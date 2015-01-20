@@ -50,7 +50,7 @@ case class Identifier(name: String)(val position: InputPosition) extends Express
 
   def renameId(newName: String) = copy(name = newName)(position)
 
-  def bumpId = copy()(position.copy(offset = position.offset + 1)) // TODO: HACKISHHHH
+  def bumpId = copy()(position.bumped())
 }
 
 object Identifier {

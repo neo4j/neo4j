@@ -48,7 +48,7 @@ case object normalizeReturnClauses extends Rewriter {
         case i: AliasedReturnItem =>
           i
         case i =>
-          val newPosition = i.expression.position.copy(offset = i.expression.position.offset + 1)
+          val newPosition = i.expression.position.bumped()
           AliasedReturnItem(i.expression, Identifier(i.name)(newPosition))(i.position)
       })
       Seq(
@@ -60,11 +60,9 @@ case object normalizeReturnClauses extends Rewriter {
 
       val (aliasProjection, finalProjection) = ri.items.map {
         i =>
-          val newPosition = i.expression.position.copy(offset = i.expression.position.offset + 1)
-
           val returnColumn = i.alias match {
             case Some(alias) => alias
-            case None        => Identifier(i.name)(newPosition)
+            case None        => Identifier(i.name)(i.expression.position.bumped())
           }
 
           val newIdentifier = Identifier(FreshIdNameGenerator.name(i.expression.position))(i.position)

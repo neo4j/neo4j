@@ -19,16 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.LazyLabel
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.Limit
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.Limit
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{Limit, _}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter.unnestOptional
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport2, PlannerQuery}
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, LogicalPlanningTestSupport2}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.{InputPosition}
 
 class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -62,14 +59,14 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   test("should build simple optional expand") {
     planFor("MATCH n OPTIONAL MATCH n-[:NOT_EXIST]->x RETURN n").plan.endoRewrite(unnestOptional) match {
       case Projection(OptionalExpand(
-        AllNodesScan(IdName("n"), _),
-        IdName("n"),
-        Direction.OUTGOING,
-        _,
-        IdName("x"),
-        _,
-        _,
-        _
+      AllNodesScan(IdName("n"), _),
+      IdName("n"),
+      Direction.OUTGOING,
+      _,
+      IdName("x"),
+      _,
+      _,
+      _
       ), _) => ()
     }
   }
@@ -77,18 +74,18 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   test("should build optional ProjectEndpoints") {
     planFor("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)<-[r]-(b2) RETURN a1, r, b2").plan match {
       case Projection(
-            Apply(
-              Limit(
-                Expand(
-                  AllNodesScan(IdName("b1"), _), _, _, _, _, _, _), _),
-              Optional(
-                Selection(
-                  predicates,
-                  ProjectEndpoints(
-                    Argument(_), IdName("r"), IdName("b2"), IdName("a1$$$_"), true, SimplePatternLength
-                  )
-                  )
-                )
+      Apply(
+      Limit(
+      Expand(
+      AllNodesScan(IdName("b1"), _), _, _, _, _, _, _), _),
+      Optional(
+      Selection(
+      predicates,
+      ProjectEndpoints(
+      Argument(_), IdName("r"), IdName("b2"), IdName("a1$$$_"), true, SimplePatternLength
+      )
+      )
+      )
       ), _) =>
         val predicate: Expression = Equals(Identifier("a1")_, Identifier("a1$$$_")_)_
         predicates should equal(Seq(predicate))
@@ -98,16 +95,16 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   test("should build optional ProjectEndpoints with extra predicates") {
     planFor("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a2)<-[r]-(b2) WHERE a1 = a2 RETURN a1, r, b2").plan match {
       case Projection(Apply(
-        Limit(Expand(AllNodesScan(IdName("b1"), _), _, _, _, _, _, _), _),
-        Optional(
-          Selection(
-            predicates1,
-            ProjectEndpoints(
-              Selection(predicates2, AllNodesScan(IdName("a2"), args)),
-              IdName("r"), IdName("b2"), IdName("a2$$$_"), true, SimplePatternLength
-            )
-          )
-        )
+      Limit(Expand(AllNodesScan(IdName("b1"), _), _, _, _, _, _, _), _),
+      Optional(
+      Selection(
+      predicates1,
+      ProjectEndpoints(
+      Selection(predicates2, AllNodesScan(IdName("a2"), args)),
+      IdName("r"), IdName("b2"), IdName("a2$$$_"), true, SimplePatternLength
+      )
+      )
+      )
       ), _) =>
         args should equal(Set(IdName("r"), IdName("a1")))
 
@@ -122,16 +119,16 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   test("should build optional ProjectEndpoints with extra predicates 2") {
     planFor("MATCH (a1)-[r]->(b1) WITH r LIMIT 1 OPTIONAL MATCH (a2)-[r]->(b2) RETURN a2, r, b2").plan  match {
       case Projection(Apply(
-        Limit(Expand(AllNodesScan(IdName("b1"), _), _, _, _, _, _, _), _),
-        Optional(
-          Selection(
-            predicates,
-            ProjectEndpoints(
-              AllNodesScan(IdName("a2"), args),
-              IdName("r"), IdName("a2$$$_"), IdName("b2"), true, SimplePatternLength
-            )
-          )
-        )
+      Limit(Expand(AllNodesScan(IdName("b1"), _), _, _, _, _, _, _), _),
+      Optional(
+      Selection(
+      predicates,
+      ProjectEndpoints(
+      AllNodesScan(IdName("a2"), args),
+      IdName("r"), IdName("a2$$$_"), IdName("b2"), true, SimplePatternLength
+      )
+      )
+      )
       ), _) =>
         val predicate: Expression = Equals(Identifier("a2")_, Identifier("a2$$$_")_)_
         predicates should equal(Seq(predicate))

@@ -29,7 +29,7 @@ import scala.collection.immutable.HashMap
 case class SymbolUse(name: String, position: InputPosition) {
   override def toString = s"SymbolUse($nameWithPosition)"
 
-  def nameWithPosition = s"$name@${position.offset}"
+  def nameWithPosition = s"$name@${position.toOffsetString}"
 }
 
 // A symbol collects all uses of a position within the current scope and
@@ -122,7 +122,7 @@ case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope]) extends
   private def dump(indent: String, builder: StringBuilder): Unit = {
     symbolTable.keys.toSeq.sorted.foreach { key =>
       val symbol = symbolTable(key)
-      val symbolText = symbol.positions.map(_.offset).toSeq.sorted.mkString(" ")
+      val symbolText = symbol.positions.map(_.toOffsetString).toSeq.sorted.mkString(" ")
       builder.append(s"$indent$key: $symbolText\n")
     }
     children.foreach { child =>

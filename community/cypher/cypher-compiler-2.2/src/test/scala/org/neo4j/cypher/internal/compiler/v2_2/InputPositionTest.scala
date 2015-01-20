@@ -19,29 +19,26 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-case class InputPosition(offset: Int, line: Int, column: Int) {
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-  override def hashCode = 41 * offset
+class InputPositionTest extends CypherFunSuite {
 
-  override def equals(that: Any): Boolean = that match {
-    case that: InputPosition =>
-      (that canEqual this) && offset == that.offset
-    case _ =>
-      false
+  test("should bump the input position") {
+    val pos = InputPosition(2, 1, 1)
+
+    val bumped = pos.bumped()
+
+    bumped.offset should equal(pos.offset + 1)
+    bumped.column should equal(pos.column)
+    bumped.line should equal(pos.line)
+
+    pos should not equal bumped
+    pos should equal(InputPosition(2, 1, 1))
+    bumped should equal(InputPosition(2, 1, 1).bumped())
   }
 
-  def canEqual(that: Any): Boolean = that.isInstanceOf[InputPosition]
-
-  override def toString = s"line $line, column $column (offset: $toOffsetString)"
-
-  def toOffsetString = offset.toString
-
-  def bumped() = new InputPosition(offset + 1, line, column)  // HACKISH
-}
-
-object InputPosition {
-  implicit val byOffset =
-    Ordering.by { (pos: InputPosition) => pos.offset }
-
-  val NONE = null
+  test("should print offset") {
+    InputPosition(2, 1, 1).toOffsetString should equal("2")
+    InputPosition(2, 1, 1).bumped().toOffsetString should equal("3")
+  }
 }
