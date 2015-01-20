@@ -51,14 +51,12 @@ import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.core.RelationshipLoader;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.kernel.impl.transaction.command.RelationshipHoles;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
 
 import static org.neo4j.kernel.impl.api.store.CacheUpdateListener.NO_UPDATES;
-import static org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper.BOTH;
-import static org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper.INCOMING;
-import static org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper.OUTGOING;
 
 /**
  * This is a cache for the {@link KernelAPI}. Currently it piggy-backs on NodeImpl/RelationshipImpl
@@ -492,23 +490,12 @@ public class PersistenceCache
         labelTokenHolder.addToken( token );
     }
 
-    public void patchDeletedRelationshipNodes( long relId, int type, long firstNodeId, long firstNodeNextRelId,
-            long secondNodeId, long secondNodeNextRelId )
-    {
-        boolean loop = firstNodeId == secondNodeId;
-        invalidateNode( firstNodeId, loop ? BOTH : OUTGOING, type, relId, firstNodeNextRelId );
-        if ( !loop )
-        {
-            invalidateNode( secondNodeId, INCOMING, type, relId, secondNodeNextRelId );
-        }
-    }
-
-    private void invalidateNode( long nodeId, DirectionWrapper direction, int type, long relIdDeleted, long nextRelId )
+    public void patchDeletedRelationshipNodes( long nodeId, RelationshipHoles holes )
     {
         NodeImpl node = nodeCache.getIfCached( nodeId );
         if ( node != null )
         {
-            node.updateRelationshipChainPosition( direction, type, relIdDeleted, nextRelId );
+            node.updateRelationshipChainPosition( holes );
         }
     }
 

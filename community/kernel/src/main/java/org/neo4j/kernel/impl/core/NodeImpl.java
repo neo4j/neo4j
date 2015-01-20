@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.api.store.CacheLoader;
 import org.neo4j.kernel.impl.api.store.CacheUpdateListener;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.transaction.command.RelationshipHoles;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
@@ -693,16 +694,18 @@ public class NodeImpl extends ArrayBasedPrimitive
         this.relChainPosition = position;
     }
 
-    public void updateRelationshipChainPosition( DirectionWrapper direction, int type, long relIdDeleted, long nextRelId )
+    public void updateRelationshipChainPosition( RelationshipHoles holes )
     {
         if ( relChainPosition != null )
         {
-            if ( relChainPosition.atPosition( direction, type, relIdDeleted ) )
+            if ( relChainPosition.atPosition( holes ) )
             {
                 synchronized ( this )
                 {
-                    // Double-checked locking. The second check will happen inside compareAndAdvance
-                    relChainPosition.compareAndAdvance( direction, type, relIdDeleted, nextRelId );
+                    if ( relChainPosition.atPosition( holes ) )
+                    {
+                        relChainPosition.patchPosition( getId(), holes );
+                    }
                 }
             }
         }

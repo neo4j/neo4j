@@ -123,25 +123,27 @@ public class RelationshipChainLoader
             {
                 i--;
             }
-            long next = 0;
-            if ( firstNode == nodeId )
-            {
-                next = relRecord.getFirstNextRel();
-            }
-            else if ( secondNode == nodeId )
-            {
-                next = relRecord.getSecondNextRel();
-            }
-            else
-            {
-                throw new InvalidRecordException( "While loading relationships for Node[" + nodeId +
-                        "] a Relationship[" + relRecord.getId() + "] was encountered that had startNode: " + firstNode +
-                        " and endNode: " + secondNode + ", i.e. which had neither start nor end node as the node we're " +
-                        "loading relationships for" );
-            }
+            long next = followRelationshipChain( nodeId, relRecord );
             position = loadPosition.nextPosition( next, direction, types );
         }
         return Pair.of( result, loadPosition );
+    }
+
+    public static long followRelationshipChain( long nodeId, RelationshipRecord relRecord )
+    {
+        if ( relRecord.getFirstNode() == nodeId )
+        {
+            return relRecord.getFirstNextRel();
+        }
+        else if ( relRecord.getSecondNode() == nodeId )
+        {
+            return relRecord.getSecondNextRel();
+        }
+
+        throw new InvalidRecordException( "While loading relationships for Node[" + nodeId +
+                "] a Relationship[" + relRecord.getId() + "] was encountered that had startNode: " +
+                relRecord.getFirstNode() + " and endNode: " + relRecord.getSecondNode() +
+                ", i.e. which had neither start nor end node as the node we're loading relationships for" );
     }
 
     public int getRelationshipCount( long id, int type, DirectionWrapper direction )

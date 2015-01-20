@@ -120,5 +120,4 @@ public class TransactionRepresentationStoreApplier
         assert counts.acceptTx( transactionId );
         return new CountsStoreApplier( counts, neoStore.getNodeStore() );
     }
-
 }

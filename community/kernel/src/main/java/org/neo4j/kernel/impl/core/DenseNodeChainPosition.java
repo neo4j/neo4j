@@ -27,6 +27,8 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntObjectVisitor;
+import org.neo4j.function.primitive.FunctionFromPrimitiveLongLongToPrimitiveLong;
+import org.neo4j.function.primitive.PrimitiveLongPredicate;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
@@ -139,9 +141,25 @@ public class DenseNodeChainPosition implements RelationshipLoadingPosition
     }
 
     @Override
-    public void compareAndAdvance( DirectionWrapper direction, int type, long relIdDeleted, long nextRelId )
+    public boolean atPosition( final PrimitiveLongPredicate predicate )
     {
-        getTypePosition( type ).compareAndAdvance( direction, type, relIdDeleted, nextRelId );
+        AnyPositionVisitor visitor = new AnyPositionVisitor( predicate );
+        positions.visitEntries( visitor );
+        return visitor.hit;
+    }
+
+    @Override
+    public void patchPosition( final long nodeId, final FunctionFromPrimitiveLongLongToPrimitiveLong<RuntimeException> next )
+    {
+        positions.visitEntries( new PrimitiveIntObjectVisitor<RelationshipLoadingPosition,RuntimeException>()
+        {
+            @Override
+            public boolean visited( int key, RelationshipLoadingPosition value )
+            {
+                value.patchPosition( nodeId, next );
+                return false;
+            }
+        } );
     }
 
     @Override
@@ -156,6 +174,28 @@ public class DenseNodeChainPosition implements RelationshipLoadingPosition
         StringBuilder builder = new StringBuilder( getClass().getSimpleName() + ":" );
         builder.append( format( "%n  positions: %s", positions ) );
         return builder.toString();
+    }
+
+    private static final class AnyPositionVisitor implements
+            PrimitiveIntObjectVisitor<RelationshipLoadingPosition,RuntimeException>
+    {
+        private final PrimitiveLongPredicate predicate;
+        private boolean hit;
+
+        private AnyPositionVisitor( PrimitiveLongPredicate predicate )
+        {
+            this.predicate = predicate;
+        }
+
+        @Override
+        public boolean visited( int key, RelationshipLoadingPosition value )
+        {
+            if ( value.atPosition( predicate ) )
+            {
+                hit = true;
+            }
+            return false;
+        }
     }
 
     private static class TypePosition implements RelationshipLoadingPosition
@@ -250,9 +290,25 @@ public class DenseNodeChainPosition implements RelationshipLoadingPosition
         }
 
         @Override
-        public void compareAndAdvance( DirectionWrapper direction, int type, long relIdDeleted, long nextRelId )
+        public boolean atPosition( PrimitiveLongPredicate predicate )
         {
-            directions.get( direction ).compareAndAdvance( direction, type, relIdDeleted, nextRelId );
+            for ( RelationshipLoadingPosition position : directions.values() )
+            {
+                if ( position.atPosition( predicate ) )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public void patchPosition( long nodeId, FunctionFromPrimitiveLongLongToPrimitiveLong<RuntimeException> next )
+        {
+            for ( RelationshipLoadingPosition position : directions.values() )
+            {
+                position.patchPosition( nodeId, next );
+            }
         }
 
         @Override
