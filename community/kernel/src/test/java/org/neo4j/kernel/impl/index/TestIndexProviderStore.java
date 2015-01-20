@@ -28,10 +28,10 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NotCurrentStoreVersionException;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
@@ -60,9 +60,9 @@ public class TestIndexProviderStore
         file = new File( "target/test-data/index-provider-store" );
         fileSystem = new DefaultFileSystemAbstraction();
         file.mkdirs();
-        file.delete();
+        fileSystem.deleteFile( file );
     }
-    
+
     @Test
     public void lastCommitedTxGetsStoredBetweenSessions() throws Exception
     {
@@ -75,7 +75,7 @@ public class TestIndexProviderStore
         assertEquals( 12, store.getLastCommittedTx() );
         store.close();
     }
-    
+
     @Test
     public void shouldFailUpgradeIfNotAllowed()
     {
@@ -95,7 +95,7 @@ public class TestIndexProviderStore
         assertEquals( "3.5", NeoStore.versionLongToString( store.getIndexVersion() ) );
         store.close();
     }
-    
+
     @Test( expected = NotCurrentStoreVersionException.class )
     public void shouldFailToGoBackToOlderVersion() throws Exception
     {
@@ -133,7 +133,7 @@ public class TestIndexProviderStore
             throw e;
         }
     }
-    
+
     @Test
     public void upgradeForMissingVersionRecord() throws Exception
     {
@@ -149,7 +149,7 @@ public class TestIndexProviderStore
         catch ( UpgradeNotAllowedByConfigurationException e )
         {   // Good
         }
-        
+
         store = new IndexProviderStore( file, fileSystem, 0, true );
         store.close();
     }
@@ -161,7 +161,8 @@ public class TestIndexProviderStore
         final StoreChannel[] channelUsedToCreateFile = {null};
 
         FileSystemAbstraction fs = spy( fileSystem );
-        when( fs.open( file, "rw" ) ).then( new Answer<StoreChannel>()
+        StoreChannel tempChannel;
+        when( tempChannel = fs.open( file, "rw" ) ).then( new Answer<StoreChannel>()
         {
             @Override
             public StoreChannel answer( InvocationOnMock _ ) throws Throwable
@@ -177,10 +178,13 @@ public class TestIndexProviderStore
             }
         } );
 
+        // Doing the FSA spying above, calling fs.open, actually invokes that method and so a channel
+        // is opened. We put that in tempChannel and close it before deleting the file below.
+        tempChannel.close();
         fs.deleteFile( file );
 
         // When
-        new IndexProviderStore( file, fs, versionStringToLong( "3.5" ), false );
+        IndexProviderStore store = new IndexProviderStore( file, fs, versionStringToLong( "3.5" ), false );
 
         // Then
         StoreChannel channel = channelUsedToCreateFile[0];
@@ -188,6 +192,7 @@ public class TestIndexProviderStore
         verify( channel ).force( true );
         verify( channel ).close();
         verifyNoMoreInteractions( channel );
+        store.close();
     }
 
     @Test( expected = IllegalArgumentException.class )
@@ -212,9 +217,10 @@ public class TestIndexProviderStore
         file.createNewFile();
 
         // When
-        new IndexProviderStore( file, fileSystem, versionStringToLong( "3.5" ), false );
+        IndexProviderStore store = new IndexProviderStore( file, fileSystem, versionStringToLong( "3.5" ), false );
 
         // Then
         assertTrue( fileSystem.getFileSize( file ) > 0 );
+        store.close();
     }
 }
