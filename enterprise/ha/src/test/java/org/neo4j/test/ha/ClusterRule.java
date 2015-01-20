@@ -30,13 +30,14 @@ import org.junit.runners.model.Statement;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.ha.ClusterManager.Builder;
 
 import static org.neo4j.cluster.ClusterSettings.default_timeout;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
-import static org.neo4j.test.ha.ClusterManager.Builder;
-import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
+import static org.neo4j.test.ha.ClusterManager.allSeesAllAsJoined;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 
 public class ClusterRule extends ExternalResource
 {
@@ -89,7 +90,8 @@ public class ClusterRule extends ExternalResource
             throw new RuntimeException( throwable );
         }
         ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
-        cluster.await( allSeesAllAsAvailable() );
+        cluster.await( masterAvailable() );
+        cluster.await( allSeesAllAsJoined() );
         return cluster;
     }
 
