@@ -17,8 +17,40 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction;
+package org.neo4j.unsafe.impl.batchimport.executor;
 
-public interface TransactionIdFactory
+import java.util.concurrent.locks.LockSupport;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
+/**
+ * Strategy for waiting a while, given a certain {@link Thread}.
+ */
+public interface ParkStrategy
 {
+    void park( Thread thread );
+
+    void unpark( Thread thread );
+
+    public static class Park implements ParkStrategy
+    {
+        private final long nanos;
+
+        public Park( int millis )
+        {
+            this.nanos = MILLISECONDS.toNanos( millis );
+        }
+
+        @Override
+        public void park( Thread thread )
+        {
+            LockSupport.parkNanos( nanos );
+        }
+
+        @Override
+        public void unpark( Thread thread )
+        {
+            LockSupport.unpark( thread );
+        }
+    }
 }

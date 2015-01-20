@@ -734,7 +734,8 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
                 config.get( GraphDatabaseSettings.logical_log_rotation_threshold ), neoStore,
                 neoStore, physicalLogMonitor, transactionMetadataCache );
 
-        final PhysicalLogFileInformation.SPI logInformation = new PhysicalLogFileInformation.SPI()
+        final PhysicalLogFileInformation.LogVersionToTimestamp
+                logInformation = new PhysicalLogFileInformation.LogVersionToTimestamp()
         {
             @Override
             public long getTimestampForVersion( long version ) throws IOException

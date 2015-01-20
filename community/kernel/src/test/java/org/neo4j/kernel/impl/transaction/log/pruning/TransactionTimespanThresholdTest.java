@@ -19,16 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Test;
-
 import org.neo4j.helpers.FrozenClock;
 import org.neo4j.kernel.impl.transaction.log.IllegalLogFormatException;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
-import org.neo4j.kernel.impl.transaction.log.pruning.TransactionTimespanThreshold;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

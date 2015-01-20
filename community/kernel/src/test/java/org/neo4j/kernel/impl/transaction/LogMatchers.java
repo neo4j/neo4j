@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.List;
 import javax.transaction.xa.Xid;
-
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -51,9 +51,6 @@ import static org.neo4j.kernel.impl.util.Cursors.iterable;
 /**
  * A set of hamcrest matchers for asserting logical logs look in certain ways.
  * Please expand as necessary.
- *
- * Please note: Matching specific commands is done by matchers found in
- * {@link org.neo4j.kernel.impl.transaction.command.CommandMatchers}.
  */
 public class LogMatchers
 {

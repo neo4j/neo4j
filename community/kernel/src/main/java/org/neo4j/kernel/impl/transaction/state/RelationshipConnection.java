@@ -207,7 +207,7 @@ enum RelationshipConnection
     
     abstract boolean isFirstInChain( RelationshipRecord rel );
 
-    abstract void set( RelationshipRecord rel, long id, boolean isFirt );
+    abstract void set( RelationshipRecord rel, long id, boolean isFirst );
     
     abstract long compareNode( RelationshipRecord rel );
     

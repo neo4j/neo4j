@@ -71,30 +71,6 @@ public class ControlledLoaders
         return relationshipGroups.data;
     }
 
-
-    public Map<Long,Collection<DynamicRecord>> getSchemaRules()
-    {
-        return schemaRules.data;
-    }
-
-
-    public Map<Integer,PropertyKeyTokenRecord> getPropertyKeyTokens()
-    {
-        return propertyKeyTokens.data;
-    }
-
-
-    public Map<Integer,LabelTokenRecord> getLabelTokens()
-    {
-        return labelTokens.data;
-    }
-
-
-    public Map<Integer,RelationshipTypeTokenRecord> getRelationshipTypeTokens()
-    {
-        return relationshipTypeTokens.data;
-    }
-
     public RecordAccessSet newAccessSet()
     {
         return new RecordChangeSet( nodes, properties, relationships, relationshipGroups, schemaRules,

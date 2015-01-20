@@ -27,7 +27,6 @@ import java.util.concurrent.BlockingQueue;
 
 import org.neo4j.function.Supplier;
 import org.neo4j.function.Suppliers;
-import org.neo4j.kernel.impl.transaction.log.ParkStrategy;
 
 import static java.lang.Math.min;
 

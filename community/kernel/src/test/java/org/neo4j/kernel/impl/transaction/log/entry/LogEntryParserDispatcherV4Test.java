@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import java.io.IOException;
-
 import org.junit.Test;
+
+import java.io.IOException;
 
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.CommandReaderFactory;
@@ -29,15 +29,6 @@ import org.neo4j.kernel.impl.transaction.command.NeoCommandType;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryParser;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserDispatcher;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryParsersV4;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersions;
-import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

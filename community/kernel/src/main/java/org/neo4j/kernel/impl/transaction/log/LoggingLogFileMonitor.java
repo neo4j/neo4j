@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.neo4j.kernel.Recovery;
 import org.neo4j.kernel.impl.transaction.state.RecoveryVisitor;
@@ -93,11 +92,5 @@ public class LoggingLogFileMonitor implements PhysicalLogFile.Monitor, RecoveryV
     {
         log.info( format( "Opened logical log [%s] version=%d, lastTxId=%d (%s)",
                 logFile, logVersion, lastTransactionId,  (clean ? "clean" : "recovered") ) );
-    }
-
-    @Override
-    public void failureToTruncate( File logFile, IOException e )
-    {
-        log.warn( format( "Failed to truncate %s at correct size", logFile ), e );
     }
 }
