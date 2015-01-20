@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
+import org.junit.Assert._
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.StatementConverters._
@@ -33,6 +34,9 @@ import org.neo4j.cypher.internal.spi.v2_1.TransactionBoundPlanContext
 import org.neo4j.graphdb.Transaction
 
 class TraversalMatcherBuilderTest extends GraphDatabaseFunSuite with BuilderTest {
+
+  import org.neo4j.cypher.internal.compiler.v2_1.symbols._
+
   var builder: TraversalMatcherBuilder = null
   var ctx: PlanContext = null
   var tx: Transaction = null
@@ -102,6 +106,18 @@ class TraversalMatcherBuilderTest extends GraphDatabaseFunSuite with BuilderTest
     val newPlan = builder.apply(testPlan, ctx)
 
     newPlan.query.start.exists(_.unsolved) should be(false)
+  }
+
+  test("does_not_take_on_paths_overlapping_with_identifiers_already_in_scope") {
+    val q = query("START a = node(*) MATCH a-->b RETURN b")
+
+    val sourcePipe = NullPipe(new SymbolTable(Map("b" -> CTNode)))
+
+    assertRejects(sourcePipe, q)
+  }
+
+  private def assertAcceptsQuery(q:PartiallySolvedQuery) {
+    assertTrue("Should be able to build on this", builder.canWorkWith(plan(NullPipe(), q), ctx))
   }
 
   def assertQueryHasNotSolvedPathExpressions(newPlan: ExecutionPlanInProgress) {
