@@ -20,7 +20,9 @@
 package org.neo4j.test.ha;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.rules.ExternalResource;
@@ -29,12 +31,16 @@ import org.junit.runners.model.Statement;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.ha.ClusterManager.Builder;
+import org.neo4j.test.ha.ClusterManager.ManagedCluster;
+
+import static java.util.Arrays.asList;
 
 import static org.neo4j.cluster.ClusterSettings.default_timeout;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
-import static org.neo4j.test.ha.ClusterManager.Builder;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
@@ -47,8 +53,9 @@ public class ClusterRule extends ExternalResource
     private Description description;
 
     private ClusterManager.Provider provider = clusterOfSize( 3 );
-    private Map<String, String> config = new HashMap<>(  );
+    private final Map<String, String> config = new HashMap<>();
     private HighlyAvailableGraphDatabaseFactory factory = new HighlyAvailableGraphDatabaseFactory();
+    private List<Predicate<ManagedCluster>> availabilityChecks = asList( allSeesAllAsAvailable() );
 
     public ClusterRule( Class<?> testClass )
     {
@@ -76,7 +83,13 @@ public class ClusterRule extends ExternalResource
         return this;
     }
 
-    public ClusterManager.ManagedCluster startCluster(  ) throws Exception
+    public ClusterRule availabilityChecks( List<Predicate<ManagedCluster>> checks )
+    {
+        availabilityChecks = new ArrayList<>( checks );
+        return this;
+    }
+
+    public ClusterManager.ManagedCluster startCluster() throws Exception
     {
         clusterManager = new Builder( storeDirectory )
                 .withCommonConfig( config ).withProvider( provider ).withDbFactory( factory ).build();
@@ -89,7 +102,10 @@ public class ClusterRule extends ExternalResource
             throw new RuntimeException( throwable );
         }
         ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
-        cluster.await( allSeesAllAsAvailable() );
+        for ( Predicate<ManagedCluster> availabilityCheck : availabilityChecks )
+        {
+            cluster.await( availabilityCheck );
+        }
         return cluster;
     }
 

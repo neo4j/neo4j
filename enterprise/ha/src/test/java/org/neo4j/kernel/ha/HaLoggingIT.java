@@ -23,7 +23,6 @@ import java.io.File;
 
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -31,13 +30,15 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
 
+import static java.util.Arrays.asList;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.kernel.impl.util.StringLogger.DEFAULT_NAME;
+import static org.neo4j.test.ha.ClusterManager.allSeesAllAsJoined;
 import static org.neo4j.test.ha.ClusterManager.clusterWithAdditionalClients;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 import static org.neo4j.test.ha.ClusterManager.masterSeesMembers;
 
-@Ignore
 public class HaLoggingIT
 {
     @Rule
@@ -48,7 +49,10 @@ public class HaLoggingIT
     @Before
     public void setup() throws Exception
     {
-        cluster = clusterRule.provider(clusterWithAdditionalClients( 2, 1 )).startCluster();
+        cluster = clusterRule
+                  .provider( clusterWithAdditionalClients( 2, 1 ) )
+                  .availabilityChecks( asList( masterAvailable(), masterSeesMembers( 3 ), allSeesAllAsJoined() ) )
+                  .startCluster();
     }
 
     @Test
