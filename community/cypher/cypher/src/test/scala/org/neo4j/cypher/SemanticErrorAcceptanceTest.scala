@@ -443,16 +443,13 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   def executeAndEnsureError(query: String, expected: String) {
-    import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.StringHelper._
-
-    val fixedExpected = expected.fixPosition
     try {
       execute(query).toList
-      fail(s"Did not get the expected syntax error, expected: $fixedExpected")
+      fail(s"Did not get the expected syntax error, expected: $expected")
     } catch {
       case x: CypherException =>
         val actual = x.getMessage.lines.next().trim
-        actual should equal(fixedExpected)
+        actual should equal(expected)
     }
   }
 }

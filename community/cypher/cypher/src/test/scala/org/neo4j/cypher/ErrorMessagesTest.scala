@@ -392,15 +392,13 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
   }
 
   def expectError(query: String, expectedError: String) {
-    import StringHelper._
     val error = intercept[CypherException](executeQuery(query))
-    assertThat(error.getMessage, containsString(expectedError.fixPosition))
+    assertThat(error.getMessage, containsString(expectedError))
   }
 
   private def expectSyntaxError(query: String, expectedError: String, expectedOffset: Int) {
-    import StringHelper._
     val error = intercept[SyntaxException](executeQuery(query))
-    assertThat(error.getMessage(), containsString(expectedError.fixPosition))
+    assertThat(error.getMessage(), containsString(expectedError))
     assertThat(error.offset, equalTo(Some(expectedOffset): Option[Int]))
   }
 
