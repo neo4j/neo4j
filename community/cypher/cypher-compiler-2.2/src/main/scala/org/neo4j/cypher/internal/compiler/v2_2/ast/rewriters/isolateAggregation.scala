@@ -108,9 +108,4 @@ case object isolateAggregation extends Rewriter {
   private def clauseNeedingWork(c: Clause): Boolean = c.exists {
     case e: Expression => hasAggregateButIsNotAggregate(e)
   }
-
-  private def hasAggregateButIsNotAggregate(e: Expression): Boolean = e match {
-    case IsAggregate(_) => false
-    case e: Expression  => containsAggregate(e)
-  }
 }

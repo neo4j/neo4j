@@ -52,7 +52,8 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters
       normalizeEqualsArgumentOrder,
       enableCondition(normalizedEqualsArguments),
       addUniquenessPredicates,
-      isolateAggregation
+      isolateAggregation,
+      enableCondition(aggregationsAreIsolated)
     )
 
     val rewrittenStatement = statement.rewrite(contract.rewriter).asInstanceOf[ast.Statement]
