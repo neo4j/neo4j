@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction;
+package org.neo4j.kernel.impl.transaction.log;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,22 +37,10 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
-import org.neo4j.kernel.impl.transaction.log.BatchingPhysicalTransactionAppender;
-import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
-import org.neo4j.kernel.impl.transaction.log.InMemoryVersionableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.LogFile;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.LogRotation;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionAppender;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
-import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
@@ -87,7 +75,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.helpers.Exceptions.contains;
 import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
 
-public class PhysicalTransactionAppenderTest
+public class BatchingTransactionAppenderTest
 {
     private final InMemoryVersionableLogChannel channel = new InMemoryVersionableLogChannel();
     private final LogAppendEvent logAppendEvent = LogAppendEvent.NULL;
@@ -102,7 +90,8 @@ public class PhysicalTransactionAppenderTest
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( txId );
-        TransactionAppender appender = new PhysicalTransactionAppender( logFile, LogRotation.NO_ROTATION, positionCache,
+        TransactionAppender appender = new BatchingTransactionAppender( logFile, LogRotation.NO_ROTATION,
+                positionCache,
                 transactionIdStore, BYPASS, mock( KernelHealth.class ) );
 
         // WHEN
@@ -142,7 +131,7 @@ public class PhysicalTransactionAppenderTest
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( nextTxId );
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
-        TransactionAppender appender = new PhysicalTransactionAppender(
+        TransactionAppender appender = new BatchingTransactionAppender(
                 logFile, LogRotation.NO_ROTATION, positionCache, transactionIdStore, BYPASS,
                 mock( KernelHealth.class ) );
 
@@ -188,7 +177,7 @@ public class PhysicalTransactionAppenderTest
         when( logFile.getWriter() ).thenReturn( channel );
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
-        TransactionAppender appender = new PhysicalTransactionAppender(
+        TransactionAppender appender = new BatchingTransactionAppender(
                 logFile, LogRotation.NO_ROTATION, positionCache, transactionIdStore, BYPASS,
                 mock( KernelHealth.class ) );
 
@@ -235,7 +224,7 @@ public class PhysicalTransactionAppenderTest
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( txId );
         KernelHealth health = mock( KernelHealth.class );
-        TransactionAppender appender = new PhysicalTransactionAppender( logFile, LogRotation.NO_ROTATION,
+        TransactionAppender appender = new BatchingTransactionAppender( logFile, LogRotation.NO_ROTATION,
                 metadataCache, transactionIdStore, BYPASS, health );
 
         // WHEN
@@ -268,7 +257,7 @@ public class PhysicalTransactionAppenderTest
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( 1L, 2L, 3L, 4L, 5L );
         IdOrderingQueue legacyIndexOrdering = new SynchronizedArrayIdOrderingQueue( 5 );
-        TransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile, LogRotation.NO_ROTATION,
+        TransactionAppender appender = new BatchingTransactionAppender( logFile, LogRotation.NO_ROTATION,
                 metadataCache, transactionIdStore, legacyIndexOrdering,
                 mock( KernelHealth.class ) );
 
@@ -333,7 +322,7 @@ public class PhysicalTransactionAppenderTest
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( txId );
         IdOrderingQueue idOrderingQueue = mock( IdOrderingQueue.class );
         doThrow( new RuntimeException( failureMessage ) ).when( idOrderingQueue ).waitFor( anyLong() );
-        TransactionAppender appender = new PhysicalTransactionAppender( logFile, LogRotation.NO_ROTATION,
+        TransactionAppender appender = new BatchingTransactionAppender( logFile, LogRotation.NO_ROTATION,
                 metadataCache, transactionIdStore, idOrderingQueue, mock( KernelHealth.class ) );
 
         // WHEN

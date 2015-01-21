@@ -27,8 +27,13 @@ package org.neo4j.kernel.impl.transaction.log;
 public interface Commitment
 {
     /**
-     * Marks the transaction as committed. After this call the caller must see to that the transaction
-     * gets properly closed as well, i.e {@link TransactionIdStore#transactionClosed(long)}.
+     * <p>
+     *     Marks the transaction as committed and makes this fact public.
+     * </p>
+     * <p>
+     *     After this call the caller must see to that the transaction gets properly closed as well, i.e
+     *     {@link TransactionIdStore#transactionClosed(long)}.
+     * </p>
      */
-    void transactionCommitted();
+    void publishAsCommitted();
 }
