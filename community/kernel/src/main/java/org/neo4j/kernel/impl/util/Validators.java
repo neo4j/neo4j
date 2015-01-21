@@ -35,10 +35,19 @@ public class Validators
         {
             for ( File file : files )
             {
-                if ( !file.exists() )
-                {
-                    throw new IllegalArgumentException( file + " doesn't exist" );
-                }
+                FILE_EXISTS.validate( file );
+            }
+        }
+    };
+
+    public static final Validator<File> FILE_EXISTS = new Validator<File>()
+    {
+        @Override
+        public void validate( File file )
+        {
+            if ( !file.exists() )
+            {
+                throw new IllegalArgumentException( "'" + file + "' doesn't exist" );
             }
         }
     };

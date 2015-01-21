@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
@@ -36,6 +37,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.Triplet;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.test.TargetDirectory;
@@ -44,6 +48,7 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 
 import static java.lang.System.currentTimeMillis;
+import static java.util.Arrays.asList;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -52,6 +57,7 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.alwaysTrue;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.ArrayUtil.join;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.tooling.ImportTool.MULTI_FILE_DELIMITER;
 
 public class ImportToolTest
@@ -97,7 +103,7 @@ public class ImportToolTest
     }
 
     @Test
-    public void shouldImportMultipleInputGroups() throws Exception
+    public void shouldImportSplitInputFiles() throws Exception
     {
         // GIVEN
         List<String> nodeIds = nodeIds();
@@ -122,26 +128,26 @@ public class ImportToolTest
     }
 
     @Test
-    public void shouldImportMultipleInputGroupsWithAddedLabelsAndDefaultRelationshipType() throws Exception
+    public void shouldImportMultipleInputsWithAddedLabelsAndDefaultRelationshipType() throws Exception
     {
         // GIVEN
         List<String> nodeIds = nodeIds();
         Configuration config = Configuration.COMMAS;
-        final String[] firstGroupLabels = { "AddedOne", "AddedTwo" };
-        final String[] secondGroupLabels = { "AddedThree" };
-        final String firstGroupType = "TYPE_1";
-        final String secondGroupType = "TYPE_2";
+        final String[] firstLabels = { "AddedOne", "AddedTwo" };
+        final String[] secondLabels = { "AddedThree" };
+        final String firstType = "TYPE_1";
+        final String secondType = "TYPE_2";
 
         // WHEN
         ImportTool.main( arguments(
                 "--into", directory.absolutePath(),
-                "--nodes:" + join( firstGroupLabels, ":" ),
+                "--nodes:" + join( firstLabels, ":" ),
                     nodeData( true, config, nodeIds, lines( 0, NODE_COUNT/2 ) ).getAbsolutePath(),
-                "--nodes:" + join( secondGroupLabels, ":" ),
+                "--nodes:" + join( secondLabels, ":" ),
                     nodeData( true, config, nodeIds, lines( NODE_COUNT/2, NODE_COUNT ) ).getAbsolutePath(),
-                "--relationships:" + firstGroupType,
+                "--relationships:" + firstType,
                     relationshipData( true, config, nodeIds, lines( 0, RELATIONSHIP_COUNT/2 ), false ).getAbsolutePath(),
-                "--relationships:" + secondGroupType,
+                "--relationships:" + secondType,
                     relationshipData( true, config, nodeIds,
                             lines( RELATIONSHIP_COUNT/2, RELATIONSHIP_COUNT ), false ).getAbsolutePath() ) );
 
@@ -154,11 +160,11 @@ public class ImportToolTest
                     {
                         if ( node.getId() < NODE_COUNT/2 )
                         {
-                            assertNodeHasLabels( node, firstGroupLabels );
+                            assertNodeHasLabels( node, firstLabels );
                         }
                         else
                         {
-                            assertNodeHasLabels( node, secondGroupLabels );
+                            assertNodeHasLabels( node, secondLabels );
                         }
                     }
                 },
@@ -169,11 +175,11 @@ public class ImportToolTest
                     {
                         if ( relationship.getId() < RELATIONSHIP_COUNT/2 )
                         {
-                            assertEquals( firstGroupType, relationship.getType().name() );
+                            assertEquals( firstType, relationship.getType().name() );
                         }
                         else
                         {
-                            assertEquals( secondGroupType, relationship.getType().name() );
+                            assertEquals( secondType, relationship.getType().name() );
                         }
                     }
                 } );
@@ -209,6 +215,78 @@ public class ImportToolTest
         finally
         {
             db.shutdown();
+        }
+    }
+
+    @Test
+    public void shouldImportGroupsOfOverlappingIds() throws Exception
+    {
+        // GIVEN
+        List<String> groupOneNodeIds = asList( "1", "2", "3" );
+        List<String> groupTwoNodeIds = asList( "4", "5", "2" );
+        List<Triplet<String,String,String>> rels = asList(
+                Triplet.of( "1", "4", "TYPE" ),
+                Triplet.of( "2", "5", "TYPE" ),
+                Triplet.of( "3", "2", "TYPE" ) );
+        Configuration config = Configuration.COMMAS;
+        String groupOne = "Actor";
+        String groupTwo = "Movie";
+
+        // WHEN
+        ImportTool.main( arguments(
+                "--into",          directory.absolutePath(),
+                "--nodes",         nodeHeader( config, groupOne ) + MULTI_FILE_DELIMITER +
+                                   nodeData( false, config, groupOneNodeIds, alwaysTrue() ),
+                "--nodes",         nodeHeader( config, groupTwo ) + MULTI_FILE_DELIMITER +
+                                   nodeData( false, config, groupTwoNodeIds, alwaysTrue() ),
+                "--relationships", relationshipHeader( config, groupOne, groupTwo ) + MULTI_FILE_DELIMITER +
+                                   relationshipData( false, config, rels.iterator(), alwaysTrue(), true )
+
+                ) );
+
+        // THEN
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
+        try ( Transaction tx = db.beginTx() )
+        {
+            int nodeCount = 0;
+            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            {
+                assertTrue( node.hasProperty( "name" ) );
+                nodeCount++;
+                assertEquals( 1, count( node.getRelationships() ) );
+            }
+            assertEquals( 6, nodeCount );
+            tx.success();
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+
+    @Test
+    public void shouldNotBeAbleToMixSpecifiedAndUnspecifiedGroups() throws Exception
+    {
+        // GIVEN
+        List<String> groupOneNodeIds = asList( "1", "2", "3" );
+        List<String> groupTwoNodeIds = asList( "4", "5", "2" );
+        Configuration config = Configuration.COMMAS;
+
+        // WHEN
+        try
+        {
+            ImportTool.main( arguments(
+                    "--into",          directory.absolutePath(),
+                    "--nodes",         nodeHeader( config, "MyGroup" ) + MULTI_FILE_DELIMITER +
+                    nodeData( false, config, groupOneNodeIds, alwaysTrue() ),
+                    "--nodes",         nodeHeader( config ) + MULTI_FILE_DELIMITER +
+                    nodeData( false, config, groupTwoNodeIds, alwaysTrue() )
+
+                    ) );
+        }
+        catch ( Exception e )
+        {
+            assertTrue( Exceptions.contains( e, "Mixing specified", IllegalStateException.class ) );
         }
     }
 
@@ -258,12 +336,22 @@ public class ImportToolTest
 
     private List<String> nodeIds()
     {
+        return nodeIds( NODE_COUNT );
+    }
+
+    private List<String> nodeIds( int count )
+    {
         List<String> ids = new ArrayList<>();
-        for ( int i = 0; i < NODE_COUNT; i++ )
+        for ( int i = 0; i < count; i++ )
         {
-            ids.add( UUID.randomUUID().toString() );
+            ids.add( randomNodeId() );
         }
         return ids;
+    }
+
+    private String randomNodeId()
+    {
+        return UUID.randomUUID().toString();
     }
 
     private File nodeData( boolean includeHeader, Configuration config, List<String> nodeIds,
@@ -274,7 +362,7 @@ public class ImportToolTest
         {
             if ( includeHeader )
             {
-                writeNodeHeader( writer, config );
+                writeNodeHeader( writer, config, null );
             }
             writeNodeData( writer, config, nodeIds, linePredicate );
         }
@@ -283,18 +371,28 @@ public class ImportToolTest
 
     private File nodeHeader( Configuration config ) throws FileNotFoundException
     {
+        return nodeHeader( config, null );
+    }
+
+    private File nodeHeader( Configuration config, String idGroup ) throws FileNotFoundException
+    {
         File file = directory.file( fileName( "nodes-header.csv" ) );
         try ( PrintStream writer = new PrintStream( file ) )
         {
-            writeNodeHeader( writer, config );
+            writeNodeHeader( writer, config, idGroup );
         }
         return file;
     }
 
-    private void writeNodeHeader( PrintStream writer, Configuration config )
+    private void writeNodeHeader( PrintStream writer, Configuration config, String idGroup )
     {
         char delimiter = config.delimiter();
-        writer.println( "id:ID" + delimiter + "name" + delimiter + "labels:LABEL" );
+        writer.println( idEntry( "id", Type.ID, idGroup ) + delimiter + "name" + delimiter + "labels:LABEL" );
+    }
+
+    private String idEntry( String name, Type type, String idGroup )
+    {
+        return (name != null ? name : "") + ":" + type.name() + (idGroup != null ? "(" + idGroup + ")" : "");
     }
 
     private void writeNodeData( PrintStream writer, Configuration config, List<String> nodeIds,
@@ -347,24 +445,37 @@ public class ImportToolTest
     private File relationshipData( boolean includeHeader, Configuration config, List<String> nodeIds,
             PrimitiveIntPredicate linePredicate, boolean specifyType ) throws FileNotFoundException
     {
+        return relationshipData( includeHeader, config, randomRelationships( nodeIds ), linePredicate, specifyType );
+    }
+
+    private File relationshipData( boolean includeHeader, Configuration config,
+            Iterator<Triplet<String,String,String>> data, PrimitiveIntPredicate linePredicate,
+            boolean specifyType ) throws FileNotFoundException
+    {
         File file = directory.file( fileName( "relationships.csv" ) );
         try ( PrintStream writer = new PrintStream( file ) )
         {
             if ( includeHeader )
             {
-                writeRelationshipHeader( writer, config );
+                writeRelationshipHeader( writer, config, null, null );
             }
-            writeRelationshipData( writer, config, nodeIds, linePredicate, specifyType );
+            writeRelationshipData( writer, config, data, linePredicate, specifyType );
         }
         return file;
     }
 
     private File relationshipHeader( Configuration config ) throws FileNotFoundException
     {
+        return relationshipHeader( config, null, null );
+    }
+
+    private File relationshipHeader( Configuration config, String startIdGroup, String endIdGroup )
+            throws FileNotFoundException
+    {
         File file = directory.file( fileName( "relationships-header.csv" ) );
         try ( PrintStream writer = new PrintStream( file ) )
         {
-            writeRelationshipHeader( writer, config );
+            writeRelationshipHeader( writer, config, startIdGroup, endIdGroup );
         }
         return file;
     }
@@ -374,27 +485,51 @@ public class ImportToolTest
         return dataIndex++ + "-" + name;
     }
 
-    private void writeRelationshipHeader( PrintStream writer, Configuration config )
+    private void writeRelationshipHeader( PrintStream writer, Configuration config,
+            String startIdGroup, String endIdGroup )
     {
         char delimiter = config.delimiter();
-        writer.println( ":" + Type.START_ID + delimiter + ":" + Type.END_ID + delimiter +
-                        ":" + Type.TYPE + delimiter + "created:long" );
+        writer.println(
+                idEntry( null, Type.START_ID, startIdGroup ) + delimiter +
+                idEntry( null, Type.END_ID, endIdGroup ) + delimiter +
+                ":" + Type.TYPE + delimiter + "created:long" );
     }
 
-    private void writeRelationshipData( PrintStream writer, Configuration config, List<String> nodeIds,
-                                        PrimitiveIntPredicate linePredicate, boolean specifyType )
+    private void writeRelationshipData( PrintStream writer, Configuration config,
+            Iterator<Triplet<String,String,String>> data, PrimitiveIntPredicate linePredicate, boolean specifyType )
     {
         char delimiter = config.delimiter();
         for ( int i = 0; i < RELATIONSHIP_COUNT; i++ )
         {
             if ( linePredicate.accept( i ) )
             {
-                writer.println( nodeIds.get( random.nextInt( nodeIds.size() ) ) + delimiter +
-                        nodeIds.get( random.nextInt( nodeIds.size() ) ) + delimiter +
-                        (specifyType ? randomType() : "") + delimiter +
+                if ( !data.hasNext() )
+                {
+                    break;
+                }
+                Triplet<String,String,String> entry = data.next();
+                writer.println(
+                        entry.first() + delimiter +
+                        entry.second() + delimiter +
+                        (specifyType ? entry.third() : "") + delimiter +
                         currentTimeMillis() );
             }
         }
+    }
+
+    private Iterator<Triplet<String,String,String>> randomRelationships( final List<String> nodeIds )
+    {
+        return new PrefetchingIterator<Triplet<String,String,String>>()
+        {
+            @Override
+            protected Triplet<String,String,String> fetchNextOrNull()
+            {
+                return Triplet.of(
+                        nodeIds.get( random.nextInt( nodeIds.size() ) ),
+                        nodeIds.get( random.nextInt( nodeIds.size() ) ),
+                        randomType() );
+            }
+        };
     }
 
     private String randomType()

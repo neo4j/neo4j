@@ -39,7 +39,7 @@ abstract class InputGroupsDeserializer<ENTITY extends InputEntity>
     private final Header.Factory headerFactory;
     private final Configuration config;
     private final IdType idType;
-    private ResourceIterator<ENTITY> currentGroup;
+    private ResourceIterator<ENTITY> currentInput;
 
     InputGroupsDeserializer( Iterator<DataFactory<ENTITY>> dataFactory, Header.Factory headerFactory,
                              Configuration config, IdType idType )
@@ -58,26 +58,25 @@ abstract class InputGroupsDeserializer<ENTITY extends InputEntity>
         // Open the data stream. It's closed by the batch importer when execution is done.
         Data<ENTITY> data = dataFactory.create( config );
         CharSeeker dataStream = data.stream();
-        Function<ENTITY,ENTITY> decorator = data.decorator();
 
         // Read the header, given the data stream. This allows the header factory to be able to
         // parse the header from the data stream directly. Or it can decide to grab the header
         // from somewhere else, it's up to that factory.
         Header dataHeader = headerFactory.create( dataStream, config, idType );
 
-        return currentGroup = entityDeserializer( dataStream, dataHeader, decorator );
+        return currentInput = entityDeserializer( dataStream, dataHeader, data.decorator() );
     }
 
     private void closeCurrent()
     {
-        if ( currentGroup != null )
+        if ( currentInput != null )
         {
-            currentGroup.close();
+            currentInput.close();
         }
     }
 
     protected abstract ResourceIterator<ENTITY> entityDeserializer( CharSeeker dataStream, Header dataHeader,
-                                                                    Function<ENTITY,ENTITY> decorator  );
+            Function<ENTITY,ENTITY> decorator );
 
     @Override
     public void close()

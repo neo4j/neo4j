@@ -238,7 +238,7 @@ public class ImportToolDocIT
     {
         try (PrintStream out = new PrintStream( file( "man", "options.adoc" ) ))
         {
-            for ( Options option : ImportTool.Options.values() )
+            for ( Options option : Options.values() )
             {
                 out.print( option.manPageEntry() );
             }

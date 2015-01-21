@@ -224,8 +224,35 @@ public class DataFactoriesTest
         seeker.close();
     }
 
+    @Test
+    public void shouldParseGroupName() throws Exception
+    {
+     // GIVEN
+        CharSeeker seeker = new BufferedCharSeeker( wrap( new StringReader(
+                ":START_ID(GroupOne)\t:END_ID(GroupTwo)\ttype:TYPE\tdate:long\tmore:long[]" ) ) );
+        IdType idType = IdType.ACTUAL;
+        Extractors extractors = new Extractors( '\t' );
+
+        // WHEN
+        Header header = DataFactories.defaultFormatRelationshipFileHeader().create( seeker, TABS, idType );
+
+        // THEN
+        assertArrayEquals( array(
+                entry( null, Type.START_ID, "GroupOne", idType.extractor( extractors ) ),
+                entry( null, Type.END_ID, "GroupTwo", idType.extractor( extractors ) ),
+                entry( "type", Type.TYPE, extractors.string() ),
+                entry( "date", Type.PROPERTY, extractors.long_() ),
+                entry( "more", Type.PROPERTY, extractors.longArray() ) ), header.entries() );
+        seeker.close();
+    }
+
     private Header.Entry entry( String name, Type type, Extractor<?> extractor )
     {
-        return new Header.Entry( name, type, extractor );
+        return entry( name, type, null, extractor );
+    }
+
+    private Header.Entry entry( String name, Type type, String groupName, Extractor<?> extractor )
+    {
+        return new Header.Entry( name, type, groupName, extractor );
     }
 }

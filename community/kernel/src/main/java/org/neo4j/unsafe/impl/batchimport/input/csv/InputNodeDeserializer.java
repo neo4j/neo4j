@@ -23,8 +23,11 @@ import java.util.Arrays;
 
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.function.Function;
+import org.neo4j.unsafe.impl.batchimport.input.Group;
+import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
+import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 
 import static java.util.Arrays.copyOf;
 
@@ -41,12 +44,17 @@ class InputNodeDeserializer extends InputEntityDeserializer<InputNode>
     // holder of labels, Will grow with the node having most labels.
     private String[] labels = new String[10];
     private int labelsCursor;
+    private final Group group;
 
     InputNodeDeserializer( Header header, CharSeeker data, int[] delimiter, Function<InputNode,InputNode> decorator,
-            boolean idsAreExternal )
+            boolean idsAreExternal, Groups groups )
     {
         super( header, data, delimiter, decorator );
         this.idsAreExternal = idsAreExternal;
+
+        // ID header entry is optional
+        Entry idEntry = header.entry( Type.ID );
+        this.group = idEntry != null ? groups.getOrCreate( idEntry.groupName() ) : Group.GLOBAL;
     }
 
     @Override
@@ -98,7 +106,7 @@ class InputNodeDeserializer extends InputEntityDeserializer<InputNode>
     {
         try
         {
-            return new InputNode( id, properties, null, labels(), null );
+            return new InputNode( group, id, properties, null, labels(), null );
         }
         finally
         {

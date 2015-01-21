@@ -53,16 +53,35 @@ public class Header
         return entries;
     }
 
+    public Entry entry( Type type )
+    {
+        Entry result = null;
+        for ( Entry entry : entries )
+        {
+            if ( entry.type() == type )
+            {
+                if ( result != null )
+                {
+                    throw new IllegalStateException( "Multiple header entries of type " + type );
+                }
+                result = entry;
+            }
+        }
+        return result;
+    }
+
     public static class Entry
     {
         private final String name;
         private final Type type;
+        private final String groupName;
         private final Extractor<?> extractor;
 
-        public Entry( String name, Type type, Extractor<?> extractor )
+        public Entry( String name, Type type, String groupName, Extractor<?> extractor )
         {
             this.name = name;
             this.type = type;
+            this.groupName = groupName;
             this.extractor = extractor;
         }
 
@@ -82,6 +101,11 @@ public class Header
             return type;
         }
 
+        public String groupName()
+        {
+            return groupName;
+        }
+
         public String name()
         {
             return name;
@@ -92,8 +116,15 @@ public class Header
         {
             final int prime = 31;
             int result = 1;
-            result = prime * result + name.hashCode();
+            if ( name != null )
+            {
+                result = prime * result + name.hashCode();
+            }
             result = prime * result + type.hashCode();
+            if ( groupName != null )
+            {
+                result = prime * result + groupName.hashCode();
+            }
             result = prime * result + extractor.hashCode();
             return result;
         }
@@ -110,7 +141,8 @@ public class Header
                 return false;
             }
             Entry other = (Entry) obj;
-            return nullSafeEquals( name, other.name ) && type == other.type && extractorEquals( extractor, other.extractor );
+            return nullSafeEquals( name, other.name ) && type == other.type &&
+                    nullSafeEquals( groupName, other.groupName ) && extractorEquals( extractor, other.extractor );
         }
 
         private boolean nullSafeEquals( Object o1, Object o2 )

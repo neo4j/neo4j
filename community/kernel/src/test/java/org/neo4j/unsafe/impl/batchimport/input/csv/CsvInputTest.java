@@ -36,6 +36,8 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
+import org.neo4j.unsafe.impl.batchimport.input.Group;
+import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
@@ -53,6 +55,7 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.helpers.ArrayUtil.union;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.unsafe.impl.batchimport.input.Group.GLOBAL;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.additiveLabels;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.defaultRelationshipType;
@@ -112,8 +115,11 @@ public class CsvInputTest
         Iterable<DataFactory<InputNode>> nodeDataIterable = dataIterable( given( nodeData ) );
         Iterable<DataFactory<InputRelationship>> relationshipDataIterable = dataIterable( given( relationshipData ) );
         Input input = new CsvInput(
-                nodeDataIterable, header( entry( "single", Type.IGNORE, idType.extractor( extractors ) ) ),
-                relationshipDataIterable, header( entry( "single", Type.IGNORE, idType.extractor( extractors ) ) ),
+                nodeDataIterable, header(
+                        entry( null, Type.ID, idType.extractor( extractors ) ) ),
+                relationshipDataIterable, header(
+                        entry( null, Type.START_ID, idType.extractor( extractors ) ),
+                        entry( null, Type.END_ID, idType.extractor( extractors ) ) ),
                 idType, COMMAS );
 
         // WHEN
@@ -454,6 +460,54 @@ public class CsvInputTest
         }
     }
 
+    @Test
+    public void shouldHaveNodesBelongToGroupSpecifiedInHeader() throws Exception
+    {
+        // GIVEN
+        IdType idType = IdType.ACTUAL;
+        Iterable<DataFactory<InputNode>> data = dataIterable( data(
+                "123,one\n" +
+                "456,two" ) );
+        Groups groups = new Groups();
+        Group group = groups.getOrCreate( "MyGroup" );
+        Input input = new CsvInput(
+                data,
+                header( entry( null, Type.ID, group.name(), idType.extractor( extractors ) ),
+                        entry( "name", Type.PROPERTY, extractors.string() ) ),
+                        null, null, idType, COMMAS );
+
+        // WHEN/THEN
+        Iterator<InputNode> nodes = input.nodes().iterator();
+        assertNode( nodes.next(), group, 123L, properties( "name", "one" ), labels() );
+        assertNode( nodes.next(), group, 456L, properties( "name", "two" ), labels() );
+        assertFalse( nodes.hasNext() );
+    }
+
+    @Test
+    public void shouldHaveRelationshipsSpecifyStartEndNodeIdGroupsInHeader() throws Exception
+    {
+        // GIVEN
+        IdType idType = IdType.ACTUAL;
+        Iterable<DataFactory<InputRelationship>> data = dataIterable( data(
+                "123,TYPE,234\n" +
+                "345,TYPE,456" ) );
+        Groups groups = new Groups();
+        Group startNodeGroup = groups.getOrCreate( "StartGroup" );
+        Group endNodeGroup = groups.getOrCreate( "EndGroup" );
+        Input input = new CsvInput( null, null,
+                data,
+                header( entry( null, Type.START_ID, startNodeGroup.name(), idType.extractor( extractors ) ),
+                        entry( null, Type.TYPE, extractors.string() ),
+                        entry( null, Type.END_ID, endNodeGroup.name(), idType.extractor( extractors ) ) ),
+                        idType, COMMAS );
+
+        // WHEN/THEN
+        Iterator<InputRelationship> relationships = input.relationships().iterator();
+        assertRelationship( relationships.next(), 0, startNodeGroup, 123L, endNodeGroup, 234L, "TYPE", properties() );
+        assertRelationship( relationships.next(), 1, startNodeGroup, 345L, endNodeGroup, 456L, "TYPE", properties() );
+        assertFalse( relationships.hasNext() );
+    }
+
     private Configuration customConfig( final char delimiter, final char arrayDelimiter, final char quote )
     {
         return new Configuration()
@@ -509,11 +563,21 @@ public class CsvInputTest
         };
     }
 
-    private void assertRelationship( InputRelationship relationship, long id, Object startNode, Object endNode,
+    private void assertRelationship( InputRelationship relationship, long id,
+            Object startNode, Object endNode, String type, Object[] properties )
+    {
+        assertRelationship( relationship, id, GLOBAL, startNode, GLOBAL, endNode, type, properties );
+    }
+
+    private void assertRelationship( InputRelationship relationship, long id,
+            Group startNodeGroup, Object startNode,
+            Group endNodeGroup, Object endNode,
             String type, Object[] properties )
     {
         assertEquals( id, relationship.id() );
+        assertEquals( startNodeGroup, relationship.startNodeGroup() );
         assertEquals( startNode, relationship.startNode() );
+        assertEquals( endNodeGroup, relationship.endNodeGroup() );
         assertEquals( endNode, relationship.endNode() );
         assertEquals( type, relationship.type() );
         assertArrayEquals( properties, relationship.properties() );
@@ -521,6 +585,12 @@ public class CsvInputTest
 
     private void assertNode( InputNode node, Object id, Object[] properties, Set<String> labels )
     {
+        assertNode( node, GLOBAL, id, properties, labels );
+    }
+
+    private void assertNode( InputNode node, Group group, Object id, Object[] properties, Set<String> labels )
+    {
+        assertEquals( group, node.group() );
         assertEquals( id, node.id() );
         assertArrayEquals( properties, node.properties() );
         assertEquals( labels, asSet( node.labels() ) );
@@ -550,7 +620,12 @@ public class CsvInputTest
 
     private Header.Entry entry( String name, Type type, Extractor<?> extractor )
     {
-        return new Header.Entry( name, type, extractor );
+        return entry( name, type, null, extractor );
+    }
+
+    private Header.Entry entry( String name, Type type, String groupName, Extractor<?> extractor )
+    {
+        return new Header.Entry( name, type, groupName, extractor );
     }
 
     private <ENTITY extends InputEntity> DataFactory<ENTITY> data( final String data )
