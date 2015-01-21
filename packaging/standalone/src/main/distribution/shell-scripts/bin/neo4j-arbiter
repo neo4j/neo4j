@@ -250,7 +250,7 @@ installservice() {
         fi
       fi
     elif [[ $DIST_OS -eq "macosx" ]] ; then
-      sed -e "s^NEO4J_INSTANCE^${NEO4J_INSTANCE}^" -e "s^LAUNCHD_NAME^${LAUNCHD_NAME}^" <"${NEO4J_INSTANCE}/bin/org.neo4j.arbiter.plist" >"${LAUNCHD_DIR}/org.neo4j.arbiter.plist"
+      sed -e "s^NEO4J_INSTANCE^${NEO4J_INSTANCE}^" -e "s^LAUNCHD_NAME^${LAUNCHD_NAME}^" <"${NEO4J_INSTANCE}/system/resources/org.neo4j.arbiter.plist" >"${LAUNCHD_DIR}/org.neo4j.arbiter.plist"
       launchctl load -w ${LAUNCHD_DIR}/org.neo4j.arbiter.plist
       launchctl start $LAUNCHD_NAME
     else
