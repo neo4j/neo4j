@@ -20,11 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_2.functions
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.ExpressionConverters
-import ExpressionConverters._
-import commands.{expressions => commandexpressions}
-import commands.expressions.{Expression => CommandExpression}
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_2.commands.{expressions => commandexpressions}
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
 case object Sum extends AggregatingFunction with SimpleTypedFunction {
   def name = "sum"
