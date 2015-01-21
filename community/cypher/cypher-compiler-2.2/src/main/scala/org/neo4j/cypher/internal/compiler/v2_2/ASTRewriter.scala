@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.conditions.{orderByOnlyOnIdentifiers, noReferenceEqualityAmongIdentifiers, containsNoReturnAll, containsNoNodesOfType}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.conditions._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{NotEquals, Statement, UnaliasedReturnItem}
-import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.{RewriterCondition, ApplyRewriter, RewriterStepSequencer}
+import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.{ApplyRewriter, RewriterCondition, RewriterStepSequencer}
 
 class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters: Boolean = true) {
 
@@ -45,6 +45,7 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters
       foldConstants,
       ApplyRewriter("extractParameters", extractParameters),
       nameMatchPatternElements,
+      enableCondition(noUnnamedPatternElementsInMatch),
       normalizeMatchPredicates,
       normalizeNotEquals,
       enableCondition(containsNoNodesOfType[NotEquals]),
