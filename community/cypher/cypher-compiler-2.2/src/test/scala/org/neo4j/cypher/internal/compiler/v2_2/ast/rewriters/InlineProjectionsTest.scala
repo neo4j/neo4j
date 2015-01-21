@@ -168,15 +168,15 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
       """.stripMargin))
   }
 
-  test("should not inline identifiers into patterns: WITH 1 as a MATCH (a) RETURN a => WITH 1 as a MATCH (a) RETURN a AS a") {
+  test("should not inline identifiers into patterns: WITH {node} as a MATCH (a) RETURN a => WITH {node} as a MATCH (a) RETURN a AS `a`") {
     val result = projectionInlinedAst(
-      """WITH 1 as a
+      """WITH {node} as a
         |MATCH (a)
         |RETURN a
       """.stripMargin)
 
     result should equal(ast(
-      """WITH 1 as a
+      """WITH {node} as a
         |MATCH (a)
         |RETURN a AS `a`
       """.stripMargin))
@@ -380,6 +380,24 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
         |with `n.division` AS `n.division`, `max(n.age)` AS $freshIdName order by $freshIdName
         |RETURN `n.division` AS `n.division`, $freshIdName AS `max(n.age)`
       """.stripMargin))
+  }
+
+  test("should not inline expressions used many times: WITH 1 as a MATCH (a) WHERE a.prop = x OR a.bar > x RETURN a, x => WITH 1 as a MATCH (a) WHERE a.prop = x OR a.bar > x RETURN a, x") {
+    val result = projectionInlinedAst(
+      """WITH 1 as x
+        |MATCH (a) WHERE a.prop = x OR a.bar > x
+        |RETURN a, x""".stripMargin)
+
+    result should equal(ast(
+      """WITH 1 as x
+        |MATCH (a) WHERE a.prop = x OR a.bar > x
+        |RETURN a, x""".stripMargin))
+  }
+
+  test("should not inline relationship identifiers if not inlinging expressions") {
+   val result = projectionInlinedAst("MATCH (u)-[r1]->(v) WITH r1 AS r2 MATCH (a)-[r2]->(b) RETURN r2 AS rel")
+
+    result should equal(ast("MATCH (u)-[r1]->(v) WITH r1 AS r2 MATCH (a)-[r2]->(b) RETURN r2 AS rel"))
   }
 
   private def projectionInlinedAst(queryText: String) = ast(queryText).endoRewrite(inlineProjections)

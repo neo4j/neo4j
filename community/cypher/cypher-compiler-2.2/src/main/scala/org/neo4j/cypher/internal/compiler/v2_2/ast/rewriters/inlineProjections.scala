@@ -88,7 +88,7 @@ case object inlineProjections extends Rewriter {
     case ri: ReturnItems =>
       val newItems = ri.items.flatMap {
         case item: AliasedReturnItem
-          if context.projections.contains(item.identifier) && inlineAliases =>
+          if context.okToRewrite(item.identifier) && inlineAliases =>
           val dependencies = findAllDependencies(item.identifier, context)
           if (dependencies == Set(item.identifier)) {
             Seq(item)
