@@ -1,11 +1,11 @@
 [[server-plugins]]
-Server Plugins 
+Server Plugins
 ==============
 
 .Quick info
 ***********
 * The server's functionality can be extended by adding plugins.
-* Plugins are user-specified code which extend the capabilities of the database, nodes, or relationships. 
+* Plugins are user-specified code which extend the capabilities of the database, nodes, or relationships.
 * The neo4j server will then advertise the plugin functionality within representations as clients interact via HTTP.
 ***********
 
@@ -34,9 +34,12 @@ Your plugin should also:
 
 * ensure that it can produce an (Iterable of) `Node`, `Relationship` or `Path`, any Java primitive or `String` or an instance of a `org.neo4j.server.rest.repr.Representation`
 * specify parameters,
-* specify a point of extension and of course 
+* specify a point of extension and of course
 * contain the application logic.
 * make sure that the discovery point type in the +@PluginTarget+ and the +@Source+ parameter are of the same type.
+
+[NOTE]
+If your plugin class has any constructors defined it must also have a no-arguments constructor defined.
 
 // link Node/Rel/Path javadocs here?
 
@@ -88,7 +91,7 @@ Simply changing the +@PluginTarget+ parameter to +Node.class+ or +Relationship.c
 The functionality extensions provided by the plugin are automatically advertised in representations on the wire.
 For example, clients can discover the extension implemented by the above plugin easily by examining the representations
 they receive as responses from the server, e.g. by performing a +GET+ on the default database URI:
- 
+
 [source, shell]
 ----
 curl -v http://localhost:7474/db/data/
@@ -119,7 +122,7 @@ Extension names will be automatically assigned, based on method names, if not sp
 ----
 
 // generate the above output from a test
- 
+
 Performing a +GET+ on one of the two extension URIs gives back the meta information about the service:
 
 [source, shell]
@@ -146,7 +149,7 @@ For example for calling the +shortest path+ extension (URI gotten from a +GET+ t
 curl -X POST http://localhost:7474/db/data/ext/ShortestPath/node/123/shortestPath \
   -H "Content-Type: application/json" \
   -d '{"target":"http://localhost:7474/db/data/node/456", "depth":"5"}'
----- 
+----
 If everything is OK a response code +200+ and a list of zero or more items will be returned.
 If nothing is returned (null returned from extension) an empty result and response code +204+ will be returned.
 If the extension throws an exception response code +500+ and a detailed error message is returned.

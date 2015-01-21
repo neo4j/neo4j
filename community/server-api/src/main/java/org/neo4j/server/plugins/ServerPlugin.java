@@ -32,8 +32,8 @@ import org.neo4j.helpers.Service;
  * API for creating extensions for the Neo4j server.
  * <p/>
  * Extensions are created by creating a subclass of this class. The subclass
- * should have a public no-argument constructor. Then place this class in a
- * jar-file that contains a file called
+ * should have a public no-argument constructor (or no constructor at all).
+ * Then place this class in a jar-file that contains a file called
  * <code>META-INF/services/org.neo4j.server.plugins.ServerPlugin</code>.
  * This file should contain the fully qualified name of the class that extends
  * {@link ServerPlugin}, e.g. <code>com.example.MyNeo4jServerExtension</code>
