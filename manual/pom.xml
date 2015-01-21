@@ -303,6 +303,9 @@
           </execution>
           <execution>
             <id>setup-logging</id>
+            <!-- A bug in the exec-maven-plugin used elsewhere in the build screws up the logging config,
+            which leaks into the PDF rendering making it super slow. The code below resets the logging
+            config, and the PDF rendering then works just fine. -->
             <phase>process-resources</phase>
             <goals>
               <goal>execute</goal>
