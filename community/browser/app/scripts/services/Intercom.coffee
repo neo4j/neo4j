@@ -24,8 +24,8 @@ angular.module('neo4jApp.services')
   .service 'Intercom', [
     '$log'
     '$window'
-    'Settings'
-    ($log, $window, Settings) ->
+    '$timeout'
+    ($log, $window, $timeout) ->
 
       class IntercomService
 
@@ -35,7 +35,9 @@ angular.module('neo4jApp.services')
 
         do: (command, params...) ->
           # console.log("do", command, params)
-          $window.Intercom.apply(this, arguments)
+          that = @
+          args = arguments
+          $timeout(-> $window.Intercom.apply(that, args))
 
         user: (userID, userData) ->
           intercomSettings = {
