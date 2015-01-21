@@ -27,6 +27,7 @@ class RelationshipFunctionsTest extends RefcardTest with QueryStatisticsTestSupp
   val graphDescription = List("ROOT KNOWS A", "A KNOWS B", "B KNOWS C", "C KNOWS ROOT")
   val title = "Relationship Functions"
   val css = "general c2-2 c3-1 c4-2 c5-4 c6-5"
+  override val linkId = "query-functions-scalar"
 
   override def assert(name: String, result: InternalExecutionResult) {
     name match {

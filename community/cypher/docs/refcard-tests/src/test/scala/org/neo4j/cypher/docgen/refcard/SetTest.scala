@@ -27,6 +27,7 @@ class SetTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT LINK A")
   val title = "SET"
   val css = "write c2-2 c4-4 c5-5 c6-3"
+  override val linkId = "query-set"
 
   override def assert(name: String, result: InternalExecutionResult) {
     name match {

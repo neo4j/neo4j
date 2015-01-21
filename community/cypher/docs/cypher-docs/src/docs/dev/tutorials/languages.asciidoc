@@ -1,0 +1,12 @@
+[[languages]]
+Languages
+=========
+
+Please see http://neo4j.com/developer/language-guides/ for the current set of drivers!
+
+There's an included Java example which shows a ``low-level'' approach to using the Neo4j REST API from Java.
+
+:leveloffset: 2
+
+include::{importdir}/neo4j-server-examples-docs-jar/dev/server-java-rest-client.asciidoc[]
+

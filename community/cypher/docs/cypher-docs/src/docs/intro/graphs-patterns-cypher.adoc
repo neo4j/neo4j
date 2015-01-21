@@ -1,0 +1,162 @@
+[[cypher-intro-patterns]]
+= Graphs, Patterns, and Cypher
+
+:WP:        https://en.wikipedia.org/wiki
+:WP_AA:     {WP}/ASCII_art
+:WP_API:    {WP}/Application_programming_interface
+:WP_DP:     {WP}/Declarative_programming
+:WP_Java:   {WP}/Java_(programming_language)
+:WP_RDBMS:  {WP}/Relational_database_management_system
+:WP_SQL:    {WP}/SQL
+
+== Nodes, Relationships, and Patterns
+
+Neo4j's Property Graphs are composed of nodes and relationships, either of which may have properties (ie, attributes).
+Nodes represent entities (eg, concepts, events, places, things);
+relationships (which may be directed) connect pairs of nodes.
+
+However, nodes and relationships are simply low-level building blocks.
+The real strength of the Property Graph lies in its ability to encode _patterns_ of connected nodes and relationships.
+A single node or relationship typically encodes very little information,
+but a pattern of nodes and relationships can encode arbitrarily complex ideas.
+
+Cypher, Neo4j's query language, is strongly based on patterns.
+Specifically, patterns are used to match desired graph structures.
+Once a matching structure has been found (or created), Neo4j can use it for further processing.
+
+=== Simple and Complex Patterns
+
+A simple pattern, which has only a single relationship, connects a pair of nodes (or, occasionally, a node to itself).
+For example, _a Person_ `LIVES_IN` _a City_ or _a City is_ `PART_OF` _a Country_.
+
+Complex patterns, using multiple relationships, can express arbitrarily complex concepts and support a variety of interesting use cases.
+For example, we might want to match instances where _a Person_  `LIVES_IN` _a Country_.
+The following Cypher code combines two simple patterns into a (mildly) complex pattern which performs this match:
+
+[source,cypher]
+----
+(:Person) -[:LIVES_IN]-> (:City) -[:PART_OF]-> (:Country)
+----
+
+Pattern recognition is fundamental to the way that the brain works.
+Consequently, humans are very good at working with patterns.
+When patterns are presented visually (eg, in a diagram or map),
+humans can use them to recognize, specify, and understand concepts.
+As a pattern-based language, Cypher takes advantage of this capability.
+
+== Cypher Concepts
+
+Like {WP_SQL}[SQL] (used in {WP_RDBMS}[relational databases]),
+Cypher is a textual, declarative query language.
+It uses a form of {WP_AA}[ASCII art] to represent graph-related patterns.
+SQL-like clauses and keywords (eg, `MATCH`, `WHERE`, `DELETE`) are used to combine these patterns and specify desired actions.
+
+This combination tells Neo4j which patterns to match and what to do with the matching items (eg, nodes, relationships, paths, collections).
+However, as a {WP_DP}[declarative] language, Cypher does _not_ tell Neo4j how to find nodes, traverse relationships, etc.
+(This level of control is available from Neo4j's {WP_Java}[Java] {WP_API}[APIs], see <<server-unmanaged-extensions>>)
+
+Diagrams made up of icons and arrows are commonly used to visualize graphs;
+textual annotations provide labels, define properties, etc.
+Cypher's ASCII-art syntax formalizes this approach, while adapting it to the limitations of text.
+
+=== Node Syntax
+
+Cypher uses a pair of parentheses (usually containing a text string) to represent a node, eg: `()`, `(foo)`.
+This is reminiscent of a circle or a rectangle with rounded end caps.
+Here are some ASCII-art encodings for example Neo4j nodes, providing varying types and amounts of detail:
+
+[source,cypher]
+----
+()
+(matrix)
+(:Movie)
+(matrix:Movie)
+(matrix:Movie {title: "The Matrix"})
+(matrix:Movie {title: "The Matrix", released: 1997})
+----
+
+The simplest form, `()`, represents an anonymous, uncharacterized node.
+If we want to refer to the node elsewhere, we can add an identifier, eg: `(matrix)`.
+Identifiers are restricted (ie, scoped) to a single statement:
+an identifier may have different (or no) meaning in another statement.
+
+The `Movie` label (prefixed in use with a colon) declares the node's type.
+This restricts the pattern, keeping it from matching (say) a structure with an `Actor` node in this position.
+Neo4j's node indexes also use labels: each index is specific to the combination of a label and a property.
+
+The node's properties (eg, `title`) are represented as a list of key/value pairs, enclosed within a pair of braces, eg: `{...}`.
+Properties can be used to store information and/or restrict patterns.
+For example, we could match nodes whose `title` is "The Matrix".
+
+=== Relationship Syntax
+
+Cypher uses a pair of dashes (`--`) to represent an undirected relationship.
+Directed relationships have an arrowhead at one end (eg, `<--`, `-->`).
+Bracketed expressions (eg: `[...]`) can be used to add details.
+This may include identifiers, properties, and/or type information, eg:
+
+[source,cypher]
+----
+-->
+-[role]->
+-[:ACTED_IN]->
+-[role:ACTED_IN]->
+-[role:ACTED_IN {roles: ["Neo"]}]->
+----
+
+The syntax and semantics found within a relationship's bracket pair are very similar to those used between a node's parentheses.
+An identifier (eg, `role`) can be defined, to be used elsewhere in the statement.
+The relationship's type (eg, `ACTED_IN`) is analogous to the node's label.
+The properties (eg, `roles`) are entirely equivalent to node properties.
+(Note that the value of a property may be an array.)
+
+=== Pattern Syntax
+
+Combining the syntax for nodes and relationships, we can express patterns.
+The following could be a simple pattern (or fact) in this domain:
+
+[source,cypher]
+----
+(keanu:Person:Actor {name:  "Keanu Reeves"} )
+-[role:ACTED_IN     {roles: ["Neo"] } ]->
+(matrix:Movie       {title: "The Matrix"} )
+----
+
+Like with node labels, the relationship type `ACTED_IN` is added as a symbol, prefixed with a colon: `:ACTED_IN`.
+Identifiers (eg, `role`) can be used elsewhere in the statement to refer to the relationship.
+Node and relationship properties use the same notation.
+In this case, we used an array property for the `roles`, allowing multiple roles to be specified.
+
+[NOTE]
+.Pattern Nodes vs. Database Nodes
+====
+When a node is used in a pattern, it _describes_ zero or more nodes in the database.
+Similarly, each pattern describes zero or more paths of nodes and relationships.
+====
+
+=== Pattern Identifiers
+
+To increase modularity and reduce repetition, Cypher allows patterns to be  assigned to identifiers.
+This allow the matching paths to be inspected, used in other expressions, etc.
+
+[source,cypher]
+----
+acted_in = (:Person)-[:ACTED_IN]->(:Movie)
+----
+
+The `acted_in` variable would contain two nodes and the connecting relationship for each path that was found or created.
+There are a number of functions to access details of a path, including `nodes(path)`, `rels(path)` (same as `relationships(path)`), and `length(path)`.
+
+== Clauses
+
+Cypher statements typically have multiple _clauses_, each of which performs a specific task, eg:
+
+* create and match patterns in the graph
+* filter, project, sort, or paginate results
+* connect/compose partial statements
+
+By combining Cypher clauses, we can compose more complex statements that express what we want to know or create.
+Neo4j then figures out how to achieve the desired goal in an efficient manner.
+
+// maybe add an overview of the clauses here? /AN
+

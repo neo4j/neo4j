@@ -27,6 +27,7 @@ class PathFunctionsTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT KNOWS A", "A:Person KNOWS B:Person", "B KNOWS C:Person", "C KNOWS ROOT")
   val title = "Path Functions"
   val css = "general c3-3 c4-3 c5-4 c6-6"
+  override val linkId = "query-functions-collection"
 
   override def assert(name: String, result: InternalExecutionResult) {
     name match {

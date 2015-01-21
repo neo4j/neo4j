@@ -27,6 +27,7 @@ class WhereTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT FRIEND A", "A FRIEND B", "B FRIEND C", "C FRIEND ROOT")
   val title = "WHERE"
   val css = "read c2-2 c3-2 c4-2 c5-2"
+  override val linkId = "query-where"
 
   override def assert(name: String, result: InternalExecutionResult) {
     name match {

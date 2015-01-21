@@ -384,6 +384,10 @@ footer div.mid {
   font-weight: 500;
 }
 
+.col tr th a {
+  color: #fff;
+}
+
 .col.cardgeneral tr th {
   background: #428BCA;
 }

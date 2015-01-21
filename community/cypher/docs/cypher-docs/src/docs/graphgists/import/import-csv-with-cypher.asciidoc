@@ -33,10 +33,11 @@ The CSV file we're using looks like this:
 include::../../graphgists/import/persons.csv[]
 ----
 
-////
+[source,querytest]
+----
 Nodes created: 5
 Properties set: 10
-////
+----
 
 Now, let's import the movies.
 This time, we're also creating a relationship to the country in which the movie was made.
@@ -71,11 +72,12 @@ include::../../graphgists/import/movies.csv[]
 ----
 
 
-////
+[source,querytest]
+----
 Nodes created: 4
 Relationships created: 3
 Properties set: 10
-////
+----
 
 Lastly, we create the relationships between the persons and the movies.
 Since the relationship is a many to many relationship, one actor can participate in many movies, and one movie has many actors in it.
@@ -117,10 +119,11 @@ CREATE (person)-[:PLAYED { role: csvLine.role }]->(movie)
 include::../../graphgists/import/roles.csv[]
 ----
 
-////
+[source,querytest]
+----
 Relationships created: 6
 Properties set: 6
-////
+----
 
 Finally, as the +id+ property was only necessary to import the relationships, we can drop the constraints and the id property from all movie and person nodes.
 
@@ -139,7 +142,8 @@ DROP CONSTRAINT ON (movie:Movie) ASSERT movie.id IS UNIQUE
 MATCH (n) WHERE n:Person OR n:Movie REMOVE n.id
 ----
 
-////
+[source,querytest]
+----
 Properties set: 8
-////
+----
 

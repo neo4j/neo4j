@@ -1,0 +1,38 @@
+[preface]
+[[preface]]
+= Preface
+
+This is the reference manual for Neo4j version {neo4j-version}, authored by the Neo4j Team.
+
+The main parts of the manual are:
+
+* <<introduction>> -- introducing graph database concepts and Neo4j.
+* <<tutorials>> -- learn how to use Neo4j.
+* <<cypher-query-lang>> -- details on the Cypher query language.
+* <<reference-documentation>> -- detailed information on Neo4j.
+* <<operations>> -- how to install and maintain Neo4j.
+* <<tools>> -- guides on tools.
+* <<community>> -- getting help from, contributing to.
+* <<advanced-usage>> -- using Neo4j in more advanced ways.
+* <<terminology>> -- terminology about graph databases.
+* <<resources>> -- find additional documentation resources.
+* <<manpages>> -- command line documentation.
+
+The material is practical, technical, and focused on answering specific questions.
+It addresses how things work, what to do and what to avoid to successfully run Neo4j in a production environment.
+
+The goal is to be thumb-through and rule-of-thumb friendly.
+
+Each section should stand on its own, so you can hop right to whatever interests you.
+When possible, the sections distill ``rules of thumb'' which you can keep in mind whenever you wander out of the house without this manual in your back pocket.
+
+The included code examples are executed when Neo4j is built and tested.
+Also, the REST API request and response examples are captured from real interaction with a Neo4j server.
+Thus, the examples are always in sync with how Neo4j actually works.
+
+There's other documentation resources besides the manual as well, see <<resources>>.
+
+_Who should read this?_
+
+The topics should be relevant to architects, administrators, developers and operations personnel.
+

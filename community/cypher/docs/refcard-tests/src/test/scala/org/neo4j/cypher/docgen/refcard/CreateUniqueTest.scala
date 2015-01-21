@@ -27,6 +27,7 @@ class CreateUniqueTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT LINK A", "A LINK B", "B LINK C", "C LINK ROOT")
   val title = "CREATE UNIQUE"
   val css = "col carddeprecation c2-1 c3-2 c4-4 c5-4 c6-6"
+  override val linkId = "query-create-unique"
 
   override def assert(name: String, result: InternalExecutionResult) {
     name match {
