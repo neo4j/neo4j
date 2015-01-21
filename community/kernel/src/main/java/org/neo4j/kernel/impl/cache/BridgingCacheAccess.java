@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.transaction.command.RelationshipHoles;
 
 public class BridgingCacheAccess implements CacheAccessBackDoor
 {
@@ -114,11 +115,9 @@ public class BridgingCacheAccess implements CacheAccessBackDoor
     }
 
     @Override
-    public void patchDeletedRelationshipNodes( long relId, int type, long firstNodeId, long firstNodeNextRelId,
-            long secondNodeId, long secondNodeNextRelId )
+    public void patchDeletedRelationshipNodes( long nodeId, RelationshipHoles holes )
     {
-        persistenceCache.patchDeletedRelationshipNodes( relId, type, firstNodeId, firstNodeNextRelId, secondNodeId,
-                secondNodeNextRelId );
+        persistenceCache.patchDeletedRelationshipNodes( nodeId, holes );
     }
 
     @Override

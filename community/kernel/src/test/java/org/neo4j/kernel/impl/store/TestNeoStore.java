@@ -37,6 +37,8 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.function.primitive.FunctionFromPrimitiveLongLongToPrimitiveLong;
+import org.neo4j.function.primitive.PrimitiveLongPredicate;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -506,9 +508,15 @@ public class TestNeoStore
         }
 
         @Override
-        public void compareAndAdvance( DirectionWrapper direction, int type, long relIdDeleted, long nextRelId )
+        public boolean atPosition( PrimitiveLongPredicate predicate )
         {
-            actual.compareAndAdvance( direction, type, relIdDeleted, nextRelId );
+            return actual.atPosition( predicate );
+        }
+
+        @Override
+        public void patchPosition( long nodeId, FunctionFromPrimitiveLongLongToPrimitiveLong<RuntimeException> next )
+        {
+            actual.patchPosition( nodeId, next );
         }
 
         @Override

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.neo4j.function.primitive.FunctionFromPrimitiveLongLongToPrimitiveLong;
+import org.neo4j.function.primitive.PrimitiveLongPredicate;
 import org.neo4j.helpers.CloneableInPublic;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
@@ -84,16 +86,27 @@ public interface RelationshipLoadingPosition extends CloneableInPublic
     boolean atPosition( DirectionWrapper direction, int type, long position );
 
     /**
-     * Used when a relationship has been deleted, so that if there's any chain that is currently at position
-     * {@code relIdDeleted}, then its position is moved to {@code nextRelId} instead so that loading is able
-     * to continue the next time that will happen.
+     * Checks whether or not the chain is at a position such that the supplied {@code predicate} returns
+     * {@code true}.
      *
-     * @param direction direction of the deleted relationship.
-     * @param type type of the deleted relationship.
-     * @param relIdDeleted relationship id that has been deleted.
-     * @param nextRelId relationship id to move the position to instead.
+     * @param predicate {@link PrimitiveLongPredicate} capable of deciding whether or not a position
+     * (relationship id) is affected.
+     * @return {@code true} if the chain is at a position such that the supplied {@code predicate}
+     * {@code true}.
      */
-    void compareAndAdvance( DirectionWrapper direction, int type, long relIdDeleted, long nextRelId );
+    boolean atPosition( PrimitiveLongPredicate predicate );
+
+    /**
+     * Used when relationships gets deleted in the middle of traversing their chain(s). Should only be called if
+     * {@link #atPosition(PrimitiveLongPredicate)} returns {@code true}. Current positions can here be
+     * moved to the next in use relationship if the current position happens to point to a deleted relationship.
+     * If a current position isn't at a deleted relationship then the {@code next} function returns whatever
+     * was passed in.
+     *
+     * @param nodeId node id of this chain position. Used for passing back into {@code next}.
+     * @param next function for getting the next in use relationship after a currently deleted position.
+     */
+    void patchPosition( long nodeId, FunctionFromPrimitiveLongLongToPrimitiveLong<RuntimeException> next );
 
     @Override
     RelationshipLoadingPosition clone();
@@ -125,7 +138,13 @@ public interface RelationshipLoadingPosition extends CloneableInPublic
         }
 
         @Override
-        public void compareAndAdvance( DirectionWrapper direction, int type, long relIdDeleted, long nextRelId )
+        public boolean atPosition( PrimitiveLongPredicate predicate )
+        {
+            return false;
+        }
+
+        @Override
+        public void patchPosition( long nodeId, FunctionFromPrimitiveLongLongToPrimitiveLong<RuntimeException> next )
         {
         }
 

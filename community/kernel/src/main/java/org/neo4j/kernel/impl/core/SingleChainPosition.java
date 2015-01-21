@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.neo4j.function.primitive.FunctionFromPrimitiveLongLongToPrimitiveLong;
+import org.neo4j.function.primitive.PrimitiveLongPredicate;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
@@ -57,12 +59,15 @@ public class SingleChainPosition implements RelationshipLoadingPosition
     }
 
     @Override
-    public void compareAndAdvance( DirectionWrapper direction, int type, long relIdDeleted, long nextRelId )
+    public boolean atPosition( PrimitiveLongPredicate predicate )
     {
-        if ( position == relIdDeleted )
-        {
-            position = nextRelId;
-        }
+        return predicate.accept( position );
+    }
+
+    @Override
+    public void patchPosition( long nodeId, FunctionFromPrimitiveLongLongToPrimitiveLong<RuntimeException> next )
+    {
+        position = next.apply( nodeId, position );
     }
 
     @Override
