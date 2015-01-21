@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.ResourceIterator;
@@ -831,10 +830,8 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
         final LogRotation logRotation = new LogRotationImpl( monitors.newMonitor( LogRotation.Monitor.class ),
                 logFile, logRotationControl, kernelHealth, logging );
 
-        final LogicalTransactionStore logicalTransactionStore =
-                new PhysicalLogicalTransactionStore( logFile, logRotation,
-                        transactionMetadataCache, neoStore, legacyIndexTransactionOrdering,
-                        kernelHealth, config.get( GraphDatabaseSettings.batched_writes ) );
+        final LogicalTransactionStore logicalTransactionStore = new PhysicalLogicalTransactionStore( logFile,
+                logRotation, transactionMetadataCache, neoStore, legacyIndexTransactionOrdering, kernelHealth );
 
         life.add( logFile );
         life.add( logicalTransactionStore );
@@ -1223,14 +1220,6 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
     public StoreReadLayer getStoreLayer()
     {
         return storeLayerModule.storeLayer();
-    }
-
-    public void awaitAllTransactionsClosed()
-    {
-        while ( !neoStoreModule.neoStore().closedTransactionIdIsOnParWithOpenedTransactionId() )
-        {
-            LockSupport.parkNanos( 1_000_000 ); // 1 ms
-        }
     }
 
     public Cache<NodeImpl> getNodeCache()
