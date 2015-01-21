@@ -50,6 +50,7 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters
       normalizeNotEquals,
       enableCondition(containsNoNodesOfType[NotEquals]),
       normalizeEqualsArgumentOrder,
+      enableCondition(normalizedEqualsArguments),
       addUniquenessPredicates,
       isolateAggregation
     )

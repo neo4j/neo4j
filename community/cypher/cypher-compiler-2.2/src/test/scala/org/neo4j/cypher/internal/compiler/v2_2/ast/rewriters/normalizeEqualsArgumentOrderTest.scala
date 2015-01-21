@@ -20,11 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.{InputPosition, DummyPosition}
-import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Equals
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_2.ast.SignedIntegerLiteral
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{Equals, Identifier, _}
 
 class NormalizeEqualsArgumentOrderTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -64,6 +60,24 @@ class NormalizeEqualsArgumentOrderTest extends CypherFunSuite with AstConstructi
     val expected: Expression = Equals(rhs, lhs)_
 
     normalizeEqualsArgumentOrder(input) should equal(expected)
+  }
+
+  test("a.prop = id(b) rewritten to: id(b) = a.prop") {
+    val lhs: Expression = Property(ident("a"), PropertyKeyName("prop")_)_
+    val rhs: Expression = id("b")
+
+    val input: Expression = Equals(rhs, lhs)_
+
+    normalizeEqualsArgumentOrder(input) should equal(input)
+  }
+
+  test("id(a) = b.prop rewritten to: id(a) = b.prop") {
+    val lhs: Expression = id("a")
+    val rhs: Expression = Property(ident("b"), PropertyKeyName("prop")_)_
+
+    val input: Expression = Equals(lhs, rhs)_
+
+    normalizeEqualsArgumentOrder(input) should equal(input)
   }
 
   private def id(name: String): FunctionInvocation =

@@ -26,16 +26,16 @@ case object normalizeEqualsArgumentOrder extends Rewriter {
   override def apply(that: AnyRef): AnyRef = topDown(instance).apply(that)
 
   private val instance: Rewriter = Rewriter.lift {
-    // move n.prop on equals to the left
-    case predicate @ Equals(Property(_, _), _) =>
-      predicate
-    case predicate @ Equals(lhs, rhs @ Property(_, _)) =>
-      predicate.copy(lhs = rhs, rhs = lhs)(predicate.position)
-
     // move id(n) on equals to the left
     case predicate @ Equals(func@FunctionInvocation(_, _, _), _) if func.function == Some(functions.Id) =>
       predicate
     case predicate @ Equals(lhs, rhs @ FunctionInvocation(_, _, _)) if rhs.function == Some(functions.Id) =>
+      predicate.copy(lhs = rhs, rhs = lhs)(predicate.position)
+
+    // move n.prop on equals to the left
+    case predicate @ Equals(Property(_, _), _) =>
+      predicate
+    case predicate @ Equals(lhs, rhs @ Property(_, _)) =>
       predicate.copy(lhs = rhs, rhs = lhs)(predicate.position)
   }
 }
