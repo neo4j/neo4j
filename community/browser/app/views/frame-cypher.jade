@@ -29,9 +29,9 @@ div(ng-controller="CypherResultCtrl", fullscreen)
                   on-canvas-clicked='onItemClick()'
                   ng-controller='D3GraphCtrl'
                   style="pointer-events:fill;")
-            .status-bar(ng-show='isActive("graph")')
-              .status
-                include partials/inspector
+              .status-bar(ng-show='isActive("graph")')
+                .status
+                  include partials/inspector
 
           .view-result-table.result(ng-show='isActive("table")')
             neo-table(table-data='frame.response.table', ng-show='isAvailable("table")')
