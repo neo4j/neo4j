@@ -85,6 +85,14 @@
       </includes>
       <filtered>false</filtered>
     </fileSet>
+    <!--add MacOS *.plist installer files -->
+    <fileSet>
+      <directory>${project.parent.basedir}/src/main/distribution/resources</directory>
+      <outputDirectory>/</outputDirectory>
+      <lineEnding>unix</lineEnding>
+      <fileMode>0755</fileMode>
+      <filtered>true</filtered>
+    </fileSet>
     <!-- upgrade text file -->
     <fileSet>
       <directory>target/upgrade</directory>
