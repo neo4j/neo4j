@@ -19,19 +19,19 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.lang.reflect.Array;
-import java.util.Arrays;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.lang.reflect.Array;
+import java.util.Arrays;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.ArrayUtil;
+import org.neo4j.helpers.ObjectUtil;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
 import static java.lang.String.format;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -768,7 +768,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
 
         // THEN reading the value one more time should still yield the set property
         assertTrue(
-                format( "Expected %s, but was %s", ArrayUtil.toString( value ), ArrayUtil.toString( readValue ) ),
+                format( "Expected %s, but was %s", ObjectUtil.toString( value ), ObjectUtil.toString( readValue ) ),
                 ArrayUtil.equals( value, node1.getProperty( key ) ) );
     }
 
@@ -787,7 +787,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
 
         // THEN reading the value one more time should still yield the set property
         assertTrue(
-                format( "Expected %s, but was %s", ArrayUtil.toString( value ), ArrayUtil.toString( readValue ) ),
+                format( "Expected %s, but was %s", ObjectUtil.toString( value ), ObjectUtil.toString( readValue ) ),
                 ArrayUtil.equals( value, node1.getProperty( key ) ) );
     }
 }
