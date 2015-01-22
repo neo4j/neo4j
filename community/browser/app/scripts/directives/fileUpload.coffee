@@ -30,10 +30,10 @@ angular.module('neo4jApp.directives')
       INITIAL_STATUS = $attrs.message or 'Drop Cypher script file to import'
       $scope.status = INITIAL_STATUS
 
-      onUploadSuccess = (content)->
+      onUploadSuccess = (content, name)->
         if $attrs.upload
           exp = $parse($attrs.upload)
-          $scope.$apply(->exp($scope, {'$content': content}))
+          $scope.$apply(->exp($scope, {'$content': content, '$name': name}))
 
       getFirstFileFromEvent = (evt) ->
         files = evt.originalEvent.dataTransfer.files
@@ -88,7 +88,7 @@ angular.module('neo4jApp.directives')
         reader.onloadend = scopeApply (evt) ->
           data = evt.target.result
           data = data.split('base64,')[1]
-          onUploadSuccess($window.atob(data))
+          onUploadSuccess($window.atob(data), file.name)
           $scope.status = INITIAL_STATUS
 
         reader.readAsDataURL(file)

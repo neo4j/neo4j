@@ -15,12 +15,6 @@ h4 Neo4j {{ neo4j.version }}
     span(ng-repeat='propertyKey in propertyKeys | orderBy: identity')
       a.label.property(ng-click="editor.execScript('MATCH (n) WHERE has(n.`'+propertyKey+'`) RETURN DISTINCT \"node\" as element, n.`'+propertyKey+'` AS `'+propertyKey+'` LIMIT 25 UNION ALL MATCH ()-[r]-() WHERE has(r.`'+propertyKey+'`) RETURN DISTINCT \"relationship\" AS element, r.`'+propertyKey+'` AS `'+propertyKey+'` LIMIT 25')") {{propertyKey}}
 
-  h5 Styling / Graph Style Sheet
-  ul
-    li
-      button.btn.btn-primary.btn-popup.btn-sm(ng-click="editor.execScript(settings.cmdchar + 'style')")
-        | Open Graph Style Sheet Viewer
-
   h5 Database
   ul
     li.pair
