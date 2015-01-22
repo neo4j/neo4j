@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.util.concurrent.Future;
 
+import org.neo4j.graphdb.Lookup;
+import org.neo4j.kernel.api.Specialization;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -89,6 +91,12 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
 
     @Override
     public IndexReader newReader()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Lookup.Transformation<Specialization<Lookup>> queryTransformation()
     {
         throw new UnsupportedOperationException();
     }

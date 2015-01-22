@@ -21,7 +21,9 @@ package org.neo4j.kernel.api.index;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.graphdb.Lookup;
 import org.neo4j.graphdb.Resource;
+import org.neo4j.kernel.api.Specialization;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 
 import static org.neo4j.register.Register.DoubleLong;
@@ -35,10 +37,18 @@ public interface IndexReader extends Resource
 {
     PrimitiveLongIterator lookup( Object value );
 
+    PrimitiveLongIterator query( Specialization<Lookup> query );
+
     IndexReader EMPTY = new IndexReader()
     {
         @Override
         public PrimitiveLongIterator lookup( Object value )
+        {
+            return PrimitiveLongCollections.emptyIterator();
+        }
+
+        @Override
+        public PrimitiveLongIterator query( Specialization<Lookup> query )
         {
             return PrimitiveLongCollections.emptyIterator();
         }
@@ -89,6 +99,12 @@ public interface IndexReader extends Resource
         public PrimitiveLongIterator lookup( Object value )
         {
             return delegate.lookup( value );
+        }
+
+        @Override
+        public PrimitiveLongIterator query( Specialization<Lookup> query )
+        {
+            return delegate.query( query );
         }
 
         @Override

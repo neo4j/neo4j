@@ -24,7 +24,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 
+import org.neo4j.graphdb.Lookup;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.kernel.api.Specialization;
 import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.SwallowingIndexUpdater;
@@ -86,6 +88,8 @@ public interface IndexAccessor extends Closeable
      */
     ResourceIterator<File> snapshotFiles() throws IOException;
 
+    Lookup.Transformation<Specialization<Lookup>> queryTransformation();
+
     class Adapter implements IndexAccessor
     {
         @Override
@@ -142,6 +146,12 @@ public interface IndexAccessor extends Closeable
         {
             return emptyIterator();
         }
+
+        @Override
+        public Lookup.Transformation<Specialization<Lookup>> queryTransformation()
+        {
+            return QuerySpecializer.DEFAULT;
+        }
     }
 
     class Delegator implements IndexAccessor
@@ -193,6 +203,12 @@ public interface IndexAccessor extends Closeable
         public ResourceIterator<File> snapshotFiles() throws IOException
         {
             return delegate.snapshotFiles();
+        }
+
+        @Override
+        public Lookup.Transformation<Specialization<Lookup>> queryTransformation()
+        {
+            return delegate.queryTransformation();
         }
 
         @Override

@@ -29,9 +29,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
 
+import org.neo4j.graphdb.Lookup;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.BiConsumer;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.api.Specialization;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -107,6 +109,12 @@ public class IndexingService extends LifecycleAdapter
         void appliedRecoveredData( Iterable<NodePropertyUpdate> updates );
 
         void populationCompleteOn( IndexDescriptor descriptor );
+    }
+
+    public Lookup.Transformation<Specialization<Lookup>> indexQueryTransformation( long indexId )
+            throws IndexNotFoundKernelException
+    {
+        return indexMapRef.getIndexProxy( indexId ).queryTransformation();
     }
 
     public static abstract class MonitorAdapter implements Monitor

@@ -24,10 +24,16 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.NumericUtils;
 
+import org.neo4j.graphdb.Lookup;
+import org.neo4j.kernel.api.Specialization;
 import org.neo4j.kernel.api.index.ArrayEncoder;
 
 import static java.lang.String.format;
@@ -36,7 +42,7 @@ import static org.apache.lucene.document.Field.Index.NOT_ANALYZED;
 import static org.apache.lucene.document.Field.Store.NO;
 import static org.apache.lucene.document.Field.Store.YES;
 
-public class LuceneDocumentStructure
+public class LuceneDocumentStructure implements Lookup.Transformation<Query>, SpecializedQuery.User<Query>
 {
     static final String NODE_ID_KEY = "id";
 
@@ -168,6 +174,10 @@ public class LuceneDocumentStructure
     {
         Document document = newDocument( nodeId );
         document.add( encodedValue );
+        if ( ValueEncoding.String.key().equals( encodedValue.name() ) )
+        {
+            document.add( field( "reversed", new StringBuilder( encodedValue.stringValue() ).reverse().toString() ) );
+        }
         return document;
     }
 
@@ -217,5 +227,191 @@ public class LuceneDocumentStructure
     public long getNodeId( Document from )
     {
         return Long.parseLong( from.get( NODE_ID_KEY ) );
+    }
+
+    // Specialization
+
+    @Override
+    public Query specialize( Lookup lookup )
+    {
+        return lookup.transform( this );
+    }
+
+    @Override
+    public Query verify( SpecializedQuery specialized )
+    {
+        return specialized.structure == this ? specialized.query : specialize( specialized.genericForm() );
+    }
+
+    // Lookup.Transformation
+
+    @SuppressWarnings("unchecked")
+    final Lookup.Transformation<Specialization<Lookup>> queryTransformation =
+            (Lookup.Transformation) SpecializedQuery.transformation( this );
+
+    @Override
+    public Query equalTo( Object value )
+    {
+        return newQuery( value );
+    }
+
+    @Override
+    public Query startsWith( String prefix )
+    {
+        return new PrefixQuery( new Term( ValueEncoding.String.key(), prefix ) );
+    }
+
+    @Override
+    public Query endsWith( String suffix )
+    {
+        return new PrefixQuery( new Term( "reversed", new StringBuilder( suffix ).reverse().toString() ) );
+    }
+
+//    @Override
+//    public Query matches( String pattern )
+//    {
+//        throw new UnsupportedOperationException( "not implemented" );
+//    }
+
+    @Override
+    public Query lessThan( Number value )
+    {
+        return range( false, Double.NEGATIVE_INFINITY, value, false );
+    }
+
+    @Override
+    public Query lessThanOrEqualTo( Number value )
+    {
+        return range( false, Double.NEGATIVE_INFINITY, value, true );
+    }
+
+    @Override
+    public Query greaterThan( Number value )
+    {
+        return range( false, value, Double.POSITIVE_INFINITY, false );
+    }
+
+    @Override
+    public Query greaterThanOrEqualTo( Number value )
+    {
+        return range( true, value, Double.POSITIVE_INFINITY, false );
+    }
+
+    @Override
+    public Query range( boolean includeLower, Number lower, Number upper, boolean includeUpper )
+    {
+        return new TermRangeQuery( ValueEncoding.Number.key(),
+                                   NumericUtils.doubleToPrefixCoded( lower.doubleValue() ),
+                                   NumericUtils.doubleToPrefixCoded( upper.doubleValue() ),
+                                   includeLower, includeUpper );
+    }
+
+    @Override
+    public Query not( Query lookup )
+    {
+        if ( lookup instanceof TermRangeQuery )
+        {
+            TermRangeQuery rangeQuery = (TermRangeQuery) lookup;
+            BooleanQuery query = new BooleanQuery();
+            query.add( new TermRangeQuery( ValueEncoding.Number.key(),
+                                           NumericUtils.doubleToPrefixCoded( Double.NEGATIVE_INFINITY ),
+                                           rangeQuery.getLowerTerm(),
+                                           false, !rangeQuery.includesLower() ),
+                       BooleanClause.Occur.SHOULD );
+            query.add( new TermRangeQuery( ValueEncoding.Number.key(),
+                                           rangeQuery.getUpperTerm(),
+                                           NumericUtils.doubleToPrefixCoded( Double.POSITIVE_INFINITY ),
+                                           !rangeQuery.includesUpper(), false ),
+                       BooleanClause.Occur.SHOULD );
+            query.setMinimumNumberShouldMatch( 1 );
+            return query;
+        }
+        else
+        {
+            throw new UnsupportedOperationException(
+                    "Cannot negate: " + genericForm( lookup ) +
+                    ". Support for negated queries has not been implemented, lucene does not support it natively." );
+        }
+    }
+
+    Lookup genericForm( Query query )
+    {
+        if ( query instanceof BooleanQuery )
+        {
+            BooleanClause[] clauses = ((BooleanQuery) query).getClauses();
+            if ( clauses.length == 2 && clauses[0].getOccur() == BooleanClause.Occur.SHOULD &&
+                 clauses[1].getOccur() == BooleanClause.Occur.SHOULD &&
+                 clauses[0].getQuery() instanceof TermRangeQuery &&
+                 clauses[1].getQuery() instanceof TermRangeQuery )
+            {
+                TermRangeQuery lower = (TermRangeQuery) clauses[0].getQuery();
+                TermRangeQuery upper = (TermRangeQuery) clauses[1].getQuery();
+                if ( ValueEncoding.Number.key().equals( lower.getField() ) &&
+                     ValueEncoding.Number.key().equals( upper.getField() ) )
+                {
+                    if ( NumericUtils.doubleToPrefixCoded( Double.NEGATIVE_INFINITY ).equals( lower.getLowerTerm() ) )
+                    {
+                        TermRangeQuery tmp = lower;
+                        lower = upper;
+                        upper = tmp;
+                    }
+                    double lLow = NumericUtils.prefixCodedToDouble( lower.getLowerTerm() );
+                    double lUpp = NumericUtils.prefixCodedToDouble( lower.getUpperTerm() );
+                    double uLow = NumericUtils.prefixCodedToDouble( upper.getLowerTerm() );
+                    double uUpp = NumericUtils.prefixCodedToDouble( upper.getUpperTerm() );
+                    if ( lLow == Double.NEGATIVE_INFINITY && uUpp == Double.POSITIVE_INFINITY )
+                    {
+                        Lookup.LowerBound bound = lower.includesUpper() ? Lookup.greaterThan( lUpp )
+                                                                        : Lookup.greaterThanOrEqualTo( lUpp );
+                        return upper.includesLower() ? bound.andLessThan( uLow ) : bound.andLessThanOrEqualTo( uLow );
+                    }
+                }
+            }
+        }
+        else if ( query instanceof TermRangeQuery )
+        {
+            TermRangeQuery rangeQuery = (TermRangeQuery) query;
+            if ( ValueEncoding.Number.key().equals( rangeQuery.getField() ) )
+            {
+                double lower = NumericUtils.prefixCodedToDouble( rangeQuery.getLowerTerm() );
+                double upper = NumericUtils.prefixCodedToDouble( rangeQuery.getUpperTerm() );
+                Lookup.LowerBound bound = rangeQuery.includesLower()
+                                          ? Lookup.greaterThanOrEqualTo( lower )
+                                          : Lookup.greaterThan( lower );
+                return rangeQuery.includesUpper() ? bound.andLessThanOrEqualTo( upper ) : bound.andLessThan( upper );
+            }
+        }
+        else if ( query instanceof PrefixQuery )
+        {
+            Term prefix = ((PrefixQuery) query).getPrefix();
+            if ( "reversed".equals( prefix.field() ) )
+            {
+                return Lookup.endsWith( new StringBuilder( prefix.text() ).reverse().toString() );
+            }
+            else if ( "string".equals( prefix.field() ) )
+            {
+                return Lookup.startsWith( prefix.text() );
+            }
+        }
+        else if ( query instanceof TermQuery )
+        {
+            Term term = ((TermQuery) query).getTerm();
+            for ( ValueEncoding encoding : ValueEncoding.values() )
+            {
+                if ( encoding.key().equals( term.field() ) )
+                {
+                    switch ( encoding )
+                    {
+                    case Number:
+                        return Lookup.equalTo( NumericUtils.prefixCodedToDouble( term.text() ) );
+                    case Bool:
+                        return Lookup.equalTo( Boolean.parseBoolean( term.text() ) );
+                    case String:
+                        return Lookup.equalTo( term.text() );
+                    }
+                }
+            }
+        }
+        throw new UnsupportedOperationException( query + " not recognized" );
     }
 }

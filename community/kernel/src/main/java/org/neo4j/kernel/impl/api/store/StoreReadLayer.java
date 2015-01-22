@@ -25,6 +25,8 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Lookup;
+import org.neo4j.kernel.api.Specialization;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -192,4 +194,10 @@ public interface StoreReadLayer
     long countsForRelationship( int startLabelId, int typeId, int endLabelId );
 
     double indexUniqueValuesPercentage( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+
+    Lookup.Transformation<Specialization<Lookup>> indexQueryTransformation( IndexDescriptor index )
+            throws IndexNotFoundKernelException;
+
+    PrimitiveLongIterator nodesGetFromIndexQuery( KernelStatement state, IndexDescriptor descriptor,
+                                                  Specialization<Lookup> query ) throws IndexNotFoundKernelException;
 }

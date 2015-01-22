@@ -32,8 +32,10 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.graphdb.Lookup;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.api.Specialization;
 import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -220,6 +222,12 @@ public class NodeCorrectlyIndexedCheckTest
                 }
 
                 @Override
+                public PrimitiveLongIterator query( Specialization<Lookup> query )
+                {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
                 public int getIndexedCount( long nodeId, Object propertyValue )
                 {
                     long[] candidates = entries.get( propertyValue );
@@ -282,6 +290,12 @@ public class NodeCorrectlyIndexedCheckTest
 
         @Override
         public ResourceIterator<File> snapshotFiles() throws IOException
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Lookup.Transformation<Specialization<Lookup>> queryTransformation()
         {
             throw new UnsupportedOperationException();
         }

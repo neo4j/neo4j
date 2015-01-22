@@ -33,6 +33,7 @@ import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Lookup;
 import org.neo4j.graphdb.MultipleFoundException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -68,6 +69,7 @@ import org.neo4j.io.pagecache.monitoring.PageCacheMonitorFactory;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.Specialization;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -78,6 +80,7 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.properties.PropertyPredicate;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
@@ -133,6 +136,8 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
 import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
+import org.neo4j.kernel.impl.query.QueryEngineProvider;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -170,11 +175,10 @@ import org.neo4j.kernel.logging.DefaultLogging;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.RollingLogMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.kernel.impl.query.QueryEngineProvider;
-import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.String.format;
+
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.helpers.Settings.STRING;
 import static org.neo4j.helpers.Settings.setting;
@@ -1199,20 +1203,44 @@ public abstract class InternalAbstractGraphDatabase
 
         IndexDescriptor descriptor = findAnyIndexByLabelAndProperty( readOps, propertyId, labelId );
 
-        try
+        if ( descriptor != null )
         {
-            if ( null != descriptor )
+            try
             {
-                // Ha! We found an index - let's use it to find matching nodes
-                return map2nodes( readOps.nodesGetFromIndexLookup( descriptor, value ), statement );
+                if ( value instanceof Lookup )
+                {
+                    Specialization<Lookup> query = ((Lookup) value).transform(
+                            readOps.indexQueryTransformation( descriptor ) );
+                    if ( query.isSpecialized() )
+                    {
+                        return map2nodes( readOps.nodesGetFromIndexQuery( descriptor, query ), statement );
+                    }
+                }
+                else
+                {
+                    return map2nodes( readOps.nodesGetFromIndexLookup( descriptor, value ), statement );
+                }
+            }
+            catch ( IndexNotFoundKernelException e )
+            {
+                // weird at this point but ignore and fallback to a label scan
             }
         }
-        catch ( IndexNotFoundKernelException e )
+
+        PropertyPredicate predicate;
+        if ( value instanceof Lookup )
         {
-            // weird at this point but ignore and fallback to a label scan
+            predicate = ((Lookup) value).transform( PropertyPredicate.TRANSFORMATION );
+        }
+        else
+        {
+            predicate = PropertyPredicate.equalTo( value );
         }
 
-        return getNodesByLabelAndPropertyWithoutIndex( propertyId, value, statement, labelId );
+        return map2nodes(
+                new PropertyValueFilteringNodeIdIterator(
+                        statement.readOperations().nodesGetForLabel( labelId ), readOps, propertyId, predicate ),
+                statement );
     }
 
     private IndexDescriptor findAnyIndexByLabelAndProperty( ReadOperations readOps, int propertyId, int labelId )
@@ -1232,15 +1260,6 @@ public abstract class InternalAbstractGraphDatabase
             // If we don't find a matching index rule, we'll scan all nodes and filter manually (below)
         }
         return null;
-    }
-
-    private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( int propertyId, Object value,
-                                                                           Statement statement, int labelId )
-    {
-        return map2nodes(
-                new PropertyValueFilteringNodeIdIterator(
-                        statement.readOperations().nodesGetForLabel( labelId ),
-                        statement.readOperations(), propertyId, value ), statement );
     }
 
     private ResourceIterator<Node> allNodesWithLabel( final Label myLabel )
@@ -1312,15 +1331,15 @@ public abstract class InternalAbstractGraphDatabase
         private final PrimitiveLongIterator nodesWithLabel;
         private final ReadOperations statement;
         private final int propertyKeyId;
-        private final Object value;
+        private final PropertyPredicate predicate;
 
         PropertyValueFilteringNodeIdIterator( PrimitiveLongIterator nodesWithLabel, ReadOperations statement,
-                                              int propertyKeyId, Object value )
+                                              int propertyKeyId, PropertyPredicate predicate )
         {
             this.nodesWithLabel = nodesWithLabel;
             this.statement = statement;
             this.propertyKeyId = propertyKeyId;
-            this.value = value;
+            this.predicate = predicate;
         }
 
         @Override
@@ -1331,7 +1350,7 @@ public abstract class InternalAbstractGraphDatabase
                 long nextValue = nodesWithLabel.next();
                 try
                 {
-                    if ( statement.nodeGetProperty( nextValue, propertyKeyId ).valueEquals( value ) )
+                    if ( predicate.matches( statement.nodeGetProperty( nextValue, propertyKeyId ) ) )
                     {
                         return next( nextValue );
                     }

@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
@@ -28,17 +34,13 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.concurrent.TimeUnit;
-
+import org.neo4j.graphdb.Lookup;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.TaskControl;
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.helpers.ThisShouldNotHappenError;
+import org.neo4j.kernel.api.Specialization;
 import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
@@ -157,6 +159,12 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     public ResourceIterator<File> snapshotFiles() throws IOException
     {
         return new LuceneSnapshotter().snapshot( this.dirFile, writer );
+    }
+
+    @Override
+    public Lookup.Transformation<Specialization<Lookup>> queryTransformation()
+    {
+        return documentStructure.queryTransformation;
     }
 
     private void addRecovered( long nodeId, Object value ) throws IOException

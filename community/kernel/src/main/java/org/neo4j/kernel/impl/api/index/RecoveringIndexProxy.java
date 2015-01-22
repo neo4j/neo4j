@@ -22,7 +22,9 @@ package org.neo4j.kernel.impl.api.index;
 import java.io.File;
 import java.util.concurrent.Future;
 
+import org.neo4j.graphdb.Lookup;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.kernel.api.Specialization;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -67,6 +69,12 @@ public class RecoveringIndexProxy extends AbstractSwallowingIndexProxy
     public ResourceIterator<File> snapshotFiles()
     {
         throw  unsupportedOperation( "Cannot snapshot a recovering index." );
+    }
+
+    @Override
+    public Lookup.Transformation<Specialization<Lookup>> queryTransformation()
+    {
+        throw  unsupportedOperation( "Cannot access a recovering index." );
     }
 
     @Override

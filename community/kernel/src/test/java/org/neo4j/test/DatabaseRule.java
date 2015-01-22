@@ -29,6 +29,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.QueryExecutionException;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -116,6 +117,11 @@ public abstract class DatabaseRule extends ExternalResource
     public Node createNode( Label... labels )
     {
         return database.createNode( labels );
+    }
+
+    public ResourceIterator<Node> findNodes( Label label, String key, Object value )
+    {
+        return database.findNodes( label, key, value );
     }
 
     public Schema schema()
