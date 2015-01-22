@@ -1,5 +1,4 @@
-var ButtonsCtrl = function ($scope) {
-
+angular.module('ui.bootstrap.demo').controller('ButtonsCtrl', function ($scope) {
   $scope.singleModel = 1;
 
   $scope.radioModel = 'Middle';
@@ -9,4 +8,4 @@ var ButtonsCtrl = function ($scope) {
     middle: true,
     right: false
   };
-};
+});

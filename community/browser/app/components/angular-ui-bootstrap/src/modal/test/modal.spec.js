@@ -1,5 +1,5 @@
 describe('$modal', function () {
-  var $rootScope, $document, $compile, $templateCache, $timeout, $q;
+  var $controllerProvider, $rootScope, $document, $compile, $templateCache, $timeout, $q;
   var $modal, $modalProvider;
 
   var triggerKeyDown = function (element, keyCode) {
@@ -108,6 +108,7 @@ describe('$modal', function () {
 
   function close(modal, result) {
     modal.close(result);
+    $timeout.flush();
     $rootScope.$digest();
   }
 
@@ -133,6 +134,36 @@ describe('$modal', function () {
 
       waitForBackdropAnimation();
       expect($document).not.toHaveBackdrop();
+    });
+
+    it('should not throw an exception on a second dismiss', function () {
+
+      var modal = open({template: '<div>Content</div>'});
+
+      expect($document).toHaveModalsOpen(1);
+      expect($document).toHaveModalOpenWithContent('Content', 'div');
+      expect($document).toHaveBackdrop();
+
+      dismiss(modal, 'closing in test');
+
+      expect($document).toHaveModalsOpen(0);
+
+      dismiss(modal, 'closing in test');
+    });
+
+    it('should not throw an exception on a second close', function () {
+
+      var modal = open({template: '<div>Content</div>'});
+
+      expect($document).toHaveModalsOpen(1);
+      expect($document).toHaveModalOpenWithContent('Content', 'div');
+      expect($document).toHaveBackdrop();
+
+      close(modal, 'closing in test');
+
+      expect($document).toHaveModalsOpen(0);
+
+      close(modal, 'closing in test');
     });
 
     it('should open a modal from templateUrl', function () {
@@ -249,6 +280,23 @@ describe('$modal', function () {
         expect($document).toHaveModalOpenWithContent('Whitespaces', 'div');
       });
 
+      it('should accept template as a function', function () {
+        open({template: function() {
+          return '<div>From a function</div>';
+        }});
+
+        expect($document).toHaveModalOpenWithContent('From a function', 'div');
+      });
+
+      it('should not fail if a templateUrl as a function', function () {
+
+        $templateCache.put('whitespace.html', '  <div>Whitespaces</div>  ');
+        open({templateUrl: function(){
+          return 'whitespace.html';
+        }});
+        expect($document).toHaveModalOpenWithContent('Whitespaces', 'div');
+      });
+
     });
 
     describe('controller', function () {
@@ -259,7 +307,7 @@ describe('$modal', function () {
           $scope.isModalInstance = angular.isObject($modalInstance) && angular.isFunction($modalInstance.close);
         };
 
-        var modal = open({template: '<div>{{fromCtrl}} {{isModalInstance}}</div>', controller: TestCtrl});
+        open({template: '<div>{{fromCtrl}} {{isModalInstance}}</div>', controller: TestCtrl});
         expect($document).toHaveModalOpenWithContent('Content from ctrl true', 'div');
       });
 
@@ -269,10 +317,27 @@ describe('$modal', function () {
           this.isModalInstance = angular.isObject($modalInstance) && angular.isFunction($modalInstance.close);
         });
 
-        var modal = open({template: '<div>{{test.fromCtrl}} {{test.isModalInstance}}</div>', controller: 'TestCtrl as test'});
+        open({template: '<div>{{test.fromCtrl}} {{test.isModalInstance}}</div>', controller: 'TestCtrl as test'});
         expect($document).toHaveModalOpenWithContent('Content from ctrl true', 'div');
       });
 
+      it('should respect the controllerAs property as an alternative for the controller-as syntax', function () {
+        $controllerProvider.register('TestCtrl', function($modalInstance) {
+          this.fromCtrl = 'Content from ctrl';
+          this.isModalInstance = angular.isObject($modalInstance) && angular.isFunction($modalInstance.close);
+        });
+
+        open({template: '<div>{{test.fromCtrl}} {{test.isModalInstance}}</div>', controller: 'TestCtrl', controllerAs: 'test'});
+        expect($document).toHaveModalOpenWithContent('Content from ctrl true', 'div');
+      });
+
+      it('should allow defining in-place controller-as controllers', function () {
+        open({template: '<div>{{test.fromCtrl}} {{test.isModalInstance}}</div>', controller: function($modalInstance) {
+          this.fromCtrl = 'Content from ctrl';
+          this.isModalInstance = angular.isObject($modalInstance) && angular.isFunction($modalInstance.close);
+        }, controllerAs: 'test'});
+        expect($document).toHaveModalOpenWithContent('Content from ctrl true', 'div');
+      });
     });
 
     describe('resolve', function () {
@@ -429,6 +494,18 @@ describe('$modal', function () {
         expect(backdropEl).not.toHaveClass('in');
 
       });
+
+      describe('custom backdrop classes', function () {
+
+        it('should support additional backdrop class as string', function () {
+          open({
+            template: '<div>With custom backdrop class</div>',
+            backdropClass: 'additional'
+          });
+
+          expect($document.find('div.modal-backdrop')).toHaveClass('additional');
+        });
+      });
     });
 
     describe('custom window classes', function () {
@@ -442,24 +519,24 @@ describe('$modal', function () {
         expect($document.find('div.modal')).toHaveClass('additional');
       });
     });
-    
+
     describe('size', function () {
-      
+
       it('should support creating small modal dialogs', function () {
         open({
           template: '<div>Small modal dialog</div>',
           size: 'sm'
         });
-        
+
         expect($document.find('div.modal-dialog')).toHaveClass('modal-sm');
       });
-      
+
       it('should support creating large modal dialogs', function () {
         open({
           template: '<div>Large modal dialog</div>',
           size: 'lg'
         });
-        
+
         expect($document.find('div.modal-dialog')).toHaveClass('modal-lg');
       });
     });

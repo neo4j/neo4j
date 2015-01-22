@@ -7,8 +7,8 @@
           .switch-inner
           .handle
       a.toggle-table(ng-class='{active: isActive("table")}', ng-click='setActive("table")') Table
-    li.dropdown(ng-if='frame.type == "cypher"')
-      a.button.fa.fa-download.dropdown-toggle(ng-show='frame.exportable')
+    li.dropdown(dropdown="", ng-show='frame.type == "cypher"')
+      a.button.fa.fa-download.dropdown-toggle(dropdown-toggle="")
       ul.dropdown-menu
         li
           a(exportable ng-click='exportSVG()', ng-show='isActive("graph")') Export SVG

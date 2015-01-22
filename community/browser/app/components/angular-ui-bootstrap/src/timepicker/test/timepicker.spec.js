@@ -1,5 +1,5 @@
 describe('timepicker directive', function () {
-  var $rootScope, element;
+  var $rootScope, $compile, element;
 
   beforeEach(module('ui.bootstrap.timepicker'));
   beforeEach(module('template/timepicker/timepicker.html'));
@@ -792,7 +792,7 @@ describe('timepicker directive', function () {
 
   describe('when model is not a Date', function() {
     beforeEach(inject(function() {
-      eelement = $compile('<timepicker ng-model="time"></timepicker>')($rootScope);
+      element = $compile('<timepicker ng-model="time"></timepicker>')($rootScope);
     }));
 
     it('should not be invalid when the model is null', function() {
