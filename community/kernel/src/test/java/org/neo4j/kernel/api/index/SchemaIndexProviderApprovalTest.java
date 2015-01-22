@@ -36,6 +36,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.Function;
+import org.neo4j.helpers.ObjectUtil;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
@@ -230,7 +231,7 @@ public abstract class SchemaIndexProviderApprovalTest
         @Override
         public String toString()
         {
-            return ArrayUtil.toString( array );
+            return ObjectUtil.toString( array );
         }
     }
 }

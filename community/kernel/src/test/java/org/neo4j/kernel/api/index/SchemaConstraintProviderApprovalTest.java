@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.api.index;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -36,10 +36,10 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.Function;
+import org.neo4j.helpers.ObjectUtil;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.createConstraint;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -226,7 +226,7 @@ public abstract class SchemaConstraintProviderApprovalTest
         @Override
         public String toString()
         {
-            return ArrayUtil.toString( array );
+            return ObjectUtil.toString( array );
         }
     }
 }

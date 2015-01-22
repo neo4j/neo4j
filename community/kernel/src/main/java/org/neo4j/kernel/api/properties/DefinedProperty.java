@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import org.neo4j.helpers.ArrayUtil;
+import org.neo4j.helpers.ObjectUtil;
 import org.neo4j.kernel.impl.cache.SizeOfObject;
 
 /**
@@ -102,12 +102,7 @@ public abstract class DefinedProperty extends Property implements SizeOfObject
     @Override
     public String valueAsString()
     {
-        Object value = value();
-        if ( value.getClass().isArray() )
-        {
-            return ArrayUtil.toString( value );
-        }
-        return value.toString();
+        return ObjectUtil.toString( value() );
     }
 
     DefinedProperty( int propertyKeyId )
