@@ -21,6 +21,11 @@ package org.neo4j.backup;
 
 import java.io.IOException;
 
+import org.neo4j.com.RequestContext;
+import org.neo4j.com.ResourceReleaser;
+import org.neo4j.com.Response;
+import org.neo4j.com.TransactionStream;
+import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.com.storecopy.ResponsePacker;
 import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.Visitor;
@@ -30,6 +35,8 @@ import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 /**
  * In full backup we're more tolerant about missing transactions. Just as long as we fulfill this criterion:
@@ -54,11 +61,32 @@ public class StoreCopyResponsePacker extends ResponsePacker
     }
 
     @Override
+    public <T> Response<T> packTransactionStreamResponse( RequestContext context, T response )
+    {
+        final long toStartFrom = mandatoryStartTransactionId;
+        final long toEndAt = transactionIdStore.getLastCommittedTransactionId();
+        TransactionStream transactions = new TransactionStream()
+        {
+            @Override
+            public void accept( Visitor<CommittedTransactionRepresentation,IOException> visitor ) throws IOException
+            {
+                // Check so that it's even worth thinking about extracting any transactions at all
+                if ( toStartFrom > BASE_TX_ID && toStartFrom <= toEndAt )
+                {
+                    extractTransactions( toStartFrom, filterVisitor( visitor, toEndAt ) );
+                }
+            }
+        };
+        return new TransactionStreamResponse<>( response, storeId.instance(), transactions, ResourceReleaser.NO_OP );
+    }
+
+    @Override
     protected void extractTransactions( long startingAtTransactionId,
             Visitor<CommittedTransactionRepresentation, IOException> accumulator ) throws IOException
     {
         try
         {
+            startingAtTransactionId = Math.min( mandatoryStartTransactionId, startingAtTransactionId );
             super.extractTransactions( startingAtTransactionId, accumulator );
         }
         catch ( NoSuchTransactionException e )
