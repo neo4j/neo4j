@@ -77,10 +77,13 @@
             box-shadow: none
             background: #F8F9FB
             z-index: 3
+            &.active, &:focus
+              color: #000
+              outline: 0
             &:hover
-              color: #000
-            &.active
-              color: #000
+              color: #F8F9FB
+              background: #40454f
+              outline: 0
 
             i, span
               font-size: 21px
