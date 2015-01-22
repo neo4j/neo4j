@@ -30,8 +30,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGrap
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.{ApplyRewriter, RewriterStepSequencer}
+import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.{RewriterCondition, ApplyRewriter, RewriterStepSequencer}
 import org.neo4j.helpers.Clock
+import org.parboiled.common.Preconditions
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class Planner(monitors: Monitors,
@@ -51,7 +52,7 @@ case class Planner(monitors: Monitors,
     maybeExecutionPlanBuilder.getOrElse(new PipeExecutionPlanBuilder(clock, monitors))
 
   def producePlan(inputQuery: PreparedQuery, planContext: PlanContext): PipeInfo = {
-    Planner.rewriteStatement(inputQuery.statement, inputQuery.scopeTree, inputQuery.semanticTable) match {
+    Planner.rewriteStatement(inputQuery.statement, inputQuery.scopeTree, inputQuery.semanticTable, inputQuery.conditions) match {
       case (ast: Query, rewrittenSemanticTable) =>
         monitor.startedPlanning(inputQuery.queryText)
         val (logicalPlan, pipeBuildContext) = produceLogicalPlan(ast, rewrittenSemanticTable)(planContext)
@@ -85,28 +86,31 @@ case class Planner(monitors: Monitors,
 object Planner {
   import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStep._
 
-  def rewriteStatement(statement: Statement, scopeTree: Scope, semanticTable: SemanticTable): (Statement, SemanticTable) = {
+  def rewriteStatement(statement: Statement, scopeTree: Scope, semanticTable: SemanticTable, preConditions: Set[RewriterCondition]): (Statement, SemanticTable) = {
     val namespacer = Namespacer(statement, semanticTable, scopeTree)
 
-    val newStatement = rewriteStatement(namespacer, statement)
+    val newStatement = rewriteStatement(namespacer, statement, preConditions)
     val newSemanticTable = namespacer.tableRewriter(semanticTable)
 
     (newStatement, newSemanticTable)
   }
 
-  def rewriteStatement(namespacer: Namespacer, statement: Statement): Statement = {
-    val rewriter = RewriterStepSequencer.newDefault("Planner")(
-      ApplyRewriter("namespaceIdentifiers", namespacer.astRewriter),
-      rewriteEqualityToInCollection,
-      splitInCollectionsToIsolateConstants,
-      CNFNormalizer,
-      collapseInCollectionsContainingConstants,
-      nameUpdatingClauses /* this is actually needed as a precondition for projectedNamedPaths even though we do not handle updates in Ronja */,
-      projectNamedPaths,
-      enableCondition(containsNamedPathOnlyForShortestPath),
-      projectFreshSortExpressions,
-      inlineProjections
-    )
+  def rewriteStatement(namespacer: Namespacer, statement: Statement, preConditions: Set[RewriterCondition]): Statement = {
+    val rewriter =
+      RewriterStepSequencer
+        .newDefault("Planner")
+        .withPrecondition(preConditions)(
+          ApplyRewriter("namespaceIdentifiers", namespacer.astRewriter),
+          rewriteEqualityToInCollection,
+          splitInCollectionsToIsolateConstants,
+          CNFNormalizer,
+          collapseInCollectionsContainingConstants,
+          nameUpdatingClauses /* this is actually needed as a precondition for projectedNamedPaths even though we do not handle updates in Ronja */,
+          projectNamedPaths,
+          enableCondition(containsNamedPathOnlyForShortestPath),
+          projectFreshSortExpressions,
+          inlineProjections
+        ).rewriter
 
     statement.endoRewrite(rewriter)
   }

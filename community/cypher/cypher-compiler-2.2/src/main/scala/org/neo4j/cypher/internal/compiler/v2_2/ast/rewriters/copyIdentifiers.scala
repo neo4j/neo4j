@@ -19,23 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.ast._
+import org.neo4j.cypher.internal.compiler.v2_2.{bottomUp, Rewriter}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Identifier
 
-case object normalizeEqualsArgumentOrder extends Rewriter {
-  override def apply(that: AnyRef): AnyRef = topDown(instance).apply(that)
+case object copyIdentifiers extends Rewriter {
+  private val instance = Rewriter.lift { case identifier: Identifier => identifier.copyId }
 
-  private val instance: Rewriter = Rewriter.lift {
-    // move id(n) on equals to the left
-    case predicate @ Equals(func@FunctionInvocation(_, _, _), _) if func.function == Some(functions.Id) =>
-      predicate
-    case predicate @ Equals(lhs, rhs @ FunctionInvocation(_, _, _)) if rhs.function == Some(functions.Id) =>
-      predicate.copy(lhs = rhs, rhs = lhs)(predicate.position)
-
-    // move n.prop on equals to the left
-    case predicate @ Equals(Property(_, _), _) =>
-      predicate
-    case predicate @ Equals(lhs, rhs @ Property(_, _)) =>
-      predicate.copy(lhs = rhs, rhs = lhs)(predicate.position)
-  }
+  def apply(that: AnyRef): AnyRef = bottomUp(instance).apply(that)
 }

@@ -17,19 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter
+package org.neo4j.cypher.internal.compiler.v2_2.ast.conditions
 
-import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, repeat}
-import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{Identifier, OrderBy, SortItem}
+import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.Condition
 
-case object LogicalPlanRewriter extends Rewriter {
-  val instance: Rewriter = repeat(RewriterStepSequencer.newDefault("LogicalPlanRewriter")(
-    fuseSelections,
-    unnestApply,
-    simplifyEquality,
-    unnestOptional,
-    predicateRemovalThroughJoins
-  ).rewriter)
+case object orderByOnlyOnIdentifiers extends Condition {
+  def apply(that: Any): Seq[String] = {
+    val orderBys = collectNodesOfType[OrderBy].apply(that)
+    orderBys.flatMap { orderBy =>
+      orderBy.sortItems.collect {
+        case item: SortItem if !item.expression.isInstanceOf[Identifier] =>
+          s"OrderBy at ${orderBy.position} is ordering on an expression (${item.expression}) instead of an identifier"
+      }
+    }
+  }
 
-  def apply(that: AnyRef) = instance(that)
+  override def name: String = productPrefix
 }

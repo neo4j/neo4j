@@ -25,7 +25,7 @@ import scala.annotation.tailrec
 
 case object RewriterTaskBuilder {
 
-  def apply(steps: Seq[RewriterStep]) = State()(steps)
+  def apply(steps: Seq[RewriterStep]): Seq[RewriterTask] = State()(steps)
 
   final private case class State(
     conditions: Set[RewriterCondition] = Set.empty,

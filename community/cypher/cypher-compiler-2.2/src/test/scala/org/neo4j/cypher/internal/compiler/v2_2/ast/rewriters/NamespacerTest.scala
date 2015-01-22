@@ -123,7 +123,7 @@ class NamespacerTest extends CypherFunSuite {
   private def parseAndRewrite(queryText: String): Statement = {
     val parsedAst = parser.parse(queryText)
     val cleanedAst = parsedAst.endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
-    val (rewrittenAst, _) = astRewriter.rewrite(queryText, cleanedAst, cleanedAst.semanticState)
+    val (rewrittenAst, _, _) = astRewriter.rewrite(queryText, cleanedAst, cleanedAst.semanticState)
     rewrittenAst
   }
 }

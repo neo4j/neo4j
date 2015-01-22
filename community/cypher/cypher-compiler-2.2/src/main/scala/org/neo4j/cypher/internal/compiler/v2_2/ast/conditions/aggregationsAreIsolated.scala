@@ -17,19 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter
+package org.neo4j.cypher.internal.compiler.v2_2.ast.conditions
 
-import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, repeat}
-import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{hasAggregateButIsNotAggregate, Expression}
+import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.Condition
 
-case object LogicalPlanRewriter extends Rewriter {
-  val instance: Rewriter = repeat(RewriterStepSequencer.newDefault("LogicalPlanRewriter")(
-    fuseSelections,
-    unnestApply,
-    simplifyEquality,
-    unnestOptional,
-    predicateRemovalThroughJoins
-  ).rewriter)
+case object aggregationsAreIsolated extends Condition {
+  import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
 
-  def apply(that: AnyRef) = instance(that)
+  def apply(that: Any): Seq[String] = that.treeFold(Seq.empty[String]) {
+    case expr: Expression if hasAggregateButIsNotAggregate(expr) =>
+      (acc, _) => acc :+ s"Expression $expr contains child expressions which are aggregations"
+  }
+
+  override def name: String = productPrefix
 }

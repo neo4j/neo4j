@@ -40,7 +40,7 @@ class LegacyPipeBuilder(monitors: Monitors, eagernessRewriter: Pipe => Pipe = ad
   private implicit val pipeMonitor: PipeMonitor = monitors.newMonitor[PipeMonitor]()
 
   def producePlan(in: PreparedQuery, planContext: PlanContext): PipeInfo = {
-    val rewriter = RewriterStepSequencer.newDefault("LegacyPipeBuilder")(reattachAliasedExpressions)
+    val rewriter = RewriterStepSequencer.newDefault("LegacyPipeBuilder")(reattachAliasedExpressions).rewriter
     val rewrite = in.rewrite(rewriter)
 
     rewrite.abstractQuery match {

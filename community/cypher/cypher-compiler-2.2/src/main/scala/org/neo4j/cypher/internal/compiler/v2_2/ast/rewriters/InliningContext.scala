@@ -48,7 +48,7 @@ case class InliningContext(projections: Map[Identifier, Expression] = Map.empty,
 
   def identifierRewriter: BottomUpRewriter = bottomUp(Rewriter.lift {
     case identifier: Identifier =>
-      projections.getOrElse(identifier, identifier)
+      projections.get(identifier).map(_.endoRewrite(copyIdentifiers)).getOrElse(identifier.copyId)
   })
 
   def patternRewriter: BottomUpRewriter = bottomUp(Rewriter.lift {
@@ -65,7 +65,7 @@ case class InliningContext(projections: Map[Identifier, Expression] = Map.empty,
   })
 
   def alias(identifier: Identifier): Option[Identifier] = projections.get(identifier) match {
-    case Some(other: Identifier) => Some(other)
+    case Some(other: Identifier) => Some(other.copyId)
     case _                       => None
   }
 }
