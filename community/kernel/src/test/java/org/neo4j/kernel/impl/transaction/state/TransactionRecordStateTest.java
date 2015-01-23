@@ -19,21 +19,27 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.junit.Rule;
+import org.junit.Test;
+
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommandApplierFacade;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -41,6 +47,9 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.command.NeoStoreTransactionApplier;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
@@ -59,9 +68,13 @@ import org.neo4j.test.CleanupRule;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+
 import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class TransactionRecordStateTest
 {
@@ -108,6 +121,135 @@ public class TransactionRecordStateTest
         assertDynamicLabelRecordInUse( store, dynamicLabelRecordId.get(), false );
     }
 
+    @Test
+    public void shouldExtractCreatedCommandsInCorrectOrder() throws Exception
+    {
+        // GIVEN
+        NeoStore neoStore = newNeoStore( GraphDatabaseSettings.dense_node_threshold.name(), "1" );
+        NeoStoreTransactionContextSupplier supplier = new NeoStoreTransactionContextSupplier( neoStore );
+        NeoStoreTransactionContext context = new NeoStoreTransactionContext( supplier, neoStore );
+        context.bind( mock( Locks.Client.class ) );
+        TransactionRecordState recordState =
+                new TransactionRecordState( neoStore, mock( IntegrityValidator.class ), context );
+        long nodeId = 0, relId = 1;
+        recordState.nodeCreate( nodeId );
+        recordState.relCreate( relId++, 0, nodeId, nodeId );
+        recordState.relCreate( relId, 0, nodeId, nodeId );
+        recordState.nodeAddProperty( nodeId, 0, 101 );
+
+        // WHEN
+        Collection<Command> commands = new ArrayList<>();
+        recordState.extractCommands( commands );
+
+        // THEN
+        Iterator<Command> commandIterator = commands.iterator();
+
+        assertCommand( commandIterator.next(), PropertyCommand.class );
+        assertCommand( commandIterator.next(), RelationshipCommand.class );
+        assertCommand( commandIterator.next(), RelationshipCommand.class );
+        assertCommand( commandIterator.next(), Command.RelationshipGroupCommand.class );
+        assertCommand( commandIterator.next(), NodeCommand.class );
+        assertFalse( commandIterator.hasNext() );
+    }
+
+    @Test
+    public void shouldExtractUpdateCommandsInCorrectOrder() throws Exception
+    {
+        // GIVEN
+        NeoStore neoStore = newNeoStore( GraphDatabaseSettings.dense_node_threshold.name(), "1" );
+        NeoStoreTransactionContextSupplier supplier = new NeoStoreTransactionContextSupplier( neoStore );
+        NeoStoreTransactionContext context = new NeoStoreTransactionContext( supplier, neoStore );
+        context.bind( mock( Locks.Client.class ) );
+        TransactionRecordState recordState =
+                new TransactionRecordState( neoStore, mock( IntegrityValidator.class ), context );
+        long nodeId = 0, relId1 = 1, relId2 = 2, relId3 = 3;
+        recordState.nodeCreate( nodeId );
+        recordState.relCreate( relId1, 0, nodeId, nodeId );
+        recordState.relCreate( relId2, 0, nodeId, nodeId );
+        recordState.nodeAddProperty( nodeId, 0, 101 );
+        NeoCommandHandler applier = new NeoStoreTransactionApplier( neoStore, mock( CacheAccessBackDoor.class ),
+                LockService.NO_LOCK_SERVICE, new LockGroup(), 1 );
+        apply( applier, transaction( recordState ) );
+
+        context = new NeoStoreTransactionContext( supplier, neoStore );
+        context.bind( mock( Locks.Client.class ) );
+        recordState = new TransactionRecordState( neoStore, mock( IntegrityValidator.class ), context );
+        recordState.nodeChangeProperty( nodeId, 0, 102 );
+        recordState.relCreate( relId3, 0, nodeId, nodeId );
+        recordState.relAddProperty( relId1, 0, 123 );
+
+        // WHEN
+        Collection<Command> commands = new ArrayList<>();
+        recordState.extractCommands( commands );
+
+        // THEN
+        Iterator<Command> commandIterator = commands.iterator();
+
+        // added rel property
+        assertCommand( commandIterator.next(), PropertyCommand.class );
+        // created relationship relId3
+        assertCommand( commandIterator.next(), RelationshipCommand.class );
+        // rest is updates...
+        assertCommand( commandIterator.next(), PropertyCommand.class );
+        assertCommand( commandIterator.next(), RelationshipCommand.class );
+        assertCommand( commandIterator.next(), RelationshipCommand.class );
+        assertCommand( commandIterator.next(), Command.RelationshipGroupCommand.class );
+        assertCommand( commandIterator.next(), NodeCommand.class );
+        assertFalse( commandIterator.hasNext() );
+    }
+
+    @Test
+    public void shouldExtractDeleteCommandsInCorrectOrder() throws Exception
+    {
+        // GIVEN
+        NeoStore neoStore = newNeoStore( GraphDatabaseSettings.dense_node_threshold.name(), "1" );
+        NeoStoreTransactionContextSupplier supplier = new NeoStoreTransactionContextSupplier( neoStore );
+        NeoStoreTransactionContext context = new NeoStoreTransactionContext( supplier, neoStore );
+        context.bind( mock( Locks.Client.class ) );
+        TransactionRecordState recordState =
+                new TransactionRecordState( neoStore, mock( IntegrityValidator.class ), context );
+        long nodeId1 = 0, nodeId2 = 1, relId1 = 1, relId2 = 2, relId3 = 3, relId4 = 10;
+        recordState.nodeCreate( nodeId1 );
+        recordState.nodeCreate( nodeId2 );
+        recordState.relCreate( relId1, 0, nodeId1, nodeId1 );
+        recordState.relCreate( relId2, 0, nodeId1, nodeId1 );
+        recordState.relCreate( relId4, 1, nodeId1, nodeId1 );
+        recordState.nodeAddProperty( nodeId1, 0, 101 );
+        NeoCommandHandler applier = new NeoStoreTransactionApplier( neoStore, mock( CacheAccessBackDoor.class ),
+                LockService.NO_LOCK_SERVICE, new LockGroup(), 1 );
+        apply( applier, transaction( recordState ) );
+
+        context = new NeoStoreTransactionContext( supplier, neoStore );
+        context.bind( mock( Locks.Client.class ) );
+        recordState = new TransactionRecordState( neoStore, mock( IntegrityValidator.class ), context );
+        recordState.relDelete( relId4 );
+        recordState.nodeDelete( nodeId2 );
+        recordState.nodeRemoveProperty( nodeId1, 0 );
+
+        // WHEN
+        Collection<Command> commands = new ArrayList<>();
+        recordState.extractCommands( commands );
+
+        // THEN
+        Iterator<Command> commandIterator = commands.iterator();
+
+        // updated rel group to not point to the deleted one below
+        assertCommand( commandIterator.next(), Command.RelationshipGroupCommand.class );
+        // updated node to point to the group after the deleted one
+        assertCommand( commandIterator.next(), NodeCommand.class );
+        // rest is deletions below...
+        assertCommand( commandIterator.next(), PropertyCommand.class );
+        assertCommand( commandIterator.next(), RelationshipCommand.class );
+        assertCommand( commandIterator.next(), Command.RelationshipGroupCommand.class );
+        assertCommand( commandIterator.next(), NodeCommand.class );
+        assertFalse( commandIterator.hasNext() );
+    }
+
+    private void assertCommand( Command next, Class klass )
+    {
+        assertTrue( "Expected " + klass + ". was: " + next, klass.isInstance( next ) );
+    }
+
     private CommittedTransactionRepresentation readFromChannel( ReadableVersionableLogChannel channel ) throws IOException
     {
         LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new LogEntryReaderFactory().versionable();
@@ -127,12 +269,14 @@ public class TransactionRecordStateTest
         writer.append( transaction, 2 );
     }
 
-    private NeoStore newNeoStore()
+    private NeoStore newNeoStore( String... config )
     {
         File storeDir = new File( "dir" );
         fsr.get().mkdirs( storeDir );
-        StoreFactory storeFactory = new StoreFactory( fsr.get(), storeDir,
-                pageCacheRule.getPageCache( fsr.get() ), StringLogger.DEV_NULL, new Monitors() );
+        Config configuration = StoreFactory.configForStoreDir( new Config( stringMap( config ) ), storeDir );
+        StoreFactory storeFactory = new StoreFactory( configuration, new DefaultIdGeneratorFactory(),
+                pageCacheRule.getPageCache( fsr.get() ),
+                fsr.get(), StringLogger.DEV_NULL, new Monitors() );
         return cleanup.add( storeFactory.newNeoStore( true ) );
     }
 
