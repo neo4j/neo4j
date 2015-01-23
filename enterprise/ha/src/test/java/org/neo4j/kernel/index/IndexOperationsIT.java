@@ -39,6 +39,7 @@ import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
+import org.neo4j.test.ha.RetryOnGcRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -51,6 +52,9 @@ public class IndexOperationsIT
     public ClusterRule clusterRule = new ClusterRule(getClass());
 
     protected ClusterManager.ManagedCluster cluster;
+
+    @Rule
+    public RetryOnGcRule retryRule = new RetryOnGcRule();
 
     @Before
     public void setup() throws Exception
