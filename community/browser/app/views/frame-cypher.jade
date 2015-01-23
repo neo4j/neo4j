@@ -38,7 +38,7 @@ div(ng-controller="CypherResultCtrl", fullscreen)
           .view-result-table.result(ng-show='isActive("table")')
             .table-holder
               neo-table(table-data='frame.response.table', ng-show='frame.response.table.size')
-              article.help.no-data(ng-show='!frame.response.table.size')
+              article.help.no-data.has-status-bar(ng-show='!frame.response.table.size')
                 p
                   | Nothing to show. Try and &nbsp;
                   a(help-topic="RETURN")

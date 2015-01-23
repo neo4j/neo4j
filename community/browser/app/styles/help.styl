@@ -9,7 +9,9 @@
     padding: 30px
     margin 0
     &.no-data
-     height: frame-min-height
+      height: frame-result-height
+      &.has-status-bar
+        height: (frame-result-height - middlebar-height)
     [help-topic], [play-topic], [server-topic]
       background-color: #F8F8F8
       border-radius: 3px
@@ -56,8 +58,8 @@
         background: lighten(color-link, 80%)
         //outline: 2px solid color-link
       &.oneline
-        text-overflow: ellipsis; 
-        white-space: nowrap; 
+        text-overflow: ellipsis;
+        white-space: nowrap;
         overflow: hidden;
     &.manual
       section
