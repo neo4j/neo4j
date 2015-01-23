@@ -65,7 +65,7 @@ case object normalizeReturnClauses extends Rewriter {
             case None        => Identifier(i.name)(i.expression.position.bumped())
           }
 
-          val newIdentifier = Identifier(FreshIdNameGenerator.name(i.expression.position))(i.position)
+          val newIdentifier = Identifier(FreshIdNameGenerator.name(i.expression.position))(i.expression.position)
 
           rewrites = rewrites + (returnColumn -> newIdentifier)
           rewrites = rewrites + (i.expression -> newIdentifier)

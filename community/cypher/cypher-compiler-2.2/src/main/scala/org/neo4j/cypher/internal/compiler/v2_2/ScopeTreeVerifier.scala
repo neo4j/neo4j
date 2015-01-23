@@ -19,22 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-object Ref {
-  def apply[T <: AnyRef](v: T) = new Ref[T](v)
-}
+object ScopeTreeVerifier {
+  def verify(root: Scope): Seq[String] = {
+    val localSymbolTableIssues = root.allScopes.flatMap {
+      case scope =>
+        scope.symbolTable.collect {
+          case (name, symbol) if name != symbol.name =>
+            s"'$name' points to symbol with different name '$symbol' in scope #${Ref(scope).toIdString}. Scope tree:\n$root"
+        }
+    }
+    localSymbolTableIssues
+  }
 
-final class Ref[T <: AnyRef](val value: T) {
-  if (value == null)
-    throw new InternalException("Attempt to instantiate Ref(null)")
-
-  def toIdString = Integer.toHexString(java.lang.System.identityHashCode(value))
-
-  override def toString = s"Ref@$toIdString($value)"
-
-  override def hashCode = java.lang.System.identityHashCode(value)
-
-  override def equals(that: Any) = that match {
-    case other: Ref[_] => value eq other.value
-    case _             => false
+  private def formattedOccurrences(occurrences: Set[(SymbolUse, Scope)]) = {
+    occurrences.toSeq.sortBy(_._1.name).map {
+      case (key, scope) => s"$key in scope #${Ref(scope).toIdString}"
+    }
   }
 }

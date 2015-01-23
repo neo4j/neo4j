@@ -45,7 +45,11 @@ case class Symbol(name: String, positions: Set[InputPosition], types: TypeSpec) 
   if (positions.isEmpty)
     throw new InternalException(s"Cannot create empty symbol with name '$name'")
 
+  def uses = positions.map { pos => SymbolUse(name, pos) }
+
   val definition = SymbolUse(name, positions.toSeq.min(InputPosition.byOffset))
+
+  override def toString = s"${definition.nameWithPosition}(${positions.map(_.offset).mkString(",")}): ${types.toShortString}"
 }
 
 case class ExpressionTypeInfo(specified: TypeSpec, expected: Option[TypeSpec] = None) {
@@ -63,10 +67,7 @@ object Scope {
 
 case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope]) extends TreeElem[Scope] {
 
-  symbolTable.collect {
-    case (k, v) if k != v.name =>
-      throw new InternalException(s"Malformed symbol table entry $k -> $v")
-  }
+  self =>
 
   override def updateChildren(newChildren: Seq[Scope]): Scope = copy(children = newChildren)
 
@@ -113,29 +114,34 @@ case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope]) extends
   def allScopes: Seq[Scope] =
     Seq(this) ++ children.flatMap(_.allScopes)
 
+  def toIdString = s"#${Ref(self).toIdString}"
+
   override def toString: String = {
     val builder = new StringBuilder()
-    dump("", builder)
+    self.dumpSingle("", builder)
     builder.toString()
   }
 
-  private def dump(indent: String, builder: StringBuilder): Unit = {
+  private def dumpSingle(indent: String, builder: StringBuilder): Unit = {
+    builder.append(s"$indent${self.toIdString} {\n")
+    dumpTree(s"  $indent", builder)
+    builder.append(s"$indent}\n")
+  }
+
+  private def dumpTree(indent: String, builder: StringBuilder): Unit = {
     symbolTable.keys.toSeq.sorted.foreach { key =>
       val symbol = symbolTable(key)
       val symbolText = symbol.positions.map(_.toOffsetString).toSeq.sorted.mkString(" ")
       builder.append(s"$indent$key: $symbolText\n")
     }
-    children.foreach { child =>
-      builder.append(s"$indent{\n")
-      child.dump(s"\t$indent", builder)
-      builder.append(s"$indent}\n")
-    }
+    children.foreach { child => child.dumpSingle(indent, builder) }
   }
 }
 
 
 object SemanticState {
   implicit object ScopeZipper extends TreeZipper[Scope]
+
   val clean = SemanticState(Scope.empty.location, ASTAnnotationMap.empty, ASTAnnotationMap.empty)
 
   implicit class ScopeLocation(val location: ScopeZipper.Location) extends AnyVal {

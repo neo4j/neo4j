@@ -19,22 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-object Ref {
-  def apply[T <: AnyRef](v: T) = new Ref[T](v)
-}
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-final class Ref[T <: AnyRef](val value: T) {
-  if (value == null)
-    throw new InternalException("Attempt to instantiate Ref(null)")
+class ScopeTreeVerificationTest extends CypherFunSuite {
 
-  def toIdString = Integer.toHexString(java.lang.System.identityHashCode(value))
+  import org.neo4j.cypher.internal.compiler.v2_2.helpers.ScopeTestHelper._
 
-  override def toString = s"Ref@$toIdString($value)"
+  test("should reject scopes mapping the wrong name to a symbol") {
+    val given = Scope(Map("a" -> intSymbol("a", 3), "b" -> intSymbol("x", 5)), Seq())
 
-  override def hashCode = java.lang.System.identityHashCode(value)
+    val result = ScopeTreeVerifier.verify(given)
 
-  override def equals(that: Any) = that match {
-    case other: Ref[_] => value eq other.value
-    case _             => false
+    result should equal(Seq(s"""'b' points to symbol with different name 'x@5(5): Integer' in scope ${given.toIdString}. Scope tree:
+                               |${given.toIdString} {
+                               |  a: 3
+                               |  b: 5
+                               |}
+                               |""".stripMargin))
   }
 }
