@@ -457,7 +457,8 @@ public class DataFactories
     {
         protected DefaultRelationshipFileHeaderParser( HeaderCharSeekerFactory headerCharSeekerFactory )
         {
-            super( headerCharSeekerFactory, Type.START_ID, Type.END_ID, Type.TYPE );
+            // Don't have TYPE as mandatory since a decorator could provide that
+            super( headerCharSeekerFactory, Type.START_ID, Type.END_ID );
         }
 
         @Override

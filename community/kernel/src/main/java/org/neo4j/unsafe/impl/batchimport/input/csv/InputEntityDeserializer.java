@@ -26,6 +26,7 @@ import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Mark;
 import org.neo4j.function.Function;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
+import org.neo4j.unsafe.impl.batchimport.input.DataException;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.UnexpectedEndOfInputException;
@@ -117,7 +118,9 @@ abstract class InputEntityDeserializer<ENTITY extends InputEntity> extends Prefe
                 data.seek( mark, delimiter );
             }
 
-            return decorator.apply( entity );
+            entity = decorator.apply( entity );
+            validate( entity );
+            return entity;
         }
         catch ( IOException e )
         {
@@ -127,6 +130,14 @@ abstract class InputEntityDeserializer<ENTITY extends InputEntity> extends Prefe
         {
             propertiesCursor = 0;
         }
+    }
+
+    /**
+     * Called after the entity has been fully populated.
+     * @throws DataException on validation error.
+     */
+    protected void validate( ENTITY entity )
+    {   // No default validation
     }
 
     protected void addProperty( Header.Entry entry, Object value )
