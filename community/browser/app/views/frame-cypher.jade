@@ -28,7 +28,8 @@ div(ng-controller="CypherResultCtrl", fullscreen)
                   on-node-drag-toggle='onNodeDragToggle($item)'
                   on-canvas-clicked='onItemClick()'
                   ng-controller='D3GraphCtrl'
-                  style="pointer-events:fill;")
+                  style="pointer-events:fill;"
+                  ng-class="{'one-legend-row': hasLabels || hasTypes, 'two-legend-rows': hasLabels && hasTypes}")
               .status-bar(ng-show='isActive("graph")')
                 .cell
                   .status

@@ -153,7 +153,11 @@
               line-height: middlebar-height
           svg
             width: 100%
-            height: 400px
+            height: svg-start-height
+            &.one-legend-row
+              height: (svg-start-height - legend-row-height)
+            &.two-legend-rows
+              height: (svg-start-height - legend-row-height*2)
           a.fa-table
             font-size: 24px
             absolute: bottom 57px right horizontal-padding
