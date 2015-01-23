@@ -22,8 +22,14 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.bottomUp.BottomUpRewriter
+import InliningContext._
 
-case class InliningContext(projections: Map[Identifier, Expression] = Map.empty, seenIdentifiers: Set[Identifier] = Set.empty) {
+case class InliningContext(projections: Map[Identifier, Expression] = Map.empty,
+                           seenIdentifiers: Set[Identifier] = Set.empty,
+                           usageCount: Map[Identifier, Int] = Map.empty) {
+
+  def trackUsageOfIdentifier(id: Identifier) =
+    copy(usageCount = usageCount + (id -> (usageCount.withDefaultValue(0)(id) + 1)))
 
   def enterQueryPart(newProjections: Map[Identifier, Expression]): InliningContext = {
     val inlineExpressions = TypedRewriter[Expression](identifierRewriter)
@@ -47,22 +53,28 @@ case class InliningContext(projections: Map[Identifier, Expression] = Map.empty,
     copy(projections = projections - identifier)
 
   def identifierRewriter: BottomUpRewriter = bottomUp(Rewriter.lift {
-    case identifier: Identifier =>
+    case identifier: Identifier if okToRewrite(identifier) =>
       projections.get(identifier).map(_.endoRewrite(copyIdentifiers)).getOrElse(identifier.copyId)
   })
 
+  def okToRewrite(i: Identifier) =
+    projections.contains(i) &&
+    usageCount.withDefaultValue(0)(i) < INLINING_THRESHOLD
+
   def patternRewriter: BottomUpRewriter = bottomUp(Rewriter.lift {
-    case node @ NodePattern(Some(ident), _, _, _) =>
+    case node @ NodePattern(Some(ident), _, _, _) if okToRewrite(ident) =>
       alias(ident) match {
         case alias @ Some(_) => node.copy(identifier = alias)(node.position)
         case _               => node
       }
-    case rel @ RelationshipPattern(Some(ident), _, _, _, _, _) =>
+    case rel @ RelationshipPattern(Some(ident), _, _, _, _, _) if okToRewrite(ident) =>
       alias(ident) match {
         case alias @ Some(_) => rel.copy(identifier = alias)(rel.position)
         case _               => rel
       }
   })
+
+  def isAliasedIdentifier(identifier: Identifier) = alias(identifier).nonEmpty
 
   def alias(identifier: Identifier): Option[Identifier] = projections.get(identifier) match {
     case Some(other: Identifier) => Some(other.copyId)
@@ -70,3 +82,6 @@ case class InliningContext(projections: Map[Identifier, Expression] = Map.empty,
   }
 }
 
+object InliningContext {
+  private val INLINING_THRESHOLD = 3
+}
