@@ -138,43 +138,47 @@
           width: 175px
           display: inline-block
 
-        .view-result-graph .graph-holder
-          background-color: #F9FBFD
-          display: table
-          width: 100%
-          min-height: frame-min-height
-          > *
-            display: table-row
-            > .cell
-              display: table-cell
-              border-top: 1px solid #e6e9ef
-              width: 100%
-              height: middlebar-height
-              line-height: middlebar-height
-          svg
+        .view-result-graph
+          height: frame-result-height
+          background: #fff
+          .graph-holder
+            background-color: #F9FBFD
+            display: table
             width: 100%
-            height: svg-start-height
-            &.one-legend-row
-              height: (svg-start-height - legend-row-height)
-            &.two-legend-rows
-              height: (svg-start-height - legend-row-height*2)
-          a.fa-table
-            font-size: 24px
-            absolute: bottom 57px right horizontal-padding
+            min-height: frame-min-height
+            > *
+              display: table-row
+              > .cell
+                display: table-cell
+                border-top: 1px solid #e6e9ef
+                width: 100%
+                height: middlebar-height
+                line-height: middlebar-height
+            svg
+              width: 100%
+              height: svg-start-height
+              &.one-legend-row
+                height: (svg-start-height - legend-row-height)
+              &.two-legend-rows
+                height: (svg-start-height - legend-row-height*2)
+            a.fa-table
+              font-size: 24px
+              absolute: bottom 57px right horizontal-padding
 
-          .graph-contents
-            position: relative
-            overflow: hidden
-            height: 100%
+            .graph-contents
+              position: relative
+              overflow: hidden
+              height: 100%
 
         .view-result-table
           position: relative
           overflow-y: auto
-          max-height: 503px
+          max-height: frame-result-height
           min-height: frame-min-height
           .table-holder
-            height: (503 - middlebar-height)
+            height: (frame-result-height - middlebar-height)
             overflow: auto
+            background: #fff
           a.fa-download
             absolute: top 8px right horizontal-padding*2+20
             font-size: 24px
