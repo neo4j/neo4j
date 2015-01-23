@@ -199,7 +199,7 @@ class LazyTest extends ExecutionEngineFunSuite {
 
     when(idStore.getLastCommittedTransactionId).thenReturn(0)
     when(nodeManager.newNodeProxyById(anyLong())).thenAnswer( new Answer[NodeProxy] {
-      def answer( invocation: InvocationOnMock ): NodeProxy = new NodeProxy( invocation.getArguments()(0).asInstanceOf[Long], null, null, null )
+      def answer( invocation: InvocationOnMock ): NodeProxy = new NodeProxy( null, invocation.getArguments( )( 0 ).asInstanceOf[Long] )
     })
     when(bridge.instance()).thenReturn(fakeStatement)
     when(fakeStatement.readOperations()).thenReturn(fakeReadStatement)

@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -31,7 +32,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
-import org.neo4j.function.Function;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -44,8 +44,6 @@ import org.neo4j.kernel.impl.api.state.NodeState;
 import org.neo4j.kernel.impl.api.state.RelationshipState;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.core.NodeProxy;
-import org.neo4j.kernel.impl.core.RelationshipProxy;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
 
 /**
@@ -54,8 +52,7 @@ import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
 public class TxStateTransactionDataSnapshot implements TransactionData
 {
     private final ReadableTxState state;
-    private final NodeProxy.NodeLookup nodeLookup;
-    private final RelationshipProxy.RelationshipLookups relLookup;
+    private final NodeProxy.NodeActions nodeActions;
 
     private final Collection<PropertyEntry<Node>> assignedNodeProperties = new ArrayList<>();
     private final Collection<PropertyEntry<Relationship>> assignedRelationshipProperties = new ArrayList<>();
@@ -64,16 +61,12 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     private final Collection<PropertyEntry<Node>> removedNodeProperties = new ArrayList<>();
     private final Collection<PropertyEntry<Relationship>> removedRelationshipProperties = new ArrayList<>();
     private final Collection<LabelEntry> removedLabels = new ArrayList<>();
-    private final ThreadToStatementContextBridge bridge;
 
-    public TxStateTransactionDataSnapshot( ReadableTxState state, NodeProxy.NodeLookup nodeLookup,
-            RelationshipProxy.RelationshipLookups relLookup, ThreadToStatementContextBridge bridge,
-            StoreReadLayer storeReadLayer )
+    public TxStateTransactionDataSnapshot(
+            ReadableTxState state, NodeProxy.NodeActions nodeActions, StoreReadLayer storeReadLayer )
     {
         this.state = state;
-        this.nodeLookup = nodeLookup;
-        this.relLookup = relLookup;
-        this.bridge = bridge;
+        this.nodeActions = nodeActions;
 
         // Load all changes eagerly, because we won't have access to the after state after the tx has been committed.
         takeSnapshot( state, storeReadLayer );
@@ -242,7 +235,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             @Override
             public Node apply( Long id )
             {
-                return new NodeProxy( id, nodeLookup, relLookup, bridge );
+                return new NodeProxy( nodeActions, id );
             }
         }, added);
     }
@@ -253,7 +246,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
             @Override
             public Relationship apply( Long id )
             {
-                return new RelationshipProxy( id, relLookup, bridge );
+                return nodeActions.lazyRelationshipProxy( id );
             }
         }, added);
     }
@@ -308,7 +301,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         @Override
         public Node entity()
         {
-            return new NodeProxy( nodeId, nodeLookup, relLookup, bridge );
+            return new NodeProxy( nodeActions, nodeId );
         }
         @Override
         public String key()
@@ -362,7 +355,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         @Override
         public Relationship entity()
         {
-            return new RelationshipProxy( relId, relLookup, bridge );
+            return nodeActions.lazyRelationshipProxy( relId );
         }
 
         @Override
@@ -419,7 +412,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         @Override
         public Node node()
         {
-            return new NodeProxy( nodeId, nodeLookup, relLookup, bridge );
+            return new NodeProxy( nodeActions, nodeId );
         }
 
         @Override

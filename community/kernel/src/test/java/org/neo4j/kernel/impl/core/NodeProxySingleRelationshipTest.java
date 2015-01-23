@@ -20,7 +20,10 @@
 package org.neo4j.kernel.impl.core;
 
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
+import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -30,13 +33,16 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.impl.api.RelationshipVisitor;
 
 import static junit.framework.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
 
 public class NodeProxySingleRelationshipTest
 {
@@ -73,7 +79,7 @@ public class NodeProxySingleRelationshipTest
         try
         {
             node.getSingleRelationship( loves, Direction.OUTGOING );
-            fail();
+            fail("expected exception");
         }
         catch ( NotFoundException expected )
         {
@@ -97,28 +103,89 @@ public class NodeProxySingleRelationshipTest
         }
     }
 
-    private NodeProxy mockNodeWithRels(long ... relIds) throws EntityNotFoundException
+    private NodeProxy mockNodeWithRels( final long ... relIds) throws EntityNotFoundException
     {
-        ThreadToStatementContextBridge stmCtxBridge = mock( ThreadToStatementContextBridge.class );
-        NodeProxy.NodeLookup nodeLookup = mock( NodeProxy.NodeLookup.class );
+        NodeProxy.NodeActions nodeActions = mock( NodeProxy.NodeActions.class );
+        final RelationshipProxy.RelationshipActions relActions = mock( RelationshipProxy.RelationshipActions.class );
+        when( nodeActions.newRelationshipProxy( anyLong() ) ).thenAnswer( new Answer<RelationshipProxy>()
+        {
+            @Override
+            public RelationshipProxy answer( InvocationOnMock invocation ) throws Throwable
+            {
+                return new RelationshipProxy( relActions, (Long)invocation.getArguments()[0] );
+            }
+        } );
+        when( nodeActions.newRelationshipProxy( anyLong(), anyLong(), anyInt(), anyLong() ) ).then(
+                new Answer<Relationship>()
+                {
+                    @Override
+                    public Relationship answer( InvocationOnMock invocation ) throws Throwable
+                    {
+                        Long id = (Long) invocation.getArguments()[0];
+                        Long startNode = (Long) invocation.getArguments()[1];
+                        Integer type = (Integer) invocation.getArguments()[2];
+                        Long endNode = (Long) invocation.getArguments()[3];
+                        return new RelationshipProxy( relActions, id, startNode, type, endNode );
+                    }
+                } );
 
         GraphDatabaseService gds = mock( GraphDatabaseService.class );
 
         when(gds.getRelationshipById( REL_ID )).thenReturn( mock( Relationship.class ) );
         when(gds.getRelationshipById( REL_ID + 1)).thenReturn( mock(Relationship.class) );
-        when( nodeLookup.getGraphDatabase() ).thenReturn( gds );
+        when( nodeActions.getGraphDatabase() ).thenReturn( gds );
 
-        NodeProxy nodeImpl = new NodeProxy( 1, nodeLookup, mock( RelationshipProxy.RelationshipLookups.class),
-                stmCtxBridge );
+        NodeProxy nodeImpl = new NodeProxy( nodeActions, 1 );
 
         Statement stmt = mock( Statement.class );
         ReadOperations readOps = mock( ReadOperations.class );
 
-        when(stmt.readOperations()).thenReturn( readOps );
-        when( stmCtxBridge.instance() ).thenReturn( stmt );
+        when( stmt.readOperations() ).thenReturn( readOps );
+        when( nodeActions.statement() ).thenReturn( stmt );
         when( readOps.relationshipTypeGetForName( loves.name() ) ).thenReturn( 2 );
 
-        when(readOps.nodeGetRelationships( 1, Direction.OUTGOING, 2 )).thenReturn( iterator(relIds) );
+        when( readOps.nodeGetRelationships( eq( 1L ), eq( Direction.OUTGOING ), eq( new int[]{2} ),
+                                            any( RelationshipVisitor.class ) ) ).thenAnswer( new Answer<Cursor>()
+        {
+            @Override
+            public Cursor answer( InvocationOnMock invocation ) throws Throwable
+            {
+                Object[] arguments = invocation.getArguments();
+                @SuppressWarnings("unchecked")
+                final RelationshipVisitor<RuntimeException> visitor =
+                        (RelationshipVisitor) arguments[arguments.length - 1];
+                return new Cursor()
+                {
+                    int pos;
+
+                    @Override
+                    public boolean next()
+                    {
+                        if ( pos < relIds.length )
+                        {
+                            long relId = relIds[pos++];
+                            visitor.visit( relId, 2, 1, 10 * relId + 2 );
+                            return true;
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    }
+
+                    @Override
+                    public void reset()
+                    {
+                        throw new UnsupportedOperationException( "not implemented" );
+                    }
+
+                    @Override
+                    public void close()
+                    {
+                    }
+                };
+            }
+        } );
         return nodeImpl;
     }
 }

@@ -141,4 +141,13 @@ public interface EntityReadOperations
                      /* Outputs */ NeoRegister.Relationship.Out relId, NeoRegister.RelType.Out relType,
                      Register.Object.Out<Direction> direction,
                      NeoRegister.Node.Out startNodeId, NeoRegister.Node.Out neighborNodeId );
+
+
+    Cursor nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction,
+                                 RelationshipVisitor<? extends RuntimeException> visitor )
+            throws EntityNotFoundException;
+
+    Cursor nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction, int[] types,
+                                 RelationshipVisitor<? extends RuntimeException> visitor )
+            throws EntityNotFoundException;
 }

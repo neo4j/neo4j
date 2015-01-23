@@ -401,4 +401,20 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
         return entityReadOperations.expand( statement, inputCursor, nodeId, types, expandDirection,
                 relId, relType, direction, startNodeId, neighborNodeId );
     }
+
+    @Override
+    public Cursor nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction,
+                                        RelationshipVisitor<? extends RuntimeException> visitor )
+            throws EntityNotFoundException
+    {
+        return entityReadOperations.nodeGetRelationships( statement, nodeId, direction, visitor );
+    }
+
+    @Override
+    public Cursor nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction, int[] types,
+                                        RelationshipVisitor<? extends RuntimeException> visitor )
+            throws EntityNotFoundException
+    {
+        return entityReadOperations.nodeGetRelationships( statement, nodeId, direction, types, visitor );
+    }
 }
