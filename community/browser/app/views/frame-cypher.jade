@@ -35,12 +35,13 @@ div(ng-controller="CypherResultCtrl", fullscreen)
                     include partials/inspector
 
           .view-result-table.result(ng-show='isActive("table")')
-            neo-table(table-data='frame.response.table', ng-show='isAvailable("table")')
-            article.help.no-data(ng-show='!isAvailable("table")')
-              p No rows returned.
-          .status-bar(ng-show='isActive("table") && isAvailable("table")')
-            .status
-              include partials/result-status
+            .table-holder
+              neo-table(table-data='frame.response.table', ng-show='isAvailable("table")')
+              article.help.no-data(ng-show='!isAvailable("table")')
+                p No rows returned.
+            .status-bar
+              .status
+                include partials/result-status
 
 
           .view-result-error.result(ng-show='frame.hasErrors')

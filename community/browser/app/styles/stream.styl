@@ -166,8 +166,11 @@
         .view-result-table
           position: relative
           overflow-y: auto
-          max-height: 464px
+          max-height: 503px
           min-height: frame-min-height
+          .table-holder
+            height: (503 - middlebar-height)
+            overflow: auto
           a.fa-download
             absolute: top 8px right horizontal-padding*2+20
             font-size: 24px
