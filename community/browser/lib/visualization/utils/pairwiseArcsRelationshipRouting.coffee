@@ -31,30 +31,10 @@ class neo.utils.pairwiseArcsRelationshipRouting
         return [shortCaption, width]
 
   layoutRelationships: (graph) ->
-    groupedRelationships = {}
+    for nodePair in graph.groupedRelationships()
+      for relationship in nodePair.relationships
+        delete relationship.arrow
 
-    class NodePair
-
-      constructor: (node1, node2) ->
-        @relationships = []
-        if node1.id < node2.id
-          @nodeA = node1
-          @nodeB = node2
-        else
-          @nodeA = node2
-          @nodeB = node1
-
-      toString: ->
-        "#{@nodeA.id}:#{@nodeB.id}"
-
-    for relationship in graph.relationships()
-      delete relationship.arrow
-      nodePair = new NodePair(relationship.source, relationship.target)
-      nodePair = groupedRelationships[nodePair] or nodePair
-      nodePair.relationships.push relationship
-      groupedRelationships[nodePair] = nodePair
-
-    for ignored, nodePair of groupedRelationships
       middleRelationshipIndex = (nodePair.relationships.length - 1) / 2
 
       for relationship, i in nodePair.relationships
