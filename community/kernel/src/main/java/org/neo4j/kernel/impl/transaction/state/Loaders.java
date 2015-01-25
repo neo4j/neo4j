@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.TokenStore;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -51,8 +52,8 @@ public class Loaders
             @Override
             public NodeRecord newUnused( Long key, Void additionalData )
             {
-                return new NodeRecord( key, false, Record.NO_NEXT_RELATIONSHIP.intValue(),
-                        Record.NO_NEXT_PROPERTY.intValue() );
+                return andMarkAsCreated( new NodeRecord( key, false, Record.NO_NEXT_RELATIONSHIP.intValue(),
+                        Record.NO_NEXT_PROPERTY.intValue() ) );
             }
 
             @Override
@@ -84,7 +85,7 @@ public class Loaders
             {
                 PropertyRecord record = new PropertyRecord( key );
                 setOwner( record, additionalData );
-                return record;
+                return andMarkAsCreated( record );
             }
 
             private void setOwner( PropertyRecord record, PrimitiveRecord owner )
@@ -127,7 +128,7 @@ public class Loaders
             @Override
             public RelationshipRecord newUnused( Long key, Void additionalData )
             {
-                return new RelationshipRecord( key );
+                return andMarkAsCreated( new RelationshipRecord( key ) );
             }
 
             @Override
@@ -157,7 +158,7 @@ public class Loaders
             @Override
             public RelationshipGroupRecord newUnused( Long key, Integer type )
             {
-                return new RelationshipGroupRecord( key, type );
+                return andMarkAsCreated( new RelationshipGroupRecord( key, type ) );
             }
 
             @Override
@@ -184,19 +185,20 @@ public class Loaders
         return new Loader<Long, Collection<DynamicRecord>, SchemaRule>()
         {
             @Override
-            public Collection<DynamicRecord> newUnused(Long key, SchemaRule additionalData)
+            public Collection<DynamicRecord> newUnused(Long key, SchemaRule additionalData )
             {
-                return store.allocateFrom(additionalData);
+                // Don't blindly mark as created here since some records may be reused.
+                return store.allocateFrom( additionalData );
             }
 
             @Override
-            public Collection<DynamicRecord> load(Long key, SchemaRule additionalData)
+            public Collection<DynamicRecord> load(Long key, SchemaRule additionalData )
             {
                 return store.getRecords( key );
             }
 
             @Override
-            public void ensureHeavy(Collection<DynamicRecord> dynamicRecords)
+            public void ensureHeavy(Collection<DynamicRecord> dynamicRecords )
             {
                 for ( DynamicRecord record : dynamicRecords)
                 {
@@ -205,9 +207,10 @@ public class Loaders
             }
 
             @Override
-            public Collection<DynamicRecord> clone(Collection<DynamicRecord> dynamicRecords) {
+            public Collection<DynamicRecord> clone( Collection<DynamicRecord> dynamicRecords )
+            {
                 Collection<DynamicRecord> list = new ArrayList<>( dynamicRecords.size() );
-                for ( DynamicRecord record : dynamicRecords)
+                for ( DynamicRecord record : dynamicRecords )
                 {
                     list.add( record.clone() );
                 }
@@ -224,7 +227,7 @@ public class Loaders
             @Override
             public PropertyKeyTokenRecord newUnused( Integer key, Void additionalData )
             {
-                return new PropertyKeyTokenRecord( key );
+                return andMarkAsCreated( new PropertyKeyTokenRecord( key ) );
             }
 
             @Override
@@ -255,7 +258,7 @@ public class Loaders
             @Override
             public LabelTokenRecord newUnused( Integer key, Void additionalData )
             {
-                return new LabelTokenRecord( key );
+                return andMarkAsCreated( new LabelTokenRecord( key ) );
             }
 
             @Override
@@ -286,7 +289,7 @@ public class Loaders
             @Override
             public RelationshipTypeTokenRecord newUnused( Integer key, Void additionalData )
             {
-                return new RelationshipTypeTokenRecord( key );
+                return andMarkAsCreated( new RelationshipTypeTokenRecord( key ) );
             }
 
             @Override
@@ -307,5 +310,11 @@ public class Loaders
                 throw new UnsupportedOperationException();
             }
         };
+    }
+
+    protected static <RECORD extends AbstractBaseRecord> RECORD andMarkAsCreated( RECORD record )
+    {
+        record.setCreated();
+        return record;
     }
 }
