@@ -69,7 +69,7 @@ angular.module('neo4jApp.controllers')
 
       $rootScope.$on 'layout.changed', (-> graphView?.resize())
 
-      $scope.$on('export.svg', ->
+      $scope.$on('export.graph.svg', ->
         svg = d3.select(document.createElementNS('http://www.w3.org/2000/svg', 'svg'))
         svg.append('title').text('Neo4j Graph Visualization')
         svg.append('desc').text('Created using Neo4j (http://www.neo4j.com/)')

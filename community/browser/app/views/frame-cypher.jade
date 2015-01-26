@@ -11,6 +11,10 @@ div(ng-controller="CypherResultCtrl", fullscreen)
           button.btn(ng-class='{active: isActive("table")}', ng-click='setActive("table")')
             i.fa.fa-table
             span.mini-menu-item-text Rows
+          br
+          button.btn(ng-show='isAvailable("plan")', ng-class='{active: isActive("plan")}', ng-click='setActive("plan")')
+            i.fa.fa-code-fork
+            span.mini-menu-item-text Plan
     .right-inner-frame.no-indicator(ng-class='{"no-left-menu": frame.type != "cypher" || availableModes.length < 1}')
       .inner
         .view-result(ng-class='{error: frame.hasErrors}')
@@ -48,6 +52,16 @@ div(ng-controller="CypherResultCtrl", fullscreen)
               .status
                 include partials/result-status
 
+          .view-result-plan.result(ng-show='isActive("plan")')
+            .plan-holder
+              article.help.no-data.has-status-bar(ng-show='!isAvailable("plan")')
+                p No plan found. Prepend your query with EXPLAIN or PROFILE to analyze the execution plan.
+              .query-plan-contents(ng-show='isAvailable("plan")')
+                svg.query-plan(neo-plan
+                  query-plan='frame.response.table._response.plan')
+            .status-bar
+              .status
+                include partials/plan-status
 
           .view-result-error.result(ng-show='frame.hasErrors')
             pre(ng-bind="frame.detailedErrorText")

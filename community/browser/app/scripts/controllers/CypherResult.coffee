@@ -32,9 +32,15 @@ angular.module('neo4jApp.controllers')
       $scope.availableModes = []
       $scope.availableModes.push('graph') if resp.table.nodes.length
       $scope.availableModes.push('table') if resp.table.size?
+      $scope.availableModes.push('plan') if resp.table._response.plan
 
       # Initialise tab state from user selected if any
       $scope.tab = $rootScope.stickyTab
+
+      # Always pre-select the plan tab if available
+      if $scope.isAvailable('plan')
+        $scope.tab = 'plan'
+
       # Otherwise try to detect the best mode
       if not $scope.tab?
         $scope.tab = $scope.availableModes[0] || 'table'
@@ -80,10 +86,31 @@ angular.module('neo4jApp.controllers')
         joinedMessages = messages.join(', ')
         "#{joinedMessages.substring(0, 1).toUpperCase()}#{joinedMessages.substring(1)}."
 
+    $scope.planStatistics = (frame) ->
+      if frame?.response?.table?._response.plan?
+        root = frame.response.table._response.plan.root
+        collectHits = (operator) ->
+          hits = operator.DbHits ? 0
+          if operator.children
+            for child in operator.children
+              hits += collectHits(child)
+          hits
+
+        message = "Cypher version: #{root.version}, planner: #{root.planner}."
+        if collectHits(root)
+          message += " #{collectHits(root)} total db hits in #{frame.runTime} ms."
+        message
+
     # Listen for export events bubbling up the controller hierarchy
     # and forward them down to the child controller that has access to
     # the required SVG elements.
-    $scope.$on('frame.export.svg', ->
-      $scope.$broadcast('export.svg')
+    $scope.$on('frame.export.graph.svg', ->
+      console.log 'frame.export.graph.svg'
+      $scope.$broadcast('export.graph.svg')
+    )
+
+    $scope.$on('frame.export.plan.svg', ->
+      console.log 'frame.export.plan.svg'
+      $scope.$broadcast('export.plan.svg')
     )
   ]
