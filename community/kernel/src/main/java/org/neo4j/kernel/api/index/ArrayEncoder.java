@@ -19,17 +19,33 @@
  */
 package org.neo4j.kernel.api.index;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.reflect.Array;
 
-import sun.misc.BASE64Decoder;
 import sun.misc.BASE64Encoder;
 
 import org.neo4j.kernel.impl.util.Charsets;
 
 public class ArrayEncoder
 {
-    private static final BASE64Encoder base64Encoder = new BASE64Encoder();
-    private static final BASE64Decoder base64Decoder = new BASE64Decoder();
+    private static final byte[] LINE_ENDING = System.lineSeparator().getBytes();
+    private static final BASE64Encoder base64Encoder = new BASE64Encoder()
+    {
+        @Override
+        protected void encodeBufferPrefix( OutputStream out ) throws IOException
+        {
+            // don't initialize the non-thread-safe state
+        }
+
+        @Override
+        protected void encodeLineSuffix( OutputStream out ) throws IOException
+        {
+            // don't use the non-thread-safe state, instead do the same thing in a thread safe way,
+            // although, this still makes the encoded value platform dependant...
+            out.write( LINE_ENDING );
+        }
+    };
 
     public static String encode( Object array )
     {
