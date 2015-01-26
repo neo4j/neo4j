@@ -77,7 +77,7 @@ public class ImportTool
         STORE_DIR( "into", "<store-dir>", "Database directory to import into. " + "Must not contain existing database." ),
         NODE_DATA(
                 "nodes",
-                "\"<file1>" + MULTI_FILE_DELIMITER + "<file2>" + MULTI_FILE_DELIMITER + "...\"",
+                "[:Label1:Label2] \"<file1>" + MULTI_FILE_DELIMITER + "<file2>" + MULTI_FILE_DELIMITER + "...\"",
                 "Node CSV header and data. Multiple files will be logically seen as one big file "
                         + "from the perspective of the importer. "
                         + "The first line must contain the header. "
@@ -86,18 +86,20 @@ public class ImportTool
                         + "Note that file groups must be enclosed in quotation marks." ),
         RELATIONSHIP_DATA(
                 "relationships",
-                "\"<file1>" + MULTI_FILE_DELIMITER + "<file2>" + MULTI_FILE_DELIMITER + "...\"",
+                "[:REL_TYPE_1:REL_TYPE_2] \"<file1>" + MULTI_FILE_DELIMITER + "<file2>" +
+                MULTI_FILE_DELIMITER + "...\"",
                 "Relationship CSV header and data. Multiple files will be logically seen as one big file "
                         + "from the perspective of the importer. "
                         + "The first line must contain the header. "
                         + "Multiple data sources like these can be specified in one import, "
                         + "where each data source has its own header. "
                         + "Note that file groups must be enclosed in quotation marks." ),
-        DELIMITER( "delimiter", "<delimiter-character>", "Delimiter character, or 'TAB', between values in CSV data." ),
+        DELIMITER( "delimiter", "<delimiter-character>", "Delimiter character, or 'TAB', between values in CSV data. The default option is `" + COMMAS.delimiter() + "`." ),
         ARRAY_DELIMITER( "array-delimiter", "<array-delimiter-character>",
-                "Delimiter character, or 'TAB', between array elements within a value in CSV data." ),
+                "Delimiter character, or 'TAB', between array elements within a value in CSV data. The default option is `" + COMMAS.arrayDelimiter() + "`." ),
         QUOTE( "quote", "<quotation-character>",
                 "Character to treat as quotation character for values in CSV data. "
+                        + "The default option is `" + COMMAS.quotationCharacter() + "`. "
                         + "Quotes inside quotes escaped like `\"\"\"Go away\"\", he said.\"` and "
                         + "`\"\\\"Go away\\\", he said.\"` are supported. "
                         + "If you have set \"`'`\" to be used as the quotation character, "
@@ -108,7 +110,7 @@ public class ImportTool
                         + "input files are treated.\n"
                         + IdType.STRING + ": arbitrary strings for identifying nodes.\n"
                         + IdType.INTEGER + ": arbitrary integer values for identifying nodes.\n"
-                        + IdType.ACTUAL + ": (advanced) actual node ids." ),
+                        + IdType.ACTUAL + ": (advanced) actual node ids. The default option is `" + IdType.STRING  + "`." ),
         PROCESSORS( "processors", "<max processor count>",
                 "(advanced) Max number of processors used by the importer. Defaults to the number of "
                         + "available processors reported by the JVM"

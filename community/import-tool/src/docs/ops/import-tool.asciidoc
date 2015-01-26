@@ -3,24 +3,33 @@
 
 The import tool is used to create a new Neo4j database from data in CSV files.
 
-This chapter will give the details on the format of the input data together with an example.
+This chapter explains how to use the tool, format the input data and concludes with an example bringing everything together.
 
-* Fields default to be comma separated, but a different delimiter can be specified.
+These are some things you'll need to keep in mind when creating your input files:
+
+* Fields are comma separated by default but a different delimiter can be specified.
 * All files must use the same delimiter.
 * Multiple data sources can be used for both nodes and relationships.
 * A data source can optionally be provided using multiple files.
 * A header which provides information on the data fields must be on the first row of each data source.
 * Fields without corresponding information in the header will not be read.
 * UTF-8 encoding is used.
-* Indexes are not created during the import.
-  Instead, add the indexes afterwards (see <<graphdb-neo4j-schema-indexes>>).
+
+[TIP]
+Indexes are not created during the import.
+Instead you'll need to add indexes afterwards (see <<graphdb-neo4j-schema-indexes>>).
 
 [NOTE]
-Data cannot be imported into an existing database.
-If that is what you want to do, see <<batchinsert>>.
+--
+Data cannot be imported into an existing database using this tool.
 
-[[import-too-header-format]]
-== Header format
+* If you want to load small to medium sized CSV files see <<query-load-csv>>.
+* If you want to bulk import into an existing database see <<batchinsert>>.
+--
+
+
+[[import-tool-header-format]]
+== CSV file Header format
 
 The header row of each data source specifies how the fields should be interpreted.
 The same delimiter is used for the header row as for the rest of the data.
@@ -38,7 +47,7 @@ IGNORE::
 
 See below for the specifics of node and relationship data source headers.
 
-[[import-too-header-format-nodes]]
+[[import-tool-header-format-nodes]]
 === Nodes
 
 The following field types do additionally apply to node data sources:
@@ -51,7 +60,7 @@ LABEL::
   Read one or more labels from this field.
   For multiple labels, the values are separated by the array delimiter.
 
-[[import-too-header-format-rels]]
+[[import-tool-header-format-rels]]
 === Relationships
 
 For relationship data sources, there's three mandatory fields:
@@ -62,6 +71,15 @@ START_ID::
   The id of the start node of the relationship to create.
 END_ID::
   The id of the end node of the relationship to create.
+
+=== ID Spaces
+
+The import tool assumes that node identifiers are unique across node files.
+If this isn't the case then we can define an `id space`.
+Id spaces are defined in the `ID` field of node files.
+
+For example, to specify the `Person` id space we would use the field type `ID(Person)` in our persons node file.
+We also need to reference that id space in our relationships file i.e. `START_ID(Person)` or `END_ID(Person)`.
 
 [[import-tool-usage]]
 == Command Line Usage
@@ -85,12 +103,15 @@ include::../man/options.adoc[]
 === Basic Import Tool Example
 
 Let's look at an example.
-We'll use a tiny data set with movies, actors and roles.
+We'll use a data set containing movies, actors and roles.
 
-First off, let's look at the movies.
-Each movie has an id, which is used to refer to it in other data sources.
-Then it always has a title and a year.
-We also add labels to the nodes, in this case we use the labels `Movie` and `Sequel`.
+First we'll look at the movies.
+Each movie has an id, which is used to refer to it in other data sources, a title and a year
+Along with these properties we'll also add the node labels `Movie` and `Sequel`.
+
+[TIP]
+While you'll usually want to store your node identifier as a property on the node for looking it up later, it's not mandatory.
+If you don't want the identifier to be persisted then don't specify a name in the `:ID` field.
 
 .movies.csv
 [source]
@@ -99,7 +120,7 @@ include::movies.csv[]
 ----
 
 Next up are the actors.
-They have an id, a name and all have the `Actor` label.
+They have an id and a name and all have the `Actor` label.
 
 .actors.csv
 [source]
@@ -107,9 +128,9 @@ They have an id, a name and all have the `Actor` label.
 include::actors.csv[]
 ----
 
-Finally we have the roles, which are represented by relationships in the database.
-Here we refer to the ids used in the other data sources, which happens in the `START_ID` and `END_ID` fields.
-At the end of each row, we have put the relationship type to use.
+Finally we have the roles that an actor plays in a movie which will be represented by relationships in the database.
+In order to create a relationship between nodes we refer to the ids used in `actors.csv` and `movies.csv` in the `START_ID` and `END_ID` fields.
+We also need to provide a relationship type (in this case `ACTS_IN`) in the `:TYPE` field.
 
 .roles.csv
 [source]
@@ -124,25 +145,17 @@ With all data in place, we execute the following command:
 include::example-command.adoc[]
 ----
 
-Now we're ready to start up a database from the target directory.
-With the database running, we could add indexes.
-See <<cypherdoc-labels-constraints-and-indexes>> for how to do that.
+We're now ready to start up a database from the target directory. (see <<server-installation>>)
 
-[[import-tool-separate-headers-example]]
-=== Using Separate Header Files
+Once we've got the database up and running we can add appropriate indexes. (see <<cypherdoc-labels-constraints-and-indexes>>.)
 
-It can be convenient to put the header in a separate file.
-This makes it easier to edit the header, as you avoid having to open a huge data file to just change the header.
+[TIP]
+It is possible to import only nodes using the import tool - just don't specify a relationships file when calling `neo4j-import`.
 
-We'll use the same data as in the previous example, but put the headers in separate files.
-This time the field delimiter character is altered, as well as the array-delimiter character and the quotation character.
-See the command below for the details!
+=== Customizing configuration options
 
-.movies2-header.csv
-[source]
-----
-include::movies2-header.csv[]
-----
+We can customize the configuration options that the import tool uses (see <<import-tool-options>>) if our data doesn't fit the default format.
+The following CSV files are delimited by `;`,  use `|` as their array delimiter and use `'` for quotes.
 
 .movies2.csv
 [source]
@@ -150,27 +163,66 @@ include::movies2-header.csv[]
 include::movies2.csv[]
 ----
 
-.actors2-header.csv
-[source]
-----
-include::actors2-header.csv[]
-----
 .actors2.csv
 [source]
 ----
 include::actors2.csv[]
 ----
 
-.roles2-header.csv
-[source]
-----
-include::roles2-header.csv[]
-----
-
 .roles2.csv
 [source]
 ----
 include::roles2.csv[]
+----
+
+We can then import these files with the following command line options:
+
+[source]
+----
+include::custom-delimiter-quotation-command.adoc[]
+----
+
+[[import-tool-separate-headers-example]]
+=== Using Separate Header Files
+
+When dealing with very large CSV files it's more convenient to have the header in a separate file.
+This makes it easier to edit the header as you avoid having to open a huge data file just to change it.
+
+We'll use the same data as in the previous example but put the headers in separate files.
+
+.movies3-header.csv
+[source]
+----
+include::movies3-header.csv[]
+----
+
+.movies3.csv
+[source]
+----
+include::movies3.csv[]
+----
+
+.actors3-header.csv
+[source]
+----
+include::actors3-header.csv[]
+----
+.actors3.csv
+[source]
+----
+include::actors3.csv[]
+----
+
+.roles3-header.csv
+[source]
+----
+include::roles3-header.csv[]
+----
+
+.roles3.csv
+[source]
+----
+include::roles3.csv[]
 ----
 
 Note how the file groups are enclosed in quotation marks in the command:
@@ -180,4 +232,182 @@ Note how the file groups are enclosed in quotation marks in the command:
 include::separate-header-example-command.adoc[]
 ----
 
+[[import-tool-multiple-input-files]]
+=== Multiple input files
 
+As well as using a separate header file you can also provide multiple nodes or relationships files.
+This may be useful when processing the output from a Hadoop pipeline for example.
+
+.movies4-header.csv
+[source]
+----
+include::movies4-header.csv[]
+----
+
+.movies4-part1.csv
+[source]
+----
+include::movies4-part1.csv[]
+----
+
+.movies4-part2.csv
+[source]
+----
+include::movies4-part2.csv[]
+----
+
+.actors4-header.csv
+[source]
+----
+include::actors4-header.csv[]
+----
+
+.actors4-part1.csv
+[source]
+----
+include::actors4-part1.csv[]
+----
+
+.actors4-part2.csv
+[source]
+----
+include::actors4-part2.csv[]
+----
+
+.roles4-header.csv
+[source]
+----
+include::roles4-header.csv[]
+----
+
+.roles4-part1.csv
+[source]
+----
+include::roles4-part1.csv[]
+----
+
+.roles4-part2.csv
+[source]
+----
+include::roles4-part2.csv[]
+----
+
+The call to `neo4j-import` would look like this:
+
+[source]
+----
+include::multiple-input-files.adoc[]
+----
+
+[[import-tool-same-label-for-every-node]]
+=== Using the same label for every node
+
+If you want to use the same node label(s) for every node in your nodes file you can do this by specifying the appropriate value as an option to `neo4j-import`.
+In this example we'll put the label `Movie` on every node specified in `movies5.csv`:
+
+.movies5.csv
+[source]
+----
+include::movies5.csv[]
+----
+
+[TIP]
+There's then no need to specify the `:LABEL` field in the node file if you pass it as a command line option.
+
+And we'll put the labels `Movie` and `Sequel` on the nodes specified in `sequels5.csv`.
+
+.sequels5.csv
+[source]
+----
+include::sequels5.csv[]
+----
+
+.actors5.csv
+[source]
+----
+include::actors5.csv[]
+----
+
+.roles5.csv
+[source]
+----
+include::roles5.csv[]
+----
+
+The call to `neo4j-import` would look like this:
+
+[source]
+----
+include::same-node-label-everywhere.adoc[]
+----
+
+[[import-tool-same-relationship-type-for-every-relationship]]
+=== Using the same relationship type for every relationship
+
+If you want to use the same relationship type for every relationship in your relationships file you can do this by
+specifying
+the
+appropriate value as an option to `neo4j-import`.
+In this example we'll put the relationship type `ACTS_IN` on every relationship specified in `roles6.csv`:
+
+.movies6.csv
+[source]
+----
+include::movies6.csv[]
+----
+
+.actors6.csv
+[source]
+----
+include::actors6.csv[]
+----
+
+.roles6.csv
+[source]
+----
+include::roles6.csv[]
+----
+
+The call to `neo4j-import` would look like this:
+
+[source]
+----
+include::same-relationship-type-everywhere.adoc[]
+----
+
+[[import-tool-working-with-sequential-ids]]
+=== Working with sequential or auto incrementing identifiers
+
+The import tool makes the assumption that identifiers are unique across node files.
+This may not be the case for data sets which use sequential or auto incremented primary keys.
+For those data sets we can define an `id space` in which our identifier is unique.
+
+For example if movies and people both use sequential identifiers then we would define `Movie` and `Actor` id spaces.
+
+.movies7.csv
+[source]
+----
+include::movies7.csv[]
+----
+
+.actors7.csv
+[source]
+----
+include::actors7.csv[]
+----
+
+We also need to reference the appropriate id space in our relationships file so it knows which nodes to connect
+together:
+
+.roles7.csv
+[source]
+----
+include::roles7.csv[]
+----
+
+The command line arguments would remain the same as before:
+
+[source]
+----
+include::id-spaces.adoc[]
+----

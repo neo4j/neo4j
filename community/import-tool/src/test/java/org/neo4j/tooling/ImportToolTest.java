@@ -117,8 +117,8 @@ public class ImportToolTest
                     nodeData( false, config, nodeIds, lines( 0, NODE_COUNT/2 ) ).getAbsolutePath(),
                 "--nodes", // One group with two data files, where the header sits in the first file
                     nodeData( true, config, nodeIds,
-                              lines( NODE_COUNT/2, NODE_COUNT*3/4 ) ).getAbsolutePath() + MULTI_FILE_DELIMITER +
-                    nodeData( false, config, nodeIds, lines( NODE_COUNT*3/4, NODE_COUNT ) ).getAbsolutePath(),
+                            lines( NODE_COUNT / 2, NODE_COUNT * 3 / 4 ) ).getAbsolutePath() + MULTI_FILE_DELIMITER +
+                    nodeData( false, config, nodeIds, lines( NODE_COUNT * 3 / 4, NODE_COUNT ) ).getAbsolutePath(),
                 "--relationships",
                     relationshipHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
                     relationshipData( false, config, nodeIds, alwaysTrue() ).getAbsolutePath() ) );
@@ -233,16 +233,23 @@ public class ImportToolTest
         String groupTwo = "Movie";
 
         // WHEN
-        ImportTool.main( arguments(
-                "--into",          directory.absolutePath(),
-                "--nodes",         nodeHeader( config, groupOne ) + MULTI_FILE_DELIMITER +
-                                   nodeData( false, config, groupOneNodeIds, alwaysTrue() ),
-                "--nodes",         nodeHeader( config, groupTwo ) + MULTI_FILE_DELIMITER +
-                                   nodeData( false, config, groupTwoNodeIds, alwaysTrue() ),
+        String[] args = arguments(
+                "--into", directory.absolutePath(),
+                "--nodes", nodeHeader( config, groupOne ) + MULTI_FILE_DELIMITER +
+                           nodeData( false, config, groupOneNodeIds, alwaysTrue() ),
+                "--nodes", nodeHeader( config, groupTwo ) + MULTI_FILE_DELIMITER +
+                           nodeData( false, config, groupTwoNodeIds, alwaysTrue() ),
                 "--relationships", relationshipHeader( config, groupOne, groupTwo, true ) + MULTI_FILE_DELIMITER +
                                    relationshipData( false, config, rels.iterator(), alwaysTrue(), true )
 
-                ) );
+        );
+
+        for ( String arg : args )
+        {
+            System.out.println(arg);
+        }
+
+        ImportTool.main( args );
 
         // THEN
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
