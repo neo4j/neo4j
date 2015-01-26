@@ -73,24 +73,25 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
     private final IndexingService indexingService;
     private final NodeStore nodeStore;
     private final PropertyStore propertyStore;
-    private final LabelScanStore labelScanStore;
     private final CacheAccessBackDoor cacheAccess;
     private final PropertyLoader propertyLoader;
     private final long transactionId;
     private final TransactionApplicationMode mode;
+    private final WorkSync<LabelScanStore,LabelUpdateWork> labelScanStoreSync;
 
-    public IndexTransactionApplier( IndexingService indexingService, LabelScanStore labelScanStore,
+    public IndexTransactionApplier( IndexingService indexingService,
                                     NodeStore nodeStore, PropertyStore propertyStore, CacheAccessBackDoor cacheAccess,
-                                    PropertyLoader propertyLoader, long transactionId, TransactionApplicationMode mode )
+                                    PropertyLoader propertyLoader, long transactionId, TransactionApplicationMode mode,
+                                    WorkSync<LabelScanStore,LabelUpdateWork> labelScanStoreSync )
     {
         this.indexingService = indexingService;
-        this.labelScanStore = labelScanStore;
         this.nodeStore = nodeStore;
         this.propertyStore = propertyStore;
         this.cacheAccess = cacheAccess;
         this.propertyLoader = propertyLoader;
         this.transactionId = transactionId;
         this.mode = mode;
+        this.labelScanStoreSync = labelScanStoreSync;
     }
 
     @Override
@@ -122,11 +123,46 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
 
     private void updateLabelScanStore()
     {
-        Collections.sort( labelUpdates, nodeLabelUpdateComparator );
+        labelScanStoreSync.apply(
+                new LabelUpdateWork( new ArrayList<>( labelUpdates ) ) );
 
-        // We only allow a single writer at the time to update the label scan store
-        synchronized ( labelScanStore )
+//        // We only allow a single writer at the time to update the label scan store
+//        synchronized ( labelScanStore )
+//        {
+//            try ( LabelScanWriter writer = labelScanStore.newWriter() )
+//            {
+//                for ( NodeLabelUpdate update : labelUpdates )
+//                {
+//                    writer.write( update );
+//                }
+//            }
+//            catch ( IOException e )
+//            {
+//                throw new UnderlyingStorageException( e );
+//            }
+//        }
+    }
+
+    public static class LabelUpdateWork implements WorkSync.CombinableWork<LabelScanStore,LabelUpdateWork>
+    {
+        private final List<NodeLabelUpdate> labelUpdates;
+
+        public LabelUpdateWork( List<NodeLabelUpdate> labelUpdates )
         {
+            this.labelUpdates = labelUpdates;
+        }
+
+        @Override
+        public LabelUpdateWork combine( LabelUpdateWork work )
+        {
+            labelUpdates.addAll( work.labelUpdates );
+            return this;
+        }
+
+        @Override
+        public void apply( LabelScanStore labelScanStore )
+        {
+            Collections.sort( labelUpdates, nodeLabelUpdateComparator );
             try ( LabelScanWriter writer = labelScanStore.newWriter() )
             {
                 for ( NodeLabelUpdate update : labelUpdates )

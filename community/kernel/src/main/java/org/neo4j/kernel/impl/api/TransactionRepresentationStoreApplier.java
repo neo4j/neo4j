@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.transaction.command.HighIdTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.IndexTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.command.NeoStoreTransactionApplier;
+import org.neo4j.kernel.impl.transaction.command.WorkSync;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 
@@ -56,6 +57,8 @@ public class TransactionRepresentationStoreApplier
     private final PropertyLoader propertyLoader;
     private final IdOrderingQueue legacyIndexTransactionOrdering;
 
+    private final WorkSync<LabelScanStore,IndexTransactionApplier.LabelUpdateWork> labelScanStoreSync;
+
     public TransactionRepresentationStoreApplier(
             IndexingService indexingService, LabelScanStore labelScanStore, NeoStore neoStore,
             CacheAccessBackDoor cacheAccess, LockService lockService, ProviderLookup legacyIndexProviderLookup,
@@ -70,6 +73,7 @@ public class TransactionRepresentationStoreApplier
         this.indexConfigStore = indexConfigStore;
         this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
         this.propertyLoader = new PropertyLoader( neoStore );
+        labelScanStoreSync = new WorkSync<>( labelScanStore );
     }
 
     public void apply( TransactionRepresentation representation, LockGroup locks,
@@ -90,8 +94,8 @@ public class TransactionRepresentationStoreApplier
 
         // Schema index application
         IndexTransactionApplier indexApplier = new IndexTransactionApplier( indexingService,
-                labelScanStore, neoStore.getNodeStore(), neoStore.getPropertyStore(), cacheAccess,
-                propertyLoader, transactionId, mode );
+                neoStore.getNodeStore(), neoStore.getPropertyStore(), cacheAccess,
+                propertyLoader, transactionId, mode, labelScanStoreSync );
 
         // Legacy index application
         LegacyIndexApplier legacyIndexApplier = new LegacyIndexApplier( indexConfigStore,

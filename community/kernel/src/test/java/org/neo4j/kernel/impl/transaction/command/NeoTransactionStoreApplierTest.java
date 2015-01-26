@@ -97,6 +97,8 @@ public class NeoTransactionStoreApplierTest
     private final DynamicRecord one = DynamicRecord.dynamicRecord( 1, true );
     private final DynamicRecord two = DynamicRecord.dynamicRecord( 2, true );
     private final DynamicRecord three = DynamicRecord.dynamicRecord( 3, true );
+    private WorkSync<LabelScanStore,IndexTransactionApplier.LabelUpdateWork>
+            labelScanStoreSynchronizer = new WorkSync<>( labelScanStore );
 
     @Before
     public void setup()
@@ -571,8 +573,9 @@ public class NeoTransactionStoreApplierTest
     {
         // given
         final NeoCommandHandler applier = newApplier( false );
-        final NeoCommandHandler indexApplier = new IndexTransactionApplier( indexingService, labelScanStore,
-                nodeStore, propertyStore, cacheAccess, null, transactionId, TransactionApplicationMode.INTERNAL );
+        final NeoCommandHandler indexApplier = new IndexTransactionApplier( indexingService,
+                nodeStore, propertyStore, cacheAccess, null, transactionId, TransactionApplicationMode.INTERNAL,
+                labelScanStoreSynchronizer );
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         record.setCreated();
         final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
@@ -759,8 +762,8 @@ public class NeoTransactionStoreApplierTest
 
     private NeoCommandHandler newIndexApplier( TransactionApplicationMode mode )
     {
-        return new IndexTransactionApplier( indexingService, labelScanStore, nodeStore, propertyStore,
-                cacheAccess, null, transactionId, mode );
+        return new IndexTransactionApplier( indexingService, nodeStore, propertyStore,
+                cacheAccess, null, transactionId, mode, labelScanStoreSynchronizer );
     }
 
     @Test
