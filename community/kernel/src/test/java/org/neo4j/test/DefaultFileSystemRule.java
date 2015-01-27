@@ -22,7 +22,6 @@ package org.neo4j.test;
 import org.junit.rules.ExternalResource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 
 public class DefaultFileSystemRule extends ExternalResource
