@@ -25,12 +25,9 @@ import javax.ws.rs.core.Response;
 
 import org.junit.Ignore;
 import org.junit.Test;
-import org.neo4j.helpers.Clock;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
-import org.neo4j.server.security.auth.InMemoryUserRepository;
-import org.neo4j.server.security.auth.SecurityCentral;
 import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.test.server.EntityOutputFormat;
 
@@ -55,8 +52,8 @@ public class DiscoveryServiceTest
 
         String baseUri = "http://www.example.com";
         DiscoveryService ds = new DiscoveryService( mockConfig, new EntityOutputFormat( new JsonFormat(), new URI(
-                baseUri ), null ), new SecurityCentral( Clock.SYSTEM_CLOCK, new InMemoryUserRepository() ));
-        Response response = ds.getDiscoveryDocument("");
+                baseUri ), null ) );
+        Response response = ds.getDiscoveryDocument();
 
         String json = new String( (byte[]) response.getEntity() );
 
@@ -84,8 +81,8 @@ public class DiscoveryServiceTest
 
         String baseUri = "http://www.example.com";
         DiscoveryService ds = new DiscoveryService( mockConfig, new EntityOutputFormat( new JsonFormat(), new URI(
-                baseUri ), null ), new SecurityCentral( Clock.SYSTEM_CLOCK, new InMemoryUserRepository() ));
-        Response response = ds.getDiscoveryDocument("");
+                baseUri ), null ) );
+        Response response = ds.getDiscoveryDocument();
 
         String json = new String( (byte[]) response.getEntity() );
 
@@ -109,7 +106,7 @@ public class DiscoveryServiceTest
 
         String baseUri = "http://www.example.com:5435";
         DiscoveryService ds = new DiscoveryService( mockConfig, new EntityOutputFormat( new JsonFormat(), new URI(
-                baseUri ), null ), new SecurityCentral( Clock.SYSTEM_CLOCK, new InMemoryUserRepository() ));
+                baseUri ), null ) );
 
         Response response = ds.redirectToBrowser();
 

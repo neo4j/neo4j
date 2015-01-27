@@ -24,35 +24,30 @@ import com.sun.jersey.core.util.Base64;
 public class AuthorizationHeaders
 {
     /**
-     * Extract the encoded authorization token from a HTTP Authorization header value.
+     * Extract the encoded username and password from a HTTP Authorization header value.
      */
-    public static String extractToken(String authorizationHeader)
+    public static String[] decode( String authorizationHeader )
     {
-        if(authorizationHeader == null)
-        {
-            return "";
-        }
-
         String[] parts = authorizationHeader.trim().split( " " );
-        String tokenSegment = parts[parts.length-1];
+        String tokenSegment = parts[parts.length - 1];
 
-        if(tokenSegment.trim().length() == 0)
+        if ( tokenSegment.trim().length() == 0 )
         {
-            return "";
+            return null;
         }
 
         String decoded = Base64.base64Decode( tokenSegment );
-        if(decoded.length() < 1)
+        if ( decoded.length() < 1 )
         {
-            return "";
+            return null;
         }
 
-        String[] blankAndToken = decoded.split( ":" );
-        if(blankAndToken.length != 2)
+        String[] userAndPassword = decoded.split( ":", 2 );
+        if ( userAndPassword.length != 2 )
         {
-            return "";
+            return null;
         }
 
-        return blankAndToken[1];
+        return userAndPassword;
     }
 }

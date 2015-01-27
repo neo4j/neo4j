@@ -22,7 +22,6 @@ package org.neo4j.server.security.auth;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
-import org.neo4j.server.security.auth.exception.IllegalTokenException;
 import org.neo4j.server.security.auth.exception.IllegalUsernameException;
 
 /** A user repository implementation that just stores users in memory */
@@ -37,20 +36,7 @@ public class InMemoryUserRepository implements UserRepository
     }
 
     @Override
-    public User findByToken( String token )
-    {
-        for ( User user : users.values() )
-        {
-            if ( user.token().equals( token ) )
-            {
-                return user;
-            }
-        }
-        return null;
-    }
-
-    @Override
-    public void create( User user ) throws IllegalUsernameException, IllegalTokenException
+    public void create( User user ) throws IllegalUsernameException
     {
         synchronized (this)
         {
@@ -61,10 +47,6 @@ public class InMemoryUserRepository implements UserRepository
                 {
                     throw new IllegalUsernameException( "The specified user already exists" );
                 }
-                if ( other.token().equals( user.token() ) )
-                {
-                    throw new IllegalTokenException( "The specified token is already in use" );
-                }
             }
 
             users.put( user.name(), user );
@@ -72,7 +54,7 @@ public class InMemoryUserRepository implements UserRepository
     }
 
     @Override
-    public void update( User existingUser, User updatedUser ) throws IllegalTokenException, ConcurrentModificationException
+    public void update( User existingUser, User updatedUser ) throws ConcurrentModificationException
     {
         // Assert input is ok
         if ( !existingUser.name().equals( updatedUser.name() ) )
@@ -88,9 +70,6 @@ public class InMemoryUserRepository implements UserRepository
                 if ( other.equals( existingUser ) )
                 {
                     foundUser = true;
-                } else if ( other.token().equals( updatedUser.token() ) )
-                {
-                    throw new IllegalTokenException( "The specified token is already in use" );
                 }
             }
 
@@ -104,6 +83,15 @@ public class InMemoryUserRepository implements UserRepository
     }
 
     @Override
+    public boolean delete( User user )
+    {
+        synchronized (this)
+        {
+            return users.remove( user.name() ) != null;
+        }
+    }
+
+    @Override
     public int numberOfUsers()
     {
         return users.size();
@@ -113,13 +101,6 @@ public class InMemoryUserRepository implements UserRepository
     public boolean isValidName( String name )
     {
         // This repo can store any name
-        return true;
-    }
-
-    @Override
-    public boolean isValidToken( String token )
-    {
-        // This repo can store any token
         return true;
     }
 }

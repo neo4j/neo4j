@@ -19,44 +19,40 @@
  */
 package org.neo4j.server.modules;
 
-import java.util.List;
-
-import org.neo4j.server.rest.dbms.UserService;
-import org.neo4j.server.rest.discovery.DiscoveryService;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.Logging;
+import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.server.rest.dbms.AuthorizationFilter;
+import org.neo4j.server.security.auth.AuthManager;
 import org.neo4j.server.web.WebServer;
 
-import static org.neo4j.server.JAXRSHelper.listFrom;
-
-/**
- * Mounts the DBMS REST API.
- */
-public class DBMSModule implements ServerModule
+public class AuthorizationModule implements ServerModule
 {
-    private static final String ROOT_PATH = "/";
-
     private final WebServer webServer;
+    private final Config config;
+    private final AuthManager authManager;
+    private final ConsoleLogger log;
 
-    public DBMSModule( WebServer webServer )
+    public AuthorizationModule( WebServer webServer, AuthManager authManager, Config config, Logging logging )
     {
         this.webServer = webServer;
+        this.config = config;
+        this.authManager = authManager;
+        this.log = logging.getConsoleLog( getClass() );
     }
 
     @Override
     public void start()
     {
-        webServer.addJAXRSClasses( getClassNames(), ROOT_PATH, null );
-    }
-
-    private List<String> getClassNames()
-    {
-        return listFrom(
-                DiscoveryService.class.getName(),
-                UserService.class.getName());
+        if ( config.get( ServerSettings.authorization_enabled ) )
+        {
+            webServer.addFilter( new AuthorizationFilter( authManager, log ), "/*" );
+        }
     }
 
     @Override
     public void stop()
     {
-        webServer.removeJAXRSClasses( getClassNames(), ROOT_PATH );
     }
 }

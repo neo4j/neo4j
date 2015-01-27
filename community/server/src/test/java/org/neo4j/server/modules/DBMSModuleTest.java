@@ -24,9 +24,7 @@ import java.util.List;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.CommunityNeoServer;
-import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.test.Mute;
 
@@ -34,7 +32,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyCollection;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class DBMSModuleTest
 {
@@ -51,7 +48,7 @@ public class DBMSModuleTest
         when( neoServer.baseUri() ).thenReturn( new URI( "http://localhost:7575" ) );
         when( neoServer.getWebServer() ).thenReturn( webServer );
 
-        DBMSModule module = new DBMSModule(webServer, null, new Config(stringMap( ServerSettings.authorization_enabled.name(), "false" )) );
+        DBMSModule module = new DBMSModule( webServer );
 
         module.start();
 

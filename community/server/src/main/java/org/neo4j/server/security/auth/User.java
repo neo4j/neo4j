@@ -32,29 +32,16 @@ public class User
     /** User name */
     private final String name;
 
-    /** Currently valid user authorization token */
-    private final String token;
-
-    /** Privileges this user has */
-    private final Privileges privileges;
-
     /** Authentication credentials used by the built in username/password authentication scheme */
-    private final Credentials credentials;
+    private final Credential credential;
 
     /** Whether a password change is needed */
     private final boolean passwordChangeRequired;
 
-    public User( String name, String token, Privileges privileges )
-    {
-        this(name, token, privileges, Credentials.INACCESSIBLE, true );
-    }
-
-    public User(String name, String token, Privileges privileges, Credentials credentials, boolean passwordChangeRequired)
+    public User(String name, Credential credential, boolean passwordChangeRequired)
     {
         this.name = name;
-        this.token = token;
-        this.privileges = privileges;
-        this.credentials = credentials;
+        this.credential = credential;
         this.passwordChangeRequired = passwordChangeRequired;
     }
 
@@ -63,19 +50,9 @@ public class User
         return name;
     }
 
-    public String token()
+    public Credential credentials()
     {
-        return token;
-    }
-
-    public Privileges privileges()
-    {
-        return privileges;
-    }
-
-    public Credentials credentials()
-    {
-        return credentials;
+        return credential;
     }
 
     public boolean passwordChangeRequired() { return passwordChangeRequired; }
@@ -101,19 +78,11 @@ public class User
         {
             return false;
         }
-        if ( credentials != null ? !credentials.equals( user.credentials ) : user.credentials != null )
+        if ( credential != null ? !credential.equals( user.credential ) : user.credential != null )
         {
             return false;
         }
         if ( name != null ? !name.equals( user.name ) : user.name != null )
-        {
-            return false;
-        }
-        if ( privileges != null ? !privileges.equals( user.privileges ) : user.privileges != null )
-        {
-            return false;
-        }
-        if ( token != null ? !token.equals( user.token ) : user.token != null )
         {
             return false;
         }
@@ -125,9 +94,7 @@ public class User
     public int hashCode()
     {
         int result = name != null ? name.hashCode() : 0;
-        result = 31 * result + (token != null ? token.hashCode() : 0);
-        result = 31 * result + (privileges != null ? privileges.hashCode() : 0);
-        result = 31 * result + (credentials != null ? credentials.hashCode() : 0);
+        result = 31 * result + ( credential != null ? credential.hashCode() : 0);
         result = 31 * result + (passwordChangeRequired ? 1 : 0);
         return result;
     }
@@ -137,9 +104,7 @@ public class User
     {
         return "User{" +
                 "name='" + name + '\'' +
-                ", token='"+ token + '\'' +
-                ", privileges=" + privileges +
-                ", credentials=" + credentials +
+                ", credentials=" + credential +
                 ", passwordChangeRequired=" + passwordChangeRequired +
                 '}';
     }
@@ -147,9 +112,7 @@ public class User
     public static class Builder
     {
         private String name;
-        private String token;
-        private Privileges privileges = Privileges.NONE;
-        private Credentials credentials = Credentials.INACCESSIBLE;
+        private Credential credential = Credential.INACCESSIBLE;
         private boolean pwdChangeRequired;
 
         public Builder() { }
@@ -157,21 +120,17 @@ public class User
         public Builder( User base )
         {
             name = base.name;
-            token = base.token;
-            privileges = base.privileges;
-            credentials = base.credentials;
+            credential = base.credential;
             pwdChangeRequired = base.passwordChangeRequired;
         }
 
         public Builder withName( String name ) { this.name = name; return this; }
-        public Builder withToken( String token ) { this.token = token; return this; }
-        public Builder withPrivileges( Privileges privileges ) { this.privileges = privileges; return this; }
-        public Builder withCredentials( Credentials creds ) { this.credentials = creds; return this; }
+        public Builder withCredentials( Credential creds ) { this.credential = creds; return this; }
         public Builder withRequiredPasswordChange( boolean change ) { this.pwdChangeRequired = change; return this; }
 
         public User build()
         {
-            return new User(name, token, privileges, credentials, pwdChangeRequired );
+            return new User(name, credential, pwdChangeRequired );
         }
     }
 }

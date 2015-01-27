@@ -17,23 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.auth.exception;
+package org.neo4j.server.security.auth;
 
-import org.neo4j.kernel.api.exceptions.Status;
-
-public class IllegalTokenException extends Exception implements Status.HasStatus
+/**
+ * Strategy for determining if the credentials presented by a user are valid
+ */
+public interface AuthenticationStrategy
 {
-    private final Status status;
-
-    public IllegalTokenException( String message )
-    {
-        super(message);
-        this.status = Status.Request.Invalid;
-    }
-
-    @Override
-    public Status status()
-    {
-        return status;
-    }
+    /**
+     * Verify a user by password
+     */
+    AuthenticationResult authenticate( User user, String password );
 }

@@ -17,23 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.auth.exception;
+package org.neo4j.server.security.auth;
 
-import org.neo4j.kernel.api.exceptions.Status;
-
-public class TooManyAuthenticationAttemptsException extends Exception implements Status.HasStatus
+public enum AuthenticationResult
 {
-    private final Status.Security status;
-
-    public TooManyAuthenticationAttemptsException( String message )
-    {
-        super(message);
-        this.status = Status.Security.AuthenticationRateLimit;
-    }
-
-    @Override
-    public Status status()
-    {
-        return status;
-    }
+    SUCCESS,
+    FAILURE,
+    NOT_AUTHORIZED,
+    TOO_MANY_ATTEMPTS,
+    PASSWORD_CHANGE_REQUIRED
 }

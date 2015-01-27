@@ -23,17 +23,22 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.Writer;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.util.TestLogging;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
-import org.neo4j.server.security.auth.exception.IllegalTokenException;
 import org.neo4j.test.EphemeralFileSystemRule;
 
+import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.util.TestLogger.LogCall.error;
+import static org.neo4j.kernel.logging.DevNullLoggingService.DEV_NULL;
 
 public class FileUserRepositoryTest
 {
@@ -43,8 +48,8 @@ public class FileUserRepositoryTest
     public void shouldStoreAndRetriveUsersByName() throws Exception
     {
         // Given
-        FileUserRepository users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ) );
-        User user = new User( "jake", "af123", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
+        FileUserRepository users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ), DEV_NULL );
+        User user = new User( "jake", Credential.INACCESSIBLE, true );
         users.create( user );
 
         // When
@@ -55,62 +60,43 @@ public class FileUserRepositoryTest
     }
 
     @Test
-    public void shouldStoreAndRetriveUsersByToken() throws Exception
-    {
-        // Given
-        FileUserRepository users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ) );
-        User user = new User( "jake", "af123", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
-        users.create( user );
-
-        // When
-        User result = users.findByToken( user.token() );
-
-        // Then
-        assertThat( result, equalTo( user ) );
-    }
-
-    @Test
     public void shouldPersistUsers() throws Throwable
     {
         // Given
-        FileUserRepository users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ) );
-        User user = new User( "jake", "af123", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
+        FileUserRepository users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ), DEV_NULL );
+        User user = new User( "jake", Credential.INACCESSIBLE, true );
         users.create( user );
 
-        users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ) );
+        users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ), DEV_NULL );
         users.start();
 
         // When
         User resultByName = users.findByName( user.name() );
-        User resultByToken = users.findByToken( user.token() );
 
         // Then
         assertThat( resultByName, equalTo( user ) );
-        assertThat( resultByToken, equalTo( user ) );
     }
 
     @Test
-    public void shouldNotFindUserByTokenAfterChangingToken() throws Throwable
+    public void shouldNotFindUserAfterDelete() throws Throwable
     {
         // Given
-        FileUserRepository users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ) );
-        User user = new User( "jake", "af123", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
+        FileUserRepository users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ), DEV_NULL );
+        User user = new User( "jake", Credential.INACCESSIBLE, true );
         users.create( user );
 
         // When
-        User updatedUser = new User( "jake", "321fa", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
-        users.update( user, updatedUser );
+        users.delete( user );
 
         // Then
-        assertThat( users.findByToken( updatedUser.token() ), equalTo( updatedUser ) );
-        assertThat( users.findByToken( user.token() ), nullValue() );
+        assertThat( users.findByName( user.name() ), nullValue() );
     }
 
     @Test
     public void shouldNotAllowComplexNames() throws Exception
     {
         // Given
-        FileUserRepository users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ) );
+        FileUserRepository users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ), DEV_NULL );
 
         // When
         assertTrue( users.isValidName( "neo4j" ) );
@@ -128,8 +114,8 @@ public class FileUserRepositoryTest
     {
         // Given
         File dbFile = new File( "dbms/auth.db" );
-        FileUserRepository users = new FileUserRepository( fsRule.get(), dbFile );
-        User user = new User( "jake", "af123", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
+        FileUserRepository users = new FileUserRepository( fsRule.get(), dbFile, DEV_NULL );
+        User user = new User( "jake", Credential.INACCESSIBLE, true );
         users.create( user );
 
         // And given we emulate having crashed when writing
@@ -137,7 +123,7 @@ public class FileUserRepositoryTest
         fsRule.get().renameFile( dbFile, tempFile );
 
         // When
-        users = new FileUserRepository( fsRule.get(), dbFile );
+        users = new FileUserRepository( fsRule.get(), dbFile, DEV_NULL );
         users.start();
 
         // Then
@@ -150,12 +136,12 @@ public class FileUserRepositoryTest
     public void shouldThrowIfUpdateChangesName() throws Throwable
     {
         // Given
-        FileUserRepository users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ) );
-        User user = new User( "jake", "af123", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
+        FileUserRepository users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ), DEV_NULL );
+        User user = new User( "jake", Credential.INACCESSIBLE, true );
         users.create( user );
 
         // When
-        User updatedUser = new User( "john", "af123", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
+        User updatedUser = new User( "john", Credential.INACCESSIBLE, true );
         try
         {
             users.update( user, updatedUser );
@@ -165,20 +151,20 @@ public class FileUserRepositoryTest
             // Then continue
         }
 
-        assertThat( users.findByToken( user.token() ), equalTo( user ) );
+        assertThat( users.findByName( user.name() ), equalTo( user ) );
     }
 
     @Test
     public void shouldThrowIfExistingUserDoesNotMatch() throws Throwable
     {
         // Given
-        FileUserRepository users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ) );
-        User user = new User( "jake", "af123", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
+        FileUserRepository users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ), DEV_NULL );
+        User user = new User( "jake", Credential.INACCESSIBLE, true );
         users.create( user );
-        User modifiedUser = new User( "jake", "af123_2", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
+        User modifiedUser = new User( "jake", Credential.forPassword( "foo" ), false );
 
         // When
-        User updatedUser = new User( "jake", "123abc", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
+        User updatedUser = new User( "jake", Credential.forPassword( "bar" ), false );
         try
         {
             users.update( modifiedUser, updatedUser );
@@ -187,34 +173,27 @@ public class FileUserRepositoryTest
         {
             // Then continue
         }
-
-        assertThat( users.findByToken( user.token() ), equalTo( user ) );
-        assertThat( users.findByToken( modifiedUser.token() ), nullValue() );
-        assertThat( users.findByToken( updatedUser.token() ), nullValue() );
     }
 
     @Test
-    public void shouldThrowIfUpdatedUserHasDuplicateToken() throws Throwable
+    public void shouldIgnoreInvalidEntries() throws Throwable
     {
         // Given
-        FileUserRepository users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ) );
-        User user = new User( "jake", "af123", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
-        users.create( user );
-        User otherUser = new User( "john", "abc", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
-        users.create( otherUser );
+        FileSystemAbstraction fs = fsRule.get();
+        File authFile = new File( "auth.db" );
+        TestLogging testLogging = new TestLogging();
+
+        Writer writer = fs.openAsWriter( authFile, "UTF-8", false );
+        writer.write( "neo4j:fc4c600b43ffe4d5857b4439c35df88f:SHA-256,A42E541F276CF17036DB7818F8B09B1C229AAD52A17F69F4029617F3A554640F,FB7E8AE08A6A7C741F678AD22217808F:" );
+        writer.close();
 
         // When
-        User updatedUser = new User( "jake", "abc", Privileges.ADMIN, Credentials.INACCESSIBLE, true );
-        try
-        {
-            users.update( user, updatedUser );
-            fail( "expected exception not thrown" );
-        } catch ( IllegalTokenException e )
-        {
-            // Then continue
-        }
+        FileUserRepository users = new FileUserRepository( fs, authFile, testLogging );
+        users.start();
 
-        assertThat( users.findByToken( user.token() ), equalTo( user ) );
-        assertThat( users.findByToken( otherUser.token() ), equalTo( otherUser ) );
+        // Then
+        assertThat( users.numberOfUsers(), equalTo( 0 ) );
+        testLogging.getMessagesLog( FileUserRepository.class ).assertExactly(
+                error( format( "Ignoring authorization file \"%s\" (wrong number of line fields [line 1])", authFile.getAbsolutePath() ) ) );
     }
 }

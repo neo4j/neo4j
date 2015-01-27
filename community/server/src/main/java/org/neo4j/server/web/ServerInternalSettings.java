@@ -75,7 +75,7 @@ public class ServerInternalSettings
 
     public static final Setting<Long> startup_timeout = setting( "org.neo4j.server.startup_timeout", DURATION, "120s" );
 
-    public static final Setting<File> authorization_store = setting("dbms.security.authorization_location", PATH, "data/dbms/authorization");
+    public static final Setting<File> authorization_store = setting("dbms.security.authorization_location", PATH, "data/dbms/auth");
 
     public static final Setting<File> legacy_db_location = setting( "org.neo4j.server.database.location", PATH, "data/graph.db" );
 

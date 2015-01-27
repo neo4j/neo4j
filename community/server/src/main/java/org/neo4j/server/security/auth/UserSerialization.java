@@ -24,12 +24,23 @@ import java.util.Collection;
 import java.util.List;
 
 import org.neo4j.kernel.impl.util.Charsets;
+import org.neo4j.kernel.impl.util.Codecs;
+
+import static java.lang.String.format;
 
 /**
  * Serializes user authorization and authentication data to a format similar to unix passwd files.
  */
 public class UserSerialization
 {
+    public class FormatException extends Exception
+    {
+        FormatException( String message )
+        {
+            super( message );
+        }
+    }
+
     private static final String userSeparator = ":";
     private static final String credentialSeparator = ",";
 
@@ -43,60 +54,66 @@ public class UserSerialization
         return sb.toString().getBytes( Charsets.UTF_8 );
     }
 
-    public List<User> deserializeUsers( byte[] bytes )
+    public List<User> deserializeUsers( byte[] bytes ) throws FormatException
     {
         List<User> out = new ArrayList<>();
+        int lineNumber = 1;
         for ( String line : new String( bytes, Charsets.UTF_8 ).split( "\n" ) )
         {
-            if(line.trim().length() > 0)
+            if (line.trim().length() > 0)
             {
-                out.add( deserializeUser( line ) );
+                out.add( deserializeUser( line, lineNumber ) );
             }
+            lineNumber++;
         }
         return out;
     }
 
     private String serialize( User user )
     {
-        return join( userSeparator, new String[]{
-                user.name(),
-                user.token(),
+        return join( userSeparator, user.name(),
                 serialize( user.credentials() ),
-                user.passwordChangeRequired() ? "password_change_required" : ""} );
+                user.passwordChangeRequired() ? "password_change_required" : "" );
     }
 
-    private User deserializeUser( String line )
+    private User deserializeUser( String line, int lineNumber ) throws FormatException
     {
         String[] parts = line.split( userSeparator, -1 );
-        if(parts.length != 4)
+        if ( parts.length != 3 )
         {
-            throw new IllegalStateException( "Cannot read user data from authorization file." );
+            throw new FormatException( format( "wrong number of line fields [line %d]", lineNumber ) );
         }
         return new User.Builder()
                 .withName( parts[0] )
-                .withToken( parts[1] )
-                .withCredentials( deserializeCredentials(parts[2]) )
-                .withRequiredPasswordChange( parts[3].equals( "password_change_required" ) )
-                .withPrivileges( Privileges.ADMIN ) // Only "real" privilege available right now
+                .withCredentials( deserializeCredentials( parts[1], lineNumber ) )
+                .withRequiredPasswordChange( parts[2].equals( "password_change_required" ) )
                 .build();
     }
 
-    private String serialize( Credentials cred )
+    private String serialize( Credential cred )
     {
-        return join( credentialSeparator, new String[]{cred.digestAlgorithm(), cred.hash(), cred.salt()} );
+        String encodedSalt = Codecs.encodeHexString( cred.salt() );
+        String encodedPassword = Codecs.encodeHexString( cred.passwordHash() );
+        return join( credentialSeparator, Credential.DIGEST_ALGO, encodedPassword, encodedSalt );
     }
 
-    private Credentials deserializeCredentials( String part )
+    private Credential deserializeCredentials( String part, int lineNumber ) throws FormatException
     {
         String[] split = part.split( credentialSeparator, -1 );
-        if(split.length != 3)
+        if ( split.length != 3 )
         {
-            throw new IllegalStateException( "Cannot read credential data from authorization file: " + part + " " + split.length + " '" + join(":", split) + "'");
+            throw new FormatException( format( "wrong number of credential fields [line %d]", lineNumber ) );
         }
-        return new Credentials( split[2], split[0], split[1] );
+        if ( !split[0].equals( Credential.DIGEST_ALGO ) )
+        {
+            throw new FormatException( format( "unknown digest \"%s\" [line %d]", split[0], lineNumber ) );
+        }
+        byte[] decodedPassword = Codecs.decodeHexString( split[1] );
+        byte[] decodedSalt = Codecs.decodeHexString( split[2] );
+        return new Credential( decodedSalt, decodedPassword );
     }
 
-    private String join( String separator, String[] segments )
+    private String join( String separator, String... segments )
     {
         StringBuilder sb = new StringBuilder();
         for ( int i = 0; i < segments.length; i++ )

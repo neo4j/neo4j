@@ -20,6 +20,7 @@
 package org.neo4j.server.rest.dbms;
 
 import java.io.IOException;
+import java.net.URI;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -30,104 +31,46 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.UriBuilder;
 
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.Charsets;
+import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.security.UriPathWildcardMatcher;
-import org.neo4j.server.security.auth.SecurityCentral;
+import org.neo4j.server.security.auth.AuthManager;
+import org.neo4j.server.web.XForwardUtil;
 
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
+import static javax.servlet.http.HttpServletRequest.BASIC_AUTH;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.server.rest.dbms.AuthenticationService.AUTHENTICATION_PATH;
+import static org.neo4j.server.web.XForwardUtil.X_FORWARD_HOST_HEADER_KEY;
+import static org.neo4j.server.web.XForwardUtil.X_FORWARD_PROTO_HEADER_KEY;
 
 public class AuthorizationFilter implements Filter
 {
-    enum ErrorType
-    {
-        // This is a pretty annoying duplication of work, where we're manually re-implementing the JSON serialization
-        // layer. Because we don't have access to jersey at this level, we can't use our regular serialization. This,
-        // obviously, implies a larger architectural issue, which is left as a future exercise.
-
-        NO_HEADER(401, true )
-        {
-            @Override
-            Object body(String authURL)
-            {
-                return map("errors", asList(map(
-                                "code", Status.Security.AuthorizationFailed.code().serialize(),
-                                "message", "No authorization token supplied.")),
-                           "authentication", authURL);
-            }
-        },
-        INVALID_TOKEN(401, true )
-        {
-            @Override
-            Object body(String authURL)
-            {
-                return map("errors", asList(map(
-                                "code", Status.Security.AuthorizationFailed.code().serialize(),
-                                "message", "Invalid authorization token supplied.")),
-                           "authentication", authURL);
-            }
-        },
-        BAD_HEADER(400, false)
-        {
-            @Override
-            Object body(String authURL)
-            {
-                return map("errors", asList(map(
-                        "code", Status.Request.InvalidFormat.code().serialize(),
-                        "message", "Invalid Authorization header.")));
-            }
-        };
-
-        private final int statusCode;
-        private final boolean includeWWWAuthenticateHeader;
-
-        private ErrorType( int statusCode, boolean includeWWWAuthenticateHeader )
-        {
-            this.statusCode = statusCode;
-            this.includeWWWAuthenticateHeader = includeWWWAuthenticateHeader;
-        }
-
-        synchronized void reply( HttpServletResponse response, HttpServletRequest req ) throws IOException
-        {
-            response.setStatus( statusCode );
-            if(includeWWWAuthenticateHeader)
-            {
-                response.addHeader( HttpHeaders.WWW_AUTHENTICATE, "None" );
-            }
-
-            String authUrl = req.getScheme() + "://" + req.getHeader( HttpHeaders.HOST ) + AUTHENTICATION_PATH;
-
-            response.getOutputStream().write( JsonHelper.createJsonFrom( body(authUrl) ).getBytes( Charsets.UTF_8 ) );
-        }
-
-        abstract Object body(String authenticateURL);
-    }
-
     private final UriPathWildcardMatcher[] whitelist = new UriPathWildcardMatcher[]
-    {
-        new UriPathWildcardMatcher("/authentication"),
-        new UriPathWildcardMatcher("/browser*"),
-        new UriPathWildcardMatcher("/webadmin*"),
-        new UriPathWildcardMatcher("/user/*/authorization_token"),
-        new UriPathWildcardMatcher("/user/*/password"),
-        new UriPathWildcardMatcher("/"),
-    };
+            {
+                    new UriPathWildcardMatcher( "/browser*" ),
+                    new UriPathWildcardMatcher( "/webadmin*" ),
+                    new UriPathWildcardMatcher( "/" ),
+            };
 
-    private final SecurityCentral security;
+    private final UriPathWildcardMatcher passwordChangeWhitelist = new UriPathWildcardMatcher( "/user/*" );
 
-    public AuthorizationFilter( SecurityCentral security )
+    private final AuthManager authManager;
+    private final ConsoleLogger log;
+
+    public AuthorizationFilter( AuthManager authManager, ConsoleLogger log )
     {
-        this.security = security;
+        this.authManager = authManager;
+        this.log = log;
     }
 
     @Override
     public void init( FilterConfig filterConfig ) throws ServletException
     {
-
     }
 
     @Override
@@ -136,31 +79,195 @@ public class AuthorizationFilter implements Filter
         validateRequestType( servletRequest );
         validateResponseType( servletResponse );
 
-        HttpServletRequest request = (HttpServletRequest) servletRequest;
-        HttpServletResponse response = (HttpServletResponse) servletResponse;
+        final HttpServletRequest request = (HttpServletRequest) servletRequest;
+        final HttpServletResponse response = (HttpServletResponse) servletResponse;
 
-        if(authorized(request) || whitelisted(request))
+        final String path = request.getContextPath() + ( request.getPathInfo() == null ? "" : request.getPathInfo() );
+
+        if ( whitelisted( path ) )
         {
             filterChain.doFilter( servletRequest, servletResponse );
+            return;
         }
-        else
+
+        final String header = request.getHeader( HttpHeaders.AUTHORIZATION );
+        if ( header == null )
         {
-            errorType(request).reply( response, request );
+            noHeader().writeResponse( response );
+            return;
         }
+
+        final String[] usernameAndPassword = extractCredential( header );
+        if ( usernameAndPassword == null )
+        {
+            badHeader().writeResponse( response );
+            return;
+        }
+
+        final String username = usernameAndPassword[0];
+        final String password = usernameAndPassword[1];
+
+        switch ( authManager.authenticate( username, password ) )
+        {
+            case PASSWORD_CHANGE_REQUIRED:
+                if ( !passwordChangeWhitelist.matches( path ) )
+                {
+                    passwordChangeRequired( username, baseURL( request ) ).writeResponse( response );
+                    return;
+                }
+                // fall through
+            case SUCCESS:
+                filterChain.doFilter( new AuthorizedRequestWrapper( BASIC_AUTH, username, request ), servletResponse );
+                return;
+            case TOO_MANY_ATTEMPTS:
+                tooManyAttemptes().writeResponse( response );
+                return;
+            default:
+                log.warn( "Failed authentication attempt for '%s' from %s", username, request.getRemoteAddr() );
+                invalidCredential().writeResponse( response );
+                return;
+        }
+    }
+
+    // This is a pretty annoying duplication of work, where we're manually re-implementing the JSON serialization
+    // layer. Because we don't have access to jersey at this level, we can't use our regular serialization. This,
+    // obviously, implies a larger architectural issue, which is left as a future exercise.
+    private static abstract class ErrorResponse
+    {
+        private final int statusCode;
+
+        private ErrorResponse( int statusCode )
+        {
+            this.statusCode = statusCode;
+        }
+
+        void addHeaders( HttpServletResponse response )
+        {
+        }
+
+        abstract Object body();
+
+        void writeResponse( HttpServletResponse response ) throws IOException
+        {
+            response.setStatus( statusCode );
+            addHeaders( response );
+            response.getOutputStream().write( JsonHelper.createJsonFrom( body() ).getBytes( Charsets.UTF_8 ) );
+        }
+    }
+
+    private static final ErrorResponse NO_HEADER = new ErrorResponse( 401 )
+    {
+        @Override
+        void addHeaders( HttpServletResponse response )
+        {
+            response.addHeader( HttpHeaders.WWW_AUTHENTICATE, "None" );
+        }
+
+        @Override
+        Object body()
+        {
+            return map( "errors", asList( map(
+                    "code", Status.Security.AuthorizationFailed.code().serialize(),
+                    "message", "No authorization header supplied." ) ) );
+        }
+    };
+
+    private static ErrorResponse noHeader()
+    {
+        return NO_HEADER;
+    }
+
+    private static final ErrorResponse BAD_HEADER = new ErrorResponse( 400 )
+    {
+        @Override
+        Object body()
+        {
+            return map( "errors", asList( map(
+                    "code", Status.Request.InvalidFormat.code().serialize(),
+                    "message", "Invalid Authorization header." ) ) );
+        }
+    };
+
+    private static ErrorResponse badHeader()
+    {
+        return BAD_HEADER;
+    }
+
+    private static final ErrorResponse INVALID_CREDENTIAL = new ErrorResponse( 401 )
+    {
+        @Override
+        void addHeaders( HttpServletResponse response )
+        {
+            response.addHeader( HttpHeaders.WWW_AUTHENTICATE, "None" );
+        }
+
+        @Override
+        Object body()
+        {
+            return map( "errors", asList( map(
+                    "code", Status.Security.AuthorizationFailed.code().serialize(),
+                    "message", "Invalid username or password." ) ) );
+        }
+    };
+
+    private static ErrorResponse invalidCredential()
+    {
+        return INVALID_CREDENTIAL;
+    }
+
+    private static final ErrorResponse TOO_MANY_ATTEMPTS = new ErrorResponse( 429 )
+    {
+        @Override
+        Object body()
+        {
+            return map( "errors", asList( map(
+                    "code", Status.Security.AuthenticationRateLimit.code().serialize(),
+                    "message", "Too many failed authentication requests. Please wait 5 seconds and try again." ) ) );
+        }
+    };
+
+    private static ErrorResponse tooManyAttemptes()
+    {
+        return TOO_MANY_ATTEMPTS;
+    }
+
+    private static ErrorResponse passwordChangeRequired( final String username, final String baseURL )
+    {
+        return new ErrorResponse( 403 )
+        {
+            @Override
+            Object body()
+            {
+                URI path = UriBuilder.fromUri( baseURL ).path( format( "/user/%s/password", username ) ).build();
+                return map( "errors", asList( map(
+                        "code", Status.Security.AuthorizationFailed.code().serialize(),
+                        "message", "User is required to change their password."
+                ) ), "password_change", path.toString() );
+            }
+        };
+    }
+
+    private String baseURL( HttpServletRequest request )
+    {
+        StringBuffer url = request.getRequestURL();
+        String baseURL = url.substring( 0, url.length() - request.getRequestURI().length() ) + "/";
+
+        return XForwardUtil.externalUri(
+                baseURL,
+                request.getHeader( X_FORWARD_HOST_HEADER_KEY ),
+                request.getHeader( X_FORWARD_PROTO_HEADER_KEY ) );
     }
 
     @Override
     public void destroy()
     {
-
     }
 
-    private boolean whitelisted( HttpServletRequest request )
+    private boolean whitelisted( String path )
     {
-        String path = request.getContextPath() + (request.getPathInfo() == null ? "" : request.getPathInfo());
         for ( UriPathWildcardMatcher pattern : whitelist )
         {
-            if(pattern.matches( path ))
+            if ( pattern.matches( path ) )
             {
                 return true;
             }
@@ -168,53 +275,31 @@ public class AuthorizationFilter implements Filter
         return false;
     }
 
-    private boolean authorized( HttpServletRequest request )
+    private String[] extractCredential( String header )
     {
-        String token = extractToken( request );
-        return token != null && security.userForToken( token ).privileges().APIAccess();
-    }
-
-    private ErrorType errorType( HttpServletRequest request )
-    {
-        String token = extractToken( request );
-        if(token == null)
-        {
-            return ErrorType.NO_HEADER;
-        }
-        else if(token.length() == 0)
-        {
-            return ErrorType.BAD_HEADER;
-        }
-        return ErrorType.INVALID_TOKEN;
-    }
-
-    private String extractToken( HttpServletRequest request )
-    {
-        String value = request.getHeader( HttpHeaders.AUTHORIZATION );
-        if(value == null)
+        if ( header == null )
         {
             return null;
-        }
-        else
+        } else
         {
-            return AuthorizationHeaders.extractToken( value );
+            return AuthorizationHeaders.decode( header );
         }
     }
 
     private void validateRequestType( ServletRequest request ) throws ServletException
     {
-        if ( !(request instanceof HttpServletRequest) )
+        if ( !( request instanceof HttpServletRequest ) )
         {
-            throw new ServletException( String.format( "Expected HttpServletRequest, received [%s]", request.getClass()
+            throw new ServletException( format( "Expected HttpServletRequest, received [%s]", request.getClass()
                     .getCanonicalName() ) );
         }
     }
 
     private void validateResponseType( ServletResponse response ) throws ServletException
     {
-        if ( !(response instanceof HttpServletResponse) )
+        if ( !( response instanceof HttpServletResponse ) )
         {
-            throw new ServletException( String.format( "Expected HttpServletResponse, received [%s]",
+            throw new ServletException( format( "Expected HttpServletResponse, received [%s]",
                     response.getClass()
                             .getCanonicalName() ) );
         }
