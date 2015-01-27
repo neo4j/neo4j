@@ -458,8 +458,7 @@ public abstract class AbstractNeoServer implements NeoServer
         catch ( RuntimeException e )
         {
             //noinspection deprecation
-            log.error( format( "Failed to start Neo Server on port [%d], reason [%s]",
-                    getWebServerPort(), e.getMessage() ) );
+            log.error( format( "Failed to start Neo4j HTTP Connector, reason [%s]", e.getMessage() ) );
             throw e;
         }
     }
