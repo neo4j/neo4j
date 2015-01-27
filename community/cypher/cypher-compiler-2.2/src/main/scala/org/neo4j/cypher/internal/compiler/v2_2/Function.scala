@@ -61,6 +61,7 @@ object Function {
     functions.Pi,
     functions.PercentileCont,
     functions.PercentileDisc,
+    functions.Properties,
     functions.Radians,
     functions.Rand,
     functions.Range,
