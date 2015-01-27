@@ -86,6 +86,9 @@ public class MigrationTestUtils
         fileChannel.close();
     }
 
+    /**
+     * Removes the version trailer from the store files.
+     */
     public static void truncateFile( FileSystemAbstraction fileSystem, File storeFile,
             String suffixToDetermineTruncationLength ) throws IOException
     {
