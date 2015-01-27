@@ -19,6 +19,12 @@
  */
 package org.neo4j.backup;
 
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -32,7 +38,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import org.neo4j.graphdb.DynamicRelationshipType;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -56,18 +62,13 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.Mute;
 import org.neo4j.test.TargetDirectory;
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertTrue;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.index.impl.lucene.LuceneDataSource.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME;
@@ -390,6 +391,12 @@ public class BackupServiceIT
         final GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(
                 storeDir.getAbsolutePath() ).setConfig( params ).newGraphDatabase();
 
+        createAndIndexNode( db, 1 ); // create some data
+        XaDataSourceManager xaDataSourceManager = db.getDependencyResolver().resolveDependency(
+                XaDataSourceManager.class );
+        long expectedTxIdInNeoStore = xaDataSourceManager.getXaDataSource( DEFAULT_DATA_SOURCE_NAME ).getLastCommittedTxId();
+        long expectedTxIdInLuceneStore = xaDataSourceManager.getXaDataSource( DEFAULT_NAME ).getLastCommittedTxId();
+
         Config config = new Config( defaultBackupPortHostParams() );
 
         Monitors monitors = new Monitors();
@@ -498,20 +505,11 @@ public class BackupServiceIT
                 {
                     firstStoreFinishedStreaming.await();
 
-                    Transaction tx = db.beginTx();
-                    try
-                    {
-                        Node node1 = db.createNode();
-                        Node node2 = db.createNode();
-                        node1.createRelationshipTo( node2, DynamicRelationshipType.withName( "foobydoo" ) );
-                        tx.success();
-                    }
-                    finally
-                    {
-                        tx.finish();
-                        db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).getNeoStoreDataSource().getNeoStore().flushAll();
-                        transactionCommitted.countDown();
-                    }
+                    createAndIndexNode( db, 1 );
+                    db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).getNeoStoreDataSource()
+                            .getNeoStore().flushAll();
+
+                    transactionCommitted.countDown();
                 }
                 catch ( Exception e )
                 {
@@ -532,6 +530,10 @@ public class BackupServiceIT
         // then
         assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
         assertTrue( backupOutcome.isConsistent() );
+
+        // also verify the last committed tx id is correctly set
+        checkPreviousCommittedTxIdFromFirstLog( DEFAULT_DATA_SOURCE_NAME, 0, expectedTxIdInNeoStore );
+        checkPreviousCommittedTxIdFromFirstLog( DEFAULT_NAME, 0, expectedTxIdInLuceneStore );
     }
 
     private Map<String, String> defaultBackupPortHostParams()
@@ -598,6 +600,18 @@ public class BackupServiceIT
 
     private void checkPreviousCommittedTxIdFromFirstLog( String dataSourceName ) throws IOException
     {
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( backupDir
+                .getAbsolutePath() );
+        XaDataSourceManager xaDataSourceManager = db.getDependencyResolver().resolveDependency(
+                XaDataSourceManager.class );
+        XaDataSource dataSource = xaDataSourceManager.getXaDataSource( dataSourceName );
+        long expectedTxId = dataSource.getLastCommittedTxId() - 1;
+        db.shutdown();
+        checkPreviousCommittedTxIdFromFirstLog( dataSourceName, 1, expectedTxId );
+    }
+
+    private void checkPreviousCommittedTxIdFromFirstLog( String dataSourceName, int logVersion, long expectedTxId ) throws IOException
+    {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase(
                 backupDir.getAbsolutePath() );
         ReadableByteChannel logicalLog = null;
@@ -606,14 +620,15 @@ public class BackupServiceIT
             XaDataSourceManager xaDataSourceManager = db.getDependencyResolver().resolveDependency(
                     XaDataSourceManager.class );
             XaDataSource dataSource = xaDataSourceManager.getXaDataSource( dataSourceName );
-            logicalLog = dataSource.getLogicalLog( 1 );
+
+            logicalLog = dataSource.getLogicalLog( logVersion );
 
             ByteBuffer buffer = ByteBuffer.allocate( 64 );
             long[] headerData = LogIoUtils.readLogHeader( buffer, logicalLog, true );
 
             long previousCommittedTxIdFromFirstLog = headerData[1];
 
-            assertEquals( previousCommittedTxIdFromFirstLog, dataSource.getLastCommittedTxId() - 1 );
+            assertEquals( expectedTxId, previousCommittedTxIdFromFirstLog );
         }
         finally
         {
