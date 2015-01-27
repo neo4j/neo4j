@@ -32,10 +32,14 @@ import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
+import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
+import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result;
 
 import static java.lang.String.format;
 
+import static org.neo4j.helpers.UTF8.encode;
 import static org.neo4j.kernel.impl.store.NeoStore.RECORD_SIZE;
+import static org.neo4j.kernel.impl.store.NeoStore.TYPE_DESCRIPTOR;
 
 /**
  * Reads the contents of a {@link NeoStore neostore} store. Namely all of its {@link Position records}
@@ -67,9 +71,19 @@ public class NeoStoreUtil
 
     public NeoStoreUtil( File storeDir, FileSystemAbstraction fs )
     {
-        try ( StoreChannel channel = fs.open( neoStoreFile( storeDir, StoreFileType.STORE ), "r" ) )
+        File neoStoreFile = neoStoreFile( storeDir, StoreFileType.STORE );
+        String currentTypeDescriptorAndVersion = NeoStore.buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR );
+        boolean storeHasTrailer = hasTrailer( neoStoreFile, fs, currentTypeDescriptorAndVersion );
+        try ( StoreChannel channel = fs.open( neoStoreFile, "r" ) )
         {
-            ByteBuffer buf = ByteBuffer.allocate( Position.values().length * RECORD_SIZE );
+            int contentSize = (int) channel.size();
+            if ( storeHasTrailer )
+            {
+                int trailerSize = encode( currentTypeDescriptorAndVersion ).length;
+                contentSize -= trailerSize;
+            }
+            int records = contentSize/RECORD_SIZE;
+            ByteBuffer buf = ByteBuffer.allocate( records * RECORD_SIZE );
             channel.read( buf );
             buf.flip();
 
@@ -82,6 +96,13 @@ public class NeoStoreUtil
         {
             throw new RuntimeException( e );
         }
+    }
+
+    private boolean hasTrailer( File neoStoreFile, FileSystemAbstraction fs, String currentTypeDescriptorAndVersion )
+    {
+        StoreVersionCheck trailerCheck = new StoreVersionCheck( fs );
+        Result result = trailerCheck.hasVersion( neoStoreFile, currentTypeDescriptorAndVersion );
+        return result.outcome == Result.Outcome.ok || result.outcome == Result.Outcome.unexpectedUpgradingStoreVersion;
     }
 
     private long nextRecord( ByteBuffer buf )
