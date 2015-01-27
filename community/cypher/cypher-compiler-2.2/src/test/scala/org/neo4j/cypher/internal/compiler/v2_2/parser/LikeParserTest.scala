@@ -24,18 +24,33 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 class LikeParserTest extends CypherFunSuite {
 
   test("parse a string containing normal characters") {
-    LikeParser("this is a string").ops should equal(List(StringSegment("this is a string")))
+    val likeParser = new LikeParser
+    likeParser("this is a string").ops should equal(List(StringSegment("this is a string")))
   }
 
   test("parse a string containing wildcard") {
-    LikeParser("abcd%") should equal(ParsedLike(Seq(StringSegment("abcd"), MatchAll)))
+    val likeParser = new LikeParser
+    likeParser("abcd%") should equal(ParsedLike(Seq(StringSegment("abcd"), MatchAll)))
   }
 
   test("parse a string containing a single character match") {
-    LikeParser("ab_d").ops should equal(List(StringSegment("ab"), MatchSingleChar, StringSegment("d")))
+    val likeParser = new LikeParser
+    likeParser("ab_d").ops should equal(List(StringSegment("ab"), MatchSingleChar, StringSegment("d")))
   }
 
   test("parse a string containing an option") {
-    LikeParser("[Aa]bcd").ops should equal(List(SetMatch(Seq(RawCharacter("A"), RawCharacter("a"))), StringSegment("bcd")))
+    val likeParser = new LikeParser
+    likeParser("[Aa]bcd").ops should equal(List(SetMatch(Seq(RawCharacter("A"), RawCharacter("a"))), StringSegment("bcd")))
+  }
+
+  test("parse an escaped string") {
+    val likeParser = new LikeParser(Some("""\"""))
+    likeParser("""the richest 1\% of adults alone owned 40\% of global assets""").ops should
+      equal(List(StringSegment("the richest 1"), StringSegment("%"), StringSegment(" of adults alone owned 40"), StringSegment("%"), StringSegment(" of global assets")))
+  }
+
+  test("combining wildcard and escaped percent") {
+    val likeParser = new LikeParser(Some("""\"""))
+    likeParser("""%\%%""").ops should equal(List(MatchAll, StringSegment("%"), MatchAll))
   }
 }

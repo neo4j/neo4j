@@ -99,13 +99,14 @@ case class In(lhs: Expression, rhs: Expression)(val position: InputPosition) ext
     specifyType(CTBoolean)
 }
 
-case class Like(lhs: Expression, rhs: Expression, caseInsensitive: Boolean = false)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
+
+case class Like(lhs: Expression, rhs: Expression, escape: Option[String], caseInsensitive: Boolean = false)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
 }
 
-case class NotLike(lhs: Expression, rhs: Expression, caseInsensitive: Boolean = false)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
+case class NotLike(lhs: Expression, rhs: Expression, escape: Option[String], caseInsensitive: Boolean = false)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )

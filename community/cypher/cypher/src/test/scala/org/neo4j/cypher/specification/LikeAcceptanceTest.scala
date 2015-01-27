@@ -33,11 +33,11 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
 
   override def initTest() {
     super.initTest()
-    aNode = createLabeledNode(Map("name" -> "ABCDEF"), "LABEL")
-    bNode = createLabeledNode(Map("name" -> "AB"), "LABEL")
-    cNode = createLabeledNode(Map("name" -> "abcdef"), "LABEL")
-    dNode = createLabeledNode(Map("name" -> "ab"), "LABEL")
-    eNode = createLabeledNode(Map("name" -> ""), "LABEL")
+    aNode = createLabeledNode(Map("name" -> "ABCDEF", "value" -> "42%"), "LABEL")
+    bNode = createLabeledNode(Map("name" -> "AB", "value" -> "42_"), "LABEL")
+    cNode = createLabeledNode(Map("name" -> "abcdef", "value" -> "[42]"), "LABEL")
+    dNode = createLabeledNode(Map("name" -> "ab", "value" -> "42"), "LABEL")
+    eNode = createLabeledNode(Map("name" -> "", "value" -> ""), "LABEL")
     fNode = createLabeledNode("LABEL")
   }
 
@@ -195,6 +195,25 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
     val result = executeWithNewPlanner("MATCH (a) WHERE a.name LIKE 'abcde[XY]' RETURN a")
 
     result.toList shouldBe empty
+  }
+
+  // ***********************  ESCAPE testing
+  test("match on percent character") {
+    val result = executeWithNewPlanner("""MATCH (a) WHERE a.value LIKE '%\\%' ESCAPE '\\' RETURN a""")
+
+    result.toList should equal(Seq(Map("a" -> aNode)))
+  }
+
+  test("match on underscore character") {
+    val result = executeWithNewPlanner("""MATCH (a) WHERE a.value LIKE '%\\_' ESCAPE '\\' RETURN a""")
+
+    result.toList should equal(Seq(Map("a" -> bNode)))
+  }
+
+  test("match on [] character") {
+    val result = executeWithNewPlanner("""MATCH (a) WHERE a.value LIKE '^[%^]' ESCAPE '^' RETURN a""")
+
+    result.toList should equal(Seq(Map("a" -> cNode)))
   }
 
   // ***********************  CO-CO-CO-COMBO

@@ -201,7 +201,8 @@ object ExpressionConverters {
 
   implicit class LikeConverter(val e: ast.Like) extends AnyVal {
     implicit def translateToRegex(s: String) = {
-      convertLikeToRegex(LikeParser(s), e.caseInsensitive)
+      val likeParser = new LikeParser(e.escape)
+      convertLikeToRegex(likeParser(s), e.caseInsensitive)
     }
 
     def asCommandRegex = e.rhs.asCommandExpression match {
@@ -216,7 +217,7 @@ object ExpressionConverters {
 
   implicit class NotLikeConverter(val e: ast.NotLike) extends AnyVal {
     def asCommandNegatedRegex =
-      commands.Not(ast.Like(e.lhs, e.rhs, e.caseInsensitive)(e.position).asCommandPredicate)
+      commands.Not(ast.Like(e.lhs, e.rhs, e.escape, e.caseInsensitive)(e.position).asCommandPredicate)
   }
 
   implicit class InConverter(val e: ast.In) extends AnyVal {

@@ -103,4 +103,11 @@ trait Literals extends Parser
      | ch('"') ~ StringCharacters('"') ~ ch('"')
     ) memoMismatches) suppressSubnodes) ~~>> (ast.StringLiteral(_))
   }
+
+  def EscapeLiteral: Rule1[String] =rule("\"...string...\"") {
+    (((
+      ch('\'') ~ StringCharacters('\'') ~ ch('\'')
+        | ch('"') ~ StringCharacters('"') ~ ch('"')
+      ) memoMismatches) suppressSubnodes) ~~> (_.toString)
+  }
 }

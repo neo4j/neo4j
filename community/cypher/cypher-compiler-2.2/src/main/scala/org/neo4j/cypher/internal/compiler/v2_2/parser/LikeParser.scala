@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.parser
 
 import org.parboiled.scala._
+import java.util.regex.Pattern.quote
 
 //TODO should option be supported? In standard?
 /**
@@ -30,7 +31,7 @@ import org.parboiled.scala._
  *  - _ matches exactly one character
  *  - [XY] optionally match any of the characters
  */
-case object LikeParser extends Parser {
+case class LikeParser(escape: Option[String] = None) extends Parser {
 
   def apply(input: String): ParsedLike = ReportingParseRunner(LikeRule).run(input).result match {
     case Some(v) => v
@@ -38,9 +39,11 @@ case object LikeParser extends Parser {
   }
 
   /**Base rule*/
-  def LikeRule: Rule1[ParsedLike] = rule {zeroOrMore(MatchAllRule | MatchSingleCharRule | SetMatchRule | StringSegmentRule) ~~> ParsedLike ~ EOI}
+  def LikeRule: Rule1[ParsedLike] = rule {zeroOrMore( MatchAllRule | MatchSingleCharRule | SetMatchRule | StringSegmentRule) ~~> ParsedLike ~ EOI}
 
-  def StringSegmentRule: Rule1[LikeOp] = rule {oneOrMore(NormalChar) ~> StringSegment}
+  def StringSegmentRule: Rule1[LikeOp] = rule {
+    (EscapedChar |oneOrMore(NormalChar) ~> StringSegment)
+  }
 
   def RawCharacterRule: Rule1[RawCharacter] = rule {NormalChar ~> RawCharacter}
 
@@ -52,11 +55,16 @@ case object LikeParser extends Parser {
     "[" ~ zeroOrMore(RawCharacterRule) ~ "]" ~~> SetMatch
   }
 
+
   def PercentChar: Rule0 = rule {"%"}
 
   def UnderscoreChar: Rule0 = rule {"_"}
 
-  def NormalChar: Rule0 = noneOf("%_[]")
+  def EscapedChar: Rule1[LikeOp] = escape.map (esc => rule {
+    esc ~ (ANY ~> StringSegment)
+  }).getOrElse(NOTHING ~> StringSegment)
+
+  def NormalChar: Rule0 = noneOf("%_[]" + escape.getOrElse(""))
 }
 
 sealed trait LikeOp

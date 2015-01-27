@@ -41,7 +41,8 @@ class ConvertLikeToRegexTest extends CypherFunSuite {
 
   tests.foreach {
     case (like, regex) => test(s"$like -> $regex") {
-      convertLikeToRegex(LikeParser(like)) should equal(regex)
+      val likeParser = new LikeParser
+      convertLikeToRegex(likeParser(like)) should equal(regex)
     }
 
   }

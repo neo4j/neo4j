@@ -334,6 +334,15 @@ class CypherParserTest extends CypherFunSuite {
     )
   }
 
+  test("should handle LIKE ... ESCAPE") {
+    expectQuery(
+      "RETURN 'Pontus' LIKE 'Pont%' ESCAPE 't' as result",
+      Query.
+        matches().
+        returns(ReturnItem(LiteralRegularExpression(Literal("Pontus"), Literal("""\QPon\E\Q%\E""")), "result"))
+    )
+  }
+
   test("shouldHandleMultipleRegularComparison") {
     expectQuery(
       """start a = node(1) where a.name =~ 'And.*' AnD a.name =~ 'And.*' return a""",
