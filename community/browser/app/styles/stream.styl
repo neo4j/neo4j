@@ -172,17 +172,21 @@
 
         .view-result-table
           position: relative
-          overflow-y: auto
           max-height: frame-result-height
           min-height: frame-min-height
           .table-holder
             height: (frame-result-height - middlebar-height)
             overflow: auto
             background: #fff
-          a.fa-download
-            absolute: top 8px right horizontal-padding*2+20
-            font-size: 24px
-            right: horizontal-padding
+
+        .view-result-plan
+          background-color: #F9FBFD
+          max-height: frame-result-height
+          min-height: frame-min-height
+          .plan-holder
+            height: (frame-result-height - middlebar-height)
+            overflow: auto
+            background: #fff
 
         .view-result-error
           pre
