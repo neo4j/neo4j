@@ -1,5 +1,5 @@
-span(ng-show='frame.hasErrors')
-  | Execution error
-span(ng-hide='frame.hasErrors')
-  span
-    | {{planStatistics(frame)}}
+span
+  | {{planStatistics(frame)}}
+.actions.status-bar-actions
+  a.button.fa.fa-minus-square-o(ng-click="toggleExpanded(false)")
+  a.button.fa.fa-plus-square-o(ng-click="toggleExpanded(true)")
