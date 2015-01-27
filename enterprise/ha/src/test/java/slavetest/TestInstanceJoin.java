@@ -19,14 +19,14 @@
  */
 package slavetest;
 
-import java.util.Map;
-
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.Map;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -62,8 +62,7 @@ public class TestInstanceJoin
         {
             master = start( dir.cleanDirectory( "master" ).getAbsolutePath(), 0,
                     stringMap( keep_logical_logs.name(), "1 txs",
-                               ClusterSettings.initial_hosts.name(), "127.0.0.1:5001",
-                               GraphDatabaseSettings.logical_log_rotation_threshold.name(), "10" ) );
+                               ClusterSettings.initial_hosts.name(), "127.0.0.1:5001" ) );
             createNode( master, "something", "unimportant" );
             // Need to start and shutdown the slave so when we start it up later it verifies instead of copying
             slave = start( dir.cleanDirectory( "slave" ).getAbsolutePath(), 1,
@@ -71,9 +70,8 @@ public class TestInstanceJoin
             slave.shutdown();
 
             long nodeId = createNode( master, key, value );
-            createNode( master, "something", "unimportant" );
             // Rotating, moving the above transactions away so they are removed on shutdown.
-            master.getDependencyResolver().resolveDependency(LogRotation.class).rotateLogFile();
+            rotateLog( master );
 
             /*
              * We need to shutdown - rotating is not enough. The problem is that log positions are cached and they
@@ -85,8 +83,7 @@ public class TestInstanceJoin
             master.shutdown();
             master = start( dir.existingDirectory( "master" ).getAbsolutePath(), 0,
                     stringMap( keep_logical_logs.name(), "1 txs",
-                               ClusterSettings.initial_hosts.name(), "127.0.0.1:5001",
-                               GraphDatabaseSettings.logical_log_rotation_threshold.name(), "10" ) );
+                               ClusterSettings.initial_hosts.name(), "127.0.0.1:5001" ) );
 
             /**
              * The new log on master needs to have at least one transaction, so here we go.
@@ -95,6 +92,7 @@ public class TestInstanceJoin
             for ( int i = 0; i < importantNodeCount; i++ )
             {
                 createNode( master, key, value );
+                rotateLog( master );
             }
 
             slave = start( dir.existingDirectory( "slave" ).getAbsolutePath(), 1,
@@ -118,6 +116,11 @@ public class TestInstanceJoin
                 master.shutdown();
             }
         }
+    }
+
+    private void rotateLog( HighlyAvailableGraphDatabase db ) throws IOException
+    {
+        db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
     }
 
     private int nodesHavingProperty( HighlyAvailableGraphDatabase slave, String key, String value )

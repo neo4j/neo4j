@@ -19,11 +19,11 @@
  */
 package org.neo4j.helpers;
 
+import org.junit.Test;
+
 import java.io.File;
 import java.net.URI;
 import java.util.List;
-
-import org.junit.Test;
 
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
@@ -39,8 +39,8 @@ import static org.neo4j.helpers.Functions.map;
 import static org.neo4j.helpers.Settings.DURATION;
 import static org.neo4j.helpers.Settings.INTEGER;
 import static org.neo4j.helpers.Settings.MANDATORY;
-import static org.neo4j.helpers.Settings.NO_DEFAULT;
 import static org.neo4j.helpers.Settings.NORMALIZED_RELATIVE_URI;
+import static org.neo4j.helpers.Settings.NO_DEFAULT;
 import static org.neo4j.helpers.Settings.PATH;
 import static org.neo4j.helpers.Settings.STRING;
 import static org.neo4j.helpers.Settings.basePath;
@@ -283,13 +283,11 @@ public class SettingsTest
         // WHEN
         Setting<Long> setting = GraphDatabaseSettings.logical_log_rotation_threshold;
         long defaultValue = setting.apply( map( stringMap() ) );
-        long kiloValue = setting.apply( map( stringMap( setting.name(), "10k" ) ) );
         long megaValue = setting.apply( map( stringMap( setting.name(), "10M" ) ) );
         long gigaValue = setting.apply( map( stringMap( setting.name(), "10g" ) ) );
 
         // THEN
         assertThat( defaultValue, greaterThan( 0L ) );
-        assertEquals( 10 * 1024, kiloValue );
         assertEquals( 10 * 1024 * 1024, megaValue );
         assertEquals( 10L * 1024 * 1024 * 1024, gigaValue );
     }
@@ -335,13 +333,13 @@ public class SettingsTest
         // When && then
         assertThat(memUse.apply( Functions.<String,String>constant( null ) ), greaterThan( 0l ));
     }
-    
+
     @Test
     public void testNormalizedRelativeURI() throws Exception
     {
         // Given
         Setting<URI> uri = setting( "mySetting", NORMALIZED_RELATIVE_URI, "http://localhost:7474///db///data///" );
-        
+
         // When && then
         assertThat( uri.apply( Functions.<String,String>constant( null ) ).toString(), equalTo( "/db/data" ) );
     }

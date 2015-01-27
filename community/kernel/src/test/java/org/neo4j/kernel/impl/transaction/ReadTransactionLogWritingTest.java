@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -37,7 +37,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
@@ -76,7 +75,6 @@ public class ReadTransactionLogWritingTest
         protected void configure( GraphDatabaseBuilder builder )
         {
             builder.setConfig( GraphDatabaseSettings.cache_type, "none" );
-            builder.setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "5");
         };
     };
 
@@ -99,7 +97,6 @@ public class ReadTransactionLogWritingTest
             relationship.setProperty( "long", longString( 300 ) );
             tx.success();
         }
-        db.getDependencyResolver().resolveDependency( PhysicalLogFile.class ).rotationNeeded();
         logEntriesWrittenBeforeReadOperations = countLogEntries();
     }
 
