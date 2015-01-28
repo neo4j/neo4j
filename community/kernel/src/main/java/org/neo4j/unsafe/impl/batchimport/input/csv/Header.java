@@ -43,7 +43,7 @@ public class Header
 
     private final Entry[] entries;
 
-    public Header( Entry[] entries )
+    public Header( Entry... entries )
     {
         this.entries = entries;
     }

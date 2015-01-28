@@ -23,6 +23,8 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
 
+import static org.neo4j.unsafe.impl.batchimport.input.UpdateBehaviour.ADD;
+
 public class InputEntityTest
 {
     @Test
@@ -35,13 +37,52 @@ public class InputEntityTest
         }, null, InputEntity.NO_LABELS, null );
 
         // WHEN
-        node.addProperties( "third", "Yee" );
+        node.updateProperties( ADD, "third", "Yee" );
 
         // THEN
         assertArrayEquals( new Object[] {
                 "first", "Yeah",
                 "second", "Yo",
                 "third", "Yee"
+        }, node.properties() );
+    }
+
+    @Test
+    public void shouldAddToExistingProperty() throws Exception
+    {
+        // GIVEN
+        InputNode node = new InputNode( "id", new Object[] {
+                "first", "Yeah",
+                "second", "Yo"
+        }, null, InputEntity.NO_LABELS, null );
+
+        // WHEN
+        node.updateProperties( ADD, "second", "Ya" );
+
+        // THEN
+        assertArrayEquals( new Object[] {
+                "first", "Yeah",
+                "second", new String[] {"Yo", "Ya"},
+        }, node.properties() );
+    }
+
+    @Test
+    public void shouldAddToExistingArrayProperty() throws Exception
+    {
+        // GIVEN
+        InputNode node = new InputNode( "id", new Object[] {
+                "first", "Yeah",
+                "second", "Yo"
+        }, null, InputEntity.NO_LABELS, null );
+
+        // WHEN
+        node.updateProperties( ADD, "second", "Ya" );
+        node.updateProperties( ADD, "second", "Yi" );
+
+        // THEN
+        assertArrayEquals( new Object[] {
+                "first", "Yeah",
+                "second", new String[] {"Yo", "Ya", "Yi"},
         }, node.properties() );
     }
 

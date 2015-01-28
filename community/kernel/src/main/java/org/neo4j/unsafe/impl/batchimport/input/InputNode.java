@@ -82,12 +82,13 @@ public class InputNode extends InputEntity
     protected void toStringFields( Collection<Pair<String, ?>> fields )
     {
         super.toStringFields( fields );
+        fields.add( Pair.of( "id", id ) );
         fields.add( Pair.of( "group", group ) );
         if ( hasLabelField() )
         {
             fields.add( Pair.of( "labelField", labelField ) );
         }
-        else
+        else if ( labels != null && labels.length > 0 )
         {
             fields.add( Pair.of( "labels", Arrays.toString( labels ) ) );
         }
