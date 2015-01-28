@@ -57,6 +57,12 @@ final class RepeatableReadQueryContext(inner: QueryContext, locker: Locker) exte
     locker.releaseAllLocks()
   }
 
+
+  override def getPropertiesForNode(node: Long): Iterator[Long] = {
+    lockNode(node)
+    inner.getPropertiesForNode(node)
+  }
+
   class RepeatableReadOperations[T <: PropertyContainer](inner: Operations[T]) extends DelegatingOperations[T](inner) {
     override def getProperty(id: Long, propertyKeyId: Int) = {
       val obj = inner.getById(id)

@@ -279,6 +279,13 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
+    public PrimitiveLongIterator nodeGetAllPropertiesKeys( long nodeId ) throws EntityNotFoundException
+    {
+        statement.assertOpen();
+        return dataRead().nodeGetPropertyKeys(statement, nodeId);
+    }
+
+    @Override
     public Iterator<DefinedProperty> nodeGetAllProperties( long nodeId ) throws EntityNotFoundException
     {
         statement.assertOpen();
