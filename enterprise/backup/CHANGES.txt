@@ -1,3 +1,8 @@
+2.2.0-M03
+---------
+o Fix an issue where a backup could not be used to seed a slave in HA
+o Fix an issue where a backup could not be taken from a slave in HA, after master switch
+
 2.2.0-M01
 ---------
 o Backup tool exits with error if consistency check fails.
