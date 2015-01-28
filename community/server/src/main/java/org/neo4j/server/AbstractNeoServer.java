@@ -460,6 +460,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
             setUpTimeoutFilter();
 
+            webServer.init();
             webServer.start();
 
             log.log( "Server started on: " + baseUri() );

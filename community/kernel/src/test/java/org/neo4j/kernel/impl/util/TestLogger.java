@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -67,7 +68,7 @@ public class TestLogger extends StringLogger
         private LogCall( Level level, String message, Throwable cause, boolean flush )
         {
             this.level = level;
-            this.message = message;
+            this.message = message == null ? "" : message;
             this.cause = cause;
             this.flush = flush;
         }
@@ -354,6 +355,12 @@ public class TestLogger extends StringLogger
         {
             logCall.accept( visitor );
         }
+    }
+
+    /** Dump this whole log into a print stream */
+    public void dump( PrintStream out )
+    {
+        out.print( serialize( logCalls.iterator() ) );
     }
 
     private Predicate<LogCall> hasLevel( final Level level )

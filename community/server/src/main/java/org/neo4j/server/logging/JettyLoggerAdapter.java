@@ -19,14 +19,16 @@
  */
 package org.neo4j.server.logging;
 
-import java.util.IllegalFormatException;
-
+import org.eclipse.jetty.util.log.AbstractLogger;
 import org.eclipse.jetty.util.log.Logger;
+
+import java.util.IllegalFormatException;
+import java.util.regex.Pattern;
 
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
-
-import static java.lang.String.format;
+import org.neo4j.server.NeoServer;
+import org.neo4j.server.web.WebServer;
 
 /**
  * Simple wrapper over the neo4j native logger class for getting jetty to use
@@ -36,17 +38,37 @@ import static java.lang.String.format;
  *
  * @author Chris Gioran
  */
-public class JettyLoggerAdapter implements Logger
+public class JettyLoggerAdapter extends AbstractLogger
 {
     private static final String SYSTEM = "SYSTEM";
-    
+    private static final Pattern percentageRegex = Pattern.compile( "%" );
+    private static final Pattern slfPlaceholderRegex = Pattern.compile( "\\{\\}" );
+
+    private static volatile Logging GLOBAL_LOGGING = null;
+
     private final Logging logging;
     private final StringLogger logger;
+
+    /**
+     * This is crap, but jetty loads this class through reflection and requires a no-arg constructor to accept it.
+     * As such, I can't think of a way to do this without a global static field. The alternative is to configure
+     * slf4j to go via logback (which is globally configured), but thats just a very cumbersome way to do what we are
+     * doing here through xml files.
+     */
+    public static void setGlobalLogging( Logging logging )
+    {
+        GLOBAL_LOGGING = logging;
+    }
+
+    public JettyLoggerAdapter()
+    {
+        this( GLOBAL_LOGGING );
+    }
 
     public JettyLoggerAdapter( Logging logging )
     {
         this.logging = logging;
-        this.logger = StringLogger.SYSTEM;
+        this.logger = logging.getMessagesLog( NeoServer.class );
     }
 
     private JettyLoggerAdapter( Logging logging, StringLogger logger )
@@ -60,122 +82,117 @@ public class JettyLoggerAdapter implements Logger
     {
         logger.debug( arg1.getMessage(), arg1 );
     }
-    
+
     @Override
-    public void debug( String arg0, Throwable arg1 )
+    public void debug( String msg, Throwable cause )
     {
         try
         {
-            logger.debug( wrapNull( arg0 ), arg1 );
+            logger.debug( wrapNull( msg ), cause );
         }
         catch ( IllegalFormatException e )
         {
-            logger.debug( safeFormat( arg0, arg1 ) );
+            logger.debug( safeFormat( msg, cause ) );
         }
     }
 
     @Override
-    public void debug( String arg0, Object... args )
+    public void debug( String msg, Object... args )
     {
         try
         {
-            logger.debug( format( wrapNull( arg0 ), args ) );
+            logger.debug( format( wrapNull( msg ), args ) );
         }
         catch ( IllegalFormatException e )
         {
-            logger.debug( safeFormat( arg0, args ) );
+            logger.debug( safeFormat( msg, args ) );
         }
     }
 
     @Override
-    public void debug( String s, long l )
+    public Logger newLogger( String name )
     {
-        logger.debug(format(s, l));
+        return new JettyLoggerAdapter( logging, logging.getMessagesLog( WebServer.class ) );
     }
 
     @Override
-    public Logger getLogger( String arg0 )
-    {
-        Class<?> cls = null;
-        try
-        {
-            cls = Class.forName( arg0 );
-        }
-        catch ( ClassNotFoundException e )
-        {
-            cls = JettyLoggerAdapter.class;
-        }
-
-        return new JettyLoggerAdapter( logging, logging.getMessagesLog( cls ) );
-    }
-
-    @Override
-    public void info( String arg0, Object... args )
+    public void info( String msg, Object... args )
     {
         try
         {
-            logger.info( format( wrapNull( arg0 ), args ) );
+            logger.info( format( wrapNull( msg ), args ) );
         }
         catch ( IllegalFormatException e )
         {
-            logger.info( safeFormat( arg0, args ) );
+            logger.info( safeFormat( msg, args ) );
         }
     }
 
     @Override
-    public void info( Throwable arg1 )
+    public void info( Throwable cause )
     {
-        logger.debug( arg1.getMessage(), arg1 );
+        logger.debug( cause.getMessage(), cause );
     }
 
     @Override
-    public void info( String arg0, Throwable arg1 )
+    public void info( String msg, Throwable cause )
     {
-        logger.debug( arg0, arg1 );
+        logger.debug( msg, cause );
     }
 
     @Override
     public boolean isDebugEnabled()
     {
-        return true;
+        return logger.isDebugEnabled();
     }
 
     @Override
-    public void setDebugEnabled( boolean arg0 )
+    public void setDebugEnabled( boolean debugEnabled )
     {
     }
 
     @Override
-    public void warn( Throwable arg1 )
+    public void warn( Throwable cause )
     {
-        logger.debug( arg1.getMessage(), arg1 );
-    }
-    
-    @Override
-    public void warn( String arg0, Throwable arg1 )
-    {
-        // no need to catch IllegalFormatException as the delegate will use an empty message
-        logger.warn( wrapNull( arg1 ) );
+        logger.warn( cause.getMessage(), cause );
     }
 
     @Override
-    public void warn( String arg0, Object... args )
+    public void warn( String msg, Throwable cause )
+    {
+        logger.warn( wrapNull( cause ) );
+    }
+
+    @Override
+    public void warn( String msg, Object... args )
     {
         try
         {
-            logger.warn( format( wrapNull( arg0 ), args ) );
+            logger.warn( format( wrapNull( msg ), args ) );
         }
         catch ( IllegalFormatException e )
         {
-            logger.warn( safeFormat( arg0, args ) );
+            logger.warn( safeFormat( msg, args ) );
         }
     }
 
-    static String safeFormat( String arg0, Object... args )
+    @Override
+    public void ignore( Throwable cause )
+    {
+        logger.debug( cause.getMessage(), cause );
+    }
+
+    @Override
+    public String getName()
+    {
+        return SYSTEM;
+    }
+
+    static String safeFormat( String format, Object... args )
     {
         StringBuilder builder = new StringBuilder();
         builder.append( "Failed to format message: " );
-        builder.append( armored( arg0 ) );
+        builder.append( armored( format ) );
         if ( null != args )
         {
             for ( int i = 0; i < args.length; i++ )
@@ -186,9 +203,15 @@ public class JettyLoggerAdapter implements Logger
         return builder.toString();
     }
 
-    private static String armored( Object arg0 )
+    private static String format( String format, Object... args )
     {
-        return wrapNull( arg0 ).replaceAll( "%", "?" );
+        // Jetty messages use SLF4J message patterns, using '{}' as placeholders, so we convert that here
+        return String.format( format.replace( "{}", "%s" ), args );
+    }
+
+    private static String armored( Object msg )
+    {
+        return percentageRegex.matcher( wrapNull( msg ) ).replaceAll( "?" );
     }
 
     private static void appendArg( StringBuilder builder, int argNum, Object arg )
@@ -202,16 +225,5 @@ public class JettyLoggerAdapter implements Logger
     private static String wrapNull( Object arg0 )
     {
         return null == arg0 ? "null" : arg0.toString();
-    }
-    
-    @Override
-    public void ignore( Throwable arg1 )
-    {
-        logger.debug( arg1.getMessage(), arg1 );
-    }
-
-    @Override
-    public String getName() {
-        return SYSTEM;
     }
 }
