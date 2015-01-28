@@ -1,4 +1,4 @@
-h4 Credits
+h4 About Neo4j
 .inner
   h5 Made by
     a.no-icon(href='http://neotechnology.com/')  Neo Technology
@@ -16,9 +16,25 @@ h4 Credits
     a.no-icon(href='http://neotechnology.com/')  NTCL
     for Commercial.
 
+  h5 Participate
+  ul
+    li Ask questions at
+      a.no-icon(href='http://stackoverflow.com/questions/tagged/neo4j')  Stack Overflow
+    li Discuss Neo4j on
+      a.no-icon(href='http://groups.google.com/group/neo4j')  Google Groups
+    li Visit a local
+      a.no-icon(href='http://neo4j.meetup.com/')  Meetup Group
+    li Contribute code on
+      a.no-icon(href='http://github.com/neo4j')  Github
+    
+  h5 Suggestion Box
+  p What do you want to do? How did you try to do it? What would you suggest?
+  form(ng-submit="newMessage(suggestion)")
+    input.form-control(type='text', placeholder='{{suggestionPlaceholder}}', ng-model='suggestion')
+    
   h5 Thanks
   p Neo4j wouldn't be possible without a fantastic community. Thanks for all the feedback, discussions and contributions.
-
+    
 footer With&nbsp;
   span.fa.fa-heart
   |  from Sweden.
