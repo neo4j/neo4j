@@ -62,8 +62,8 @@ public class DiscoveryServiceTest
         assertThat( json, is( not( "\"\"" ) ) );
         assertThat( json, is( not( "null" ) ) );
 
-        assertThat( json, containsString( "\"management\" : \"" + baseUri + managementUri + "\"" ) );
-        assertThat( json, containsString( "\"data\" : \"" + baseUri + dataUri + "\"" ) );
+        assertThat( json, containsString( "\"management\" : \"" + baseUri + managementUri + "/\"" ) );
+        assertThat( json, containsString( "\"data\" : \"" + baseUri + dataUri + "/\"" ) );
 
     }
 
@@ -91,8 +91,8 @@ public class DiscoveryServiceTest
         assertThat( json, is( not( "\"\"" ) ) );
         assertThat( json, is( not( "null" ) ) );
 
-        assertThat( json, containsString( "\"management\" : \"" + managementUri + "\"" ) );
-        assertThat( json, containsString( "\"data\" : \"" + dataUri + "\"" ) );
+        assertThat( json, containsString( "\"management\" : \"" + managementUri + "/\"" ) );
+        assertThat( json, containsString( "\"data\" : \"" + dataUri + "/\"" ) );
 
     }
 
