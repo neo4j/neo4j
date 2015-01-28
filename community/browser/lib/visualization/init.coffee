@@ -29,6 +29,7 @@ do ->
 
       text.enter().append('text')
       .attr('text-anchor': 'middle')
+      .attr('pointer-events': 'none')
 
       text
       .text((line) -> line.text)
@@ -88,6 +89,7 @@ do ->
 
       texts.enter().append("text")
       .attr("text-anchor": "middle")
+      .attr('pointer-events': 'none')
 
       texts
       .attr('font-size', (rel) -> viz.style.forRelationship(rel).get('font-size'))
