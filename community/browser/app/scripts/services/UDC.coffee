@@ -82,6 +82,7 @@ angular.module('neo4jApp.services')
                     cypher_attempts: @data.cypher_attempts
                     cypher_wins: @data.cypher_wins
                     cypher_fails: @data.cypher_fails
+                    accepts_replies: Settings.acceptsReplies
                   })
 
         pingLater: (event) =>
