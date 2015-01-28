@@ -1,4 +1,25 @@
 For Release Notes, see http://neo4j.com/release-notes/neo4j-${project.version}/
+
+2.2.0-M03
+---------
+Move OS X *.plist files to system/resources
+
+Kernel:
+o Fixes issue with open file limit when using frequent PERIODIC COMMITs during import
+o Rename the mapped_memory_total_size setting to dbms.pagecache.memory
+o Fix property uniqueness constraint violation during concurrent modifications
+o messages.log was missing on windows
+o Fix an issue where deleting consecutive relationships could corrupt the relationship cache
+o Fix the ordering of how we write long strings to the property store, as well as node and
+  relationship record, preventing not in use type exceptions
+
+Consistency checker:
+o Better error messages from ConsistencyChecker when printing properties containing arrays
+
+CSV:
+o CSV now parses quoted-empty-fields as empty strings and unquoted-empty-fields as null
+o Adds ability to specify disjoint id groups in import tool 
+
 2.2.0-M01
 ---------
 Kernel:

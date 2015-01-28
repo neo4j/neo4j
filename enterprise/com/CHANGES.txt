@@ -1,6 +1,9 @@
-2.2-SNAPSHOT
-------------
+2.2.0-M03
+---------
+o Fix an issue where negative file sizes would be printed after store copy
 
+2.2.0-M01
+---------
 o BREAKING CHANGE: A number of classes and interfaces have moved from the org.neo4j.kernel.impl.nioneo.store to the
   org.neo4j.io.fs package. This change has rippled out through a few APIs.
 
