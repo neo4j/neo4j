@@ -27,9 +27,19 @@ angular.module('neo4jApp.directives')
       link: (scope, elm, attr) ->
         unbind = scope.$watch attr.queryPlan, (plan) ->
           return unless plan
-          neo.queryPlan(elm.get(0)).display(plan)
+          display = () ->
+            neo.queryPlan(elm.get(0)).display(plan)
+          display()
           scope.$on('export.plan.svg', ->
             exportService.download('plan.svg', 'image/svg+xml', new XMLSerializer().serializeToString(elm.get(0)))
           )
+          scope.toggleExpanded = (expanded) ->
+            visit = (operator) ->
+              operator.expanded = expanded
+              if operator.children
+                for child in operator.children
+                  visit(child)
+            visit plan.root
+            display()
           unbind()
   ])
