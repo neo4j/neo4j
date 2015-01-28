@@ -16,9 +16,21 @@ o Fix the ordering of how we write long strings to the property store, as well a
 Consistency checker:
 o Better error messages from ConsistencyChecker when printing properties containing arrays
 
+Cypher:
+o Re-allows legacy START syntax for loading nodes/rels by id or index lookup
+o Treats named shortest path of length 1 as a var length path 1..1
+o Fixes #3727: Handling of empty fields by LOAD CSV
+o Fixes: Correctly report planner type in plan descriptions of UNION queries
+o Shares plans between profiled/explained and regular variants of the same query in the plan cache
+o Fixes: JSON plan descriptions now contain all identifiers
+o Fixes #3828: ClassCastException during rewriting
+o Removes unnecessarily introduced eargerness around use of MERGE ... ON CREATE SET ...
+o Prevents literal property constraints in shortest path patterns
+o Adds terminology section to Cypher manual
+
 CSV:
 o CSV now parses quoted-empty-fields as empty strings and unquoted-empty-fields as null
-o Adds ability to specify disjoint id groups in import tool 
+o Adds ability to specify disjoint id groups in import tool
 
 2.2.0-M01
 ---------
@@ -28,7 +40,7 @@ o Configuration for store memory mapping values is now changed to be a
 o New Muninn page cache offers more performant operation with reduced
   garbage collector strain
 o Removes dependency on JTA
-o Lucene logical logs (lucene.log.vXXX) and TransactionManager 
+o Lucene logical logs (lucene.log.vXXX) and TransactionManager
   logs (tm_tx_log.X) are no longer created
 o Logical logs are now renamed to neostore.transaction.db.vXXX
 o Introduces batched writes, which especially benefit small transactions

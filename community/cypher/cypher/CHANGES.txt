@@ -1,3 +1,16 @@
+2.2.0-M03
+---------
+o Re-allows legacy START syntax for loading nodes/rels by id or index lookup
+o Treats named shortest path of length 1 as a var length path 1..1
+o Fixes #3727: Handling of empty fields by LOAD CSV
+o Fixes: Correctly report planner type in plan descriptions of UNION queries
+o Shares plans between profiled/explained and regular variants of the same query in the plan cache
+o Fixes: JSON plan descriptions now contain all identifiers
+o Fixes #3828: ClassCastException during rewriting
+o Removes unnecessarily introduced eargerness around use of MERGE ... ON CREATE SET ...
+o Prevents literal property constraints in shortest path patterns
+o Adds terminology section to Cypher manual
+
 2.2.0-M01
 ---------
 o Ronja, the cost based planner, is now the default
