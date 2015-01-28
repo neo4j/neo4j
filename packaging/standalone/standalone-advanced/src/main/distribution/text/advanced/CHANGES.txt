@@ -28,6 +28,13 @@ o Removes unnecessarily introduced eargerness around use of MERGE ... ON CREATE 
 o Prevents literal property constraints in shortest path patterns
 o Adds terminology section to Cypher manual
 
+Browser:
+o Add Query Plan Visualization.
+o Export graph as SVG.
+o Display targeted motd on the welcome frame.
+o Add left vertical frame menu to change frame views.
+o Export files in Safari.
+
 CSV:
 o CSV now parses quoted-empty-fields as empty strings and unquoted-empty-fields as null
 o Adds ability to specify disjoint id groups in import tool
