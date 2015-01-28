@@ -67,13 +67,21 @@ angular.module('neo4jApp.services')
                   "companies": [
                       {
                         type: "company"
-                        name: "Neo4j " + @data.store_id
+                        name: "Neo4j " + @data.neo4j_version + " " + @data.store_id
                         company_id: @data.store_id
+                        # custom_attibutes: {
+                        #   neo4j_version: @data.neo4j_version
+                        # }
                       }
                     ]
                   })
                 Intercom.event('connect', {
                     store_id: @data.store_id
+                    neo4j_version: @data.neo4j_version
+                    client_starts: @data.client_starts
+                    cypher_attempts: @data.cypher_attempts
+                    cypher_wins: @data.cypher_wins
+                    cypher_fails: @data.cypher_fails
                   })
 
         pingLater: (event) =>

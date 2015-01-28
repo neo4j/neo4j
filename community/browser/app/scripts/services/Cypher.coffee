@@ -25,7 +25,8 @@ angular.module('neo4jApp.services')
     '$q'
     '$rootScope'
     'Server'
-    ($q, $rootScope, Server) ->
+    'UsageDataCollectionService'
+    ($q, $rootScope, Server, UDC) ->
       parseId = (resource = "") ->
         id = resource.split('/').slice(-2, -1)
         return parseInt(id, 10)
@@ -138,15 +139,19 @@ angular.module('neo4jApp.services')
           statements = if query then [{statement:query}] else []
           if @id
             q = $q.defer()
+            UDC.increment('cypher_attempts')
             rr = Server.transaction(
               path: "/#{@id}/commit"
               statements: statements
             ).success(
               (r) =>
+                UDC.increment('cypher_wins')
                 @delegate?.transactionFinished.call(@delegate, @id)
                 @_reset()
                 q.resolve(r)
-              (r) => q.reject(r)
+              (r) =>
+                UDC.increment('cypher_fails')
+                q.reject(r)
             )
             promiseResult(rr)
           else
@@ -176,7 +181,7 @@ angular.module('neo4jApp.services')
 
         send: (query) -> # Deprecated
           @transaction().commit(query)
-        
+
         getTransactionIDs: () ->
           Object.keys(@_active_requests)
 
@@ -199,4 +204,3 @@ angular.module('neo4jApp.services')
 
       window.Cypher = new CypherService()
 ]
-

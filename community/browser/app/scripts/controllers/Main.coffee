@@ -50,6 +50,7 @@ angular.module('neo4jApp.controllers')
                 for a in r.attributes
                   $scope.kernel[a.name] = a.value
               UDC.set('store_id',   $scope.kernel['StoreId'])
+              UDC.set('neo4j_version', $scope.server.neo4j_version)
             ).error((r)-> $scope.kernel = {})
 
         $scope.identity = angular.identity
@@ -103,6 +104,7 @@ angular.module('neo4jApp.controllers')
 
         $scope.$watch 'server', (val) ->
           $scope.neo4j.version = val.neo4j_version
+
           if val.neo4j_version then $scope.motd.setCallToActionVersion(val.neo4j_version)
         , true
 
