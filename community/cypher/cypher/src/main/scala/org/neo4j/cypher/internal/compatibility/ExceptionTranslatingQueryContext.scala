@@ -65,6 +65,13 @@ class ExceptionTranslatingQueryContext(inner: QueryContext) extends DelegatingQu
   override def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int =
     translateException(super.removeLabelsFromNode(node, labelIds))
 
+  override def getPropertiesForNode(node: Long): Iterator[Long] =
+    translateException(super.getPropertiesForNode(node))
+
+  override def getPropertiesForRelationship(relId: Long): Iterator[Long] =
+    translateException(super.getPropertiesForRelationship(relId))
+
+
   override def getPropertyKeyName(propertyKeyId: Int): String =
     translateException(super.getPropertyKeyName(propertyKeyId))
 
