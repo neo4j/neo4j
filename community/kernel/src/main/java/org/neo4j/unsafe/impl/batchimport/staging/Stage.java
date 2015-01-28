@@ -37,7 +37,12 @@ public class Stage
 
     public Stage( String name, Configuration config )
     {
-        this.execution = new StageExecution( name, config, pipeline );
+        this( name, config, false );
+    }
+
+    public Stage( String name, Configuration config, boolean orderedTickets )
+    {
+        this.execution = new StageExecution( name, config, pipeline, orderedTickets );
     }
 
     protected StageControl control()

@@ -44,12 +44,14 @@ public class StageExecution implements StageControl
     private final Collection<Step<?>> pipeline;
     private volatile Throwable panicCause;
     private long startTime;
+    private final boolean orderedTickets;
 
-    public StageExecution( String stageName, Configuration config, Collection<Step<?>> pipeline )
+    public StageExecution( String stageName, Configuration config, Collection<Step<?>> pipeline, boolean orderedTickets )
     {
         this.stageName = stageName;
         this.config = config;
         this.pipeline = pipeline;
+        this.orderedTickets = orderedTickets;
     }
 
     public boolean stillExecuting()
@@ -76,7 +78,7 @@ public class StageExecution implements StageControl
         this.startTime = currentTimeMillis();
         for ( Step<?> step : pipeline )
         {
-            step.start();
+            step.start( orderedTickets );
         }
     }
 

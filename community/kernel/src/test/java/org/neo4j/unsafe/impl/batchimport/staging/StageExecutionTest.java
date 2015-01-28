@@ -19,11 +19,11 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-
-import org.junit.Test;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
@@ -44,7 +44,7 @@ public class StageExecutionTest
         steps.add( stepWithAverageOf( 10 ) );
         steps.add( stepWithAverageOf( 5 ) );
         steps.add( stepWithAverageOf( 30 ) );
-        StageExecution execution = new StageExecution( "Test", DEFAULT, steps );
+        StageExecution execution = new StageExecution( "Test", DEFAULT, steps, true );
 
         // WHEN
         Iterator<Pair<Step<?>,Float>> ordered = execution.stepsOrderedBy( Keys.avg_processing_time, true ).iterator();
@@ -68,7 +68,7 @@ public class StageExecutionTest
         steps.add( stepWithAverageOf( 5 ) );
         steps.add( stepWithAverageOf( 30 ) );
         steps.add( stepWithAverageOf( 5 ) );
-        StageExecution execution = new StageExecution( "Test", DEFAULT, steps );
+        StageExecution execution = new StageExecution( "Test", DEFAULT, steps, true );
 
         // WHEN
         Iterator<Pair<Step<?>,Float>> ordered = execution.stepsOrderedBy( Keys.avg_processing_time, false ).iterator();

@@ -40,8 +40,10 @@ public interface Step<T> extends Parallelizable
 {
     /**
      * Starts the processing in this step.
+     *
+     * @param orderedTickets whether or not tickets leave each step in order of ticket number.
      */
-    void start();
+    void start( boolean orderedTickets );
 
     /**
      * @return name of this step.

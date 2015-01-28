@@ -19,9 +19,9 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.junit.Test;
+
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
@@ -35,7 +35,7 @@ public class StageTest
     {
         // GIVEN
         Configuration config = new Configuration.Default();
-        Stage stage = new Stage( "Test stage", config );
+        Stage stage = new Stage( "Test stage", config, true );
         int batchSize = 10;
         long batches = 1000;
         final long items = batches*batchSize;

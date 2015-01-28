@@ -19,9 +19,9 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import java.util.Arrays;
-
 import org.junit.Test;
+
+import java.util.Arrays;
 
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
@@ -134,7 +134,7 @@ public class DynamicProcessorAssignerTest
 
     private StageExecution[] executionOf( Configuration config, Step<?>... steps )
     {
-        StageExecution execution = new StageExecution( "Test", config, Arrays.asList( steps ) );
+        StageExecution execution = new StageExecution( "Test", config, Arrays.asList( steps ), true );
         return new StageExecution[] {execution};
     }
 }
