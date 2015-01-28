@@ -24,10 +24,11 @@ angular.module('neo4jApp.controllers')
   .controller 'DisconnectCtrl', [
     '$scope'
     'AuthService'
-    ($scope, AuthService) ->
+    'ConnectionStatusService'
+    ($scope, AuthService, ConnectionStatusService) ->
       AuthService.forget().then( ->
-        $scope.static_user = angular.copy(AuthService.getCurrentUser())
-        $scope.static_is_authenticated = AuthService.isAuthenticated()
+        $scope.static_user = ConnectionStatusService.connectedAsUser()
+        $scope.static_is_authenticated = ConnectionStatusService.isConnected()
       )
 
       $scope.focusEditor()

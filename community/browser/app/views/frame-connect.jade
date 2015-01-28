@@ -26,7 +26,7 @@ div(ng-controller="AuthCtrl")
                       br
                   .row.form-info
                     .col-sm-5
-                      | Default username/password: 
+                      | Default username/password:
                       b neo4j
                       /
                       b neo4j
@@ -40,7 +40,7 @@ div(ng-controller="AuthCtrl")
                 p.lead
                   | Connected.
               .details.col-sm-9
-                p Connected to the Neo4j database (no authentication required).
+                p Connected to the Neo4j database (no auth required).
             .section.row-fluid.summary(ng-show="static_is_authenticated && !password_change_required && static_user")
               .summary.col-sm-3
                 h3 Connected to Neo4j
@@ -50,15 +50,10 @@ div(ng-controller="AuthCtrl")
                 p
                 ul.big.undecorated
                   li
-                    span.center-tbl-left-col 
-                      | Current user: 
+                    span.center-tbl-left-col.inline
+                      | You are connected as user:&nbsp;
                     code
-                      | {{static_user.username}}
-                  li
-                    span.center-tbl-left-col
-                      | Authorization token: 
-                    code
-                      | {{static_user.authorization_token}}
+                      | {{static_user}}
       .view-result.fade(ng-show="password_change_required")
         include partials/frame-change-password
       .status-bar(ng-class='{error: error_text, loading: frame.isLoading}')

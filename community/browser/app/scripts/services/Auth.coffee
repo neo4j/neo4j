@@ -22,18 +22,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 angular.module('neo4jApp.services')
 .service 'AuthService', [
-  'AuthDataService',
+  'ConnectionStatusService'
   'Server'
   'Settings'
-  '$rootScope'
-  (AuthDataService, Server, Settings, $rootScope) ->
+  '$q'
+  (ConnectionStatusService, Server, Settings, $q) ->
 
-    updatePersistentAuthToken = (response) ->
-      return AuthDataService.clearAuthData() unless response.authorization_token?
-      AuthDataService.setAuthData ":#{response.authorization_token}"
+    setConnectionAuthData = (username, password) ->
+      ConnectionStatusService.setConnectionAuthData username, password
 
-    setCurrentUser = (user_obj) ->
-      AuthDataService.setCurrentUser user_obj
+    clearConnectionAuthData = ->
+      ConnectionStatusService.clearConnectionAuthData()
 
     class AuthService
       constructor: ->
@@ -41,86 +40,83 @@ angular.module('neo4jApp.services')
       authenticate: (username, password) =>
         that = @
         @current_password = password
-        promise = Server.post(Settings.endpoint.auth, {username: username, password: password})
+        setConnectionAuthData username, password
+
+        promise = @makeRequest()
         promise.then(
           (r) ->
-            response = r.data
-            setCurrentUser response
-            
-            return r if response.password_change_required is true
-            updatePersistentAuthToken response
-            that.setAuthenticatedStatus true
+            ConnectionStatusService.setConnected yes
             r
           ,
           (r) ->
-            that.forget()
+            that.forget() unless r.status == 403 #Forbidden
             r
         )
         promise
 
-      hasValidAuthorization: =>
-        that = @
-        p = Server.get(Settings.endpoint.auth)
-        p.success(
-          (r) -> 
-            that.setAuthenticatedStatus true
-            setCurrentUser r
-            r
-        ).error(
+      authorizationRequired: ->
+        #Make call without auth headers
+        q = $q.defer()
+        p = @makeRequest(skip_auth_header = yes)
+        p.then(
           (r) ->
-            that.setAuthenticatedStatus false
-            setCurrentUser false
-            r
+            ##Success, no auth required
+            clearConnectionAuthData()
+            ConnectionStatusService.setAuthorizationRequired no
+            q.resolve r
+          ,
+          (r) ->
+            ConnectionStatusService.setAuthorizationRequired yes
+            q.reject r
         )
+        q.promise
+
+      hasValidAuthorization: ->
+        that = @
+        q = $q.defer()
+        req = @authorizationRequired()
+        req.then(
+          (r) ->
+            ConnectionStatusService.setConnected yes
+            q.resolve r
+          ,
+          (r) ->
+            p = that.makeRequest()
+            p.then(
+              (rr) ->
+                ConnectionStatusService.setConnected yes
+                q.resolve rr
+              ,
+              (rr) ->
+                if rr.status is 401
+                  clearConnectionAuthData()
+                q.reject rr
+            )
+        )
+        q.promise
+
+      makeRequest: (skip_auth_header = no) ->
+        opts = if skip_auth_header then {skipAuthHeader: skip_auth_header} else {}
+        p = Server.get("#{Settings.endpoint.rest}/", opts)
 
       forget: =>
-        updatePersistentAuthToken false
-        if @getCurrentUser()
-          setCurrentUser false
+        if ConnectionStatusService.connectedAsUser()
+          clearConnectionAuthData()
         @hasValidAuthorization()
-
-      getAuthInfo: ->
-        that = @
-        Server.get(Settings.endpoint.auth).then( (r)->
-          setCurrentUser r.data
-        )
 
       setNewPassword: (old_passwd, new_passwd) ->
         that = @
-        promise = Server.post("#{Settings.endpoint.authUser}/#{@getCurrentUser().username}/password"
-          , {password: old_passwd, new_password: new_passwd})
+        setConnectionAuthData ConnectionStatusService.connectedAsUser(), old_passwd
+        promise = Server.post("#{Settings.endpoint.authUser}/#{ConnectionStatusService.connectedAsUser()}/password"
+          , {password: new_passwd})
         .then(
-          (r) -> 
-            updatePersistentAuthToken r.data
-            that.hasValidAuthorization()
+          (r) ->
+            setConnectionAuthData ConnectionStatusService.connectedAsUser(), new_passwd
         )
         promise
-
-      setNewAuthToken: (passwd, new_authorization_token) ->
-        promise = Server.post("#{Settings.endpoint.authUser}/#{@getCurrentUser().username}/authorization_token"
-          , {password: passwd, new_authorization_token: new_authorization_token})
-        .then( ->
-          updatePersistentAuthToken {authorization_token: new_authorization_token}
-        )
-        promise
-
-      generateNewAuthToken: (passwd) ->
-        promise = Server.post("#{Settings.endpoint.authUser}/#{@getCurrentUser().username}/authorization_token"
-          , {password: passwd})
-        promise.then((r)->
-          response = r.data
-          updatePersistentAuthToken response
-        )
-        promise
-
-      isAuthenticated: -> AuthDataService.isAuthenticated()
-
-      setAuthenticatedStatus: (is_authenticated) =>
-        AuthDataService.setAuthenticated is_authenticated
-        $rootScope.$emit 'auth:status_updated'
 
       getCurrentUser: ->
-        AuthDataService.current_user
-      
+        ConnectionStatusService.connectedAsUser()
+
     new AuthService()
 ]

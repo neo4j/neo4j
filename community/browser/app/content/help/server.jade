@@ -8,7 +8,7 @@ article.help
         p
           | The &nbsp;
           code :server
-          |  command lets you manage the connection to Neo4j, such as authenticating and viewing metadata for the current connection.
+          |  command lets you manage the connection to Neo4j, such as connecting, disconnecting and viewing metadata for the current connection.
         table.table-condensed.table-help
           tr
             th Usage:
@@ -20,10 +20,8 @@ article.help
               a(server-topic="status") :server status
               | &nbsp;
               a(server-topic="change-password") :server change-password
-              | &nbsp;
-              a(server-topic="invalidate-token") :server invalidate-token
           tr
-            th Authentication:
+            th Auth:
             td
               a(server-topic="connect") :server connect
               | &nbsp;

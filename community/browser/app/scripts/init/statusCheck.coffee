@@ -19,12 +19,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 angular.module('neo4jApp').run([
+  'ConnectionStatusService'
   '$rootScope'
   '$http'
   '$timeout'
   'Server'
   'Settings'
-  ($scope, $http, $timeout, Server, Settings) ->
+  (ConnectionStatusService, $scope, $http, $timeout, Server, Settings) ->
     timer = null
     $scope.check = ->
       $timeout.cancel(timer)
@@ -35,14 +36,17 @@ angular.module('neo4jApp').run([
       ts = (new Date()).getTime()
       Server.status('?t='+ts).then(
         ->
+          ConnectionStatusService.setConnected yes
           $scope.offline = no
           $scope.unauthorized = no
           timer = $timeout($scope.check, Settings.heartbeat * 1000)
       ,
         (response) ->
-          if response.status is 401
+          ConnectionStatusService.setConnected no
+          if response.status in [401, 403]
             $scope.offline = no
             $scope.unauthorized = yes
+            ConnectionStatusService.setAuthorizationRequired yes
             timer = $timeout($scope.check, Settings.heartbeat * 1000)
           else
             $scope.offline = yes
