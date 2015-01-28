@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -31,6 +28,7 @@ import java.util.List;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
@@ -83,6 +81,9 @@ import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
+
 public class SwitchToSlave
 {
     // TODO solve this with lifecycle instance grouping or something
@@ -104,13 +105,14 @@ public class SwitchToSlave
     private final DelegateInvocationHandler<Master> masterDelegateHandler;
     private final ClusterMemberAvailability clusterMemberAvailability;
     private final RequestContextFactory requestContextFactory;
+    private final ClusterClient clusterClient;
 
     private MasterClientResolver masterClientResolver;
 
     public SwitchToSlave( ConsoleLogger console, Config config, DependencyResolver resolver, HaIdGeneratorFactory
             idGeneratorFactory, Logging logging, DelegateInvocationHandler<Master> masterDelegateHandler,
-                          ClusterMemberAvailability clusterMemberAvailability, RequestContextFactory
-            requestContextFactory )
+            ClusterMemberAvailability clusterMemberAvailability, RequestContextFactory
+            requestContextFactory, ClusterClient clusterClient )
     {
         this.console = console;
         this.config = config;
@@ -121,6 +123,7 @@ public class SwitchToSlave
         this.requestContextFactory = requestContextFactory;
         this.msgLog = logging.getMessagesLog( getClass() );
         this.masterDelegateHandler = masterDelegateHandler;
+        this.clusterClient = clusterClient;
     }
 
     /**
@@ -143,7 +146,7 @@ public class SwitchToSlave
 
         assert masterUri != null; // since we are here it must already have been set from outside
 
-        this.masterClientResolver = new MasterClientResolver( logging,
+        this.masterClientResolver = new MasterClientResolver( logging, clusterClient, clusterMemberAvailability, msgLog,
                 config.get( HaSettings.read_timeout ).intValue(),
                 config.get( HaSettings.lock_read_timeout ).intValue(),
                 config.get( HaSettings.max_concurrent_channels_per_slave ).intValue(),

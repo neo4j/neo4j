@@ -120,7 +120,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         return getClass().getSimpleName() + "[" + getCurrentState() + "]";
     }
 
-    private class StateMachineClusterEventListener extends ClusterMemberListener.Adapter
+    private class StateMachineClusterEventListener implements ClusterMemberListener
     {
         @Override
         public synchronized void coordinatorIsElected( InstanceId coordinatorId )
@@ -231,38 +231,22 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         }
 
         @Override
+        public void memberIsUnavailable( String role, InstanceId unavailableId )
+        {
+            if ( context.getMyId().equals( unavailableId ) &&
+                 HighAvailabilityModeSwitcher.SLAVE.equals( role ) &&
+                 state == HighAvailabilityMemberState.SLAVE )
+            {
+                changeStateToPending();
+            }
+        }
+
+        @Override
         public void memberIsFailed( InstanceId instanceId )
         {
-            if ( !isQuorum(getAliveCount(), getTotalCount()) )
+            if ( !isQuorum( getAliveCount(), getTotalCount() ) )
             {
-                try
-                {
-                    if(state.isAccessAllowed())
-                    {
-                        availabilityGuard.deny(HighAvailabilityMemberStateMachine.this);
-                    }
-
-                    final HighAvailabilityMemberChangeEvent event =
-                            new HighAvailabilityMemberChangeEvent(
-                                    state, HighAvailabilityMemberState.PENDING, null, null );
-                    state = HighAvailabilityMemberState.PENDING;
-                    Listeners.notifyListeners( memberListeners, new Listeners
-                            .Notification<HighAvailabilityMemberListener>()
-                    {
-                        @Override
-                        public void notify( HighAvailabilityMemberListener listener )
-                        {
-                            listener.instanceStops( event );
-                        }
-                    } );
-
-                    context.setAvailableHaMasterId( null );
-                    context.setElectedMasterId( null );
-                }
-                catch ( Throwable throwable )
-                {
-                    throw new RuntimeException( throwable );
-                }
+                changeStateToPending();
             }
         }
 
@@ -273,6 +257,31 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
             {
                 election.performRoleElections();
             }
+        }
+
+        private void changeStateToPending()
+        {
+            if ( state.isAccessAllowed() )
+            {
+                availabilityGuard.deny( HighAvailabilityMemberStateMachine.this );
+            }
+
+            final HighAvailabilityMemberChangeEvent event =
+                    new HighAvailabilityMemberChangeEvent( state, HighAvailabilityMemberState.PENDING, null, null );
+
+            state = HighAvailabilityMemberState.PENDING;
+
+            Listeners.notifyListeners( memberListeners, new Listeners.Notification<HighAvailabilityMemberListener>()
+            {
+                @Override
+                public void notify( HighAvailabilityMemberListener listener )
+                {
+                    listener.instanceStops( event );
+                }
+            } );
+
+            context.setAvailableHaMasterId( null );
+            context.setElectedMasterId( null );
         }
 
         private long getAliveCount()
