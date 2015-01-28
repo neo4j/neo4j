@@ -62,7 +62,6 @@ import org.neo4j.io.pagecache.monitoring.DefaultPageCacheMonitor;
 import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.test.RepeatRule;
 
-import static java.lang.Long.toHexString;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -74,6 +73,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static java.lang.Long.toHexString;
+
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
@@ -3596,6 +3598,29 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
                 assertThat( reason,
                         toHexString( cursor.getLong() ),
                         is( toHexString( x ) ) );
+            }
+        }
+    }
+
+    @Test
+    public void shouldEvictPagesFromUnmappedFiles() throws Exception
+    {
+        // GIVEN mapping then unmapping
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        try ( PagedFile pagedFile = pageCache.map( file, filePageSize );
+              PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+        }
+
+        // WHEN using all pages, so that eviction of some pages will happen
+        try ( PagedFile pagedFile = pageCache.map( file, filePageSize );
+                PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        {
+            for ( int i = 0; i < maxPages+5; i++ )
+            {
+                // THEN eviction happening here should not result in any exception
+                assertTrue( cursor.next() );
             }
         }
     }
