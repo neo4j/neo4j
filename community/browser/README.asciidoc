@@ -1,6 +1,6 @@
 = Neo4j Browser =
 
-*Explore the graph, one query at a time.* 
+*Explore the graph, one query at a time.*
 
 Neo4j Browser is http://github.com/neo4j/neo4j/[Neo4j's] built-in client application, a mashup of a REPL, data visualization and lightweight IDE.
 
@@ -12,10 +12,6 @@ Neo4j Browser is http://github.com/neo4j/neo4j/[Neo4j's] built-in client applica
 * for modern browsers, with reasonable fallbacks
 
 == Development ==
-
-Management::
-
-  * https://trello.com/b/3QpahIAK/public-neo4j-browser[Trello Wall]
 
 Run in development mode::
 
