@@ -30,7 +30,7 @@ import javax.management.NotificationListener;
 import javax.management.openmbean.CompositeData;
 
 import com.sun.management.GarbageCollectionNotificationInfo;
-import org.junit.rules.ExternalResource;
+import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
@@ -41,7 +41,7 @@ import org.junit.runners.model.Statement;
  *
  * Make sure to put this rule at the bottom of all rule fields, so that it runs outermost.
  */
-public class RetryOnGcRule extends ExternalResource
+public class RetryOnGcRule implements TestRule
 {
     @Override
     public Statement apply( final Statement base, Description description )
