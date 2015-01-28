@@ -26,7 +26,7 @@ import symbols._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.neo4j.graphdb.Node
 
-case class PropertiesFunction(nodeExpr: Expression) extends Expression {
+case class PropertiesFunction(nodeExpr: Expression) extends NullInNullOutExpression {
 
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = nodeExpr(ctx) match {
     case n: Node =>
