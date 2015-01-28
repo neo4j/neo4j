@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport.input;
 
 import org.junit.Test;
+import org.mockito.InOrder;
 
 import org.neo4j.function.Function;
 import org.neo4j.helpers.ArrayUtil;
@@ -27,6 +28,10 @@ import org.neo4j.helpers.ArrayUtil;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
@@ -132,5 +137,33 @@ public class InputEntityDecoratorsTest
         // THEN
         assertNull( node.labels() );
         assertEquals( labelField, node.labelField().longValue() );
+    }
+
+    @Test
+    public void shouldCramMultipleDecoratorsIntoOne() throws Exception
+    {
+        // GIVEN
+        Function<InputNode,InputNode> decorator1 = spy( new IdentityDecorator() );
+        Function<InputNode,InputNode> decorator2 = spy( new IdentityDecorator() );
+        Function<InputNode,InputNode> multi = InputEntityDecorators.decorators( decorator1, decorator2 );
+
+        // WHEN
+        InputNode node = mock( InputNode.class );
+        multi.apply( node );
+
+        // THEN
+        InOrder order = inOrder( decorator1, decorator2 );
+        order.verify( decorator1, times( 1 ) ).apply( node );
+        order.verify( decorator2, times( 1 ) ).apply( node );
+        order.verifyNoMoreInteractions();
+    }
+
+    private static class IdentityDecorator implements Function<InputNode,InputNode>
+    {
+        @Override
+        public InputNode apply( InputNode from ) throws RuntimeException
+        {
+            return from;
+        }
     }
 }
