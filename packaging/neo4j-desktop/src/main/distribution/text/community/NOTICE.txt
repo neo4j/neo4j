@@ -28,7 +28,6 @@ Third-party licenses
 Apache Software License, Version 2.0
   Apache Commons Configuration
   Apache ServiceMix Bundles: jline-0.9.94
-  bootstrap
   Commons BeanUtils
   Commons Digester
   Commons IO
@@ -116,8 +115,14 @@ Install4j redistributable files license
   Neo4j Launcher
 
 MIT License
+  angular-animate
+  angular-base64
+  angular-cookies
   angular-local-storage
-  angular-moment
+  angular-mocks
+  angular-resource
+  angular-sanitize
+  angular-scenario
   angular-ui-bootstrap
   angular-ui-codemirror
   angular-ui-sortable
@@ -126,6 +131,7 @@ MIT License
   arbor-tween.js
   arbor.js
   Blob.js
+  bootstrap
   CodeMirror
   CodeMirror CSS
   Color picker
@@ -133,7 +139,6 @@ MIT License
   es5-shim
   FileSaver.js
   JQuery
-  JQuery Animated-Advanced Plugin
   jquery-ui
   jquery.colorhelpers.js
   jquery.flot.js
@@ -141,8 +146,8 @@ MIT License
   jquery.putCursorAtEnd.js
   jquery.sortable.js
   JSON3
+  local-storage-js
   Modernizr
-  momentjs
   Pure Feature Detection Library (has.js)
   SLF4J API Module
   Underscore.js
