@@ -36,9 +36,9 @@ object PatternExpressionPatternElementNamer {
     val unnamedElements = findPatternElements(expr.pattern).filter(_.identifier.isEmpty)
     val unnamedMap: Map[PatternElement, Identifier] = unnamedElements.map {
       case elem: NodePattern =>
-        elem -> Identifier(UnNamedNameGenerator.name(elem.position.offset + 1))(elem.position)
+        elem -> Identifier(UnNamedNameGenerator.name(elem.position.bumped()))(elem.position)
       case elem@RelationshipChain(_, relPattern, _) =>
-        elem -> Identifier(UnNamedNameGenerator.name(relPattern.position.offset + 1))(relPattern.position)
+        elem -> Identifier(UnNamedNameGenerator.name(relPattern.position.bumped()))(relPattern.position)
     }.toMap
     unnamedMap
   }

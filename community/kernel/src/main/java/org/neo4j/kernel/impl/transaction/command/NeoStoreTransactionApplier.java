@@ -49,6 +49,7 @@ public class NeoStoreTransactionApplier extends NeoCommandHandler.Adapter
     private final LockService lockService;
     private final LockGroup lockGroup;
     private final long transactionId;
+    private RelationshipHoles relationshipHoles;
 
     public NeoStoreTransactionApplier( NeoStore store, CacheAccessBackDoor cacheAccess,
                                        LockService lockService, LockGroup lockGroup, long transactionId )
@@ -99,8 +100,11 @@ public class NeoStoreTransactionApplier extends NeoCommandHandler.Adapter
                 !record.inUse() && (record.getFirstNode() != -1 || record.getSecondNode() != -1);
         if ( relationshipHasBeenDeletedButNotPreviouslyAppliedToStore )
         {   // ... then we can use the fields in that record to patch the cache
-            cacheAccess.patchDeletedRelationshipNodes( command.getKey(), record.getType(), record.getFirstNode(),
-                    record.getFirstNextRel(), record.getSecondNode(), record.getSecondNextRel() );
+            if ( relationshipHoles == null )
+            {
+                relationshipHoles = new RelationshipHoles();
+            }
+            relationshipHoles.deleted( record );
         }
         return false;
     }
@@ -199,6 +203,15 @@ public class NeoStoreTransactionApplier extends NeoCommandHandler.Adapter
     {
         neoStore.setGraphNextProp( command.getRecord().getNextProp() );
         return false;
+    }
+
+    @Override
+    public void apply()
+    {
+        if ( relationshipHoles != null )
+        {
+            relationshipHoles.apply( cacheAccess );
+        }
     }
 
     private boolean nodeHasBeenUpgradedToDense( NodeCommand command )

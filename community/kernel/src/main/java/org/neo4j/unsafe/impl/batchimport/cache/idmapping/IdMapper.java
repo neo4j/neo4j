@@ -19,7 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping;
 
-import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.function.primitive.PrimitiveIntPredicate;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
@@ -33,8 +32,6 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
  */
 public interface IdMapper
 {
-    public static final PrimitiveIntPredicate ANY_GROUP = PrimitiveIntCollections.alwaysTrue();
-
     /**
      * Maps an {@code inputId} to an actual node id.
      * @param inputId an id of an unknown type, coming from input.
@@ -72,11 +69,10 @@ public interface IdMapper
      * @link #put(Object, long) being put}
      *
      * @param inputId the input id to get the actual node id for.
-     * @param inGroup a {@link PrimitiveIntPredicate} helping out with resolving collisions stemming from
-     * multiple equal input ids.
+     * @param group {@link Group} the given {@code inputId} must exist in, i.e. have been put with.
      * @return the actual node id previously specified by {@link #put(Object, long)}, or {@code -1} if not found.
      */
-    long get( Object inputId, PrimitiveIntPredicate inGroup );
+    long get( Object inputId, Group group );
 
     /**
      * Gathers statistics about memory usage in this object.

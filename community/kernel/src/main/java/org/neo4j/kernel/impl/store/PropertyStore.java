@@ -162,6 +162,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     public void updateRecord( PropertyRecord record )
     {
         long pageId = pageIdForRecord( record.getId() );
+        updatePropertyBlocks( record );
         try ( PageCursor cursor = storeFile.io( pageId, PF_EXCLUSIVE_LOCK ) )
         {
             if ( cursor.next() ) // should always be true
@@ -182,7 +183,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
         {
             throw new UnderlyingStorageException( e );
         }
-        updatePropertyBlocks( record );
+
     }
 
     @Override

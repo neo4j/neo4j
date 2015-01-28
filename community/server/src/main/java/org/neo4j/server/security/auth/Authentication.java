@@ -30,8 +30,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.impl.util.Charsets;
+import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 import org.neo4j.server.security.auth.exception.IllegalTokenException;
-import org.neo4j.server.security.auth.exception.IllegalUsernameException;
 import org.neo4j.server.security.auth.exception.TooManyAuthenticationAttemptsException;
 
 import static org.neo4j.kernel.impl.util.BytePrinter.compactHex;
@@ -145,24 +145,26 @@ public class Authentication
 
     public User setPassword( String name, String password ) throws IOException
     {
-        User user = users.findByName( name );
-        if(user != null)
+        User existingUser = users.findByName( name );
+        if ( existingUser != null )
         {
             try
             {
-                User updatedUser = user.augment()
+                User updatedUser = existingUser.augment()
                         .withCredentials( createPasswordCredential( password ) )
                         .withRequiredPasswordChange( false )
                         .build();
-                users.save( updatedUser );
+                users.update( existingUser, updatedUser );
                 return updatedUser;
-            }
-            catch ( IllegalTokenException | IllegalUsernameException e )
+            } catch ( ConcurrentModificationException e )
+            {
+                // try again
+                return setPassword( name, password );
+            } catch ( IllegalTokenException e )
             {
                 throw new ThisShouldNotHappenError( "Jake", "Token/username are not being modified.", e );
             }
-        }
-        else
+        } else
         {
             throw new RuntimeException( "No such user: " + name );
         }
@@ -171,19 +173,22 @@ public class Authentication
     /** Mark the user with the specified name as requiring a password change. All API access will be blocked until the password is changed. */
     public void requirePasswordChange( String name ) throws IOException
     {
-        User user = users.findByName( name );
-        if(user != null)
+        User existingUser = users.findByName( name );
+        if ( existingUser != null )
         {
             try
             {
-                users.save(user.augment().withRequiredPasswordChange( true ).build());
-            }
-            catch ( IllegalTokenException | IllegalUsernameException e )
+                User updatedUser = existingUser.augment().withRequiredPasswordChange( true ).build();
+                users.update( existingUser, updatedUser );
+            } catch ( ConcurrentModificationException e )
             {
-                throw new ThisShouldNotHappenError( "Jake", "Token/username are not being modified.", e );
+                // try again
+                requirePasswordChange( name );
+            } catch ( IllegalTokenException e )
+            {
+                throw new ThisShouldNotHappenError( "Jake", "Token is not being modified.", e );
             }
-        }
-        else
+        } else
         {
             throw new RuntimeException( "No such user: " + name );
         }

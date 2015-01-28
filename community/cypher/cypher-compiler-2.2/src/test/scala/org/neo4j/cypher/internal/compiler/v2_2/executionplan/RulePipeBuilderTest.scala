@@ -108,7 +108,7 @@ class RulePipeBuilderTest extends CypherFunSuite {
 
   private def buildExecutionPipe(q: String): Pipe = {
     val statement = parser.parse(q)
-    val parsedQ = PreparedQuery(statement, q, Map.empty)(mock[SemanticTable], mock[Scope])
+    val parsedQ = PreparedQuery(statement, q, Map.empty)(mock[SemanticTable], Set.empty, mock[Scope])
     planBuilder.producePlan(parsedQ, planContext).pipe
   }
 }

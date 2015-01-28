@@ -23,7 +23,7 @@ html,body {
     width: 2640px;
   }
   header img.neo4j-logo {
-    width: 282px;
+    width: 130px;
     float: left;
     margin: 2em 0 0 3%;
   }
@@ -51,7 +51,7 @@ html,body {
     width: 2210px;
   }
   header img.neo4j-logo {
-    width: 282px;
+    width: 130px;
     float: left;
     margin: 2em 0 0 3%;
   }
@@ -79,7 +79,7 @@ html,body {
     width: 1800px;
   }
   header img.neo4j-logo {
-    width: 282px;
+    width: 130px;
     float: left;
     margin: 2em 0 0 3%;
   }
@@ -107,7 +107,7 @@ html,body {
     width: 1330px;
   }
   header img.neo4j-logo {
-    width: 282px;
+    width: 130px;
     float: left;
     margin: 2em 0 0 3%;
   }
@@ -135,7 +135,7 @@ html,body {
     width: 90%;
   }
   header img.neo4j-logo {
-    width: 282px;
+    width: 130px;
     float: left;
     margin: 2em 0 0 3%;
   }
@@ -144,7 +144,7 @@ html,body {
     padding: 1.5em 3% 0 3%;
   }
   header {
-    height: 8em;
+    height: 7em;
   }
   .col {
     float: left;
@@ -162,16 +162,17 @@ html,body {
     width: 80%;
   }
   header img.neo4j-logo {
-    width: 282px;
+    width: 100px;
     float: left;
-    margin: 2em 0 0 3%;
+    margin: 1em 0 0 3%;
   }
   header h1 {
     float: right;
     padding: 1.5em 3% 0 3%;
+    font-size: 1.5em;
   }
   header {
-    height: 8em;
+    height: 5em;
   }
   .col {
     float: left;
@@ -190,9 +191,9 @@ html,body {
     width: 93%;
   }
   header img.neo4j-logo {
-    width: 212px;
+    width: 90px;
     float: left;
-    margin: 2em 0 0 3%;
+    margin: 0.5em 0 0 3%;
   }
   header h1 {
     float: right;
@@ -200,7 +201,7 @@ html,body {
     font-size: 1.5em;
   }
   header {
-    height: 7em;
+    height: 5em;
   }
   .col {
     float: left;
@@ -220,17 +221,17 @@ html,body {
     width: 100%;
   }
   header img.neo4j-logo {
-    width: 212px;
-    float: none;
-    margin: 1em 0 0 3%;
+    width: 75px;
+    float: left;
+    margin: 0.3em 0 0 2px;
   }
   header h1 {
-    float: none;
+    float: right;
     padding: 0.25em 3% 0 3%;
     font-size: 1.3em;
   }
   header {
-    height: 8em;
+    height: 5em;
   }
   .col {
     float: none;
@@ -261,7 +262,7 @@ html,body {
     width: 100%;
   }
   header img.neo4j-logo {
-    width: 282px;
+    width: 100px;
     float: left;
     margin: 2em 0 0 3%;
   }
@@ -314,7 +315,7 @@ html,body {
 }
 
 header {
-  background: #005a72 url('bg.png');
+  background: #0f5788;
   color: #fff;
   width: 100%;
   margin: 0;
@@ -332,7 +333,7 @@ header {
 }
 
 header .mid {
-  background-color: #005a72;
+  background-color: #0f5788;
 }
 
 header h1 {
@@ -382,6 +383,10 @@ footer div.mid {
   color: #fff;
   font-family: 'Ubuntu', Candara, serif;
   font-weight: 500;
+}
+
+.col tr th a {
+  color: #fff;
 }
 
 .col.cardgeneral tr th {
@@ -503,3 +508,4 @@ body .syntaxhighlighter {
 body .syntaxhighlighter table td.code .line {
   padding: 0 !important;
 }
+

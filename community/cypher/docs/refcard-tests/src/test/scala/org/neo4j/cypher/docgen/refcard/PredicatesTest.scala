@@ -27,6 +27,7 @@ class PredicatesTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT KNOWS A", "A:Person KNOWS B", "B KNOWS C", "C KNOWS ROOT")
   val title = "Predicates"
   val css = "general c2-2 c3-3 c4-2 c5-2 c6-4"
+  override val linkId = "query-where"
 
   override def assert(name: String, result: InternalExecutionResult) {
     name match {

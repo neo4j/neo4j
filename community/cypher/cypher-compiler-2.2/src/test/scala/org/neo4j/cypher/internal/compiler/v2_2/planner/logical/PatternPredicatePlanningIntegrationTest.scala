@@ -54,7 +54,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   }
 
   test("should build plans containing semi apply for a single pattern predicate") {
-   planFor("MATCH (a) WHERE (a)-[:X]->() RETURN a").plan should equal(
+    planFor("MATCH (a) WHERE (a)-[:X]->() RETURN a").plan should equal(
       SemiApply(
         AllNodesScan("a", Set.empty)(PlannerQuery.empty),
         Expand(

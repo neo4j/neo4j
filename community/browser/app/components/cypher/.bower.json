@@ -1,12 +1,11 @@
 {
   "name": "cypher",
   "_cacheHeaders": {
-    "ETag": "\"3088586f5723089f87c5304825ce20f4\"",
-    "Content-Length": "5849",
-    "Content-Type": "text/plain; charset=utf-8",
-    "Content-Disposition": "inline"
+    "ETag": "\"13f275925654af7920445f716430ef29bda3634b\"",
+    "Content-Length": "6396",
+    "Content-Type": "text/plain; charset=utf-8"
   },
-  "_release": "e-tag:3088586f5",
+  "_release": "e-tag:13f275925",
   "main": "index.js",
   "_source": "https://raw.github.com/neo4j-contrib/rabbithole/master/src/main/webapp/javascripts/cypher.js",
   "_target": "*",

@@ -294,7 +294,7 @@ module.exports = (grunt) ->
             dot: true
             cwd: "<%= yeoman.app %>"
             dest: "<%= yeoman.dist %>"
-            src: ["*.{ico,txt}", "images/{,*/}*.{gif,webp}", "styles/fonts/*"]
+            src: ["*.{ico,txt}", "images/{,*/}*.{gif,webp}", "fonts/*"]
           },
           {
             expand: true

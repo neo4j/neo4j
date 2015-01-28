@@ -85,7 +85,7 @@ public class TestPullUpdates
         ClusterManager clusterManager = new ClusterManager( clusterOfSize( 3 ), root, MapUtil.stringMap(
                 HaSettings.pull_interval.name(), PULL_INTERVAL+"ms",
                 ClusterSettings.heartbeat_interval.name(), "2s",
-                ClusterSettings.heartbeat_timeout.name(), "5s") );
+                ClusterSettings.heartbeat_timeout.name(), "30s") );
         clusterManager.start();
         cluster = clusterManager.getDefaultCluster();
         cluster.await( allSeesAllAsAvailable() );

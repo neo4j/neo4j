@@ -60,7 +60,7 @@ sealed trait ReturnItem extends ASTNode with ASTPhrase with SemanticCheckable {
 
 case class UnaliasedReturnItem(expression: Expression, inputText: String)(val position: InputPosition) extends ReturnItem {
   val alias = expression match {
-    case i: Identifier => Some(Identifier(i.name)(i.position.copy(offset = i.position.offset + 1)))
+    case i: Identifier => Some(i.bumpId)
     case _ => None
   }
   val name = alias.map(_.name) getOrElse { inputText.trim }

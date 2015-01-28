@@ -338,4 +338,43 @@ public class GuardingStatementOperations implements
         return entityReadDelegate.expand( statement, inputCursor, nodeId, types, expandDirection,
                 relId, relType, direction, startNodeId, neighborNodeId );
     }
+
+    @Override
+    public Cursor nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction,
+                                        final RelationshipVisitor<? extends RuntimeException> visitor )
+            throws EntityNotFoundException
+    {
+        guard.check();
+        return entityReadDelegate.nodeGetRelationships( statement, nodeId, direction,
+                                                        new GuardedRelationshipVisitor<>( guard, visitor ) );
+    }
+
+    @Override
+    public Cursor nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction, int[] types,
+                                        RelationshipVisitor<? extends RuntimeException> visitor )
+            throws EntityNotFoundException
+    {
+        guard.check();
+        return entityReadDelegate.nodeGetRelationships( statement, nodeId, direction, types,
+                                                        new GuardedRelationshipVisitor<>( guard, visitor ) );
+    }
+
+    private static class GuardedRelationshipVisitor<EX extends Exception> implements RelationshipVisitor<EX>
+    {
+        private final Guard guard;
+        private final RelationshipVisitor<EX> visitor;
+
+        public GuardedRelationshipVisitor( Guard guard, RelationshipVisitor<EX> visitor )
+        {
+            this.guard = guard;
+            this.visitor = visitor;
+        }
+
+        @Override
+        public void visit( long relId, int type, long startNode, long endNode ) throws EX
+        {
+            guard.check();
+            visitor.visit( relId, type, startNode, endNode );
+        }
+    }
 }

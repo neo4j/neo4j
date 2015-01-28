@@ -719,7 +719,7 @@ order by a.COL1""")
 
   test("should_set_label_on_node") {
     val a = createNode()
-    val result = execute("""match (a) where id(a) = 0 SET a:foo RETURN a""")
+    val result = execute("""match (a) SET a:foo RETURN a""")
 
     result.toList should equal(List(Map("a" -> a)))
   }

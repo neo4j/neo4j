@@ -1,8 +1,8 @@
 
 <div ng-controller="DropdownCtrl">
     <!-- Simple dropdown -->
-    <span class="dropdown" on-toggle="toggled(open)">
-      <a href class="dropdown-toggle">
+    <span class="dropdown" dropdown on-toggle="toggled(open)">
+      <a href class="dropdown-toggle" dropdown-toggle>
         Click me for a dropdown, yo!
       </a>
       <ul class="dropdown-menu">
@@ -14,7 +14,7 @@
 
     <!-- Single button -->
     <div class="btn-group" dropdown is-open="status.isopen">
-      <button type="button" class="btn btn-primary dropdown-toggle" ng-disabled="disabled">
+      <button type="button" class="btn btn-primary dropdown-toggle" dropdown-toggle ng-disabled="disabled">
         Button dropdown <span class="caret"></span>
       </button>
       <ul class="dropdown-menu" role="menu">
@@ -29,7 +29,7 @@
     <!-- Split button -->
     <div class="btn-group" dropdown>
       <button type="button" class="btn btn-danger">Action</button>
-      <button type="button" class="btn btn-danger dropdown-toggle">
+      <button type="button" class="btn btn-danger dropdown-toggle" dropdown-toggle>
         <span class="caret"></span>
         <span class="sr-only">Split button!</span>
       </button>

@@ -20,12 +20,13 @@
 package org.neo4j.server.security.auth;
 
 import org.junit.Test;
+
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.server.security.auth.exception.IllegalTokenException;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 public class SecurityCentralTest
 {
@@ -82,7 +83,7 @@ public class SecurityCentralTest
             fail("Should not have been allowed.");
         } catch(IllegalTokenException e)
         {
-            assertThat(e.getMessage(), equalTo("Unable to set token, because the chosen token is already in use."));
+            assertThat( e.getMessage(), equalTo( "The specified token is already in use" ) );
         }
     }
 }

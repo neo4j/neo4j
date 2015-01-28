@@ -1,41 +1,78 @@
 div(ng-controller="CypherResultCtrl", fullscreen)
   .outer
     include partials/frame-common-actions
-    .inner
-      .view-result(ng-class='{error: frame.hasErrors}')
-        .view-result-graph.result(ng-show='isActive("graph")', ng-controller="InspectorCtrl")
-          include partials/legend
-          .graph-contents
-            svg(neo-graph
-              graph-data='frame.response.graph'
-              on-item-click='onItemClick($item, "graphItem")'
-              on-item-mouse-over='onItemHover($item, "graphItem")'
-              on-item-mouse-out='onItemHover()'
-              on-node-drag-toggle='onNodeDragToggle($item)'
-              on-canvas-clicked='onItemClick()'
-              ng-controller='D3GraphCtrl'
-              style="pointer-events:fill;")
-          .status-bar
-            .status
-              include partials/inspector
+    .left-frame-toggle
+      .left-toggle-menu.toggle(ng-if='frame.type == "cypher" && availableModes.length > 0')
+        .btn-group.toggle-buttons
+          button.btn(ng-class='{active: isActive("graph")}', ng-click='setActive("graph")')
+            i.nf.nf-logo
+            span.mini-menu-item-text Graph
+          br
+          button.btn(ng-class='{active: isActive("table")}', ng-click='setActive("table")')
+            i.fa.fa-table
+            span.mini-menu-item-text Rows
+          br
+          button.btn(ng-show='isAvailable("plan")', ng-class='{active: isActive("plan")}', ng-click='setActive("plan")')
+            i.fa.fa-code-fork
+            span.mini-menu-item-text Plan
+    .right-inner-frame.no-indicator(ng-class='{"no-left-menu": frame.type != "cypher" || availableModes.length < 1}')
+      .inner
+        .view-result(ng-class='{error: frame.hasErrors}')
+          .view-result-graph(ng-show='isActive("graph")', ng-controller="InspectorCtrl")
+            article.help.no-data(ng-show='!isAvailable("graph")')
+              p No graph view available. You have to return complete nodes or relationships to view the graph.
+            .graph-holder.result(ng-show='isAvailable("graph")')
+              include partials/legend
+              .graph-contents
+                svg.graph(neo-graph
+                  graph-data='frame.response.graph'
+                  on-item-click='onItemClick($item, "graphItem")'
+                  on-item-mouse-over='onItemHover($item, "graphItem")'
+                  on-item-mouse-out='onItemHover()'
+                  on-node-drag-toggle='onNodeDragToggle($item)'
+                  on-canvas-clicked='onItemClick()'
+                  ng-controller='D3GraphCtrl'
+                  style="pointer-events:fill;"
+                  ng-class="{'one-legend-row': hasLabels || hasTypes, 'two-legend-rows': hasLabels && hasTypes}")
+              .status-bar(ng-show='isActive("graph")')
+                .cell
+                  .status
+                    include partials/inspector
 
-        .view-result-table.result(ng-show='isActive("table")')
-          neo-table(table-data='frame.response.table')
-        .status-bar(ng-show='isActive("table")')
-          .status
-            include partials/result-status
+          .view-result-table.result(ng-show='isActive("table")')
+            .table-holder
+              neo-table(table-data='frame.response.table', ng-show='frame.response.table.size')
+              article.help.no-data.has-status-bar(ng-show='!frame.response.table.size')
+                p
+                  | Nothing to show. Try and &nbsp;
+                  a(help-topic="RETURN")
+                    | RETURN
+                  | something.
+            .status-bar
+              .status
+                include partials/result-status
 
+          .view-result-plan.result(ng-show='isActive("plan")')
+            .plan-holder
+              article.help.no-data.has-status-bar(ng-show='!isAvailable("plan")')
+                p No plan found. Prepend your query with EXPLAIN or PROFILE to analyze the execution plan.
+              .query-plan-contents(ng-show='isAvailable("plan")')
+                svg.query-plan(neo-plan
+                  query-plan='frame.response.table._response.plan')
+            .status-bar
+              .status
+                include partials/plan-status
 
-        .view-result-error.result(ng-show='frame.hasErrors')
-          pre(ng-bind="frame.detailedErrorText")
-          .status-bar.error
-            .status
-              .fa.fa-exclamation-triangle
-              {{frame.errorText}}
+          .view-result-error.result(ng-show='frame.hasErrors')
+            pre(ng-bind="frame.detailedErrorText")
+            .status-bar.error
+              .status
+                .fa.fa-exclamation-triangle
+                {{frame.errorText}}
 
-        .view-result-loading(ng-show='frame.isLoading')
-          .spinner
-            span.fa.fa-spinner.fa-spin.fa-2x
-          .status-bar
-            .status
-              span Running...
+          .view-result-loading(ng-show='frame.isLoading')
+            .spinner
+              span.fa.fa-spinner.fa-spin.fa-2x
+            .status-bar
+              .status
+                span Running...

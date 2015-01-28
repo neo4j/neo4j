@@ -20,8 +20,10 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Random;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,6 +39,81 @@ import static org.junit.Assert.assertEquals;
 
 public class PhysicalWritableLogChannelTest
 {
+    @Test
+    public void shouldBeAbleToWriteSmallNumberOfBytes() throws IOException
+    {
+        final File firstFile = new File( directory.directory(), "file1" );
+        StoreChannel storeChannel = fs.open( firstFile, "rw" );
+        PhysicalLogVersionedStoreChannel versionedStoreChannel =
+                new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1 /* ignored */ );
+        PhysicalWritableLogChannel channel = new PhysicalWritableLogChannel( versionedStoreChannel );
+
+        int length = 26_145;
+        byte[] bytes = generateBytes( length );
+
+        channel.put( bytes, length );
+        channel.close();
+
+        byte[] writtenBytes = new byte[length];
+        new FileInputStream( firstFile ).read( writtenBytes );
+
+        assertArrayEquals( bytes, writtenBytes );
+    }
+
+    @Test
+    public void shouldBeAbleToWriteValuesGreaterThanHalfTheBufferSize() throws IOException
+    {
+        final File firstFile = new File( directory.directory(), "file1" );
+        StoreChannel storeChannel = fs.open( firstFile, "rw" );
+        PhysicalLogVersionedStoreChannel versionedStoreChannel =
+                new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1 /* ignored */ );
+        PhysicalWritableLogChannel channel = new PhysicalWritableLogChannel( versionedStoreChannel );
+
+        int length = 262_145;
+        byte[] bytes = generateBytes( length );
+
+        channel.put( bytes, length );
+        channel.close();
+
+        byte[] writtenBytes = new byte[length];
+        new FileInputStream( firstFile ).read( writtenBytes );
+
+        assertArrayEquals( bytes, writtenBytes );
+    }
+
+    @Test
+    public void shouldBeAbleToWriteValuesGreaterThanTheBufferSize() throws IOException
+    {
+        final File firstFile = new File( directory.directory(), "file1" );
+        StoreChannel storeChannel = fs.open( firstFile, "rw" );
+        PhysicalLogVersionedStoreChannel versionedStoreChannel =
+                new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1 /* ignored */ );
+        PhysicalWritableLogChannel channel = new PhysicalWritableLogChannel( versionedStoreChannel );
+
+        int length = 1_000_000;
+        byte[] bytes = generateBytes( length );
+
+        channel.put( bytes, length );
+        channel.close();
+
+        byte[] writtenBytes = new byte[length];
+        new FileInputStream( firstFile ).read( writtenBytes );
+
+        assertArrayEquals( bytes, writtenBytes );
+    }
+
+    private byte[] generateBytes( int length )
+    {
+        Random random = new Random();
+        char[] validCharacters = new char[] { 'a', 'b', 'c', 'd', 'e','f', 'g', 'h','i', 'j', 'k', 'l', 'm', 'n', 'o' };
+        byte[] bytes = new byte[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            bytes[i] = (byte) validCharacters[random.nextInt(validCharacters.length)];
+        }
+        return bytes;
+    }
+
     @Test
     public void shouldWriteThroughRotation() throws Exception
     {

@@ -1,4 +1,4 @@
-h4 Saved scripts
+h4 Favorites
   a.create-folder(ng-click='folderService.create()')
     .fa.fa-plus
     | New folder
@@ -13,4 +13,13 @@ h4 Saved scripts
       li(ng-repeat="document in folder.documents")
         include list-item
 
-  file-upload(upload="importDocument($content)", extension="cyp|cypher|cql|txt") &nbsp;
+  h5 Styling / Graph Style Sheet
+  ul
+    li
+      button.btn.btn-sm.btn-popup(ng-click="editor.execScript(settings.cmdchar + 'style')")
+        | Open Editor
+
+  h5 Import
+  file-upload(upload="importDocument($content, $name)",
+    extension="cyp|cypher|cql|txt|grass",
+    message="Drop a file to import Cypher or Grass") &nbsp;

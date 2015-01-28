@@ -48,7 +48,7 @@ case object normalizeReturnClauses extends Rewriter {
         case i: AliasedReturnItem =>
           i
         case i =>
-          val newPosition = i.expression.position.copy(offset = i.expression.position.offset + 1)
+          val newPosition = i.expression.position.bumped()
           AliasedReturnItem(i.expression, Identifier(i.name)(newPosition))(i.position)
       })
       Seq(
@@ -56,27 +56,25 @@ case object normalizeReturnClauses extends Rewriter {
       )
 
     case clause @ Return(distinct, ri, orderBy, skip, limit) =>
-      var rewrites = Map[Expression, Expression]()
+      var rewrites = Map[Expression, Identifier]()
 
       val (aliasProjection, finalProjection) = ri.items.map {
         i =>
-          val newPosition = i.expression.position.copy(offset = i.expression.position.offset + 1)
-
           val returnColumn = i.alias match {
             case Some(alias) => alias
-            case None        => Identifier(i.name)(newPosition)
+            case None        => Identifier(i.name)(i.expression.position.bumped())
           }
 
-          val newIdentifier = Identifier(FreshIdNameGenerator.name(i.expression.position))(i.position)
+          val newIdentifier = Identifier(FreshIdNameGenerator.name(i.expression.position))(i.expression.position)
 
           rewrites = rewrites + (returnColumn -> newIdentifier)
           rewrites = rewrites + (i.expression -> newIdentifier)
 
-          (AliasedReturnItem(i.expression, newIdentifier)(i.position), AliasedReturnItem(newIdentifier, returnColumn)(i.position))
+          (AliasedReturnItem(i.expression, newIdentifier)(i.position), AliasedReturnItem(newIdentifier.copyId, returnColumn)(i.position))
       }.unzip
 
       val newOrderBy = orderBy.endoRewrite(bottomUp(Rewriter.lift {
-        case exp: Expression if rewrites.contains(exp) => rewrites(exp)
+        case exp: Expression if rewrites.contains(exp) => rewrites(exp).copyId
       }))
 
       Seq(

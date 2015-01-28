@@ -197,7 +197,7 @@ public class AuthorizationFilter implements Filter
         }
         else
         {
-            return AuthenticateHeaders.extractToken( value );
+            return AuthorizationHeaders.extractToken( value );
         }
     }
 

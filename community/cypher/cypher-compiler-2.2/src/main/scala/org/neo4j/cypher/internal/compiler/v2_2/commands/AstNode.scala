@@ -77,5 +77,14 @@ trait AstNode[T] {
       f(this)
     }
   }
+
+
+  def visitFirst(f: PartialFunction[AstNode[_], Any]) {
+    if (f.isDefinedAt(this)) {
+      f(this)
+    }
+
+    visitChildren(f)
+  }
 }
 

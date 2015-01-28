@@ -70,7 +70,7 @@ public class StoreCopyServer
     {
         try
         {
-            long transactionIdWhenStartingCopy = transactionIdStore.getLastCommittedTransactionId();
+            long lastAppliedTransaction = transactionIdStore.getLastClosedTransactionId();
             logRotationControl.forceEverything();
             ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( 1024 * 1024 );
 
@@ -88,7 +88,7 @@ public class StoreCopyServer
                 }
             }
 
-            return anonymous( transactionIdWhenStartingCopy );
+            return anonymous( lastAppliedTransaction );
         }
         catch ( IOException e )
         {

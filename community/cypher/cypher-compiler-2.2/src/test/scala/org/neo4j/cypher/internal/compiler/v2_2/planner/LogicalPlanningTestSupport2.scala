@@ -249,10 +249,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       val parsedStatement = parser.parse(queryString)
       val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
       val semanticState = semanticChecker.check(queryString, cleanedStatement)
-      val (rewrittenStatement, _) = astRewriter.rewrite(queryString, cleanedStatement, semanticState)
+      val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryString, cleanedStatement, semanticState)
       val postRewriteSemanticState = semanticChecker.check(queryString, rewrittenStatement)
       val semanticTable = SemanticTable(types = postRewriteSemanticState.typeTable)
-      Planner.rewriteStatement(rewrittenStatement, postRewriteSemanticState.scopeTree, semanticTable) match {
+      Planner.rewriteStatement(rewrittenStatement, postRewriteSemanticState.scopeTree, semanticTable, postConditions) match {
         case (ast: Query, newTable) =>
           tokenResolver.resolve(ast)(newTable, planContext)
           val unionQuery = ast.asUnionQuery
@@ -267,9 +267,9 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     def getLogicalPlanFor(queryString: String): (LogicalPlan, SemanticTable) = {
       val parsedStatement = parser.parse(queryString)
       val semanticState = semanticChecker.check(queryString, parsedStatement)
-      val (rewrittenStatement, _) = astRewriter.rewrite(queryString, parsedStatement, semanticState)
+      val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryString, parsedStatement, semanticState)
 
-      Planner.rewriteStatement(rewrittenStatement, semanticState.scopeTree, semanticTable) match {
+      Planner.rewriteStatement(rewrittenStatement, semanticState.scopeTree, semanticTable, postConditions) match {
         case (ast: Query, newTable) =>
           tokenResolver.resolve(ast)(newTable, planContext)
           val unionQuery = ast.asUnionQuery

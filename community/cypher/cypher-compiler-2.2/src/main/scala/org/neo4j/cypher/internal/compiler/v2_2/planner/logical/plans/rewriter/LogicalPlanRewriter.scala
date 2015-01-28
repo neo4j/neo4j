@@ -29,7 +29,7 @@ case object LogicalPlanRewriter extends Rewriter {
     simplifyEquality,
     unnestOptional,
     predicateRemovalThroughJoins
-  ))
+  ).rewriter)
 
   def apply(that: AnyRef) = instance(that)
 }

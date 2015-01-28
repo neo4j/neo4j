@@ -2,7 +2,8 @@ describe('popover', function() {
   var elm,
       elmBody,
       scope,
-      elmScope;
+      elmScope,
+      tooltipScope;
 
   // load the popover code
   beforeEach(module('ui.bootstrap.popover'));
@@ -20,10 +21,11 @@ describe('popover', function() {
     scope.$digest();
     elm = elmBody.find('span');
     elmScope = elm.scope();
+    tooltipScope = elmScope.$$childTail;
   }));
 
   it('should not be open initially', inject(function() {
-    expect( elmScope.tt_isOpen ).toBe( false );
+    expect( tooltipScope.isOpen ).toBe( false );
 
     // We can only test *that* the popover-popup element wasn't created as the
     // implementation is templated and replaced.
@@ -32,7 +34,7 @@ describe('popover', function() {
 
   it('should open on click', inject(function() {
     elm.trigger( 'click' );
-    expect( elmScope.tt_isOpen ).toBe( true );
+    expect( tooltipScope.isOpen ).toBe( true );
 
     // We can only test *that* the popover-popup element was created as the
     // implementation is templated and replaced.
@@ -42,7 +44,7 @@ describe('popover', function() {
   it('should close on second click', inject(function() {
     elm.trigger( 'click' );
     elm.trigger( 'click' );
-    expect( elmScope.tt_isOpen ).toBe( false );
+    expect( tooltipScope.isOpen ).toBe( false );
   }));
 
   it('should not unbind event handlers created by other directives - issue 456', inject( function( $compile ) {

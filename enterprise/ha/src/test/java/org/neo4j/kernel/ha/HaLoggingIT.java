@@ -19,27 +19,47 @@
  */
 package org.neo4j.kernel.ha;
 
+import java.io.File;
+
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.test.ha.ClusterManager;
+import org.neo4j.test.ha.ClusterRule;
+
+import static java.util.Arrays.asList;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.kernel.impl.util.StringLogger.DEFAULT_NAME;
+import static org.neo4j.test.ha.ClusterManager.allSeesAllAsJoined;
 import static org.neo4j.test.ha.ClusterManager.clusterWithAdditionalClients;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 import static org.neo4j.test.ha.ClusterManager.masterSeesMembers;
 
-import java.io.File;
-
-import org.junit.Assert;
-import org.junit.Test;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.test.AbstractClusterTest;
-
-public class HaLoggingIT extends AbstractClusterTest
+public class HaLoggingIT
 {
+    @Rule
+    public final ClusterRule clusterRule = new ClusterRule(getClass());
+
+    protected ClusterManager.ManagedCluster cluster;
+
+    @Before
+    public void setup() throws Exception
+    {
+        cluster = clusterRule
+                  .provider( clusterWithAdditionalClients( 2, 1 ) )
+                  .availabilityChecks( asList( masterAvailable(), masterSeesMembers( 3 ), allSeesAllAsJoined() ) )
+                  .startCluster();
+    }
+
     @Test
     public void logging_continues_after_role_switch() throws Exception
     {
         // GIVEN
         // -- look at the slave and see notices of startup diagnostics
-        cluster.await( masterSeesMembers( 3 ) );
         String logMessage = "Just a test for that logging continues as expected";
         HighlyAvailableGraphDatabase db = cluster.getAnySlave();
         StringLogger logger = db.getDependencyResolver().resolveDependency( StringLogger.class );
@@ -59,11 +79,6 @@ public class HaLoggingIT extends AbstractClusterTest
         Assert.assertEquals( 2, count );
     }
 
-    public HaLoggingIT()
-    {
-        super( clusterWithAdditionalClients( 2, 1 ) );
-    }
-    
     private int findLoggingLines( HighlyAvailableGraphDatabase db, String toLookFor )
     {
         int count = 0;

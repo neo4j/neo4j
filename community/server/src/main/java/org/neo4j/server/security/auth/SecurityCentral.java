@@ -26,6 +26,7 @@ import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.impl.util.BytePrinter;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 import org.neo4j.server.security.auth.exception.IllegalTokenException;
 import org.neo4j.server.security.auth.exception.IllegalUsernameException;
 import org.neo4j.server.security.auth.exception.TooManyAuthenticationAttemptsException;
@@ -77,7 +78,7 @@ public class SecurityCentral extends LifecycleAdapter
                     .withRequiredPasswordChange( requirePasswordChange )
                     .withPrivileges( privileges )
                     .build();
-            users.save( user );
+            users.create( user );
             return user;
         } catch(IllegalTokenException e)
         {
@@ -141,27 +142,27 @@ public class SecurityCentral extends LifecycleAdapter
         }
     }
 
-    /** This is synchronized to avoid odd races if someone requests multiple concurrent token changes. */
-    public synchronized User setToken( String name, String token ) throws IllegalTokenException, IOException
+    public User setToken( String name, String token ) throws IllegalTokenException, IOException
     {
         assertValidToken( token );
-        User user = users.findByName( name );
-        if ( user == null )
+        User existingUser = users.findByName( name );
+        if ( existingUser == null )
         {
             return null;
         }
-        User updatedUser = user.augment().withToken( token ).build();
+        User updatedUser = existingUser.augment().withToken( token ).build();
         try
         {
-            users.save( updatedUser );
+            users.update( existingUser, updatedUser );
             return updatedUser;
-        } catch ( IllegalUsernameException e )
+        } catch ( ConcurrentModificationException e )
         {
-            throw new ThisShouldNotHappenError( "Jake", "Username has already been accepted, we are modifying the token only." );
+            // try again
+            return setToken( name, token );
         }
     }
 
-    public synchronized User setPassword( String name, String password ) throws IOException
+    public User setPassword( String name, String password ) throws IOException
     {
         return authentication.setPassword( name, password );
     }

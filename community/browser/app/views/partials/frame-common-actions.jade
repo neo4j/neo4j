@@ -1,17 +1,11 @@
 .code-bar
   ul.actions.list-inline
-    li.toggle(ng-if='frame.type == "cypher" && availableModes.length > 1')
-      a.toggle-graph(ng-class='{active: isActive("graph")}', ng-click='setActive("graph")') Graph
-      .switch
-        label(ng-class='{right: isActive("table")}', ng-click='setActive()')
-          .switch-inner
-          .handle
-      a.toggle-table(ng-class='{active: isActive("table")}', ng-click='setActive("table")') Table
-    li.dropdown(ng-if='frame.type == "cypher"')
-      a.button.fa.fa-download.dropdown-toggle(ng-show='frame.exportable')
+    li.dropdown(dropdown="", ng-show='frame.type == "cypher"')
+      a.button.fa.fa-download.dropdown-toggle(dropdown-toggle="")
       ul.dropdown-menu
         li
-          a(exportable ng-click='exportSVG()', ng-show='isActive("graph")') Export SVG
+          a(exportable ng-click='exportGraphSVG()', ng-show='isActive("graph")') Export SVG
+          a(exportable ng-click='exportPlanSVG()', ng-show='isActive("plan")') Export SVG
           a(exportable ng-click='exportJSON(frame.response)') Export JSON
           a(exportable ng-click='exportCSV(frame.response.table)') Export CSV
     li

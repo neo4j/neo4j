@@ -28,63 +28,36 @@ define(
     ###
     class LineChartTimeTicker
       
-      timezoneOffset : new Date().getTimezoneOffset() * 60
-      
       scales : [
         {  # 30-min span
            maxSpan : 31 * 60, 
            tickLength : 5 * 60, 
-           dateFormat : "HH:MM",
-           findFirstTickFrom : (startTime) -> 
-             timezoneOffset = new Date().getTimezoneOffset()
-             time = new Date((startTime+timezoneOffset*60) * 1000)
-             new Date(time.getFullYear(), time.getMonth(), time.getDate(), 0,timezoneOffset,0).getTime() / 1000
+           dateFormat : "HH:MM"
         }
         {  # 6-hour span
            maxSpan : 7 * 60 * 60, 
            tickLength : 60 * 60, 
-           dateFormat : "HH:MM",
-           findFirstTickFrom : (startTime) -> 
-             timezoneOffset = new Date().getTimezoneOffset()
-             time = new Date((startTime+timezoneOffset*60) * 1000)
-             new Date(time.getFullYear(), time.getMonth(), time.getDate(),0,timezoneOffset,0).getTime() / 1000
-             
+           dateFormat : "HH:MM"
         }
         {  # 1-day span
            maxSpan : 25 * 60 * 60, 
            tickLength : 6 * 60 * 60, 
-           dateFormat : "dddd HH:MM",
-           findFirstTickFrom : (startTime) -> 
-             timezoneOffset = new Date().getTimezoneOffset()
-             time = new Date((startTime+timezoneOffset*60) * 1000)
-             new Date(time.getFullYear(), time.getMonth(), time.getDate(),0,timezoneOffset,0).getTime() / 1000
+           dateFormat : "dddd HH:MM"
         }
         {  # 1-week span
            maxSpan : 8 * 24 * 60 * 60, 
            tickLength : 2 * 24 * 60 * 60, 
-           dateFormat : "dddd dd mmmm",
-           findFirstTickFrom : (startTime) ->
-             timezoneOffset = new Date().getTimezoneOffset()
-             time = new Date((startTime+timezoneOffset*60) * 1000)
-             new Date(time.getFullYear(), time.getMonth(), time.getDate(),0,timezoneOffset,0).getTime() / 1000
+           dateFormat : "dddd dd mmmm"
         }
         {  # 1-month span
            maxSpan : 32 * 24 * 60 * 60, 
            tickLength : 6 * 24 * 60 * 60, 
-           dateFormat : "dd mmmm",
-           findFirstTickFrom : (startTime) -> 
-             timezoneOffset = new Date().getTimezoneOffset()
-             time = new Date((startTime+timezoneOffset*60) * 1000)
-             new Date(time.getFullYear(), time.getMonth(), 0,0,timezoneOffset,1).getTime() / 1000
+           dateFormat : "dd mmmm"
         }
         {  # 1-year span
            maxSpan : 370 * 24 * 60 * 60, 
            tickLength : 60 * 24 * 60 * 60, 
-           dateFormat : "dd mmmm",
-           findFirstTickFrom : (startTime) -> 
-             timezoneOffset = new Date().getTimezoneOffset()
-             time = new Date((startTime+timezoneOffset*60) * 1000)
-             new Date(time.getFullYear(), time.getMonth(), 0,0,timezoneOffset,1).getTime() / 1000
+           dateFormat : "dd mmmm"
         }
       ]
 
@@ -102,10 +75,11 @@ define(
         ticks = []
 
         scale = @_getScaleFor stopTime - startTime
-        currentPosition = scale.findFirstTickFrom startTime
+        currentPosition = @_findFirstTickFrom startTime
         while currentPosition <= stopTime
           if currentPosition >= startTime
-            label = DateFormat.format((currentPosition + @timezoneOffset) * 1000, scale.dateFormat)
+            tickTime = new Date(currentPosition * 1000)
+            label = DateFormat.format(tickTime, scale.dateFormat, true)
             ticks.push([currentPosition,label])
           currentPosition += scale.tickLength
       
@@ -116,8 +90,9 @@ define(
           if scale.maxSpan > timeSpan
             return scale
         # Fall back to largest available scale
-        @scales[@scales.length-1] 
+        @scales[@scales.length-1]
 
-      
-
+      _findFirstTickFrom : (startTime) ->
+        startDate = new Date(startTime)
+        new Date(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate(), 0, 0, 0).getTime() / 1000
 )

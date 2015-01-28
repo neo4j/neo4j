@@ -28,6 +28,7 @@ class StartTest extends RefcardTest with QueryStatisticsTestSupport {
   val title = "START"
   val css = "col carddeprecation c2-1 c3-2 c4-4 c5-4 c6-6"
   override def indexProps: List[String] = List("value", "name", "key")
+  override val linkId = "query-start"
 
   override def assert(name: String, result: InternalExecutionResult) {
     name match {

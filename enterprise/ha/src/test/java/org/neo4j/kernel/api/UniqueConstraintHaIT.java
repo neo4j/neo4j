@@ -23,6 +23,7 @@ import java.io.File;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.InvalidTransactionTypeException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -36,13 +37,16 @@ import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
 
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.single;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
 public class UniqueConstraintHaIT
@@ -140,8 +144,7 @@ public class UniqueConstraintHaIT
     public void shouldNotAllowOldUncommittedTransactionsToResumeAndViolateConstraint() throws Exception
     {
         // Given
-        ClusterManager.ManagedCluster cluster = clusterRule.startCluster(stringMap(
-                HaSettings.read_timeout.name(), "4000s" ));
+        ClusterManager.ManagedCluster cluster = clusterRule.config(HaSettings.read_timeout, "4000s").startCluster();
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
         HighlyAvailableGraphDatabase master = cluster.getMaster();
 

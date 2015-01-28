@@ -40,8 +40,12 @@ angular.module('neo.exportable', ['neo.csv'])
       'exportService'
       ($scope, CSV, exportService) ->
 
-        $scope.exportSVG = ->
-          $scope.$emit('frame.export.svg')
+        $scope.exportGraphSVG = ->
+          $scope.$emit('frame.export.graph.svg')
+          true
+
+        $scope.exportPlanSVG = ->
+          $scope.$emit('frame.export.plan.svg')
           true
 
         $scope.exportJSON = (data) ->

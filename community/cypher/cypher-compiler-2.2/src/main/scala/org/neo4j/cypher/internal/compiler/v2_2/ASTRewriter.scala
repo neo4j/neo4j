@@ -19,16 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.conditions.{containsNoReturnAll, containsNoNodesOfType}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.conditions._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{Statement, UnaliasedReturnItem}
-import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.{ApplyRewriter, RewriterStepSequencer}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{NotEquals, Statement, UnaliasedReturnItem}
+import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.{ApplyRewriter, RewriterCondition, RewriterStepSequencer}
 
 class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters: Boolean = true) {
 
   import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStep._
 
-  def rewrite(queryText: String, statement: Statement, semanticState: SemanticState): (Statement, Map[String, Any]) = {
+  def rewrite(queryText: String, statement: Statement, semanticState: SemanticState): (Statement, Map[String, Any], Set[RewriterCondition]) = {
     rewritingMonitor.startRewriting(queryText, statement)
 
     val (extractParameters, extractedParameters) = if (shouldExtractParameters)
@@ -36,23 +36,29 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters
     else
       (Rewriter.lift(PartialFunction.empty), Map.empty[String, Any])
 
-    val rewriter = RewriterStepSequencer.newDefault("ASTRewriter")(
-      ApplyRewriter("expandStar", expandStar(semanticState)),
-      enableCondition(containsNoReturnAll()),
+    val contract = RewriterStepSequencer.newDefault("ASTRewriter")(
+      enableCondition(noReferenceEqualityAmongIdentifiers),
       enableCondition(containsNoNodesOfType[UnaliasedReturnItem]),
+      enableCondition(orderByOnlyOnIdentifiers),
+      expandStar(semanticState),
+      enableCondition(containsNoReturnAll),
       foldConstants,
       ApplyRewriter("extractParameters", extractParameters),
       nameMatchPatternElements,
+      enableCondition(noUnnamedPatternElementsInMatch),
       normalizeMatchPredicates,
       normalizeNotEquals,
+      enableCondition(containsNoNodesOfType[NotEquals]),
       normalizeEqualsArgumentOrder,
+      enableCondition(normalizedEqualsArguments),
       addUniquenessPredicates,
-      isolateAggregation
+      isolateAggregation,
+      enableCondition(aggregationsAreIsolated)
     )
 
-    val rewrittenStatement = statement.rewrite(rewriter).asInstanceOf[ast.Statement]
+    val rewrittenStatement = statement.rewrite(contract.rewriter).asInstanceOf[ast.Statement]
 
     rewritingMonitor.finishRewriting(queryText, rewrittenStatement)
-    (rewrittenStatement, extractedParameters)
+    (rewrittenStatement, extractedParameters, contract.postConditions)
   }
 }

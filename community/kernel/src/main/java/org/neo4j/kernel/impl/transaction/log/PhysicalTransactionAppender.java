@@ -41,14 +41,8 @@ public class PhysicalTransactionAppender extends AbstractPhysicalTransactionAppe
     }
 
     @Override
-    protected void forceAfterAppend( long ticket ) throws IOException
+    protected void forceAfterAppend() throws IOException
     {
         forceChannel();
-    }
-
-    @Override
-    protected long getNextTicket()
-    {
-        return 0;
     }
 }

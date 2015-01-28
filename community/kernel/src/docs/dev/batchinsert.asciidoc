@@ -9,7 +9,7 @@ Batch insertion is included in the http://search.maven.org/#search|ga|1|neo4j-ke
 
 Be aware of the following points when using batch insertion:
 
-* The intended use is for initial import of data.
+* The intended use is for initial import of data but you can use it on an existing database if the existing database is shutdown first.
 * Batch insertion is _not thread safe._
 * Batch insertion is _non-transactional._
 * Batch insertion will re-populate all existing indexes and indexes created during batch insertion
@@ -22,14 +22,15 @@ Always perform batch insertion in a _single thread_ (or use synchronization to m
 [[batchinsert-examples]]
 == Batch Inserter Examples ==
 
-Creating a batch inserter is similar to how you normally create data in the database, but in this case the low-level link:javadocs/org/neo4j/unsafe/batchinsert/BatchInserter.html[+BatchInserter+] interface is used.
-As we have already pointed out, you can't have multiple threads using the batch inserter concurrently without external synchronization.
+=== Initial import ===
+
+To bulk load data using the batch inserter you'll need to write a Java application which makes use of the low level link:javadocs/org/neo4j/unsafe/batchinsert/BatchInserter.html[+BatchInserter+] interface.
 
 [TIP]
-The source code of the examples is found here:
-https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/kernel/src/test/java/examples/BatchInsertDocTest.java[BatchInsertDocTest.java]
+You can't have multiple threads using the batch inserter concurrently without external synchronization.
 
-To get hold of a +BatchInserter+, use link:javadocs/org/neo4j/unsafe/batchinsert/BatchInserters.html[+BatchInserters+] and then go from there:
+You can get hold of an instance of +BatchInserter+ by using link:javadocs/org/neo4j/unsafe/batchinsert/BatchInserters.html[+BatchInserters+].
+Here's an example of the batch inserter in use:
 
 [snippet,java]
 ----
@@ -38,9 +39,19 @@ source=examples/BatchInsertDocTest.java
 tag=insert
 ----
 
-The BatchInserter can take configuration settings, if need be.
-Read <<configuration-batchinsert>> for information on what configations are available and what they do.
-This is how to start a batch inserter with configuration options:
+When creating a relationship you can set properties on the relationship by passing in a map containing properties rather than `null` as the last parameter to +createRelationship+.
+
+It's important that the call to `shutdown` is inside a finally block to ensure that it gets called even if exceptions are thrown.
+If he batch inserter isn't cleanly shutdown then the consistency of the store is not guaranteed.
+
+[TIP]
+The source code for the examples on this page can be found here:
+https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/kernel/src/test/java/examples/BatchInsertDocTest.java[BatchInsertDocTest.java]
+
+=== Setting configuration options ===
+
+You can pass custom configuration options to the +BatchInserter+. (See <<configuration-batchinsert>> for information on the available options.)
+e.g.
 
 [snippet,java]
 ----
@@ -49,7 +60,15 @@ source=examples/BatchInsertDocTest.java
 tag=configuredInsert
 ----
 
-In case you have stored the configuration in a file, you can load it like this:
+Alternatively you could store the configuration in a file:
+
+.batchinsert-config
+[source, properties]
+----
+include::../batchinsert-config[]
+----
+
+You can then refer to that file when initializing +BatchInserter+:
 
 [snippet,java]
 ----
@@ -57,3 +76,12 @@ component=neo4j-kernel
 source=examples/BatchInsertDocTest.java
 tag=configFileInsert
 ----
+
+=== Importing into an existing database ===
+
+Although it's a less common use case, the batch inserter can also be used to import data into an existing database.
+However, you will need to ensure that the existing database is _shut down_ before you write to it.
+
+[WARNING]
+Since the batch importer bypasses transactions there is a possibility of data inconsistency if the import process crashes midway.
+We would strongly suggest you take a backup of your existing database before using the batch inserter against it.

@@ -49,8 +49,8 @@ public class RelationshipPreparationStep extends ExecutorServiceStep<List<InputR
         int index = 0;
         for ( InputRelationship batchRelationship : batch )
         {
-            ids[index++] = idMapper.get( batchRelationship.startNode(), batchRelationship.startNodeGroups() );
-            ids[index++] = idMapper.get( batchRelationship.endNode(), batchRelationship.endNodeGroups() );
+            ids[index++] = idMapper.get( batchRelationship.startNode(), batchRelationship.startNodeGroup() );
+            ids[index++] = idMapper.get( batchRelationship.endNode(), batchRelationship.endNodeGroup() );
         }
         return Pair.of( batch, ids );
     }

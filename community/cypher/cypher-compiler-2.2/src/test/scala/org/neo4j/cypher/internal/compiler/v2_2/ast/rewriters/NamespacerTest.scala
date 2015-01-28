@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{ASTAnnotationMap, Identifier, Statement}
-import org.neo4j.cypher.internal.compiler.v2_2.helpers.StatementHelper
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.StatementHelper._
 import org.neo4j.cypher.internal.compiler.v2_2.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
@@ -124,7 +123,7 @@ class NamespacerTest extends CypherFunSuite {
   private def parseAndRewrite(queryText: String): Statement = {
     val parsedAst = parser.parse(queryText)
     val cleanedAst = parsedAst.endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
-    val (rewrittenAst, _) = astRewriter.rewrite(queryText, cleanedAst, cleanedAst.semanticState)
+    val (rewrittenAst, _, _) = astRewriter.rewrite(queryText, cleanedAst, cleanedAst.semanticState)
     rewrittenAst
   }
 }

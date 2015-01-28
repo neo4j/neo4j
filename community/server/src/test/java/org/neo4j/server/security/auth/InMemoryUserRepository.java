@@ -21,7 +21,9 @@ package org.neo4j.server.security.auth;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 import org.neo4j.server.security.auth.exception.IllegalTokenException;
+import org.neo4j.server.security.auth.exception.IllegalUsernameException;
 
 /** A user repository implementation that just stores users in memory */
 public class InMemoryUserRepository implements UserRepository
@@ -47,18 +49,58 @@ public class InMemoryUserRepository implements UserRepository
         return null;
     }
 
-    /** This is synchronized to ensure we can't have users with duplicate tokens. */
-    public synchronized void save( User user ) throws IllegalTokenException
+    @Override
+    public void create( User user ) throws IllegalUsernameException, IllegalTokenException
     {
-        for ( User other : users.values() )
+        synchronized (this)
         {
-            if ( other.token().equals( user.token() ) && !other.name().equals( user.name() ) )
+            // Check for existing user or token
+            for ( User other : users.values() )
             {
-                throw new IllegalTokenException( "Unable to set token, because the chosen token is already in use." );
+                if ( other.name().equals( user.name() ) )
+                {
+                    throw new IllegalUsernameException( "The specified user already exists" );
+                }
+                if ( other.token().equals( user.token() ) )
+                {
+                    throw new IllegalTokenException( "The specified token is already in use" );
+                }
             }
+
+            users.put( user.name(), user );
+        }
+    }
+
+    @Override
+    public void update( User existingUser, User updatedUser ) throws IllegalTokenException, ConcurrentModificationException
+    {
+        // Assert input is ok
+        if ( !existingUser.name().equals( updatedUser.name() ) )
+        {
+            throw new IllegalArgumentException( "updatedUser has a different name" );
         }
 
-        users.put( user.name(), user );
+        synchronized (this)
+        {
+            boolean foundUser = false;
+            for ( User other : users.values() )
+            {
+                if ( other.equals( existingUser ) )
+                {
+                    foundUser = true;
+                } else if ( other.token().equals( updatedUser.token() ) )
+                {
+                    throw new IllegalTokenException( "The specified token is already in use" );
+                }
+            }
+
+            if ( !foundUser )
+            {
+                throw new ConcurrentModificationException();
+            }
+
+            users.put( updatedUser.name(), updatedUser );
+        }
     }
 
     @Override

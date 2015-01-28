@@ -111,10 +111,10 @@ public class EncodingIdMapper implements IdMapper
     }
 
     @Override
-    public long get( Object inputId, PrimitiveIntPredicate inGroup )
+    public long get( Object inputId, Group group )
     {
         assert readyForUse;
-        return binarySearch( inputId, inGroup );
+        return binarySearch( inputId, group );
     }
 
     @Override
@@ -125,7 +125,8 @@ public class EncodingIdMapper implements IdMapper
         boolean newGroup = groupId >= idGroups.size();
         if ( newGroup )
         {
-            assert groupId == idGroups.size();
+            assert groupId == idGroups.size() :
+                "Nodes for any specific group must be added in sequence before adding nodes for any other group";
             endPreviousGroup();
         }
 

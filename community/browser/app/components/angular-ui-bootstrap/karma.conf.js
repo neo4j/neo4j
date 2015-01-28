@@ -34,6 +34,8 @@ browsers = [
 // possible values: dots || progress
 reporters = ['progress'];
 
+reportSlowerThan = 100;
+
 // web server port
 port = 9018;
 

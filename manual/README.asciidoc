@@ -21,6 +21,10 @@ If you need to see the tree, use a different browser or serve the files from a l
 To build all dependencies of the manual, use the following at the top level of the repository: +
 `mvn clean install -DdocsBuild` +
 
+[NOTE]
+When doing partial builds, note that the `neo4j-manual-contents` module (in _manual/contents_) has to be built as well.
+All the content is collected there; the `neo4j-manual` module (in _manual_) only renders it.
+
 === With brew on OSX ===
 
 Install libraries

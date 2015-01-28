@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -38,7 +38,6 @@ import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvid
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
@@ -48,9 +47,10 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.test.AbstractClusterTest;
 import org.neo4j.test.CleanupRule;
+import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.RepairKit;
+import org.neo4j.test.ha.ClusterRule;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -65,17 +65,25 @@ import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 import static org.neo4j.test.ha.ClusterManager.masterSeesSlavesAsAvailable;
 
-public class ClusterTopologyChangesIT extends AbstractClusterTest
+public class ClusterTopologyChangesIT
 {
-    private static final int TEST_NODE_COUNT = 100;
+    @Rule
+    public final ClusterRule clusterRule = new ClusterRule(getClass());
 
     @Rule
     public final CleanupRule cleanup = new CleanupRule();
 
+    protected ClusterManager.ManagedCluster cluster;
+
     @Before
-    public void setUp()
+    public void setup() throws Exception
     {
-        cluster.await( allSeesAllAsAvailable() );
+        cluster = clusterRule
+                .config(HaSettings.read_timeout, "1s")
+                .config(HaSettings.state_switch_timeout, "2s")
+                .config(HaSettings.com_chunk_size, "1024")
+                .config(GraphDatabaseSettings.cache_type, "none")
+                .startCluster();
     }
 
     @Test
@@ -187,16 +195,6 @@ public class ClusterTopologyChangesIT extends AbstractClusterTest
         // Then
         latch.await( 2, SECONDS );
         assertEquals( new InstanceId( 2 ), coordinatorIdWhenReJoined.get() );
-    }
-
-    @Override
-    protected void configureClusterMember( GraphDatabaseBuilder builder, String clusterName, InstanceId serverId )
-    {
-        super.configureClusterMember( builder, clusterName, serverId );
-        builder.setConfig( HaSettings.read_timeout, "1s" );
-        builder.setConfig( HaSettings.state_switch_timeout, "2s" );
-        builder.setConfig( HaSettings.com_chunk_size, "1024" );
-        builder.setConfig( GraphDatabaseSettings.cache_type, "none" );
     }
 
     @SuppressWarnings( "unchecked" )

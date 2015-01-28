@@ -1,0 +1,62 @@
+= The Neo4j Manual v{neo4j-version} =
+
+:neo4j-buildnumber: {neo4j-version}
+:neo4j-git-tag: {gitversion}
+
+:lucene-version: 3_6_2
+:lucene-version-printed: 3.6.2
+:lucene-base-uri: http://lucene.apache.org/core/{lucene-version}
+:lucene-api-base-uri: {lucene-base-uri}/api/core
+
+:console: 0
+
+include::preface/preface.asciidoc[]
+
+:leveloffset: 0
+
+include::introduction/index.asciidoc[]
+
+:leveloffset: 0
+
+include::{importdir}/neo4j-cypher-docs-docs-jar/dev/tutorials/index.asciidoc[]
+
+:leveloffset: 0
+
+include::{importdir}/neo4j-cypher-docs-docs-jar/dev/index.asciidoc[]
+
+:leveloffset: 0
+
+include::reference/index.asciidoc[]
+
+:leveloffset: 0
+
+include::operations/index.asciidoc[]
+
+:leveloffset: 0
+
+include::tools/index.asciidoc[]
+
+:leveloffset: 0
+
+include::community/index.asciidoc[]
+
+:leveloffset: 0
+
+include::advanced/index.asciidoc[]
+
+:leveloffset: 0
+:numbered!:
+
+:leveloffset: 0
+
+include::terminology.asciidoc[]
+
+:leveloffset: 0
+
+include::resources.asciidoc[]
+
+:leveloffset: 0
+
+include::manpages.asciidoc[]
+
+

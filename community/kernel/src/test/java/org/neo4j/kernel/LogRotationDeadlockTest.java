@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel;
 
-import java.io.IOException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Matchers;
+
+import java.io.IOException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.helpers.collection.Iterables;
@@ -39,7 +39,6 @@ import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.BatchingPhysicalTransactionAppender;
-import org.neo4j.kernel.impl.transaction.log.ControlledParkStrategy;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogRotation;
@@ -48,7 +47,6 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
-import org.neo4j.kernel.impl.util.Counter;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
@@ -56,7 +54,6 @@ import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.OtherThreadRule;
 
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -78,14 +75,12 @@ public class LogRotationDeadlockTest
         Logging logging = mock( Logging.class );
         when ( logging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
         final Barrier.Control inBetweenCommittedAndClosed = new Barrier.Control();
-        final ControlledParkStrategy controlledBatchedWritesParking = new ControlledParkStrategy();
         LogRotationControl rotationControl = new LogRotationControl( txIdStore, mock( IndexingService.class ),
                 mock( LabelScanStore.class ), Iterables.<IndexImplementation,IndexImplementation>iterable() )
         {
             @Override
             public void awaitAllTransactionsClosed()
             {
-                controlledBatchedWritesParking.releaseIndefinitely();
                 inBetweenCommittedAndClosed.release();
                 super.awaitAllTransactionsClosed();
             }
@@ -97,16 +92,15 @@ public class LogRotationDeadlockTest
         // controlled batching transaction appender that will halt a committer
         TransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile, rotation,
                 new TransactionMetadataCache( 10, 10 ), txIdStore, mock( IdOrderingQueue.class ),
-                Counter.ATOMIC_LONG, controlledBatchedWritesParking, health )
+                health )
         {
             @Override
-            protected void forceAfterAppend( long ticket ) throws IOException
+            protected void forceAfterAppend() throws IOException
             {
                 inBetweenCommittedAndClosed.reached();
-                super.forceAfterAppend( ticket );
+                super.forceAfterAppend();
             }
         };
-        controlledBatchedWritesParking.awaitIdle();
 
         // commit process
         LogicalTransactionStore txStore = mock( LogicalTransactionStore.class );

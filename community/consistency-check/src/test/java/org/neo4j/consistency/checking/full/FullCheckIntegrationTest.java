@@ -119,7 +119,7 @@ public class FullCheckIntegrationTest
     @Parameter
     public TaskExecutionOrder taskExecutionOrder;
 
-    @Parameters
+    @Parameters( name = "execution_order={0}" )
     public static Iterable<Object[]> taskExecutions()
     {
         return Arrays.asList( new Object[][]{

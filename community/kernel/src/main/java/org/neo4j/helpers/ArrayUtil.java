@@ -31,20 +31,15 @@ public abstract class ArrayUtil
 {
     /**
      * I can't believe this method is missing from {@link Arrays}.
+     *
      * @see Arrays#toString(byte[]) for similar functionality.
+     * @deprecated use {@link ObjectUtil#toString(Object)} instead.
      */
+    @Deprecated
     public static String toString( Object array )
     {
         assert array.getClass().isArray() : array + " is not an array";
-
-        StringBuilder result = new StringBuilder();
-        String separator = "[";
-        for ( int size = Array.getLength( array ), i = 0; i < size; i++ )
-        {
-            result.append( separator ).append( Array.get( array, i ) );
-            separator = ", ";
-        }
-        return result.append( ']' ).toString();
+        return ObjectUtil.arrayToString( array );
     }
 
     public static int hashCode( Object array )

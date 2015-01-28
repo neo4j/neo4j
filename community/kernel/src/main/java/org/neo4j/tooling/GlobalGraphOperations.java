@@ -136,7 +136,7 @@ public class GlobalGraphOperations
                     @Override
                     protected Relationship fetchNextOrNull()
                     {
-                        return ids.hasNext() ? nodeManager.newRelationshipProxyById( ids.next() ) : null;
+                        return ids.hasNext() ? nodeManager.newRelationshipProxy( ids.next() ) : null;
                     }
                 };
             }

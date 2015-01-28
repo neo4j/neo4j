@@ -1,12 +1,11 @@
 {
   "name": "css",
   "_cacheHeaders": {
-    "ETag": "\"a16bc9ace78c589e37b6013a50aaada9\"",
-    "Content-Length": "28846",
-    "Content-Type": "text/plain; charset=utf-8",
-    "Content-Disposition": "inline"
+    "ETag": "\"55082bf8e42f93ad5ea3f539e713d36eb501b620\"",
+    "Content-Length": "31664",
+    "Content-Type": "text/plain; charset=utf-8"
   },
-  "_release": "e-tag:a16bc9ace",
+  "_release": "e-tag:55082bf8e",
   "main": "index.js",
   "_source": "https://raw.github.com/marijnh/CodeMirror/master/mode/css/css.js",
   "_target": "*",

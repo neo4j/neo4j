@@ -124,10 +124,14 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
     entityFactory.nodeStartItems
 
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor): Boolean = {
+    val longest = extractExpanderStepsFromQuery(plan)
       plan.pipe.isInstanceOf[SingleRowPipe] &&
       !plan.query.optional &&
-      extractExpanderStepsFromQuery(plan).nonEmpty
+      longest.exists(doesNotOverlapExistingSymbols(plan.pipe.symbols))
   }
+
+  private def doesNotOverlapExistingSymbols(symbols: SymbolTable)(trail: LongestTrail) =
+    (trail.longestTrail.symbols(new SymbolTable()).keys intersect symbols.keys).isEmpty
 
   private def extractExpanderStepsFromQuery(plan: ExecutionPlanInProgress): Option[LongestTrail] = {
     val startPoints = plan.query.start.flatMap {

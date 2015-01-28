@@ -27,7 +27,6 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.cluster.InstanceId;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -37,7 +36,6 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.kernel.DeadlockDetectedException;
@@ -45,10 +43,10 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.qa.tooling.DumpProcessInformationRule;
-import org.neo4j.test.AbstractClusterTest;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.ha.ClusterManager;
+import org.neo4j.test.ha.ClusterRule;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -64,19 +62,22 @@ import static org.neo4j.qa.tooling.DumpProcessInformationRule.localVm;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 
-public class TransactionConstraintsIT extends AbstractClusterTest
+public class TransactionConstraintsIT
 {
+    @Rule
+    public final ClusterRule clusterRule = new ClusterRule(getClass()).config(HaSettings.pull_interval, "0");
+
+    protected ClusterManager.ManagedCluster cluster;
+
+    @Before
+    public void setup() throws Exception
+    {
+        cluster = clusterRule.startCluster( );
+    }
 
     private static final String PROPERTY_KEY = "name";
     private static final String PROPERTY_VALUE = "yo";
     private static final String LABEL = "Person";
-
-    @Before
-    public void stableCluster()
-    {
-        // Ensure a stable cluster before starting tests
-        cluster.await( allSeesAllAsAvailable() );
-    }
 
     @Test
     public void startTxAsSlaveAndFinishItAfterHavingSwitchedToMasterShouldNotSucceed() throws Exception
@@ -448,14 +449,6 @@ public class TransactionConstraintsIT extends AbstractClusterTest
             db.getNodeById( id ).delete();
             tx.success();
         }
-    }
-
-    @Override
-    protected void configureClusterMember( GraphDatabaseBuilder builder, String clusterName, InstanceId serverId )
-    {
-        super.configureClusterMember( builder, clusterName, serverId );
-        builder.setConfig( HaSettings.tx_push_factor, "0" );
-        builder.setConfig( HaSettings.pull_interval, "0" );
     }
 
     private void assertFinishGetsTransactionFailure( Transaction tx )

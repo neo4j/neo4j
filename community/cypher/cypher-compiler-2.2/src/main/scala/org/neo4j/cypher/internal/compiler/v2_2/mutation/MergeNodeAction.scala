@@ -169,4 +169,6 @@ case class MergeNodeAction(identifier: String,
       ++ onMatch.flatMap(_.symbolTableDependencies)).toSet - identifier
 
   def localEffects(symbols: SymbolTable) = Effects.READS_NODES | Effects.WRITES_NODES
+
+  override def updateSymbols(symbol: SymbolTable): SymbolTable = symbol.add(identifiers.toMap)
 }

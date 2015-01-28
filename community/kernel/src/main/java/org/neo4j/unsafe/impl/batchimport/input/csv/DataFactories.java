@@ -56,7 +56,7 @@ public class DataFactories
      * @return {@link DataFactory} that returns a {@link CharSeeker} over the supplied {@code file}.
      */
     public static <ENTITY extends InputEntity> DataFactory<ENTITY> data( final Function<ENTITY,ENTITY> decorator,
-                                                                         final File file )
+            final File file )
     {
         return new DataFactory<ENTITY>()
         {
@@ -96,7 +96,7 @@ public class DataFactories
      * @return {@link DataFactory} that returns a {@link CharSeeker} over all the supplied {@code files}.
      */
     public static <ENTITY extends InputEntity> DataFactory<ENTITY> data( final Function<ENTITY,ENTITY> decorator,
-                                                                         final File... files )
+            final File... files )
     {
         if ( files.length == 0 )
         {
@@ -133,7 +133,7 @@ public class DataFactories
      * @return {@link DataFactory} that returns a {@link CharSeeker} over the supplied {@code readable}
      */
     public static <ENTITY extends InputEntity> DataFactory<ENTITY> data( final Function<ENTITY,ENTITY> decorator,
-                                                                         final Factory<CharReadable> readable )
+            final Factory<CharReadable> readable )
     {
         return new DataFactory<ENTITY>()
         {
@@ -300,27 +300,15 @@ public class DataFactories
                 {
                     String entryString = headerSeeker.tryExtract( mark, extractors.string() )
                             ? extractors.string().value() : null;
-                    int typeIndex = entryString != null ? entryString.lastIndexOf( ':' ) : -1;
-                    String name;
-                    String typeSpec;
-                    if ( typeIndex != -1 )
-                    {   // Specific type given
-                        name = typeIndex > 0 ? entryString.substring( 0, typeIndex ) : null;
-                        typeSpec = entryString.substring( typeIndex+1 );
-                    }
-                    else
-                    {
-                        name = entryString;
-                        typeSpec = null;
-                    }
+                    HeaderEntrySpec spec = new HeaderEntrySpec( entryString );
 
-                    if ( name == null && typeSpec == null )
+                    if ( spec.name == null && spec.type == null )
                     {
-                        columns.add( new Header.Entry( null, Type.IGNORE, null ) );
+                        columns.add( new Header.Entry( null, Type.IGNORE, null, null ) );
                     }
                     else
                     {
-                        columns.add( entry( i, name, typeSpec, extractors, idExtractor ) );
+                        columns.add( entry( i, spec.name, spec.type, spec.groupName, extractors, idExtractor ) );
                     }
                 }
                 Entry[] entries = columns.toArray( new Header.Entry[columns.size()] );
@@ -365,6 +353,9 @@ public class DataFactories
                     }
                     singletonEntries.put( entry.type(), entry );
                     break;
+                default:
+                    // No need to validate other headers
+                    break;
                 }
             }
 
@@ -381,8 +372,45 @@ public class DataFactories
          * @param idExtractor we supply the id extractor explicitly because it's a configuration,
          * or at least input-global concern and not a concern of this particular header.
          */
-        protected abstract Header.Entry entry( int index, String name, String typeSpec, Extractors extractors,
-                Extractor<?> idExtractor );
+        protected abstract Header.Entry entry( int index, String name, String typeSpec, String groupName,
+                Extractors extractors, Extractor<?> idExtractor );
+    }
+
+    private static class HeaderEntrySpec
+    {
+        private final String name;
+        private final String type;
+        private final String groupName;
+
+        HeaderEntrySpec( String rawHeaderField )
+        {
+            String name = rawHeaderField;
+            String type = null;
+            String groupName = null;
+
+            int typeIndex;
+            if ( rawHeaderField != null && (typeIndex = rawHeaderField.lastIndexOf( ':' )) != -1 )
+            {   // Specific type given
+                name = typeIndex > 0 ? rawHeaderField.substring( 0, typeIndex ) : null;
+                type = rawHeaderField.substring( typeIndex+1 );
+                int groupNameStartIndex = type.indexOf( '(' );
+                if ( groupNameStartIndex != -1 )
+                {   // Specific group given also
+                    if ( !type.endsWith( ")" ) )
+                    {
+                        throw new IllegalArgumentException( "Group specification in '" + rawHeaderField +
+                                "' is invalid, format expected to be 'name:TYPE(group)' " +
+                                "where TYPE and (group) are optional" );
+                    }
+                    groupName = type.substring( groupNameStartIndex+1, type.length()-1 );
+                    type = type.substring( 0, groupNameStartIndex );
+                }
+            }
+
+            this.name = name;
+            this.type = type;
+            this.groupName = groupName;
+        }
     }
 
     private static class DefaultNodeFileHeaderParser extends AbstractDefaultFileHeaderParser
@@ -393,7 +421,7 @@ public class DataFactories
         }
 
         @Override
-        protected Header.Entry entry( int index, String name, String typeSpec, Extractors extractors,
+        protected Header.Entry entry( int index, String name, String typeSpec, String groupName, Extractors extractors,
                 Extractor<?> idExtractor )
         {
             // For nodes it's simply ID,LABEL,PROPERTY. typeSpec can be either ID,LABEL or a type of property,
@@ -421,7 +449,7 @@ public class DataFactories
                 extractor = extractors.valueOf( typeSpec );
             }
 
-            return new Header.Entry( name, type, extractor );
+            return new Header.Entry( name, type, groupName, extractor );
         }
     }
 
@@ -429,11 +457,12 @@ public class DataFactories
     {
         protected DefaultRelationshipFileHeaderParser( HeaderCharSeekerFactory headerCharSeekerFactory )
         {
-            super( headerCharSeekerFactory, Type.START_ID, Type.END_ID, Type.TYPE );
+            // Don't have TYPE as mandatory since a decorator could provide that
+            super( headerCharSeekerFactory, Type.START_ID, Type.END_ID );
         }
 
         @Override
-        protected Header.Entry entry( int index, String name, String typeSpec, Extractors extractors,
+        protected Header.Entry entry( int index, String name, String typeSpec, String groupName, Extractors extractors,
                 Extractor<?> idExtractor )
         {
             Type type = null;
@@ -464,7 +493,7 @@ public class DataFactories
                 extractor = extractors.valueOf( typeSpec );
             }
 
-            return new Header.Entry( name, type, extractor );
+            return new Header.Entry( name, type, groupName, extractor );
         }
     }
 }

@@ -58,7 +58,7 @@ object Namespacer {
     statement.treeFold(Map.empty[Ref[Identifier], Identifier]) {
       case i: Identifier if ambiguousNames(i.name) && !protectedIdentifiers(Ref(i)) =>
         val symbolDefinition = identifierDefinitions(i.toSymbolUse)
-        val newIdentifier = i.renamed(s"  ${symbolDefinition.nameWithPosition}")
+        val newIdentifier = i.renameId(s"  ${symbolDefinition.nameWithPosition}")
         val renaming = Ref(i) -> newIdentifier
         (acc, children) => children(acc + renaming)
     }
@@ -74,7 +74,7 @@ case class Namespacer(renamings: IdentifierRenamings) {
   })
 
   val tableRewriter = (semanticTable: SemanticTable) => {
-    val replacements = renamings.toSeq.collect { case (old, newIdentifier) => old.v -> newIdentifier }
+    val replacements = renamings.toSeq.collect { case (old, newIdentifier) => old.value -> newIdentifier }
     val newSemanticTable = semanticTable.replaceKeys(replacements: _*)
     newSemanticTable
   }

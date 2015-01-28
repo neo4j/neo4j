@@ -497,4 +497,13 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     // then
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
   }
+
+  test("should not use eager if on create modifies relationships which don't affect the match clauses") {
+    val result = execute(
+      """MATCH (src:LeftLabel), (dst:RightLabel)
+        |MERGE (src)-[r:IS_RELATED_TO ]->(dst)
+        |ON CREATE SET r.p3 = 42;""".stripMargin)
+    println(result.executionPlanDescription())
+    result.executionPlanDescription().toString should not include "Eager"
+  }
 }

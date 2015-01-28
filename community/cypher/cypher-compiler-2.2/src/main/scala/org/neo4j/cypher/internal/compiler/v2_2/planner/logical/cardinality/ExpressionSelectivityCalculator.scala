@@ -33,7 +33,6 @@ trait Expression2Selectivity {
 
 case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: SelectivityCombiner) extends Expression2Selectivity  {
 
-  // apply(exp) = s => |MATCH a| * s = |MATCH a WHERE exp(a)|
   def apply(exp: Expression)(implicit semanticTable: SemanticTable, selections: Selections): Selectivity = exp match {
     // WHERE a:Label
     case HasLabels(_, label :: Nil) =>
@@ -46,6 +45,11 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     // WHERE x.prop IN [...]
     case In(Property(Identifier(name), propertyKey), Collection(expressions)) =>
       calculateSelectivityForPropertyEquality(name, expressions, selections, propertyKey)
+
+    // Implicit relation uniqueness predicates
+    case Not(Equals(lhs: Identifier, rhs: Identifier))
+      if areRelationships(semanticTable, lhs, rhs) =>
+      GraphStatistics.DEFAULT_REL_UNIQUENESS_SELECTIVITY // This should not be the default. Instead, we should figure
 
     // WHERE NOT [...]
     case Not(inner) =>
@@ -65,12 +69,6 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       if func.function == Some(functions.Id) =>
       c.expressions.size / stats.nodesWithLabelCardinality(None)
 
-    // Implicit relation uniqueness predicates
-    case NotEquals(lhs: Identifier, rhs: Identifier)
-      if areRelationships(semanticTable, lhs, rhs) =>
-        GraphStatistics.DEFAULT_REL_UNIQUENESS_SELECTIVITY // This should not be the default. Instead, we should figure
-                                                           // out the number of matching relationships and use it
-
     // WHERE <expr> = <expr>
     case _: Equals =>
       GraphStatistics.DEFAULT_EQUALITY_SELECTIVITY
@@ -83,8 +81,11 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       GraphStatistics.DEFAULT_PREDICATE_SELECTIVITY
   }
 
-  def areRelationships(semanticTable: SemanticTable, lhs: Identifier, rhs: Identifier): Boolean =
-    semanticTable.isRelationship(lhs) && semanticTable.isRelationship(rhs)
+  def areRelationships(semanticTable: SemanticTable, lhs: Identifier, rhs: Identifier): Boolean = {
+    val l = semanticTable.isRelationship(lhs)
+    val r = semanticTable.isRelationship(rhs)
+    l && r
+  }
 
   private def calculateSelectivityForLabel(label: Option[LabelId]): Selectivity = {
     val nodeCardinality: Cardinality = stats.nodesWithLabelCardinality(None)

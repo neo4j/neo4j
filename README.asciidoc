@@ -19,7 +19,7 @@ NOTE: This GitHub repository contains mixed GPL and AGPL code. Our Community edi
 
 == Dependencies ==
 
-Neo4j is built using http://maven.apache.org/[Apache Maven] version 3.0.x and a recent version of http://www.oracle.com/technetwork/java/javase/downloads/index.html[Java 7]. Bash and Make is also required. Note that maven needs more memory than the standard configuration, this can be achieved with `export MAVEN_OPTS="-Xmx512m -XX:MaxPermSize=128m”`.
+Neo4j is built using http://maven.apache.org/[Apache Maven] version 3.0.x and a recent version of http://www.oracle.com/technetwork/java/javase/downloads/index.html[Java 7]. Bash and Make is also required. Note that maven needs more memory than the standard configuration, this can be achieved with `export MAVEN_OPTS="-Xmx512m -XX:MaxPermSize=128m"`.
 
 The Neo4j Browser module is built using http://nodejs.org[Node.js]. For skipping that part of the build, see below. Building the manual requires Python, graphviz and make.
 

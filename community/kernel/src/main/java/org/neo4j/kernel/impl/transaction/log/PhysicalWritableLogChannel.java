@@ -106,8 +106,9 @@ public class PhysicalWritableLogChannel implements WritableLogChannel
         int offset = 0;
         while ( offset < length )
         {
-            int chunkSize = min( length, buffer.capacity() >> 1 );
+            int chunkSize = min( length - offset, buffer.capacity() >> 1 );
             bufferWithGuaranteedSpace( chunkSize ).put( value, offset, chunkSize );
+
             offset += chunkSize;
         }
         return this;

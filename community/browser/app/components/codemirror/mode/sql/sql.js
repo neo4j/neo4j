@@ -213,7 +213,8 @@ CodeMirror.defineMode("sql", function(config, parserConfig) {
     while ((ch = stream.next()) != null) {
       if (ch == "`" && !stream.eat("`")) return "variable-2";
     }
-    return null;
+    stream.backUp(stream.current().length - 1);
+    return stream.eatWhile(/\w/) ? "variable-2" : null;
   }
 
   // variable token
@@ -366,8 +367,6 @@ CodeMirror.defineMode("sql", function(config, parserConfig) {
 
   keywords:
     A list of keywords you want to be highlighted.
-  functions:
-    A list of function names you want to be highlighted.
   builtin:
     A list of builtin types you want to be highlighted (if you want types to be of class "builtin" instead of "keyword").
   operatorChars:

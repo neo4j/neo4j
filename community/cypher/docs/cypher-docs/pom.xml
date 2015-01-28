@@ -97,7 +97,6 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-io</artifactId>
-      <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
@@ -111,8 +110,8 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>parse-cypherdoc</id>
-                        <phase>compile</phase>
+                        <id>parse-graphgist</id>
+                        <phase>test</phase>
                         <goals>
                             <goal>java</goal>
                         </goals>
@@ -124,22 +123,28 @@
                                 <argument>${project.build.directory}/docs/parsed-graphgists</argument>
                                 <argument>${remote-csv-upload}</argument>
                                 <argument>${project.build.directory}/../src/docs/graphgists</argument>
+                                <argument>${project.build.directory}/../src/docs/dev/tutorials/gists</argument>
                             </arguments>
                         </configuration>
                     </execution>
                 </executions>
                 <dependencies>
-                    <dependency>
-                        <groupId>org.neo4j.doc</groupId>
-                        <artifactId>neo4j-graphgist</artifactId>
-                        <version>${project.version}</version>
-                    </dependency>
-                    <dependency>
-                      <groupId>org.neo4j</groupId>
-                      <artifactId>neo4j-io</artifactId>
-                      <version>${project.version}</version>
-                      <type>test-jar</type>
-                    </dependency>
+                  <dependency>
+                    <groupId>org.neo4j.doc</groupId>
+                    <artifactId>neo4j-graphgist</artifactId>
+                    <version>${project.version}</version>
+                  </dependency>
+                  <dependency>
+                    <groupId>org.neo4j</groupId>
+                    <artifactId>neo4j-io</artifactId>
+                    <version>${project.version}</version>
+                    <type>test-jar</type>
+                  </dependency>
+                  <dependency>
+                    <groupId>org.hsqldb</groupId>
+                    <artifactId>hsqldb</artifactId>
+                    <version>${hsqldb.version}</version>
+                  </dependency>
                 </dependencies>
             </plugin>
         </plugins>
@@ -158,7 +163,7 @@
         </pluginManagement>
     </build>
 
-    <profiles>
+  <profiles>
     <profile>
       <id>neo-docs-build</id>
       <activation>

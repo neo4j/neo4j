@@ -38,31 +38,36 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.test.AbstractClusterTest;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadRule;
 import org.neo4j.test.RepeatRule;
+import org.neo4j.test.ha.ClusterManager;
+import org.neo4j.test.ha.ClusterRule;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertThat;
 
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
-import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 
 /**
  * This test stress tests unique constraints in a setup where writes are being issued against a slave.
  */
-public class UniqueConstraintStressIT extends AbstractClusterTest
+public class UniqueConstraintStressIT
 {
-    private final int REPETITIONS = 1;
-    public final @Rule RepeatRule repeater = new RepeatRule();
+    @Rule
+    public final ClusterRule clusterRule = new ClusterRule(getClass());
+
+    protected ClusterManager.ManagedCluster cluster;
 
     @Before
-    public void setUp()
+    public void setup() throws Exception
     {
-        cluster.await( allSeesAllAsAvailable() );
+        cluster = clusterRule.config(HaSettings.pull_interval, "0").startCluster( );
     }
+
+    private final int REPETITIONS = 1;
+    public final @Rule RepeatRule repeater = new RepeatRule();
 
     @Rule
     public OtherThreadRule<Object> slaveWork = new OtherThreadRule<>();

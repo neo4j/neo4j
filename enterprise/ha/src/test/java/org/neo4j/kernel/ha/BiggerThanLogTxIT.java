@@ -19,29 +19,41 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.junit.Test;
-
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.cluster.InstanceId;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.TransactionTemplate;
-import org.neo4j.test.AbstractClusterTest;
+import org.neo4j.test.ha.ClusterManager;
+import org.neo4j.test.ha.ClusterRule;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.kernel.configuration.Config.parseLongWithUnit;
-import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 
-public class BiggerThanLogTxIT extends AbstractClusterTest
+public class BiggerThanLogTxIT
 {
     private static final String ROTATION_THRESHOLD = "1M";
+
+    @Rule
+    public ClusterRule clusterRule = new ClusterRule(getClass()).config( GraphDatabaseSettings.logical_log_rotation_threshold, ROTATION_THRESHOLD );
+
+    protected ClusterManager.ManagedCluster cluster;
+
+    @Before
+    public void setup() throws Exception
+    {
+        cluster = clusterRule.startCluster( );
+    }
 
     private TransactionTemplate template = new TransactionTemplate().retries( 10 ).backoff( 3, TimeUnit.SECONDS );
 
@@ -49,7 +61,6 @@ public class BiggerThanLogTxIT extends AbstractClusterTest
     public void shouldHandleSlaveCommittingLargeTx() throws Exception
     {
         // GIVEN
-        cluster.await( allSeesAllAsAvailable() );
         GraphDatabaseService slave = cluster.getAnySlave();
         int initialNodeCount = nodeCount( slave );
 
@@ -75,7 +86,6 @@ public class BiggerThanLogTxIT extends AbstractClusterTest
     public void shouldHandleMasterCommittingLargeTx() throws Exception
     {
         // GIVEN
-        cluster.await( allSeesAllAsAvailable() );
         GraphDatabaseService slave = cluster.getAnySlave();
         int initialNodeCount = nodeCount( slave );
 
@@ -89,12 +99,6 @@ public class BiggerThanLogTxIT extends AbstractClusterTest
         commitSmallTx( cluster.getMaster() );
         cluster.sync();
         assertAllMembersHasNodeCount( initialNodeCount + nodeCount + 1 );
-    }
-
-    @Override
-    protected void configureClusterMember( GraphDatabaseBuilder builder, String clusterName, InstanceId serverId )
-    {
-        builder.setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, ROTATION_THRESHOLD );
     }
 
     private void commitSmallTx( GraphDatabaseService db )

@@ -19,7 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping;
 
-import org.neo4j.function.primitive.PrimitiveIntPredicate;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
@@ -55,7 +54,7 @@ public class IdMappers
         }
 
         @Override
-        public long get( Object inputId, PrimitiveIntPredicate inGroup )
+        public long get( Object inputId, Group group )
         {
             return ((Long)inputId).longValue();
         }

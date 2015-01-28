@@ -21,11 +21,10 @@ package org.neo4j.unsafe.impl.batchimport.input;
 
 import java.util.Collection;
 
-import org.neo4j.function.primitive.PrimitiveIntPredicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Pair;
 
-import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper.ANY_GROUP;
+import static org.neo4j.unsafe.impl.batchimport.input.Group.GLOBAL;
 
 /**
  * Represents a relationship from an input source, for example a .csv file.
@@ -37,27 +36,27 @@ public class InputRelationship extends InputEntity
     private final Object endNode;
     private String type;
     private final Integer typeId;
-    private final PrimitiveIntPredicate startNodeGroups;
-    private final PrimitiveIntPredicate endNodeGroups;
+    private final Group startNodeGroup;
+    private final Group endNodeGroup;
 
     public InputRelationship( long id,
             Object[] properties, Long firstPropertyId, Object startNode, Object endNode,
             String type, Integer typeId )
     {
-        this( id, properties, firstPropertyId, ANY_GROUP, startNode, ANY_GROUP, endNode, type, typeId );
+        this( id, properties, firstPropertyId, GLOBAL, startNode, GLOBAL, endNode, type, typeId );
     }
 
     public InputRelationship( long id,
             Object[] properties, Long firstPropertyId,
-            PrimitiveIntPredicate startNodeGroups, Object startNode,
-            PrimitiveIntPredicate endNodeGroups, Object endNode,
+            Group startNodeGroups, Object startNode,
+            Group endNodeGroups, Object endNode,
             String type, Integer typeId )
     {
         super( properties, firstPropertyId );
         this.id = id;
-        this.startNodeGroups = startNodeGroups;
+        this.startNodeGroup = startNodeGroups;
         this.startNode = startNode;
-        this.endNodeGroups = endNodeGroups;
+        this.endNodeGroup = endNodeGroups;
         this.endNode = endNode;
         this.type = type;
         this.typeId = typeId;
@@ -68,9 +67,9 @@ public class InputRelationship extends InputEntity
         return id;
     }
 
-    public PrimitiveIntPredicate startNodeGroups()
+    public Group startNodeGroup()
     {
-        return startNodeGroups;
+        return startNodeGroup;
     }
 
     public Object startNode()
@@ -78,9 +77,9 @@ public class InputRelationship extends InputEntity
         return startNode;
     }
 
-    public PrimitiveIntPredicate endNodeGroups()
+    public Group endNodeGroup()
     {
-        return endNodeGroups;
+        return endNodeGroup;
     }
 
     public Object endNode()

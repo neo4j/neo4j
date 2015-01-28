@@ -25,9 +25,4 @@ public class HeaderException extends InputException
     {
         super( message );
     }
-
-    public HeaderException( String message, Throwable cause )
-    {
-        super( message, cause );
-    }
 }

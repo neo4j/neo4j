@@ -212,16 +212,16 @@ public class CsvDataGenerator
         Configuration config = Configuration.COMMAS;
         Extractors extractors = new Extractors( config.arrayDelimiter() );
         Header nodeHeader = new Header( new Entry[] {
-                new Entry( null, Type.ID, extractors.string() ),
-                new Entry( "name", Type.PROPERTY, extractors.string() ),
-                new Entry( "age", Type.PROPERTY, extractors.int_() ),
-                new Entry( "something", Type.PROPERTY, extractors.string() ),
-                new Entry( null, Type.LABEL, extractors.stringArray() ),
+                new Entry( null, Type.ID, null, extractors.string() ),
+                new Entry( "name", Type.PROPERTY, null, extractors.string() ),
+                new Entry( "age", Type.PROPERTY, null, extractors.int_() ),
+                new Entry( "something", Type.PROPERTY, null, extractors.string() ),
+                new Entry( null, Type.LABEL, null, extractors.stringArray() ),
         } );
         Header relationshipHeader = new Header( new Entry[] {
-                new Entry( null, Type.START_ID, extractors.string() ),
-                new Entry( null, Type.END_ID, extractors.string() ),
-                new Entry( null, Type.TYPE, extractors.string() )
+                new Entry( null, Type.START_ID, null, extractors.string() ),
+                new Entry( null, Type.END_ID, null, extractors.string() ),
+                new Entry( null, Type.TYPE, null, extractors.string() )
         } );
 
         ProgressListener progress = textual( System.out ).singlePart( "Generating", nodeCount + relationshipCount );

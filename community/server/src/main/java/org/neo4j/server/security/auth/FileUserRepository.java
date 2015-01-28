@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 import org.neo4j.server.security.auth.exception.IllegalTokenException;
 import org.neo4j.server.security.auth.exception.IllegalUsernameException;
 
@@ -94,49 +95,87 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
     }
 
     @Override
-    public synchronized void save( User user ) throws IllegalTokenException, IOException, IllegalUsernameException
+    public void create( User user ) throws IllegalUsernameException, IllegalTokenException, IOException
     {
-        // Assert input is ok
-        if ( !isValidToken( user.token() ) )
-        {
-            throw new IllegalTokenException( "Invalid token provided, cannot store user." );
-        }
-        if(!isValidName(user.name()))
+        if ( !isValidName( user.name() ) )
         {
             throw new IllegalUsernameException( "'" + user.name() + "' is not a valid user name." );
         }
-
-        // Copy-on-write for the users list
-        List<User> newUsers = new ArrayList<>(users);
-        User existingUser = null;
-        for ( int i = 0; i < newUsers.size(); i++ )
+        if ( !isValidToken( user.token() ) )
         {
-            User other = newUsers.get( i );
-            if( other.name().equals( user.name() ))
+            throw new IllegalTokenException( "Invalid token" );
+        }
+
+        synchronized (this)
+        {
+            // Check for existing user or token
+            for ( User other : users )
             {
-                existingUser = other;
-                newUsers.set( i, user );
-            } else if ( other.token().equals( user.token() ) )
-            {
-                throw new IllegalTokenException( "The specified token is already in use." );
+                if ( other.name().equals( user.name() ) )
+                {
+                    throw new IllegalUsernameException( "The specified user already exists" );
+                }
+                if ( other.token().equals( user.token() ) )
+                {
+                    throw new IllegalTokenException( "The specified token is already in use" );
+                }
             }
+
+            users.add( user );
+
+            commitToDisk();
+
+            usersByName.put( user.name(), user );
+            usersByToken.put( user.token(), user );
+        }
+    }
+
+    @Override
+    public void update( User existingUser, User updatedUser ) throws IllegalTokenException, ConcurrentModificationException, IOException
+    {
+        // Assert input is ok
+        if ( !existingUser.name().equals( updatedUser.name() ) )
+        {
+            throw new IllegalArgumentException( "updatedUser has a different name" );
+        }
+        if ( !isValidToken( updatedUser.token() ) )
+        {
+            throw new IllegalTokenException( "Invalid token" );
         }
 
-        if ( existingUser == null )
+        synchronized (this)
         {
-            newUsers.add( user );
-        }
+            // Copy-on-write for the users list
+            List<User> newUsers = new ArrayList<>();
+            boolean foundUser = false;
+            for ( User other : users )
+            {
+                if ( other.equals( existingUser ) )
+                {
+                    foundUser = true;
+                    newUsers.add( updatedUser );
+                } else if ( other.token().equals( updatedUser.token() ) )
+                {
+                    throw new IllegalTokenException( "The specified token is already in use" );
+                } else
+                {
+                    newUsers.add( other );
+                }
+            }
 
-        users = newUsers;
+            if ( !foundUser )
+            {
+                throw new ConcurrentModificationException();
+            }
 
-        commitToDisk();
+            users = newUsers;
 
-        usersByName.put( user.name(), user );
-        if ( existingUser != null )
-        {
+            commitToDisk();
+
+            usersByName.put( updatedUser.name(), updatedUser );
             usersByToken.remove( existingUser.token() );
+            usersByToken.put( updatedUser.token(), updatedUser );
         }
-        usersByToken.put( user.token(), user );
     }
 
     @Override

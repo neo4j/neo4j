@@ -27,7 +27,8 @@ angular.module('neo4jApp.controllers')
     'Editor'
     'Frame'
     'Folder'
-    ($scope, Document, Editor, Frame, Folder) ->
+    'GraphStyle'
+    ($scope, Document, Editor, Frame, Folder, GraphStyle) ->
       ###*
        * Local methods
       ###
@@ -48,7 +49,8 @@ angular.module('neo4jApp.controllers')
         # also clear the document contents to cleanup editor content etc.
         doc[k] = null for own k, v of doc
 
-      $scope.importDocument = (content) ->
+      $scope.importDocument = (content, name) ->
+        return GraphStyle.importGrass(content) if /\.grass$/.test name
         Document.create(content: content)
 
       $scope.playDocument = (content) ->

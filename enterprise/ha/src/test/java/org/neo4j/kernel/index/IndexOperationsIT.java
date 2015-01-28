@@ -19,17 +19,12 @@
  */
 package org.neo4j.kernel.index;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
 
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
@@ -40,19 +35,38 @@ import org.neo4j.ha.BeginTx;
 import org.neo4j.ha.FinishTx;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePullerClient;
-import org.neo4j.test.AbstractClusterTest;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.ha.ClusterManager;
+import org.neo4j.test.ha.ClusterRule;
+import org.neo4j.test.ha.RetryOnGcRule;
 
-public class IndexOperationsIT extends AbstractClusterTest
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
+public class IndexOperationsIT
 {
+    @Rule
+    public ClusterRule clusterRule = new ClusterRule(getClass());
+
+    protected ClusterManager.ManagedCluster cluster;
+
+    @Rule
+    public RetryOnGcRule retryRule = new RetryOnGcRule();
+
+    @Before
+    public void setup() throws Exception
+    {
+        cluster = clusterRule.startCluster();
+    }
+
     @Test
     public void index_modifications_are_propagated() throws Exception
     {
         // GIVEN
         // -- a slave
-        cluster.await( allSeesAllAsAvailable() );
         String key = "name";
         String value = "Mattias";
         HighlyAvailableGraphDatabase author = cluster.getAnySlave();
@@ -75,7 +89,6 @@ public class IndexOperationsIT extends AbstractClusterTest
     {
         // GIVEN
         // -- an existing index
-        cluster.await( allSeesAllAsAvailable() );
         String key = "key", value = "value";
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         long nodeId = createNode( master, key, value, true );
@@ -146,7 +159,6 @@ public class IndexOperationsIT extends AbstractClusterTest
     {
         // GIVEN
         // -- two instances, each begin a transaction
-        cluster.await( allSeesAllAsAvailable() );
         String key = "key", value = "value";
         HighlyAvailableGraphDatabase db1 = cluster.getMaster(), db2 = cluster.getAnySlave();
         long node = createNode( db1, key, value, false );

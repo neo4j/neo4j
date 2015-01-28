@@ -29,6 +29,7 @@ class IndexTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("A:Person KNOWS B:Person")
   val title = "INDEX"
   val css = "write c4-4 c5-5 c6-3"
+  override val linkId = "query-schema-index"
 
   override def assert(name: String, result: InternalExecutionResult) {
     name match {

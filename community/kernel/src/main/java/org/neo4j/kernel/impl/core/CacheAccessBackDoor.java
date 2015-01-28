@@ -23,6 +23,7 @@ import java.util.Collection;
 
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.transaction.command.RelationshipHoles;
 
 public interface CacheAccessBackDoor
 {
@@ -64,6 +65,5 @@ public interface CacheAccessBackDoor
      * @param secondNodeId The relId of the second node
      * @param secondNodeNextRelId The next relationship relId of the second node in its relationship chain
      */
-    void patchDeletedRelationshipNodes( long relId, int type,
-            long firstNodeId, long firstNodeNextRelId, long secondNodeId, long secondNodeNextRelId );
+    void patchDeletedRelationshipNodes( long nodeId, RelationshipHoles holes );
 }

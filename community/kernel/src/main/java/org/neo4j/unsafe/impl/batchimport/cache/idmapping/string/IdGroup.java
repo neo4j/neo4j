@@ -29,7 +29,7 @@ class IdGroup
     private final Group group;
     private final int groupId;
     private final long lowDataIndex; // inclusive
-    private long highDataIndex; // inclusive
+    private long highDataIndex = -1; // inclusive
 
     IdGroup( Group group, long lowDataIndex )
     {
@@ -48,12 +48,12 @@ class IdGroup
         return index >= lowDataIndex && index <= highDataIndex;
     }
 
-    public int id()
+    int id()
     {
         return groupId;
     }
 
-    public long translate( long dataIndex )
+    long translate( long dataIndex )
     {
         return dataIndex - lowDataIndex;
     }

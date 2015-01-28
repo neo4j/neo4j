@@ -28,6 +28,7 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
@@ -48,6 +49,7 @@ public class CsvInput implements Input
     private final Configuration config;
     private final int[] delimiter;
     private final BatchingIdSequence relationshipIds = new BatchingIdSequence();
+    private final Groups groups = new Groups();
 
     /**
      * @param nodeDataFactory multiple {@link DataFactory} instances providing data, each {@link DataFactory}
@@ -104,14 +106,14 @@ public class CsvInput implements Input
             public ResourceIterator<InputNode> iterator()
             {
                 return new InputGroupsDeserializer<InputNode>( nodeDataFactory.iterator(),
-                                                               nodeHeaderFactory, config, idType )
+                        nodeHeaderFactory, config, idType )
                 {
                     @Override
                     protected ResourceIterator<InputNode> entityDeserializer( CharSeeker dataStream, Header dataHeader,
-                                                                              Function<InputNode,InputNode> decorator )
+                            Function<InputNode,InputNode> decorator )
                     {
                         return new InputNodeDeserializer( dataHeader, dataStream, delimiter, decorator,
-                                idType.idsAreExternal() );
+                                idType.idsAreExternal(), groups );
                     }
                 };
             }
@@ -128,14 +130,14 @@ public class CsvInput implements Input
             {
                 relationshipIds.reset();
                 return new InputGroupsDeserializer<InputRelationship>( relationshipDataFactory.iterator(),
-                                                                       relationshipHeaderFactory, config, idType )
+                        relationshipHeaderFactory, config, idType )
                 {
                     @Override
                     protected ResourceIterator<InputRelationship> entityDeserializer( CharSeeker dataStream,
                               Header dataHeader, Function<InputRelationship,InputRelationship> decorator )
                     {
                         return new InputRelationshipDeserializer( dataHeader, dataStream, delimiter,
-                                relationshipIds, decorator );
+                                relationshipIds, decorator, groups );
                     }
                 };
             }

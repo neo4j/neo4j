@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.{SemanticState, inSequence}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{AstRewritingTestSupport, CantHandleQueryException}
+import org.neo4j.cypher.internal.compiler.v2_2.{SemanticState, inSequence}
+import org.neo4j.helpers.Platforms
 
 class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport {
 
@@ -48,12 +48,12 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
         |RETURN a, r, b
       """.stripMargin)
 
-    result should equal(ast("""
-        |WITH {a} AS b, {r} AS r
-        |WITH b AS a, r LIMIT 1
-        |MATCH (a)-[r]->(b)
-        |RETURN a, r, b
-      """.stripMargin))
+    result should equal(ast( """
+                               |WITH {a} AS b, {r} AS r
+                               |WITH b AS a, r LIMIT 1
+                               |MATCH (a)-[r]->(b)
+                               |RETURN a, r, b
+                             """.stripMargin))
   }
 
   test("should inline: MATCH a, b, c WITH c AS d, b AS a RETURN d") {
@@ -168,15 +168,15 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
       """.stripMargin))
   }
 
-  test("should not inline identifiers into patterns: WITH 1 as a MATCH (a) RETURN a => WITH 1 as a MATCH (a) RETURN a AS a") {
+  test("should not inline identifiers into patterns: WITH {node} as a MATCH (a) RETURN a => WITH {node} as a MATCH (a) RETURN a AS `a`") {
     val result = projectionInlinedAst(
-      """WITH 1 as a
+      """WITH {node} as a
         |MATCH (a)
         |RETURN a
       """.stripMargin)
 
     result should equal(ast(
-      """WITH 1 as a
+      """WITH {node} as a
         |MATCH (a)
         |RETURN a AS `a`
       """.stripMargin))
@@ -290,14 +290,15 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
 
   // FIXME: 2014-4-30 Stefan: This is not yet supported by the inline rewriter
   test("should refuse to inline queries containing update clauses by throwing CantHandleQueryException") {
-    evaluating { projectionInlinedAst(
-      """CREATE (n)
-        |RETURN n
-      """.stripMargin)
+    evaluating {
+      projectionInlinedAst(
+        """CREATE (n)
+          |RETURN n
+        """.stripMargin)
     } should produce[CantHandleQueryException]
   }
 
-  test("MATCH n WITH n.prop AS x WITH x LIMIT 10 RETURN x" ) {
+  test("MATCH n WITH n.prop AS x WITH x LIMIT 10 RETURN x") {
     val result = projectionInlinedAst(
       """MATCH n
         |WITH n.prop AS x
@@ -313,7 +314,7 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
       """.stripMargin))
   }
 
-  test("MATCH (a:Start) WITH a.prop AS property, count(*) AS count MATCH (b) WHERE id(b) = property RETURN b" ) {
+  test("MATCH (a:Start) WITH a.prop AS property, count(*) AS count MATCH (b) WHERE id(b) = property RETURN b") {
     val result = projectionInlinedAst(
       """MATCH (a:Start)
         |WITH a.prop AS property, count(*) AS count
@@ -362,7 +363,7 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
       """.stripMargin))
   }
 
-  test( "match n where id(n) IN [0,1,2,3] with n.division AS `n.division`, max(n.age) AS `max(n.age)` with `n.division` AS `n.division`, `max(n.age)` AS `max(n.age)` RETURN `n.division` AS `n.division`, `max(n.age)` AS `max(n.age)` order by `max(n.age)`") {
+  test("match n where id(n) IN [0,1,2,3] with n.division AS `n.division`, max(n.age) AS `max(n.age)` with `n.division` AS `n.division`, `max(n.age)` AS `max(n.age)` RETURN `n.division` AS `n.division`, `max(n.age)` AS `max(n.age)` order by `max(n.age)`") {
     val result = projectionInlinedAst(
       """match n where id(n) IN [0,1,2,3]
         |with n.division AS `n.division`, max(n.age) AS `max(n.age)`
@@ -370,13 +371,33 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
         |RETURN `n.division` AS `n.division`, `max(n.age)` AS `max(n.age)` order by `max(n.age)`
       """.stripMargin)
 
+    // TODO: this is a temporary solution we should rethink how to generated fresh ids on windows
+    val freshIdName = if (Platforms.platformIsWindows()) "`  FRESHID197`" else "`  FRESHID194`"
     result should equal(ast(
-      """match n where id(n) IN [0,1,2,3]
+      s"""match n where id(n) IN [0,1,2,3]
         |with n.division AS `n.division`, max(n.age) AS `max(n.age)`
         |with `n.division` AS `n.division`, `max(n.age)` AS `max(n.age)`
-        |with `n.division` AS `n.division`, `max(n.age)` AS `  FRESHID194` order by `  FRESHID194`
-        |RETURN `n.division` AS `n.division`, `  FRESHID194` AS `max(n.age)`
-      """.stripMargin ))
+        |with `n.division` AS `n.division`, `max(n.age)` AS $freshIdName order by $freshIdName
+        |RETURN `n.division` AS `n.division`, $freshIdName AS `max(n.age)`
+      """.stripMargin))
+  }
+
+  test("should not inline expressions used many times: WITH 1 as a MATCH (a) WHERE a.prop = x OR a.bar > x RETURN a, x => WITH 1 as a MATCH (a) WHERE a.prop = x OR a.bar > x RETURN a, x") {
+    val result = projectionInlinedAst(
+      """WITH 1 as x
+        |MATCH (a) WHERE a.prop = x OR a.bar > x
+        |RETURN a, x""".stripMargin)
+
+    result should equal(ast(
+      """WITH 1 as x
+        |MATCH (a) WHERE a.prop = x OR a.bar > x
+        |RETURN a, x""".stripMargin))
+  }
+
+  test("should not inline relationship identifiers if not inlinging expressions") {
+   val result = projectionInlinedAst("MATCH (u)-[r1]->(v) WITH r1 AS r2 MATCH (a)-[r2]->(b) RETURN r2 AS rel")
+
+    result should equal(ast("MATCH (u)-[r1]->(v) WITH r1 AS r2 MATCH (a)-[r2]->(b) RETURN r2 AS rel"))
   }
 
   private def projectionInlinedAst(queryText: String) = ast(queryText).endoRewrite(inlineProjections)

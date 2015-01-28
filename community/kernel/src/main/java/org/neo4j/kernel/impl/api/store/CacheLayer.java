@@ -280,7 +280,7 @@ public class CacheLayer implements StoreReadLayer
             throws EntityNotFoundException
     {
         return persistenceCache.relationshipGetProperty( relationshipId, propertyKeyId,
-                relationshipPropertyLoader );
+                                                         relationshipPropertyLoader );
     }
 
     @Override

@@ -23,16 +23,18 @@ object Ref {
   def apply[T <: AnyRef](v: T) = new Ref[T](v)
 }
 
-final class Ref[T <: AnyRef](val v: T) {
-  if (v == null)
+final class Ref[T <: AnyRef](val value: T) {
+  if (value == null)
     throw new InternalException("Attempt to instantiate Ref(null)")
 
-  override def toString = s"Ref($v)"
+  def toIdString = Integer.toHexString(java.lang.System.identityHashCode(value))
 
-  override def hashCode = java.lang.System.identityHashCode(v)
+  override def toString = s"Ref@$toIdString($value)"
+
+  override def hashCode = java.lang.System.identityHashCode(value)
 
   override def equals(that: Any) = that match {
-    case other: Ref[_] => v eq other.v
+    case other: Ref[_] => value eq other.value
     case _             => false
   }
 }

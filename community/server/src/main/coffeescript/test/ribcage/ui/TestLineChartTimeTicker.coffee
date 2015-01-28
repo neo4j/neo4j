@@ -28,7 +28,7 @@ define(
       for expectedTick in expected
         gotTick = ticks.shift(0)
         expect(expectedTick[0]).toBe(gotTick[0])
-        expect(expectedTick[0]).toBe(gotTick[0])
+        expect(expectedTick[1]).toBe(gotTick[1])
 
     describe "LineChartTimeTicker", ->
       it "formats ticks with 30-minute scale appropriately", ->

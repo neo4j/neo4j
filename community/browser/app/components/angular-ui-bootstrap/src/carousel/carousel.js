@@ -7,11 +7,11 @@
 *
 */
 angular.module('ui.bootstrap.carousel', ['ui.bootstrap.transition'])
-.controller('CarouselController', ['$scope', '$timeout', '$transition', function ($scope, $timeout, $transition) {
+.controller('CarouselController', ['$scope', '$timeout', '$interval', '$transition', function ($scope, $timeout, $interval, $transition) {
   var self = this,
     slides = self.slides = $scope.slides = [],
     currentIndex = -1,
-    currentTimeout, isPlaying;
+    currentInterval, isPlaying;
   self.currentSlide = null;
 
   var destroyed = false;
@@ -106,22 +106,22 @@ angular.module('ui.bootstrap.carousel', ['ui.bootstrap.transition'])
   function restartTimer() {
     resetTimer();
     var interval = +$scope.interval;
-    if (!isNaN(interval) && interval>=0) {
-      currentTimeout = $timeout(timerFn, interval);
+    if (!isNaN(interval) && interval > 0) {
+      currentInterval = $interval(timerFn, interval);
     }
   }
 
   function resetTimer() {
-    if (currentTimeout) {
-      $timeout.cancel(currentTimeout);
-      currentTimeout = null;
+    if (currentInterval) {
+      $interval.cancel(currentInterval);
+      currentInterval = null;
     }
   }
 
   function timerFn() {
-    if (isPlaying) {
+    var interval = +$scope.interval;
+    if (isPlaying && !isNaN(interval) && interval > 0) {
       $scope.next();
-      restartTimer();
     } else {
       $scope.pause();
     }

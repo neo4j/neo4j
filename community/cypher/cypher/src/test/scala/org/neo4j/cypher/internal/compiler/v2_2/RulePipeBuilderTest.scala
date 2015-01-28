@@ -54,7 +54,7 @@ class RulePipeBuilderTest
   val planner = Planner(mock[Monitors], SimpleMetricsFactory, mock[PlanningMonitor], Clock.SYSTEM_CLOCK, acceptQuery = (_) => true)
 
   class FakePreparedQuery(q: AbstractQuery)
-    extends PreparedQuery(mock[Statement], "q", Map.empty)(SemanticTable(), Scope(Map.empty, Seq.empty)) {
+    extends PreparedQuery(mock[Statement], "q", Map.empty)(SemanticTable(), Set.empty, Scope(Map.empty, Seq.empty)) {
 
     override def abstractQuery: AbstractQuery = q
 

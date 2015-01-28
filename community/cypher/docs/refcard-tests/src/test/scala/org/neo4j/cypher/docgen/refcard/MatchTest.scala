@@ -27,6 +27,7 @@ class MatchTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT KNOWS A:Person", "A KNOWS B:Person", "B KNOWS C:Person", "C KNOWS ROOT")
   val title = "MATCH"
   val css = "read c2-2 c3-2 c4-2 c5-2"
+  override val linkId = "query-match"
 
   override def assert(name: String, result: InternalExecutionResult) {
     name match {

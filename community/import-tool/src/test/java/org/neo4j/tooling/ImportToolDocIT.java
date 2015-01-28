@@ -44,6 +44,7 @@ import org.neo4j.tooling.ImportTool.Options;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import static org.neo4j.helpers.ArrayUtil.join;
 import static org.neo4j.tooling.ImportTool.MULTI_FILE_DELIMITER;
 
 public class ImportToolDocIT
@@ -61,7 +62,7 @@ public class ImportToolDocIT
         File movies = file( "ops", "movies.csv" );
         try (PrintStream out = new PrintStream( movies ))
         {
-            out.println( ":ID,title,year:int,:LABEL" );
+            out.println( "movieId:ID,title,year:int,:LABEL" );
             out.println( "tt0133093,\"The Matrix\",1999,Movie" );
             out.println( "tt0234215,\"The Matrix Reloaded\",2003,Movie;Sequel" );
             out.println( "tt0242653,\"The Matrix Revolutions\",2003,Movie;Sequel" );
@@ -70,7 +71,7 @@ public class ImportToolDocIT
         File actors = file( "ops", "actors.csv" );
         try (PrintStream out = new PrintStream( actors ))
         {
-            out.println( ":ID,name,:LABEL" );
+            out.println( "personId:ID,name,:LABEL" );
             out.println( "keanu,\"Keanu Reeves\",Actor" );
             out.println( "laurence,\"Laurence Fishburne\",Actor" );
             out.println( "carrieanne,\"Carrie-Anne Moss\",Actor" );
@@ -108,41 +109,31 @@ public class ImportToolDocIT
     }
 
     @Test
-    public void separateHeadersCsvImport() throws Exception
+    public void basicCsvImportCustomDelimiterQuotation() throws Exception
     {
         // GIVEN
-        File moviesHeader = file( "ops", "movies2-header.csv" );
-        try ( PrintStream out = new PrintStream( moviesHeader ) )
-        {
-            out.println( ":ID;title;year:int;:LABEL" );
-        }
         File movies = file( "ops", "movies2.csv" );
-        try ( PrintStream out = new PrintStream( movies ) )
+        try (PrintStream out = new PrintStream( movies ))
         {
+            out.println( "movieId:ID;title;year:int;:LABEL" );
             out.println( "tt0133093;'The Matrix';1999;Movie" );
             out.println( "tt0234215;'The Matrix Reloaded';2003;Movie|Sequel" );
             out.println( "tt0242653;'The Matrix Revolutions';2003;Movie|Sequel" );
         }
-        File actorsHeader = file( "ops", "actors2-header.csv" );
-        try ( PrintStream out = new PrintStream( actorsHeader ) )
-        {
-            out.println( ":ID;name;:LABEL" );
-        }
+
         File actors = file( "ops", "actors2.csv" );
-        try ( PrintStream out = new PrintStream( actors ) )
+        try (PrintStream out = new PrintStream( actors ))
         {
+            out.println( "personId:ID;name;:LABEL" );
             out.println( "keanu;'Keanu Reeves';Actor" );
             out.println( "laurence;'Laurence Fishburne';Actor" );
             out.println( "carrieanne;'Carrie-Anne Moss';Actor" );
         }
-        File rolesHeader = file( "ops", "roles2-header.csv" );
-        try ( PrintStream out = new PrintStream( rolesHeader ) )
+
+        File roles = file( "ops", "roles2.csv" );
+        try (PrintStream out = new PrintStream( roles ))
         {
             out.println( ":START_ID;role;:END_ID;:TYPE" );
-        }
-        File roles = file( "ops", "roles2.csv" );
-        try ( PrintStream out = new PrintStream( roles ) )
-        {
             out.println( "keanu;'Neo';tt0133093;ACTS_IN" );
             out.println( "keanu;'Neo';tt0234215;ACTS_IN" );
             out.println( "keanu;'Neo';tt0242653;ACTS_IN" );
@@ -157,9 +148,9 @@ public class ImportToolDocIT
         // WHEN
         String[] arguments = arguments(
                 "--into", directory.absolutePath(),
-                "--nodes", moviesHeader.getAbsolutePath() + MULTI_FILE_DELIMITER + movies.getAbsolutePath(),
-                "--nodes", actorsHeader.getAbsolutePath() + MULTI_FILE_DELIMITER + actors.getAbsolutePath(),
-                "--relationships", rolesHeader.getAbsolutePath() + MULTI_FILE_DELIMITER + roles.getAbsolutePath(),
+                "--nodes", movies.getAbsolutePath(),
+                "--nodes", actors.getAbsolutePath(),
+                "--relationships", roles.getAbsolutePath(),
                 "--delimiter", ";",
                 "--array-delimiter", "|",
                 "--quote", "'");
@@ -167,7 +158,315 @@ public class ImportToolDocIT
 
         // DOCS
         String realDir = movies.getParentFile().getAbsolutePath();
+        printCommandToFile( arguments, realDir, "custom-delimiter-quotation-command.adoc" );
+
+        // THEN
+        verifyData();
+    }
+
+
+    @Test
+    public void separateHeadersCsvImport() throws Exception
+    {
+        // GIVEN
+        File moviesHeader = file( "ops", "movies3-header.csv" );
+        try ( PrintStream out = new PrintStream( moviesHeader ) )
+        {
+            out.println( "movieId:ID,title,year:int,:LABEL" );
+        }
+        File movies = file( "ops", "movies3.csv" );
+        try ( PrintStream out = new PrintStream( movies ) )
+        {
+            out.println( "tt0133093,\"The Matrix\",1999,Movie" );
+            out.println( "tt0234215,\"The Matrix Reloaded\",2003,Movie;Sequel" );
+            out.println( "tt0242653,\"The Matrix Revolutions\",2003,Movie;Sequel" );
+        }
+        File actorsHeader = file( "ops", "actors3-header.csv" );
+        try ( PrintStream out = new PrintStream( actorsHeader ) )
+        {
+            out.println( "personId:ID,name,:LABEL" );
+        }
+        File actors = file( "ops", "actors3.csv" );
+        try ( PrintStream out = new PrintStream( actors ) )
+        {
+            out.println( "keanu,\"Keanu Reeves\",Actor" );
+            out.println( "laurence,\"Laurence Fishburne\",Actor" );
+            out.println( "carrieanne,\"Carrie-Anne Moss\",Actor" );
+        }
+        File rolesHeader = file( "ops", "roles3-header.csv" );
+        try ( PrintStream out = new PrintStream( rolesHeader ) )
+        {
+            out.println( ":START_ID,role,:END_ID,:TYPE" );
+        }
+        File roles = file( "ops", "roles3.csv" );
+        try ( PrintStream out = new PrintStream( roles ) )
+        {
+            out.println( "keanu,\"Neo\",tt0133093,ACTS_IN" );
+            out.println( "keanu,\"Neo\",tt0234215,ACTS_IN" );
+            out.println( "keanu,\"Neo\",tt0242653,ACTS_IN" );
+            out.println( "laurence,\"Morpheus\",tt0133093,ACTS_IN" );
+            out.println( "laurence,\"Morpheus\",tt0234215,ACTS_IN" );
+            out.println( "laurence,\"Morpheus\",tt0242653,ACTS_IN" );
+            out.println( "carrieanne,\"Trinity\",tt0133093,ACTS_IN" );
+            out.println( "carrieanne,\"Trinity\",tt0234215,ACTS_IN" );
+            out.println( "carrieanne,\"Trinity\",tt0242653,ACTS_IN" );
+        }
+
+        // WHEN
+        String[] arguments = arguments(
+                "--into", directory.absolutePath(),
+                "--nodes", moviesHeader.getAbsolutePath() + MULTI_FILE_DELIMITER + movies.getAbsolutePath(),
+                "--nodes", actorsHeader.getAbsolutePath() + MULTI_FILE_DELIMITER + actors.getAbsolutePath(),
+                "--relationships", rolesHeader.getAbsolutePath() + MULTI_FILE_DELIMITER + roles.getAbsolutePath());
+        ImportTool.main( arguments );
+
+        // DOCS
+        String realDir = movies.getParentFile().getAbsolutePath();
         printCommandToFile( arguments, realDir, "separate-header-example-command.adoc" );
+
+        // THEN
+        verifyData();
+    }
+
+    @Test
+    public void multipleInputFiles() throws Exception
+    {
+        // GIVEN
+        File moviesHeader = file( "ops", "movies4-header.csv" );
+        try ( PrintStream out = new PrintStream( moviesHeader ) )
+        {
+            out.println( "movieId:ID,title,year:int,:LABEL" );
+        }
+        File moviesPart1 = file( "ops", "movies4-part1.csv" );
+        try ( PrintStream out = new PrintStream( moviesPart1 ) )
+        {
+            out.println( "tt0133093,\"The Matrix\",1999,Movie" );
+            out.println( "tt0234215,\"The Matrix Reloaded\",2003,Movie;Sequel" );
+        }
+        File moviesPart2 = file( "ops", "movies4-part2.csv" );
+        try ( PrintStream out = new PrintStream( moviesPart2 ) )
+        {
+            out.println( "tt0242653,\"The Matrix Revolutions\",2003,Movie;Sequel" );
+        }
+        File actorsHeader = file( "ops", "actors4-header.csv" );
+        try ( PrintStream out = new PrintStream( actorsHeader ) )
+        {
+            out.println( "personId:ID,name,:LABEL" );
+        }
+        File actorsPart1 = file( "ops", "actors4-part1.csv" );
+        try ( PrintStream out = new PrintStream( actorsPart1 ) )
+        {
+            out.println( "keanu,\"Keanu Reeves\",Actor" );
+            out.println( "laurence,\"Laurence Fishburne\",Actor" );
+        }
+        File actorsPart2 = file( "ops", "actors4-part2.csv" );
+        try ( PrintStream out = new PrintStream( actorsPart2 ) )
+        {
+            out.println( "carrieanne,\"Carrie-Anne Moss\",Actor" );
+        }
+        File rolesHeader = file( "ops", "roles4-header.csv" );
+        try ( PrintStream out = new PrintStream( rolesHeader ) )
+        {
+            out.println( ":START_ID,role,:END_ID,:TYPE" );
+        }
+        File rolesPart1 = file( "ops", "roles4-part1.csv" );
+        try ( PrintStream out = new PrintStream( rolesPart1 ) )
+        {
+            out.println( "keanu,\"Neo\",tt0133093,ACTS_IN" );
+            out.println( "keanu,\"Neo\",tt0234215,ACTS_IN" );
+            out.println( "keanu,\"Neo\",tt0242653,ACTS_IN" );
+            out.println( "laurence,\"Morpheus\",tt0133093,ACTS_IN" );
+            out.println( "laurence,\"Morpheus\",tt0234215,ACTS_IN" );
+        }
+        File rolesPart2 = file( "ops", "roles4-part2.csv" );
+        try ( PrintStream out = new PrintStream( rolesPart2 ) )
+        {
+            out.println( "laurence,\"Morpheus\",tt0242653,ACTS_IN" );
+            out.println( "carrieanne,\"Trinity\",tt0133093,ACTS_IN" );
+            out.println( "carrieanne,\"Trinity\",tt0234215,ACTS_IN" );
+            out.println( "carrieanne,\"Trinity\",tt0242653,ACTS_IN" );
+        }
+
+        // WHEN
+        String[] arguments = arguments(
+                "--into", directory.absolutePath(),
+                "--nodes", moviesHeader.getAbsolutePath() + MULTI_FILE_DELIMITER + moviesPart1.getAbsolutePath() +
+                        MULTI_FILE_DELIMITER + moviesPart2.getAbsolutePath(),
+                "--nodes", actorsHeader.getAbsolutePath() + MULTI_FILE_DELIMITER + actorsPart1.getAbsolutePath() +
+                        MULTI_FILE_DELIMITER + actorsPart2.getAbsolutePath(),
+                "--relationships", rolesHeader.getAbsolutePath() + MULTI_FILE_DELIMITER + rolesPart1.getAbsolutePath() +
+                        MULTI_FILE_DELIMITER + rolesPart2.getAbsolutePath() );
+        ImportTool.main( arguments );
+
+        // DOCS
+        String realDir = moviesPart2.getParentFile().getAbsolutePath();
+        printCommandToFile( arguments, realDir, "multiple-input-files.adoc" );
+
+        // THEN
+        verifyData();
+    }
+
+    @Test
+    public void sameNodeLabelEverywhere() throws FileNotFoundException
+    {
+        // GIVEN
+        File movies = file( "ops", "movies5.csv" );
+        try (PrintStream out = new PrintStream( movies ))
+        {
+            out.println( "movieId:ID,title,year:int" );
+            out.println( "tt0133093,\"The Matrix\",1999" );
+        }
+
+        File sequels = file( "ops", "sequels5.csv" );
+        try (PrintStream out = new PrintStream( sequels ))
+        {
+            out.println( "movieId:ID,title,year:int" );
+            out.println( "tt0234215,\"The Matrix Reloaded\",2003" );
+            out.println( "tt0242653,\"The Matrix Revolutions\",2003" );
+        }
+
+        File actors = file( "ops", "actors5.csv" );
+        try (PrintStream out = new PrintStream( actors ))
+        {
+            out.println( "personId:ID,name" );
+            out.println( "keanu,\"Keanu Reeves\"" );
+            out.println( "laurence,\"Laurence Fishburne\"" );
+            out.println( "carrieanne,\"Carrie-Anne Moss\"" );
+        }
+
+        File roles = file( "ops", "roles5.csv" );
+        try ( PrintStream out = new PrintStream( roles ) )
+        {
+            out.println( ":START_ID,role,:END_ID,:TYPE" );
+            out.println( "keanu,\"Neo\",tt0133093,ACTS_IN" );
+            out.println( "keanu,\"Neo\",tt0234215,ACTS_IN" );
+            out.println( "keanu,\"Neo\",tt0242653,ACTS_IN" );
+            out.println( "laurence,\"Morpheus\",tt0133093,ACTS_IN" );
+            out.println( "laurence,\"Morpheus\",tt0234215,ACTS_IN" );
+            out.println( "laurence,\"Morpheus\",tt0242653,ACTS_IN" );
+            out.println( "carrieanne,\"Trinity\",tt0133093,ACTS_IN" );
+            out.println( "carrieanne,\"Trinity\",tt0234215,ACTS_IN" );
+            out.println( "carrieanne,\"Trinity\",tt0242653,ACTS_IN" );
+        }
+        // WHEN
+        String[] arguments = arguments(
+                "--into", directory.absolutePath(),
+                "--nodes:" + join( new String[] { "Movie" }, ":" ),
+                    movies.getAbsolutePath(),
+                "--nodes:" + join( new String[] { "Movie", "Sequel" }, ":" ),
+                    sequels.getAbsolutePath(),
+                "--nodes:" + join( new String[] { "Actor" }, ":" ),
+                    actors.getAbsolutePath(),
+                "--relationships", roles.getAbsolutePath() );
+        ImportTool.main( arguments );
+
+        // DOCS
+        String realDir = movies.getParentFile().getAbsolutePath();
+        printCommandToFile( arguments, realDir, "same-node-label-everywhere.adoc" );
+
+        // THEN
+        verifyData();
+    }
+
+    @Test
+    public void sameRelationshipTypeEverywhere() throws FileNotFoundException
+    {
+        // GIVEN
+        File movies = file( "ops", "movies6.csv" );
+        try (PrintStream out = new PrintStream( movies ))
+        {
+            out.println( "movieId:ID,title,year:int,:LABEL" );
+            out.println( "tt0133093,\"The Matrix\",1999,Movie" );
+            out.println( "tt0234215,\"The Matrix Reloaded\",2003,Movie;Sequel" );
+            out.println( "tt0242653,\"The Matrix Revolutions\",2003,Movie;Sequel" );
+        }
+
+        File actors = file( "ops", "actors6.csv" );
+        try (PrintStream out = new PrintStream( actors ))
+        {
+            out.println( "personId:ID,name,:LABEL" );
+            out.println( "keanu,\"Keanu Reeves\",Actor" );
+            out.println( "laurence,\"Laurence Fishburne\",Actor" );
+            out.println( "carrieanne,\"Carrie-Anne Moss\",Actor" );
+        }
+
+        File roles = file( "ops", "roles6.csv" );
+        try ( PrintStream out = new PrintStream( roles ) )
+        {
+            out.println( ":START_ID,role,:END_ID" );
+            out.println( "keanu,\"Neo\",tt0133093" );
+            out.println( "keanu,\"Neo\",tt0234215" );
+            out.println( "keanu,\"Neo\",tt0242653" );
+            out.println( "laurence,\"Morpheus\",tt0133093" );
+            out.println( "laurence,\"Morpheus\",tt0234215" );
+            out.println( "laurence,\"Morpheus\",tt0242653" );
+            out.println( "carrieanne,\"Trinity\",tt0133093" );
+            out.println( "carrieanne,\"Trinity\",tt0234215" );
+            out.println( "carrieanne,\"Trinity\",tt0242653" );
+        }
+        // WHEN
+        String[] arguments = arguments(
+                "--into", directory.absolutePath(),
+                "--nodes", movies.getAbsolutePath(),
+                "--nodes", actors.getAbsolutePath(),
+                "--relationships:" + join( new String[] { "ACTS_IN" }, ":" ), roles.getAbsolutePath());
+        ImportTool.main( arguments );
+
+        // DOCS
+        String realDir = movies.getParentFile().getAbsolutePath();
+        printCommandToFile( arguments, realDir, "same-relationship-type-everywhere.adoc" );
+
+        // THEN
+        verifyData();
+    }
+
+    @Test
+    public void idSpaces() throws FileNotFoundException
+    {
+        // GIVEN
+        File movies = file( "ops", "movies7.csv" );
+        try (PrintStream out = new PrintStream( movies ))
+        {
+            out.println( "movieId:ID(Movie),title,year:int,:LABEL" );
+            out.println( "1,\"The Matrix\",1999,Movie" );
+            out.println( "2,\"The Matrix Reloaded\",2003,Movie;Sequel" );
+            out.println( "3,\"The Matrix Revolutions\",2003,Movie;Sequel" );
+        }
+
+        File actors = file( "ops", "actors7.csv" );
+        try (PrintStream out = new PrintStream( actors ))
+        {
+            out.println( "personId:ID(Actor),name,:LABEL" );
+            out.println( "1,\"Keanu Reeves\",Actor" );
+            out.println( "2,\"Laurence Fishburne\",Actor" );
+            out.println( "3,\"Carrie-Anne Moss\",Actor" );
+        }
+
+        File roles = file( "ops", "roles7.csv" );
+        try ( PrintStream out = new PrintStream( roles ) )
+        {
+            out.println( ":START_ID(Actor),role,:END_ID(Movie)" );
+            out.println( "1,\"Neo\",1" );
+            out.println( "1,\"Neo\",2" );
+            out.println( "1,\"Neo\",3" );
+            out.println( "2,\"Morpheus\",1" );
+            out.println( "2,\"Morpheus\",2" );
+            out.println( "2,\"Morpheus\",3" );
+            out.println( "3,\"Trinity\",1" );
+            out.println( "3,\"Trinity\",2" );
+            out.println( "3,\"Trinity\",3" );
+        }
+        // WHEN
+        String[] arguments = arguments(
+                "--into", directory.absolutePath(),
+                "--nodes", movies.getAbsolutePath(),
+                "--nodes", actors.getAbsolutePath(),
+                "--relationships:" + join( new String[] { "ACTS_IN" }, ":" ), roles.getAbsolutePath());
+        ImportTool.main( arguments );
+
+        // DOCS
+        String realDir = movies.getParentFile().getAbsolutePath();
+        printCommandToFile( arguments, realDir, "id-spaces.adoc" );
 
         // THEN
         verifyData();
@@ -238,7 +537,7 @@ public class ImportToolDocIT
     {
         try (PrintStream out = new PrintStream( file( "man", "options.adoc" ) ))
         {
-            for ( Options option : ImportTool.Options.values() )
+            for ( Options option : Options.values() )
             {
                 out.print( option.manPageEntry() );
             }
