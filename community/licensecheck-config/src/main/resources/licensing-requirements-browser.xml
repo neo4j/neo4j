@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright (c) 2002-2014 "Neo Technology,"
+    Copyright (c) 2002-2015 "Neo Technology,"
     Network Engine for Objects in Lund AB [http://neotechnology.com]
 
     This file is part of Neo4j.
@@ -22,70 +22,85 @@
 -->
 <licensing-requirements>
   <missing-artifacts>
-    <artifact id="json3" name="JSON3">
+    <artifact id="angular" name="AngularJS">
       <license>MIT</license>
     </artifact>
-    <artifact id="es5-shim" name="es5-shim">
+    <artifact id="angular-animate" name="angular-animate">
       <license>MIT</license>
     </artifact>
-    <artifact id="angular-ui-codemirror" name="angular-ui-codemirror">
+    <artifact id="angular-base64" name="angular-base64">
       <license>MIT</license>
     </artifact>
-    <artifact id="codemirror" name="CodeMirror">
-      <license>MIT</license>
-    </artifact>
-    <artifact id="d3" name="D3.js">
-      <license>BSD License</license>
-    </artifact>
-    <artifact id="blob" name="Blob.js">
-      <license>MIT</license>
-    </artifact>
-    <artifact id="file-saver" name="FileSaver.js">
+    <artifact id="angular-cookies" name="angular-cookies">
       <license>MIT</license>
     </artifact>
     <artifact id="angular-local-storage" name="angular-local-storage">
       <license>MIT</license>
     </artifact>
-    <artifact id="angular-moment" name="angular-moment">
+    <artifact id="angular-mocks" name="angular-mocks">
       <license>MIT</license>
     </artifact>
-    <artifact id="moment" name="momentjs">
+    <artifact id="angular-resource" name="angular-resource">
       <license>MIT</license>
     </artifact>
-    <artifact id="UUID.js" name="UUID.js">
+    <artifact id="angular-sanitize" name="angular-sanitize">
       <license>MIT</license>
     </artifact>
-    <artifact id="jquery" name="JQuery">
-      <license>MIT</license>
-    </artifact>
-    <artifact id="jquery-ui" name="jquery-ui">
-      <license>MIT</license>
-    </artifact>
-    <artifact id="angular-ui-sortable" name="angular-ui-sortable">
+    <artifact id="angular-scenario" name="angular-scenario">
       <license>MIT</license>
     </artifact>
     <artifact id="angular-ui-bootstrap" name="angular-ui-bootstrap">
       <license>MIT</license>
     </artifact>
+    <artifact id="angular-ui-codemirror" name="angular-ui-codemirror">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="angular-ui-sortable" name="angular-ui-sortable">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="blob" name="Blob.js">
+      <license>MIT</license>
+    </artifact>
     <artifact id="bootstrap" name="bootstrap">
-      <license>Apache Software License, Version 2.0</license>
+      <license>MIT</license>
     </artifact>
-    <artifact id="font-awesome" name="Font Awesome">
-      <license>SIL OFL 1.1</license>
-    </artifact>
-    <artifact id="angular" name="AngularJS">
+    <artifact id="codemirror" name="CodeMirror">
       <license>MIT</license>
     </artifact>
     <artifact id="codemirror css" name="CodeMirror CSS">
       <license>MIT</license>
     </artifact>
-    <artifact id="Modernizr" name="Modernizr">
+    <artifact id="d3" name="D3.js">
+      <license>BSD License</license>
+    </artifact>
+    <artifact id="es5-shim" name="es5-shim">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="file-saver" name="FileSaver.js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="font-awesome" name="Font Awesome">
+      <license>SIL OFL 1.1</license>
+    </artifact>
+    <artifact id="jquery" name="JQuery">
       <license>MIT</license>
     </artifact>
     <artifact id="jquery.easing" name="JQuery Easing Plugin">
       <license>BSD License</license>
     </artifact>
-    <artifact id="jquery.animate-enhanced" name="JQuery Animated-Advanced Plugin">
+    <artifact id="jquery-ui" name="jquery-ui">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="json3" name="JSON3">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="local-storage-js" name="local-storage-js">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="Modernizr" name="Modernizr">
+      <license>MIT</license>
+    </artifact>
+    <artifact id="UUID.js" name="UUID.js">
       <license>MIT</license>
     </artifact>
   </missing-artifacts>
