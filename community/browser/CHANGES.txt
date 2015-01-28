@@ -1,17 +1,25 @@
-2.2.0-M01
+2.2.0-M03
+---------
+o Add Query Plan Visualization.
+o Export graph as SVG.
+o Display targeted motd on the welcome frame.
+o Add left vertical frame menu to change frame views.
+o Export files in Safari.
+
+2.2.0-M02
 ---------
 o Overall UI Facelift.
 o Support for server authentication /  authorization.
 o Terminate long running queries.
 o Add `:history` command.
+o Persist `:config` changes.
 o Graph panning.
 o Graph relationships captions changeable.
+o Change default caption on nodes.
 o Move Legend outside the graph.
 o Move Inspector below the graph.
-o Persist `:config` changes.
 o Curved arrows in graph view.
 o Improved maxRows behaviour, showing first config:maxRows of resultset in table.
-o Change default caption on nodes.
 o Treat everything not recognized as a command as Cypher.
 o Fix text not showing in fullscreen editor.
 o Fix history stepping in OS X to use cmd + up/down arrow and cmd+enter to run current command.
