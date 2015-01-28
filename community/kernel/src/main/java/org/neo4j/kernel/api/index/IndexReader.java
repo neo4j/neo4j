@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.api.index;
 
+import java.util.Collections;
+import java.util.Set;
+
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
@@ -51,6 +54,12 @@ public interface IndexReader extends Resource
         }
 
         @Override
+        public Set<Class> valueTypesInIndex()
+        {
+            return Collections.emptySet();
+        }
+
+        @Override
         public long sampleIndex( DoubleLong.Out result )
         {
             result.write( 0l, 0l );
@@ -67,6 +76,12 @@ public interface IndexReader extends Resource
      * Number of nodes indexed by the given property
      */
     int getIndexedCount( long nodeId, Object propertyValue );
+
+    /**
+     *
+     * @return the set of value types present in the index
+     */
+    Set<Class> valueTypesInIndex();
 
     /**
      * Sample this index (on the current thread)
@@ -95,6 +110,12 @@ public interface IndexReader extends Resource
         public int getIndexedCount( long nodeId, Object propertyValue )
         {
             return delegate.getIndexedCount( nodeId, propertyValue );
+        }
+
+        @Override
+        public Set<Class> valueTypesInIndex()
+        {
+            return delegate.valueTypesInIndex();
         }
 
         @Override

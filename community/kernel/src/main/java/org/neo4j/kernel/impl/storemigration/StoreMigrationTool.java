@@ -73,10 +73,11 @@ public class StoreMigrationTool
                 SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE );
         try
         {
+            UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( fs ) );
             migrationProcess.addParticipant( new StoreMigrator(
                     new VisibleMigrationProgressMonitor( logging.getMessagesLog( StoreMigrationTool.class ), System.out ),
-                    fs, new UpgradableDatabase( new StoreVersionCheck( fs ) ), config, logging ) );
-            migrationProcess.addParticipant( schemaIndexProvider.storeMigrationParticipant() );
+                    fs, upgradableDatabase, config, logging ) );
+            migrationProcess.addParticipant( schemaIndexProvider.storeMigrationParticipant( fs, upgradableDatabase) );
         }
         catch ( IllegalArgumentException e )
         {   // That's fine actually, no schema index provider on the classpath or something

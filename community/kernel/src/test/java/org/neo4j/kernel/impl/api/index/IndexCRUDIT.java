@@ -35,6 +35,7 @@ import java.util.Set;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
@@ -51,6 +52,7 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.register.Register;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -161,7 +163,9 @@ public class IndexCRUDIT
     @Before
     public void before() throws Exception
     {
-        when( mockedIndexProvider.storeMigrationParticipant() ).thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
+        when( mockedIndexProvider.storeMigrationParticipant(
+                any( FileSystemAbstraction.class ), any( UpgradableDatabase.class )
+        ) ).thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs.get() );
         factory.addKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList( mockedIndexProviderFactory ) );

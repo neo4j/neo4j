@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.api;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -26,9 +29,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -42,6 +42,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Predicates;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -59,6 +60,8 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePullerClient;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ha.ClusterManager;
@@ -66,11 +69,9 @@ import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 import org.neo4j.test.ha.ClusterRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
@@ -509,6 +510,13 @@ public class SchemaIndexHaIT
         public InternalIndexState getInitialState( long indexId )
         {
             return delegate.getInitialState(indexId);
+        }
+
+        @Override
+        public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs,
+                                                                    UpgradableDatabase upgradableDatabase )
+        {
+            return delegate.storeMigrationParticipant( fs, upgradableDatabase );
         }
 
         @Override

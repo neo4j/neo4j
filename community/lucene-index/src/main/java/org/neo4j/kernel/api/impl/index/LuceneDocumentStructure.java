@@ -31,7 +31,6 @@ import org.apache.lucene.util.NumericUtils;
 import org.neo4j.kernel.api.index.ArrayEncoder;
 
 import static java.lang.String.format;
-
 import static org.apache.lucene.document.Field.Index.NOT_ANALYZED;
 import static org.apache.lucene.document.Field.Store.NO;
 import static org.apache.lucene.document.Field.Store.YES;
@@ -162,6 +161,22 @@ public class LuceneDocumentStructure
         abstract boolean canEncode( Object value );
         abstract Fieldable encodeField( Object value );
         abstract Query encodeQuery( Object value );
+
+        public static ValueEncoding fromKey( String key )
+        {
+            switch ( key )
+            {
+            case "number":
+                return Number;
+            case "array":
+                return Array;
+            case "bool":
+                return Bool;
+            case "string":
+                return String;
+            }
+            throw new IllegalArgumentException( "Unknown key: " + key );
+        }
     }
 
     public Document newDocumentRepresentingProperty( long nodeId, Fieldable encodedValue )

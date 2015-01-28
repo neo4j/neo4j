@@ -34,7 +34,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 
-import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -46,7 +45,7 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
@@ -104,10 +103,10 @@ public class StoreUpgradeIntegrationTest
                             indexCounts()
                     )},
                     new Store[]{new Store( "0.A.1-db2.zip",
-                            179 /* node count */,
-                            31 /* last txId */,
-                            selectivities( 1.0, 1.0, 1.0 ),
-                            indexCounts( counts( 0, 1, 1, 1 ), counts( 0, 38, 38, 38 ), counts( 0, 133, 133, 133 ) )
+                            180 /* node count */,
+                            35 /* last txId */,
+                            selectivities( 1.0, 1.0, 1.0, 1.0 ),
+                            indexCounts( counts( 0, 1, 1, 1 ), counts( 0, 38, 38, 38 ), counts(0, 1, 1, 1), counts( 0, 133, 133, 133 ) )
                     )},
 
                     // 2.1
@@ -118,17 +117,16 @@ public class StoreUpgradeIntegrationTest
                             indexCounts()
                     )},
                     new Store[]{new Store( "0.A.3-data.zip",
-                            173 /* node count */,
-                            26 /* last txId */,
-                            selectivities( 1.0, 1.0 ),
-                            indexCounts( counts( 0, 38, 38, 38 ), counts( 0, 133, 133, 133 ) )
+                            174 /* node count */,
+                            30 /* last txId */,
+                            selectivities( 1.0, 1.0, 1.0 ),
+                            indexCounts( counts( 0, 38, 38, 38 ), counts(0, 1, 1, 1), counts( 0, 133, 133, 133 ) )
                     )}
             );
         }
 
         @Test
-        public void embeddedDatabaseShouldStartOnOlderStoreWhenUpgradeIsEnabled()
-                throws IOException, ConsistencyCheckIncompleteException, IndexNotFoundKernelException
+        public void embeddedDatabaseShouldStartOnOlderStoreWhenUpgradeIsEnabled() throws Throwable
         {
             File dir = store.prepareDirectory();
 
@@ -150,8 +148,7 @@ public class StoreUpgradeIntegrationTest
         }
 
         @Test
-        public void serverDatabaseShouldStartOnOlderStoreWhenUpgradeIsEnabled()
-                throws IOException, ConsistencyCheckIncompleteException, IndexNotFoundKernelException
+        public void serverDatabaseShouldStartOnOlderStoreWhenUpgradeIsEnabled() throws Throwable
         {
             File dir = store.prepareDirectory();
 
@@ -237,31 +234,14 @@ public class StoreUpgradeIntegrationTest
         }
     }
 
-    @RunWith(Parameterized.class)
-    public static class StoreUpgradeNotCleanlyShutdownStoreTest
+    public static class StoreUpgradeFailingTest
     {
-        @Parameterized.Parameter(0)
-        public Store store;
-
-        // NOTE: the zip files must contain the database files and NOT the graph.db folder itself!!!
-        @Parameterized.Parameters(name = "{0}")
-        public static Collection<Store[]> stores()
-        {
-            return Arrays.<Store[]>asList(
-                    new Store[]{new Store(
-                            "0.A.3-to-be-recovered.zip",
-                            -1 /* ignored */,
-                            -1 /* ignored */,
-                            null /* ignored */,
-                            null /* ignored */ )}
-            );
-        }
-
         @Test
         public void migratingFromANotCleanlyShutdownStoreShouldNotStartAndFail() throws Throwable
         {
             // migrate the store using a single instance
-            File dir = store.prepareDirectory();
+            File dir = AbstractNeo4jTestCase.unzip( StoreUpgradeIntegrationTest.class, "0.A.3-to-be-recovered.zip" );
+            new File( dir, "messages.log" ).delete(); // clear the log
             GraphDatabaseFactory factory = new GraphDatabaseFactory();
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder(dir.getAbsolutePath());
             builder.setConfig(GraphDatabaseSettings.allow_store_upgrade, "true");
@@ -316,7 +296,7 @@ public class StoreUpgradeIntegrationTest
         }
     }
 
-    private static void checkInstance( Store store, GraphDatabaseAPI db ) throws IndexNotFoundKernelException
+    private static void checkInstance( Store store, GraphDatabaseAPI db ) throws KernelException
     {
         checkProvidedParameters( store, db );
         checkGlobalNodeCount( store, db );
@@ -324,17 +304,23 @@ public class StoreUpgradeIntegrationTest
         checkIndexCounts( store, db );
     }
 
-    private static void checkIndexCounts( Store store, GraphDatabaseAPI db ) throws IndexNotFoundKernelException
+    private static void checkIndexCounts( Store store, GraphDatabaseAPI db ) throws KernelException
     {
         CountsTracker counts = db.getDependencyResolver()
                                  .resolveDependency( NeoStoreDataSource.class )
                                  .getNeoStore().getCounts();
+        ThreadToStatementContextBridge bridge = db.getDependencyResolver()
+                                                  .resolveDependency( ThreadToStatementContextBridge.class );
 
         Iterator<IndexDescriptor> indexes = getAllIndexes( db );
         DoubleLongRegister register = Registers.newDoubleLongRegister();
         for ( int i = 0; indexes.hasNext(); i++ )
         {
             IndexDescriptor descriptor = indexes.next();
+
+            // wait index to be online since sometimes we need to rebuild the indexes on migration
+            awaitOnline( db, bridge, descriptor );
+
             assertDoubleLongEquals( store.indexCounts[i][0], store.indexCounts[i][1],
                     counts.indexUpdatesAndSize( descriptor.getLabelId(), descriptor.getPropertyKeyId(), register )
             );
@@ -343,8 +329,6 @@ public class StoreUpgradeIntegrationTest
             );
             try ( Transaction ignored = db.beginTx() )
             {
-                ThreadToStatementContextBridge bridge = db.getDependencyResolver()
-                                                          .resolveDependency( ThreadToStatementContextBridge.class );
                 Statement statement = bridge.instance();
                 double selectivity = statement.readOperations().indexUniqueValuesSelectivity( descriptor );
                 assertEquals( store.indexSelectivity[i], selectivity, 0.0000001d );
@@ -464,4 +448,43 @@ public class StoreUpgradeIntegrationTest
     {
         return new long[]{upgrade, size, unique, sampleSize};
     }
+
+
+    private static IndexDescriptor awaitOnline( GraphDatabaseAPI db,
+                                                ThreadToStatementContextBridge bridge,
+                                                IndexDescriptor index ) throws KernelException
+    {
+        long start = System.currentTimeMillis();
+        long end = start + 20_000;
+        while ( System.currentTimeMillis() < end )
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                Statement statement = bridge.instance();
+                switch ( statement.readOperations().indexGetState( index ) )
+                {
+                case ONLINE:
+                    return index;
+
+                case FAILED:
+                    throw new IllegalStateException( "Index failed instead of becoming ONLINE" );
+
+                default:
+                    break;
+                }
+                tx.success();
+
+                try
+                {
+                    Thread.sleep( 100 );
+                }
+                catch ( InterruptedException e )
+                {
+                    // ignored
+                }
+            }
+        }
+        throw new IllegalStateException( "Index did not become ONLINE within reasonable time" );
+    }
+
 }

@@ -19,6 +19,17 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.apache.lucene.index.CorruptIndexException;
+import org.junit.Test;
+
+import java.io.EOFException;
+import java.io.File;
+import java.io.FileNotFoundException;
+
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.configuration.Config;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertTrue;
@@ -27,15 +38,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.TargetDirectory.forTest;
-
-import java.io.EOFException;
-import java.io.File;
-import java.io.FileNotFoundException;
-
-import org.apache.lucene.index.CorruptIndexException;
-import org.junit.Test;
-import org.neo4j.kernel.api.index.InternalIndexState;
-import org.neo4j.kernel.configuration.Config;
 
 public class LuceneSchemaIndexCorruptionTest
 {

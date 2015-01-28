@@ -19,33 +19,73 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.Rule;
-import org.junit.Test;
-
+import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.Function;
 import org.neo4j.test.ThreadingRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static junit.framework.Assert.assertTrue;
-import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ArrayEncoderTest
 {
     @Rule
     public final ThreadingRule threads = new ThreadingRule();
 
+
+    private static final Character[] base64chars = new Character[]{
+            'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U',
+            'V', 'W', 'X', 'Y', 'Z',
+            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u',
+            'v', 'w', 'x', 'y', 'z',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            '+', '/'};
+    private static final char ARRAY_ENTRY_SEPARATOR = '|';
+    private static final char PADDING = '=';
+
     @Test
-    public void WARNING_TheEncodingIsPlatformDependant_WARNING() throws Exception
+    public void encodingShouldContainOnlyBase64EncodingChars() throws Exception
     {
-        String encoded = ArrayEncoder.encode( new String[]{
-                "This string is long enough for BASE64 to emit a line break, making the encoding platform dependant."} );
-        assertTrue( "The encoding is platform dependant", encoded.contains( System.lineSeparator() ) );
+        String[] array = {
+                "This string is long enough for BASE64 to emit a line break, making the encoding platform dependant.",
+                "Something else to trigger padding."
+        };
+        String encoded = ArrayEncoder.encode( array );
+
+        System.out.println(encoded);
+        int separators = 0;
+        boolean padding = false;
+        for ( int i = 0; i < encoded.length(); i++ )
+        {
+            char character = encoded.charAt( i );
+            if ( character == ARRAY_ENTRY_SEPARATOR )
+            {
+                padding = false;
+                separators++;
+            }
+            else if ( padding )
+            {
+                assertEquals( PADDING, character );
+            }
+            else if ( character == PADDING )
+            {
+                padding = true;
+            }
+            else
+            {
+                assertTrue( "Char " + character + " at position " + i + " is not a valid Base64 encoded char",
+                        ArrayUtil.contains( base64chars, character ) );
+            }
+        }
+        assertEquals( array.length, separators );
     }
 
     @Test

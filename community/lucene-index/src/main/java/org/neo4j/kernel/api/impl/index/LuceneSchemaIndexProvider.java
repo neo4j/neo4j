@@ -29,6 +29,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -39,8 +41,16 @@ import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.kernel.api.index.util.FolderLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
+import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
+import static org.neo4j.kernel.impl.store.StoreVersionMismatchHandler.ALLOW_OLD_VERSION;
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 {
@@ -137,6 +147,20 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
         {
             throw new RuntimeException( e );
         }
+    }
+
+    @Override
+    public StoreMigrationParticipant storeMigrationParticipant( final FileSystemAbstraction fs,
+                                                                UpgradableDatabase upgradableDatabase )
+    {
+        return new SchemaIndexMigrator( fs, upgradableDatabase, new SchemaIndexMigrator.SchemaStoreProvider()
+        {
+            @Override
+            public SchemaStore provide( File dir, PageCache pageCache )
+            {
+                return new StoreFactory( fs, dir, pageCache, DEV_NULL, new Monitors(), ALLOW_OLD_VERSION ).newSchemaStore();
+            }
+        } );
     }
 
     @Override

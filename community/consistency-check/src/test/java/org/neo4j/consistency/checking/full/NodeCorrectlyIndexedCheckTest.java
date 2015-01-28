@@ -19,13 +19,14 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.junit.Test;
+import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -47,13 +48,11 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.register.Register;
 
 import static java.util.Arrays.asList;
-
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
 import static org.neo4j.kernel.impl.store.record.IndexRule.constraintIndexRule;
@@ -236,6 +235,12 @@ public class NodeCorrectlyIndexedCheckTest
                         }
                     }
                     return count;
+                }
+
+                @Override
+                public Set<Class> valueTypesInIndex()
+                {
+                    throw new UnsupportedOperationException();
                 }
 
                 @Override

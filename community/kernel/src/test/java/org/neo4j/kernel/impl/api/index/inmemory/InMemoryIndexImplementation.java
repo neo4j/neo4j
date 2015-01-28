@@ -83,7 +83,7 @@ abstract class InMemoryIndexImplementation implements IndexReader, BoundedIterab
         return propertyValue;
     }
 
-    private static class ArrayKey
+    static class ArrayKey
     {
         private final String arrayValue;
 

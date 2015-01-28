@@ -42,7 +42,7 @@ public class LabelRecoveryTest
      * but had no labels on that node changed within that same transaction.
      * Now defensively only marks as heavy if there were one or more dynamic
      * records provided when providing the record object with the label field
-     * value. This would give the opportuniy to load the dynamic records the
+     * value. This would give the opportunity to load the dynamic records the
      * next time that record would be ensured heavy.
      */
     @Test
