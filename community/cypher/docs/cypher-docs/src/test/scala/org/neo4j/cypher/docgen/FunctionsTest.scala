@@ -147,6 +147,22 @@ class FunctionsTest extends DocumentingTestBase {
     )
   }
 
+  @Test def _properties() {
+    testThis(
+      title = "PROPERTIES",
+      syntax = "PROPERTIES( node )",
+      arguments = List("node" -> "Any expression that returns a single node"),
+      text = """Returns a collection of string representations for the properties names from a node.""",
+      queryText = """match (a) where a.name='Alice' return properties(a)""",
+      returns = """The name of the properties of `n` is returned by the query.""",
+      assertions = {
+        (p) =>
+          val iter: Iterable[String] = p.columnAs[Iterable[String]]("properties(a)").next()
+          assert(iter.toSet === Set("name", "age"), "eyes")
+      }
+    )
+  }
+
   @Test def extract() {
     testThis(
       title = "EXTRACT",
