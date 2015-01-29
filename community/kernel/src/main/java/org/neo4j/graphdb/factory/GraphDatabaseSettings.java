@@ -40,7 +40,6 @@ import static org.neo4j.helpers.Settings.ANY;
 import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.BYTES;
 import static org.neo4j.helpers.Settings.DURATION;
-import static org.neo4j.helpers.Settings.DirectMemoryUsage.directMemoryUsage;
 import static org.neo4j.helpers.Settings.FALSE;
 import static org.neo4j.helpers.Settings.INTEGER;
 import static org.neo4j.helpers.Settings.NO_DEFAULT;
@@ -55,6 +54,7 @@ import static org.neo4j.helpers.Settings.min;
 import static org.neo4j.helpers.Settings.options;
 import static org.neo4j.helpers.Settings.port;
 import static org.neo4j.helpers.Settings.setting;
+import static org.neo4j.helpers.Settings.DirectMemoryUsage.directMemoryUsage;
 
 /**
  * Settings for Neo4j. Use this with {@link GraphDatabaseBuilder}.
@@ -191,7 +191,7 @@ public abstract class GraphDatabaseSettings
 
     @Description( "Specifies at which file size the logical log will auto-rotate. " +
                   "`0` means that no rotation will automatically occur based on file size. " )
-    public static final Setting<Long> logical_log_rotation_threshold = setting( "logical_log_rotation_threshold", BYTES, "25M" );
+    public static final Setting<Long> logical_log_rotation_threshold = setting( "logical_log_rotation_threshold", BYTES, "250M" );
 
     @Description("Use a quick approach for rebuilding the ID generators. This give quicker recovery time, " +
             "but will limit the ability to reuse the space of deleted entities.")
