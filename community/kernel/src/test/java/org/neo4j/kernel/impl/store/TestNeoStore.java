@@ -19,6 +19,13 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -30,15 +37,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.function.primitive.FunctionFromPrimitiveLongLongToPrimitiveLong;
-import org.neo4j.function.primitive.PrimitiveLongPredicate;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -505,12 +504,6 @@ public class TestNeoStore
         public boolean atPosition( DirectionWrapper direction, int type, long position )
         {
             return actual.atPosition( direction, type, position );
-        }
-
-        @Override
-        public boolean atPosition( PrimitiveLongPredicate predicate )
-        {
-            return actual.atPosition( predicate );
         }
 
         @Override

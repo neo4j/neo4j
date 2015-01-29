@@ -696,16 +696,16 @@ public class NodeImpl extends ArrayBasedPrimitive
 
     public void updateRelationshipChainPosition( RelationshipHoles holes )
     {
-        if ( relChainPosition != null )
+        // If the position is EMPTY, i.e. it has reached the end there's no point in patching it
+        // However even if it's null, i.e. it hasn't even yet been initialized we must check under
+        // synchronization since a concurrent loader might initialize it simultaneously.
+        if ( relChainPosition != RelationshipLoadingPosition.EMPTY )
         {
-            if ( relChainPosition.atPosition( holes ) )
+            synchronized ( this )
             {
-                synchronized ( this )
+                if ( relChainPosition != null )
                 {
-                    if ( relChainPosition.atPosition( holes ) )
-                    {
-                        relChainPosition.patchPosition( getId(), holes );
-                    }
+                    relChainPosition.patchPosition( getId(), holes );
                 }
             }
         }
