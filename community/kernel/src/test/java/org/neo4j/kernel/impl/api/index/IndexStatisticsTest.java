@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
@@ -62,7 +63,6 @@ import org.neo4j.test.ImpermanentDatabaseRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.register.Register.DoubleLongRegister;
 
 public class IndexStatisticsTest
 {
@@ -152,7 +152,7 @@ public class IndexStatisticsTest
         IndexDescriptor index = awaitOnline( createIndex( "Person", "name" ) );
 
         // then
-        double expectedSelectivity = UNIQUE_NAMES / ((double) created);
+        double expectedSelectivity = UNIQUE_NAMES / (created);
         assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
         assertCorrectIndexSize( created, indexSize( index ) );
         assertEquals( 0l, indexUpdates( index ) );
@@ -171,7 +171,7 @@ public class IndexStatisticsTest
 
         // then
         int seenWhilePopulating = initialNodes + updatesTracker.createdDuringPopulation();
-        double expectedSelectivity = UNIQUE_NAMES / ((double) seenWhilePopulating);
+        double expectedSelectivity = UNIQUE_NAMES / (seenWhilePopulating);
         assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
         assertCorrectIndexSize( seenWhilePopulating, indexSize( index ) );
         assertCorrectIndexUpdates( updatesTracker.createdAfterPopulation(), indexUpdates( index ) );
@@ -193,7 +193,7 @@ public class IndexStatisticsTest
         // then
         int seenWhilePopulating =
                 initialNodes + updatesTracker.createdDuringPopulation() - updatesTracker.deletedDuringPopulation();
-        double expectedSelectivity = UNIQUE_NAMES / ((double) seenWhilePopulating);
+        double expectedSelectivity = UNIQUE_NAMES / (seenWhilePopulating);
         assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
         assertCorrectIndexSize( seenWhilePopulating, indexSize( index ) );
         int expectedIndexUpdates = updatesTracker.deletedAfterPopulation() + updatesTracker.createdAfterPopulation();
@@ -215,7 +215,7 @@ public class IndexStatisticsTest
 
         // then
         int seenWhilePopulating = initialNodes + updatesTracker.createdDuringPopulation();
-        double expectedSelectivity = UNIQUE_NAMES / ((double) seenWhilePopulating);
+        double expectedSelectivity = UNIQUE_NAMES / (seenWhilePopulating);
         assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ) );
         assertCorrectIndexSize( seenWhilePopulating, indexSize( index ) );
         assertCorrectIndexUpdates( updatesTracker.createdAfterPopulation(), indexUpdates( index ) );
@@ -259,9 +259,9 @@ public class IndexStatisticsTest
 
         // then
         int tolerance = MISSED_UPDATES_TOLERANCE * threads;
-        double doubleTolerance = DOUBLE_ERROR_TOLERANCE * (double) threads;
+        double doubleTolerance = DOUBLE_ERROR_TOLERANCE * threads;
         int seenWhilePopulating = initialNodes + result.createdDuringPopulation() - result.deletedDuringPopulation();
-        double expectedSelectivity = UNIQUE_NAMES / ((double) seenWhilePopulating);
+        double expectedSelectivity = UNIQUE_NAMES / (seenWhilePopulating);
         assertCorrectIndexSelectivity( expectedSelectivity, indexSelectivity( index ), doubleTolerance );
         assertCorrectIndexSize( "Tracker had " + result, seenWhilePopulating, indexSize( index ), tolerance );
         int expectedIndexUpdates = result.deletedAfterPopulation() + result.createdAfterPopulation();
@@ -409,7 +409,7 @@ public class IndexStatisticsTest
     private IndexDescriptor awaitOnline( IndexDescriptor index ) throws KernelException
     {
         long start = System.currentTimeMillis();
-        long end = start + 3000;
+        long end = start + 20_000;
         while ( System.currentTimeMillis() < end )
         {
             try ( Transaction tx = db.beginTx() )
