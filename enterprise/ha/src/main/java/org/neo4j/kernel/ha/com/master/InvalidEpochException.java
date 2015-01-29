@@ -23,8 +23,19 @@ import org.neo4j.com.ComException;
 
 public class InvalidEpochException extends ComException
 {
+    private final long correctEpoch;
+    private final long invalidEpoch;
+
     public InvalidEpochException( long correctEpoch, long invalidEpoch )
     {
         super( "Invalid epoch " + invalidEpoch + ", correct epoch is " + correctEpoch );
+        this.correctEpoch = correctEpoch;
+        this.invalidEpoch = invalidEpoch;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "InvalidEpochException{correctEpoch=" + correctEpoch + ", invalidEpoch=" + invalidEpoch + "}";
     }
 }

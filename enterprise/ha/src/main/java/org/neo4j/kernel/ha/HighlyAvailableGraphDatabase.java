@@ -488,7 +488,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 requestContextFactory );
         highAvailabilityModeSwitcher =
                 new HighAvailabilityModeSwitcher( new SwitchToSlave(logging.getConsoleLog( HighAvailabilityModeSwitcher.class ), config, getDependencyResolver(), (HaIdGeneratorFactory) idGeneratorFactory,
-                        logging, masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory),
+                        logging, masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory, clusterClient ),
                         new SwitchToMaster( logging, msgLog, this,
                         (HaIdGeneratorFactory) idGeneratorFactory, config, getDependencyResolver(), masterDelegateInvocationHandler, clusterMemberAvailability ),
                         clusterClient, clusterMemberAvailability, logging.getMessagesLog( HighAvailabilityModeSwitcher.class ));

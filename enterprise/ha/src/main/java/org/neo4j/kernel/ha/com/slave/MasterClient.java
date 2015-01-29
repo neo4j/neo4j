@@ -19,15 +19,13 @@
  */
 package org.neo4j.kernel.ha.com.slave;
 
-import static org.neo4j.com.Protocol.readString;
-import static org.neo4j.com.Protocol.writeString;
+import org.jboss.netty.buffer.ChannelBuffer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.jboss.netty.buffer.ChannelBuffer;
+import org.neo4j.com.ComExceptionHandler;
 import org.neo4j.com.Deserializer;
-import org.neo4j.com.MismatchingVersionHandler;
 import org.neo4j.com.ObjectSerializer;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
@@ -36,6 +34,9 @@ import org.neo4j.com.TxExtractor;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.ha.lock.LockStatus;
+
+import static org.neo4j.com.Protocol.readString;
+import static org.neo4j.com.Protocol.writeString;
 
 public interface MasterClient extends Master
 {
@@ -92,5 +93,5 @@ public interface MasterClient extends Master
     public Response<Void> copyTransactions( RequestContext context, final String ds, final long startTxId,
             final long endTxId );
 
-    public void addMismatchingVersionHandler( MismatchingVersionHandler toAdd );
+    public void addComExceptionHandler( ComExceptionHandler handler );
 }
