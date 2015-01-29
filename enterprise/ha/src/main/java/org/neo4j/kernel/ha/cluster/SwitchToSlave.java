@@ -22,11 +22,11 @@ package org.neo4j.kernel.ha.cluster;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
-
 import javax.transaction.TransactionManager;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
@@ -105,7 +105,6 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.first;
@@ -142,11 +141,12 @@ public class SwitchToSlave
 
     private final MasterClientResolver masterClientResolver;
 
-    public SwitchToSlave( ConsoleLogger console, Config config, DependencyResolver resolver, HaIdGeneratorFactory
-            idGeneratorFactory, Logging logging, DelegateInvocationHandler<Master> masterDelegateHandler,
-                          ClusterMemberAvailability clusterMemberAvailability, RequestContextFactory
-            requestContextFactory, UpdateableSchemaState updateableSchemaState, Monitors monitors,
-                          Iterable<KernelExtensionFactory<?>> kernelExtensions )
+    public SwitchToSlave( ConsoleLogger console, Config config, DependencyResolver resolver,
+            HaIdGeneratorFactory idGeneratorFactory, Logging logging,
+            DelegateInvocationHandler<Master> masterDelegateHandler,
+            ClusterMemberAvailability clusterMemberAvailability, ClusterClient clusterClient,
+            RequestContextFactory requestContextFactory, UpdateableSchemaState updateableSchemaState, Monitors monitors,
+            Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
         this.console = console;
         this.config = config;
@@ -161,7 +161,7 @@ public class SwitchToSlave
         this.msgLog = logging.getMessagesLog( getClass() );
         this.masterDelegateHandler = masterDelegateHandler;
 
-        this.masterClientResolver = new MasterClientResolver( logging,
+        this.masterClientResolver = new MasterClientResolver( logging, msgLog, clusterClient, clusterMemberAvailability,
                 config.get( HaSettings.read_timeout ).intValue(),
                 config.get( HaSettings.lock_read_timeout ).intValue(),
                 config.get( HaSettings.max_concurrent_channels_per_slave ),

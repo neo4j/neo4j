@@ -19,7 +19,7 @@
  */
 package org.neo4j.com;
 
-public interface MismatchingVersionHandler
+public interface ComExceptionHandler
 {
-    public void versionMismatched( byte expected, byte received );
+    void handle( ComException exception );
 }
