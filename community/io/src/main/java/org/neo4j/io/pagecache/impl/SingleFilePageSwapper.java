@@ -46,7 +46,7 @@ public class SingleFilePageSwapper implements PageSwapper
     private final FileSystemAbstraction fs;
     private final File file;
     private final int filePageSize;
-    private final PageEvictionCallback onEviction;
+    private PageEvictionCallback onEviction;
     private volatile StoreChannel channel;
 
     // Guarded by synchronized(this). See tryReopen() and close().
@@ -144,7 +144,10 @@ public class SingleFilePageSwapper implements PageSwapper
     @Override
     public void evicted( long filePageId, Page page )
     {
-        onEviction.onEvict( filePageId, page );
+        if ( onEviction != null )
+        {
+            onEviction.onEvict( filePageId, page );
+        }
     }
 
     @Override
@@ -224,6 +227,13 @@ public class SingleFilePageSwapper implements PageSwapper
     {
         closed = true;
         channel.close();
+
+        // Eagerly relinquish our reference to the onEviction callback, because even though
+        // we've closed the PagedFile at this point, there are likely still pages in the cache that are bound to this
+        // swapper, and will stay bound, until the eviction threads eventually gets around to kicking them out.
+        // It is especially important to null out the onEviction callback field, because it is in turn holding on to
+        // the striped translation table, which can be a rather large structure.
+        onEviction = null;
     }
 
     @Override
