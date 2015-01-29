@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.jboss.netty.logging.InternalLoggerFactory;
+
 import java.io.File;
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Map;
-
 import javax.transaction.Transaction;
 
-import org.jboss.netty.logging.InternalLoggerFactory;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -412,18 +412,18 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     {
         idGeneratorFactory = new HaIdGeneratorFactory( masterDelegateInvocationHandler, logging,
                 requestContextFactory );
-        highAvailabilityModeSwitcher =
-                new HighAvailabilityModeSwitcher( new SwitchToSlave( logging.getConsoleLog(
-                        HighAvailabilityModeSwitcher.class ), config, getDependencyResolver(),
-                        (HaIdGeneratorFactory) idGeneratorFactory,
-                        logging, masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory,
-                        updateableSchemaState, monitors, kernelExtensions.listFactories() ),
-                        new SwitchToMaster( logging, msgLog, this,
-                                (HaIdGeneratorFactory) idGeneratorFactory, config, getDependencyResolver(),
-                                masterDelegateInvocationHandler, clusterMemberAvailability, monitors ),
-                        clusterClient, clusterMemberAvailability,
-                        logging.getMessagesLog( HighAvailabilityModeSwitcher.class )
-                );
+
+        SwitchToSlave switchToSlave = new SwitchToSlave( logging.getConsoleLog( HighAvailabilityModeSwitcher.class ),
+                config, getDependencyResolver(), (HaIdGeneratorFactory) idGeneratorFactory, logging,
+                masterDelegateInvocationHandler, clusterMemberAvailability, clusterClient, requestContextFactory,
+                updateableSchemaState, monitors, kernelExtensions.listFactories() );
+
+        SwitchToMaster switchToMaster = new SwitchToMaster( logging, msgLog, this,
+                (HaIdGeneratorFactory) idGeneratorFactory, config, getDependencyResolver(),
+                masterDelegateInvocationHandler, clusterMemberAvailability, monitors );
+
+        highAvailabilityModeSwitcher = new HighAvailabilityModeSwitcher( switchToSlave, switchToMaster, clusterClient,
+                clusterMemberAvailability, logging.getMessagesLog( HighAvailabilityModeSwitcher.class ) );
 
         clusterClient.addBindingListener( highAvailabilityModeSwitcher );
         memberStateMachine.addHighAvailabilityMemberListener( highAvailabilityModeSwitcher );

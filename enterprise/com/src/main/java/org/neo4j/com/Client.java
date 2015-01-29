@@ -85,7 +85,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     private final int maxUnusedChannels;
     private final StoreId storeId;
     private ResourceReleaser resourcePoolReleaser;
-    private final List<MismatchingVersionHandler> mismatchingVersionHandlers;
+    private final List<ComExceptionHandler> comExceptionHandlers;
 
     private final RequestMonitor requestMonitor;
 
@@ -104,7 +104,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         this.readTimeout = readTimeout;
         // ResourcePool no longer controls max concurrent channels. Use this value for the pool size
         this.maxUnusedChannels = maxConcurrentChannels;
-        this.mismatchingVersionHandlers = new ArrayList<MismatchingVersionHandler>( 2 );
+        this.comExceptionHandlers = new ArrayList<ComExceptionHandler>( 2 );
         this.address = new InetSocketAddress( hostNameOrIp, port );
         this.protocol = new Protocol( chunkSize, applicationProtocolVersion, getInternalProtocolVersion() );
 
@@ -190,7 +190,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         bootstrap.releaseExternalResources();
         bossExecutor.shutdownNow();
         workerExecutor.shutdownNow();
-        mismatchingVersionHandlers.clear();
+        comExceptionHandlers.clear();
         msgLog.logMessage( toString() + " shutdown", true );
     }
 
@@ -246,13 +246,13 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
 
             return response;
         }
-        catch ( IllegalProtocolVersionException e )
+        catch ( ComException e )
         {
             failure = e;
             success = false;
-            for ( MismatchingVersionHandler handler : mismatchingVersionHandlers )
+            for ( ComExceptionHandler handler : comExceptionHandlers )
             {
-                handler.versionMismatched( e.getExpected(), e.getReceived() );
+                handler.handle( e );
             }
             throw e;
         }
@@ -337,9 +337,9 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         return pipeline;
     }
 
-    public void addMismatchingVersionHandler( MismatchingVersionHandler toAdd )
+    public void addComExceptionHandler( ComExceptionHandler handler )
     {
-        mismatchingVersionHandlers.add( toAdd );
+        comExceptionHandlers.add( handler );
     }
 
     protected byte getInternalProtocolVersion()
