@@ -25,6 +25,7 @@ import java.net.URI;
 import org.neo4j.backup.OnlineBackupKernelExtension;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
@@ -83,7 +84,6 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.first;
@@ -138,7 +138,7 @@ public class SwitchToSlave
     public SwitchToSlave( ConsoleLogger console, Config config, DependencyResolver resolver,
                           HaIdGeneratorFactory idGeneratorFactory, Logging logging,
                           DelegateInvocationHandler<Master> masterDelegateHandler,
-                          ClusterMemberAvailability clusterMemberAvailability,
+                          ClusterMemberAvailability clusterMemberAvailability, ClusterClient clusterClient,
                           RequestContextFactory requestContextFactory,
                           Iterable<KernelExtensionFactory<?>> kernelExtensions, ResponseUnpacker responseUnpacker,
                           ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor, Monitor monitor )
@@ -157,7 +157,8 @@ public class SwitchToSlave
         this.masterDelegateHandler = masterDelegateHandler;
         this.monitor = monitor;
 
-        this.masterClientResolver = new MasterClientResolver( logging, responseUnpacker,
+        this.masterClientResolver = new MasterClientResolver( logging, msgLog, responseUnpacker, clusterClient,
+                clusterMemberAvailability,
                 config.get( HaSettings.read_timeout ).intValue(),
                 config.get( HaSettings.lock_read_timeout ).intValue(),
                 config.get( HaSettings.max_concurrent_channels_per_slave ),

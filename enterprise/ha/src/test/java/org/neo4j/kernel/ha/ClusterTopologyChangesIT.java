@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -44,6 +44,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
+import org.neo4j.kernel.ha.com.master.InvalidEpochException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -54,10 +55,8 @@ import org.neo4j.test.ha.ClusterRule;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-
 import static org.neo4j.cluster.protocol.cluster.ClusterConfiguration.COORDINATOR;
 import static org.neo4j.helpers.Predicates.not;
 import static org.neo4j.test.ReflectionUtil.getPrivateField;
@@ -149,12 +148,17 @@ public class ClusterTopologyChangesIT
         slave1RepairKit.repair();
         slave2RepairKit.repair();
 
-        // THEN: whole cluster should be fine, every member should be available
-        cluster.await( masterAvailable() );
-        cluster.await( masterSeesSlavesAsAvailable( 2 ) );
+        // whole cluster looks fine, but slaves have stale value of the epoch
         cluster.await( allSeesAllAsAvailable() );
 
-        // able to perform transactions on master and slaves
+        // attempt to perform tx on slave1 throws InvalidEpochException, election is triggered
+        assertHasInvalidEpoch( slave1 );
+        // tx on slave2 might fail with InvalidEpochException or might succeed because election was triggered by slave1
+        safeCreateNodeOn( slave2 );
+
+        // THEN: InvalidEpochException handled and election triggered, cluster feels good and able to serve transactions
+        cluster.await( allSeesAllAsAvailable() );
+
         assertNotNull( createNodeOn( master ) );
         assertNotNull( createNodeOn( slave1 ) );
         assertNotNull( createNodeOn( slave2 ) );
@@ -259,5 +263,30 @@ public class ClusterTopologyChangesIT
 
         return new ClusterClient( new Monitors(), ClusterClient.adapt( config ), new DevNullLoggingService(),
                 new NotElectableElectionCredentialsProvider(), new ObjectStreamFactory(), new ObjectStreamFactory() );
+    }
+
+    private static void safeCreateNodeOn( HighlyAvailableGraphDatabase db )
+    {
+        try
+        {
+            createNodeOn( db );
+        }
+        catch ( Exception ignored )
+        {
+        }
+    }
+
+    private static void assertHasInvalidEpoch( HighlyAvailableGraphDatabase db )
+    {
+        InvalidEpochException invalidEpochException = null;
+        try
+        {
+            createNodeOn( db );
+        }
+        catch ( InvalidEpochException e )
+        {
+            invalidEpochException = e;
+        }
+        assertNotNull( "Expected InvalidEpochException was not thrown", invalidEpochException );
     }
 }
