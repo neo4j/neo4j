@@ -21,8 +21,8 @@ package org.neo4j.kernel.ha.lock.forseti;
 
 import java.util.concurrent.ConcurrentMap;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.pool.LinkedQueuePool;
+import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIntMap;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
@@ -679,9 +679,19 @@ public class ForsetiClient implements Locks.Client
 
     private void markAsWaitingFor( ForsetiLockManager.Lock lock, Locks.ResourceType type, long resourceId )
     {
-        clearWaitList();
-        lock.copyHolderWaitListsInto( waitList );
-        if(lock.anyHolderIsWaitingFor( myId ) && lock.holderWaitListSize() >= waitListSize())
+        final int retries = 10;
+        for ( int i = 0; i < retries; i++ )
+        {
+            // When deadlock detected, we retry several times to reduce false positive dead locks
+            clearWaitList();
+            lock.copyHolderWaitListsInto( waitList );
+            boolean deadlockDetected = lock.anyHolderIsWaitingFor( myId );
+            if ( !deadlockDetected )
+            {
+                return;
+            }
+        }
+        if(lock.holderWaitListSize() >= waitListSize())
         {
             waitList.clear();
             throw new DeadlockDetectedException( this + " can't acquire " + lock + " on " + type + "("+resourceId+"), because holders of that lock " +
