@@ -274,12 +274,27 @@ case class RelationshipPattern(
     }
 
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
+    checkNoInvalidSelfReferences chain
     checkNoOptionalRelsForAnExpression(ctx) chain
-    checkNoVarLengthWhenUpdating(ctx) chain
-    checkNoLegacyOptionals(ctx) chain
-    checkNoParamMapsWhenMatching(ctx) chain
-    checkProperties(ctx) chain
-    checkNotUndirectedWhenCreating(ctx)
+      checkNoVarLengthWhenUpdating(ctx) chain
+      checkNoLegacyOptionals(ctx) chain
+      checkNoParamMapsWhenMatching(ctx) chain
+      checkProperties(ctx) chain
+      checkNotUndirectedWhenCreating(ctx)
+
+
+  private def checkNoInvalidSelfReferences: SemanticCheck = {
+    when(!isSingleLength) {
+      val (hasSelfReference, pos) = properties.treeFold((false, position)) {
+        case id: Identifier if identifier.exists(_ == id) => (_, _) => (true, id.position)
+        case _ => (acc, children) => children(acc)
+      }
+
+      when(hasSelfReference) {
+        SemanticError(s"Cannot use identifier ${identifier.get.name} as a relation property when declared as a variable length relationship", pos)
+      }
+    }
+  }
 
   private def checkNotUndirectedWhenCreating(ctx: SemanticContext): SemanticCheck = {
     ctx match {

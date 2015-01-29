@@ -442,6 +442,13 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
+  test("prevent broken use of variables declared in var-length pattern") {
+    executeAndEnsureError(
+      "MATCH a, b, (a)-[r* {x: r.y}]->(b) RETURN *",
+      "Cannot use identifier r as a relation property when declared as a variable length relationship (line 1, column 25 (offset: 24))"
+    )
+  }
+
   def executeAndEnsureError(query: String, expected: String) {
     import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.StringHelper._
 
