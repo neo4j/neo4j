@@ -70,6 +70,9 @@
     <artifact id="codemirror css" name="CodeMirror CSS">
       <license>MIT</license>
     </artifact>
+    <artifact id="colorbrewer" name="ColorBrewer">
+      <license>ASL2.0</license>
+    </artifact>
     <artifact id="d3" name="D3.js">
       <license>BSD License</license>
     </artifact>

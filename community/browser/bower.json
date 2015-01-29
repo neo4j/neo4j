@@ -18,6 +18,7 @@
     "bootstrap": "~3.3.1",
     "blob": "latest",
     "codemirror": "~4.11",
+    "colorbrewer": "1.0.0",
     "css": "https://raw.github.com/marijnh/CodeMirror/master/mode/css/css.js",
     "d3": "~3.5.0",
     "es5-shim": "~4.0.5",
