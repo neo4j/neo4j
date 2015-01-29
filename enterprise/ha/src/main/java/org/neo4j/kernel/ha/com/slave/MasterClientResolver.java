@@ -22,24 +22,35 @@ package org.neo4j.kernel.ha.com.slave;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.com.MismatchingVersionHandler;
+import org.neo4j.cluster.client.ClusterClient;
+import org.neo4j.cluster.member.ClusterMemberAvailability;
+import org.neo4j.com.ComException;
+import org.neo4j.com.ComExceptionHandler;
+import org.neo4j.com.IllegalProtocolVersionException;
 import org.neo4j.com.ProtocolVersion;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.kernel.ha.MasterClient210;
 import org.neo4j.kernel.ha.MasterClient214;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
+import org.neo4j.kernel.ha.com.master.InvalidEpochException;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
-public class MasterClientResolver implements MasterClientFactory, MismatchingVersionHandler
+public class MasterClientResolver implements MasterClientFactory
 {
     private volatile MasterClientFactory currentFactory;
 
     private final ResponseUnpacker responseUnpacker;
     private final Map<ProtocolVersion, MasterClientFactory> protocolToFactoryMapping;
+    private final StringLogger log;
+
+    private final ClusterClient clusterClient;
+    private final ClusterMemberAvailability clusterMemberAvailability;
 
     @Override
     public MasterClient instantiate( String hostNameOrIp, int port, Monitors monitors,
@@ -51,25 +62,30 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
         }
 
         MasterClient result = currentFactory.instantiate( hostNameOrIp, port, monitors, storeId, life );
-        result.addMismatchingVersionHandler( this );
+        addComExceptionHandler( result, new MismatchingProtocolVersionHandler() );
+        addComExceptionHandler( result, new InvalidEpochHandler() );
         return result;
     }
 
-    @Override
-    public void versionMismatched( byte expected, byte received )
+    public MasterClientResolver( Logging logging, StringLogger msgLog, ResponseUnpacker responseUnpacker,
+            ClusterClient clusterClient, ClusterMemberAvailability clusterMemberAvailability,
+            int readTimeout, int lockReadTimeout, int channels, int chunkSize )
     {
-        getFor( new ProtocolVersion( received, ProtocolVersion.INTERNAL_PROTOCOL_VERSION ) );
-    }
-
-    public MasterClientResolver( Logging logging, ResponseUnpacker responseUnpacker,
-                                 int readTimeout, int lockReadTimeout, int channels, int chunkSize )
-    {
+        this.log = msgLog;
+        this.clusterClient = clusterClient;
+        this.clusterMemberAvailability = clusterMemberAvailability;
         this.responseUnpacker = responseUnpacker;
+
         protocolToFactoryMapping = new HashMap<>();
         protocolToFactoryMapping.put( MasterClient210.PROTOCOL_VERSION, new F210( logging, readTimeout, lockReadTimeout,
                 channels, chunkSize ) );
         protocolToFactoryMapping.put( MasterClient214.PROTOCOL_VERSION, new F214( logging, readTimeout, lockReadTimeout,
                 channels, chunkSize ) );
+    }
+
+    void addComExceptionHandler( MasterClient masterClient, ComExceptionHandler handler )
+    {
+        masterClient.addComExceptionHandler( handler );
     }
 
     private MasterClientFactory getFor( ProtocolVersion protocolVersion )
@@ -141,6 +157,36 @@ public class MasterClientResolver implements MasterClientFactory, MismatchingVer
                     lockReadTimeout, maxConcurrentChannels, chunkSize, responseUnpacker,
                     monitors.newMonitor( ByteCounterMonitor.class, MasterClient214.class ),
                     monitors.newMonitor( RequestMonitor.class, MasterClient214.class ) ) );
+        }
+    }
+
+    private class MismatchingProtocolVersionHandler implements ComExceptionHandler
+    {
+        @Override
+        public void handle( ComException exception )
+        {
+            if ( exception instanceof IllegalProtocolVersionException )
+            {
+                log.info( "Handling " + exception + ", will pick new master client" );
+
+                byte receivedVersion = ((IllegalProtocolVersionException) exception).getReceived();
+                getFor( new ProtocolVersion( receivedVersion, ProtocolVersion.INTERNAL_PROTOCOL_VERSION ) );
+            }
+        }
+    }
+
+    private class InvalidEpochHandler implements ComExceptionHandler
+    {
+        @Override
+        public void handle( ComException exception )
+        {
+            if ( exception instanceof InvalidEpochException )
+            {
+                log.info( "Handling " + exception + ", will go to PENDING and ask for election" );
+
+                clusterMemberAvailability.memberIsUnavailable( HighAvailabilityModeSwitcher.SLAVE );
+                clusterClient.performRoleElections();
+            }
         }
     }
 }

@@ -471,12 +471,11 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         SwitchToSlave switchToSlaveInstance = new SwitchToSlave( consoleLog, config, getDependencyResolver(),
                 (HaIdGeneratorFactory) idGeneratorFactory,
-                logging, masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory,
-                kernelExtensions.listFactories(), responseUnpacker,
+                logging, masterDelegateInvocationHandler, clusterMemberAvailability, clusterClient,
+                requestContextFactory, kernelExtensions.listFactories(), responseUnpacker,
                 monitors.newMonitor( ByteCounterMonitor.class, SlaveServer.class ),
                 monitors.newMonitor( RequestMonitor.class, SlaveServer.class ),
-                monitors.newMonitor( SwitchToSlave.Monitor.class )
-        );
+                monitors.newMonitor( SwitchToSlave.Monitor.class ) );
 
         SwitchToMaster switchToMasterInstance = new SwitchToMaster( logging, consoleLog, this,
                 (HaIdGeneratorFactory) idGeneratorFactory, config, dependencies.provideDependency( SlaveFactory.class ),

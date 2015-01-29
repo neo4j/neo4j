@@ -19,12 +19,14 @@
  */
 package org.neo4j.com;
 
-import java.io.IOException;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
+import java.io.IOException;
 
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
@@ -36,18 +38,18 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 
 import static java.lang.System.currentTimeMillis;
 import static java.lang.Thread.yield;
-
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
-
 import static org.neo4j.com.MadeUpServer.FRAME_LENGTH;
 import static org.neo4j.com.TxChecksumVerifier.ALWAYS_MATCH;
 
@@ -375,6 +377,50 @@ public class TestCommunication
         catch ( IllegalArgumentException e )
         {   // Good
         }
+    }
+
+    @Test
+    public void clientShouldUseHandlersToHandleComExceptions()
+    {
+        // Given
+        final String comExceptionMessage = "The ComException";
+
+        MadeUpCommunicationInterface communication = mock( MadeUpCommunicationInterface.class, new Answer<Response<?>>()
+        {
+            @Override
+            public Response<?> answer( InvocationOnMock _ ) throws ComException
+            {
+                throw new ComException( comExceptionMessage );
+            }
+        } );
+
+        ComExceptionHandler handler = mock( ComExceptionHandler.class );
+
+        life.add( builder.server( communication ) );
+        MadeUpClient client = life.add( builder.client() );
+        client.addComExceptionHandler( handler );
+
+        life.start();
+
+        // When
+        ComException exceptionThrownOnRequest = null;
+        try
+        {
+            client.multiply( 1, 10 );
+        }
+        catch ( ComException e )
+        {
+            exceptionThrownOnRequest = e;
+        }
+
+        // Then
+        assertNotNull( exceptionThrownOnRequest );
+        assertEquals( comExceptionMessage, exceptionThrownOnRequest.getMessage() );
+
+        ArgumentCaptor<ComException> exceptionCaptor = ArgumentCaptor.forClass( ComException.class );
+        verify( handler ).handle( exceptionCaptor.capture() );
+        assertEquals( comExceptionMessage, exceptionCaptor.getValue().getMessage() );
+        verifyNoMoreInteractions( handler );
     }
 
     @Test

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import static org.neo4j.cluster.util.Quorums.isQuorum;
-
 import java.net.URI;
 
 import org.neo4j.cluster.InstanceId;
@@ -34,6 +32,8 @@ import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
+import static org.neo4j.cluster.util.Quorums.isQuorum;
 
 /**
  * State machine that listens for global cluster events, and coordinates
@@ -125,7 +125,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         return "Cluster state is '" + getCurrentState() + "'";
     }
 
-    private class StateMachineClusterEventListener extends ClusterMemberListener.Adapter
+    private class StateMachineClusterEventListener implements ClusterMemberListener
     {
         @Override
         public synchronized void coordinatorIsElected( InstanceId coordinatorId )
@@ -236,41 +236,22 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         }
 
         @Override
+        public void memberIsUnavailable( String role, InstanceId unavailableId )
+        {
+            if ( context.getMyId().equals( unavailableId ) &&
+                 HighAvailabilityModeSwitcher.SLAVE.equals( role ) &&
+                 state == HighAvailabilityMemberState.SLAVE )
+            {
+                changeStateToPending();
+            }
+        }
+
+        @Override
         public void memberIsFailed( InstanceId instanceId )
         {
-            if ( !isQuorum(getAliveCount(), getTotalCount()) )
+            if ( !isQuorum( getAliveCount(), getTotalCount() ) )
             {
-                try
-                {
-                    if(state.isAccessAllowed())
-                    {
-                        availabilityGuard.deny(HighAvailabilityMemberStateMachine.this);
-                    }
-
-                    final HighAvailabilityMemberChangeEvent event =
-                            new HighAvailabilityMemberChangeEvent(
-                                    state, HighAvailabilityMemberState.PENDING, null, null );
-                    HighAvailabilityMemberState oldState = state;
-                    state = HighAvailabilityMemberState.PENDING;
-                    logger.debug( "Got memberIsFailed(" + instanceId + ") and quorum is no longer satisfied, " +
-                            "moved to " + state + " from " + oldState );
-                    Listeners.notifyListeners( memberListeners, new Listeners
-                            .Notification<HighAvailabilityMemberListener>()
-                    {
-                        @Override
-                        public void notify( HighAvailabilityMemberListener listener )
-                        {
-                            listener.instanceStops( event );
-                        }
-                    } );
-
-                    context.setAvailableHaMasterId( null );
-                    context.setElectedMasterId( null );
-                }
-                catch ( Throwable throwable )
-                {
-                    throw new RuntimeException( throwable );
-                }
+                changeStateToPending();
             }
             else
             {
@@ -285,6 +266,31 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
             {
                 election.performRoleElections();
             }
+        }
+
+        private void changeStateToPending()
+        {
+            if ( state.isAccessAllowed() )
+            {
+                availabilityGuard.deny( HighAvailabilityMemberStateMachine.this );
+            }
+
+            final HighAvailabilityMemberChangeEvent event =
+                    new HighAvailabilityMemberChangeEvent( state, HighAvailabilityMemberState.PENDING, null, null );
+
+            state = HighAvailabilityMemberState.PENDING;
+
+            Listeners.notifyListeners( memberListeners, new Listeners.Notification<HighAvailabilityMemberListener>()
+            {
+                @Override
+                public void notify( HighAvailabilityMemberListener listener )
+                {
+                    listener.instanceStops( event );
+                }
+            } );
+
+            context.setAvailableHaMasterId( null );
+            context.setElectedMasterId( null );
         }
 
         private long getAliveCount()

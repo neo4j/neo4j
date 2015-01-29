@@ -19,6 +19,13 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
+import org.junit.Before;
+import org.junit.Test;
+
+import java.net.URI;
+
+import org.neo4j.cluster.InstanceId;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
@@ -28,12 +35,6 @@ import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.PENDING;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.SLAVE;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.TO_MASTER;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.TO_SLAVE;
-
-import java.net.URI;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.neo4j.cluster.InstanceId;
 
 /**
  * This is the full specification for state switching in HA according to incoming cluster
@@ -277,9 +278,9 @@ public class HighAvailabilityMemberStateTest
         HighAvailabilityMemberState newStateCase2 = SLAVE.masterIsElected( context, new InstanceId( 3 ) );
         assertEquals( PENDING, newStateCase2 );
 
-        // CASE 3: It is the current master that got elected again - SLAVE should switch to PENDING
+        // CASE 3: It is the current master that got elected again - ignore
         HighAvailabilityMemberState newStateCase3 = SLAVE.masterIsElected( context, masterInstanceId );
-        assertEquals( PENDING, newStateCase3 );
+        assertEquals( SLAVE, newStateCase3 );
     }
 
     @Test

@@ -46,4 +46,10 @@ public class IllegalProtocolVersionException extends ComException
     {
         return received;
     }
+
+    @Override
+    public String toString()
+    {
+        return "IllegalProtocolVersionException{expected=" + expected + ", received=" + received + "}";
+    }
 }
