@@ -33,7 +33,6 @@ angular.module('neo4jApp.controllers')
       $scope.settings = Settings
 
       $scope.save = () ->
-        console.log("saving you!")
         SettingsStore.save()
 
   ]
