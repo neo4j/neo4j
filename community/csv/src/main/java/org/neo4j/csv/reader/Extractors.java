@@ -884,8 +884,7 @@ public class Extractors
         int digit = ch - '0';
         if ( (digit < 0) || (digit > 9) )
         {
-            throw new NumberFormatException( "Invalid digit character " + digit + " '" + (char)digit +
-                    "' where the original char was '" + ch + "'" );
+            throw new NumberFormatException( "Invalid digit character '" + ch + "'" );
         }
         return digit;
     }

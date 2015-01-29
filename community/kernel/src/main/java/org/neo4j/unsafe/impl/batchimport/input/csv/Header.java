@@ -19,10 +19,10 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
+import java.util.Arrays;
+
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractor;
-
-import static java.lang.String.format;
 
 /**
  * Header of tabular/csv data input, specifying meta data about values in each "column", for example
@@ -70,6 +70,12 @@ public class Header
         return result;
     }
 
+    @Override
+    public String toString()
+    {
+        return Arrays.toString( entries );
+    }
+
     public static class Entry
     {
         private final String name;
@@ -88,7 +94,9 @@ public class Header
         @Override
         public String toString()
         {
-            return format( "Column[%s,%s,%s]", name, type, extractor );
+            return (name != null ? name : "") +
+                   ":" + (type == Type.PROPERTY ? extractor.toString().toLowerCase() : type.name()) +
+                   (groupName != null ? "(" + groupName + ")" : "");
         }
 
         public Extractor<?> extractor()

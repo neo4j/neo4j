@@ -23,8 +23,10 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.neo4j.csv.reader.CharSeeker;
+import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Mark;
 import org.neo4j.function.Function;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.unsafe.impl.batchimport.input.DataException;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
@@ -44,6 +46,7 @@ abstract class InputEntityDeserializer<ENTITY extends InputEntity> extends Prefe
     private final Mark mark = new Mark();
     private final int[] delimiter;
     private final Function<ENTITY,ENTITY> decorator;
+    private int lineNumber;
 
     // Data
     // holder of properties, alternating key/value. Will grow with the entity having most properties.
@@ -62,15 +65,17 @@ abstract class InputEntityDeserializer<ENTITY extends InputEntity> extends Prefe
     protected ENTITY fetchNextOrNull()
     {
         // Read a CSV "line" and convert the values into what they semantically mean.
+        lineNumber++;
+        int fieldIndex = 0;
         try
         {
             Header.Entry[] entries = header.entries();
-            for ( int i = 0; i < entries.length; i++ )
+            for ( ; fieldIndex < entries.length; fieldIndex++ )
             {
                 // Seek the next value
                 if ( !data.seek( mark, delimiter ) )
                 {
-                    if ( i > 0 )
+                    if ( fieldIndex > 0 )
                     {
                         throw new UnexpectedEndOfInputException( "Near " + mark );
                     }
@@ -79,7 +84,7 @@ abstract class InputEntityDeserializer<ENTITY extends InputEntity> extends Prefe
                 }
 
                 // Extract it, type according to our header
-                Header.Entry entry = entries[i];
+                Header.Entry entry = entries[fieldIndex];
                 Object value = data.tryExtract( mark, entry.extractor() )
                         ? entry.extractor().value() : null;
                 boolean handled = true;
@@ -125,6 +130,27 @@ abstract class InputEntityDeserializer<ENTITY extends InputEntity> extends Prefe
         catch ( IOException e )
         {
             throw new InputException( "Unable to read more data from input stream", e );
+        }
+        catch ( final RuntimeException e )
+        {
+            String stringValue = null;
+            try
+            {
+                Extractors extractors = new Extractors( '?' );
+                if ( data.tryExtract( mark, extractors.string() ) )
+                {
+                    stringValue = extractors.string().value();
+                }
+            }
+            catch ( Exception e1 )
+            {   // OK
+            }
+
+            throw Exceptions.withMessage( e, "ERROR in input data on data line " + lineNumber + " in field " +
+                    (fieldIndex+1) + " (1-based)." +
+                    "\n  Header: " + header +
+                    "\n  Original error: " + e.getMessage() +
+                    (stringValue != null ? "\n  Raw field value: '" + stringValue + "'" : "") );
         }
         finally
         {
