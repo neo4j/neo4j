@@ -83,4 +83,21 @@ public class InputEntityDecorators
             }
         };
     }
+
+    public static <ENTITY extends InputEntity> Function<ENTITY,ENTITY> decorators(
+            final Function<ENTITY,ENTITY>... decorators )
+    {
+        return new Function<ENTITY,ENTITY>()
+        {
+            @Override
+            public ENTITY apply( ENTITY from ) throws RuntimeException
+            {
+                for ( Function<ENTITY,ENTITY> decorator : decorators )
+                {
+                    from = decorator.apply( from );
+                }
+                return from;
+            }
+        };
+    }
 }

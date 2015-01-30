@@ -35,7 +35,7 @@ public abstract class InputEntity
     public static final Object[] NO_PROPERTIES = new Object[0];
     public static final String[] NO_LABELS = new String[0];
 
-    private final Object[] properties;
+    private Object[] properties;
     private final Long firstPropertyId;
 
     public InputEntity( Object[] properties, Long firstPropertyId )
@@ -47,6 +47,23 @@ public abstract class InputEntity
     public Object[] properties()
     {
         return properties;
+    }
+
+    public void addProperties( Object... keyValuePairs )
+    {
+        if ( properties == null || properties.length == 0 )
+        {
+            properties = keyValuePairs;
+        }
+
+        Object[] oldProperties = properties;
+        properties = Arrays.copyOf( properties, properties.length+keyValuePairs.length );
+        System.arraycopy( keyValuePairs, 0, properties, oldProperties.length, keyValuePairs.length );
+    }
+
+    public void setProperties( Object... keyValuePairs )
+    {
+        properties = keyValuePairs;
     }
 
     public boolean hasFirstPropertyId()
