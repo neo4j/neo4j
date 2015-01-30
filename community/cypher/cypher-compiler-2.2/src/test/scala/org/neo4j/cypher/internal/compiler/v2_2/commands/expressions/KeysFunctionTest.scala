@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.neo4j.graphdb.Node
 
-class PropertiesFunctionTest extends CypherFunSuite {
+class KeysFunctionTest extends CypherFunSuite {
 
   test("testPropertyKeys") {
     // GIVEN
@@ -50,7 +50,7 @@ class PropertiesFunctionTest extends CypherFunSuite {
     val ctx = ExecutionContext() += ("n" -> node)
 
     // WHEN
-    val result = PropertiesFunction(Identifier("n"))(ctx)(state)
+    val result = KeysFunction(Identifier("n"))(ctx)(state)
 
     // THEN
     result should equal(lsValues)
@@ -73,7 +73,7 @@ class PropertiesFunctionTest extends CypherFunSuite {
     val ctx = ExecutionContext() += ("n" -> node)
 
     // WHEN
-    val result = PropertiesFunction(Identifier("n"))(ctx)(state)
+    val result = KeysFunction(Identifier("n"))(ctx)(state)
 
 
     // THEN

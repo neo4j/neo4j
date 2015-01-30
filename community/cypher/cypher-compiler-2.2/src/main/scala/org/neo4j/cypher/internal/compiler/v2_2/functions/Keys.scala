@@ -25,13 +25,13 @@ import ExpressionConverters._
 import commands.{expressions => commandexpressions}
 import symbols._
 
-case object Properties extends Function with SimpleTypedFunction {
-  def name = "properties"
+case object Keys extends Function with SimpleTypedFunction {
+  def name = "keys"
 
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTNode), outputType = CTCollection(CTString))
   )
 
   def asCommandExpression(invocation: ast.FunctionInvocation) =
-    commandexpressions.PropertiesFunction(invocation.arguments(0).asCommandExpression)
+    commandexpressions.KeysFunction(invocation.arguments(0).asCommandExpression)
 }

@@ -26,7 +26,7 @@ import symbols._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.neo4j.graphdb.{Relationship, Node}
 
-case class PropertiesFunction(nodeExpr: Expression) extends NullInNullOutExpression(nodeExpr) {
+case class KeysFunction(nodeExpr: Expression) extends NullInNullOutExpression(nodeExpr) {
 
   override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) = value match {
     case node: Node        => node.getId
@@ -40,11 +40,13 @@ case class PropertiesFunction(nodeExpr: Expression) extends NullInNullOutExpress
       queryCtx.getPropertiesForNode(n.getId).map { case (v) =>
                                                     queryCtx.getPropertyKeyName(v.toInt)
                                                   }.toList
+    case rel: Relationship =>
+                throw new CypherTypeException("keys() expected a Node but was called with relationship (underdevelopment) ")
     case null =>  null
-    case _    =>  throw new CypherTypeException("properties() expected a Node but was called with something else")
+    case _    =>  throw new CypherTypeException("keys() expected a Node but was called with something else")
   }
 
-  def rewrite(f: (Expression) => Expression) = f(PropertiesFunction(nodeExpr.rewrite(f)))
+  def rewrite(f: (Expression) => Expression) = f(KeysFunction(nodeExpr.rewrite(f)))
 
   def arguments = Seq(nodeExpr)
 

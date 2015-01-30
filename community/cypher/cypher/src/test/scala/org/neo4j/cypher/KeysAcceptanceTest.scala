@@ -24,15 +24,17 @@ import org.scalatest.Assertions
 import org.neo4j.graphdb.Node
 import org.scalautils.LegacyTripleEquals
 
-class PropertiesAcceptanceTest extends ExecutionEngineFunSuite
+class KeysAcceptanceTest extends ExecutionEngineFunSuite
 with QueryStatisticsTestSupport with Assertions with CollectionSupport with LegacyTripleEquals {
 
-  test("Using_properties_in_RETURN_clauses") {
+  test("Using_keys_function_with_Empty_result") {
     createNode()
-    assertThat("match (n) where id(n) = 0 RETURN properties(n)", List())
+    assertThat("match (n) RETURN keys(n)", List())
+  }
 
+  test("Using_keys_function_with_Not_Empty_result") {
     createNode()
-    assertThat("match (n) where id(n) = 0 SET n.FOO='potato' RETURN properties(n)", List("FOO"))
+    assertThat("match (n) SET n.FOO='potato' RETURN keys(n)", List("FOO"))
   }
 
   private def assertThat(q: String, expectedProperties: List[String]) {
