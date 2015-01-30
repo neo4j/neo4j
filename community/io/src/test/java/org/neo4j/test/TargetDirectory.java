@@ -19,13 +19,13 @@
  */
 package org.neo4j.test;
 
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
+
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -93,14 +93,14 @@ public class TargetDirectory
         }
 
         @Override
-        public Statement apply( final Statement base, Description description )
+        public Statement apply( final Statement base, final Description description )
         {
-            subdir = directoryForDescription( description );
             return new Statement()
             {
                 @Override
                 public void evaluate() throws Throwable
                 {
+                    subdir = directoryForDescription( description );
                     boolean success = false;
                     try
                     {

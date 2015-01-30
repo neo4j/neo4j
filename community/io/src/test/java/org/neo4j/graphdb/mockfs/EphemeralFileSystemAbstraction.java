@@ -49,6 +49,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -919,44 +920,27 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         Iterator<EphemeralFileChannel> getOpenChannels()
         {
             final Iterator<WeakReference<EphemeralFileChannel>> refs = channels.iterator();
-            return new Iterator<EphemeralFileChannel>()
-            {
-                private EphemeralFileChannel current = fetchNextOrNull();
 
-                private EphemeralFileChannel fetchNextOrNull()
-                {
-                    while ( refs.hasNext() )
-                    {
-                        EphemeralFileChannel channel = refs.next().get();
-                        if ( channel != null )
+            return new PrefetchingIterator<EphemeralFileChannel>()
                         {
-                            return channel;
-                        }
-                        refs.remove();
-                    }
-                    return null;
-                }
+                            @Override
+                            protected EphemeralFileChannel fetchNextOrNull()
+                            {
+                                while ( refs.hasNext() )
+                                {
+                                    EphemeralFileChannel channel = refs.next().get();
+                                    if ( channel != null ) return channel;
+                                    refs.remove();
+                                }
+                                return null;
+                            }
 
-                @Override
-                public boolean hasNext()
-                {
-                    return current != null;
-                }
-
-                @Override
-                public EphemeralFileChannel next()
-                {
-                    EphemeralFileChannel value = current;
-                    current = fetchNextOrNull();
-                    return value;
-                }
-
-                @Override
-                public void remove()
-                {
-                    refs.remove();
-                }
-            };
+                            @Override
+                            public void remove()
+                            {
+                                refs.remove();
+                            }
+                        };
         }
 
         long size()
@@ -1281,5 +1265,66 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
                 target.write( scratchPad, 0, read );
             }
         }
+    }
+
+    // Copied from kernel since we don't want to depend on that module here
+    public static abstract class PrefetchingIterator<T> implements Iterator<T>
+    {
+        boolean hasFetchedNext;
+        T nextObject;
+
+    	/**
+    	 * @return {@code true} if there is a next item to be returned from the next
+    	 * call to {@link #next()}.
+    	 */
+    	@Override
+        public boolean hasNext()
+    	{
+    		return peek() != null;
+    	}
+
+        /**
+         * @return the next element that will be returned from {@link #next()} without
+         * actually advancing the iterator
+         */
+        public T peek()
+        {
+            if ( hasFetchedNext )
+            {
+                return nextObject;
+            }
+
+            nextObject = fetchNextOrNull();
+            hasFetchedNext = true;
+            return nextObject;
+        }
+
+        /**
+    	 * Uses {@link #hasNext()} to try to fetch the next item and returns it
+    	 * if found, otherwise it throws a {@link java.util.NoSuchElementException}.
+    	 *
+    	 * @return the next item in the iteration, or throws
+    	 * {@link java.util.NoSuchElementException} if there's no more items to return.
+    	 */
+    	@Override
+        public T next()
+    	{
+    		if ( !hasNext() )
+    		{
+    			throw new NoSuchElementException();
+    		}
+    		T result = nextObject;
+    		nextObject = null;
+    		hasFetchedNext = false;
+    		return result;
+    	}
+
+    	protected abstract T fetchNextOrNull();
+
+    	@Override
+        public void remove()
+    	{
+    		throw new UnsupportedOperationException();
+    	}
     }
 }
