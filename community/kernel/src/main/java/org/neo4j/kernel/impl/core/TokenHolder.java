@@ -57,8 +57,11 @@ public abstract class TokenHolder<TOKEN extends Token> extends LifecycleAdapter
         this.tokenCreator = tokenCreator;
     }
 
-    public void addTokens( Token... tokens ) throws NonUniqueTokenException
+    public void setInitialTokens( Token... tokens ) throws NonUniqueTokenException
     {
+        nameToId.clear();
+        idToToken.clear();
+
         Map<String,Integer> newNameToId = new HashMap<>();
         Map<Integer,TOKEN> newIdToToken = new HashMap<>();
 
@@ -180,13 +183,6 @@ public abstract class TokenHolder<TOKEN extends Token> extends LifecycleAdapter
     public Iterable<TOKEN> getAllTokens()
     {
         return idToToken.values();
-    }
-
-    @Override
-    public void stop()
-    {
-        nameToId.clear();
-        idToToken.clear();
     }
 
     protected abstract TOKEN newToken( String name, int id );
