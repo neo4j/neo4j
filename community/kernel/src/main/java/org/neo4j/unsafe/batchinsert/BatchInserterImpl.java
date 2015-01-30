@@ -599,6 +599,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             ids[i] = getOrCreateLabelId( labels[i].name() );
         }
+        Arrays.sort( ids );
         return ids;
     }
 
