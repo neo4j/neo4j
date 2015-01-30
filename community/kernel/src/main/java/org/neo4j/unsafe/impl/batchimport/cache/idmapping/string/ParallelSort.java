@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 
 import org.neo4j.unsafe.impl.batchimport.Utils;
@@ -140,7 +141,8 @@ public class ParallelSort
                 if ( rIndex <= bucketRange[k] )
                 {
                     long temp = (rangeParams[k][0] + bucketIndex[k]++);
-                    assert tracker.get( temp ) == -1;
+                    assert tracker.get( temp ) == -1 : "Overlapping buckets i:" + i + ", k:" + k + "\n" +
+                            dumpBuckets( rangeParams, bucketRange, bucketIndex );
                     tracker.set( temp, (int) i );
                     if ( bucketIndex[k] == rangeParams[k][1] )
                     {
@@ -152,6 +154,27 @@ public class ParallelSort
             }
         }
         return rangeParams;
+    }
+
+    private String dumpBuckets( int[][] rangeParams, int[] bucketRange, int[] bucketIndex )
+    {
+        StringBuilder builder = new StringBuilder();
+        builder.append( "rangeParams:\n" );
+        for ( int[] range : rangeParams )
+        {
+            builder.append( "  " ).append( Arrays.toString( range ) ).append( "\n" );
+        }
+        builder.append( "bucketRange:\n" );
+        for ( int range : bucketRange )
+        {
+            builder.append( "  " ).append( range ).append( "\n" );
+        }
+        builder.append( "bucketIndex:\n" );
+        for ( int index : bucketIndex )
+        {
+            builder.append( "  " ).append( index ).append( "\n" );
+        }
+        return builder.toString();
     }
 
     private int partition( int leftIndex, int rightIndex, int pivotIndex )
@@ -192,7 +215,7 @@ public class ParallelSort
         return partingIndex;
     }
 
-    public void recursiveQsort( int start, int end )
+    private void recursiveQsort( int start, int end )
     {
         if ( end - start < 2 )
         {

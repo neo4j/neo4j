@@ -19,17 +19,16 @@
  */
 package org.neo4j.tooling;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Random;
 import java.util.UUID;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.function.primitive.PrimitiveIntPredicate;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -42,17 +41,18 @@ import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.kernel.impl.util.Validators;
+import org.neo4j.test.RandomRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 
-import static java.lang.System.currentTimeMillis;
-import static java.util.Arrays.asList;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
+import static java.lang.System.currentTimeMillis;
+import static java.util.Arrays.asList;
 
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.alwaysTrue;
 import static org.neo4j.graphdb.DynamicLabel.label;
@@ -585,6 +585,6 @@ public class ImportToolTest
     private static final int NODE_COUNT = 100;
 
     public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
-    private final Random random = new Random();
+    public final @Rule RandomRule random = new RandomRule();
     private int dataIndex;
 }
