@@ -97,6 +97,7 @@ import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.asList;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -923,6 +924,22 @@ public class TestBatchInsert
         // THEN
         Iterable<String> labelNames = asNames( inserter.getNodeLabels( node ) );
         assertEquals( asSet( Labels.FIRST.name() ), asSet( labelNames ) );
+    }
+    
+    @Test
+    public void labelsShouldObeySetSemantics() throws Exception
+    {
+        // GIVEN
+        BatchInserter inserter = newBatchInserter();
+        long node = inserter.createNode( map() );
+
+        // WHEN
+        inserter.setNodeLabels( node, Labels.FIRST, Labels.FIRST );
+
+        // THEN
+        Iterable<String> labelNames = asNames( inserter.getNodeLabels( node ) );
+        assertEquals( asList(asSet( Labels.FIRST.name() )), asList( labelNames ) );
+        inserter.shutdown();
     }
 
     @Test

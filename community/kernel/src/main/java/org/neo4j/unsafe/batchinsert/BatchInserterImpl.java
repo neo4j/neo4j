@@ -19,16 +19,28 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
+import static java.lang.Boolean.parseBoolean;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
+import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Label;
@@ -125,16 +137,6 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SingleLoggingService;
-
-import static java.lang.Boolean.parseBoolean;
-
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
-import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 public class BatchInserterImpl implements BatchInserter
 {
@@ -584,7 +586,9 @@ public class BatchInserterImpl implements BatchInserter
     private void setNodeLabels( NodeRecord nodeRecord, Label... labels )
     {
         NodeLabels nodeLabels = parseLabelsField( nodeRecord );
-        getNodeStore().updateDynamicLabelRecords( nodeLabels.put( getOrCreateLabelIds( labels ), getNodeStore() ) );
+        Set<Label> newLabelSet = new LinkedHashSet<>( Arrays.asList(labels) );
+        Label[] newLabels = newLabelSet.toArray(new Label[ newLabelSet.size() ]);
+        getNodeStore().updateDynamicLabelRecords( nodeLabels.put( getOrCreateLabelIds( newLabels ), getNodeStore() ) );
         labelsTouched = true;
     }
 
