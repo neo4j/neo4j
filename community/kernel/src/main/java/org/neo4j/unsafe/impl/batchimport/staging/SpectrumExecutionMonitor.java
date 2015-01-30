@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import java.io.PrintStream;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.helpers.Pair;
 import org.neo4j.unsafe.impl.batchimport.stats.DetailLevel;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
@@ -81,6 +82,7 @@ public class SpectrumExecutionMonitor extends AbstractExecutionMonitor
     @Override
     public void end( StageExecution[] executions, long totalTimeMillis )
     {
+        check( executions );
         out.println();
         out.println( "Done in " + duration( totalTimeMillis ) );
     }
@@ -95,34 +97,17 @@ public class SpectrumExecutionMonitor extends AbstractExecutionMonitor
     @Override
     public void check( StageExecution[] executions )
     {
-        int active = countActive( executions );
-        float partWidth = (float) width / active;
+        float partWidth = (float) width / executions.length;
         StringBuilder builder = new StringBuilder();
         boolean allPrinted = true;
         for ( StageExecution execution : executions )
         {
-            if ( execution.stillExecuting() )
-            {
-                allPrinted &= printSpectrum( builder, execution, round( partWidth ) );
-            }
+            allPrinted &= printSpectrum( builder, execution, round( partWidth ) );
         }
         if ( allPrinted )
         {
             out.print( "\r" + builder );
         }
-    }
-
-    private int countActive( StageExecution[] executions )
-    {
-        int active = 0;
-        for ( StageExecution execution : executions )
-        {
-            if ( execution.stillExecuting() )
-            {
-                active++;
-            }
-        }
-        return active;
     }
 
     private boolean printSpectrum( StringBuilder builder, StageExecution execution, int width )
@@ -137,6 +122,7 @@ public class SpectrumExecutionMonitor extends AbstractExecutionMonitor
         // reduce the width with the known extra characters we know we'll print in and around the spectrum
         width -= values.length + 1/*'|' chars*/ + 4 /*progress chars*/;
 
+        Pair<Step<?>,Float> bottleNeck = execution.stepsOrderedBy( Keys.avg_processing_time, false ).iterator().next();
         QuantizedProjection projection = new QuantizedProjection( total, width );
         long lastDoneBatches = 0;
         int stepIndex = 0;
@@ -148,7 +134,12 @@ public class SpectrumExecutionMonitor extends AbstractExecutionMonitor
                 break; // odd though
             }
             long stepWidth = projection.step();
-            String name = stats.toString( DetailLevel.IMPORTANT ) + (step.numberOfProcessors() > 1 ? "(" + step.numberOfProcessors() + ")" : "");
+            boolean isBottleNeck = bottleNeck.first() == step;
+            String name =
+                    (isBottleNeck ? "*" : "") +
+                    stats.toString( DetailLevel.IMPORTANT ) + (step.numberOfProcessors() > 1
+                    ? "(" + step.numberOfProcessors() + ")"
+                    : "");
             builder.append( stepIndex++ == 0 ? '[' : '|' );
             int charIndex = 0; // negative value "delays" the text, i.e. pushes it to the right
             char backgroundChar = step.numberOfProcessors() > 1 ? '=' : '-';

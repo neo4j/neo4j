@@ -68,7 +68,7 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
             AbstractRecordStore<RECORD> entityStore,
             PropertyStore propertyStore, IoMonitor monitor, WriterFactory writerFactory )
     {
-        super( control, "WRITER", 1, config.movingAverageSize(), 1 ); // work-ahead doesn't matter, we're the last one
+        super( control, "W", 1, config.movingAverageSize(), 1 ); // work-ahead doesn't matter, we're the last one
         this.entityStore = entityStore;
         this.propertyStore = propertyStore;
         this.writerFactory = writerFactory;

@@ -41,6 +41,7 @@ import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.kernel.impl.util.Validators;
+import org.neo4j.test.Mute;
 import org.neo4j.test.RandomRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
@@ -586,5 +587,6 @@ public class ImportToolTest
 
     public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
     public final @Rule RandomRule random = new RandomRule();
+    public final @Rule Mute mute = Mute.mute( Mute.System.values() );
     private int dataIndex;
 }

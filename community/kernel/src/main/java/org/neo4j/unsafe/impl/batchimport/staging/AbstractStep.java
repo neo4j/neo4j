@@ -234,11 +234,11 @@ public abstract class AbstractStep<T> implements Step<T>
     {
         if ( !stillWorking() && !isCompleted() )
         {
-            done();
             if ( downstream != null )
             {
                 downstream.endOfUpstream();
             }
+            done();
             // else this is the end of the line
             completed = true;
         }
