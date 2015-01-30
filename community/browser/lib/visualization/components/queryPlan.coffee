@@ -12,30 +12,38 @@ neo.queryPlan = (element)->
   margin = 10
   standardFont = "'Helvetica Neue',Helvetica,Arial,sans-serif"
   fixedWidthFont = "Monaco,'Courier New',Terminal,monospace"
+  linkColor = '#DFE1E3'
+  costColor = '#F25A29'
+  dividerColor = '#DFE1E3'
+  operatorColors = colorbrewer.Blues[9].slice(2)
+
+  operatorCategories =
+    result: ['result']
+    seek: ['scan', 'seek', 'argument']
+    rows: ['limit', 'top', 'skip', 'sort', 'union', 'projection']
+    other: []
+    filter: ['select', 'filter', 'apply', 'distinct']
+    expand: ['expand', 'product', 'join', 'optional', 'path']
+    eager: ['eager']
+
+  augment = (color) ->
+    {
+      color: color,
+      'border-color': d3.rgb(color).darker(),
+      'text-color-internal': if d3.hsl(color).l < 0.7 then '#FFFFFF' else '#000000'
+    }
 
   colors =
-    gray:    { color: '#DFE1E3', 'border-color': '#D4D6D7', 'text-color-internal': '#000000' }
-    red:     { color: '#F25A29', 'border-color': '#DC4717', 'text-color-internal': '#FFFFFF' }
-    magenta: { color: '#AD62CE', 'border-color': '#9453B1', 'text-color-internal': '#FFFFFF' }
-    cyan:    { color: '#30B6AF', 'border-color': '#46A39E', 'text-color-internal': '#FFFFFF' }
-    pink:    { color: '#FF6C7C', 'border-color': '#EB5D6C', 'text-color-internal': '#FFFFFF' }
-    yellow:  { color: '#FCC940', 'border-color': '#F3BA25', 'text-color-internal': '#000000' }
-    blue:    { color: '#4356C0', 'border-color': '#3445A2', 'text-color-internal': '#FFFFFF' }
-    white:   { color: '#FFFFFF', 'border-color': '#9AA1AC', 'text-color-internal': '#000000' }
-
-  operatorColors =
-    yellow: ['scan', 'seek', 'argument', 'result']
-    blue: ['expand', 'product']
-    cyan: ['select', 'filter']
-    red: ['eager']
-    white: ['limit', 'skip', 'sort', 'union', 'projection']
+    d3.scale.ordinal()
+    .domain(d3.keys(operatorCategories))
+    .range(operatorColors);
 
   color = (d) ->
-    for name, keywords of operatorColors
+    for name, keywords of operatorCategories
       for keyword in keywords
         if new RegExp(keyword, 'i').test(d)
-          return colors[name]
-    colors.white
+          return augment(colors(name))
+    augment(colors('other'))
 
   rows = (operator) ->
     operator.Rows ? operator.EstimatedRows ? 0
@@ -69,7 +77,7 @@ neo.queryPlan = (element)->
       wordWrap(identifiers.filter((d) -> not (/^  /.test(d))).join(', '), 'identifiers')
       details.push { className: 'padding' }
 
-    if expression = operator.LegacyExpression || operator.ExpandExpression
+    if expression = operator.LegacyExpression ? operator.ExpandExpression ? operator.LabelName
       wordWrap(expression, 'expression')
       details.push { className: 'padding' }
 
@@ -242,7 +250,7 @@ neo.queryPlan = (element)->
             selections: (enter, update) ->
               enter
               .append('path')
-              .attr('fill', colors.gray.color)
+              .attr('fill', linkColor)
 
               update
               .transition()
@@ -468,7 +476,7 @@ neo.queryPlan = (element)->
                         'M', 0, -operatorPadding * 2
                         'L', operatorWidth, -operatorPadding * 2
                       ].join(' '))
-                  .attr('stroke', colors.gray['border-color'])
+                  .attr('stroke', dividerColor)
                   .transition()
                   .each('end', ->
                     update
@@ -481,7 +489,7 @@ neo.queryPlan = (element)->
               enter
               .append('path')
               .attr('class', 'cost')
-              .attr('fill', '#333')
+              .attr('fill', costColor)
 
               update
               .transition()

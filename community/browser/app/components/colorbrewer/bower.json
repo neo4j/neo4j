@@ -1,0 +1,23 @@
+{
+  "name": "colorbrewer",
+  "version": "1.0.0",
+  "description": "Color specifications and designs developed by Cynthia Brewer (http://colorbrewer.org/)",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/undashes/colorbrewer.git"
+  },
+  "keywords": [
+    "colors",
+    "design",
+    "visualization",
+    "svg"
+  ],
+  "author": {
+    "name": "Cynthia Brewer",
+    "uri": "http://www.personal.psu.edu/cab38/"
+  },
+  "license": "Apache-Style",
+  "main": "colorbrewer.js",
+  "scripts": ["colorbrewer.js"],
+  "homepage": "http://www.personal.psu.edu/cab38/ColorBrewer/ColorBrewer_updates.html"
+}
