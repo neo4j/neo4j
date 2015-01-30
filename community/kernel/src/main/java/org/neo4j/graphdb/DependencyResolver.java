@@ -50,6 +50,15 @@ public interface DependencyResolver
     <T> T resolveDependency( Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException;
 
     /**
+     * Check if a dependency can be resolved by this resolver. This allows you to check for the existence of
+     * dependencies without treating their non-existence as exceptional.
+     * @param type the type of {@link Class} that the returned instance must implement.
+     * @param <T>
+     * @return true if at least one instance of the specified type exists
+     */
+    <T> boolean canResolve( Class<T> type );
+
+    /**
      * Responsible for making the choice between available candidates.
      */
     interface SelectionStrategy
@@ -91,6 +100,23 @@ public interface DependencyResolver
         public <T> T resolveDependency( Class<T> type ) throws IllegalArgumentException
         {
             return resolveDependency( type, FIRST );
+        }
+
+        @Override
+        public <T> boolean canResolve( Class<T> type )
+        {
+            try
+            {
+                // Flow control by exception by design, this was added after the resolveDependency method,
+                // and because this class is public API, to to avoid breaking client implementations (based on the
+                // assumption that they extend this public adapter), we provide this default implementation.
+                resolveDependency( type );
+                return true;
+            }
+            catch(IllegalArgumentException e)
+            {
+                return false;
+            }
         }
     }
 }
