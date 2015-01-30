@@ -37,10 +37,19 @@ public class LifeRule extends LifeSupport implements TestRule
                 {
                     base.evaluate();
                 }
-                finally
+                catch ( Throwable failure )
                 {
-                    LifeRule.this.shutdown();
+                    try
+                    {
+                        shutdown();
+                    }
+                    catch ( Throwable suppressed )
+                    {
+                        failure.addSuppressed( suppressed );
+                    }
+                    throw failure;
                 }
+                shutdown();
             }
         };
     }

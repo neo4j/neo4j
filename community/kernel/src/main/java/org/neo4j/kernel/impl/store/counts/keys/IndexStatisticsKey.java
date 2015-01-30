@@ -21,26 +21,26 @@ package org.neo4j.kernel.impl.store.counts.keys;
 
 import org.neo4j.kernel.impl.api.CountsVisitor;
 
-public final class IndexCountsKey extends IndexKey
+public final class IndexStatisticsKey extends IndexKey
 {
-    IndexCountsKey( int labelId, int propertyKeyId )
+    IndexStatisticsKey( int labelId, int propertyKeyId )
     {
-        super( labelId, propertyKeyId, CountsKeyType.INDEX_COUNTS );
+        super( labelId, propertyKeyId, CountsKeyType.INDEX_STATISTICS );
     }
 
     @Override
     public void accept( CountsVisitor visitor, long updates, long size )
     {
-        visitor.visitIndexCounts( labelId(), propertyKeyId(), updates, size );
+        visitor.visitIndexStatistics( labelId(), propertyKeyId(), updates, size );
     }
 
     @Override
     public int compareTo( CountsKey other )
     {
-        if ( other instanceof org.neo4j.kernel.impl.store.counts.keys.IndexCountsKey )
+        if ( other instanceof IndexStatisticsKey )
         {
-            org.neo4j.kernel.impl.store.counts.keys.IndexCountsKey
-                    that = (org.neo4j.kernel.impl.store.counts.keys.IndexCountsKey) other;
+            IndexStatisticsKey
+                    that = (IndexStatisticsKey) other;
             int cmp = this.labelId() - that.labelId();
             if ( cmp == 0 )
             {

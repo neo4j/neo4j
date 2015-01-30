@@ -224,6 +224,12 @@ public class PageCacheRule extends ExternalResource
         }
 
         @Override
+        public String toString()
+        {
+            return "PossiblyInconsistent:" + pagedFile;
+        }
+
+        @Override
         public PageCursor io( long pageId, int pf_flags ) throws IOException
         {
             PageCursor cursor = pagedFile.io( pageId, pf_flags );

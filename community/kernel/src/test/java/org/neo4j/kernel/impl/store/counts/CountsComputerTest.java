@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
+import java.io.File;
+import java.io.IOException;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.io.File;
-import java.io.IOException;
 
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -51,7 +52,7 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.impl.store.StoreFactory.buildTypeDescriptorAndVersion;
+
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
@@ -71,10 +72,12 @@ public class CountsComputerTest
 
         rebuildCounts( countsState, lastCommittedTransactionId );
 
-        try ( CountsStore store = CountsStore.open( fs, pageCache, alphaStoreFile() ) )
+        try ( Lifespan life = new Lifespan() )
         {
+            CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
+                                                           new File( dir, COUNTS_STORE_BASE ) ) );
             // a transaction for creating the label and a transaction for the node
-            assertEquals( BASE_TX_ID, store.lastTxId() );
+            assertEquals( BASE_TX_ID, store.txId() );
             assertEquals( 0, store.totalRecordsStored() );
         }
     }
@@ -100,9 +103,11 @@ public class CountsComputerTest
 
         rebuildCounts( countsState, lastCommittedTransactionId );
 
-        try ( CountsStore store = CountsStore.open( fs, pageCache, betaStoreFile() ) )
+        try ( Lifespan life = new Lifespan() )
         {
-            assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1, store.lastTxId() );
+            CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
+                                                           new File( dir, COUNTS_STORE_BASE ) ) );
+            assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1, store.txId() );
             assertEquals( 4, store.totalRecordsStored() );
             assertEquals( 4, get( store, nodeKey( -1 ) ) );
             assertEquals( 1, get( store, nodeKey( 0 ) ) );
@@ -134,9 +139,11 @@ public class CountsComputerTest
 
         rebuildCounts( countsState, lastCommittedTransactionId );
 
-        try ( CountsStore store = CountsStore.open( fs, pageCache, betaStoreFile() ) )
+        try ( Lifespan life = new Lifespan() )
         {
-            assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1, store.lastTxId() );
+            CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
+                                                           new File( dir, COUNTS_STORE_BASE ) ) );
+            assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1, store.txId() );
             assertEquals( 3, store.totalRecordsStored() );
             assertEquals( 3, get( store, nodeKey( -1 ) ) );
             assertEquals( 1, get( store, nodeKey( 0 ) ) );
@@ -168,9 +175,11 @@ public class CountsComputerTest
 
         rebuildCounts( countsState, lastCommittedTransactionId );
 
-        try ( CountsStore store = CountsStore.open( fs, pageCache, betaStoreFile() ) )
+        try ( Lifespan life = new Lifespan() )
         {
-            assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1, store.lastTxId() );
+            CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
+                                                           new File( dir, COUNTS_STORE_BASE ) ) );
+            assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1, store.txId() );
 //            assertEquals( 11, store.totalRecordsStored() ); // we do not support yet (label,type,label) counts
             assertEquals( 9, store.totalRecordsStored() );
             assertEquals( 2, get( store, nodeKey( -1 ) ) );
@@ -207,9 +216,11 @@ public class CountsComputerTest
 
         rebuildCounts( countsState, lastCommittedTransactionId );
 
-        try ( CountsStore store = CountsStore.open( fs, pageCache, betaStoreFile() ) )
+        try ( Lifespan life = new Lifespan() )
         {
-            assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1 + 1, store.lastTxId() );
+            CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
+                                                           new File( dir, COUNTS_STORE_BASE ) ) );
+            assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1 + 1, store.txId() );
 //            assertEquals( 15, store.totalRecordsStored() ); // we do not support yet (label,type,label) counts
             assertEquals( 13, store.totalRecordsStored() );
             assertEquals( 4, get( store, nodeKey( -1 ) ) );
@@ -253,9 +264,11 @@ public class CountsComputerTest
 
         rebuildCounts( countsState, lastCommittedTransactionId );
 
-        try ( CountsStore store = CountsStore.open( fs, pageCache, betaStoreFile() ) )
+        try ( Lifespan life = new Lifespan() )
         {
-            assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1, store.lastTxId() );
+            CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
+                                                           new File( dir, COUNTS_STORE_BASE ) ) );
+            assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1, store.txId() );
             assertEquals( 22, store.totalRecordsStored() );
 //            assertEquals( 30, store.totalRecordsStored() ); // we do not support yet (label,type,label) counts
             assertEquals( 3, get( store, nodeKey( -1 ) ) );
@@ -304,12 +317,12 @@ public class CountsComputerTest
 
     private File alphaStoreFile()
     {
-        return new File( dir, COUNTS_STORE_BASE + CountsTracker.ALPHA );
+        return new File( dir, COUNTS_STORE_BASE + CountsTracker.LEFT );
     }
 
     private File betaStoreFile()
     {
-        return new File( dir, COUNTS_STORE_BASE + CountsTracker.BETA );
+        return new File( dir, COUNTS_STORE_BASE + CountsTracker.RIGHT );
     }
 
     private long getLastTxId( @SuppressWarnings( "deprecation" ) GraphDatabaseAPI db )
@@ -322,20 +335,23 @@ public class CountsComputerTest
     {
         fs.deleteFile( alphaStoreFile() );
         fs.deleteFile( betaStoreFile() );
-        CountsTracker.createEmptyCountsStore( pageCache, new File( dir, COUNTS_STORE_BASE ),
-                buildTypeDescriptorAndVersion( CountsTracker.STORE_DESCRIPTOR ) );
     }
 
     private void rebuildCounts( CountsRecordState countsState, long lastCommittedTransactionId ) throws IOException
     {
-        CountsTracker tracker = new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
-                new File( dir, COUNTS_STORE_BASE ) );
-        countsState.accept( new CountsAccessor.Initializer( tracker ) );
-        tracker.rotate( lastCommittedTransactionId );
-        tracker.close();
+        try ( Lifespan life = new Lifespan() )
+        {
+            CountsTracker tracker = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
+                                                             new File( dir, COUNTS_STORE_BASE ) ) );
+            try ( CountsAccessor.Updater updater = tracker.updater() )
+            {
+                countsState.accept( new CountsAccessor.Initializer( updater ) );
+            }
+            tracker.rotate( lastCommittedTransactionId );
+        }
     }
 
-    private long get( CountsStore store, CountsKey key )
+    private long get( CountsTracker store, CountsKey key )
     {
         Register.DoubleLongRegister value = Registers.newDoubleLongRegister();
         store.get( key, value );

@@ -17,118 +17,93 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.store.counts;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsVisitor;
-import org.neo4j.kernel.impl.locking.LockWrapper;
+import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
-import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
-import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
+import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
+import org.neo4j.kernel.impl.store.kvstore.AbstractKeyValueStore;
+import org.neo4j.kernel.impl.store.kvstore.CollectedMetadata;
+import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
+import org.neo4j.kernel.impl.store.kvstore.Rotation;
+import org.neo4j.kernel.impl.store.kvstore.WritableBuffer;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.register.Register.CopyableDoubleLongRegister;
-import org.neo4j.register.Register.DoubleLongRegister;
-import org.neo4j.register.Registers;
+import org.neo4j.register.Register;
 
-import static org.neo4j.kernel.impl.store.counts.CountsStore.RECORD_SIZE;
-import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexCountsKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSampleKey;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexStatisticsKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
-import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.BASE_MINOR_VERSION;
-import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.with;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 /**
- * {@link CountsTracker} maintains two files, the {@link #alphaFile} and the {@link #betaFile} that it rotates between.
- * {@link #updateLock} is used to ensure that no updates happen while we rotate from one file to another. Reads are
- * still ok though, they just read whatever the current state is. The state is assigned atomically at the end of
- * rotation.
+ * This is the main class for the counts store.
+ *
+ * The counts store is a key/value store, where key/value entries are stored sorted by the key in ascending unsigned
+ * (big endian) order. These store files are immutable, and on store-flush the implementation swaps the read and write
+ * file in a {@linkplain Rotation.Strategy#LEFT_RIGHT left/right pattern}.
+ *
+ * This class defines {@linkplain CountsTracker.KeyFormat the key serialisation format},
+ * {@linkplain CountsTracker.ValueFormat the value serialisation format}, and {@linkplain Metadata the metadata format}.
+ *
+ * The {@linkplain AbstractKeyValueStore parent class} defines the life cycle of the store.
+ *
+ * The pattern of immutable store files, and rotation strategy, et.c. is defined in the
+ * {@code kvstore}-package, see {@link org.neo4j.kernel.impl.store.kvstore.KeyValueStoreFile} for a good entry point.
  */
-public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, CountsAccessor
+@Rotation(value = Rotation.Strategy.LEFT_RIGHT, parameters = {CountsTracker.LEFT, CountsTracker.RIGHT})
+public class CountsTracker extends AbstractKeyValueStore<CountsKey, Metadata, Metadata.Diff>
+        implements CountsVisitor.Visitable, CountsAccessor
 {
-    public static final String STORE_DESCRIPTOR = SortedKeyValueStore.class.getSimpleName();
-
-    public static final String ALPHA = ".a", BETA = ".b";
-    private final File alphaFile, betaFile;
-    private final ReadWriteLock updateLock = new ReentrantReadWriteLock( /*fair=*/true );
+    /** The format specifier for the current version of the store file format. */
+    private static final byte[] FORMAT = {'N', 'e', 'o', 'C', 'o', 'u', 'n', 't',
+                                          'S', 't', 'o', 'r', 'e', /**/0, 0, 'V'};
+    public static final String LEFT = ".a", RIGHT = ".b";
+    public static final String TYPE_DESCRIPTOR = "CountsStore";
     private final StringLogger logger;
-    private volatile CountsTrackerState state;
 
-    public CountsTracker( StringLogger logger, FileSystemAbstraction fs, PageCache pageCache, File storeFileBase )
+    public CountsTracker( StringLogger logger, FileSystemAbstraction fs, PageCache pages, File baseFile )
     {
+        super( fs, pages, baseFile, 16, 16, Metadata.KEYS );
         this.logger = logger;
-        this.alphaFile = storeFile( storeFileBase, ALPHA );
-        this.betaFile = storeFile( storeFileBase, BETA );
-        CountsStore store = openStore( logger, fs, pageCache, this.alphaFile, this.betaFile );
-        this.state = new ConcurrentCountsTrackerState( store );
     }
 
-    private static CountsStore openStore( StringLogger logger, FileSystemAbstraction fs, PageCache pageCache,
-                                          File alphaFile, File betaFile )
+    public void rotate( long txId ) throws IOException
+    {
+        logger.debug( "Start writing new counts store with txId=" + txId );
+        rotate( new Metadata.Diff( txId ) );
+        logger.debug( "Completed writing of counts store with txId=" + txId );
+    }
+
+    public boolean acceptTx( long txId )
+    {
+        Metadata metadata = metadata();
+        return metadata != null && metadata.txId < txId;
+    }
+
+    public long txId()
+    {
+        return metadata().txId;
+    }
+
+    public long minorVersion()
+    {
+        return metadata().minorVersion;
+    }
+
+    public Register.DoubleLongRegister get( CountsKey key, Register.DoubleLongRegister target )
     {
         try
         {
-            if ( !fs.fileExists( alphaFile ) || !fs.fileExists( betaFile ) )
-            {
-                throw new UnderlyingStorageException(
-                        "Expected both counts store files " + alphaFile + " and " + betaFile + " to exist. You may " +
-                        "recreate the counts store by shutting down the database first, deleting the counts store " +
-                        "files manually and then restarting the database" );
-            }
-
-            CountsStore alphaStore = openVerifiedCountsStore( fs, pageCache, alphaFile );
-            CountsStore betaStore = openVerifiedCountsStore( fs, pageCache, betaFile );
-
-            boolean isAlphaCorrupted = alphaStore == null;
-            boolean isBetaCorrupted = betaStore == null;
-            if ( isAlphaCorrupted && isBetaCorrupted )
-            {
-                throw new UnderlyingStorageException(
-                        "Neither of the two store files could be properly opened. Please shut down the database and " +
-                        "delete " + alphaFile + " and " + betaFile + " to have the database recreate the counts" +
-                        "store on next startup" );
-            }
-
-            if ( isAlphaCorrupted )
-            {
-                logger.debug( "CountsStore picked " + betaFile + " since " + alphaFile + " could not be opened " +
-                              "(txId=" + betaStore.lastTxId() + ", minorVersion=" + betaStore.minorVersion() + ")" );
-                return betaStore;
-            }
-
-            if ( isBetaCorrupted )
-            {
-                logger.debug( "CountsStore picked " + alphaFile + " since " + betaFile + " could not be opened " +
-                              "(txId=" + alphaStore.lastTxId() + ", minorVersion=" + alphaStore.minorVersion() + ")" );
-                return alphaStore;
-            }
-
-            // default case
-            if ( isAlphaStoreMoreRecent( alphaStore, betaStore ) )
-            {
-                logger.debug( "CountsStore picked " + alphaFile + " (txId=" + alphaStore.lastTxId() + ", " +
-                              "minorVersion=" + alphaStore.minorVersion() + "), against " + betaFile + " " +
-                              "(txId=" + betaStore.lastTxId() + ", minorVersion=" + betaStore.minorVersion() + ")" );
-                betaStore.close();
-                return alphaStore;
-            }
-            else
-            {
-                logger.debug( "CountsStore picked " + betaFile + " file (txId=" + betaStore.lastTxId() + ", " +
-                              "minorVersion=" + betaStore.minorVersion() + "), against " + alphaFile + " " +
-                              "(txId=" + alphaStore.lastTxId() + ", minorVersion=" + alphaStore.minorVersion() + ")" );
-                alphaStore.close();
-                return betaStore;
-            }
+            return lookup( key, new ValueRegister( target ) );
         }
         catch ( IOException e )
         {
@@ -136,163 +111,69 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         }
     }
 
-    private static CountsStore openVerifiedCountsStore( FileSystemAbstraction fs, PageCache pageCache, File file )
-            throws IOException
+    @Override
+    public Register.DoubleLongRegister nodeCount( int labelId, final Register.DoubleLongRegister target )
     {
-        try
-        {
-            return CountsStore.open( fs, pageCache, file );
-        }
-        catch ( UnderlyingStorageException | IOException ex )
-        {
-            // This will be treated as the file being corrupted, if both files are corrupted an exception will be
-            // thrown from the openStore() method, informing the user that the store is corrupted, and how to fix it.
-            return null;
-        }
-    }
-
-    public static boolean countsStoreExists( FileSystemAbstraction fs, File storeFileBase )
-    {
-        final File alphaFile = storeFile( storeFileBase, ALPHA );
-        final File betaFile = storeFile( storeFileBase, BETA );
-        return fs.fileExists( alphaFile ) || fs.fileExists( betaFile );
-    }
-
-    private static boolean isAlphaStoreMoreRecent( CountsStore alphaStore, CountsStore betaStore )
-    {
-        long alphaTxId = alphaStore.lastTxId(), betaTxId = betaStore.lastTxId();
-        long alphaVersion = alphaStore.minorVersion(), betaVersion = betaStore.minorVersion();
-        if ( alphaTxId == betaTxId )
-        {
-            if ( alphaVersion == betaVersion )
-            {
-                throw new UnderlyingStorageException( "Found two storage files with same tx id and minor version. " +
-                                                      "Please shut down the database and manually delete the counts " +
-                                                      "store files: " + alphaStore.file() + " and " + betaStore.file() +
-                                                      " to have the database recreate them on next startup" );
-            }
-            return alphaVersion > betaVersion;
-        }
-        else
-        {
-            return alphaTxId > betaTxId;
-        }
-    }
-
-    public static void createEmptyCountsStore( PageCache pageCache, File file, String storeVersion )
-    {
-        // create both files initially to avoid problems with unflushed metadata
-        // increase alpha minor version by 1 to ensure that we use alpha after creating the store
-
-        File alpha = storeFile( file, ALPHA );
-        CountsStore.createEmpty( pageCache, alpha,
-                with( RECORD_SIZE, storeVersion, BASE_TX_ID, BASE_MINOR_VERSION + 1 ) );
-
-        File beta = storeFile( file, BETA );
-        CountsStore.createEmpty( pageCache, beta,
-                with( RECORD_SIZE, storeVersion, BASE_TX_ID, BASE_MINOR_VERSION ) );
-    }
-
-    public boolean acceptTx( long txId )
-    {
-        return state.lastTxId() < txId;
+        return get( nodeKey( labelId ), target );
     }
 
     @Override
-    public DoubleLongRegister nodeCount( int labelId, DoubleLongRegister target )
+    public Register.DoubleLongRegister relationshipCount( int startLabelId, int typeId, int endLabelId,
+                                                          Register.DoubleLongRegister target )
     {
-        return state.nodeCount( nodeKey( labelId ), target );
+        return get( relationshipKey( startLabelId, typeId, endLabelId ), target );
     }
 
     @Override
-    public void incrementNodeCount( int labelId, long delta )
+    public Register.DoubleLongRegister indexUpdatesAndSize( int labelId, int propertyKeyId,
+                                                            Register.DoubleLongRegister target )
     {
-        try ( @SuppressWarnings( "UnusedDeclaration" ) LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
-        {
-            state.incrementNodeCount( nodeKey( labelId ), delta );
-        }
+        return get( indexStatisticsKey( labelId, propertyKeyId ), target );
     }
 
     @Override
-    public DoubleLongRegister relationshipCount( int startLabelId, int relTypeId, int endLabelId,
-                                                 DoubleLongRegister target )
+    public Register.DoubleLongRegister indexSample( int labelId, int propertyKeyId, Register.DoubleLongRegister target )
     {
-        return state.relationshipCount( relationshipKey( startLabelId, relTypeId, endLabelId ), target );
+        return get( indexSampleKey( labelId, propertyKeyId ), target );
     }
 
-    @Override
-    public void incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta )
-    {
-            try ( @SuppressWarnings( "UnusedDeclaration" ) LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
-            {
-                state.incrementRelationshipCount( relationshipKey( startLabelId, typeId, endLabelId ), delta );
-            }
-    }
-
-    @Override
-    public DoubleLongRegister indexUpdatesAndSize( int labelId, int propertyKeyId, DoubleLongRegister target )
-    {
-        return state.indexUpdatesAndSize( indexCountsKey( labelId, propertyKeyId ), target );
-    }
-
-    @Override
-    public DoubleLongRegister indexSample( int labelId, int propertyKeyId, DoubleLongRegister target )
-    {
-        return state.indexSample( indexSampleKey( labelId, propertyKeyId ), target );
-    }
-
-    @Override
-    public void replaceIndexUpdateAndSize( int labelId, int propertyKeyId, long updates, long size )
-    {
-        try ( @SuppressWarnings( "UnusedDeclaration" ) LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
-        {
-            state.replaceIndexUpdatesAndSize( indexCountsKey( labelId, propertyKeyId ), updates, size );
-        }
-    }
-
+    /**
+     * For key format, see {@link KeyFormat#visitIndexStatistics(int, int, long, long)}
+     * For value format, see {@link ValueFormat#replaceIndexUpdateAndSize(int, int, long, long)}
+     */
     @Override
     public void incrementIndexUpdates( int labelId, int propertyKeyId, long delta )
     {
-        try ( @SuppressWarnings( "UnusedDeclaration" ) LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
+        try
         {
-            state.incrementIndexUpdates( indexCountsKey( labelId, propertyKeyId ), delta );
+            apply( new UpdateFirstValue( indexStatisticsKey( labelId, propertyKeyId ), delta ) );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
         }
     }
 
     @Override
-    public void replaceIndexSample( int labelId, int propertyKeyId, long unique, long size )
+    public CountsAccessor.Updater updater()
     {
-        try ( @SuppressWarnings( "UnusedDeclaration" ) LockWrapper _ = new LockWrapper( updateLock.readLock() ) )
-        {
-            state.replaceIndexSample( indexSampleKey( labelId, propertyKeyId ), unique, size );
-        }
+        return new ValueFormat();
     }
 
     @Override
     public void accept( final CountsVisitor visitor )
     {
-        state.accept( new KeyValueRecordVisitor<CountsKey,CopyableDoubleLongRegister>()
-        {
-            private final DoubleLongRegister target = Registers.newDoubleLongRegister();
-
-            @Override
-            public void visit( CountsKey key, CopyableDoubleLongRegister register )
-            {
-                register.copyTo( target );
-                key.accept( visitor, target.readFirst(), target.readSecond() );
-            }
-        } );
-    }
-
-    public void close()
-    {
         try
         {
-            if ( state.hasChanges() )
+            visitAll( new Visitor()
             {
-                throw new IllegalStateException( "Cannot close with memory-state!" );
-            }
-            state.close();
+                @Override
+                protected boolean visitKeyValuePair( CountsKey key, ReadableBuffer value )
+                {
+                    key.accept( visitor, value.getLong( 0 ), value.getLong( 8 ) );
+                    return true;
+                }
+            } );
         }
         catch ( IOException e )
         {
@@ -300,56 +181,303 @@ public class CountsTracker implements CountsVisitor.Visitable, AutoCloseable, Co
         }
     }
 
-    public void rotate( long lastCommittedTxId ) throws IOException
+    @Override
+    protected Metadata initialMetadata()
     {
-        try ( @SuppressWarnings( "UnusedDeclaration" ) LockWrapper _ = new LockWrapper( updateLock.writeLock() ) )
+        return new Metadata( -1, 1 );
+    }
+
+    @Override
+    protected int compareMetadata( Metadata lhs, Metadata rhs )
+    {
+        return compare( lhs, rhs );
+    }
+
+    static int compare( Metadata lhs, Metadata rhs )
+    {
+        int cmp = Long.compare( lhs.txId, rhs.txId );
+        if ( cmp == 0 )
         {
-            CountsTrackerState state = this.state;
-            long stateTxId = state.lastTxId();
-            if ( stateTxId > lastCommittedTxId )
+            cmp = Long.compare( lhs.minorVersion, rhs.minorVersion );
+        }
+        return cmp;
+    }
+
+    @Override
+    protected Metadata updateMetadata( Metadata metadata, Metadata.Diff changes )
+    {
+        return metadata.update( changes );
+    }
+
+    @Override
+    protected void writeKey( CountsKey key, final WritableBuffer buffer )
+    {
+        key.accept( new KeyFormat( buffer ), 0, 0 );
+    }
+
+    @Override
+    protected CountsKey readKey( ReadableBuffer key )
+    {
+        switch ( key.getByte( 0 ) )
+        {
+        case KeyFormat.NODE_COUNT:
+            return CountsKeyFactory.nodeKey( key.getInt( 12 ) );
+        case KeyFormat.RELATIONSHIP_COUNT:
+            return CountsKeyFactory.relationshipKey( key.getInt( 4 ), key.getInt( 8 ), key.getInt( 12 ) );
+        case KeyFormat.INDEX:
+            switch ( key.getByte( 15 ) )
             {
-                throw new IllegalStateException( String.format(
-                        "Ask to rotate on an already used txId, storeTxId=%d and got lastTxId=%d",
-                        stateTxId, lastCommittedTxId ) );
+            case KeyFormat.INDEX_STATS:
+                return indexStatisticsKey( key.getInt( 4 ), key.getInt( 8 ) );
+            case KeyFormat.INDEX_SAMPLE:
+                return CountsKeyFactory.indexSampleKey( key.getInt( 4 ), key.getInt( 8 ) );
             }
-            if ( state.hasChanges() || stateTxId < lastCommittedTxId )
+        default:
+            throw new IllegalArgumentException( "Unknown key type: " + key );
+        }
+    }
+
+    @Override
+    protected Metadata buildMetadata( ReadableBuffer formatSpecifier, CollectedMetadata metadata )
+    {
+        Metadata.TxId txId = metadata.getMetadata( Metadata.TX_ID );
+        return new Metadata( txId.txId, txId.minorVersion );
+    }
+
+    @Override
+    protected String extractFileTrailer( Metadata metadata )
+    {
+        return StoreFactory.buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR );
+    }
+
+    @Override
+    protected boolean include( CountsKey countsKey, ReadableBuffer value )
+    {
+        return !value.allZeroes();
+    }
+
+    @Override
+    protected void failedToOpenStoreFile( File path, Exception error )
+    {
+        logger.logMessage( "Failed to open counts store file: " + path, error );
+    }
+
+    protected void beforeRotation( File source, File target, Metadata metadata )
+    {
+        logger.logMessage( String.format( "About to rotate counts store at transaction %d to [%s], from [%s].",
+                                          metadata.txId, target, source ) );
+    }
+
+    @Override
+    protected void rotationSucceeded( File source, File target, Metadata metadata )
+    {
+        logger.logMessage( String.format( "Successfully rotated counts store at transaction %d to [%s], from [%s].",
+                                          metadata.txId, target, source ) );
+    }
+
+    @Override
+    protected void rotationFailed( File source, File target, Metadata metadata, Exception e )
+    {
+        logger.logMessage( String.format( "Failed to rotate counts store at transaction %d to [%s], from [%s].",
+                                          metadata.txId, target, source ), e );
+    }
+
+    @Override
+    protected void writeFormatSpecifier( WritableBuffer formatSpecifier )
+    {
+        formatSpecifier.put( 0, FORMAT );
+    }
+
+    @Override
+    protected boolean hasMetadataChanges( Metadata metadata, Metadata.Diff diff )
+    {
+        return metadata != null && metadata.txId != diff.txId;
+    }
+
+    private static class KeyFormat implements CountsVisitor
+    {
+        private static final byte NODE_COUNT = 1, RELATIONSHIP_COUNT = 2, INDEX = 127, INDEX_STATS = 1, INDEX_SAMPLE = 2;
+        private final WritableBuffer buffer;
+
+        public KeyFormat( WritableBuffer key )
+        {
+            assert key.size() >= 16;
+            this.buffer = key;
+        }
+
+        /**
+         * Key format:
+         * <pre>
+         *  0 1 2 3 4 5 6 7   8 9 A B C D E F
+         * [t,0,0,0,0,0,0,0 ; 0,0,0,0,l,l,l,l]
+         *  t - entry type - "{@link #NODE_COUNT}"
+         *  l - label id
+         * </pre>
+         * For value format, see {@link ValueFormat#incrementNodeCount(int, long)}.
+         */
+        @Override
+        public void visitNodeCount( int labelId, long count )
+        {
+            buffer.putByte( 0, NODE_COUNT )
+                  .putInt( 12, labelId );
+        }
+
+        /**
+         * Key format:
+         * <pre>
+         *  0 1 2 3 4 5 6 7   8 9 A B C D E F
+         * [t,0,0,0,s,s,s,s ; r,r,r,r,e,e,e,e]
+         *  t - entry type - "{@link #RELATIONSHIP_COUNT}"
+         *  s - start label id
+         *  r - relationship type id
+         *  e - end label id
+         * </pre>
+         * For value format, see {@link ValueFormat#incrementRelationshipCount(int, int, int, long)}
+         */
+        @Override
+        public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
+        {
+            buffer.putByte( 0, RELATIONSHIP_COUNT )
+                  .putInt( 4, startLabelId )
+                  .putInt( 8, typeId )
+                  .putInt( 12, endLabelId );
+        }
+
+        /**
+         * Key format:
+         * <pre>
+         *  0 1 2 3 4 5 6 7   8 9 A B C D E F
+         * [t,0,0,0,l,l,l,l ; p,p,p,p,0,0,0,k]
+         *  t - index entry marker - "{@link #INDEX}"
+         *  k - entry (sub)type - "{@link #INDEX_STATS}"
+         *  l - label id
+         *  p - property key id
+         * </pre>
+         * For value format, see {@link ValueFormat#replaceIndexUpdateAndSize(int, int, long, long)}.
+         */
+        @Override
+        public void visitIndexStatistics( int labelId, int propertyKeyId, long updates, long size )
+        {
+            indexKey( INDEX_STATS, labelId, propertyKeyId );
+        }
+
+        /**
+         * Key format:
+         * <pre>
+         *  0 1 2 3 4 5 6 7   8 9 A B C D E F
+         * [t,0,0,0,l,l,l,l ; p,p,p,p,0,0,0,k]
+         *  t - index entry marker - "{@link #INDEX}"
+         *  k - entry (sub)type - "{@link #INDEX_SAMPLE}"
+         *  l - label id
+         *  p - property key id
+         * </pre>
+         * For value format, see {@link ValueFormat#replaceIndexSample(int, int, long, long)}.
+         */
+        @Override
+        public void visitIndexSample( int labelId, int propertyKeyId, long unique, long size )
+        {
+            indexKey( INDEX_SAMPLE, labelId, propertyKeyId );
+        }
+
+        private void indexKey( byte indexKey, int labelId, int propertyKeyId )
+        {
+            buffer.putByte( 0, INDEX )
+                  .putInt( 4, labelId )
+                  .putInt( 8, propertyKeyId )
+                  .putByte( 15, indexKey );
+        }
+    }
+
+    private class ValueFormat extends AbstractKeyValueStore<CountsKey, ?, ?>.Updater implements CountsAccessor.Updater
+    {
+        /**
+         * Value format:
+         * <pre>
+         *  0 1 2 3 4 5 6 7   8 9 A B C D E F
+         * [0,0,0,0,0,0,0,0 ; c,c,c,c,c,c,c,c]
+         *  c - number of matching nodes
+         * </pre>
+         * For key format, see {@link KeyFormat#visitNodeCount(int, long)}
+         */
+        @Override
+        public void incrementNodeCount( int labelId, final long delta )
+        {
+            try
             {
-                logger.debug( "Start writing new counts store with txId=" + lastCommittedTxId );
-                // select the next file, and create a writer for it
-                try ( CountsStore.Writer<CountsKey,CopyableDoubleLongRegister> writer =
-                              nextWriter( state, lastCommittedTxId ) )
-                {
-                    state.accept( writer );
-                    // replaceSecond the old store with the
-                    this.state = new ConcurrentCountsTrackerState( writer.openForReading() );
-                }
-                logger.debug( "Completed writing of counts store with txId=" + lastCommittedTxId );
-                // close the old store
-                state.close();
+                apply( new UpdateSecondValue( nodeKey( labelId ), delta ) );
+            }
+            catch ( IOException e )
+            {
+                throw new UnderlyingStorageException( e );
             }
         }
-    }
 
-    CountsStore.Writer<CountsKey,CopyableDoubleLongRegister> nextWriter( CountsTrackerState state, long lastTxId )
-            throws IOException
-    {
-        if ( alphaFile.equals( state.storeFile() ) )
+        /**
+         * Value format:
+         * <pre>
+         *  0 1 2 3 4 5 6 7   8 9 A B C D E F
+         * [0,0,0,0,0,0,0,0 ; c,c,c,c,c,c,c,c]
+         *  c - number of matching relationships
+         * </pre>
+         * For key format, see {@link KeyFormat#visitRelationshipCount(int, int, int, long)}
+         */
+        @Override
+        public void incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta )
         {
-            return state.newWriter( betaFile, lastTxId );
+            try
+            {
+                apply( new UpdateSecondValue( relationshipKey( startLabelId, typeId, endLabelId ), delta ) );
+            }
+            catch ( IOException e )
+            {
+                throw new UnderlyingStorageException( e );
+            }
         }
-        else
+
+        /**
+         * Value format:
+         * <pre>
+         *  0 1 2 3 4 5 6 7   8 9 A B C D E F
+         * [u,u,u,u,u,u,u,u ; s,s,s,s,s,s,s,s]
+         *  u - number of updates
+         *  s - size of index
+         * </pre>
+         * For key format, see {@link KeyFormat#visitIndexStatistics(int, int, long, long)}
+         */
+        @Override
+        public void replaceIndexUpdateAndSize( int labelId, int propertyKeyId, final long updates, final long size )
         {
-            return state.newWriter( alphaFile, lastTxId );
+            try
+            {
+                apply( new AssignValues( indexStatisticsKey( labelId, propertyKeyId ), updates, size ) );
+            }
+            catch ( IOException e )
+            {
+                throw new UnderlyingStorageException( e );
+            }
         }
-    }
 
-    File storeFile()
-    {
-        return state.storeFile();
-    }
-
-    private static File storeFile( File base, String version )
-    {
-        return new File( base.getParentFile(), base.getName() + version );
+        /**
+         * Value format:
+         * <pre>
+         *  0 1 2 3 4 5 6 7   8 9 A B C D E F
+         * [u,u,u,u,u,u,u,u ; s,s,s,s,s,s,s,s]
+         *  u - number of unique values
+         *  s - size of index
+         * </pre>
+         * For key format, see {@link KeyFormat#visitIndexSample(int, int, long, long)}
+         */
+        @Override
+        public void replaceIndexSample( int labelId, int propertyKeyId, final long unique, final long size )
+        {
+            try
+            {
+                apply( new AssignValues( indexSampleKey( labelId, propertyKeyId ), unique, size ) );
+            }
+            catch ( IOException e )
+            {
+                throw new UnderlyingStorageException( e );
+            }
+        }
     }
 }

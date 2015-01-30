@@ -21,11 +21,20 @@ package org.neo4j.kernel.impl.locking;
 
 public class LockWrapper implements AutoCloseable
 {
+    public static LockWrapper readLock( java.util.concurrent.locks.ReadWriteLock lock )
+    {
+        return new LockWrapper( lock.readLock() );
+    }
+
+    public static LockWrapper writeLock( java.util.concurrent.locks.ReadWriteLock lock )
+    {
+        return new LockWrapper( lock.writeLock() );
+    }
+
     private final java.util.concurrent.locks.Lock lock;
 
     public LockWrapper( java.util.concurrent.locks.Lock lock )
     {
-
         (this.lock = lock).lock();
     }
 

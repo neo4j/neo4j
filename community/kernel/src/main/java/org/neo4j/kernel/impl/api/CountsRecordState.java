@@ -32,19 +32,19 @@ import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 
 import static java.util.Objects.requireNonNull;
+
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
-import static org.neo4j.kernel.impl.store.counts.CountsRecordSerializer.DEFAULT_FIRST_VALUE;
-import static org.neo4j.kernel.impl.store.counts.CountsRecordSerializer.DEFAULT_SECOND_VALUE;
-import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexCountsKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSampleKey;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexStatisticsKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
 
-public class CountsRecordState implements CountsAccessor, RecordState
+public class CountsRecordState implements CountsAccessor, RecordState, CountsAccessor.Updater
 {
     /** Don't support these counts at the moment so don't compute them */
     private static final boolean COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS = false;
+    private static final long DEFAULT_FIRST_VALUE = 0, DEFAULT_SECOND_VALUE = 0;
     private final Map<CountsKey, DoubleLongRegister> counts = new HashMap<>();
 
     @Override
@@ -52,6 +52,12 @@ public class CountsRecordState implements CountsAccessor, RecordState
     {
         counts( nodeKey( labelId ) ).copyTo( target );
         return target;
+    }
+
+    @Override
+    public Updater updater()
+    {
+        return this;
     }
 
     @Override
@@ -84,27 +90,32 @@ public class CountsRecordState implements CountsAccessor, RecordState
     @Override
     public DoubleLongRegister indexUpdatesAndSize( int labelId, int propertyKeyId, DoubleLongRegister target )
     {
-        counts( indexCountsKey( labelId, propertyKeyId ) ).copyTo( target );
+        counts( indexStatisticsKey( labelId, propertyKeyId ) ).copyTo( target );
         return target;
     }
 
     @Override
     public void replaceIndexUpdateAndSize( int labelId, int propertyKeyId, long updates, long size )
     {
-        counts( indexCountsKey( labelId, propertyKeyId ) ).write( updates, size );
+        counts( indexStatisticsKey( labelId, propertyKeyId ) ).write( updates, size );
     }
 
     @Override
     public void incrementIndexUpdates( int labelId, int propertyKeyId, long delta )
     {
-        counts( indexCountsKey( labelId, propertyKeyId ) ).increment( delta, 0l );
+        counts( indexStatisticsKey( labelId, propertyKeyId ) ).increment( delta, 0l );
     }
-
 
     @Override
     public void replaceIndexSample( int labelId, int propertyKeyId, long unique, long size )
     {
         counts( indexSampleKey( labelId, propertyKeyId ) ).write( unique, size );
+    }
+
+    @Override
+    public void close()
+    {
+        // this is close() of CountsAccessor.Updater - do nothing.
     }
 
     @Override
@@ -309,9 +320,9 @@ public class CountsRecordState implements CountsAccessor, RecordState
             verify( relationshipKey( startLabelId, typeId, endLabelId ), 0, count );
         }
         @Override
-        public void visitIndexCounts( int labelId, int propertyKeyId, long updates, long size )
+        public void visitIndexStatistics( int labelId, int propertyKeyId, long updates, long size )
         {
-            verify( indexCountsKey( labelId, propertyKeyId ), updates, size );
+            verify( indexStatisticsKey( labelId, propertyKeyId ), updates, size );
         }
 
         @Override

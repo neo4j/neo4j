@@ -141,14 +141,14 @@ public enum StoreFile
             Legacy20Store.LEGACY_VERSION
     ),
 
-    COUNTS_STORE_ALPHA(
-            CountsTracker.STORE_DESCRIPTOR,
-            StoreFactory.COUNTS_STORE + CountsTracker.ALPHA,
+    COUNTS_STORE_LEFT(
+            CountsTracker.TYPE_DESCRIPTOR,
+            StoreFactory.COUNTS_STORE + CountsTracker.LEFT,
             AbstractStore.ALL_STORES_VERSION
     ),
-    COUNTS_STORE_BETA(
-            CountsTracker.STORE_DESCRIPTOR,
-            StoreFactory.COUNTS_STORE + CountsTracker.BETA,
+    COUNTS_STORE_RIGHT(
+            CountsTracker.TYPE_DESCRIPTOR,
+            StoreFactory.COUNTS_STORE + CountsTracker.RIGHT,
             AbstractStore.ALL_STORES_VERSION
     ),
 

@@ -150,7 +150,6 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.helpers.collection.Iterables.toList;
-import static org.neo4j.kernel.impl.store.StoreFactory.COUNTS_STORE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.state.CacheLoaders.nodeLoader;
 import static org.neo4j.kernel.impl.transaction.state.CacheLoaders.relationshipLoader;
@@ -566,7 +565,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
         life.add( new LifecycleAdapter()
         {
             @Override
-            public void start()
+            public void start() throws IOException
             {
                 if ( startupStatistics.numberOfRecoveredTransactions() > 0 )
                 {
@@ -580,10 +579,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
                         neoStoreModule.neoStore().getRelationshipTypeTokenStore().getTokens( Integer.MAX_VALUE ) );
                 labelTokens.setInitialTokens( neoStoreModule.neoStore().getLabelTokenStore().getTokens( Integer.MAX_VALUE ) );
 
-                if ( neoStore.getCounts() == null )
-                {
-                    neoStore.rebuildCountStoreIfNeeded( storeFactory.storeFileName( COUNTS_STORE ) );
-                }
+                neoStore.rebuildCountStoreIfNeeded(); // TODO: move this to lifecycle
             }
         } );
 

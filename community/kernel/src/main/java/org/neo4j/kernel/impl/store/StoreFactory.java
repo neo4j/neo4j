@@ -148,12 +148,6 @@ public class StoreFactory
             return createNeoStore();
         }
 
-        CountsTracker countsTracker = null;
-        if ( storeExists && countsStoreExists() )
-        {
-            countsTracker = newCountsStore();
-        }
-
         // The store exists already, start it
         return new NeoStore( neoStoreFileName, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
                 stringLogger,
@@ -164,18 +158,13 @@ public class StoreFactory
                 newNodeStore(),
                 newSchemaStore(),
                 newRelationshipGroupStore(),
-                countsTracker,
+                newCountsStore(),
                 versionMismatchHandler, monitors );
     }
 
     public boolean storeExists()
     {
         return fileSystemAbstraction.fileExists( neoStoreFileName );
-    }
-
-    private boolean countsStoreExists()
-    {
-        return CountsTracker.countsStoreExists( fileSystemAbstraction, storeFileName( COUNTS_STORE ) );
     }
 
     public RelationshipGroupStore newRelationshipGroupStore()
@@ -367,7 +356,6 @@ public class StoreFactory
         createLabelTokenStore();
         createSchemaStore();
         createRelationshipGroupStore( config.get( Configuration.dense_node_threshold ) );
-        createCountsStore();
 
         NeoStore neoStore = newNeoStore( false );
         /*
@@ -498,12 +486,6 @@ public class StoreFactory
     {
         createEmptyDynamicStore( storeFileName( SCHEMA_STORE_NAME ), SchemaStore.BLOCK_SIZE,
                 SchemaStore.VERSION, IdType.SCHEMA );
-    }
-
-    private void createCountsStore()
-    {
-        CountsTracker.createEmptyCountsStore( pageCache, storeFileName( COUNTS_STORE ),
-                buildTypeDescriptorAndVersion( CountsTracker.STORE_DESCRIPTOR ) );
     }
 
     /**

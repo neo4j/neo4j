@@ -19,13 +19,13 @@
  */
 package counts;
 
+import java.io.File;
+import java.io.IOException;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.io.File;
-import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -48,6 +48,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.index_background_sampling_enabled;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.warn;
@@ -150,8 +151,8 @@ public class RebuildCountsTest
     private void deleteCounts( FileSystemAbstraction snapshot )
     {
         final File storeFileBase = new File( storeDir, NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
-        File alpha = new File( storeFileBase + CountsTracker.ALPHA );
-        File beta = new File( storeFileBase + CountsTracker.BETA );
+        File alpha = new File( storeFileBase + CountsTracker.LEFT );
+        File beta = new File( storeFileBase + CountsTracker.RIGHT );
         assertTrue( snapshot.deleteFile( alpha ) );
         assertTrue( snapshot.deleteFile( beta ) );
 

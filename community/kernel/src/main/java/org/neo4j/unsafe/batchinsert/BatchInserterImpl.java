@@ -103,6 +103,7 @@ import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.UniquenessConstraintRule;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -467,7 +468,19 @@ public class BatchInserterImpl implements BatchInserter
 
     private void rebuildCounts()
     {
-        CountsComputer.computeCounts( neoStore ).accept( new CountsAccessor.Initializer( neoStore.getCounts() ) );
+        CountsTracker counts = neoStore.getCounts();
+        try
+        {
+            counts.start();
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+        try ( CountsAccessor.Updater updater = counts.updater() )
+        {
+            CountsComputer.computeCounts( neoStore ).accept( new CountsAccessor.Initializer( updater ) );
+        }
     }
 
     private class InitialNodeLabelCreationVisitor implements Visitor<NodeLabelUpdate, IOException>

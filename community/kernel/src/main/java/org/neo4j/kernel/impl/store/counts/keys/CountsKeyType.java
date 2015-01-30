@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.store.counts.keys;
 
 public enum CountsKeyType
 {
-    EMPTY( 0 ), ENTITY_NODE( 2 ), ENTITY_RELATIONSHIP( 3 ), INDEX_COUNTS( 4 ), INDEX_SAMPLE( 5 );
+    EMPTY( 0 ), ENTITY_NODE( 2 ), ENTITY_RELATIONSHIP( 3 ), INDEX_STATISTICS( 4 ), INDEX_SAMPLE( 5 );
 
     public final byte code;
 
@@ -37,7 +37,7 @@ public enum CountsKeyType
             case 0: return EMPTY;
             case 2: return ENTITY_NODE;
             case 3: return ENTITY_RELATIONSHIP;
-            case 4: return INDEX_COUNTS;
+            case 4: return INDEX_STATISTICS;
             case 5: return INDEX_SAMPLE;
 
             default:

@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
@@ -91,6 +92,14 @@ public class BatchingNeoStore implements AutoCloseable
         {
             neoStore.close();
             throw new IllegalStateException( storeDir + " already contains data, cannot do import here" );
+        }
+        try
+        {
+            neoStore.rebuildCountStoreIfNeeded();
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
         }
         neoStore.setLastCommittedAndClosedTransactionId(
                 initialIds.lastCommittedTransactionId(), initialIds.lastCommittedTransactionChecksum() );

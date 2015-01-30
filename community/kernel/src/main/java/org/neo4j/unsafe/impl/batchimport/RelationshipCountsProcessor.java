@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
@@ -122,7 +123,10 @@ public class RelationshipCountsProcessor implements StoreProcessor<RelationshipR
                     int type = typeId == anyRelationshipType ? ReadOperations.ANY_RELATIONSHIP_TYPE : typeId;
                     int endLabel = endNodeLabelId == anyLabel ? ReadOperations.ANY_LABEL : endNodeLabelId;
                     long count = endNodeLabelIds[endNodeLabelId];
-                    countsTracker.incrementRelationshipCount( startLabel, type, endLabel, count );
+                    try ( CountsAccessor.Updater updater = countsTracker.updater() )
+                    {
+                        updater.incrementRelationshipCount( startLabel, type, endLabel, count );
+                    }
                 }
             }
         }

@@ -19,14 +19,14 @@
  */
 package org.neo4j.consistency.checking;
 
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
-
 import java.io.File;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.impl.index.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
@@ -191,7 +192,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
     public static final class TransactionDataBuilder
     {
         private final TransactionWriter writer;
-        private final CountsTracker counts;
+        private final CountsAccessor counts;
 
         public TransactionDataBuilder( TransactionWriter writer, CountsTracker counts )
         {
@@ -290,12 +291,18 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
 
         public void incrementNodeCount( int labelId, long delta )
         {
-            counts.incrementNodeCount( labelId, delta );
+            try ( CountsAccessor.Updater updater = counts.updater() )
+            {
+                updater.incrementNodeCount( labelId, delta );
+            }
         }
 
         public void incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta )
         {
-            counts.incrementRelationshipCount( startLabelId, typeId, endLabelId, delta );
+            try ( CountsAccessor.Updater updater = counts.updater() )
+            {
+                updater.incrementRelationshipCount( startLabelId, typeId, endLabelId, delta );
+            }
         }
     }
 

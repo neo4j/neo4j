@@ -68,6 +68,7 @@ public class TransactionRepresentationStoreApplierTest
     {
         final CountsTracker tracker = mock( CountsTracker.class );
         when( neoStore.getCounts() ).thenReturn( tracker );
+        when( tracker.updater() ).thenReturn( mock( CountsAccessor.Updater.class ) );
         when( tracker.acceptTx( anyLong() ) ).thenReturn( true );
     }
 
