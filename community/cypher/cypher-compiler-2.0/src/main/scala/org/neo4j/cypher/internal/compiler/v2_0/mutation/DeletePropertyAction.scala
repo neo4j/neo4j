@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.mutation
 
+import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_0._
-import commands.expressions.Expression
-import commands.values.KeyToken
-import pipes.QueryState
-import symbols._
-import org.neo4j.graphdb.{Relationship, Node}
-import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_0.commands.values.KeyToken
+import org.neo4j.cypher.internal.compiler.v2_0.pipes.QueryState
+import org.neo4j.graphdb.{Node, Relationship}
 
 case class DeletePropertyAction(element: Expression, propertyKey: KeyToken)
   extends UpdateAction {
@@ -39,13 +38,15 @@ case class DeletePropertyAction(element: Expression, propertyKey: KeyToken)
               state.query.nodeOps.removeProperty(n.getId, propertyKeyId)
             }
 
-          case r: Relationship  =>
+          case r: Relationship =>
             if (state.query.relationshipOps.hasProperty(r.getId, propertyKeyId)) {
               state.query.relationshipOps.removeProperty(r.getId, propertyKeyId)
             }
 
+          case null =>
+
           case _ =>
-            throw new ThisShouldNotHappenError("Andres", "This should be a node or a relationship")
+            throw new InternalException("This should be a node or a relationship")
         }
 
       case None =>
