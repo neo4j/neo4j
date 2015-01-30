@@ -313,6 +313,7 @@ include::movies5.csv[]
 
 [TIP]
 There's then no need to specify the `:LABEL` field in the node file if you pass it as a command line option.
+If you do then both the label provided in the file and the one provided on the command line will be added to the node.
 
 And we'll put the labels `Movie` and `Sequel` on the nodes specified in `sequels5.csv`.
 
@@ -345,9 +346,7 @@ include::same-node-label-everywhere.adoc[]
 === Using the same relationship type for every relationship
 
 If you want to use the same relationship type for every relationship in your relationships file you can do this by
-specifying
-the
-appropriate value as an option to `neo4j-import`.
+specifying the appropriate value as an option to `neo4j-import`.
 In this example we'll put the relationship type `ACTS_IN` on every relationship specified in `roles6.csv`:
 
 .movies6.csv
@@ -367,6 +366,10 @@ include::actors6.csv[]
 ----
 include::roles6.csv[]
 ----
+
+[TIP]
+If you provide a relationship type on the command line and in the relationships file the one in the file will be
+applied.
 
 The call to `neo4j-import` would look like this:
 
