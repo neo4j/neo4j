@@ -22,6 +22,7 @@ package org.neo4j.unsafe.batchinsert;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -127,7 +128,6 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SingleLoggingService;
 
 import static java.lang.Boolean.parseBoolean;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
@@ -595,6 +595,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             ids[i] = getOrCreateLabelId( labels[i].name() );
         }
+        Arrays.sort(ids);
         return ids;
     }
 
