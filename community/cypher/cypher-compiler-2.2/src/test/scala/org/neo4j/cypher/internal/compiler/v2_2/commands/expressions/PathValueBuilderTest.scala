@@ -59,6 +59,24 @@ class PathValueBuilderTest extends CypherFunSuite {
     builder.result() should equal(new PathImpl(node2, rel1, node1))
   }
 
+  test("p = (a)-[r:X]-(b)") {
+    val builder = new PathValueBuilder
+
+    builder.addNode(node1)
+      .addUndirectedRelationship(rel1)
+
+    builder.result() should equal(new PathImpl(node1, rel1, node2))
+  }
+
+  test("p = (b)-[r:X]-(a)") {
+    val builder = new PathValueBuilder
+
+    builder.addNode(node2)
+      .addUndirectedRelationship(rel1)
+
+    builder.result() should equal(new PathImpl(node2, rel1, node1))
+  }
+
   test("p = <empty> should throw") {
     val builder = new PathValueBuilder
 
@@ -99,6 +117,24 @@ class PathValueBuilderTest extends CypherFunSuite {
 
     builder.addNode(node1)
       .addIncomingRelationships(null)
+
+    builder.result() should equal(null)
+  }
+
+  test("p = (b)-[r:X*]-(a)") {
+    val builder = new PathValueBuilder
+
+    builder.addNode(node3)
+      .addUndirectedRelationships(Iterable(rel2, rel1))
+
+    builder.result() should equal(new PathImpl(node3, rel2, node2, rel1, node1))
+  }
+
+  test("p = (b)-[r:X*]-(a) when rels is null") {
+    val builder = new PathValueBuilder
+
+    builder.addNode(node1)
+      .addUndirectedRelationships(null)
 
     builder.result() should equal(null)
   }
