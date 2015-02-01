@@ -42,7 +42,8 @@ public interface AvailableMemoryCalculator
             com.sun.management.OperatingSystemMXBean bean =
                     (com.sun.management.OperatingSystemMXBean)
                     java.lang.management.ManagementFactory.getOperatingSystemMXBean();
-            return bean.getFreePhysicalMemorySize();
+            long osMemory = bean.getTotalPhysicalMemorySize();
+            return osMemory-Runtime.getRuntime().maxMemory();
         }
 
         @Override
