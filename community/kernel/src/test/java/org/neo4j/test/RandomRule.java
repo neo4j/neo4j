@@ -121,4 +121,9 @@ public class RandomRule implements TestRule
     {
         return random.nextLong();
     }
+
+    public long seed()
+    {
+        return seed;
+    }
 }
