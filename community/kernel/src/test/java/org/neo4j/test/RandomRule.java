@@ -54,7 +54,7 @@ public class RandomRule implements TestRule
             public void evaluate() throws Throwable
             {
                 seed = specificSeed == null ? currentTimeMillis() : specificSeed;
-                random = new Random();
+                reset();
                 try
                 {
                     base.evaluate();
@@ -65,6 +65,11 @@ public class RandomRule implements TestRule
                 }
             }
         };
+    }
+
+    public void reset()
+    {
+        random = new Random( seed );
     }
 
     public void nextBytes( byte[] bytes )
