@@ -24,6 +24,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -46,6 +48,8 @@ import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -54,6 +58,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
@@ -136,18 +141,28 @@ public class TestCrashWithRebuildSlow
 
         EphemeralFileSystemAbstraction snapshot = fs.snapshot( shutdownDb( db ) );
 
-        assertThat( snapshot.checksum(), equalTo( checksumBefore ) );
+        long snapshotChecksum = snapshot.checksum();
+        if ( snapshotChecksum != checksumBefore )
+        {
+            TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+            try ( OutputStream out = new FileOutputStream( testDir.file( "snapshot.zip" ) ) )
+            {
+                snapshot.dumpZip( out );
+            }
+            try ( OutputStream out = new FileOutputStream( testDir.file( "fs.zip" ) ) )
+            {
+                fs.get().dumpZip( out );
+            }
+        }
+        assertThat( snapshotChecksum, equalTo( checksumBefore ) );
 
         // Recover with rebuild_idgenerators_fast=false
         assertNumberOfFreeIdsEquals( storeDir, snapshot, 0 );
-        GraphDatabaseAPI newDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( snapshot )
-                                                                                  .newImpermanentDatabaseBuilder(
-                                                                                          storeDir )
-                                                                                  .setConfig(
-                                                                                          GraphDatabaseSettings
-                                                                                                  .rebuild_idgenerators_fast,
-                                                                                          Settings.FALSE )
-                                                                                  .newGraphDatabase();
+        GraphDatabaseAPI newDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+                .setFileSystem( snapshot )
+                .newImpermanentDatabaseBuilder( storeDir )
+                .setConfig( GraphDatabaseSettings.rebuild_idgenerators_fast, Settings.FALSE )
+                .newGraphDatabase();
         Map<IdType,Long> highIdsAfterCrash = getHighIds( newDb );
         assertEquals( highIdsBeforeCrash, highIdsAfterCrash );
 
