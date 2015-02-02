@@ -9,8 +9,7 @@ article.help
           | Cypher breaks down the work of executing a query into small pieces called&nbsp;
           em operators
           | . Each operator is reponsible for a small part of the overall query.
-          | The operators are connected together in a pattern called a Query Plan,
-          | which executes the query.
+          | The operators are connected together in a pattern called a Query Plan.
         p
           | When you use the&nbsp;
           a(help-topic='explain') EXPLAIN
@@ -53,7 +52,7 @@ article.help
           em estimated rows
           |  instead. These numbers are predicted based on Neo4j's built-in
           | statistics. The Cypher cost-based planner uses estimated rows to determine
-          | the optimum query plan.
+          | the optimal query plan.
     slide.row-fluid
       .details.col-sm-5
         img.img-responsive(src='images/query-plan-operator-cost.svg')
@@ -98,8 +97,8 @@ article.help
           code MATCH (n)
           |  then you should find the identifier n bound in one of the operators.
           | In addition to identifiers that you named in your query you may see
-          | some internal identifiers that Cypher has introduced to help join
-          | operators together.
+          | some internal identifiers that Cypher has introduced to keep track
+          | of unnamed entities.
         h4 Expressions
         p
           | After the identifiers, you'll see a section for an expression.
