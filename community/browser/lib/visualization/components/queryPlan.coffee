@@ -1,13 +1,15 @@
 neo.queryPlan = (element)->
 
-  maxComparableRows = 1000000 # link widths are comparable between plans if all operators are below this row count
   maxChildOperators = 2 # Fact we know about the cypher compiler
+  maxComparableRows = 1000000 # link widths are comparable between plans if all operators are below this row count
+  maxComparableDbHits = 1000000 # db hits are comparable between plans if all operators are below this db hit count
 
   operatorWidth = 180
   operatorCornerRadius = 4
   operatorHeaderHeight = 18
   operatorHeaderFontSize = 11
   operatorDetailHeight = 14
+  maxCostHeight = 50
   detailFontSize = 10
   operatorMargin = 50
   operatorPadding = 3
@@ -126,11 +128,11 @@ neo.queryPlan = (element)->
 
   layout = (operators, links) ->
     costHeight = do ->
-      scale = d3.scale.linear()
-      .domain([0, d3.sum(operators, (operator) -> operator.DbHits or 0)])
-      .range([0, 100])
+      scale = d3.scale.log()
+      .domain([1, Math.max(d3.max(operators, (operator) -> operator.DbHits or 0), maxComparableDbHits)])
+      .range([0, maxCostHeight])
       (operator) ->
-        scale(operator.DbHits or 0)
+        scale((operator.DbHits ? 0) + 1)
 
     operatorHeight = (operator) ->
       height = operatorHeaderHeight
