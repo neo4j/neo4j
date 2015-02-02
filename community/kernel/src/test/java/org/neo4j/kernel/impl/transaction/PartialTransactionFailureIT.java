@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.adversaries.ClassGuardedAdversary;
 import org.neo4j.adversaries.CountingAdversary;
@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.SoftCacheProvider;
+import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -68,10 +69,8 @@ public class PartialTransactionFailureIT
                 "org.neo4j.kernel.impl.nioneo.xa.Command$RelationshipCommand" );
         adversary.disable();
 
-        Map<String, String> params = stringMap(
-                "logical_log_rotation_threshold", "1");
         String storeDir = dir.directory().getAbsolutePath();
-        final EmbeddedGraphDatabase db = new TestEmbeddedGraphDatabase( storeDir, params ) {
+        final EmbeddedGraphDatabase db = new TestEmbeddedGraphDatabase( storeDir, stringMap() ) {
             @Override
             protected FileSystemAbstraction createFileSystemAbstraction()
             {
@@ -179,6 +178,7 @@ public class PartialTransactionFailureIT
                     x.createRelationshipTo( y, DynamicRelationshipType.withName( "r" ) );
                     tx.success();
                     latch.await();
+                    db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
                     tx.finish();
                 }
                 catch ( Exception ignore )

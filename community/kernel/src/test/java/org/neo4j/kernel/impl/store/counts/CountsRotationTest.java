@@ -32,7 +32,6 @@ import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -43,7 +42,9 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
 import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
+import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.register.Register.CopyableDoubleLongRegister;
+import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
@@ -51,9 +52,9 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.BASE_MINOR_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
-import static org.neo4j.register.Register.DoubleLongRegister;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 public class CountsRotationTest
@@ -121,16 +122,17 @@ public class CountsRotationTest
     public void shouldRotateCountsStoreWhenRotatingLog() throws IOException
     {
         // GIVEN
-        GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.
-                setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1" ).newGraphDatabase();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
+
+        // WHEN doing a transaction (actually two, the label-mini-tx also counts)
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode( B );
             tx.success();
         }
-
-        // WHEN
-        // we do a log rotation _BEFORE_ this transaction
+        // and rotating the log (which implies flushing)
+        rotateLog( db );
+        // and creating another node after it
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode( C );
@@ -142,7 +144,7 @@ public class CountsRotationTest
         assertTrue( fs.fileExists( betaStoreFile() ) );
 
         final PageCache pageCache = db.getDependencyResolver().resolveDependency( PageCache.class );
-        try ( CountsStore store = CountsStore.open( fs, pageCache, alphaStoreFile() ) )
+        try ( CountsStore store = CountsStore.open( fs, pageCache, betaStoreFile() ) )
         {
             // NOTE since the rotation happens before the second transaction is committed we do not see those changes
             // in the stats
@@ -163,6 +165,11 @@ public class CountsRotationTest
         assertEquals( 1, tracker.nodeCount( labelId, newDoubleLongRegister() ).readSecond() );
 
         db.shutdown();
+    }
+
+    private void rotateLog( GraphDatabaseAPI db ) throws IOException
+    {
+        db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
     }
 
     private final Label A = DynamicLabel.label( "A" );

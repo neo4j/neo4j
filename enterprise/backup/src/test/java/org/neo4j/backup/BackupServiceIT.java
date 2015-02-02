@@ -58,7 +58,7 @@ import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
@@ -78,6 +78,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 public class BackupServiceIT
@@ -247,13 +248,13 @@ public class BackupServiceIT
         }
 
         File oldLog = db.getDependencyResolver().resolveDependency( LogFile.class ).currentLogFile();
-        db.getDependencyResolver().resolveDependency( PhysicalLogFile.class ).rotate();
+        rotate( db );
 
         for ( int i = 0; i < 1; i++ )
         {
             createAndIndexNode( db, i );
         }
-        db.getDependencyResolver().resolveDependency( PhysicalLogFile.class ).rotate();
+        rotate( db );
 
         long lastCommittedTxBefore = db.getDependencyResolver().resolveDependency( NeoStore.class )
                 .getLastCommittedTransactionId();
@@ -366,11 +367,11 @@ public class BackupServiceIT
         Map<String,String> config = defaultBackupPortHostParams();
         config.put( GraphDatabaseSettings.keep_logical_logs.name(), "false" );
         // have logs rotated on every transaction
-        config.put( GraphDatabaseSettings.logical_log_rotation_threshold.name(), "20" );
         GraphDatabaseAPI db = createDb( storeDir, config );
         BackupService backupService = new BackupService( fileSystem );
 
         createAndIndexNode( db, 1 );
+        rotate( db );
 
         // A full backup
         backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
@@ -378,9 +379,13 @@ public class BackupServiceIT
 
         // And the log the backup uses is rotated out
         createAndIndexNode( db, 2 );
+        rotate( db );
         createAndIndexNode( db, 3 );
+        rotate( db );
         createAndIndexNode( db, 4 );
+        rotate( db );
         createAndIndexNode( db, 5 );
+        rotate( db );
 
         // when
         try
@@ -403,7 +408,6 @@ public class BackupServiceIT
         Map<String,String> config = defaultBackupPortHostParams();
         config.put( GraphDatabaseSettings.keep_logical_logs.name(), "false" );
         // have logs rotated on every transaction
-        config.put( GraphDatabaseSettings.logical_log_rotation_threshold.name(), "20" );
         GraphDatabaseAPI db = createDb( storeDir, config );
         BackupService backupService = new BackupService( fileSystem );
 
@@ -415,8 +419,11 @@ public class BackupServiceIT
 
         // And the log the backup uses is rotated out
         createAndIndexNode( db, 2 );
+        rotate( db );
         createAndIndexNode( db, 3 );
-        createAndIndexNode( db, 3 );
+        rotate( db );
+        createAndIndexNode( db, 4 );
+        rotate( db );
 
         // when
         backupService.doIncrementalBackupOrFallbackToFull(
@@ -426,6 +433,11 @@ public class BackupServiceIT
         // Then
         db.shutdown();
         assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
+    }
+
+    private void rotate( GraphDatabaseAPI db ) throws IOException
+    {
+        db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
     }
 
     @Test

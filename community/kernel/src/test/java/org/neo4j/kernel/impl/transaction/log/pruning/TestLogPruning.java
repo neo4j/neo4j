@@ -19,12 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
+import org.junit.After;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
-
-import org.junit.After;
-import org.junit.Ignore;
-import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -32,6 +31,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -47,7 +47,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_log_rotation_threshold;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
 
@@ -58,11 +57,10 @@ public class TestLogPruning
         int extract( File from ) throws IOException;
     }
 
-    // From the last measurement by figureOutSampleTransactionSizeBytes
-    private final int transactionLogSize = 358;
     private GraphDatabaseAPI db;
     private FileSystemAbstraction fs;
     private PhysicalLogFiles files;
+    private int rotateEveryNTransactions, performedTransactions;
 
     @After
     public void after() throws Exception
@@ -76,7 +74,7 @@ public class TestLogPruning
     @Test
     public void noPruning() throws Exception
     {
-        newDb( "true", transactionLogSize * 2 );
+        newDb( "true", 2 );
 
         for ( int i = 0; i < 100; i++ )
         {
@@ -95,9 +93,10 @@ public class TestLogPruning
     public void pruneByFileSize() throws Exception
     {
         // Given
-        int size = 1050;
-        int logThreshold = transactionLogSize * 3;
-        newDb( size + " size", logThreshold );
+        int transactionByteSize = figureOutSampleTransactionSizeBytes();
+        int transactionsPerFile = 3;
+        int logThreshold = transactionByteSize * transactionsPerFile;
+        newDb( logThreshold + " size", 1 );
 
         // When
         for ( int i = 0; i < 100; i++ )
@@ -105,15 +104,16 @@ public class TestLogPruning
             doTransaction();
         }
 
-        int logFileSize = logFileSize();
-        assertTrue( logFileSize >= size - logThreshold && logFileSize <= size + logThreshold );
+        int totalLogFileSize = logFileSize();
+        double totalTransactions = (double) totalLogFileSize / transactionByteSize;
+        assertTrue( totalTransactions >= 3 && totalTransactions < 4 );
     }
 
     @Test
     public void pruneByFileCount() throws Exception
     {
         int logsToKeep = 5;
-        newDb( logsToKeep + " files", transactionLogSize * 3 );
+        newDb( logsToKeep + " files", 3 );
 
         for ( int i = 0; i < 100; i++ )
         {
@@ -128,9 +128,8 @@ public class TestLogPruning
     public void pruneByTransactionCount() throws Exception
     {
         int transactionsToKeep = 100;
-
         int transactionsPerLog = 3;
-        newDb( transactionsToKeep + " txs", transactionsToKeep * transactionsPerLog );
+        newDb( transactionsToKeep + " txs", 3 );
 
         for ( int i = 0; i < 100; i++ )
         {
@@ -145,12 +144,12 @@ public class TestLogPruning
                 transactionCount <= (transactionsToKeep + transactionsPerLog) );
     }
 
-    private GraphDatabaseAPI newDb( String logPruning, int rotateThreshold )
+    private GraphDatabaseAPI newDb( String logPruning, int rotateEveryNTransactions )
     {
+        this.rotateEveryNTransactions = rotateEveryNTransactions;
         fs = new EphemeralFileSystemAbstraction();
         GraphDatabaseAPI db = new ImpermanentGraphDatabase( stringMap(
-                keep_logical_logs.name(), logPruning,
-                logical_log_rotation_threshold.name(), "" + rotateThreshold
+                keep_logical_logs.name(), logPruning
         ) )
         {
             @Override
@@ -164,8 +163,14 @@ public class TestLogPruning
         return db;
     }
 
-    private void doTransaction()
+    private void doTransaction() throws IOException
     {
+        if ( ++performedTransactions >= rotateEveryNTransactions )
+        {
+            db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
+            performedTransactions = 0;
+        }
+
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode();
@@ -174,14 +179,12 @@ public class TestLogPruning
         }
     }
 
-    @Test
-    @Ignore( "Here as a helper to figure out the transaction size of the sample transaction on disk" )
-    public void figureOutSampleTransactionSizeBytes()
+    private int figureOutSampleTransactionSizeBytes() throws IOException
     {
-        db = newDb( "true", transactionLogSize * 2 );
+        db = newDb( "true", 5 );
         doTransaction();
         db.shutdown();
-        System.out.println( fs.getFileSize( files.getLogFileForVersion( 0 ) ) );
+        return (int) fs.getFileSize( files.getLogFileForVersion( 0 ) );
     }
 
     private int aggregateLogData( Extractor extractor ) throws IOException
