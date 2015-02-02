@@ -25,4 +25,9 @@ public class UnsatisfiedDependencyException extends RuntimeException
     {
         super( cause );
     }
+
+    public UnsatisfiedDependencyException( String msg )
+    {
+        super(msg);
+    }
 }

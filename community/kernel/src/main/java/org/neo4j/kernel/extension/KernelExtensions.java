@@ -24,6 +24,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -91,20 +92,42 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
     @Override
     public void init() throws Throwable
     {
-
-        for ( KernelExtensionFactory kernelExtensionFactory : kernelExtensionFactories )
+        // Because extensions may depend on one another, we need to instantiate them in the right order.
+        // The algorithm below loops over the extensions over and over, each time instantiating the ones it can
+        // find all dependencies for, until there are none left or we fail to satisfy more dependencies
+        ArrayList<KernelExtensionFactory<?>> leftToInstantiate = new ArrayList<>( kernelExtensionFactories );
+        do
         {
-            Object configuration = getKernelExtensionDependencies( kernelExtensionFactory );
+            Iterator<KernelExtensionFactory<?>> leftIterator = leftToInstantiate.iterator();
+            int satisfied = 0;
+            while(leftIterator.hasNext())
+            {
+                KernelExtensionFactory factory = leftIterator.next();
+                if( canSatisfyDependencies( factory ) )
+                {
+                    leftIterator.remove();
+                    life.add( factory.newKernelExtension( getKernelExtensionDependencies( factory ) ) );
+                    satisfied++;
+                }
+            }
 
-            try
+            if(satisfied == 0)
             {
-                life.add( kernelExtensionFactory.newKernelExtension( configuration) );
+                // Ran a full iteration without satisfying a single new extension, meaning we'll infinite loop from
+                // now on. This dependency tree is unsolvable.
+                for ( KernelExtensionFactory<?> left : leftToInstantiate )
+                {
+                    StringBuilder message = new StringBuilder();
+                    String missing = toString( listMissingDependencies( left ) );
+                    message.append( "Unable to instantiate " )
+                            .append( left.getClass().getSimpleName() ).append( ", " )
+                            .append( "unable to satisfy the following dependencies: " )
+                            .append( missing )
+                            .append( "." );
+                    unsatisfiedDepencyStrategy.handle( left, new UnsatisfiedDependencyException( message.toString() ));
+                }
             }
-            catch ( UnsatisfiedDependencyException e )
-            {
-                unsatisfiedDepencyStrategy.handle( kernelExtensionFactory, e );
-            }
-        }
+        } while(leftToInstantiate.size() > 0);
 
         life.init();
     }
@@ -168,10 +191,55 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
 
     private Object getKernelExtensionDependencies( KernelExtensionFactory<?> factory )
     {
-        Class configurationClass = (Class) ((ParameterizedType) factory.getClass().getGenericSuperclass())
-                .getActualTypeArguments()[0];
+        Class configurationClass = configurationClass( factory );
         return Proxy.newProxyInstance( configurationClass.getClassLoader(), new Class[]{configurationClass},
                 new KernelExtensionHandler() );
+    }
+
+    private boolean canSatisfyDependencies( KernelExtensionFactory factory )
+    {
+        return listMissingDependencies( factory ).size() == 0;
+    }
+
+    private List<Class> listMissingDependencies( KernelExtensionFactory factory )
+    {
+        ArrayList<Class> missing = new ArrayList<>();
+        for ( Class dep : listDependencies( factory ) )
+        {
+            if(!dependencyResolver.canResolve( dep ) && !canResolve(dep))
+            {
+                missing.add( dep );
+            }
+        }
+        return missing;
+    }
+
+    private Class configurationClass( KernelExtensionFactory<?> factory )
+    {
+        return (Class) ((ParameterizedType) factory.getClass().getGenericSuperclass())
+                .getActualTypeArguments()[0];
+    }
+
+    private Iterable<Class> listDependencies( KernelExtensionFactory<?> factory )
+    {
+        List<Class> deps = new ArrayList<>();
+        for ( Method method : configurationClass( factory ).getDeclaredMethods() )
+        {
+            deps.add( method.getReturnType() );
+        }
+        return deps;
+    }
+
+    private String toString( List<Class> deps )
+    {
+        StringBuilder b = new StringBuilder();
+        b.append('[');
+        for (int i = 0; ; i++) {
+            b.append(deps.get(i).getSimpleName());
+            if (i == deps.size() - 1)
+                return b.append(']').toString();
+            b.append(", ");
+        }
     }
 
     public Iterable<KernelExtensionFactory<?>> listFactories()
@@ -207,7 +275,14 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
             }
             catch ( IllegalArgumentException e )
             {
-                throw new UnsatisfiedDependencyException( e );
+                try
+                {
+                    return resolveDependency( method.getReturnType() );
+                }
+                catch(IllegalArgumentException e2)
+                {
+                    throw new UnsatisfiedDependencyException( e2 );
+                }
             }
         }
     }
