@@ -1,5 +1,8 @@
 neo.queryPlan = (element)->
 
+  maxComparableRows = 1000000 # link widths are comparable between plans if all operators are below this row count
+  maxChildOperators = 2 # Fact we know about the cypher compiler
+
   operatorWidth = 180
   operatorCornerRadius = 4
   operatorHeaderHeight = 18
@@ -138,8 +141,8 @@ neo.queryPlan = (element)->
 
     linkWidth = do ->
       scale = d3.scale.log()
-      .domain([1, d3.max(operators, (operator) -> rows(operator) + 1)])
-      .range([2, (operatorWidth - operatorCornerRadius * 2) / d3.max(operators, (operator) -> operator.children.length)])
+      .domain([1, Math.max(d3.max(operators, (operator) -> rows(operator) + 1), maxComparableRows)])
+      .range([2, (operatorWidth - operatorCornerRadius * 2) / maxChildOperators])
       (operator) ->
         scale(rows(operator) + 1)
 
