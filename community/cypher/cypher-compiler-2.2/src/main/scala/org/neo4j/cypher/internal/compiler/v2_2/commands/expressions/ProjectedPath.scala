@@ -47,6 +47,11 @@ object ProjectedPath {
       tailProjector(ctx, builder.addOutgoingRelationship(ctx(rel).asInstanceOf[Relationship]))
   }
 
+  case class singleUndirectedRelationshipProjector(rel: String, tailProjector: Projector) extends Projector {
+    def apply(ctx: ExecutionContext, builder: PathValueBuilder) =
+      tailProjector(ctx, builder.addUndirectedRelationship(ctx(rel).asInstanceOf[Relationship]))
+  }
+
   case class multiIncomingRelationshipProjector(rel: String, tailProjector: Projector) extends Projector {
     def apply(ctx: ExecutionContext, builder: PathValueBuilder) =
       tailProjector(ctx, builder.addIncomingRelationships(ctx(rel).asInstanceOf[Iterable[Relationship]]))
@@ -55,6 +60,11 @@ object ProjectedPath {
   case class multiOutgoingRelationshipProjector(rel: String, tailProjector: Projector) extends Projector {
     def apply(ctx: ExecutionContext, builder: PathValueBuilder) =
       tailProjector(ctx, builder.addOutgoingRelationships(ctx(rel).asInstanceOf[Iterable[Relationship]]))
+  }
+
+  case class multiUndirectedRelationshipProjector(rel: String, tailProjector: Projector) extends Projector {
+    def apply(ctx: ExecutionContext, builder: PathValueBuilder) =
+      tailProjector(ctx, builder.addUndirectedRelationships(ctx(rel).asInstanceOf[Iterable[Relationship]]))
   }
 }
 

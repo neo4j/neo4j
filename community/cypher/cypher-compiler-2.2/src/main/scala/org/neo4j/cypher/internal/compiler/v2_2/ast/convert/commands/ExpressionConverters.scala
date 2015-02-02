@@ -395,14 +395,20 @@ object ExpressionConverters {
         case SingleRelationshipPathStep(Identifier(rel), Direction.INCOMING, next) =>
           singleIncomingRelationshipProjector(rel, project(next))
 
-        case SingleRelationshipPathStep(Identifier(rel), _, next) =>
+        case SingleRelationshipPathStep(Identifier(rel), Direction.OUTGOING, next) =>
           singleOutgoingRelationshipProjector(rel, project(next))
+
+        case SingleRelationshipPathStep(Identifier(rel), Direction.BOTH, next) =>
+          singleUndirectedRelationshipProjector(rel, project(next))
 
         case MultiRelationshipPathStep(Identifier(rel), Direction.INCOMING, next) =>
           multiIncomingRelationshipProjector(rel, project(next))
 
-        case MultiRelationshipPathStep(Identifier(rel), _, next) =>
+        case MultiRelationshipPathStep(Identifier(rel), Direction.OUTGOING, next) =>
           multiOutgoingRelationshipProjector(rel, project(next))
+
+        case MultiRelationshipPathStep(Identifier(rel), Direction.BOTH, next) =>
+          multiUndirectedRelationshipProjector(rel, project(next))
 
         case NilPathStep =>
           nilProjector

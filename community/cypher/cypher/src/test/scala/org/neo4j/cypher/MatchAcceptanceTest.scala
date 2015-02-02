@@ -1778,4 +1778,21 @@ return b
     //THEN
     result.toList should equal (List(Map("host" -> host), Map("host" -> null)))
   }
+
+  test("Undirected paths should be properly handled") {
+    //GIVEN
+    val node1 = createLabeledNode("Movie")
+    val node2 = createNode()
+    val rel = relate(node2, node1)
+
+    val query =
+      """profile match p = (n:Movie)--(m) return p limit 1""".stripMargin
+
+    graph.inTx {
+      val res = executeWithNewPlanner(query).toList
+      val path = res.head("p").asInstanceOf[Path]
+      path.startNode should equal(node1)
+      path.endNode should equal(node2)
+    }
+  }
 }
