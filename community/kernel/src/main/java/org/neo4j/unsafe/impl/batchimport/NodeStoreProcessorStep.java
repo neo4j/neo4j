@@ -21,39 +21,31 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.unsafe.impl.batchimport.staging.LonelyProcessingStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 /**
  * Convenient step for processing all in use {@link NodeRecord records} in the {@link NodeStore node store}.
  */
-public class NodeStoreProcessorStep extends LonelyProcessingStep
+public class NodeStoreProcessorStep extends StoreProcessorStep<NodeRecord>
 {
     private final NodeStore nodeStore;
-    private final StoreProcessor<NodeRecord> processor;
 
     protected NodeStoreProcessorStep( StageControl control, String name, Configuration config, NodeStore nodeStore,
             StoreProcessor<NodeRecord> processor )
     {
-        super( control, name, config.batchSize(), config.movingAverageSize() );
+        super( control, name, config.batchSize(), config.movingAverageSize(), nodeStore, processor );
         this.nodeStore = nodeStore;
-        this.processor = processor;
     }
 
     @Override
-    protected final void process()
+    protected NodeRecord loadRecord( long id, NodeRecord into )
     {
-        long highId = nodeStore.getHighestPossibleIdInUse();
-        NodeRecord heavilyReusedRecord = new NodeRecord( -1 );
-        for ( long nodeId = highId; nodeId >= 0; nodeId-- )
-        {
-            NodeRecord node = nodeStore.loadRecord( nodeId, heavilyReusedRecord );
-            if ( node != null && processor.process( node ) )
-            {
-                nodeStore.updateRecord( heavilyReusedRecord );
-            }
-            itemProcessed();
-        }
-        processor.done();
+        return nodeStore.loadRecord( id, into );
+    }
+
+    @Override
+    protected NodeRecord createReusableRecord()
+    {
+        return new NodeRecord( -1 );
     }
 }

@@ -22,40 +22,32 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.unsafe.impl.batchimport.staging.LonelyProcessingStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 /**
  * Convenient step for processing all in use {@link RelationshipRecord records} in the
  * {@link RelationshipStore relationship store}.
  */
-public class RelationshipStoreProcessorStep extends LonelyProcessingStep
+public class RelationshipStoreProcessorStep extends StoreProcessorStep<RelationshipRecord>
 {
     private final RelationshipStore relationshipStore;
-    private final StoreProcessor<RelationshipRecord> processor;
 
     protected RelationshipStoreProcessorStep( StageControl control, String name, Configuration config,
             RelationshipStore relationshipStore, StoreProcessor<RelationshipRecord> processor )
     {
-        super( control, name, config.batchSize(), config.movingAverageSize() );
+        super( control, name, config.batchSize(), config.movingAverageSize(), relationshipStore, processor );
         this.relationshipStore = relationshipStore;
-        this.processor = processor;
     }
 
     @Override
-    protected final void process()
+    protected RelationshipRecord loadRecord( long id, RelationshipRecord into )
     {
-        long highId = relationshipStore.getHighestPossibleIdInUse();
-        RelationshipRecord heavilyReusedRecord = new RelationshipRecord( -1 );
-        for ( long i = highId; i >= 0; i-- )
-        {
-            if ( relationshipStore.fillRecord( i, heavilyReusedRecord, RecordLoad.CHECK )
-                    && processor.process( heavilyReusedRecord ) )
-            {
-                relationshipStore.updateRecord( heavilyReusedRecord );
-            }
-            itemProcessed();
-        }
-        processor.done();
+        return relationshipStore.fillRecord( id, into, RecordLoad.CHECK ) ? into : null;
+    }
+
+    @Override
+    protected RelationshipRecord createReusableRecord()
+    {
+        return new RelationshipRecord( -1 );
     }
 }

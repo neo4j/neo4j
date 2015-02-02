@@ -21,9 +21,8 @@ package org.neo4j.unsafe.impl.batchimport.store.io;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.helpers.Format;
-import org.neo4j.unsafe.impl.batchimport.stats.DetailLevel;
-import org.neo4j.unsafe.impl.batchimport.stats.GenericStatsProvider;
+import org.neo4j.unsafe.impl.batchimport.IoThroughputStat;
+import org.neo4j.unsafe.impl.batchimport.stats.Key;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 import org.neo4j.unsafe.impl.batchimport.stats.Stat;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
@@ -35,38 +34,10 @@ import static java.lang.System.currentTimeMillis;
  *
  * Assumes that I/O is busy all the time.
  */
-public class IoMonitor extends GenericStatsProvider implements Monitor
+public class IoMonitor implements StatsProvider, Monitor
 {
     private volatile long startTime = currentTimeMillis(), endTime;
     private final AtomicLong totalWritten = new AtomicLong();
-
-    public IoMonitor()
-    {
-        add( Keys.io_throughput, new Stat()
-        {
-            @Override
-            public String toString()
-            {
-                long stat = asLong();
-                return stat == -1 ? "??" : Format.bytes( stat ) + "/s";
-            }
-
-            @Override
-            public long asLong()
-            {
-                long thisEndTime = endTime != 0 ? endTime : currentTimeMillis();
-                long totalTime = thisEndTime-startTime;
-                int seconds = (int) (totalTime/1000);
-                return seconds > 0 ? totalWritten.get()/seconds : -1;
-            }
-
-            @Override
-            public DetailLevel detailLevel()
-            {
-                return DetailLevel.IMPORTANT;
-            }
-        } );
-    }
 
     @Override
     public void dataWritten( int bytes )
@@ -94,5 +65,21 @@ public class IoMonitor extends GenericStatsProvider implements Monitor
     public long totalBytesWritten()
     {
         return totalWritten.get();
+    }
+
+    @Override
+    public Stat stat( Key key )
+    {
+        if ( key == Keys.io_throughput )
+        {
+            return new IoThroughputStat( startTime, endTime, totalWritten.get() );
+        }
+        return null;
+    }
+
+    @Override
+    public Key[] keys()
+    {
+        return new Key[] { Keys.io_throughput };
     }
 }
