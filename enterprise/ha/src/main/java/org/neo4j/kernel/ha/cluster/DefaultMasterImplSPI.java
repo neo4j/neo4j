@@ -160,7 +160,7 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
         NeoStoreDataSource dataSource = graphDb.getDependencyResolver().resolveDependency(
                 DataSourceManager.class ).getDataSource();
         StoreCopyServer streamer = new StoreCopyServer( transactionIdStore, dataSource, graphDb.getDependencyResolver
-                ().resolveDependency( LogRotationControl.class ), fileSystem, 
+                ().resolveDependency( LogRotationControl.class ), fileSystem,
                 storeDir );
         return streamer.flushStoresAndStreamStoreFiles( writer );
     }

@@ -83,6 +83,7 @@ public class EncodingIdMapper implements IdMapper
     private long[][] sortBuckets;
     private long size;
     private final List<IdGroup> idGroups = new ArrayList<>();
+    private IdGroup currentIdGroup;
 
     public EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Radix radix )
     {
@@ -122,11 +123,22 @@ public class EncodingIdMapper implements IdMapper
     {
         // Check if we're now venturing into a new group. If so then end the previous group.
         int groupId = group.id();
-        boolean newGroup = groupId >= idGroups.size();
+        boolean newGroup = false;
+        if ( currentIdGroup == null )
+        {
+            newGroup = true;
+        }
+        else
+        {
+            if ( groupId < currentIdGroup.id() )
+            {
+                throw new IllegalStateException( "Nodes for any specific group must be added in sequence " +
+                        "before adding nodes for any other group" );
+            }
+            newGroup = groupId != currentIdGroup.id();
+        }
         if ( newGroup )
         {
-            assert groupId == idGroups.size() :
-                "Nodes for any specific group must be added in sequence before adding nodes for any other group";
             endPreviousGroup();
         }
 
@@ -139,7 +151,7 @@ public class EncodingIdMapper implements IdMapper
         // Create the new group
         if ( newGroup )
         {
-            idGroups.add( new IdGroup( group, dataCache.highestSetIndex() ) );
+            idGroups.add( currentIdGroup = new IdGroup( group, dataCache.highestSetIndex() ) );
         }
     }
 
@@ -256,10 +268,23 @@ public class EncodingIdMapper implements IdMapper
         return numCollisions;
     }
 
+    private static class CollisionPoint
+    {
+        private final long dataIndex;
+        private final String sourceLocation;
+
+        CollisionPoint( long dataIndex, String sourceLocation )
+        {
+            this.dataIndex = dataIndex;
+            this.sourceLocation = sourceLocation;
+        }
+    }
+
     private void buildCollisionInfo( Iterator<Object> ids )
     {
         // This is currently the only way of discovering duplicate input ids, checked per group.
-        PrimitiveIntObjectMap<Map<Object,Long>> collidedIds = Primitive.intObjectMap();
+        // groupId --> inputId --> CollisionPoint(dataIndex,sourceLocation)
+        PrimitiveIntObjectMap<Map<Object,CollisionPoint>> collidedIds = Primitive.intObjectMap();
 
         for ( long i = 0; ids.hasNext(); i++ )
         {
@@ -269,20 +294,22 @@ public class EncodingIdMapper implements IdMapper
             {
                 // Get hold of the group and duplicate detector for that group
                 IdGroup group = groupOf( i );
-                Map<Object,Long> idsForGroup = collidedIds.get( group.id() );
-                if ( idsForGroup == null )
+                Map<Object,CollisionPoint> collisionsForGroup = collidedIds.get( group.id() );
+                if ( collisionsForGroup == null )
                 {
-                    collidedIds.put( group.id(), idsForGroup = new HashMap<>() );
+                    collidedIds.put( group.id(), collisionsForGroup = new HashMap<>() );
                 }
 
                 // Check for duplicates in this group
-                Long existingI = idsForGroup.put( id, i );
-                if ( existingI != null )
+                CollisionPoint existing = collisionsForGroup.get( id );
+                if ( existing != null )
                 {
                     throw new IllegalStateException( "Id '" + id + "' is defined more than once in " +
-                            group + ", at least at " + group.translate( existingI.longValue() ) + " and " +
-                            group.translate( i ) );
+                            group.name() + ", at least at " +
+                            existing.sourceLocation + " and " +
+                            ids.toString() );
                 }
+                collisionsForGroup.put( id, new CollisionPoint( i, ids.toString() ) );
 
                 // Store this collision input id for matching later in get()
                 long val = encoder.encode( id );

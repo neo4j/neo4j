@@ -48,8 +48,7 @@ class InputRelationshipDeserializer extends InputEntityDeserializer<InputRelatio
         super( header, data, delimiter, decorator );
         this.idSequence = idSequence;
         this.startNodeGroup = groups.getOrCreate( header.entry( Type.START_ID ).groupName() );
-        this.endNodeGroup = groups.getOrCreate( header.entry( Type.END_ID ).groupName() );
-    }
+        this.endNodeGroup = groups.getOrCreate( header.entry( Type.END_ID ).groupName() );    }
 
     @Override
     protected void handleValue( Header.Entry entry, Object value )

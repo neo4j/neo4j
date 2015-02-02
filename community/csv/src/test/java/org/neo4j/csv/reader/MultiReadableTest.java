@@ -124,7 +124,7 @@ public class MultiReadableTest
             @Override
             public CharReadable next()
             {
-                return Readables.wrap( new StringReader( join( data[cursor++] ) ) );
+                return Readables.wrap( new StringReader( join( data[cursor++] ) ), "Reader" + cursor );
             }
 
             private String join( String[] strings )

@@ -53,9 +53,9 @@ class IdGroup
         return groupId;
     }
 
-    long translate( long dataIndex )
+    String name()
     {
-        return dataIndex - lowDataIndex;
+        return group.name();
     }
 
     @Override

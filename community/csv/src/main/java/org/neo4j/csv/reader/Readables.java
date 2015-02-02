@@ -64,7 +64,7 @@ public class Readables
         throw new AssertionError( "No instances allowed" );
     }
 
-    public static final CharReadable EMPTY = new CharReadable()
+    public static final CharReadable EMPTY = new CharReadable.Adapter()
     {
         @Override
         public int read( char[] buffer, int offset, int length ) throws IOException
@@ -82,11 +82,22 @@ public class Readables
         {
             return 0;
         }
+
+        @Override
+        public String toString()
+        {
+            return "EMPTY";
+        }
     };
 
     public static CharReadable wrap( final Reader reader )
     {
-        return new CharReadable()
+        return wrap( reader, reader.toString() );
+    }
+
+    public static CharReadable wrap( final Reader reader, final String toString )
+    {
+        return new CharReadable.Adapter()
         {
             private long position;
 
@@ -109,6 +120,12 @@ public class Readables
             {
                 return position;
             }
+
+            @Override
+            public String toString()
+            {
+                return toString;
+            }
         };
     }
 
@@ -122,7 +139,7 @@ public class Readables
             {   // ZIP file
                 ZipFile zipFile = new ZipFile( file );
                 ZipEntry entry = getSingleSuitableEntry( zipFile );
-                return wrap( new InputStreamReader( zipFile.getInputStream( entry ) ) );
+                return wrap( new InputStreamReader( zipFile.getInputStream( entry ) ), file.getPath() );
             }
             else if ( (magic >>> 16) == GZIP_MAGIC )
             {   // GZIP file. GZIP isn't an archive like ZIP, so this is purely data that is compressed.
@@ -131,10 +148,10 @@ public class Readables
                 // the data will look like garbage and the reader will fail for whatever it will be used for.
                 // TODO add tar support
                 GZIPInputStream zipStream = new GZIPInputStream( new FileInputStream( file ) );
-                return wrap( new InputStreamReader( zipStream ) );
+                return wrap( new InputStreamReader( zipStream ), file.getPath() );
             }
 
-            return wrap( new FileReader( file ) );
+            return wrap( new FileReader( file ), file.getPath() );
         }
 
         private ZipEntry getSingleSuitableEntry( ZipFile zipFile ) throws IOException
@@ -204,22 +221,22 @@ public class Readables
         return FROM_FILE.apply( file );
     }
 
-    public static CharReadable multipleFiles( File... files )
+    public static CharReadable multipleFiles( File... files ) throws IOException
     {
         return new MultiReadable( iterator( files, FROM_FILE ) );
     }
 
-    public static CharReadable multipleSources( CharReadable... sources )
+    public static CharReadable multipleSources( CharReadable... sources ) throws IOException
     {
         return new MultiReadable( iterator( sources, IDENTITY ) );
     }
 
-    public static CharReadable multipleFiles( Iterator<File> files )
+    public static CharReadable multipleFiles( Iterator<File> files ) throws IOException
     {
         return new MultiReadable( iterator( files, FROM_FILE ) );
     }
 
-    public static CharReadable multipleSources( RawIterator<CharReadable,IOException> sources )
+    public static CharReadable multipleSources( RawIterator<CharReadable,IOException> sources ) throws IOException
     {
         return new MultiReadable( sources );
     }

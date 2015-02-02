@@ -19,20 +19,23 @@
  */
 package org.neo4j.csv.reader;
 
+import org.junit.After;
+import org.junit.Ignore;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import org.junit.After;
-import org.junit.Ignore;
-import org.junit.Test;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static java.lang.Math.min;
 
 import static org.neo4j.csv.reader.Readables.wrap;
 
@@ -42,7 +45,7 @@ public class BufferedCharSeekerTest
     public void shouldFindCertainCharacter() throws Exception
     {
         // GIVEN
-        seeker = new BufferedCharSeeker( wrap( new StringReader( "abcdefg\thijklmnop\tqrstuvxyz" ) ) );
+        seeker = seeker( "abcdefg\thijklmnop\tqrstuvxyz" );
 
         // WHEN/THEN
         // first value
@@ -71,48 +74,40 @@ public class BufferedCharSeekerTest
     public void shouldReadMultipleLines() throws Exception
     {
         // GIVEN
-        seeker = new BufferedCharSeeker( wrap( new StringReader(
+        seeker = seeker(
                 "1\t2\t3\n" +
-                "4\t5\t6\n" ) ) );
+                "4\t5\t6\n" );
 
         // WHEN/THEN
         assertTrue( seeker.seek( mark, TAB ) );
         assertEquals( 1L, seeker.extract( mark, extractors.long_() ).longValue() );
-        assertEquals( 1, mark.lineNumber() );
 
         assertTrue( seeker.seek( mark, TAB ) );
         assertEquals( 2L, seeker.extract( mark, extractors.long_() ).longValue() );
-        assertEquals( 1, mark.lineNumber() );
 
         assertTrue( seeker.seek( mark, TAB ) );
         assertEquals( 3L, seeker.extract( mark, extractors.long_() ).longValue() );
         assertTrue( mark.isEndOfLine() );
-        assertEquals( 1, mark.lineNumber() );
 
         assertTrue( seeker.seek( mark, TAB ) );
         assertEquals( 4L, seeker.extract( mark, extractors.long_() ).longValue() );
-        assertEquals( 2, mark.lineNumber() );
 
         assertTrue( seeker.seek( mark, TAB ) );
         assertEquals( 5L, seeker.extract( mark, extractors.long_() ).longValue() );
-        assertEquals( 2, mark.lineNumber() );
 
         assertTrue( seeker.seek( mark, TAB ) );
         assertEquals( 6L, seeker.extract( mark, extractors.long_() ).longValue() );
-        assertEquals( 2, mark.lineNumber() );
 
         assertTrue( mark.isEndOfLine() );
         assertFalse( seeker.seek( mark, TAB ) );
-        assertEquals( 3, mark.lineNumber() ); // since there's a newline in the end of the data in this test
     }
 
     @Test
     public void shouldSeekThroughAdditionalBufferRead() throws Exception
     {
         // GIVEN
-        seeker = new BufferedCharSeeker( wrap( new StringReader(
-                                                  "1234,5678,9012,3456" ) ), 12 );
-        // bufferSIze 12 should have seeker read more here     ^
+        seeker = seeker( "1234,5678,9012,3456", 12 );
+        // read more here             ^
 
         // WHEN/THEN
         seeker.seek( mark, COMMA );
@@ -130,10 +125,10 @@ public class BufferedCharSeekerTest
     public void shouldHandleWindowsEndOfLineCharacters() throws Exception
     {
         // GIVEN
-        seeker = new BufferedCharSeeker( wrap( new StringReader(
+        seeker = seeker(
                 "here,comes,Windows\r\n" +
                 "and,it,has\r" +
-                "other,line,endings" ) ), 100 );
+                "other,line,endings" );
 
         // WHEN/THEN
         assertEquals( "here", seeker.seek( mark, COMMA ) ? seeker.extract( mark, extractors.string() ).value() : "" );
@@ -157,7 +152,7 @@ public class BufferedCharSeekerTest
         int cols = 3, rows = 3;
         char delimiter = '\t';
         String[][] data = randomWeirdValues( cols, rows, delimiter, '\n', '\r' );
-        seeker = new BufferedCharSeeker( wrap( new StringReader( join( data, delimiter ) ) ) );
+        seeker = seeker( join( data, delimiter ) );
 
         // WHEN/THEN
         for ( int row = 0; row < rows; row++ )
@@ -176,7 +171,7 @@ public class BufferedCharSeekerTest
     public void shouldHandleEmptyValues() throws Exception
     {
         // GIVEN
-        seeker = new BufferedCharSeeker( wrap( new StringReader( "1,,3,4" ) ) );
+        seeker = seeker( "1,,3,4" );
 
         // WHEN
         assertTrue( seeker.seek( mark, COMMA ) );
@@ -195,8 +190,8 @@ public class BufferedCharSeekerTest
     public void shouldNotLetEolCharSkippingMessUpPositionsInMark() throws Exception
     {
         // GIVEN
-        seeker = new BufferedCharSeeker( wrap( new StringReader( "12,34,56\n789,901,23" ) ), 9 );
-        //      reading this char will cause new chunk read                ^
+        seeker = seeker( "12,34,56\n789,901,23", 9 );
+        // read more here          ^
 
         // WHEN
         assertTrue( seeker.seek( mark, COMMA ) );
@@ -220,7 +215,7 @@ public class BufferedCharSeekerTest
     public void shouldSeeEofEvenIfBufferAlignsWithEnd() throws Exception
     {
         // GIVEN
-        seeker = new BufferedCharSeeker( wrap( new StringReader( "123,56" ) ), 6 );
+        seeker = seeker( "123,56", 6 );
 
         // WHEN
         assertTrue( seeker.seek( mark, COMMA ) );
@@ -237,9 +232,9 @@ public class BufferedCharSeekerTest
     public void shouldSkipEmptyLastValue() throws Exception
     {
         // GIVEN
-        seeker = new BufferedCharSeeker( wrap( new StringReader(
+        seeker = seeker(
                 "one,two,three,\n" +
-                "uno,dos,tres," ) ), 100 );
+                "uno,dos,tres," );
 
         // WHEN
         assertNextValue( seeker, mark, COMMA, "one" );
@@ -262,8 +257,7 @@ public class BufferedCharSeekerTest
     public void shouldExtractEmptyStringForEmptyQuotedString() throws Exception
     {
         // GIVEN
-        seeker = new BufferedCharSeeker( wrap( new StringReader(
-                "\"\",,\"\"" ) ), 100 );
+        seeker = seeker( "\"\",,\"\"" );
 
         // WHEN
         assertNextValue( seeker, mark, COMMA, "" );
@@ -278,7 +272,7 @@ public class BufferedCharSeekerTest
     public void shouldExtractNullForEmptyFieldWhenWeSkipEOLChars() throws Exception
     {
         // GIVEN
-        seeker = new BufferedCharSeeker( wrap( new StringReader( "\"\",\r\n" ) ), 100 );
+        seeker = seeker( "\"\",\r\n" );
 
         // WHEN
         assertNextValue( seeker, mark, COMMA, "" );
@@ -288,43 +282,15 @@ public class BufferedCharSeekerTest
         assertFalse( seeker.seek( mark, COMMA ) );
     }
 
-    private void assertNextValue( CharSeeker seeker, Mark mark, int[] delimiter, String expectedValue )
-            throws IOException
-    {
-        assertTrue( seeker.seek( mark, delimiter ) );
-        assertEquals( expectedValue, seeker.extract( mark, extractors.string() ).value() );
-    }
-
-    private void assertNextValueNotExtracted( CharSeeker seeker, Mark mark, int[] delimiter ) throws IOException
-    {
-        assertTrue( seeker.seek( mark, delimiter ) );
-        assertFalse( seeker.tryExtract( mark, extractors.string() ) );
-    }
-
     @Test
     public void shouldContinueThroughCompletelyEmptyLines() throws Exception
     {
         // GIVEN
-        seeker = new BufferedCharSeeker( wrap( new StringReader(
-                "one,two,three\n\n\nfour,five,six" ) ), 200 );
+        seeker = seeker( "one,two,three\n\n\nfour,five,six" );
 
         // WHEN/THEN
         assertArrayEquals( new String[] {"one", "two", "three"}, nextLineOfAllStrings( seeker, mark ) );
         assertArrayEquals( new String[] {"four", "five", "six"}, nextLineOfAllStrings( seeker, mark ) );
-    }
-
-    private String[] nextLineOfAllStrings( CharSeeker seeker, Mark mark ) throws IOException
-    {
-        List<String> line = new ArrayList<>();
-        while ( seeker.seek( mark, COMMA ) )
-        {
-            line.add( seeker.extract( mark, extractors.string() ).value() );
-            if ( mark.isEndOfLine() )
-            {
-                break;
-            }
-        }
-        return line.toArray( new String[line.size()] );
     }
 
     @Ignore( "TODO add test for characters with surrogate code points or whatever they are called," +
@@ -340,8 +306,7 @@ public class BufferedCharSeekerTest
     public void shouldReadQuotes() throws Exception
     {
         // GIVEN
-        seeker = new BufferedCharSeeker( wrap( new StringReader(
-                "value one\t\"value two\"\tvalue three" ) ) );
+        seeker = seeker( "value one\t\"value two\"\tvalue three" );
 
         // WHEN/THEN
         assertTrue( seeker.seek( mark, TAB ) );
@@ -358,8 +323,7 @@ public class BufferedCharSeekerTest
     public void shouldReadQuotedValuesWithDelimiterInside() throws Exception
     {
         // GIVEN
-        seeker =  new BufferedCharSeeker( wrap( new StringReader(
-                "value one\t\"value\ttwo\"\tvalue three" ) ) );
+        seeker = seeker( "value one\t\"value\ttwo\"\tvalue three" );
 
         // WHEN/THEN
         assertTrue( seeker.seek( mark, TAB ) );
@@ -376,8 +340,7 @@ public class BufferedCharSeekerTest
     public void shouldReadQuotedValuesWithNewLinesInside() throws Exception
     {
         // GIVEN
-        seeker =  new BufferedCharSeeker( wrap( new StringReader(
-                "value one\t\"value\ntwo\"\tvalue three" ) ) );
+        seeker = seeker( "value one\t\"value\ntwo\"\tvalue three" );
 
         // WHEN/THEN
         assertTrue( seeker.seek( mark, TAB ) );
@@ -394,8 +357,7 @@ public class BufferedCharSeekerTest
     public void shouldHandleDoubleQuotes() throws Exception
     {
         // GIVEN
-        seeker = new BufferedCharSeeker( wrap( new StringReader(
-                "\"value \"\"one\"\"\"\t\"\"\"value\"\" two\"\t\"va\"\"lue\"\" three\"" ) ) );
+        seeker = seeker( "\"value \"\"one\"\"\"\t\"\"\"value\"\" two\"\t\"va\"\"lue\"\" three\"" );
 
         // WHEN/THEN
         assertTrue( seeker.seek( mark, TAB ) );
@@ -412,8 +374,7 @@ public class BufferedCharSeekerTest
     public void shouldHandleSlashEncodedQuotes() throws Exception
     {
         // GIVEN
-        seeker = new BufferedCharSeeker( wrap( new StringReader(
-                "\"value \\\"one\\\"\"\t\"\\\"value\\\" two\"\t\"va\\\"lue\\\" three\"" ) ) );
+        seeker = seeker( "\"value \\\"one\\\"\"\t\"\\\"value\\\" two\"\t\"va\\\"lue\\\" three\"" );
 
         // WHEN/THEN
         assertTrue( seeker.seek( mark, TAB ) );
@@ -430,9 +391,9 @@ public class BufferedCharSeekerTest
     public void shouldRecognizeStrayQuoteCharacters() throws Exception
     {
         // GIVEN
-        seeker = new BufferedCharSeeker( wrap( new StringReader(
+        seeker = seeker(
                 "one,two\",th\"ree\n" +
-                "four,five,s\"ix" ) ) );
+                "four,five,s\"ix" );
 
         // THEN
         assertNextValue( seeker, mark, COMMA, "one" );
@@ -443,6 +404,37 @@ public class BufferedCharSeekerTest
         assertNextValue( seeker, mark, COMMA, "five" );
         assertNextValue( seeker, mark, COMMA, "s\"ix" );
         assertTrue( mark.isEndOfLine() );
+        assertFalse( seeker.seek( mark, COMMA ) );
+    }
+
+    @Test
+    public void shouldNotMisinterpretUnfilledRead() throws Exception
+    {
+        // GIVEN
+        CharReadable readable = new ControlledCharReadable(
+                "123,456,789\n" +
+                "abc,def,ghi", 5 );
+        seeker = seeker( readable );
+
+        // WHEN/THEN
+        assertNextValue( seeker, mark, COMMA, "123" );
+        assertNextValue( seeker, mark, COMMA, "456" );
+        assertNextValue( seeker, mark, COMMA, "789" );
+        assertTrue( mark.isEndOfLine() );
+        assertNextValue( seeker, mark, COMMA, "abc" );
+        assertNextValue( seeker, mark, COMMA, "def" );
+        assertNextValue( seeker, mark, COMMA, "ghi" );
+        assertTrue( mark.isEndOfLine() );
+        assertFalse( seeker.seek( mark, COMMA ) );
+    }
+
+    @Test
+    public void shouldNotFindAnyValuesForEmptySource() throws Exception
+    {
+        // GIVEN
+        seeker = seeker( "" );
+
+        // WHEN/THEN
         assertFalse( seeker.seek( mark, COMMA ) );
     }
 
@@ -509,6 +501,53 @@ public class BufferedCharSeekerTest
         return builder.toString();
     }
 
+    private void assertNextValue( CharSeeker seeker, Mark mark, int[] delimiter, String expectedValue )
+            throws IOException
+    {
+        assertTrue( seeker.seek( mark, delimiter ) );
+        assertEquals( expectedValue, seeker.extract( mark, extractors.string() ).value() );
+    }
+
+    private void assertNextValueNotExtracted( CharSeeker seeker, Mark mark, int[] delimiter ) throws IOException
+    {
+        assertTrue( seeker.seek( mark, delimiter ) );
+        assertFalse( seeker.tryExtract( mark, extractors.string() ) );
+    }
+
+    private String[] nextLineOfAllStrings( CharSeeker seeker, Mark mark ) throws IOException
+    {
+        List<String> line = new ArrayList<>();
+        while ( seeker.seek( mark, COMMA ) )
+        {
+            line.add( seeker.extract( mark, extractors.string() ).value() );
+            if ( mark.isEndOfLine() )
+            {
+                break;
+            }
+        }
+        return line.toArray( new String[line.size()] );
+    }
+
+    private BufferedCharSeeker seeker( CharReadable readable )
+    {
+        return seeker( readable, 1_000 );
+    }
+
+    private BufferedCharSeeker seeker( CharReadable readable, int bufferSize )
+    {
+        return new BufferedCharSeeker( readable, bufferSize );
+    }
+
+    private BufferedCharSeeker seeker( String data )
+    {
+        return seeker( data, 1_000 );
+    }
+
+    private BufferedCharSeeker seeker( String data, int bufferSize )
+    {
+        return seeker( wrap( new StringReader( data ) ), bufferSize );
+    }
+
     private static final int[] TAB = new int[] { '\t' };
     private static final int[] COMMA = new int[] { ',' };
     private static final Random random = new Random();
@@ -523,6 +562,37 @@ public class BufferedCharSeekerTest
         if ( seeker != null )
         {
             seeker.close();
+        }
+    }
+
+    private static class ControlledCharReadable extends CharReadable.Adapter
+    {
+        private final char[] chars;
+        private final int maxBytesPerRead;
+        private int position;
+
+        ControlledCharReadable( String data, int maxBytesPerRead )
+        {
+            this.maxBytesPerRead = maxBytesPerRead;
+            this.chars = data.toCharArray();
+        }
+
+        @Override
+        public int read( char[] buffer, int offset, int length ) throws IOException
+        {
+            int remaining = chars.length-position;
+            int toRead = min( min( length, maxBytesPerRead ), remaining );
+            for ( int i = 0; i < toRead; i++ )
+            {
+                buffer[offset+i] = chars[position++];
+            }
+            return toRead;
+        }
+
+        @Override
+        public long position()
+        {
+            return position;
         }
     }
 }

@@ -92,4 +92,10 @@ abstract class InputGroupsDeserializer<ENTITY extends InputEntity>
     {
         return previousInputsCollectivePositions + (currentInput != null ? currentInput.position() : 0);
     }
+
+    @Override
+    public String toString()
+    {
+        return currentInput.toString();
+    }
 }

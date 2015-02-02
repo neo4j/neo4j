@@ -62,13 +62,13 @@ interface CollisionHandler
         @Override
         public long handle( long previousIndex, long foundIndex, IdGroup idGroup )
         {
-            error.append( format( "%n  %s at %d", idGroup, idGroup.translate( foundIndex ) ) );
+            error.append( format( "%n  %s", idGroup ) );
             return foundIndex;
         }
 
         public IllegalStateException exception()
         {
-            throw new IllegalStateException( "Id '" + inputId + "' found in multiple groups: " + error );
+            throw new IllegalStateException( "Id '" + inputId + "' defined in multiple groups: " + error );
         }
     }
 }

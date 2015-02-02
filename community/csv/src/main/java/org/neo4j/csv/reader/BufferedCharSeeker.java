@@ -31,7 +31,7 @@ import static org.neo4j.csv.reader.Mark.END_OF_LINE_CHARACTER;
 /**
  * Much like a {@link BufferedReader} for a {@link Reader}.
  */
-public class BufferedCharSeeker implements CharSeeker
+public class BufferedCharSeeker implements CharSeeker, SourceMonitor
 {
     private static final int KB = 1024, MB = KB * KB;
     public static final int DEFAULT_BUFFER_SIZE = 16 * MB;
@@ -50,9 +50,11 @@ public class BufferedCharSeeker implements CharSeeker
     private final CharBuffer charBuffer;
 
     private int bufferPos;
+    private int bufferEnd;
     private long lineStartPos;
     private int seekStartPos;
-    private int lineNumber = 1;
+    private int lineNumber;
+    private int intermediaryNewLines;
     private boolean eof;
     private final char quoteChar;
 
@@ -73,6 +75,8 @@ public class BufferedCharSeeker implements CharSeeker
         this.charBuffer = CharBuffer.wrap( buffer );
         this.bufferPos = bufferSize;
         this.quoteChar = quoteChar;
+        this.lineStartPos = this.bufferPos;
+        reader.addSourceMonitor( this );
     }
 
     @Override
@@ -91,6 +95,18 @@ public class BufferedCharSeeker implements CharSeeker
         int skippedChars = 0;
         int quoteDepth = 0;
         boolean isQuoted = false;
+
+        if ( lineStartPos == bufferPos )
+        {
+            int skippedEolChars = skipEolChars();
+            seekStartPos += skippedEolChars;
+            if ( eof )
+            {
+                return eof( mark );
+            }
+            lineNumber++;
+        }
+
         while ( !eof )
         {
             ch = nextChar( skippedChars );
@@ -112,7 +128,7 @@ public class BufferedCharSeeker implements CharSeeker
                     {
                         if ( ch == untilOneOfChars[i] )
                         {   // We found a delimiter, set marker and return true
-                            mark.set( lineNumber, seekStartPos, bufferPos - endOffset - skippedChars, ch, isQuoted );
+                            mark.set( seekStartPos, bufferPos - endOffset - skippedChars, ch, isQuoted );
                             return true;
                         }
                     }
@@ -138,6 +154,7 @@ public class BufferedCharSeeker implements CharSeeker
                 }
                 else if ( (ch == EOL_CHAR || ch == EOL_CHAR_2) )
                 {   // Found a new line, just keep going
+                    intermediaryNewLines++;
                     nextChar( skippedChars );
                 }
                 else if ( ch == BACK_SLASH )
@@ -158,9 +175,7 @@ public class BufferedCharSeeker implements CharSeeker
         }
 
         // We found the last value of the line or stream
-        skippedChars += skipEolChars();
-        mark.set( lineNumber, seekStartPos, bufferPos - endOffset - skippedChars, END_OF_LINE_CHARACTER, isQuoted );
-        lineNumber++;
+        mark.set( seekStartPos, bufferPos - endOffset - skippedChars, END_OF_LINE_CHARACTER, isQuoted );
         lineStartPos = bufferPos;
         return true;
     }
@@ -187,7 +202,7 @@ public class BufferedCharSeeker implements CharSeeker
 
     private boolean eof( Mark mark )
     {
-        mark.set( lineNumber, -1, -1, Mark.END_OF_LINE_CHARACTER, false );
+        mark.set( -1, -1, Mark.END_OF_LINE_CHARACTER, false );
         return false;
     }
 
@@ -238,22 +253,25 @@ public class BufferedCharSeeker implements CharSeeker
 
     private void fillBufferIfWeHaveExhaustedIt() throws IOException
     {
-        if ( bufferPos >= buffer.length )
+        if ( bufferPos >= bufferEnd )
         {
-            if ( seekStartPos == 0 )
+            if ( seekStartPos == 0 && bufferEnd == charBuffer.capacity() )
             {
                 throw new IllegalStateException( "Tried to read in a value larger than buffer size " + buffer.length );
             }
             charBuffer.position( seekStartPos );
+            charBuffer.limit( bufferPos );
             charBuffer.compact();
+            charBuffer.limit( charBuffer.capacity() );
             int remaining = charBuffer.remaining();
             int read = reader.read( buffer, charBuffer.position(), remaining );
-            if ( read < remaining )
+            if ( read <= 0 )
             {
                 buffer[charBuffer.position() + max( read, 0 )] = EOF_CHAR;
             }
             bufferPos = charBuffer.position();
             seekStartPos = 0;
+            bufferEnd = bufferPos + max( read, 0 );
         }
     }
 
@@ -270,9 +288,15 @@ public class BufferedCharSeeker implements CharSeeker
     }
 
     @Override
+    public void notify( String sourceDescription )
+    {
+        lineNumber = 0;
+        intermediaryNewLines = 0;
+    }
+
+    @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[buffer:" + charBuffer +
-                ", seekPos:" + seekStartPos + ", line:" + lineNumber + "]";
+        return reader + ":" + (lineNumber+intermediaryNewLines);
     }
 }

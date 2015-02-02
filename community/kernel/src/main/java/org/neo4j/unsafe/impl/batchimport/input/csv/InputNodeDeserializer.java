@@ -54,7 +54,7 @@ class InputNodeDeserializer extends InputEntityDeserializer<InputNode>
 
         // ID header entry is optional
         Entry idEntry = header.entry( Type.ID );
-        this.group = idEntry != null ? groups.getOrCreate( idEntry.groupName() ) : Group.GLOBAL;
+        this.group = groups.getOrCreate( idEntry != null ? idEntry.groupName() : null );
     }
 
     @Override

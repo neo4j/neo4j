@@ -48,9 +48,12 @@ import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.Arrays.asList;
@@ -245,11 +248,6 @@ public class ImportToolTest
 
         );
 
-        for ( String arg : args )
-        {
-            System.out.println(arg);
-        }
-
         ImportTool.main( args );
 
         // THEN
@@ -291,6 +289,7 @@ public class ImportToolTest
                     nodeData( false, config, groupTwoNodeIds, alwaysTrue() )
 
                     ) );
+            fail( "Should have failed" );
         }
         catch ( Exception e )
         {
@@ -316,6 +315,34 @@ public class ImportToolTest
 
         // THEN
         verifyData();
+    }
+
+    @Test
+    public void shouldIncludeSourceInformationInNodeIdCollisionError() throws Exception
+    {
+        // GIVEN
+        List<String> nodeIds = asList( "a", "b", "c", "d", "e", "f", "a", "g" );
+        Configuration config = Configuration.COMMAS;
+        File nodeHeaderFile = nodeHeader( config );
+        File nodeData1 = nodeData( false, config, nodeIds, lines( 0, 4 ) );
+        File nodeData2 = nodeData( false, config, nodeIds, lines( 4, nodeIds.size() ) );
+
+        // WHEN
+        try
+        {
+            ImportTool.main( arguments(
+                    "--into",  directory.absolutePath(),
+                    "--nodes", nodeHeaderFile.getAbsolutePath() + MULTI_FILE_DELIMITER +
+                               nodeData1.getAbsolutePath() + MULTI_FILE_DELIMITER +
+                               nodeData2.getAbsolutePath() ) );
+            fail( "Should have failed with duplicate node IDs" );
+        }
+        catch ( Exception e )
+        {
+            // THEN
+            assertThat( e.getMessage(), containsString( nodeData1.getPath() + ":" + 1 ) );
+            assertThat( e.getMessage(), containsString( nodeData2.getPath() + ":" + 3 ) );
+        }
     }
 
     protected void assertNodeHasLabels( Node node, String[] names )

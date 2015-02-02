@@ -116,8 +116,15 @@ public class DataFactories
                     @Override
                     public CharSeeker stream()
                     {
-                        return charSeeker( multipleFiles( files ), DEFAULT_BUFFER_SIZE,
-                                           true, config.quotationCharacter() );
+                        try
+                        {
+                            return charSeeker( multipleFiles( files ), DEFAULT_BUFFER_SIZE,
+                                               true, config.quotationCharacter() );
+                        }
+                        catch ( IOException e )
+                        {
+                            throw new InputException( e.getMessage(), e );
+                        }
                     }
 
                     @Override
