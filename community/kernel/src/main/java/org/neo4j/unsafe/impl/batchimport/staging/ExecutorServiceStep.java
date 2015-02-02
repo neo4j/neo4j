@@ -70,8 +70,9 @@ public abstract class ExecutorServiceStep<T> extends AbstractStep<T>
     }
 
     @Override
-    public void start()
+    public void start( boolean orderedTickets )
     {
+        super.start( orderedTickets );
         this.executor = new DynamicTaskExecutor( initialProcessorCount, workAheadSize, DEFAULT_PARK_STRATEGY, name() );
     }
 
@@ -96,11 +97,15 @@ public abstract class ExecutorServiceStep<T> extends AbstractStep<T>
                     Object result = process( ticket, batch );
                     totalProcessingTime.add( currentTimeMillis()-startTime );
 
-                    await( rightTicket, ticket );
+                    if ( orderedTickets )
+                    {
+                        await( rightTicket, ticket );
+                    }
                     sendDownstream( ticket, result );
 
                     long expectedTicket = doneBatches.incrementAndGet();
-                    assert expectedTicket == ticket : "Unexpected ticket " + ticket + ", expected " + expectedTicket;
+                    assert !orderedTickets || expectedTicket == ticket :
+                            "Unexpected ticket " + ticket + ", expected " + expectedTicket;
 
                     int queueSizeAfterThisJobDone = queuedBatches.decrementAndGet();
                     assert queueSizeAfterThisJobDone >= 0 : "Negative queue size " + queueSizeAfterThisJobDone;

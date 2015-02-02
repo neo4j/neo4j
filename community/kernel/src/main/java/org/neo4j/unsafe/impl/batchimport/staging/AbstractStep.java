@@ -45,6 +45,7 @@ public abstract class AbstractStep<T> implements Step<T>
     private volatile boolean endOfUpstream;
     private volatile Throwable panic;
     private volatile boolean completed;
+    protected boolean orderedTickets;
     protected final PrimitiveLongPredicate rightTicket = new PrimitiveLongPredicate()
     {
         @Override
@@ -75,8 +76,9 @@ public abstract class AbstractStep<T> implements Step<T>
     }
 
     @Override
-    public void start()
-    {   // Do nothing by default
+    public void start( boolean orderedTickets )
+    {
+        this.orderedTickets = orderedTickets;   // Do nothing by default
     }
 
     /**

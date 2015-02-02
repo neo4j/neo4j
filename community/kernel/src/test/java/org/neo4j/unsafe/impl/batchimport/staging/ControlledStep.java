@@ -153,7 +153,7 @@ public class ControlledStep<T> implements Step<T>, StatsProvider
     }
 
     @Override
-    public void start()
+    public void start( boolean orderedTickets )
     {
     }
 
