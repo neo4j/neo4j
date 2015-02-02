@@ -34,6 +34,7 @@ public class MultiReadable implements CharReadable, Closeable
     private final RawIterator<CharReadable,IOException> actual;
     private CharReadable current = Readables.EMPTY;
     private int readFromCurrent;
+    private long previousReadersCollectivePosition;
 
     public MultiReadable( RawIterator<CharReadable,IOException> actual )
     {
@@ -51,6 +52,7 @@ public class MultiReadable implements CharReadable, Closeable
             {
                 if ( actual.hasNext() )
                 {
+                    previousReadersCollectivePosition += current.position();
                     closeCurrent();
                     current = actual.next();
 
@@ -60,6 +62,7 @@ public class MultiReadable implements CharReadable, Closeable
                     if ( readFromCurrent > 0 )
                     {
                         buffer[offset + read++] = '\n';
+                        previousReadersCollectivePosition++;
                         readFromCurrent = 0;
                     }
                 }
@@ -86,5 +89,11 @@ public class MultiReadable implements CharReadable, Closeable
     public void close() throws IOException
     {
         closeCurrent();
+    }
+
+    @Override
+    public long position()
+    {
+        return previousReadersCollectivePosition + current.position();
     }
 }

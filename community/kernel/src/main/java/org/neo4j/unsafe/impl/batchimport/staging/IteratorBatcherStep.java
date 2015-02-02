@@ -19,17 +19,28 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import org.neo4j.graphdb.ResourceIterator;
+import java.util.Collection;
+
+import org.neo4j.helpers.Format;
+import org.neo4j.unsafe.impl.batchimport.InputIterator;
+import org.neo4j.unsafe.impl.batchimport.stats.DetailLevel;
+import org.neo4j.unsafe.impl.batchimport.stats.Key;
+import org.neo4j.unsafe.impl.batchimport.stats.Keys;
+import org.neo4j.unsafe.impl.batchimport.stats.Stat;
+import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
+
+import static java.lang.System.currentTimeMillis;
 
 /**
  * Takes an Iterator and chops it up into batches downstream.
  */
-public class IteratorBatcherStep<T> extends ProducerStep<T>
+public class IteratorBatcherStep<T> extends ProducerStep<T> implements StatsProvider
 {
-    private final ResourceIterator<T> data;
+    private final InputIterator<T> data;
+    private long startTime, endTime;
 
     public IteratorBatcherStep( StageControl control, String name, int batchSize, int movingAverageSize,
-            ResourceIterator<T> data )
+            InputIterator<T> data )
     {
         super( control, name, batchSize, movingAverageSize );
         this.data = data;
@@ -42,8 +53,66 @@ public class IteratorBatcherStep<T> extends ProducerStep<T>
     }
 
     @Override
+    public void start()
+    {
+        startTime = currentTimeMillis();
+    }
+
+    @Override
     public void close()
     {
         data.close();
+    }
+
+    @Override
+    protected void addStatsProviders( Collection<StatsProvider> providers )
+    {
+        super.addStatsProviders( providers );
+        providers.add( this );
+    }
+
+    @Override
+    public Stat stat( Key key )
+    {
+        if ( key == Keys.io_throughput )
+        {
+            return new Stat()
+            {
+                @Override
+                public String toString()
+                {
+                    long stat = asLong();
+                    return stat == -1 ? "??" : Format.bytes( stat ) + "/s";
+                }
+
+                @Override
+                public long asLong()
+                {
+                    long thisEndTime = endTime != 0 ? endTime : currentTimeMillis();
+                    long totalTime = thisEndTime-startTime;
+                    int seconds = (int) (totalTime/1000);
+                    return seconds > 0 ? data.position()/seconds : -1;
+                }
+
+                @Override
+                public DetailLevel detailLevel()
+                {
+                    return DetailLevel.IMPORTANT;
+                }
+            };
+        }
+        return null;
+    }
+
+    @Override
+    protected void done()
+    {
+        endTime = currentTimeMillis();
+    }
+
+    @Override
+    public Key[] keys()
+    {
+        return new Key[] { Keys.io_throughput };
     }
 }

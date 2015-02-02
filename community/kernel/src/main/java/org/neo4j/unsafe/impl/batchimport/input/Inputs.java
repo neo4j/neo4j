@@ -20,9 +20,12 @@
 package org.neo4j.unsafe.impl.batchimport.input;
 
 import java.io.File;
+import java.util.Iterator;
 
 import org.neo4j.function.Functions;
-import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.helpers.collection.IteratorWrapper;
+import org.neo4j.unsafe.impl.batchimport.InputIterable;
+import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
@@ -31,7 +34,6 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories;
 import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactory;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 
-import static org.neo4j.helpers.collection.Iterables.asResourceIterable;
 import static org.neo4j.helpers.collection.Iterables.iterable;
 
 public class Inputs
@@ -39,18 +41,18 @@ public class Inputs
     public static Input input( final Iterable<InputNode> nodes, final Iterable<InputRelationship> relationships,
             final IdMapper idMapper, final IdGenerator idGenerator )
     {
-        final ResourceIterable<InputNode> resourceNodes = asResourceIterable( nodes );
-        final ResourceIterable<InputRelationship> resourceRelationships = asResourceIterable( relationships );
+        final InputIterable<InputNode> resourceNodes = asInputIterable( nodes );
+        final InputIterable<InputRelationship> resourceRelationships = asInputIterable( relationships );
         return new Input()
         {
             @Override
-            public ResourceIterable<InputRelationship> relationships()
+            public InputIterable<InputRelationship> relationships()
             {
                 return resourceRelationships;
             }
 
             @Override
-            public ResourceIterable<InputNode> nodes()
+            public InputIterable<InputNode> nodes()
             {
                 return resourceNodes;
             }
@@ -80,5 +82,42 @@ public class Inputs
                 nodeData, DataFactories.defaultFormatNodeFileHeader(),
                 relationshipData, DataFactories.defaultFormatRelationshipFileHeader(),
                 idType, configuration );
+    }
+
+    public static <T> InputIterable<T> asInputIterable( final Iterable<T> iterable )
+    {
+        return new InputIterable<T>()
+        {
+            @Override
+            public InputIterator<T> iterator()
+            {
+                return new PlainInputIterator<>( iterable.iterator() );
+            }
+        };
+    }
+
+    private static class PlainInputIterator<T> extends IteratorWrapper<T,T> implements InputIterator<T>
+    {
+        public PlainInputIterator( Iterator<T> iteratorToWrap )
+        {
+            super( iteratorToWrap );
+        }
+
+        @Override
+        protected T underlyingObjectToObject( T object )
+        {
+            return object;
+        }
+
+        @Override
+        public void close()
+        {   // Nothing to close here
+        }
+
+        @Override
+        public long position()
+        {
+            return 0;
+        }
     }
 }

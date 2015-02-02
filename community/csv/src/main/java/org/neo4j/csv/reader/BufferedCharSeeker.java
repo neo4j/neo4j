@@ -264,6 +264,12 @@ public class BufferedCharSeeker implements CharSeeker
     }
 
     @Override
+    public long position()
+    {
+        return reader.position();
+    }
+
+    @Override
     public String toString()
     {
         return getClass().getSimpleName() + "[buffer:" + charBuffer +

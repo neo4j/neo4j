@@ -42,7 +42,7 @@ public class IoMonitor extends GenericStatsProvider implements Monitor
 
     public IoMonitor()
     {
-        add( Keys.write_throughput, new Stat()
+        add( Keys.io_throughput, new Stat()
         {
             @Override
             public String toString()

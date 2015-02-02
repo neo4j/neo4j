@@ -159,6 +159,12 @@ public class ThreadAheadReadable extends Thread implements CharReadable, Closeab
         }
     }
 
+    @Override
+    public long position()
+    {
+        return actual.position();
+    }
+
     public static CharReadable threadAhead( CharReadable actual, int bufferSize )
     {
         return new ThreadAheadReadable( actual, bufferSize );

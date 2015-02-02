@@ -30,7 +30,7 @@ public enum Keys implements Key
     upstream_idle_time( "^", "Time spent waiting for batch from upstream" ),
     downstream_idle_time( "v", "Time spent waiting for downstream to catch up" ),
     avg_processing_time( "avg", "Average processing time per done batch" ),
-    write_throughput( null, "Write throughput per second, I/O" );
+    io_throughput( null, "I/O throughput per second" );
 
     private final String shortName;
     private final String description;

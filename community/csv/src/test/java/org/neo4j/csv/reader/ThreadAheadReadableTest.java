@@ -19,10 +19,11 @@
  */
 package org.neo4j.csv.reader;
 
+import org.junit.Test;
+
 import java.io.IOException;
 import java.util.concurrent.locks.LockSupport;
 
-import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 public class ThreadAheadReadableTest
@@ -114,6 +115,12 @@ public class ThreadAheadReadableTest
             {
                 LockSupport.parkNanos( 10_000_000 );
             }
+            return bytesRead;
+        }
+
+        @Override
+        public long position()
+        {
             return bytesRead;
         }
     }

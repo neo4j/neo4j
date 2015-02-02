@@ -19,10 +19,10 @@
  */
 package org.neo4j.csv.reader;
 
+import org.junit.Test;
+
 import java.io.IOException;
 import java.io.StringReader;
-
-import org.junit.Test;
 
 import org.neo4j.collection.RawIterator;
 
@@ -73,6 +73,29 @@ public class MultiReadableTest
         }
         assertFalse( seeker.seek( mark, delimiter ) );
         seeker.close();
+    }
+
+    @Test
+    public void shouldTrackAbsolutePosition() throws Exception
+    {
+        // GIVEN
+        String[][] data = new String[][] {
+                {"this is", "the first line"},
+                {"where this", "is the second line"},
+        };
+        RawIterator<CharReadable,IOException> readers = readerIteratorFromStrings( data, '\n' );
+        CharReadable reader = Readables.multipleSources( readers );
+        assertEquals( 0L, reader.position() );
+
+        // WHEN
+        char[] buffer = new char[100];
+        int read = reader.read( buffer, 0, 10 );
+        assertEquals( 10, reader.position() );
+        read += reader.read( buffer, 0, 30 );
+
+        // THEN
+        // we should now be well into the other reader
+        assertEquals( read, reader.position() );
     }
 
     private void assertNextLine( String[] line, CharSeeker seeker, Mark mark, Extractors extractors ) throws IOException

@@ -23,8 +23,8 @@ import java.util.Iterator;
 
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.function.Function;
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.NestingIterator;
+import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 
 /**
@@ -34,12 +34,13 @@ import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
  */
 abstract class InputGroupsDeserializer<ENTITY extends InputEntity>
         extends NestingIterator<ENTITY,DataFactory<ENTITY>>
-        implements ResourceIterator<ENTITY>
+        implements InputIterator<ENTITY>
 {
     private final Header.Factory headerFactory;
     private final Configuration config;
     private final IdType idType;
-    private ResourceIterator<ENTITY> currentInput;
+    private InputIterator<ENTITY> currentInput;
+    private long previousInputsCollectivePositions;
 
     InputGroupsDeserializer( Iterator<DataFactory<ENTITY>> dataFactory, Header.Factory headerFactory,
                              Configuration config, IdType idType )
@@ -51,7 +52,7 @@ abstract class InputGroupsDeserializer<ENTITY extends InputEntity>
     }
 
     @Override
-    protected ResourceIterator<ENTITY> createNestedIterator( DataFactory<ENTITY> dataFactory )
+    protected InputIterator<ENTITY> createNestedIterator( DataFactory<ENTITY> dataFactory )
     {
         closeCurrent();
 
@@ -71,16 +72,24 @@ abstract class InputGroupsDeserializer<ENTITY extends InputEntity>
     {
         if ( currentInput != null )
         {
+            previousInputsCollectivePositions += currentInput.position();
             currentInput.close();
+            currentInput = null;
         }
     }
 
-    protected abstract ResourceIterator<ENTITY> entityDeserializer( CharSeeker dataStream, Header dataHeader,
+    protected abstract InputIterator<ENTITY> entityDeserializer( CharSeeker dataStream, Header dataHeader,
             Function<ENTITY,ENTITY> decorator );
 
     @Override
     public void close()
     {
         closeCurrent();
+    }
+
+    @Override
+    public long position()
+    {
+        return previousInputsCollectivePositions + (currentInput != null ? currentInput.position() : 0);
     }
 }

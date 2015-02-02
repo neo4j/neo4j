@@ -38,6 +38,8 @@ import java.util.zip.ZipFile;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.function.RawFunction;
 
+import static java.lang.Math.max;
+
 /**
  * Means of instantiating common {@link CharReadable} instances.
  *
@@ -74,22 +76,38 @@ public class Readables
         public void close() throws IOException
         {   // Nothing to close
         }
+
+        @Override
+        public long position()
+        {
+            return 0;
+        }
     };
 
     public static CharReadable wrap( final Reader reader )
     {
         return new CharReadable()
         {
+            private long position;
+
             @Override
             public int read( char[] buffer, int offset, int length ) throws IOException
             {
-                return reader.read( buffer, offset, length );
+                int read = reader.read( buffer, offset, length );
+                position += max( read, 0 );
+                return read;
             }
 
             @Override
             public void close() throws IOException
             {
                 reader.close();
+            }
+
+            @Override
+            public long position()
+            {
+                return position;
             }
         };
     }

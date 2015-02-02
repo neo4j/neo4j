@@ -49,4 +49,9 @@ public interface CharReadable extends Closeable
      * @throws IOException if an I/O error occurs.
      */
     int read( char[] buffer, int offset, int length ) throws IOException;
+
+    /**
+     * @return a low-level byte-like position of f.ex. total number of read bytes.
+     */
+    long position();
 }
