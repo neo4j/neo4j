@@ -86,17 +86,6 @@ public interface RelationshipLoadingPosition extends CloneableInPublic
     boolean atPosition( DirectionWrapper direction, int type, long position );
 
     /**
-     * Checks whether or not the chain is at a position such that the supplied {@code predicate} returns
-     * {@code true}.
-     *
-     * @param predicate {@link PrimitiveLongPredicate} capable of deciding whether or not a position
-     * (relationship id) is affected.
-     * @return {@code true} if the chain is at a position such that the supplied {@code predicate}
-     * {@code true}.
-     */
-    boolean atPosition( PrimitiveLongPredicate predicate );
-
-    /**
      * Used when relationships gets deleted in the middle of traversing their chain(s). Should only be called if
      * {@link #atPosition(PrimitiveLongPredicate)} returns {@code true}. Current positions can here be
      * moved to the next in use relationship if the current position happens to point to a deleted relationship.
@@ -133,12 +122,6 @@ public interface RelationshipLoadingPosition extends CloneableInPublic
 
         @Override
         public boolean atPosition( DirectionWrapper direction, int type, long position )
-        {
-            return false;
-        }
-
-        @Override
-        public boolean atPosition( PrimitiveLongPredicate predicate )
         {
             return false;
         }
