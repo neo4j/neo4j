@@ -37,7 +37,7 @@ public class Stage
 
     public Stage( String name, Configuration config )
     {
-        this( name, config, false );
+        this( name, config, true );
     }
 
     public Stage( String name, Configuration config, boolean orderedTickets )
