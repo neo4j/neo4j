@@ -1151,9 +1151,9 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
                     }
                 }
             }
-            return ByteBuffer.allocate( (sizeIndex < SIZES.length) ? SIZES[sizeIndex]
-                    : ((sizeIndex - SIZES.length + 1) *
-                    SIZES[SIZES.length - 1]) );
+            return ByteBuffer.allocateDirect( (sizeIndex < SIZES.length) ? SIZES[sizeIndex]
+                                                                         : ((sizeIndex - SIZES.length + 1) *
+                                                                            SIZES[SIZES.length - 1]) );
         }
 
         void free()
@@ -1244,7 +1244,6 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             ByteBuffer buf = allocate( sizeIndex );
             this.buf.position( 0 );
             buf.put( this.buf );
-            free();
             this.buf = buf;
             this.buf.position( oldPosition );
         }
