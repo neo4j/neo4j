@@ -34,7 +34,7 @@ import static org.neo4j.csv.reader.Mark.END_OF_LINE_CHARACTER;
 public class BufferedCharSeeker implements CharSeeker
 {
     private static final int KB = 1024, MB = KB * KB;
-    public static final int DEFAULT_BUFFER_SIZE = 2 * MB;
+    public static final int DEFAULT_BUFFER_SIZE = 16 * MB;
     public static final char DEFAULT_QUOTE_CHAR = '"';
 
     private static final char EOL_CHAR = '\n';
