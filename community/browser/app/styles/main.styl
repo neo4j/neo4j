@@ -353,9 +353,9 @@ select
   height: banner-height
   left: nav-width
   right: 0
-  background-color: #afe29a
+  color: white
+  background-color: color-notice
   z-index: 100;
-  color: #000
   padding-left:24px
   padding-top:12px
   font-size: 15px
@@ -363,6 +363,21 @@ select
   font-weight: normal
   overflow:hidden
   word-break: keep-all
+  .notification button
+    width: 200px
+    padding: 2px
+    margin-bottom: 6px
+    border-radius: 6px !important;
+  a
+    color: lighten(color-link, 30)
+    cursor: pointer
+    text-decoration: underline
+    &:hover
+      color: lighten(color-link-hover, 30)
+      text-decoration: none
+    &:visited
+      text-decoration: none
+
 
 .connection-error
   #error
@@ -493,10 +508,11 @@ span.error
   font-size: 11px
   color: red
 
-.fa-good
-  background-color: yellow
+.btn-good
+  color: white
+  background-color: color-yes
   border-radius: 6px
 
-.fa-neutral
-  background-color: pink
+.btn-neutral
+  background-color: color-no
   border-radius: 6px
