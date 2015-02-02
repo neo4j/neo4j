@@ -53,7 +53,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.monitoring.BackupMonitor;
+import org.neo4j.kernel.monitoring.StoreCopyMonitor;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.first;
@@ -133,25 +133,25 @@ public class ServerUtil
                                                                 boolean includeLogicalLogs,
                                                                 StoreWriter writer,
                                                                 FileSystemAbstraction fs,
-                                                                BackupMonitor backupMonitor )
+                                                                StoreCopyMonitor storeCopyMonitor )
     {
         File baseDir = getBaseDir( storeDir );
         RequestContext context = RequestContext.anonymous( rotateLogs( dsManager, kernelPanicEventGenerator, logger ) );
-        backupMonitor.finishedRotatingLogicalLogs();
+        storeCopyMonitor.finishedRotatingLogicalLogs();
         ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( 1024 * 1024 );
         for ( XaDataSource ds : dsManager.getAllRegisteredDataSources() )
         {
-            copyStoreFiles( writer, fs, baseDir, temporaryBuffer, ds, backupMonitor );
+            copyStoreFiles( writer, fs, baseDir, temporaryBuffer, ds, storeCopyMonitor );
             if ( includeLogicalLogs )
             {
-                copyLogicalLogs( writer, fs, baseDir, temporaryBuffer, ds, backupMonitor );
+                copyLogicalLogs( writer, fs, baseDir, temporaryBuffer, ds, storeCopyMonitor );
             }
         }
         return context;
     }
 
     private static void copyLogicalLogs( StoreWriter writer, FileSystemAbstraction fs, File baseDir,
-                                         ByteBuffer temporaryBuffer, XaDataSource ds, BackupMonitor backupMonitor )
+                                         ByteBuffer temporaryBuffer, XaDataSource ds, StoreCopyMonitor storeCopyMonitor )
     {
         try ( ResourceIterator<File> files = ds.listLogicalLogs() )
         {
@@ -160,7 +160,7 @@ public class ServerUtil
                 File storeFile = files.next();
                 try
                 {
-                    copyFile( writer, fs, baseDir, temporaryBuffer, storeFile, backupMonitor );
+                    copyFile( writer, fs, baseDir, temporaryBuffer, storeFile, storeCopyMonitor );
                 }
                 catch ( FileNotFoundException ignored )
                 {
@@ -175,14 +175,14 @@ public class ServerUtil
     }
 
     private static void copyStoreFiles( StoreWriter writer, FileSystemAbstraction fs, File baseDir,
-                                        ByteBuffer temporaryBuffer, XaDataSource ds, BackupMonitor backupMonitor )
+                                        ByteBuffer temporaryBuffer, XaDataSource ds, StoreCopyMonitor storeCopyMonitor )
     {
         try ( ResourceIterator<File> files = ds.listStoreFiles() )
         {
             while ( files.hasNext() )
             {
                 File storeFile = files.next();
-                copyFile( writer, fs, baseDir, temporaryBuffer, storeFile, backupMonitor );
+                copyFile( writer, fs, baseDir, temporaryBuffer, storeFile, storeCopyMonitor );
             }
         }
         catch ( IOException e )
@@ -192,15 +192,15 @@ public class ServerUtil
     }
 
     private static void copyFile( StoreWriter writer, FileSystemAbstraction fs, File baseDir,
-            ByteBuffer temporaryBuffer, File storeFile, BackupMonitor backupMonitor ) throws IOException
+            ByteBuffer temporaryBuffer, File storeFile, StoreCopyMonitor storeCopyMonitor ) throws IOException
     {
-        backupMonitor.streamingFile( storeFile );
+        storeCopyMonitor.streamingFile( storeFile );
         try ( StoreChannel fileChannel = fs.open( storeFile, "r" ) )
         {
             writer.write( relativePath( baseDir, storeFile ), fileChannel, temporaryBuffer,
                     storeFile.length() > 0 );
         }
-        backupMonitor.streamedFile( storeFile );
+        storeCopyMonitor.streamedFile( storeFile );
     }
 
     /**

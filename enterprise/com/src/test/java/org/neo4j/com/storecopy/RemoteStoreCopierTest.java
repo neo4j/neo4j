@@ -20,8 +20,10 @@
 package org.neo4j.com.storecopy;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -44,12 +46,13 @@ import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.monitoring.BackupMonitor;
+import org.neo4j.kernel.monitoring.StoreCopyMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.spy;
@@ -72,9 +75,16 @@ public class RemoteStoreCopierTest
         final String copyDir = new File( testDir.directory(), "copy" ).getAbsolutePath();
         final String originalDir = new File( testDir.directory(), "original" ).getAbsolutePath();
         Config config = new Config( MapUtil.stringMap( store_dir.name(), copyDir ) );
-        RemoteStoreCopier copier = new RemoteStoreCopier( config, loadKernelExtensions(), new ConsoleLogger( StringLogger.SYSTEM ), fs );
 
-        final GraphDatabaseAPI original = (GraphDatabaseAPI)new GraphDatabaseFactory().newEmbeddedDatabase( originalDir );
+        Monitors monitors = new Monitors();
+        monitors.addMonitorListener( StoreCopyMonitor.NONE );
+
+        RemoteStoreCopier copier =
+                new RemoteStoreCopier( config, loadKernelExtensions(), new ConsoleLogger( StringLogger.SYSTEM ), fs,
+                        monitors );
+
+        final GraphDatabaseAPI original =
+                (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( originalDir );
 
         // When
         RemoteStoreCopier.StoreCopyRequester requester = spy( new RemoteStoreCopier.StoreCopyRequester()
@@ -98,7 +108,7 @@ public class RemoteStoreCopierTest
                         original.getDependencyResolver().resolveDependency( KernelPanicEventGenerator.class ),
                         StringLogger.SYSTEM, false, writer, fs,
                         original.getDependencyResolver().resolveDependency( Monitors.class ).newMonitor(
-                                BackupMonitor.class )
+                                StoreCopyMonitor.class )
                 );
 
                 // Data that should be made available as part of recovery
@@ -108,8 +118,7 @@ public class RemoteStoreCopierTest
                     tx.success();
                 }
 
-                response = spy( ServerUtil.packResponse( original.storeId(), dsManager, ctx, null,
-                        ServerUtil.ALL ) );
+                response = spy( ServerUtil.packResponse( original.storeId(), dsManager, ctx, null, ServerUtil.ALL ) );
                 return response;
             }
 
@@ -126,12 +135,13 @@ public class RemoteStoreCopierTest
         // Then
         GraphDatabaseService copy = new GraphDatabaseFactory().newEmbeddedDatabase( copyDir );
 
-        try( Transaction tx = copy.beginTx() )
+        try ( Transaction tx = copy.beginTx() )
         {
             GlobalGraphOperations globalOps = GlobalGraphOperations.at( copy );
             assertThat( Iterables.single( globalOps.getAllNodesWithLabel( label( "BeforeCopyBegins" ) ) ).getId(),
                     equalTo( 0l ) );
-            assertThat( Iterables.single(globalOps.getAllNodesWithLabel( label( "AfterCopy" ) )).getId(), equalTo(1l) );
+            assertThat( Iterables.single( globalOps.getAllNodesWithLabel( label( "AfterCopy" ) ) ).getId(),
+                    equalTo( 1l ) );
             tx.success();
         }
         finally
@@ -142,6 +152,207 @@ public class RemoteStoreCopierTest
 
         verify( requester, times( 1 ) ).done();
     }
+
+    @Test
+    public void shouldCopyStoreFilesAcrossIfACancellationRequestHappensAfterTheTempStoreHasBeenRecovered()
+            throws IOException
+    {
+        // given
+        final String copyDir = new File( testDir.directory(), "copy" ).getAbsolutePath();
+        final String originalDir = new File( testDir.directory(), "original" ).getAbsolutePath();
+        Config config = new Config( MapUtil.stringMap( store_dir.name(), copyDir ) );
+
+        final AtomicBoolean cancelStoreCopy = new AtomicBoolean( false );
+        CancellationRequest cancellationRequest = new CancellationRequest()
+        {
+            @Override
+            public boolean cancellationRequested()
+            {
+                return cancelStoreCopy.get();
+            }
+        };
+
+        Monitors monitors = new Monitors();
+        monitors.addMonitorListener( new StoreCopyMonitor.Adaptor()
+        {
+            @Override
+            public void recoveredStore()
+            {
+                // simulate a cancellation request
+                cancelStoreCopy.set( true );
+            }
+        } );
+
+        RemoteStoreCopier copier =
+                new RemoteStoreCopier( config, loadKernelExtensions(), new ConsoleLogger( StringLogger.SYSTEM ), fs,
+                        monitors
+                );
+
+        final GraphDatabaseAPI original =
+                (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( originalDir );
+
+        try ( Transaction tx = original.beginTx() )
+        {
+            original.createNode( label( "BeforeCopyBegins" ) );
+            tx.success();
+        }
+
+        RemoteStoreCopier.StoreCopyRequester requester = spy( new RemoteStoreCopier.StoreCopyRequester()
+        {
+            public Response<Object> response;
+
+            @Override
+            public Response<?> copyStore( StoreWriter writer )
+            {
+                XaDataSourceManager dsManager = original.getDependencyResolver().resolveDependency(
+                        XaDataSourceManager.class );
+                RequestContext ctx = ServerUtil.rotateLogsAndStreamStoreFiles( originalDir,
+                        dsManager,
+                        original.getDependencyResolver().resolveDependency( KernelPanicEventGenerator.class ),
+                        StringLogger.SYSTEM, false, writer, fs,
+                        original.getDependencyResolver().resolveDependency( Monitors.class ).newMonitor(
+                                StoreCopyMonitor.class )
+                );
+
+                response = spy( ServerUtil.packResponse( original.storeId(), dsManager, ctx, null, ServerUtil.ALL ) );
+                return response;
+            }
+
+            @Override
+            public void done()
+            {
+                // Ensure response is closed before this method is called
+                assertNotNull( response );
+                verify( response, times( 1 ) ).close();
+            }
+        } );
+
+
+        // when
+        copier.copyStore( requester, cancellationRequest );
+
+        // Then
+        GraphDatabaseService copy = new GraphDatabaseFactory().newEmbeddedDatabase( copyDir );
+
+        try ( Transaction tx = copy.beginTx() )
+        {
+            GlobalGraphOperations globalOps = GlobalGraphOperations.at( copy );
+
+            long nodesCount = Iterables.count( globalOps.getAllNodesWithLabel( label( "BeforeCopyBegins" ) ) );
+            assertThat( nodesCount, equalTo( 1l ) );
+
+            assertThat( Iterables.single( globalOps.getAllNodesWithLabel( label( "BeforeCopyBegins" ) ) ).getId(),
+                    equalTo( 0l ) );
+
+            tx.success();
+        }
+        finally
+        {
+            copy.shutdown();
+            original.shutdown();
+        }
+
+        verify( requester, times( 1 ) ).done();
+    }
+
+    @Test
+    public void shouldEndUpWithAnEmptyStoreIfCancellationRequestIssuedJustBeforeRecoveryTakesPlace()
+            throws IOException
+    {
+        // given
+        final String copyDir = new File( testDir.directory(), "copy" ).getAbsolutePath();
+        final String originalDir = new File( testDir.directory(), "original" ).getAbsolutePath();
+        Config config = new Config( MapUtil.stringMap( store_dir.name(), copyDir ) );
+
+        final AtomicBoolean cancelStoreCopy = new AtomicBoolean( false );
+        CancellationRequest cancellationRequest = new CancellationRequest()
+        {
+            @Override
+            public boolean cancellationRequested()
+            {
+                return cancelStoreCopy.get();
+            }
+        };
+
+        Monitors monitors = new Monitors();
+        monitors.addMonitorListener( new StoreCopyMonitor.Adaptor()
+        {
+            @Override
+            public void finishedCopyingStoreFiles()
+            {
+                // simulate a cancellation request
+                cancelStoreCopy.set( true );
+            }
+        } );
+
+
+        RemoteStoreCopier copier =
+                new RemoteStoreCopier( config, loadKernelExtensions(), new ConsoleLogger( StringLogger.SYSTEM ), fs,
+                        monitors );
+
+        final GraphDatabaseAPI original =
+                (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( originalDir );
+
+        try ( Transaction tx = original.beginTx() )
+        {
+            original.createNode( label( "BeforeCopyBegins" ) );
+            tx.success();
+        }
+
+        RemoteStoreCopier.StoreCopyRequester requester = spy( new RemoteStoreCopier.StoreCopyRequester()
+        {
+            public Response<Object> response;
+
+            @Override
+            public Response<?> copyStore( StoreWriter writer )
+            {
+                XaDataSourceManager dsManager = original.getDependencyResolver().resolveDependency(
+                        XaDataSourceManager.class );
+                RequestContext ctx = ServerUtil.rotateLogsAndStreamStoreFiles( originalDir,
+                        dsManager,
+                        original.getDependencyResolver().resolveDependency( KernelPanicEventGenerator.class ),
+                        StringLogger.SYSTEM, false, writer, fs,
+                        original.getDependencyResolver().resolveDependency( Monitors.class ).newMonitor(
+                                StoreCopyMonitor.class )
+                );
+
+                response = spy( ServerUtil.packResponse( original.storeId(), dsManager, ctx, null, ServerUtil.ALL ) );
+                return response;
+            }
+
+            @Override
+            public void done()
+            {
+                // Ensure response is closed before this method is called
+                assertNotNull( response );
+                verify( response, times( 1 ) ).close();
+            }
+        } );
+
+
+        // when
+        copier.copyStore( requester, cancellationRequest );
+
+        // Then
+        GraphDatabaseService copy = new GraphDatabaseFactory().newEmbeddedDatabase( copyDir );
+
+        try ( Transaction tx = copy.beginTx() )
+        {
+            GlobalGraphOperations globalOps = GlobalGraphOperations.at( copy );
+
+            long nodesCount = Iterables.count( globalOps.getAllNodesWithLabel( label( "BeforeCopyBegins" ) ) );
+            assertThat( nodesCount, equalTo( 0l ) );
+            tx.success();
+        }
+        finally
+        {
+            copy.shutdown();
+            original.shutdown();
+        }
+
+        verify( requester, times( 1 ) ).done();
+    }
+
 
     private List<KernelExtensionFactory<?>> loadKernelExtensions()
     {

@@ -55,7 +55,7 @@ import org.neo4j.kernel.impl.util.ResourceIterators;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.monitoring.BackupMonitor;
+import org.neo4j.kernel.monitoring.StoreCopyMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
 
@@ -97,7 +97,8 @@ public class ThirdPartyDSStoreCopyIT
         final String copyDir = new File(testDir.directory(), "copy").getAbsolutePath();
         final String originalDir = new File(testDir.directory(), "original").getAbsolutePath();
         Config config = new Config( MapUtil.stringMap( store_dir.name(), copyDir ) );
-        RemoteStoreCopier copier = new RemoteStoreCopier( config, loadKernelExtensions(), new ConsoleLogger( StringLogger.DEV_NULL ), fs );
+        RemoteStoreCopier copier = new RemoteStoreCopier( config, loadKernelExtensions(), new ConsoleLogger(
+                StringLogger.DEV_NULL ), fs, new Monitors() );
 
         // When
         copier.copyStore( new RemoteStoreCopier.StoreCopyRequester()
@@ -116,7 +117,7 @@ public class ThirdPartyDSStoreCopyIT
                             dsManager,
                             original.getDependencyResolver().resolveDependency( KernelPanicEventGenerator.class ),
                             StringLogger.SYSTEM, false, writer, fs,
-                            original.getDependencyResolver().resolveDependency( Monitors.class ).newMonitor( BackupMonitor.class ) );
+                            original.getDependencyResolver().resolveDependency( Monitors.class ).newMonitor( StoreCopyMonitor.class ) );
 
                     return ServerUtil.packResponse( original.storeId(), dsManager, ctx, null, ServerUtil.ALL );
                 } finally
