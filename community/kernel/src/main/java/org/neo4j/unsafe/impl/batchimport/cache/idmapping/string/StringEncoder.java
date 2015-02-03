@@ -164,4 +164,10 @@ public class StringEncoder implements Encoder
         }
         return (int) code;
     }
+
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName() + "[" + numCodes + "]";
+    }
 }

@@ -63,6 +63,12 @@ public class IdMappers
         public void visitMemoryStats( MemoryStatsVisitor visitor )
         {   // No memory usage
         }
+
+        @Override
+        public String toString()
+        {
+            return getClass().getSimpleName();
+        }
     }
 
     /**

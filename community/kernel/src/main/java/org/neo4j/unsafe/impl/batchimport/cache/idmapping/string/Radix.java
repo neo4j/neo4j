@@ -47,6 +47,12 @@ public abstract class Radix
 
     public abstract RadixCalculator calculator();
 
+    @Override
+    public java.lang.String toString()
+    {
+        return Radix.class.getSimpleName() + "." + getClass().getSimpleName();
+    }
+
     public static class String extends Radix
     {
         private final RadixCalculator calculator;

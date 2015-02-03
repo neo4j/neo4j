@@ -445,4 +445,10 @@ public class EncodingIdMapper implements IdMapper
         trackerCache.visit( visitor );
         collisionCache.visit( visitor );
     }
+
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName() + "[" + encoder + "," + radix + "]";
+    }
 }

@@ -38,4 +38,10 @@ public class LongEncoder implements Encoder
     {
         return (int)(Math.log10( value ) + 1);
     }
+
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName();
+    }
 }
