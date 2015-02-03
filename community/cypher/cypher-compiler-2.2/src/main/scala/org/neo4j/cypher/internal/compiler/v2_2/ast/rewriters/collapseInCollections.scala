@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.{bottomUp, Rewriter}
+import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, bottomUp}
 
-case object collapseInCollectionsContainingConstants extends Rewriter {
+case object collapseInCollections extends Rewriter {
   override def apply(that: AnyRef) = bottomUp(instance).apply(that)
 
   case class InValue(lhs: Expression, expr: Expression)
@@ -30,7 +30,7 @@ case object collapseInCollectionsContainingConstants extends Rewriter {
   private val instance: Rewriter = Rewriter.lift {
     case predicate@Ors(exprs) =>
       val (const, nonConst) = exprs.toList.partition {
-        case in@In(_, rhs: Collection) if ConstantExpression.unapply(rhs).isDefined => true
+        case in@In(_, rhs: Collection) => true
         case _ => false
       }
 
@@ -52,4 +52,3 @@ case object collapseInCollectionsContainingConstants extends Rewriter {
       }
   }
 }
-
