@@ -158,9 +158,26 @@ public class BatchingPageCache implements PageCache
         Writer writer = file.getName().contains( StoreFactory.COUNTS_STORE )
                 ? SYNCHRONOUS.create( channel, monitor )
                 : writerFactory.create( channel, monitor );
-        BatchingPagedFile pageFile = new BatchingPagedFile( file, channel, writer, pageSize );
+        BatchingPagedFile pageFile = new BatchingPagedFile( file, channel, writer,
+                individualizedPageSize( file, pageSize ) );
         pagedFiles.put( file, pageFile );
         return pageFile;
+    }
+
+    private int individualizedPageSize( File file, int pageSize )
+    {
+        // There's a problem, at least on Windows 7, where the OS would somehow
+        // keep the entire file, or very large portions of it in memory when reading
+        // the relationship store backwards.
+        // This would be a performance problem where releasing of this memory would
+        // come first when the import was done, or all available RAM was used at
+        // which point the OS would start releasing some parts of the cached
+        // relationship file. Although at this point the JVM would observe
+        // significant stalls and slowdowns.
+        // The current solution is to, when reading a file backwards, read it in
+        // much bigger chunks. When doing so the OS doesn't seem to cache the file
+        // like described above.
+        return file.getName().endsWith( StoreFactory.RELATIONSHIP_STORE_NAME ) ? pageSize * 50 : pageSize;
     }
 
     void unmap( BatchingPagedFile pagedFile ) throws IOException
