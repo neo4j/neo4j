@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongPeekingIterator;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.checking.index.IndexAccessors;
@@ -30,6 +31,8 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.LookupFilter;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
@@ -74,7 +77,8 @@ public class NodeCorrectlyIndexedCheck implements RecordCheck<NodeRecord, Consis
 
                 if ( indexRule.isConstraintIndex() )
                 {
-                    verifyNodeCorrectlyIndexedUniquely( nodeId, propertyValue, engine, indexRule, reader );
+                    verifyNodeCorrectlyIndexedUniquely( nodeId, property.getKeyIndexId(), propertyValue, engine,
+                            indexRule, reader );
                 }
                 else
                 {
@@ -84,14 +88,17 @@ public class NodeCorrectlyIndexedCheck implements RecordCheck<NodeRecord, Consis
         }
     }
 
-    private void verifyNodeCorrectlyIndexedUniquely(
-            long nodeId,
-            Object propertyValue,
-            CheckerEngine<NodeRecord, ConsistencyReport.NodeConsistencyReport> engine,
-            IndexRule indexRule,
+    private void verifyNodeCorrectlyIndexedUniquely( long nodeId, int propertyKeyId, Object propertyValue,
+            CheckerEngine<NodeRecord,ConsistencyReport.NodeConsistencyReport> engine, IndexRule indexRule,
             IndexReader reader )
     {
         PrimitiveLongIterator indexedNodeIds = reader.lookup( propertyValue );
+
+        // For verifying node indexed uniquely in offline CC, if one match found in the first stage match,
+        // then there is no need to filter the result. The result is a exact match.
+        // If multiple matches found, we need to filter the result to get exact matches.
+        indexedNodeIds = filterIfMultipleValuesFound( indexedNodeIds, propertyKeyId, propertyValue );
+
         boolean found = false;
 
         while ( indexedNodeIds.hasNext() )
@@ -112,6 +119,18 @@ public class NodeCorrectlyIndexedCheck implements RecordCheck<NodeRecord, Consis
         {
             engine.report().notIndexed( indexRule, propertyValue );
         }
+    }
+
+    private PrimitiveLongIterator filterIfMultipleValuesFound( PrimitiveLongIterator indexedNodeIds, int propertyKeyId,
+            Object propertyValue )
+    {
+        PrimitiveLongIterator filteredIndexedNodeIds = new PrimitiveLongPeekingIterator( indexedNodeIds );
+        if ( ((PrimitiveLongPeekingIterator) filteredIndexedNodeIds).hasMultipleValues() )
+        {
+            filteredIndexedNodeIds = LookupFilter.exactIndexMatches( propertyReader, filteredIndexedNodeIds,
+                    propertyKeyId, propertyValue );
+        }
+        return filteredIndexedNodeIds;
     }
 
     private void verifyNodeCorrectlyIndexed(

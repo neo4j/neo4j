@@ -33,6 +33,7 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
@@ -118,8 +119,8 @@ public class ConsistencyCheckTasks
         if ( checkIndexes )
         {
             tasks.add( new RecordScanner<>( new IterableStore<>( nativeStores.getNodeStore() ), "NodeStoreToIndexes",
-                    progress, new NodeToLabelIndexesProcessor( reporter, indexes,
-                    new PropertyReader( (PropertyStore) nativeStores.getPropertyStore() ) ) ) );
+                    progress, new NodeToLabelIndexesProcessor( reporter, indexes, new PropertyReader(
+                            (PropertyStore) nativeStores.getPropertyStore(), (NodeStore) nativeStores.getNodeStore() ) ) ) );
         }
 
         int iPass = 0;

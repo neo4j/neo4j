@@ -29,10 +29,8 @@ import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.function.primitive.PrimitiveLongPredicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TxState;
@@ -575,8 +573,7 @@ public class StateHandlingStatementOperations implements
 
     @Override
     public PrimitiveLongIterator nodesGetFromIndexLookup( KernelStatement state, IndexDescriptor index,
-                                                          final Object value )
-            throws IndexNotFoundKernelException
+            Object value ) throws IndexNotFoundKernelException
     {
         PrimitiveLongResourceIterator committed = storeLayer.nodesGetFromIndexLookup( state, index, value );
         PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, value, committed );
@@ -584,45 +581,10 @@ public class StateHandlingStatementOperations implements
         return resourceIterator( changeFilteredMatches, committed );
     }
 
-    private PrimitiveLongIterator filterExactIndexMatches(
-            KernelStatement state,
-            IndexDescriptor index,
-            Object value,
-            PrimitiveLongIterator committed )
+    private PrimitiveLongIterator filterExactIndexMatches( final KernelStatement state, IndexDescriptor index,
+            Object value, PrimitiveLongResourceIterator committed )
     {
-        if ( isNumberOrArray( value ) )
-        {
-            return PrimitiveLongCollections.filter( committed, exactMatch( state, index.getPropertyKeyId(), value ) );
-        }
-        return committed;
-    }
-
-    private boolean isNumberOrArray( Object value )
-    {
-        return value instanceof Number || value.getClass().isArray();
-    }
-
-    private PrimitiveLongPredicate exactMatch(
-            final KernelStatement state,
-            final int propertyKeyId,
-            final Object value )
-    {
-        return new PrimitiveLongPredicate()
-        {
-            @Override
-            public boolean accept( long nodeId )
-            {
-                try
-                {
-                    return nodeGetProperty( state, nodeId, propertyKeyId ).valueEquals( value );
-                }
-                catch ( EntityNotFoundException e )
-                {
-                    throw new ThisShouldNotHappenError( "Chris", "An index claims a node by id " + nodeId +
-                            " has the value. However, it looks like that node does not exist.", e);
-                }
-            }
-        };
+        return LookupFilter.exactIndexMatches( this, state, committed, index.getPropertyKeyId(), value );
     }
 
     private PrimitiveLongIterator filterIndexStateChanges( KernelStatement state, IndexDescriptor index,
