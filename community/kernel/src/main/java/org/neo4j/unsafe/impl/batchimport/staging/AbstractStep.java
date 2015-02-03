@@ -67,6 +67,7 @@ public abstract class AbstractStep<T> implements Step<T>
     protected final AtomicLong doneBatches = new AtomicLong();
     // Milliseconds spent processing all received batches.
     protected final MovingAverage totalProcessingTime;
+    protected long startTime, endTime;
 
     public AbstractStep( StageControl control, String name, int movingAverageSize )
     {
@@ -79,6 +80,7 @@ public abstract class AbstractStep<T> implements Step<T>
     public void start( boolean orderedTickets )
     {
         this.orderedTickets = orderedTickets;   // Do nothing by default
+        startTime = currentTimeMillis();
     }
 
     /**
@@ -252,6 +254,7 @@ public abstract class AbstractStep<T> implements Step<T>
      */
     protected void done()
     {   // Do nothing by default
+        endTime = currentTimeMillis();
     }
 
     @Override

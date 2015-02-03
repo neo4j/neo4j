@@ -17,23 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.input;
+package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.unsafe.impl.batchimport.BatchImporter;
-import org.neo4j.unsafe.impl.batchimport.InputIterable;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.graphdb.ResourceIterable;
 
 /**
- * Unifies all data input given to a {@link BatchImporter} to allow for more coherent implementations.
+ * {@link Iterable} that returns {@link InputIterator} instances.
  */
-public interface Input
+public interface InputIterable<T> extends ResourceIterable<T>
 {
-    InputIterable<InputNode> nodes();
-
-    InputIterable<InputRelationship> relationships();
-
-    IdMapper idMapper();
-
-    IdGenerator idGenerator();
+    @Override
+    public InputIterator<T> iterator();
 }

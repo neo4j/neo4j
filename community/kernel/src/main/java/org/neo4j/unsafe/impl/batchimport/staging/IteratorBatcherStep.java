@@ -19,17 +19,24 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import org.neo4j.graphdb.ResourceIterator;
+import java.util.Collection;
+
+import org.neo4j.unsafe.impl.batchimport.InputIterator;
+import org.neo4j.unsafe.impl.batchimport.IoThroughputStat;
+import org.neo4j.unsafe.impl.batchimport.stats.Key;
+import org.neo4j.unsafe.impl.batchimport.stats.Keys;
+import org.neo4j.unsafe.impl.batchimport.stats.Stat;
+import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 /**
  * Takes an Iterator and chops it up into batches downstream.
  */
-public class IteratorBatcherStep<T> extends ProducerStep<T>
+public class IteratorBatcherStep<T> extends ProducerStep<T> implements StatsProvider
 {
-    private final ResourceIterator<T> data;
+    private final InputIterator<T> data;
 
     public IteratorBatcherStep( StageControl control, String name, int batchSize, int movingAverageSize,
-            ResourceIterator<T> data )
+            InputIterator<T> data )
     {
         super( control, name, batchSize, movingAverageSize );
         this.data = data;
@@ -45,5 +52,28 @@ public class IteratorBatcherStep<T> extends ProducerStep<T>
     public void close()
     {
         data.close();
+    }
+
+    @Override
+    protected void addStatsProviders( Collection<StatsProvider> providers )
+    {
+        super.addStatsProviders( providers );
+        providers.add( this );
+    }
+
+    @Override
+    public Stat stat( Key key )
+    {
+        if ( key == Keys.io_throughput )
+        {
+            return new IoThroughputStat( startTime, endTime, data.position() );
+        }
+        return null;
+    }
+
+    @Override
+    public Key[] keys()
+    {
+        return new Key[] { Keys.io_throughput };
     }
 }

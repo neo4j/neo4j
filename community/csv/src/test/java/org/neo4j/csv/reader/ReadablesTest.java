@@ -19,21 +19,23 @@
  */
 package org.neo4j.csv.reader;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.StringReader;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.test.TestDirectory;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
@@ -121,6 +123,20 @@ public class ReadablesTest
         {   // Good
             assertThat( e.getMessage(), containsString( "Multiple" ) );
         }
+    }
+
+    @Test
+    public void shouldTrackPosition() throws Exception
+    {
+        // GIVEN
+        CharReadable reader = Readables.wrap( new StringReader( "1234567890" ) );
+
+        // WHEN/THEN
+        char[] buffer = new char[10];
+        assertEquals( 3, reader.read( buffer, 0, 3 ) );
+        assertEquals( 3L, reader.position() );
+        assertEquals( 7, reader.read( buffer, 0, 7 ) );
+        assertEquals( 10L, reader.position() );
     }
 
     private File write( String text ) throws IOException

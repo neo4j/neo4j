@@ -22,7 +22,6 @@ package org.neo4j.unsafe.impl.batchimport;
 import java.io.IOException;
 
 import org.neo4j.function.Function;
-import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Format;
@@ -134,8 +133,8 @@ public class ParallelBatchImporter implements BatchImporter
             IdMapper idMapper = input.idMapper();
             IdGenerator idGenerator = input.idGenerator();
             nodeRelationshipLink = new NodeRelationshipLinkImpl( AUTO, config.denseNodeThreshold() );
-            final ResourceIterable<InputNode> nodes = input.nodes();
-            final ResourceIterable<InputRelationship> relationships = input.relationships();
+            final InputIterable<InputNode> nodes = input.nodes();
+            final InputIterable<InputRelationship> relationships = input.relationships();
 
             // Stage 1 -- nodes, properties, labels
             final NodeStage nodeStage = new NodeStage( nodes, idMapper, idGenerator, neoStore );
@@ -273,11 +272,11 @@ public class ParallelBatchImporter implements BatchImporter
 
     public class NodeStage extends Stage
     {
-        public NodeStage( ResourceIterable<InputNode> nodes, IdMapper idMapper, IdGenerator idGenerator,
+        public NodeStage( InputIterable<InputNode> nodes, IdMapper idMapper, IdGenerator idGenerator,
                           BatchingNeoStore neoStore )
         {
             super( "Nodes", config );
-            add( new IteratorBatcherStep<>( control(), "INPUT", config.batchSize(), config.movingAverageSize(),
+            add( new IteratorBatcherStep<>( control(), ">", config.batchSize(), config.movingAverageSize(),
                     nodes.iterator() ) );
 
             NodeStore nodeStore = neoStore.getNodeStore();
@@ -292,11 +291,11 @@ public class ParallelBatchImporter implements BatchImporter
 
     public class CalculateDenseNodesStage extends Stage
     {
-        public CalculateDenseNodesStage( ResourceIterable<InputRelationship> relationships,
+        public CalculateDenseNodesStage( InputIterable<InputRelationship> relationships,
                 NodeRelationshipLink nodeRelationshipLink, IdMapper idMapper )
         {
             super( "Calculate dense nodes", config );
-            add( new IteratorBatcherStep<>( control(), "INPUT", config.batchSize(), config.movingAverageSize(),
+            add( new IteratorBatcherStep<>( control(), ">", config.batchSize(), config.movingAverageSize(),
                     relationships.iterator() ) );
 
             add( new RelationshipPreparationStep( control(), config, idMapper ) );
@@ -306,11 +305,11 @@ public class ParallelBatchImporter implements BatchImporter
 
     public class RelationshipStage extends Stage
     {
-        public RelationshipStage( ResourceIterable<InputRelationship> relationships, IdMapper idMapper,
+        public RelationshipStage( InputIterable<InputRelationship> relationships, IdMapper idMapper,
                 BatchingNeoStore neoStore, NodeRelationshipLink nodeRelationshipLink )
         {
             super( "Relationships", config );
-            add( new IteratorBatcherStep<>( control(), "INPUT", config.batchSize(), config.movingAverageSize(),
+            add( new IteratorBatcherStep<>( control(), ">", config.batchSize(), config.movingAverageSize(),
                     relationships.iterator() ) );
 
             RelationshipStore relationshipStore = neoStore.getRelationshipStore();

@@ -24,8 +24,8 @@ import java.util.Map;
 
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.function.Function;
-import org.neo4j.graphdb.ResourceIterable;
-import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.unsafe.impl.batchimport.InputIterable;
+import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
@@ -98,18 +98,18 @@ public class CsvInput implements Input
     }
 
     @Override
-    public ResourceIterable<InputNode> nodes()
+    public InputIterable<InputNode> nodes()
     {
-        return new ResourceIterable<InputNode>()
+        return new InputIterable<InputNode>()
         {
             @Override
-            public ResourceIterator<InputNode> iterator()
+            public InputIterator<InputNode> iterator()
             {
                 return new InputGroupsDeserializer<InputNode>( nodeDataFactory.iterator(),
                         nodeHeaderFactory, config, idType )
                 {
                     @Override
-                    protected ResourceIterator<InputNode> entityDeserializer( CharSeeker dataStream, Header dataHeader,
+                    protected InputIterator<InputNode> entityDeserializer( CharSeeker dataStream, Header dataHeader,
                             Function<InputNode,InputNode> decorator )
                     {
                         return new InputNodeDeserializer( dataHeader, dataStream, delimiter, decorator,
@@ -121,19 +121,19 @@ public class CsvInput implements Input
     }
 
     @Override
-    public ResourceIterable<InputRelationship> relationships()
+    public InputIterable<InputRelationship> relationships()
     {
-        return new ResourceIterable<InputRelationship>()
+        return new InputIterable<InputRelationship>()
         {
             @Override
-            public ResourceIterator<InputRelationship> iterator()
+            public InputIterator<InputRelationship> iterator()
             {
                 relationshipIds.reset();
                 return new InputGroupsDeserializer<InputRelationship>( relationshipDataFactory.iterator(),
                         relationshipHeaderFactory, config, idType )
                 {
                     @Override
-                    protected ResourceIterator<InputRelationship> entityDeserializer( CharSeeker dataStream,
+                    protected InputIterator<InputRelationship> entityDeserializer( CharSeeker dataStream,
                               Header dataHeader, Function<InputRelationship,InputRelationship> decorator )
                     {
                         return new InputRelationshipDeserializer( dataHeader, dataStream, delimiter,

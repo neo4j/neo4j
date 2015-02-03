@@ -83,6 +83,11 @@ public interface CharSeeker extends Closeable
      */
     boolean tryExtract( Mark mark, Extractor<?> extractor );
 
+    /**
+     * @return a low-level byte-like position of f.ex. total number of read bytes.
+     */
+    long position();
+
     public static final CharSeeker EMPTY = new CharSeeker()
     {
         @Override
@@ -106,6 +111,12 @@ public interface CharSeeker extends Closeable
         @Override
         public void close()
         {   // Nothing to close
+        }
+
+        @Override
+        public long position()
+        {
+            return 0;
         }
     };
 }
