@@ -574,11 +574,11 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
                 }
                 neoStoreModule.neoStore().makeStoreOk();
 
-                propertyKeyTokenHolder.addTokens(
+                propertyKeyTokenHolder.setInitialTokens(
                         neoStoreModule.neoStore().getPropertyKeyTokenStore().getTokens( Integer.MAX_VALUE ) );
-                relationshipTypeTokens.addTokens(
+                relationshipTypeTokens.setInitialTokens(
                         neoStoreModule.neoStore().getRelationshipTypeTokenStore().getTokens( Integer.MAX_VALUE ) );
-                labelTokens.addTokens( neoStoreModule.neoStore().getLabelTokenStore().getTokens( Integer.MAX_VALUE ) );
+                labelTokens.setInitialTokens( neoStoreModule.neoStore().getLabelTokenStore().getTokens( Integer.MAX_VALUE ) );
 
                 if ( neoStore.getCounts() == null )
                 {
