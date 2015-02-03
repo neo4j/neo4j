@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.graphdb.QueryExecutionException
+import collection.JavaConverters._
 
 class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -442,15 +444,21 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
+  test("should reject unicode versions of hyphens") {
+    executeAndEnsureError(
+      "RETURN 42 — 41",
+      "Invalid input '—': expected whitespace, comment, '.', node labels, '[', \"=~\", IN, IS, '^', '*', '/', '%', '+', '-', '<', '>', \"<=\", \">=\", '=', \"<>\", \"!=\", AND, XOR, OR, AS, ',', ORDER, SKIP, LIMIT, LOAD CSV, START, MATCH, UNWIND, MERGE, CREATE, SET, DELETE, REMOVE, FOREACH, WITH, RETURN, UNION, ';' or end of input (line 1, column 11 (offset: 10))")
+  }
+
   def executeAndEnsureError(query: String, expected: String) {
     import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.StringHelper._
 
     val fixedExpected = expected.fixPosition
     try {
-      execute(query).toList
+      graph.execute(query).asScala.size
       fail(s"Did not get the expected syntax error, expected: $fixedExpected")
     } catch {
-      case x: CypherException =>
+      case x: QueryExecutionException =>
         val actual = x.getMessage.lines.next().trim
         actual should equal(fixedExpected)
     }

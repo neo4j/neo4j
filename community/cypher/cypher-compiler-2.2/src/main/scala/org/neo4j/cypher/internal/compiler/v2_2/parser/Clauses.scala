@@ -149,7 +149,7 @@ trait Clauses extends Parser
     | group(Expression ~> (s => s)) ~~>> (ast.UnaliasedReturnItem(_, _))
   )
 
-  private def Order: Rule1[ast.OrderBy] = rule {
+  private def Order: Rule1[ast.OrderBy] = rule("ORDER") {
     group(keyword("ORDER BY") ~~ oneOrMore(SortItem, separator = CommaSep)) ~~>> (ast.OrderBy(_))
   }
 
@@ -158,11 +158,11 @@ trait Clauses extends Parser
     | group(Expression ~~ optional(keyword("ASCENDING") | keyword("ASC"))) ~~>> (ast.AscSortItem(_))
   )
 
-  private def Skip: Rule1[ast.Skip] = rule {
+  private def Skip: Rule1[ast.Skip] = rule("SKIP") {
     group(keyword("SKIP") ~~ (UnsignedIntegerLiteral | Parameter)) ~~>> (ast.Skip(_))
   }
 
-  private def Limit: Rule1[ast.Limit] = rule {
+  private def Limit: Rule1[ast.Limit] = rule("LIMIT") {
     group(keyword("LIMIT") ~~ (UnsignedIntegerLiteral | Parameter)) ~~>> (ast.Limit(_))
   }
 }
