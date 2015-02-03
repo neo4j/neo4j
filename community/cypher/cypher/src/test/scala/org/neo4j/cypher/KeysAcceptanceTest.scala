@@ -40,7 +40,7 @@ class KeysAcceptanceTest extends ExecutionEngineFunSuite  with QueryStatisticsTe
     val n1 = createNode(Map("name" -> "Andres", "surname" -> "Lopez"))
     val n2 = createNode(Map("otherName" -> "Andres", "otherSurname" -> "Lopez"))
 
-    val result = execute("match (n) where id(n) = " + n1.getId + " or id(n) = " + n2.getId + " unwind (keys(n)) AS theProps return distinct(x) as theProps")
+    val result = execute("match (n) where id(n) = " + n1.getId + " or id(n) = " + n2.getId + " unwind (keys(n)) AS x return distinct(x) as theProps")
 
     result.columnAs[String]("theProps").toList should equal(List("name","surname","otherName","otherSurname"))
   }
@@ -50,6 +50,16 @@ class KeysAcceptanceTest extends ExecutionEngineFunSuite  with QueryStatisticsTe
     val n = createNode()
 
     val result = execute("match (n) where id(n) = " + n.getId() + " unwind (keys(n)) AS x return distinct(x) as theProps")
+
+    result.columnAs[String]("theProps").toList should equal(List())
+  }
+
+
+  test("Using_keys_function_with_NODE_NULL_result") {
+
+    val n = createNode()
+
+    val result = execute("optional match (n) where id(n) = " + n.getId() + " unwind (keys(n)) AS x return distinct(x) as theProps")
 
     result.columnAs[String]("theProps").toList should equal(List())
   }
@@ -73,4 +83,12 @@ class KeysAcceptanceTest extends ExecutionEngineFunSuite  with QueryStatisticsTe
   }
 
 
+  test("Using_keys_function_with_RELATIONSHIP_NULL_result") {
+
+    val r = relate(createNode(), createNode(), "KNOWS")
+
+    val result = execute("optional match ()-[r:KNOWS]-() where id(r) = " + r.getId + " unwind (keys(r)) AS x return distinct(x) as theProps")
+
+    result.columnAs[String]("theProps").toList should equal(List())
+  }
 }
