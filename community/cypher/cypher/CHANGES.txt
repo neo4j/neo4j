@@ -1,3 +1,13 @@
+2.1.7
+-----
+o Fixes problem when using undirected variable length paths
+o Fix type error that made numbers coercible to boolean
+o Fail with a helpful error message when predicates in shortest path can't
+  be used as expected
+o Fixes problem when using shortest paths with minimal length of 0
+o Fixes bug when using index hints with OPTIONAL MATCH
+o Fixes behaviour of REMOVE on NULL entities
+
 2.1.5
 -----
 o Solves shortest path end points when they are missing
