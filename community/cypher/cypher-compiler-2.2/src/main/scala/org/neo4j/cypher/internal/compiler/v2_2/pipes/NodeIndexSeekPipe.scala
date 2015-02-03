@@ -48,8 +48,8 @@ case class NodeIndexSeekPipe(ident: String,
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val index = indexFactory(state)
-    val resultNodes = indexQuery(valueExpr, ExecutionContext.empty, state, index, label.name, propertyKey.name)
     val baseContext = state.initialContext.getOrElse(ExecutionContext.empty)
+    val resultNodes = indexQuery(valueExpr, baseContext, state, index, label.name, propertyKey.name)
     resultNodes.map(node => baseContext.newWith1(ident, node))
   }
 
