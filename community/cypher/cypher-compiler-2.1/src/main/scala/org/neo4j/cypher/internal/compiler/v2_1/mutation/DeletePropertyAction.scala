@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.mutation
 
+import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.commands.values.KeyToken
@@ -26,7 +27,6 @@ import org.neo4j.cypher.internal.compiler.v2_1.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 import org.neo4j.graphdb.{Node, Relationship}
-import org.neo4j.helpers.ThisShouldNotHappenError
 
 case class DeletePropertyAction(element: Expression, propertyKey: KeyToken)
   extends UpdateAction {
@@ -45,8 +45,11 @@ case class DeletePropertyAction(element: Expression, propertyKey: KeyToken)
               state.query.relationshipOps.removeProperty(r.getId, propertyKeyId)
             }
 
+            // When we get a null entity, we simply ignore it
+          case null =>
+
           case _ =>
-            throw new ThisShouldNotHappenError("Andres", "This should be a node or a relationship")
+            throw new InternalException("This should be a node or a relationship")
         }
 
       case None =>
