@@ -30,11 +30,12 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -143,10 +144,10 @@ public class IndexStatisticsTest
     }
 
     @Test
-    public void shouldProvideIndexSelectivityWhenThereAreManyDuplicates() throws KernelException
+    public void shouldProvideIndexSelectivityWhenThereAreManyDuplicates() throws Exception
     {
         // given some initial data
-        int created = repeatCreateNamedPeopleFor( NAMES.length * 10000 ).length;
+        int created = repeatCreateNamedPeopleFor( NAMES.length * CREATION_MULTIPLIER ).length;
 
         // when
         IndexDescriptor index = awaitOnline( createIndex( "Person", "name" ) );
@@ -159,14 +160,14 @@ public class IndexStatisticsTest
     }
 
     @Test
-    public void shouldProvideIndexStatisticsWhenIndexIsBuiltViaPopulationAndConcurrentAdditions() throws KernelException
+    public void shouldProvideIndexStatisticsWhenIndexIsBuiltViaPopulationAndConcurrentAdditions() throws Exception
     {
         // given some initial data
-        int initialNodes = repeatCreateNamedPeopleFor( NAMES.length * 10000 ).length;
+        int initialNodes = repeatCreateNamedPeopleFor( NAMES.length * CREATION_MULTIPLIER ).length;
 
         // when populating while creating
         IndexDescriptor index = createIndex( "Person", "name" );
-        final UpdatesTracker updatesTracker = executeCreations( index, 10000 );
+        final UpdatesTracker updatesTracker = executeCreations( index, CREATION_MULTIPLIER );
         awaitOnline( index );
 
         // then
@@ -178,16 +179,15 @@ public class IndexStatisticsTest
     }
 
     @Test
-    public void shouldProvideIndexStatisticsWhenIndexIsBuiltViaPopulationAndConcurrentAdditionsAndDeletions()
-            throws KernelException
+    public void shouldProvideIndexStatisticsWhenIndexIsBuiltViaPopulationAndConcurrentAdditionsAndDeletions() throws Exception
     {
         // given some initial data
-        long[] nodes = repeatCreateNamedPeopleFor( NAMES.length * 10000 );
+        long[] nodes = repeatCreateNamedPeopleFor( NAMES.length * CREATION_MULTIPLIER );
         int initialNodes = nodes.length;
 
         // when populating while creating
         IndexDescriptor index = createIndex( "Person", "name" );
-        UpdatesTracker updatesTracker = executeCreationsAndDeletions( nodes, index, 10000 );
+        UpdatesTracker updatesTracker = executeCreationsAndDeletions( nodes, index, CREATION_MULTIPLIER );
         awaitOnline( index );
 
         // then
@@ -201,16 +201,15 @@ public class IndexStatisticsTest
     }
 
     @Test
-    public void shouldProvideIndexStatisticsWhenIndexIsBuiltViaPopulationAndConcurrentAdditionsAndChanges()
-            throws KernelException
+    public void shouldProvideIndexStatisticsWhenIndexIsBuiltViaPopulationAndConcurrentAdditionsAndChanges() throws Exception
     {
         // given some initial data
-        long[] nodes = repeatCreateNamedPeopleFor( NAMES.length * 10000 );
+        long[] nodes = repeatCreateNamedPeopleFor( NAMES.length * CREATION_MULTIPLIER );
         int initialNodes = nodes.length;
 
         // when populating while creating
         IndexDescriptor index = createIndex( "Person", "name" );
-        UpdatesTracker updatesTracker = executeCreationsAndUpdates( nodes, index, 10000 );
+        UpdatesTracker updatesTracker = executeCreationsAndUpdates( nodes, index, CREATION_MULTIPLIER );
         awaitOnline( index );
 
         // then
@@ -222,11 +221,10 @@ public class IndexStatisticsTest
     }
 
     @Test
-    public void shouldWorkWhileHavingHeavyConcurrentUpdates()
-            throws KernelException, InterruptedException, ExecutionException
+    public void shouldWorkWhileHavingHeavyConcurrentUpdates() throws Exception
     {
         // given some initial data
-        final long[] nodes = repeatCreateNamedPeopleFor( NAMES.length * 10_000 );
+        final long[] nodes = repeatCreateNamedPeopleFor( NAMES.length * CREATION_MULTIPLIER );
         int initialNodes = nodes.length;
         int threads = 5;
         ExecutorService executorService = Executors.newFixedThreadPool( threads );
@@ -242,7 +240,7 @@ public class IndexStatisticsTest
                 @Override
                 public UpdatesTracker call() throws Exception
                 {
-                    return executeCreationsDeletionsAndUpdates( nodes, index, 10_000 );
+                    return executeCreationsDeletionsAndUpdates( nodes, index, CREATION_MULTIPLIER );
                 }
             } );
         }
@@ -256,6 +254,9 @@ public class IndexStatisticsTest
             result.add( future.get() );
         }
         awaitOnline( index );
+
+        executorService.awaitTermination( 1, TimeUnit.SECONDS );
+        executorService.shutdown();
 
         // then
         int tolerance = MISSED_UPDATES_TOLERANCE * threads;
@@ -307,14 +308,60 @@ public class IndexStatisticsTest
         return NAMES.length;
     }
 
-    private long[] repeatCreateNamedPeopleFor( int totalNumberOfPeople ) throws KernelException
+    private long[] repeatCreateNamedPeopleFor( int totalNumberOfPeople ) throws Exception
     {
-        long[] nodes = new long[totalNumberOfPeople];
-        int counts = 0;
-        while ( counts < totalNumberOfPeople )
+        // Parallelize the creation of persons
+        final long[] nodes = new long[totalNumberOfPeople];
+        final int threads = 100;
+        final int peoplePerThread = totalNumberOfPeople / threads;
+
+        final ExecutorService service = Executors.newFixedThreadPool( threads );
+        final AtomicReference<KernelException> exception = new AtomicReference<>();
+
+        final List<Callable<Void>> jobs = new ArrayList<>( threads );
+        // Start threads that creates these people, relying on batched writes to speed things up
+        for ( int i = 0; i < threads; i++ )
         {
-            counts += createNamedPeople( nodes, counts );
+            final int finalI = i;
+
+            jobs.add( new Callable<Void>()
+            {
+                @Override
+                public Void call() throws Exception
+                {
+                    int offset = finalI * peoplePerThread;
+                    while ( offset < (finalI + 1) * peoplePerThread )
+                    {
+                        try
+                        {
+                            offset += createNamedPeople( nodes, offset );
+                        }
+                        catch ( KernelException e )
+                        {
+                            exception.compareAndSet( null, e );
+                            throw new RuntimeException( e );
+                        }
+                    }
+                    return null;
+                }
+            } );
         }
+
+        for ( Future<?> job : service.invokeAll( jobs ) )
+        {
+            job.get();
+        }
+
+        service.awaitTermination( 1, TimeUnit.SECONDS );
+        service.shutdown();
+
+        // Make any KernelException thrown from a creation thread visible in the main thread
+        Exception ex = exception.get();
+        if ( ex != null )
+        {
+            throw ex;
+        }
+
         return nodes;
     }
 
@@ -489,6 +536,7 @@ public class IndexStatisticsTest
                 updatesTracker.notifyPopulationCompleted();
             }
 
+            // delete if allowed
             if ( allowDeletions && updatesTracker.created() % 5 == 0 )
             {
                 long nodeId = nodes[random.nextInt( nodes.length )];
@@ -509,12 +557,13 @@ public class IndexStatisticsTest
                 }
             }
 
+            // update if allowed
             if ( allowUpdates && updatesTracker.created() % 5 == 0 )
             {
-                long nodeId = nodes[random.nextInt( nodes.length )];
+                int randomIndex = random.nextInt( nodes.length );
                 try
                 {
-                    changeName( nodeId, "name", NAMES[(int) (nodeId % NAMES.length)] );
+                    changeName( nodes[randomIndex], "name", NAMES[randomIndex % NAMES.length] );
                 }
                 catch ( EntityNotFoundException ex )
                 {
@@ -588,7 +637,8 @@ public class IndexStatisticsTest
             "Chris"
     };
 
-    private static final int MISSED_UPDATES_TOLERANCE = NAMES.length * 2;
+    private static final int CREATION_MULTIPLIER = 10_000;
+    private static final int MISSED_UPDATES_TOLERANCE = NAMES.length;
     private static final double DOUBLE_ERROR_TOLERANCE = 0.00001d;
 
     @Rule
@@ -597,7 +647,8 @@ public class IndexStatisticsTest
         @Override
         protected void configure( GraphDatabaseBuilder builder )
         {
-            // make sure we don't sample got these tests
+            super.configure( builder );
+            // make sure we don't sample in these tests
             builder.setConfig( GraphDatabaseSettings.index_background_sampling_enabled, "false" );
         }
     };
