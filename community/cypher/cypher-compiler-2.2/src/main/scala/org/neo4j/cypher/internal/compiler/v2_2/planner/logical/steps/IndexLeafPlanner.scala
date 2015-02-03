@@ -52,8 +52,13 @@ abstract class IndexLeafPlanner extends LeafPlanner {
       }
     }
 
+    val availableIdentifiers = qg.argumentIds.map(n => Identifier(n.name)(null))
+
     predicates.collect {
-      case inPredicate@In(Property(identifier@Identifier(name), propertyKeyName), ConstantExpression(valueExpr)) if !qg.argumentIds.contains(IdName(name)) =>
+      case inPredicate@In(Property(identifier@Identifier(name), propertyKeyName), valueExpr)
+        if valueExpr.dependencies.forall(availableIdentifiers) &&
+          !qg.argumentIds.contains(IdName(name)) =>
+
         producePlanFor(name, propertyKeyName, inPredicate, ManyQueryExpression(valueExpr))
     }.flatten
   }
