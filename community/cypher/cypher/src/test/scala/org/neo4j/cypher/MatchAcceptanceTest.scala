@@ -1795,4 +1795,15 @@ return b
       path.endNode should equal(node2)
     }
   }
+  
+  test("named paths should work properly with WITH") {
+    val a = createNode()
+    val query = """MATCH p = (a)
+                  |WITH p
+                  |RETURN p
+                  | """.stripMargin
+
+    val result = executeWithNewPlanner(query).toList
+    result should equal(List(Map("p" -> PathImpl(a))))
+  }
 }

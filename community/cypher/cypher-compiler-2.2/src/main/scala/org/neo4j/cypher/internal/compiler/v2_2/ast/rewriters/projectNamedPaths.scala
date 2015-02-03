@@ -28,13 +28,32 @@ import scala.annotation.tailrec
 
 case object projectNamedPaths extends Rewriter {
 
-  private def getRewriter(paths: Map[Identifier, PathExpression], blacklist: IdentityMap[Identifier, Boolean]) =
+  private def projectNamedPathsRewriter(paths: Map[Identifier, PathExpression], blacklist: IdentityMap[Identifier, Boolean]) =
     Rewriter.lift {
       case NamedPatternPart(identifier, part) if paths.contains(identifier) =>
         part
       case identifier: Identifier if !blacklist.contains(identifier) && paths.contains(identifier) =>
         paths(identifier).endoRewrite(copyIdentifiers)
     }
+
+  /**
+   * In order to safely project named paths we must also cary along the dependencies of the paths
+   */
+  private def projectDependenciesRewriter(paths: Map[Identifier, PathExpression]) = Rewriter.lift {
+    case clause@With(_, ri: ReturnItems, _, _, _, _) => {
+
+      val pathDependencies = clause.treeFold(Set.empty[Identifier]) {
+        case step:PathStep => (acc, children) => children(acc ++ step.dependencies)
+        case _ => (acc, children) => children(acc)
+      }
+
+      //add dependencies coming from paths, without duplication
+      val newDeps = (ri.items.toSet ++ pathDependencies.map(a => AliasedReturnItem(a, a)(a.position))).toSeq
+      val newRi = ri.copy(items = newDeps)(ri.position)
+
+      clause.copy(returnItems = newRi)(clause.position).endoRewrite(copyIdentifiers)
+    }
+  }
 
   private def collectNamedPaths(input: AnyRef): Map[Identifier, PathExpression] = {
     input.treeFold(Map.empty[Identifier, PathExpression]) {
@@ -76,9 +95,11 @@ case object projectNamedPaths extends Rewriter {
     }
   }
 
-  def apply(input: AnyRef): AnyRef =
-    bottomUp(getRewriter(
-      collectNamedPaths(input),
-      collectUninlinableIdentifiers(input)
-    )).apply(input)
+  def apply(input: AnyRef): AnyRef = {
+    val namedPaths = collectNamedPaths(input)
+    val blacklist = collectUninlinableIdentifiers(input)
+
+    inSequence(bottomUp(projectNamedPathsRewriter(namedPaths, blacklist)),
+      bottomUp(projectDependenciesRewriter(namedPaths)))(input)
+  }
 }
