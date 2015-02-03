@@ -1795,7 +1795,7 @@ return b
       path.endNode should equal(node2)
     }
   }
-  
+
   test("named paths should work properly with WITH") {
     val a = createNode()
     val query = """MATCH p = (a)

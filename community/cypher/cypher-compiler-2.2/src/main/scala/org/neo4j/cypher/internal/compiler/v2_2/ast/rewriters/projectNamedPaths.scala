@@ -99,7 +99,7 @@ case object projectNamedPaths extends Rewriter {
     val namedPaths = collectNamedPaths(input)
     val blacklist = collectUninlinableIdentifiers(input)
 
-    inSequence(bottomUp(projectNamedPathsRewriter(namedPaths, blacklist)),
-      bottomUp(projectDependenciesRewriter(namedPaths)))(input)
+    bottomUp(inSequence(projectNamedPathsRewriter(namedPaths, blacklist),
+      projectDependenciesRewriter(namedPaths)))(input)
   }
 }
