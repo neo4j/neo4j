@@ -1,3 +1,7 @@
+2.2.0-M04
+---------
+o Fixes #3910 - Semantic errors not propagated correctly to the user
+
 2.2.0-M03
 ---------
 o Re-allows legacy START syntax for loading nodes/rels by id or index lookup
