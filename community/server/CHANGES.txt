@@ -1,3 +1,8 @@
+2.1.7
+-----
+o Improves performance of JSON serialization by flushing
+  buffers only on HTTP stream flushing
+
 2.1.6
 -----
 o Users of unmanaged extensions now have access to Cypher ExecutionEngine

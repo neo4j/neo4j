@@ -1,3 +1,9 @@
+2.1.7
+-----
+o Fixes bug where the backup process would result in stores
+  inappropriate for use as slave instances in HA clusters,
+  because of improper last txid information
+
 2.1.6
 -----
 o Fixes an issue with backup, where it could happen that the backup

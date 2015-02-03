@@ -1,3 +1,9 @@
+2.1.7
+-----
+o Slaves receiving IllegalEpochException will from now on
+  react to it by updating themselves to properly communicate
+  with the master
+
 2.1.6
 -----
 o Fixes issue where if the master lost contact with a majority of slaves

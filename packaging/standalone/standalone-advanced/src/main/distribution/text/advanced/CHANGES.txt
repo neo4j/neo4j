@@ -1,5 +1,33 @@
 For Release Notes, see http://neo4j.com/release-notes/neo4j-${project.version}/
 
+2.1.7
+-----
+Kernel:
+o It is now possible to define the amount of memory to dedicate to
+  mapping portions of the relationship type storage
+o Recovery of the relationship type store no longer leads to
+  excessive size use because of improper id use
+o Batch importer will now throw ConstraintViolationException
+  when a schema constraint is not respected
+o Deleting a Node already deleted in the running transaction
+  will now result in an EntityNotFoundException
+o Constraint enforcement is now more strict courtesy of using
+  an up to date Lucene index reader
+o messages.log file is now properly created under Windows
+
+Cypher:
+o Fixes problem when using undirected variable length paths
+o Fix type error that made numbers coercible to boolean
+o Fail with a helpful error message when predicates in shortest path can't
+  be used as expected
+o Fixes problem when using shortest paths with minimal length of 0
+o Fixes bug when using index hints with OPTIONAL MATCH
+o Fixes behaviour of REMOVE on NULL entities
+
+Server:
+o Improves performance of JSON serialization by flushing
+  buffers only on HTTP stream flushing
+
 2.1.6
 -----
 Kernel:

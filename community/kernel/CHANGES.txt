@@ -1,3 +1,17 @@
+2.1.7
+-----
+o It is now possible to define the amount of memory to dedicate to
+  mapping portions of the relationship type storage
+o Recovery of the relationship type store no longer leads to
+  excessive size use because of improper id use
+o Batch importer will now throw ConstraintViolationException
+  when a schema constraint is not respected
+o Deleting a Node already deleted in the running transaction
+  will now result in an EntityNotFoundException
+o Constraint enforcement is now more strict courtesy of using
+  an up to date Lucene index reader
+o messages.log file is now properly created under Windows
+
 2.1.6
 -----
 o Fixes issue with shutdown order for the store and the transaction log,
