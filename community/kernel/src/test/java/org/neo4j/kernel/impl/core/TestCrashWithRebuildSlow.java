@@ -71,6 +71,8 @@ public class TestCrashWithRebuildSlow
 {
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    // for dumping data about failing build
+    public final @Rule TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 
     private static List<Long> produceNonCleanDefraggedStringStore( GraphDatabaseService db )
     {
@@ -144,7 +146,6 @@ public class TestCrashWithRebuildSlow
         long snapshotChecksum = snapshot.checksum();
         if ( snapshotChecksum != checksumBefore )
         {
-            TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
             try ( OutputStream out = new FileOutputStream( testDir.file( "snapshot.zip" ) ) )
             {
                 snapshot.dumpZip( out );
