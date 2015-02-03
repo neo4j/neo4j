@@ -293,6 +293,13 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
+    public PrimitiveLongIterator relationshipGetAllPropertiesKeys( long nodeId ) throws EntityNotFoundException
+    {
+        statement.assertOpen();
+        return dataRead().relationshipGetPropertyKeys(statement, nodeId);
+    }
+
+    @Override
     public Iterator<DefinedProperty> relationshipGetAllProperties( long relationshipId )
             throws EntityNotFoundException
     {

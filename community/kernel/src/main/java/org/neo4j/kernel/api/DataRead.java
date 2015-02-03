@@ -103,6 +103,8 @@ interface DataRead
 
     PrimitiveLongIterator nodeGetAllPropertiesKeys( long nodeId ) throws EntityNotFoundException;
 
+    PrimitiveLongIterator relationshipGetAllPropertiesKeys( long relationshipId ) throws EntityNotFoundException;
+
     PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId ) throws EntityNotFoundException;
 
     Property nodeGetProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException;

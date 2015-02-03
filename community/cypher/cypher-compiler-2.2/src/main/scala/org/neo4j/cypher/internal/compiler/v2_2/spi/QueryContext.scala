@@ -59,6 +59,8 @@ trait QueryContext extends TokenContext {
 
   def getPropertiesForNode(node: Long): Iterator[Long]
 
+  def getPropertiesForRelationship(relId: Long): Iterator[Long]
+
   def getOrCreatePropertyKeyId(propertyKey: String): Int
 
   def addIndexRule(labelId: Int, propertyKeyId: Int): IdempotentResult[IndexDescriptor]

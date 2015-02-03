@@ -108,6 +108,8 @@ class SnitchingQueryContext extends QueryContext {
 
   def getPropertiesForNode(node: Long) = ???
 
+  def getPropertiesForRelationship(relId: Long) = ???
+
   def getOrCreatePropertyKeyId(propertyKey: String) = ???
 
   def getOptPropertyKeyId(propertyKey: String): Option[Int] = ???

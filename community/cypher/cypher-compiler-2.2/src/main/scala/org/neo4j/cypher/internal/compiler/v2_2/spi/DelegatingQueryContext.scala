@@ -63,6 +63,8 @@ class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
 
   def getPropertiesForNode(node: Long): Iterator[Long] = singleDbHit(inner.getPropertiesForNode(node))
 
+  def getPropertiesForRelationship(relId: Long): Iterator[Long] = singleDbHit(inner.getPropertiesForRelationship(relId))
+
   def getPropertyKeyName(propertyKeyId: Int): String = singleDbHit(inner.getPropertyKeyName(propertyKeyId))
 
   def getOptPropertyKeyId(propertyKeyName: String): Option[Int] = singleDbHit(inner.getOptPropertyKeyId(propertyKeyName))
