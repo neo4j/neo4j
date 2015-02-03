@@ -21,6 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.PathImpl
 import org.neo4j.graphdb._
+import scala.collection.JavaConverters._
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
@@ -1805,5 +1806,55 @@ return b
 
     val result = executeWithNewPlanner(query).toList
     result should equal(List(Map("p" -> PathImpl(a))))
+  }
+
+  test("Named paths with directed followed by undirected relationships") {
+    //GIVEN
+    val node1 = createNode()
+    val node2 = createNode()
+    val node3 = createNode()
+    val twoToOne = relate(node2, node1)
+    val threeToTwo = relate(node3, node2)
+    val query =
+      """match p = (n)-->(m)--(o) return p""".stripMargin
+
+    //WHEN
+    val res = executeWithNewPlanner(query).toList
+
+    //THEN
+    graph.inTx {
+      val path = res.head("p").asInstanceOf[Path]
+      path.startNode should equal(node3)
+      path.endNode should equal(node1)
+
+      path.nodes().asScala.toList should equal(Seq(node3, node2, node1))
+      path.relationships().asScala.toList should equal(Seq(threeToTwo, twoToOne))
+    }
+  }
+
+  test("Named paths with directed followed by multiple undirected relationships") {
+    //GIVEN
+    val node1 = createNode()
+    val node2 = createNode()
+    val node3 = createNode()
+    val node4 = createNode()
+    val twoToOne = relate(node2, node1)
+    val threeToTwo = relate(node3, node2)
+    val fourToThree = relate(node4, node3)
+    val query =
+      """match path = (n)-->(m)--(o)--(p) return path""".stripMargin
+
+    //WHEN
+    val res = executeWithNewPlanner(query).toList
+
+    //THEN
+    graph.inTx {
+      val path = res.head("path").asInstanceOf[Path]
+      path.startNode should equal(node4)
+      path.endNode should equal(node1)
+
+      path.nodes().asScala.toList should equal(Seq(node4, node3, node2, node1))
+      path.relationships().asScala.toList should equal(Seq(fourToThree, threeToTwo, twoToOne))
+    }
   }
 }
