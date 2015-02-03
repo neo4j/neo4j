@@ -23,6 +23,6 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 trait RonjaPipe {
   self: Pipe =>
 
-  def estimatedCardinality: Option[Long]
-  def withEstimatedCardinality(estimated: Long): Pipe with RonjaPipe
+  def estimatedCardinality: Option[Double]
+  def withEstimatedCardinality(estimated: Double): Pipe with RonjaPipe
 }

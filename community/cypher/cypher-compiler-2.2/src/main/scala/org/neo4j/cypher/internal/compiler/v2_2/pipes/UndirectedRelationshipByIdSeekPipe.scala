@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 
 case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: EntityByIdRhs, toNode: String, fromNode: String)
-                                             (val estimatedCardinality: Option[Long] = None)(implicit pipeMonitor: PipeMonitor)
+                                             (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends Pipe
   with CollectionSupport
   with RonjaPipe {
@@ -53,5 +53,5 @@ case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: EntityBy
 
   def sources: Seq[Pipe] = Seq.empty
 
-  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

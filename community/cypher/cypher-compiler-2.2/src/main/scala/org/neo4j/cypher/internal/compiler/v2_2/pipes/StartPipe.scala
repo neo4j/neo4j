@@ -46,12 +46,12 @@ sealed abstract class StartPipe[T <: PropertyContainer](source: Pipe,
       .andThen(this, s"${createSource.producerType}", identifiers, createSource.arguments: _*)
 }
 
-case class NodeStartPipe(source: Pipe, name: String, createSource: EntityProducer[Node])(val estimatedCardinality: Option[Long] = None)(implicit pipeMonitor: PipeMonitor)
+case class NodeStartPipe(source: Pipe, name: String, createSource: EntityProducer[Node])(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends StartPipe[Node](source, name, createSource, pipeMonitor) {
   def identifierType = CTNode
   override def localEffects = Effects.READS_NODES
 
-  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
@@ -59,12 +59,12 @@ case class NodeStartPipe(source: Pipe, name: String, createSource: EntityProduce
   }
 }
 
-case class RelationshipStartPipe(source: Pipe, name: String, createSource: EntityProducer[Relationship])(val estimatedCardinality: Option[Long] = None)(implicit pipeMonitor: PipeMonitor)
+case class RelationshipStartPipe(source: Pipe, name: String, createSource: EntityProducer[Relationship])(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends StartPipe[Relationship](source, name, createSource, pipeMonitor) {
   def identifierType = CTRelationship
   override def localEffects = Effects.READS_RELATIONSHIPS
 
-  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources

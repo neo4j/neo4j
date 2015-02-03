@@ -30,7 +30,7 @@ case class ExpandAllPipe(source: Pipe,
                          relName: String,
                          toName: String,
                          dir: Direction,
-                         types: LazyTypes)(val estimatedCardinality: Option[Long] = None)
+                         types: LazyTypes)(val estimatedCardinality: Option[Double] = None)
                         (implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
@@ -70,5 +70,5 @@ case class ExpandAllPipe(source: Pipe,
     copy(source = source)(estimatedCardinality)
   }
 
-  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

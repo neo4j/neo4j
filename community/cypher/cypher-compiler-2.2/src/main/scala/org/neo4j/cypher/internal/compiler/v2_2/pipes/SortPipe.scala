@@ -30,7 +30,7 @@ case class Ascending(id:String) extends SortDescription
 case class Descending(id:String) extends SortDescription
 
 case class SortPipe(source: Pipe, orderBy: Seq[SortDescription])
-                   (val estimatedCardinality: Option[Long] = None)(implicit monitor: PipeMonitor)
+                   (val estimatedCardinality: Option[Double] = None)(implicit monitor: PipeMonitor)
   extends PipeWithSource(source, monitor) with Comparer with RonjaPipe {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.toList.
@@ -61,5 +61,5 @@ case class SortPipe(source: Pipe, orderBy: Seq[SortDescription])
     copy(source = head)(estimatedCardinality)
   }
 
-  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

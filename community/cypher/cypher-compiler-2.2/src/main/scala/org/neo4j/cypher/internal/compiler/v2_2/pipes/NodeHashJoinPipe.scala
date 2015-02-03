@@ -29,7 +29,7 @@ import org.neo4j.graphdb.Node
 import scala.collection.mutable
 
 case class NodeHashJoinPipe(nodeIdentifiers: Set[String], left: Pipe, right: Pipe)
-                           (val estimatedCardinality: Option[Long] = None)(implicit pipeMonitor: PipeMonitor)
+                           (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(left, pipeMonitor) with RonjaPipe {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
@@ -76,7 +76,7 @@ case class NodeHashJoinPipe(nodeIdentifiers: Set[String], left: Pipe, right: Pip
 
   override def localEffects = Effects.NONE
 
-  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
   private def buildProbeTable(input: Iterator[ExecutionContext]): mutable.HashMap[Vector[Long], mutable.MutableList[ExecutionContext]] = {
     val table = new mutable.HashMap[Vector[Long], mutable.MutableList[ExecutionContext]]

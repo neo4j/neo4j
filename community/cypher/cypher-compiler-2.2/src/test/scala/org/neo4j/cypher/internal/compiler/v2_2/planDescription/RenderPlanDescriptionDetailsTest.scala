@@ -20,10 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planDescription
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{LengthFunction, Identifier}
-import org.neo4j.cypher.internal.compiler.v2_2.commands.values.{TokenType, KeyToken}
-import org.neo4j.cypher.internal.compiler.v2_2.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v2_2.commands._
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Identifier, LengthFunction}
+import org.neo4j.cypher.internal.compiler.v2_2.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.graphdb.Direction
@@ -43,7 +42,7 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
       """+----------+---------------+------+--------+-------------+-------+
         || Operator | EstimatedRows | Rows | DbHits | Identifiers | Other |
         |+----------+---------------+------+--------+-------------+-------+
-        ||     NAME |             1 |   42 |     33 |           n |       |
+        ||     NAME |         1.000 |   42 |     33 |           n |       |
         |+----------+---------------+------+--------+-------------+-------+
         |""".stripMargin)
   }
@@ -59,7 +58,7 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
       """+----------+---------------+------+--------+-------------+-------+
         || Operator | EstimatedRows | Rows | DbHits | Identifiers | Other |
         |+----------+---------------+------+--------+-------------+-------+
-        ||     NAME |             1 |   42 |     33 |     a, b, c |       |
+        ||     NAME |         1.000 |   42 |     33 |     a, b, c |       |
         |+----------+---------------+------+--------+-------------+-------+
         |""".stripMargin)
   }
@@ -75,7 +74,7 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
       """+----------+---------------+------+--------+------------------+-------+
         || Operator | EstimatedRows | Rows | DbHits |      Identifiers | Other |
         |+----------+---------------+------+--------+------------------+-------+
-        ||     NAME |             1 |   42 |     33 | a, b, c, d, e, f |       |
+        ||     NAME |         1.000 |   42 |     33 | a, b, c, d, e, f |       |
         |+----------+---------------+------+--------+------------------+-------+
         |""".stripMargin)
   }
@@ -89,7 +88,7 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
       """+----------+---------------+-------------+-------+
         || Operator | EstimatedRows | Identifiers | Other |
         |+----------+---------------+-------------+-------+
-        ||     NAME |             1 |           n |       |
+        ||     NAME |         1.000 |           n |       |
         |+----------+---------------+-------------+-------+
         |""".stripMargin)
   }
@@ -105,8 +104,8 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
       """+----------+---------------+------+--------+-------------+--------------+
         || Operator | EstimatedRows | Rows | DbHits | Identifiers |        Other |
         |+----------+---------------+------+--------+-------------+--------------+
-        ||  NAME(0) |             1 |    2 |    633 |           b | :Label(Prop) |
-        ||  NAME(1) |             1 |   42 |     33 |           a |              |
+        ||  NAME(0) |         1.000 |    2 |    633 |           b | :Label(Prop) |
+        ||  NAME(1) |         1.000 |   42 |     33 |           a |              |
         |+----------+---------------+------+--------+-------------+--------------+
         |""".stripMargin)
   }
@@ -122,7 +121,7 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
       """+-------------+---------------+-------------+---------------------+
         ||    Operator | EstimatedRows | Identifiers |               Other |
         |+-------------+---------------+-------------+---------------------+
-        || Expand(All) |             1 |     rel, to | (from)<-[rel:]-(to) |
+        || Expand(All) |         1.000 |     rel, to | (from)<-[rel:]-(to) |
         |+-------------+---------------+-------------+---------------------+
         |""".stripMargin)
   }
@@ -134,7 +133,7 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
       """+-----------------+---------------+-------------+-------+
         ||        Operator | EstimatedRows | Identifiers | Other |
         |+-----------------+---------------+-------------+-------+
-        || NodeByLabelScan |             1 |           n |  :Foo |
+        || NodeByLabelScan |         1.000 |           n |  :Foo |
         |+-----------------+---------------+-------------+-------+
         |""".stripMargin )
   }
@@ -149,7 +148,7 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
       """+-------------------+---------------+-------------+----------------------+
         ||          Operator | EstimatedRows | Identifiers |                Other |
         |+-------------------+---------------+-------------+----------------------+
-        || Var length expand |             1 |     rel, to | (from)-[rel:*]->(to) |
+        || Var length expand |         1.000 |     rel, to | (from)-[rel:*]->(to) |
         |+-------------------+---------------+-------------+----------------------+
         |""".stripMargin)
   }
@@ -166,7 +165,7 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
       """+----------+---------------+------+--------+-------------+------------------+
         || Operator | EstimatedRows | Rows | DbHits | Identifiers |            Other |
         |+----------+---------------+------+--------+-------------+------------------+
-        ||     NAME |             1 |   42 |     33 |           n | ()-[R:WHOOP]->() |
+        ||     NAME |         1.000 |   42 |     33 |           n | ()-[R:WHOOP]->() |
         |+----------+---------------+------+--------+-------------+------------------+
         |""".stripMargin)
   }
@@ -183,7 +182,7 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
       """+----------+---------------+------+--------+-------------+-------------------------------------------------+
         || Operator | EstimatedRows | Rows | DbHits | Identifiers |                                           Other |
         |+----------+---------------+------+--------+-------------+-------------------------------------------------+
-        ||     NAME |             1 |   42 |     33 |           n | (source)-[through:SOME|:OTHER|:THING]->(target) |
+        ||     NAME |         1.000 |   42 |     33 |           n | (source)-[through:SOME|:OTHER|:THING]->(target) |
         |+----------+---------------+------+--------+-------------+-------------------------------------------------+
         |""".stripMargin)
   }
@@ -199,7 +198,7 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
       """+----------+---------------+------+--------+-------------+-----------------------------+
         || Operator | EstimatedRows | Rows | DbHits | Identifiers |                       Other |
         |+----------+---------------+------+--------+-------------+-----------------------------+
-        ||     NAME |             1 |   42 |     33 |           n | NOT(anon[123] == anon[321]) |
+        ||     NAME |         1.000 |   42 |     33 |           n | NOT(anon[123] == anon[321]) |
         |+----------+---------------+------+--------+-------------+-----------------------------+
         |""".stripMargin)
   }
@@ -216,7 +215,7 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
       """+----------+---------------+------+--------+-------------+--------------------+
         || Operator | EstimatedRows | Rows | DbHits | Identifiers |              Other |
         |+----------+---------------+------+--------+-------------+--------------------+
-        ||     NAME |             1 |   42 |     33 |           n | hasLabel(x:Artist) |
+        ||     NAME |         1.000 |   42 |     33 |           n | hasLabel(x:Artist) |
         |+----------+---------------+------+--------+-------------+--------------------+
         |""".stripMargin)
   }
@@ -233,7 +232,7 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
       """+----------+---------------+------+--------+-------------+-----------+
         || Operator | EstimatedRows | Rows | DbHits | Identifiers |     Other |
         |+----------+---------------+------+--------+-------------+-----------+
-        ||     NAME |             1 |   42 |     33 |           n | length(n) |
+        ||     NAME |         1.000 |   42 |     33 |           n | length(n) |
         |+----------+---------------+------+--------+-------------+-----------+
         |""".stripMargin)
   }
@@ -250,7 +249,7 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
       """+----------+---------------+------+--------+-------------+-------+
         || Operator | EstimatedRows | Rows | DbHits | Identifiers | Other |
         |+----------+---------------+------+--------+-------------+-------+
-        ||     NAME |             1 |   42 |     33 |           n |    id |
+        ||     NAME |         1.000 |   42 |     33 |           n |    id |
         |+----------+---------------+------+--------+-------------+-------+
         |""".stripMargin)
   }
@@ -268,10 +267,8 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
       """+----------+---------------+------+--------+-------------+-------+
         || Operator | EstimatedRows | Rows | DbHits | Identifiers | Other |
         |+----------+---------------+------+--------+-------------+-------+
-        ||     NAME |             1 |   42 |     33 |           n |    id |
+        ||     NAME |         1.000 |   42 |     33 |           n |    id |
         |+----------+---------------+------+--------+-------------+-------+
         |""".stripMargin)
   }
-
-
 }

@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{InternalPlanDesc
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 
 case class OptionalPipe(nullableIdentifiers: Set[String], source: Pipe)
-                       (val estimatedCardinality: Option[Long] = None)(implicit pipeMonitor: PipeMonitor)
+                       (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
   val notFoundExecutionContext: ExecutionContext =
@@ -52,5 +52,5 @@ case class OptionalPipe(nullableIdentifiers: Set[String], source: Pipe)
 
   override def localEffects = Effects.NONE
 
-  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

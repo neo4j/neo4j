@@ -28,10 +28,10 @@ import org.neo4j.cypher.internal.helpers._
 
 import scala.collection.mutable
 
-case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])(val estimatedCardinality: Option[Long] = None)
+case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])(val estimatedCardinality: Option[Double] = None)
                        (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
-  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
   val keyNames: Seq[String] = expressions.keys.toSeq
 

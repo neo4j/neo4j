@@ -37,7 +37,7 @@ case class VarLengthExpandPipe(source: Pipe,
                                min: Int,
                                max: Option[Int],
                                filteringStep: (ExecutionContext, QueryState, Relationship) => Boolean = (_, _, _) => true)
-                              (val estimatedCardinality: Option[Long] = None)
+                              (val estimatedCardinality: Option[Double] = None)
                               (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
   private def varLengthExpand(node: Node, state: QueryState, maxDepth: Option[Int],
@@ -102,6 +102,6 @@ case class VarLengthExpandPipe(source: Pipe,
     copy(head)(estimatedCardinality)
   }
 
-  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
 }

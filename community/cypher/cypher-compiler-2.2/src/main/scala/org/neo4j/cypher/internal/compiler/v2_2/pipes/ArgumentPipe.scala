@@ -24,11 +24,11 @@ import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{InternalPlanDesc
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.{SymbolTable, SymbolTypeAssertionCompiler, _}
 
 case class ArgumentPipe(symbols: SymbolTable)
-                       (val estimatedCardinality: Option[Long] = None)
+                       (val estimatedCardinality: Option[Double] = None)
                        (implicit val monitor: PipeMonitor) extends Pipe with RonjaPipe {
   def sources = Seq.empty
 
-  def withEstimatedCardinality(estimated: Long): Pipe with RonjaPipe = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Double): Pipe with RonjaPipe = copy()(Some(estimated))
 
   def planDescription: InternalPlanDescription =
     new PlanDescriptionImpl(this, "Argument", NoChildren, Seq.empty, identifiers)

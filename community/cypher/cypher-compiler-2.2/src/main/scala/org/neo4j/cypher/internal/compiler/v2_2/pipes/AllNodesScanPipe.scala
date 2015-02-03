@@ -21,12 +21,10 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
-case class AllNodesScanPipe(ident: String)(val estimatedCardinality: Option[Long] = None)
+case class AllNodesScanPipe(ident: String)(val estimatedCardinality: Option[Double] = None)
                            (implicit pipeMonitor: PipeMonitor) extends Pipe with RonjaPipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
@@ -51,5 +49,5 @@ case class AllNodesScanPipe(ident: String)(val estimatedCardinality: Option[Long
 
   def sources: Seq[Pipe] = Seq.empty
 
-  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }
