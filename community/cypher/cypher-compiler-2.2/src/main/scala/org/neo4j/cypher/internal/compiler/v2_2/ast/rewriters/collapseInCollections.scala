@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, bottomUp}
 
+import scala.collection.immutable.Iterable
+
 case object collapseInCollections extends Rewriter {
   override def apply(that: AnyRef) = bottomUp(instance).apply(that)
 
@@ -29,24 +31,28 @@ case object collapseInCollections extends Rewriter {
 
   private val instance: Rewriter = Rewriter.lift {
     case predicate@Ors(exprs) =>
-      val (const, nonConst) = exprs.toList.partition {
+      // Find all the expressions we want to rewrite
+      val (const: List[Expression], nonRewritable: List[Expression]) = exprs.toList.partition {
         case in@In(_, rhs: Collection) => true
         case _ => false
       }
 
-      val ins = const.flatMap {
+      // For each expression on the RHS of any IN, produce a InValue place holder
+      val ins: List[InValue] = const.flatMap {
         case In(lhs, rhs: Collection) =>
           rhs.expressions.map(expr => InValue(lhs, expr))
       }
 
-      val flattenConst = ins.groupBy(_.lhs).map {
-        case (lhs, values) => {
+      // Find all IN against the same predicate and rebuild the collection with all available values
+      val groupedINPredicates = ins.groupBy(_.lhs)
+      val flattenConst: Iterable[In] = groupedINPredicates.map {
+        case (lhs, values) =>
           val pos = lhs.position
           In(lhs, Collection(values.map(_.expr).toSeq)(pos))(pos)
-        }
       }
 
-      nonConst ++ flattenConst match {
+      // Return the original non-rewritten predicates with our new ones
+      nonRewritable ++ flattenConst match {
         case head :: Nil => head
         case l => Ors(l.toSet)(predicate.position)
       }
