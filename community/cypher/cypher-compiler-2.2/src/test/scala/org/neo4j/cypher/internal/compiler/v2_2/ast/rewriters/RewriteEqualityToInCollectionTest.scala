@@ -20,42 +20,71 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Query
 import org.neo4j.cypher.internal.compiler.v2_2.planner.AstRewritingTestSupport
-import org.neo4j.cypher.internal.compiler.v2_2.bottomUp
 
 class RewriteEqualityToInCollectionTest extends CypherFunSuite with AstRewritingTestSupport {
 
-  test("should transform id(a) = ConstValue to id(a) IN [ConstValue]") {
-    val original = parser.parse("MATCH (a) WHERE id(a) = 42")
-    val expected = parser.parse("MATCH (a) WHERE id(a) IN [42]")
+  test("MATCH (a) WHERE id(a) = 42 (no dependencies on the RHS)") {
+    shouldRewrite(
+      "MATCH (a) WHERE id(a) = 42",
+      "MATCH (a) WHERE id(a) IN [42]")
+  }
 
-    val result = original.rewrite(rewriteEqualityToInCollection)
+  test("MATCH (a) WHERE a.prop = 42 (no dependencies on the RHS)") {
+    shouldRewrite(
+      "MATCH (a) WHERE a.prop = 42",
+      "MATCH (a) WHERE a.prop IN [42]")
+  }
+
+  test("MATCH (a) WHERE id(a) = rand() (no dependencies on the RHS)") {
+    shouldRewrite(
+      "MATCH (a) WHERE id(a) = rand()",
+      "MATCH (a) WHERE id(a) IN [rand()]")
+  }
+
+  test("MATCH (a) WHERE a.prop = rand() (no dependencies on the RHS)") {
+    shouldRewrite(
+      "MATCH (a) WHERE a.prop = rand()",
+      "MATCH (a) WHERE a.prop IN [rand()]")
+  }
+
+  test("WITH x as 42 MATCH (a) WHERE id(a) = x (no dependencies on the RHS)") {
+    shouldRewrite(
+      "WITH 42 as x MATCH (a) WHERE id(a) = x",
+      "WITH 42 as x MATCH (a) WHERE id(a) IN [x]")
+  }
+
+  test("WITH x as 42 MATCH (a) WHERE a.prop = x (no dependencies on the RHS)") {
+    shouldRewrite(
+      "WITH 42 as x MATCH (a) WHERE a.prop = x",
+      "WITH 42 as x MATCH (a) WHERE a.prop IN [x]")
+  }
+
+  test("MATCH a,b WHERE id(a) = b.prop (dependencies on the RHS)") {
+    shouldRewrite(
+      "MATCH a,b WHERE b.prop = id(a)",
+      "MATCH a,b WHERE b.prop IN [id(a)]")
+  }
+
+  test("MATCH a,b WHERE a.prop = b.prop (dependencies on the RHS)") {
+    shouldNotRewrite("MATCH a,b WHERE a.prop = b.prop")
+  }
+
+  test("MATCH a,b WHERE id(a) = id(b) (dependencies on the RHS)") {
+    shouldNotRewrite("MATCH a,b WHERE id(a) = id(b)")
+  }
+
+  private def shouldRewrite(from: String, to: String) {
+    val original = parser.parse(from).asInstanceOf[Query]
+    val expected = parser.parse(to).asInstanceOf[Query]
+
+    val result = rewriteEqualityToInCollection(original)
 
     result should equal(expected)
   }
 
-  test("should not transform id(a) = NonConstValue") {
-    val original = parser.parse("MATCH (a) WHERE id(a) = rand()")
-
-    val result = original.rewrite(rewriteEqualityToInCollection)
-
-    result should equal(original)
-  }
-
-  test("should transform a.prop = ConstValue to a.prop IN [ConstValue]") {
-    val original = parser.parse("MATCH (a) WHERE a.prop = 42")
-    val expected = parser.parse("MATCH (a) WHERE a.prop IN [42]")
-
-    val result = original.rewrite(rewriteEqualityToInCollection)
-
-    result should equal(expected)
-  }
-
-  test("should not transform a.prop = NonConstValue") {
-    val original = parser.parse("MATCH (a) WHERE a.prop = rand()")
-
-    val result = original.rewrite(rewriteEqualityToInCollection)
-
-    result should equal(original)
+  private def shouldNotRewrite(q: String) {
+    shouldRewrite(q, q)
   }
 }

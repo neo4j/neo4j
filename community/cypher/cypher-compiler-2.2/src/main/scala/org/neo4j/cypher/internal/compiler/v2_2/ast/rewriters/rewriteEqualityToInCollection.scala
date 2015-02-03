@@ -26,14 +26,20 @@ case object rewriteEqualityToInCollection extends Rewriter {
   override def apply(that: AnyRef) = bottomUp(instance).apply(that)
 
   private val instance: Rewriter = Rewriter.lift {
+
+    case e@Equals(_:Property, _:Property) => e
+
+    case e@Equals(a:FunctionInvocation, b:FunctionInvocation)
+      if a.function == Some(functions.Id) && b.function == Some(functions.Id) => e
+
     // id(a) = value
-    case predicate@Equals(func@FunctionInvocation(_, _, IndexedSeq(idExpr)), p@ConstantExpression(idValueExpr))
+    case predicate@Equals(func@FunctionInvocation(_, _, IndexedSeq(idExpr)), idValueExpr)
       if func.function == Some(functions.Id) =>
+      In(func, Collection(Seq(idValueExpr))(idValueExpr.position))(predicate.position)
 
-      In(func, Collection(Seq(idValueExpr))(p.position))(predicate.position)
     // a.prop = value
-    case predicate@Equals(prop@Property(id: Identifier, propKeyName), p@ConstantExpression(idValueExpr)) =>
+    case predicate@Equals(prop@Property(id: Identifier, propKeyName), idValueExpr) =>
 
-      In(prop, Collection(Seq(idValueExpr))(p.position))(predicate.position)
+      In(prop, Collection(Seq(idValueExpr))(idValueExpr.position))(predicate.position)
   }
 }
