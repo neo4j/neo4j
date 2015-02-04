@@ -22,13 +22,10 @@ package org.neo4j.kernel.ha.com.slave;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.cluster.client.ClusterClient;
-import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.ComException;
 import org.neo4j.com.ComExceptionHandler;
 import org.neo4j.com.IllegalProtocolVersionException;
 import org.neo4j.kernel.ha.MasterClient196;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.com.master.InvalidEpochException;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -36,7 +33,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
-public class MasterClientResolver implements MasterClientFactory
+public class MasterClientResolver implements MasterClientFactory, ComExceptionHandler
 {
     private volatile MasterClientFactory currentFactory;
     private volatile ProtocolVersionCombo currentVersion;
@@ -45,8 +42,7 @@ public class MasterClientResolver implements MasterClientFactory
     private final Map<ProtocolVersionCombo,MasterClientFactory> protocolToFactoryMapping;
     private final StringLogger log;
 
-    private final ClusterClient clusterClient;
-    private final ClusterMemberAvailability clusterMemberAvailability;
+    private final InvalidEpochExceptionHandler invalidEpochHandler;
 
     @Override
     public MasterClient instantiate( String hostNameOrIp, int port, Monitors monitors, StoreId storeId, LifeSupport life )
@@ -57,9 +53,26 @@ public class MasterClientResolver implements MasterClientFactory
         }
 
         MasterClient result = currentFactory.instantiate( hostNameOrIp, port, monitors, storeId, life );
-        result.addComExceptionHandler( new MismatchingProtocolVersionHandler() );
-        result.addComExceptionHandler( new InvalidEpochHandler() );
+        result.setComExceptionHandler( this );
         return result;
+    }
+
+    @Override
+    public void handle( ComException exception )
+    {
+        if ( exception instanceof IllegalProtocolVersionException )
+        {
+            log.info( "Handling " + exception + ", will pick new master client" );
+
+            IllegalProtocolVersionException illegalProtocolVersion = (IllegalProtocolVersionException) exception;
+            getFor( illegalProtocolVersion.getReceived(), 2 );
+        }
+        else if ( exception instanceof InvalidEpochException )
+        {
+            log.info( "Handling " + exception + ", will go to PENDING and ask for election" );
+
+            invalidEpochHandler.handle();
+        }
     }
 
     private static final class ProtocolVersionCombo implements Comparable<ProtocolVersionCombo>
@@ -105,13 +118,11 @@ public class MasterClientResolver implements MasterClientFactory
         static final ProtocolVersionCombo PC_196 = new ProtocolVersionCombo( 7, 2 );
     }
 
-    public MasterClientResolver( Logging logging, ClusterClient clusterClient,
-            ClusterMemberAvailability clusterMemberAvailability, StringLogger msgLog,
+    public MasterClientResolver( Logging logging, InvalidEpochExceptionHandler invalidEpochHandler,
             int readTimeout, int lockReadTimeout, int channels, int chunkSize )
     {
-        this.log = msgLog;
-        this.clusterClient = clusterClient;
-        this.clusterMemberAvailability = clusterMemberAvailability;
+        this.log = logging.getMessagesLog( getClass() );
+        this.invalidEpochHandler = invalidEpochHandler;
         protocolToFactoryMapping = new HashMap<ProtocolVersionCombo, MasterClientFactory>();
         protocolToFactoryMapping.put( ProtocolVersionCombo.PC_18, new F18( logging, readTimeout, lockReadTimeout,
                 channels, chunkSize ) );
@@ -192,36 +203,6 @@ public class MasterClientResolver implements MasterClientFactory
         {
             return life.add( new MasterClient196( hostNameOrIp, port, logging, monitors, storeId,
                     readTimeoutSeconds, lockReadTimeout, maxConcurrentChannels, chunkSize ) );
-        }
-    }
-
-    private class MismatchingProtocolVersionHandler implements ComExceptionHandler
-    {
-        @Override
-        public void handle( ComException exception )
-        {
-            if ( exception instanceof IllegalProtocolVersionException )
-            {
-                log.info( "Handling " + exception + ", will pick new master client" );
-
-                IllegalProtocolVersionException illegalProtocolVersion = (IllegalProtocolVersionException) exception;
-                getFor( illegalProtocolVersion.getReceived(), 2 );
-            }
-        }
-    }
-
-    private class InvalidEpochHandler implements ComExceptionHandler
-    {
-        @Override
-        public void handle( ComException exception )
-        {
-            if ( exception instanceof InvalidEpochException )
-            {
-                log.info( "Handling " + exception + ", will go to PENDING and ask for election" );
-
-                clusterMemberAvailability.memberIsUnavailable( HighAvailabilityModeSwitcher.SLAVE );
-                clusterClient.performRoleElections();
-            }
         }
     }
 
