@@ -75,6 +75,7 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplicatio
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
@@ -96,7 +97,6 @@ import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.kernel.impl.store.NeoStore.DEFAULT_NAME;
-import static org.neo4j.kernel.impl.store.StoreFactory.buildTypeDescriptorAndVersion;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
@@ -308,20 +308,24 @@ public class StoreMigrator implements StoreMigrationParticipant
             File storeDir, File migrationDir, long lastTxId, PageCache pageCache ) throws IOException
     {
         final File storeFileBase = new File( migrationDir, NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
-        CountsTracker.createEmptyCountsStore( pageCache, storeFileBase,
-                buildTypeDescriptorAndVersion( CountsTracker.STORE_DESCRIPTOR ) );
 
         final StoreFactory storeFactory =
                 new StoreFactory( fileSystem, storeDir, pageCache, DEV_NULL, new Monitors(),
                         StoreVersionMismatchHandler.ALLOW_OLD_VERSION );
         try ( NodeStore nodeStore = storeFactory.newNodeStore();
-              RelationshipStore relationshipStore = storeFactory.newRelationshipStore();
-              CountsTracker tracker = new CountsTracker( logging.getMessagesLog( CountsTracker.class ),
-                      fileSystem, pageCache, storeFileBase ) )
+              RelationshipStore relationshipStore = storeFactory.newRelationshipStore() )
         {
-            CountsComputer.computeCounts( nodeStore, relationshipStore ).
-                    accept( new CountsAccessor.Initializer( tracker ) );
-            tracker.rotate( lastTxId );
+            try ( Lifespan life = new Lifespan() )
+            {
+                CountsTracker tracker = life.add( new CountsTracker( logging.getMessagesLog( CountsTracker.class ),
+                                                                 fileSystem, pageCache, storeFileBase ) );
+                try ( CountsAccessor.Updater updater = tracker.updater() )
+                {
+                    CountsComputer.computeCounts( nodeStore, relationshipStore )
+                                  .accept( new CountsAccessor.Initializer( updater ) );
+                }
+                tracker.rotate( lastTxId );
+            }
         }
     }
 
@@ -649,8 +653,8 @@ public class StoreMigrator implements StoreMigrationParticipant
                         StoreFile.PROPERTY_KEY_TOKEN_STORE,
                         StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
                         StoreFile.SCHEMA_STORE,
-                        StoreFile.COUNTS_STORE_ALPHA,
-                        StoreFile.COUNTS_STORE_BETA );
+                        StoreFile.COUNTS_STORE_LEFT,
+                        StoreFile.COUNTS_STORE_RIGHT );
                 idFilesToDelete = allExcept(
                         StoreFile.RELATIONSHIP_GROUP_STORE
                 );
@@ -661,8 +665,8 @@ public class StoreMigrator implements StoreMigrationParticipant
                         StoreFile.NODE_STORE,
                         StoreFile.RELATIONSHIP_STORE,
                         StoreFile.RELATIONSHIP_GROUP_STORE,
-                        StoreFile.COUNTS_STORE_ALPHA,
-                        StoreFile.COUNTS_STORE_BETA );
+                        StoreFile.COUNTS_STORE_LEFT,
+                        StoreFile.COUNTS_STORE_RIGHT );
                 idFilesToDelete = allExcept(
                         StoreFile.RELATIONSHIP_GROUP_STORE
                 );
@@ -670,8 +674,8 @@ public class StoreMigrator implements StoreMigrationParticipant
             case Legacy21Store.LEGACY_VERSION:
                 filesToMove = Arrays.asList(
                         StoreFile.NODE_STORE,
-                        StoreFile.COUNTS_STORE_ALPHA,
-                        StoreFile.COUNTS_STORE_BETA,
+                        StoreFile.COUNTS_STORE_LEFT,
+                        StoreFile.COUNTS_STORE_RIGHT,
                         StoreFile.PROPERTY_STORE,
                         StoreFile.PROPERTY_KEY_TOKEN_STORE,
                         StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE );
@@ -704,8 +708,7 @@ public class StoreMigrator implements StoreMigrationParticipant
 
     private void ensureStoreVersions( File dir ) throws IOException
     {
-        final Iterable<StoreFile> versionedStores =
-                iterable( allExcept( StoreFile.COUNTS_STORE_ALPHA, StoreFile.COUNTS_STORE_BETA ) );
+        final Iterable<StoreFile> versionedStores = iterable( allExcept() );
         StoreFile.ensureStoreVersion( fileSystem, dir, versionedStores );
     }
 

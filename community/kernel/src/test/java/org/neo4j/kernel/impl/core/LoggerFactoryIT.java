@@ -22,23 +22,22 @@ package org.neo4j.kernel.impl.core;
 import java.io.IOException;
 import java.lang.reflect.Field;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
-
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.test.CleanupRule;
-
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.impl.StaticLoggerBinder;
+
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.test.CleanupRule;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -56,13 +55,15 @@ public class LoggerFactoryIT
     @Before
     public void setupTempFolder() throws IOException
     {
+        cleanup.add( new AutoCloseable()
+        {
+            @Override
+            public void close() throws Exception
+            {
+                graphDbFolder.delete();
+            }
+        } );
         graphDbFolder.create();
-    }
-
-    @After
-    public void cleanupTempFolder()
-    {
-        graphDbFolder.delete();
     }
 
     @Test

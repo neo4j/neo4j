@@ -93,6 +93,12 @@ final class MuninnPagedFile implements PagedFile
     }
 
     @Override
+    public String toString()
+    {
+        return getClass().getSimpleName() + "[" + swapper.fileName() + "]";
+    }
+
+    @Override
     public PageCursor io( long pageId, int pf_flags )
     {
         if ( getRefCount() == 0 )

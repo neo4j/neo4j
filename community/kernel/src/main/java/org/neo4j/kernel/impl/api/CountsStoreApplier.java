@@ -42,7 +42,7 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
 public class CountsStoreApplier extends NeoCommandHandler.Adapter
 {
-    private final CountsAccessor countsAccessor;
+    private final CountsAccessor.Updater countsUpdater;
     private final NodeStore nodeStore;
     private final Map<Integer/*labelId*/, IntCounter> labelDelta = new HashMap<>();
     private final Map<Integer/*typeId*/, IntCounter> relationshipTypeDelta = new HashMap<>();
@@ -50,10 +50,16 @@ public class CountsStoreApplier extends NeoCommandHandler.Adapter
     private int nodesDelta;
     private int relsDelta;
 
-    public CountsStoreApplier( CountsAccessor countsAccessor, NodeStore nodeStore )
+    public CountsStoreApplier( CountsAccessor.Updater countsUpdater, NodeStore nodeStore )
     {
-        this.countsAccessor = countsAccessor;
+        this.countsUpdater = countsUpdater;
         this.nodeStore = nodeStore;
+    }
+
+    @Override
+    public void close()
+    {
+        countsUpdater.close();
     }
 
     private static <KEY> IntCounter counter( Map<KEY,IntCounter> map, KEY key )
@@ -154,7 +160,7 @@ public class CountsStoreApplier extends NeoCommandHandler.Adapter
     @Override
     public boolean visitUpdateCountsCommand( Command.CountsCommand command ) throws IOException
     {
-        countsAccessor.incrementRelationshipCount(
+        countsUpdater.incrementRelationshipCount(
                 command.startLabelId(), command.typeId(), command.endLabelId(), command.delta() );
         return false;
     }
@@ -168,17 +174,17 @@ public class CountsStoreApplier extends NeoCommandHandler.Adapter
     public void apply()
     {
         // nodes
-        countsAccessor.incrementNodeCount( ANY_LABEL, nodesDelta );
+        countsUpdater.incrementNodeCount( ANY_LABEL, nodesDelta );
         for ( Map.Entry<Integer,IntCounter> label : labelDelta.entrySet() )
         {
-            countsAccessor.incrementNodeCount( label.getKey(), label.getValue().value() );
+            countsUpdater.incrementNodeCount( label.getKey(), label.getValue().value() );
         }
 
         // relationships
-        countsAccessor.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, relsDelta );
+        countsUpdater.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, relsDelta );
         for ( Map.Entry<Integer, IntCounter> type : relationshipTypeDelta.entrySet() )
         {
-            countsAccessor.incrementRelationshipCount( ANY_LABEL, type.getKey(), ANY_LABEL, type.getValue().value() );
+            countsUpdater.incrementRelationshipCount( ANY_LABEL, type.getKey(), ANY_LABEL, type.getValue().value() );
         }
     }
 

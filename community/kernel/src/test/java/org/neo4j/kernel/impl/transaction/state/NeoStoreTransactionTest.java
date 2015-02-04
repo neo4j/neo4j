@@ -1408,6 +1408,7 @@ public class NeoStoreTransactionTest
                 DEV_NULL,
                 new Monitors() );
         neoStore = storeFactory.createNeoStore();
+        neoStore.rebuildCountStoreIfNeeded();
         lockMocks.clear();
         locks = mock( LockService.class, new Answer()
         {

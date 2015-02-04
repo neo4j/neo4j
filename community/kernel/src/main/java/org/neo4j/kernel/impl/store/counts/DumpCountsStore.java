@@ -25,15 +25,17 @@ import java.io.IOException;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCache;
+import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
-import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
-import org.neo4j.register.Register.CopyableDoubleLongRegister;
-import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.kernel.impl.store.kvstore.AbstractKeyValueVisitor;
+import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
+import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
-import static org.neo4j.register.Registers.newDoubleLongRegister;
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
-public class DumpCountsStore
+public class DumpCountsStore implements AbstractKeyValueVisitor<CountsKey, Metadata>
 {
     public static void main( String[] args ) throws IOException
     {
@@ -44,28 +46,43 @@ public class DumpCountsStore
         }
 
         final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        final File storeFile = new File( args[0] );
+        File path = new File( args[0] );
 
-        try ( StandalonePageCache pageCache = createPageCache( fs, "counts-store-dump" );
-              CountsStore counts = CountsStore.open( fs, pageCache, storeFile ) )
+        try ( StandalonePageCache pages = createPageCache( fs, "counts-store-dump" ); Lifespan life = new Lifespan() )
         {
-            System.out.println( "Counts Store: " + counts.file() );
-            System.out.println( "\ttxId: " + counts.lastTxId() );
-            System.out.println( "\tminor version: " + counts.minorVersion() );
-            System.out.println( "\tentries: " + counts.totalRecordsStored() );
-            System.out.println( "Entries:" );
-
-            counts.accept( new KeyValueRecordVisitor<CountsKey,CopyableDoubleLongRegister>()
+            if ( fs.isDirectory( path ) )
             {
-                private final DoubleLongRegister tmp = newDoubleLongRegister();
-
-                @Override
-                public void visit( CountsKey key, CopyableDoubleLongRegister register )
+                life.add( new StoreFactory( fs, path, pages, DEV_NULL, new Monitors() ).newCountsStore() )
+                    .visitFile( new DumpCountsStore() );
+            }
+            else
+            {
+                CountsTracker tracker = new CountsTracker( DEV_NULL, fs, pages, path );
+                if ( fs.fileExists( path ) )
                 {
-                    register.copyTo( tmp );
-                    System.out.println( "\t" + key + ": (" + tmp.readFirst() + ", " + tmp.readSecond() + ")" );
+                    tracker.visitFile( path, new DumpCountsStore() );
                 }
-            }, newDoubleLongRegister() );
+                else
+                {
+                    life.add( tracker ).visitFile( new DumpCountsStore() );
+                }
+            }
         }
+    }
+
+    @Override
+    public void visitMetadata( File path, Metadata metadata, int entryCount )
+    {
+        System.out.println( "Counts Store: " + path );
+        System.out.println( "\ttxId: " + metadata.txId );
+        System.out.println( "\tminor version: " + metadata.minorVersion );
+        System.out.println( "\tentries: " + entryCount );
+        System.out.println( "Entries:" );
+    }
+
+    @Override
+    public void visitData( CountsKey key, ReadableBuffer value )
+    {
+        System.out.println( "\t" + key + ": " + value );
     }
 }

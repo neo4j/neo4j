@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
@@ -36,15 +36,15 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
-import org.neo4j.kernel.impl.store.kvstore.KeyValueRecordVisitor;
-import org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStore;
+import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
 import org.neo4j.kernel.impl.transaction.log.LogRotation;
-import org.neo4j.register.Register.CopyableDoubleLongRegister;
-import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
@@ -72,17 +72,21 @@ public class CountsRotationTest
         assertTrue( fs.fileExists( alphaStoreFile() ) );
         assertTrue( fs.fileExists( betaStoreFile() ) );
 
-        try ( CountsStore store = CountsStore.open( fs, pageCache, alphaStoreFile() ) )
+        try ( Lifespan life = new Lifespan() )
         {
-            assertEquals( BASE_TX_ID, store.lastTxId() );
+            CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
+                                                           new File( dir.getPath(), COUNTS_STORE_BASE ) ) );
+            assertEquals( BASE_TX_ID, store.txId() );
 //            assertEquals( BASE_MINOR_VERSION + 1, store.minorVersion() );
             assertEquals( 0, store.totalRecordsStored() );
             assertEquals( 0, allRecords( store ).size() );
         }
 
-        try ( CountsStore store = CountsStore.open( fs, pageCache, betaStoreFile() ) )
+        try ( Lifespan life = new Lifespan() )
         {
-            assertEquals( BASE_TX_ID, store.lastTxId() );
+            CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
+                                                           new File( dir.getPath(), COUNTS_STORE_BASE ) ) );
+            assertEquals( BASE_TX_ID, store.txId() );
             assertEquals( BASE_MINOR_VERSION, store.minorVersion() );
             assertEquals( 0, store.totalRecordsStored() );
             assertEquals( 0, allRecords( store ).size() );
@@ -107,10 +111,12 @@ public class CountsRotationTest
         assertTrue( fs.fileExists( alphaStoreFile() ) );
         assertTrue( fs.fileExists( betaStoreFile() ) );
 
-        try ( CountsStore store = CountsStore.open( fs, pageCache, betaStoreFile() ) )
+        try ( Lifespan life = new Lifespan() )
         {
+            CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
+                                                           new File( dir.getPath(), COUNTS_STORE_BASE ) ) );
             // a transaction for creating the label and a transaction for the node
-            assertEquals( BASE_TX_ID + 1 + 1, store.lastTxId() );
+            assertEquals( BASE_TX_ID + 1 + 1, store.txId() );
             assertEquals( BASE_MINOR_VERSION, store.minorVersion() );
             // one for all nodes and one for the created "A" label
             assertEquals( 1 + 1, store.totalRecordsStored() );
@@ -144,12 +150,14 @@ public class CountsRotationTest
         assertTrue( fs.fileExists( betaStoreFile() ) );
 
         final PageCache pageCache = db.getDependencyResolver().resolveDependency( PageCache.class );
-        try ( CountsStore store = CountsStore.open( fs, pageCache, betaStoreFile() ) )
+        try ( Lifespan life = new Lifespan() )
         {
+            CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
+                                                           new File( dir.getPath(), COUNTS_STORE_BASE ) ) );
             // NOTE since the rotation happens before the second transaction is committed we do not see those changes
             // in the stats
             // a transaction for creating the label and a transaction for the node
-            assertEquals( BASE_TX_ID + 1 + 1, store.lastTxId() );
+            assertEquals( BASE_TX_ID + 1 + 1, store.txId() );
             assertEquals( BASE_MINOR_VERSION, store.minorVersion() );
             // one for all nodes and one for the created "B" label
             assertEquals( 1 + 1, store.totalRecordsStored() );
@@ -202,32 +210,44 @@ public class CountsRotationTest
 
     private File alphaStoreFile()
     {
-        return new File( dir.getPath(), COUNTS_STORE_BASE + CountsTracker.ALPHA );
+        return new File( dir.getPath(), COUNTS_STORE_BASE + CountsTracker.LEFT );
     }
 
     private File betaStoreFile()
     {
-        return new File( dir.getPath(), COUNTS_STORE_BASE + CountsTracker.BETA );
+        return new File( dir.getPath(), COUNTS_STORE_BASE + CountsTracker.RIGHT );
     }
 
 
-    private Collection<Pair<CountsKey, Long>> allRecords(
-            SortedKeyValueStore<CountsKey, CopyableDoubleLongRegister>  store )
+    private Collection<Pair<? extends CountsKey, Long>> allRecords( CountsVisitor.Visitable store )
     {
-        final Collection<Pair<CountsKey, Long>> records = new ArrayList<>();
-        store.accept( new KeyValueRecordVisitor<CountsKey, CopyableDoubleLongRegister>()
+        final Collection<Pair<? extends CountsKey, Long>> records = new ArrayList<>();
+        store.accept( new CountsVisitor()
         {
-            private final DoubleLongRegister register = newDoubleLongRegister();
-
             @Override
-            public void visit( CountsKey key, CopyableDoubleLongRegister valueRegister  )
+            public void visitNodeCount( int labelId, long count )
             {
-                // read out atomically in case count is a concurrent register
-                valueRegister.copyTo( register );
-                records.add( Pair.of( key, register.readSecond() ) );
+                records.add( Pair.of( CountsKeyFactory.nodeKey( labelId ), count ) );
             }
 
-        }, newDoubleLongRegister() );
+            @Override
+            public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
+            {
+                records.add( Pair.of( CountsKeyFactory.relationshipKey( startLabelId, typeId, endLabelId ), count ) );
+            }
+
+            @Override
+            public void visitIndexStatistics( int labelId, int propertyKeyId, long updates, long size )
+            {
+                records.add( Pair.of( CountsKeyFactory.indexStatisticsKey( labelId, propertyKeyId ), size ) );
+            }
+
+            @Override
+            public void visitIndexSample( int labelId, int propertyKeyId, long unique, long size )
+            {
+                records.add( Pair.of( CountsKeyFactory.indexSampleKey( labelId, propertyKeyId ), size ) );
+            }
+        } );
         return records;
     }
 }

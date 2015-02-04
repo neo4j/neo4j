@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.Lock;
@@ -89,8 +90,11 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     {
         int labelId = descriptor.getLabelId();
         int propertyKeyId = descriptor.getPropertyKeyId();
-        counts.replaceIndexSample( labelId, propertyKeyId, uniqueElements, maxUniqueElements );
-        counts.replaceIndexUpdateAndSize( labelId, propertyKeyId, 0l, indexSize );
+        try ( CountsAccessor.Updater updater = counts.updater() )
+        {
+            updater.replaceIndexSample( labelId, propertyKeyId, uniqueElements, maxUniqueElements );
+            updater.replaceIndexUpdateAndSize( labelId, propertyKeyId, 0l, indexSize );
+        }
     }
 
     @Override

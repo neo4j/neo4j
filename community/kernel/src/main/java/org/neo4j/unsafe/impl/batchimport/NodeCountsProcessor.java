@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
@@ -69,9 +70,12 @@ public class NodeCountsProcessor implements StoreProcessor<NodeRecord>
     @Override
     public void done()
     {
-        for ( int i = 0; i < labelCounts.length; i++ )
+        try ( CountsAccessor.Updater updater = countsTracker.updater() )
         {
-            countsTracker.incrementNodeCount( i == anyLabel ? ReadOperations.ANY_LABEL : i, labelCounts[i] );
+            for ( int i = 0; i < labelCounts.length; i++ )
+            {
+                updater.incrementNodeCount( i == anyLabel ? ReadOperations.ANY_LABEL : i, labelCounts[i] );
+            }
         }
     }
 }

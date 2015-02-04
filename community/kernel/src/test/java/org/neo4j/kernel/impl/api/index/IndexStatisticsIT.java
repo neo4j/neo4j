@@ -34,6 +34,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
@@ -168,9 +169,11 @@ public class IndexStatisticsIT
 
     private void resetIndexCounts( int labelId, int pkId )
     {
-        CountsTracker tracker = neoStore().getCounts();
-        tracker.replaceIndexSample( labelId, pkId, 0, 0 );
-        tracker.replaceIndexUpdateAndSize( labelId, pkId, 0, 0 );
+        try ( CountsAccessor.Updater updater = neoStore().getCounts().updater() )
+        {
+            updater.replaceIndexSample( labelId, pkId, 0, 0 );
+            updater.replaceIndexUpdateAndSize( labelId, pkId, 0, 0 );
+        }
     }
 
     private NeoStore neoStore()

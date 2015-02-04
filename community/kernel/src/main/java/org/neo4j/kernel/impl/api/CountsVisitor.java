@@ -30,7 +30,7 @@ public interface CountsVisitor
 
     void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count );
 
-    void visitIndexCounts( int labelId, int propertyKeyId, long updates, long size );
+    void visitIndexStatistics( int labelId, int propertyKeyId, long updates, long size );
 
     void visitIndexSample( int labelId, int propertyKeyId, long unique, long size );
 
@@ -49,7 +49,7 @@ public interface CountsVisitor
         }
 
         @Override
-        public void visitIndexCounts( int labelId, int propertyKeyId, long updates, long size )
+        public void visitIndexStatistics( int labelId, int propertyKeyId, long updates, long size )
         {
             // override in subclasses
         }
@@ -58,6 +58,48 @@ public interface CountsVisitor
         public void visitIndexSample( int labelId, int propertyKeyId, long unique, long size )
         {
             // override in subclasses
+        }
+
+        public static CountsVisitor multiplex( final CountsVisitor... visitors )
+        {
+            return new CountsVisitor()
+            {
+                @Override
+                public void visitNodeCount( int labelId, long count )
+                {
+                    for ( CountsVisitor visitor : visitors )
+                    {
+                        visitor.visitNodeCount( labelId, count );
+                    }
+                }
+
+                @Override
+                public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
+                {
+                    for ( CountsVisitor visitor : visitors )
+                    {
+                        visitor.visitRelationshipCount( startLabelId, typeId, endLabelId, count );
+                    }
+                }
+
+                @Override
+                public void visitIndexStatistics( int labelId, int propertyKeyId, long updates, long size )
+                {
+                    for ( CountsVisitor visitor : visitors )
+                    {
+                        visitor.visitIndexStatistics( labelId, propertyKeyId, updates, size );
+                    }
+                }
+
+                @Override
+                public void visitIndexSample( int labelId, int propertyKeyId, long unique, long size )
+                {
+                    for ( CountsVisitor visitor : visitors )
+                    {
+                        visitor.visitIndexSample( labelId, propertyKeyId, unique, size );
+                    }
+                }
+            };
         }
     }
 }

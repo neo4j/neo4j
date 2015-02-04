@@ -53,7 +53,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
-import static org.neo4j.kernel.impl.store.counts.CountsTracker.STORE_DESCRIPTOR;
 import static org.neo4j.kernel.impl.util.CappedOperation.time;
 
 /**
@@ -178,6 +177,14 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
                         lastCommittedTx, lastClosedTx ) );
             }
         };
+        try
+        {
+            counts.init(); // TODO: move this to LifeCycle
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( "Failed to initialize counts store", e );
+        }
     }
 
     @Override
@@ -270,12 +277,15 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
             try
             {
                 counts.rotate( getLastCommittedTransactionId() );
-                counts.close();
-                counts = null;
+                counts.shutdown();
             }
             catch ( IOException e )
             {
                 throw new UnderlyingStorageException( e );
+            }
+            finally
+            {
+                counts = null;
             }
         }
     }
@@ -954,28 +964,34 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         visitor.visit( this );
     }
 
-    public void rebuildCountStoreIfNeeded( File storeFileBase )
+    public void rebuildCountStoreIfNeeded() throws IOException
     {
-        if ( counts != null )
+        // TODO: move this to LifeCycle
+        counts.start();
+        if ( counts.txId() == -1 )
         {
-            return;
+            stringLogger.warn( "Missing counts store, rebuilding it." );
+            try
+            {
+                try ( CountsAccessor.Updater updater = counts.updater() )
+                {
+                    CountsComputer.computeCounts( nodeStore, relStore )
+                                  .accept( new CountsAccessor.Initializer( updater ) );
+                }
+                counts.rotate( getLastCommittedTransactionId() );
+            }
+            catch ( Throwable failure )
+            {
+                try
+                {
+                    counts.shutdown();
+                }
+                catch ( Throwable err )
+                {
+                    failure.addSuppressed( err );
+                }
+                throw failure;
+            }
         }
-
-        stringLogger.warn( "Missing counts store, rebuilding it." );
-        final String storeVersion = buildTypeDescriptorAndVersion( STORE_DESCRIPTOR );
-        CountsTracker.createEmptyCountsStore( pageCache, storeFileBase, storeVersion );
-        CountsTracker tracker = new CountsTracker( stringLogger, fileSystemAbstraction, pageCache, storeFileBase );
-        CountsComputer.computeCounts( nodeStore, relStore ).accept( new CountsAccessor.Initializer( tracker ) );
-        try
-        {
-            tracker.rotate( getLastCommittedTransactionId() );
-        }
-        catch ( IOException e )
-        {
-            tracker.close();
-            throw new UnderlyingStorageException( "Unable to recreate CountsStore", e );
-        }
-
-        counts = tracker;
     }
 }

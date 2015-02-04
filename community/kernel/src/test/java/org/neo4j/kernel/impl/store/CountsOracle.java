@@ -24,10 +24,10 @@ import java.util.List;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.api.CountsVisitor;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.register.Register;
 
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 public class CountsOracle
@@ -67,7 +67,10 @@ public class CountsOracle
 
     public void update( CountsAccessor target )
     {
-        state.accept( new CountsAccessor.Initializer( target ) );
+        try ( CountsAccessor.Updater updater = target.updater() )
+        {
+            state.accept( new CountsAccessor.Initializer( updater ) );
+        }
     }
 
     public void update( CountsOracle target )
@@ -75,52 +78,51 @@ public class CountsOracle
         update( target.state );
     }
 
-    public void verify( final CountsTracker tracker )
+    public <Tracker extends CountsVisitor.Visitable & CountsAccessor> void verify( final Tracker tracker )
     {
+        CountsRecordState seenState = new CountsRecordState();
+        final CountsAccessor.Initializer initializer = new CountsAccessor.Initializer( seenState );
         List<CountsRecordState.Difference> differences = state.verify( new CountsVisitor.Visitable()
         {
             @Override
             public void accept( final CountsVisitor verifier )
             {
-                tracker.accept( new CountsVisitor()
-                {
-                    @Override
-                    public void visitNodeCount( int labelId, long count )
-                    {
-                        long expected = tracker.nodeCount( labelId, newDoubleLongRegister() ).readSecond();
-                        assertEquals( "Should be able to read visited state.", expected, count );
-                        verifier.visitNodeCount( labelId, count );
-                    }
+                tracker.accept( CountsVisitor.Adapter.multiplex( initializer, verifier ) );
+            }
+        } );
+        seenState.accept( new CountsVisitor()
+        {
+            @Override
+            public void visitNodeCount( int labelId, long count )
+            {
+                long expected = tracker.nodeCount( labelId, newDoubleLongRegister() ).readSecond();
+                assertEquals( "Should be able to read visited state.", expected, count );
+            }
 
-                    @Override
-                    public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
-                    {
-                        long expected = tracker.relationshipCount(
-                                startLabelId, typeId, endLabelId, newDoubleLongRegister() ).readSecond();
-                        assertEquals( "Should be able to read visited state.", expected, count );
-                        verifier.visitRelationshipCount( startLabelId, typeId, endLabelId, count );
-                    }
+            @Override
+            public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
+            {
+                long expected = tracker.relationshipCount(
+                        startLabelId, typeId, endLabelId, newDoubleLongRegister() ).readSecond();
+                assertEquals( "Should be able to read visited state.", expected, count );
+            }
 
-                    @Override
-                    public void visitIndexCounts( int labelId, int propertyKeyId, long updates, long size )
-                    {
-                        DoubleLongRegister output =
-                            tracker.indexUpdatesAndSize( labelId, propertyKeyId, newDoubleLongRegister() );
-                        assertEquals( "Should be able to read visited state.", output.readFirst(), updates );
-                        assertEquals( "Should be able to read visited state.", output.readSecond() , size );
-                        verifier.visitIndexCounts( labelId, propertyKeyId, updates, size );
-                    }
+            @Override
+            public void visitIndexStatistics( int labelId, int propertyKeyId, long updates, long size )
+            {
+                Register.DoubleLongRegister output =
+                        tracker.indexUpdatesAndSize( labelId, propertyKeyId, newDoubleLongRegister() );
+                assertEquals( "Should be able to read visited state.", output.readFirst(), updates );
+                assertEquals( "Should be able to read visited state.", output.readSecond(), size );
+            }
 
-                    @Override
-                    public void visitIndexSample( int labelId, int propertyKeyId, long unique, long size )
-                    {
-                        DoubleLongRegister output =
-                            tracker.indexSample( labelId, propertyKeyId, newDoubleLongRegister() );
-                        assertEquals( "Should be able to read visited state.", output.readFirst(), unique );
-                        assertEquals( "Should be able to read visited state.", output.readSecond(), size );
-                        verifier.visitIndexSample( labelId, propertyKeyId, unique, size );
-                    }
-                } );
+            @Override
+            public void visitIndexSample( int labelId, int propertyKeyId, long unique, long size )
+            {
+                Register.DoubleLongRegister output =
+                        tracker.indexSample( labelId, propertyKeyId, newDoubleLongRegister() );
+                assertEquals( "Should be able to read visited state.", output.readFirst(), unique );
+                assertEquals( "Should be able to read visited state.", output.readSecond(), size );
             }
         } );
         if ( !differences.isEmpty() )

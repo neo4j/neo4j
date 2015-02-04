@@ -47,21 +47,29 @@ public interface CountsAccessor extends CountsVisitor.Visitable
      */
     DoubleLongRegister indexSample( int labelId, int propertyKeyId, DoubleLongRegister target );
 
-    void incrementNodeCount( int labelId, long delta );
+    void incrementIndexUpdates( int labelId, int propertyKeyId, long delta );
 
-    void incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta );
+    Updater updater();
 
-    void replaceIndexUpdateAndSize( int labelId, int propertyKeyId, long updates, long size );
+    interface Updater extends AutoCloseable
+    {
+        void incrementNodeCount( int labelId, long delta );
 
-    void incrementIndexUpdates( int labelId, int propertyKeyId, long total );
+        void incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta );
 
-    void replaceIndexSample( int labelId, int propertyKeyId, long unique, long size );
+        void replaceIndexUpdateAndSize( int labelId, int propertyKeyId, long updates, long size );
+
+        void replaceIndexSample( int labelId, int propertyKeyId, long unique, long size );
+
+        @Override
+        void close();
+    }
 
     final class Initializer implements CountsVisitor
     {
-        private final CountsAccessor target;
+        private final Updater target;
 
-        public Initializer( CountsAccessor target )
+        public Initializer( Updater target )
         {
             this.target = target;
         }
@@ -79,7 +87,7 @@ public interface CountsAccessor extends CountsVisitor.Visitable
         }
 
         @Override
-        public void visitIndexCounts( int labelId, int propertyKeyId, long updates, long size )
+        public void visitIndexStatistics( int labelId, int propertyKeyId, long updates, long size )
         {
             target.replaceIndexUpdateAndSize( labelId, propertyKeyId, updates, size );
         }
