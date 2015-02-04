@@ -19,6 +19,8 @@
  */
 package org.neo4j.com;
 
+import org.junit.Rule;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
@@ -32,8 +34,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
-
-import org.junit.Rule;
 
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.ResourceIterator;
@@ -84,7 +84,7 @@ public class ServerUtilTest
 
         // when
         ServerUtil.rotateLogsAndStreamStoreFiles( testDirectory.absolutePath(), dsManager, kernelPanicEventGenerator,
-                StringLogger.DEV_NULL, false, storeWriter, fs, BackupMonitor.NONE );
+                StringLogger.DEV_NULL, false, storeWriter, fs, StoreCopyMonitor.NONE );
 
         // then
         verify( storeWriter ).write( eq( "neostore.nodestore.db" ), any( ReadableByteChannel.class ),
@@ -128,7 +128,7 @@ public class ServerUtilTest
 
         // when
         ServerUtil.rotateLogsAndStreamStoreFiles( testDirectory.absolutePath(), dsManager, kernelPanicEventGenerator,
-                StringLogger.DEV_NULL, true, storeWriter, fs, BackupMonitor.NONE );
+                StringLogger.DEV_NULL, true, storeWriter, fs, StoreCopyMonitor.NONE );
 
         // then
         verify( storeWriter ).write( eq( PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "0" ), any( ReadableByteChannel.class ),
@@ -169,7 +169,7 @@ public class ServerUtilTest
 
         // when
         ServerUtil.rotateLogsAndStreamStoreFiles( testDirectory.absolutePath(), dsManager, kernelPanicEventGenerator,
-                StringLogger.DEV_NULL, true, storeWriter, fs, BackupMonitor.NONE );
+                StringLogger.DEV_NULL, true, storeWriter, fs, StoreCopyMonitor.NONE );
 
         // then
         verify( storeWriter ).write( eq( "neostore.nodestore.db" ), any( ReadableByteChannel.class ),
@@ -213,7 +213,7 @@ public class ServerUtilTest
         {
             ServerUtil.rotateLogsAndStreamStoreFiles( testDirectory.absolutePath(), dsManager,
                     kernelPanicEventGenerator,
-                    StringLogger.DEV_NULL, true, storeWriter, fs, BackupMonitor.NONE );
+                    StringLogger.DEV_NULL, true, storeWriter, fs, StoreCopyMonitor.NONE );
             fail( "should have thrown exception" );
         }
         catch ( ServerFailureException e )

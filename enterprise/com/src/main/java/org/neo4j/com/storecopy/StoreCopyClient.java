@@ -54,6 +54,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.monitoring.StoreCopyMonitor;
 
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
@@ -95,15 +96,18 @@ public class StoreCopyClient
     private final ConsoleLogger console;
     private final Logging logging;
     private final FileSystemAbstraction fs;
+    private final StoreCopyMonitor storeCopyMonitor;
 
     public StoreCopyClient( Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                            ConsoleLogger console, Logging logging, FileSystemAbstraction fs )
+                            ConsoleLogger console, Logging logging, FileSystemAbstraction fs,
+            StoreCopyMonitor storeCopyMonitor )
     {
         this.config = config;
         this.kernelExtensions = kernelExtensions;
         this.console = console;
         this.logging = logging;
         this.fs = fs;
+        this.storeCopyMonitor = storeCopyMonitor;
     }
 
     public void copyStore( StoreCopyRequester requester, CancellationRequest cancellationRequest )
@@ -126,6 +130,7 @@ public class StoreCopyClient
         {
             requester.done();
         }
+        storeCopyMonitor.finishedCopyingStoreFiles();
 
         // This is a good place to check if the switch has been cancelled
         checkCancellation( cancellationRequest, tempStore );
@@ -133,9 +138,7 @@ public class StoreCopyClient
         // Run recovery, so that the transactions we just wrote into the active log will be applied.
         GraphDatabaseService graphDatabaseService = newTempDatabase( tempStore );
         graphDatabaseService.shutdown();
-
-        // This is a good place to check if the switch has been cancelled
-        checkCancellation( cancellationRequest, tempStore );
+        storeCopyMonitor.recoveredStore();
 
         // All is well, move the streamed files to the real store directory
         for ( File candidate : tempStore.listFiles( STORE_FILE_FILTER ) )

@@ -82,6 +82,7 @@ import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.monitoring.StoreCopyMonitor;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
@@ -133,6 +134,7 @@ public class SwitchToSlave
     private final MasterClientResolver masterClientResolver;
     private final ByteCounterMonitor byteCounterMonitor;
     private final RequestMonitor requestMonitor;
+    private StoreCopyMonitor storeCopyMonitor;
     private final Monitor monitor;
 
     public SwitchToSlave( ConsoleLogger console, Config config, DependencyResolver resolver,
@@ -141,7 +143,8 @@ public class SwitchToSlave
                           ClusterMemberAvailability clusterMemberAvailability, ClusterClient clusterClient,
                           RequestContextFactory requestContextFactory,
                           Iterable<KernelExtensionFactory<?>> kernelExtensions, ResponseUnpacker responseUnpacker,
-                          ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor, Monitor monitor )
+                          ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor, Monitor monitor,
+            StoreCopyMonitor storeCopyMonitor )
     {
         this.console = console;
         this.config = config;
@@ -153,6 +156,7 @@ public class SwitchToSlave
         this.kernelExtensions = kernelExtensions;
         this.byteCounterMonitor = byteCounterMonitor;
         this.requestMonitor = requestMonitor;
+        this.storeCopyMonitor = storeCopyMonitor;
         this.msgLog = logging.getMessagesLog( getClass() );
         this.masterDelegateHandler = masterDelegateHandler;
         this.monitor = monitor;
@@ -477,7 +481,7 @@ public class SwitchToSlave
 
         // This will move the copied db to the graphdb location
         console.log( "Copying store from master" );
-        new StoreCopyClient( config, kernelExtensions, console, logging, fs ).copyStore(
+        new StoreCopyClient( config, kernelExtensions, console, logging, fs, storeCopyMonitor ).copyStore(
                 new StoreCopyClient.StoreCopyRequester()
                 {
                     @Override

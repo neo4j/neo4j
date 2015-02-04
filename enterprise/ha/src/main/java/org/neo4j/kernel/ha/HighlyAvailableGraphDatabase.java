@@ -110,6 +110,7 @@ import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.monitoring.StoreCopyMonitor;
 
 import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
 import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
@@ -475,7 +476,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 requestContextFactory, kernelExtensions.listFactories(), responseUnpacker,
                 monitors.newMonitor( ByteCounterMonitor.class, SlaveServer.class ),
                 monitors.newMonitor( RequestMonitor.class, SlaveServer.class ),
-                monitors.newMonitor( SwitchToSlave.Monitor.class ) );
+                monitors.newMonitor( SwitchToSlave.Monitor.class ),
+                monitors.newMonitor( StoreCopyMonitor.class ));
 
         SwitchToMaster switchToMasterInstance = new SwitchToMaster( logging, consoleLog, this,
                 (HaIdGeneratorFactory) idGeneratorFactory, config, dependencies.provideDependency( SlaveFactory.class ),

@@ -64,7 +64,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.logging.DevNullLoggingService;
-import org.neo4j.kernel.monitoring.BackupMonitor;
+import org.neo4j.kernel.monitoring.StoreCopyMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.Mute;
@@ -83,7 +83,7 @@ import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 public class BackupServiceIT
 {
-    private static final class StoreSnoopingMonitor extends BackupMonitor.Adapter
+    private static final class StoreSnoopingMonitor extends StoreCopyMonitor.Adaptor
     {
         private final CountDownLatch firstStoreFinishedStreaming;
         private final CountDownLatch transactionCommitted;
@@ -527,6 +527,7 @@ public class BackupServiceIT
                 storeDir.getAbsolutePath() ).setConfig( params ).newGraphDatabase();
 
         createAndIndexNode( db, 1 ); // create some data
+
         NeoStoreDataSource ds = db.getDependencyResolver().resolveDependency( DataSourceManager.class ).getDataSource();
         long expectedLastTxId = ds.getNeoStore().getLastCommittedTransactionId();
         BackupService.BackupOutcome backupOutcome;
@@ -544,6 +545,7 @@ public class BackupServiceIT
                     new DevNullLoggingService(),
                     monitors );
             backup.start();
+
 
             // when
             BackupService backupService = new BackupService( fileSystem );

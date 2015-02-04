@@ -65,6 +65,7 @@ import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.monitoring.StoreCopyMonitor;
 
 import static org.neo4j.com.RequestContext.anonymous;
 
@@ -138,8 +139,10 @@ class BackupService
         try
         {
             StoreCopyClient storeCopier = new StoreCopyClient( tuningConfiguration, loadKernelExtensions(),
-                    new ConsoleLogger( StringLogger.SYSTEM ), new DevNullLoggingService(), new DefaultFileSystemAbstraction() );
+                    new ConsoleLogger( StringLogger.SYSTEM ), new DevNullLoggingService(),
+                    new DefaultFileSystemAbstraction(), new Monitors().newMonitor( StoreCopyMonitor.class, getClass() ) );
             storeCopier.copyStore( new StoreCopyClient.StoreCopyRequester()
+
             {
                 private BackupClient client;
 

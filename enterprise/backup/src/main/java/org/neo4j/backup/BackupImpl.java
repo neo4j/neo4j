@@ -29,14 +29,14 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.monitoring.BackupMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.monitoring.StoreCopyMonitor;
 
 import static org.neo4j.com.RequestContext.anonymous;
 
 class BackupImpl implements TheBackupInterface
 {
-    private final BackupMonitor backupMonitor;
+    private final StoreCopyMonitor storeCopyMonitor;
     private final StoreCopyServer storeCopyServer;
     private final ResponsePacker incrementalResponsePacker;
     private final LogicalTransactionStore logicalTransactionStore;
@@ -53,7 +53,7 @@ class BackupImpl implements TheBackupInterface
         this.transactionIdStore = transactionIdStore;
         this.logFileInformation = logFileInformation;
         this.storeId = storeId;
-        this.backupMonitor = monitors.newMonitor( BackupMonitor.class, getClass() );
+        this.storeCopyMonitor = monitors.newMonitor( StoreCopyMonitor.class, getClass() );
         this.incrementalResponsePacker = new ResponsePacker( logicalTransactionStore, transactionIdStore, storeId );
     }
 
@@ -62,7 +62,7 @@ class BackupImpl implements TheBackupInterface
     {
         try ( StoreWriter storeWriter = writer )
         {
-            backupMonitor.startCopyingFiles();
+            storeCopyMonitor.startCopyingFiles();
             RequestContext copyStartContext = storeCopyServer.flushStoresAndStreamStoreFiles( storeWriter );
             ResponsePacker responsePacker = new StoreCopyResponsePacker( logicalTransactionStore,
                     transactionIdStore, logFileInformation, storeId,
@@ -70,6 +70,7 @@ class BackupImpl implements TheBackupInterface
             long optionalTransactionId = copyStartContext.lastAppliedTransaction();
             return responsePacker.packTransactionStreamResponse( anonymous( optionalTransactionId ), null/*no response object*/ );
         }
+
     }
 
     @Override
