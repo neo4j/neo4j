@@ -328,6 +328,16 @@ public class Args
         return arg.startsWith( "-" ) && arg.length() > 1;
     }
 
+    private boolean isFlag( String arg )
+    {
+        return ArrayUtil.contains( flags, arg );
+    }
+
+    private static boolean isBoolean( String value )
+    {
+        return (value != null) && ("true".equalsIgnoreCase( value ) || "false".equalsIgnoreCase( value ));
+    }
+
     private static String stripOption( String arg )
     {
         while ( !arg.isEmpty() && arg.charAt( 0 ) == '-' )
@@ -355,9 +365,19 @@ public class Args
                         put( optionParser, key, value );
                     }
                 }
-                else if ( ArrayUtil.contains( flags, arg ) )
+                else if ( isFlag( arg ) )
                 {
-                    put( optionParser, arg, "true" );
+                    int nextIndex = i + 1;
+                    String value = nextIndex < args.length ? args[nextIndex] : null;
+                    if ( isBoolean( value ) )
+                    {
+                        i = nextIndex;
+                        put( optionParser, arg, Boolean.valueOf( value ).toString() );
+                    }
+                    else
+                    {
+                        put( optionParser, arg, null );
+                    }
                 }
                 else
                 {
