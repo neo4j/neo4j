@@ -86,6 +86,8 @@ include::relationships.asciidoc[]
 
 include::labels.asciidoc[]
 
+include::keys.asciidoc[]
+
 include::extract.asciidoc[]
 
 include::filter.asciidoc[]
