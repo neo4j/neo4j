@@ -57,7 +57,7 @@ import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.logging.DevNullLoggingService;
-import org.neo4j.kernel.monitoring.BackupMonitor;
+import org.neo4j.kernel.monitoring.StoreCopyMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.Mute;
@@ -400,37 +400,19 @@ public class BackupServiceIT
         Config config = new Config( defaultBackupPortHostParams() );
 
         Monitors monitors = new Monitors();
-        monitors.addMonitorListener( new BackupMonitor()
+        monitors.addMonitorListener( new StoreCopyMonitor.Adaptor()
         {
             @Override
-            public void startCopyingFiles()
-            {
-
-            }
-
-            @Override
-            public void finishedCopyingStoreFiles()
-            {
-
-            }
-
-            @Override
-            public void finishedRotatingLogicalLogs()
-            {
-
-            }
-
-            @Override
-            public void streamedFile( File storefile )
+            public void streamedFile( File file )
             {
                 if ( neitherStoreHasBeenStreamed() )
                 {
-                    if ( storefile.getAbsolutePath().contains( NODE_STORE ) )
+                    if ( file.getAbsolutePath().contains( NODE_STORE ) )
                     {
                         storesThatHaveBeenStreamed.add( NODE_STORE );
                         firstStoreFinishedStreaming.countDown();
                     }
-                    else if ( storefile.getAbsolutePath().contains( RELATIONSHIP_STORE ) )
+                    else if ( file.getAbsolutePath().contains( RELATIONSHIP_STORE ) )
                     {
                         storesThatHaveBeenStreamed.add(RELATIONSHIP_STORE);
                         firstStoreFinishedStreaming.countDown();
@@ -444,9 +426,9 @@ public class BackupServiceIT
             }
 
             @Override
-            public void streamingFile( File storefile )
+            public void streamingFile( File file )
             {
-                if ( storefile.getAbsolutePath().contains( RELATIONSHIP_STORE ) )
+                if ( file.getAbsolutePath().contains( RELATIONSHIP_STORE ) )
                 {
                     if ( streamedFirst( NODE_STORE ) )
                     {
@@ -460,7 +442,7 @@ public class BackupServiceIT
                         }
                     }
                 }
-                else if ( storefile.getAbsolutePath().contains( NODE_STORE ) )
+                else if ( file.getAbsolutePath().contains( NODE_STORE ) )
                 {
                     if ( streamedFirst( RELATIONSHIP_STORE ) )
                     {
