@@ -54,7 +54,7 @@ import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.monitoring.BackupMonitor;
+import org.neo4j.kernel.monitoring.StoreCopyMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
 class DefaultMasterImplSPI implements MasterImpl.SPI
@@ -202,7 +202,7 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
                 true,
                 writer,
                 new DefaultFileSystemAbstraction(),
-                monitors.newMonitor( BackupMonitor.class, getClass() ) );
+                monitors.newMonitor( StoreCopyMonitor.class, getClass() ) );
     }
 
     @Override

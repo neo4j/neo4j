@@ -29,12 +29,12 @@ import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.monitoring.BackupMonitor;
+import org.neo4j.kernel.monitoring.StoreCopyMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
 class BackupImpl implements TheBackupInterface
 {
-    private final BackupMonitor backupMonitor;
+    private final StoreCopyMonitor storeCopyMonitor;
 
     public interface SPI
     {
@@ -55,18 +55,18 @@ class BackupImpl implements TheBackupInterface
         this.spi = spi;
         this.xaDataSourceManager = xaDataSourceManager;
         this.kpeg = kpeg;
-        this.backupMonitor = monitors.newMonitor( BackupMonitor.class, getClass() );
+        this.storeCopyMonitor = monitors.newMonitor( StoreCopyMonitor.class, getClass() );
     }
 
     @Override
     public Response<Void> fullBackup( StoreWriter writer )
     {
-        backupMonitor.startCopyingFiles();
+        storeCopyMonitor.startCopyingFiles();
         RequestContext context = ServerUtil.rotateLogsAndStreamStoreFiles( spi.getStoreDir(),
                 xaDataSourceManager,
-                kpeg, logger, false, writer, new DefaultFileSystemAbstraction(), backupMonitor );
+                kpeg, logger, false, writer, new DefaultFileSystemAbstraction(), storeCopyMonitor );
         writer.done();
-        backupMonitor.finishedCopyingStoreFiles();
+        storeCopyMonitor.finishedCopyingStoreFiles();
         return packResponse( context );
     }
 

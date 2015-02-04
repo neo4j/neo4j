@@ -103,6 +103,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.monitoring.StoreCopyMonitor;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
@@ -488,7 +489,8 @@ public class SwitchToSlave
 
         // This will move the copied db to the graphdb location
         console.log( "Copying store from master" );
-        RemoteStoreCopier storeCopier = new RemoteStoreCopier( config, kernelExtensions, console, logging, fs );
+        RemoteStoreCopier storeCopier = new RemoteStoreCopier( config, kernelExtensions, console, logging, fs,
+                monitors );
         storeCopier.copyStore( new RemoteStoreCopier.StoreCopyRequester()
         {
             @Override

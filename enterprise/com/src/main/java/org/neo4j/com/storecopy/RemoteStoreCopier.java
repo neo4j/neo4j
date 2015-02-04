@@ -50,6 +50,8 @@ import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.monitoring.StoreCopyMonitor;
 
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration;
@@ -64,6 +66,7 @@ public class RemoteStoreCopier
     private final ConsoleLogger console;
     private final Logging logging;
     private final FileSystemAbstraction fs;
+    private StoreCopyMonitor storeCopyMonitor;
 
     /**
      * This is built as a pluggable interface to allow backup and HA to use this code independently of each other,
@@ -77,13 +80,14 @@ public class RemoteStoreCopier
     }
 
     public RemoteStoreCopier( Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                              ConsoleLogger console, Logging logging, FileSystemAbstraction fs )
+                              ConsoleLogger console, Logging logging, FileSystemAbstraction fs, Monitors monitors  )
     {
         this.config = config;
         this.kernelExtensions = kernelExtensions;
         this.console = console;
         this.logging = logging;
         this.fs = fs;
+        this.storeCopyMonitor = monitors.newMonitor( StoreCopyMonitor.class, getClass() );
     }
 
     public void copyStore( StoreCopyRequester requester, CancellationRequest cancellationRequest ) throws IOException
@@ -112,16 +116,15 @@ public class RemoteStoreCopier
         {
             requester.done();
         }
-        
+        storeCopyMonitor.finishedCopyingStoreFiles();
+
         // This is a good place to check if the switch has been cancelled
         checkCancellation( cancellationRequest, tempStore );
 
         // Run recovery
         GraphDatabaseAPI copiedDb = newTempDatabase( tempStore );
         copiedDb.shutdown();
-        
-        // This is a good place to check if the switch has been cancelled
-        checkCancellation( cancellationRequest, tempStore );
+        storeCopyMonitor.recoveredStore();
 
         // All is well, move to the real store directory
         for ( File candidate : tempStore.listFiles( new FileFilter()
