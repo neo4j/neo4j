@@ -22,40 +22,42 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.planner.AstRewritingTestSupport
 
-class CollapseInCollectionsContainingConstantsTest extends CypherFunSuite with AstRewritingTestSupport {
+class CollapseInCollectionsTest extends CypherFunSuite with AstRewritingTestSupport {
 
   test("should collapse collection containing ConstValues for id function") {
     val original = parse("MATCH (a) WHERE id(a) IN [42] OR id(a) IN [13]")
     val expected = parse("MATCH (a) WHERE id(a) IN [42, 13]")
 
-    val result = original.rewrite(collapseInCollectionsContainingConstants)
+    val result = original.rewrite(collapseInCollections)
 
     result should equal(expected)
   }
 
   test("should not collapse collections containing ConstValues and nonConstValues for id function") {
     val original = parse("MATCH (a) WHERE id(a) IN [42] OR id(a) IN [rand()]")
+    val expected = parse("MATCH (a) WHERE id(a) IN [42, rand()]")
 
-    val result = original.rewrite(collapseInCollectionsContainingConstants)
+    val result = original.rewrite(collapseInCollections)
 
-    result should equal(original)
+    result should equal(expected)
   }
 
   test("should collapse collection containing ConstValues for property") {
     val original = parse("MATCH (a) WHERE a.prop IN [42] OR a.prop IN [13]")
     val expected = parse("MATCH (a) WHERE a.prop IN [42, 13]")
 
-    val result = original.rewrite(collapseInCollectionsContainingConstants)
+    val result = original.rewrite(collapseInCollections)
 
     result should equal(expected)
   }
 
   test("should not collapse collections containing ConstValues and nonConstValues for property") {
     val original = parse("MATCH (a) WHERE a.prop IN [42] OR a.prop IN [rand()]")
+    val expected = parse("MATCH (a) WHERE a.prop IN [42, rand()]")
 
-    val result = original.rewrite(collapseInCollectionsContainingConstants)
+    val result = original.rewrite(collapseInCollections)
 
-    result should equal(original)
+    result should equal(expected)
   }
 
   private def parse(query: String) = {

@@ -63,13 +63,16 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
   test("should be able to use value coming from UNWIND for index seek") {
     // Given
     graph.createIndex("Prop", "id")
+    val n1 = createLabeledNode(Map("id" -> 1), "Prop")
+    val n2 = createLabeledNode(Map("id" -> 2), "Prop")
+    val n3 = createLabeledNode(Map("id" -> 3), "Prop")
 
     // When
-    val result = executeWithNewPlanner("unwind [1,2,3] as x match (n:Prop) where n.id = x return *;")
+    val result = executeWithNewPlanner("unwind [1,2,3] as x match (n:Prop) where n.id = x return n;")
 
     // Then
-    result shouldBe empty
-    result.executionPlanDescription().toString should include("NodeByLabelScan")
+    result.toList should equal(List(Map("n" -> n1), Map("n" -> n2), Map("n" -> n3)))
+    result.executionPlanDescription().toString should include("NodeIndexSeek")
   }
 
   test("should use index selectivity when planning") {

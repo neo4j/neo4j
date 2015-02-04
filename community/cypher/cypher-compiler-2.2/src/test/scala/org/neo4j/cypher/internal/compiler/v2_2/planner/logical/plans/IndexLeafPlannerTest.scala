@@ -30,10 +30,10 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.{indexSeekL
 class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   val idName = IdName("n")
-  val hasLabels = HasLabels(ident("n"), Seq(LabelName("Awesome") _)) _
-  val property = Property(ident("n"), PropertyKeyName("prop") _)_
-  val lit42 = SignedDecimalIntegerLiteral("42") _
-  val lit6 = SignedDecimalIntegerLiteral("6") _
+  val hasLabels: Expression = HasLabels(ident("n"), Seq(LabelName("Awesome") _)) _
+  val property: Expression = Property(ident("n"), PropertyKeyName("prop") _)_
+  val lit42: Expression = SignedDecimalIntegerLiteral("42") _
+  val lit6: Expression = SignedDecimalIntegerLiteral("6") _
 
   val inCollectionValue = In(property, Collection(Seq(lit42))_)_
 
@@ -76,15 +76,17 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
         // then
         resultPlans should beLike {
-          case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(lit42))), _)) => ()
+          case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(`lit42`))), _)) =>  ()
         }
       }
     }
   }
 
-  test("index scan when there is an index on the property for IN queries") {
-    new given {
-      qg = queryGraph(In(property, Collection(Seq(lit42))_)_, hasLabels)
+  test("plans index seeks when identifier exists as an argument") {
+    new given { // GIVEN 42 as x MATCH a WHERE a.prop IN [x]
+       val x = ident("x")
+      qg = queryGraph(In(property, Collection(Seq(x))_)_, hasLabels).
+        addArgumentIds(Seq(IdName("x")))
 
       indexOn("Awesome", "prop")
 
@@ -94,8 +96,25 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
         // then
         resultPlans should beLike {
-          case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(lit42))), _)) => ()
+          case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(`x`))), _)) => ()
         }
+      }
+    }
+  }
+
+  test("does not plan an index seek when the RHS expression does not have its dependencies in scope") {
+    new given { // MATCH a, x WHERE a.prop IN [x]
+       val x = ident("x")
+      qg = queryGraph(In(property, Collection(Seq(x))_)_, hasLabels)
+
+      indexOn("Awesome", "prop")
+
+      withLogicalPlanningContext { (ctx) =>
+        // when
+        val resultPlans = indexSeekLeafPlanner(qg)(ctx)
+
+        // then
+        resultPlans shouldBe empty
       }
     }
   }
@@ -112,7 +131,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
         // then
         resultPlans should beLike {
-          case Seq(NodeIndexUniqueSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(lit42))), _)) => ()
+          case Seq(NodeIndexUniqueSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(`lit42`))), _)) => ()
         }
       }
     }
@@ -132,7 +151,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
         // then
         resultPlans should beLike {
-          case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(lit42))), _)) => ()
+          case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(`lit42`))), _)) => ()
         }
 
         resultPlans.map(_.solved.graph) should beLike {
@@ -156,7 +175,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
         // then
         resultPlans should beLike {
-          case Seq(NodeIndexUniqueSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(lit42))), _)) => ()
+          case Seq(NodeIndexUniqueSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(`lit42`))), _)) => ()
         }
 
         resultPlans.map(_.solved.graph) should beLike {

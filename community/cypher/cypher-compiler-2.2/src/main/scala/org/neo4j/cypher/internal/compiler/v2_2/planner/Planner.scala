@@ -102,9 +102,8 @@ object Planner {
         .withPrecondition(preConditions)(
           ApplyRewriter("namespaceIdentifiers", namespacer.astRewriter),
           rewriteEqualityToInCollection,
-          splitInCollectionsToIsolateConstants,
           CNFNormalizer,
-          collapseInCollectionsContainingConstants,
+          collapseInCollections,
           nameUpdatingClauses /* this is actually needed as a precondition for projectedNamedPaths even though we do not handle updates in Ronja */,
           projectNamedPaths,
           enableCondition(containsNamedPathOnlyForShortestPath),

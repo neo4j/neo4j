@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.{CypherTypeException, LabelId, PropertyKeyId}
+import org.neo4j.cypher.internal.compiler.v2_2.{ExecutionContext, CypherTypeException, LabelId, PropertyKeyId}
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{LabelToken, PropertyKeyToken, _}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.{ManyQueryExpression, SingleQueryExpression}
-import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Collection, Literal}
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Collection, Literal, Identifier}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.index.IndexDescriptor
@@ -203,6 +203,22 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     // then
     result.map(_("n")).toList should equal(List(node))
   }
+
+  test("should use existing values from arguments when available") {
+    //  GIVEN "hello" as x MATCH a WHERE a.prop = x
+    val queryState: QueryState = QueryStateHelper.emptyWith(
+      query = exactIndexFor("hello" -> Iterator(node)) ,
+      initialContext = Some(ExecutionContext.from("x" -> "hello"))
+    )
+
+    // when
+    val pipe = NodeIndexSeekPipe("n", label, propertyKey, SingleQueryExpression(Identifier("x")))()
+    val result = pipe.createResults(queryState)
+
+    // then
+    result.map(_("n")).toList should equal(List(node))
+  }
+
 
   private def exactUniqueIndexFor(values : (Any, Option[Node])*): QueryContext = {
     val query = mock[QueryContext]

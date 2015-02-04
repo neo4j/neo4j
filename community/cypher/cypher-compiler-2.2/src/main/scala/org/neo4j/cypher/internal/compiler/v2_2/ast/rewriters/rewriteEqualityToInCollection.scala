@@ -22,18 +22,29 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 
+/*
+This class rewrites equality predicates into IN comparisons which can then be turned into
+either index lookup or node-by-id operations
+ */
 case object rewriteEqualityToInCollection extends Rewriter {
   override def apply(that: AnyRef) = bottomUp(instance).apply(that)
 
   private val instance: Rewriter = Rewriter.lift {
-    // id(a) = value
-    case predicate@Equals(func@FunctionInvocation(_, _, IndexedSeq(idExpr)), p@ConstantExpression(idValueExpr))
+    // a.prop = b.prop are not rewritten, since they can't be turned into index lookups anyway
+    case e@Equals(_:Property, _:Property) => e
+
+    // id(a) = id(b) are also not rewritten to IN predicates since they can't be optimized at later stages
+    case e@Equals(a:FunctionInvocation, b:FunctionInvocation)
+      if a.function == Some(functions.Id) && b.function == Some(functions.Id) => e
+
+    // id(a) = value => id(a) IN [value]
+    case predicate@Equals(func@FunctionInvocation(_, _, IndexedSeq(idExpr)), idValueExpr)
       if func.function == Some(functions.Id) =>
+      In(func, Collection(Seq(idValueExpr))(idValueExpr.position))(predicate.position)
 
-      In(func, Collection(Seq(idValueExpr))(p.position))(predicate.position)
-    // a.prop = value
-    case predicate@Equals(prop@Property(id: Identifier, propKeyName), p@ConstantExpression(idValueExpr)) =>
+    // a.prop = value => a.prop IN [value]
+    case predicate@Equals(prop@Property(id: Identifier, propKeyName), idValueExpr) =>
 
-      In(prop, Collection(Seq(idValueExpr))(p.position))(predicate.position)
+      In(prop, Collection(Seq(idValueExpr))(idValueExpr.position))(predicate.position)
   }
 }

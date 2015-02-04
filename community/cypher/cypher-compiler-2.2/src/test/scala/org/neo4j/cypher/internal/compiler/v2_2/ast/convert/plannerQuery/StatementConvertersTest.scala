@@ -39,7 +39,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   val lit43: SignedIntegerLiteral = SignedDecimalIntegerLiteral("43")_
 
   val patternRel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
-  val property: Expression = Property( Identifier( "n" ) _, PropertyKeyName( "prop" ) _ ) _
+  val nProp: Expression = Property( Identifier( "n" ) _, PropertyKeyName( "prop" ) _ ) _
 
   def buildPlannerQuery(query: String, cleanStatement: Boolean = true): UnionQuery = {
     val ast = parser.parse(query.replace("\r\n", "\n"))
@@ -653,10 +653,11 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val tailQg = query.tail.get
     tailQg.graph.patternNodes should equal(Set(IdName("b")))
     tailQg.graph.patternRelationships should be(empty)
+
     tailQg.graph.selections.predicates should equal(Set(
       Predicate(
         Set(IdName("b"), IdName("a")),
-        Equals(FunctionInvocation(FunctionName("id")_, Identifier("b")_)_, Property(Identifier("a")_, PropertyKeyName("prop")_)_)_
+        In(FunctionInvocation(FunctionName("id") _, Identifier("b") _) _, Collection(Seq(Property(Identifier("a")(pos), PropertyKeyName("prop")(pos))(pos))) _) _
       )
     ))
 
@@ -673,7 +674,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       Predicate(Set(IdName("a")), HasLabels(Identifier("a")_, Seq(LabelName("Start")(null)))_),
       Predicate(
         Set(IdName("b"), IdName("a")),
-        Equals(FunctionInvocation(FunctionName("id")_, Identifier("b")_)_, Property(Identifier("a")_, PropertyKeyName("prop")_)_)_
+        In(FunctionInvocation(FunctionName("id") _, Identifier("b") _) _, Collection(Seq(Property(Identifier("a")(pos), PropertyKeyName("prop")(pos))(pos))) _) _
       )
     ))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
@@ -704,7 +705,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     tailQg.graph.selections.predicates should equal(Set(
       Predicate(
         Set(IdName("b"), IdName("property")),
-        Equals(FunctionInvocation(FunctionName("id")_, Identifier("b")_)_, Identifier("property")_)_
+        In(FunctionInvocation(FunctionName("id") _, Identifier("b") _) _, Collection(Seq(Identifier("property") _)) _) _
       )
     ))
 
@@ -835,7 +836,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("match n with distinct n.prop as x return x") {
     val UnionQuery(query :: Nil, _) = buildPlannerQuery("match n with distinct n.prop as x return x")
     query.horizon should equal(AggregatingQueryProjection(
-      groupingKeys = Map("x" -> property),
+      groupingKeys = Map("x" -> nProp),
       aggregationExpressions = Map.empty
     ))
 
@@ -939,7 +940,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     tail.graph.patternNodes should equal(Set(IdName("n")))
     val set: Set[Predicate] = Set(
-      Predicate(Set(IdName("n"), IdName("x")), Equals(property, ident("x")) _))
+      Predicate(Set(IdName("n"), IdName("x")), In(nProp, Collection(Seq(ident("x"))) _) _))
 
     tail.graph.selections.predicates should equal(set)
     tail.horizon should equal(RegularQueryProjection(Map("n" -> ident("n"))))
@@ -953,7 +954,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     query.horizon should equal(UnwindProjection(
       IdName("x"),
-      property
+      nProp
     ))
 
     val tail = query.tail.get
