@@ -44,7 +44,7 @@ case class UnionPipe(sources: List[Pipe], columns:List[String])(implicit val mon
 }
 
 case class NewUnionPipe(l: Pipe, r: Pipe)
-                       (val estimatedCardinality: Option[Long] = None)(implicit val monitor: PipeMonitor)
+                       (val estimatedCardinality: Option[Double] = None)(implicit val monitor: PipeMonitor)
   extends Pipe with RonjaPipe {
   def planDescription: InternalPlanDescription =
     new PlanDescriptionImpl(this, "Union", TwoChildren(l.planDescription, r.planDescription), Seq.empty, identifiers)
@@ -65,5 +65,5 @@ case class NewUnionPipe(l: Pipe, r: Pipe)
 
   override def localEffects = Effects.NONE
 
-  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

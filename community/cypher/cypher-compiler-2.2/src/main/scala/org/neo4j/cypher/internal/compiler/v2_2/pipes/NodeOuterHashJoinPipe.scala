@@ -29,7 +29,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 case class NodeOuterHashJoinPipe(nodeIdentifiers: Set[String], source: Pipe, inner: Pipe, nullableIdentifiers: Set[String])
-                                (val estimatedCardinality: Option[Long] = None)(implicit pipeMonitor: PipeMonitor)
+                                (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
   val nullColumns: Map[String, Any] = nullableIdentifiers.map(_ -> null).toMap
 
@@ -80,7 +80,7 @@ case class NodeOuterHashJoinPipe(nodeIdentifiers: Set[String], source: Pipe, inn
 
   override def localEffects = Effects.NONE
 
-  def withEstimatedCardinality(estimated: Long) = copy()(Some(estimated))
+  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
   private def buildProbeTableAndFindNullRows(input: Iterator[ExecutionContext]): ProbeTable = {
     val probeTable = new ProbeTable()

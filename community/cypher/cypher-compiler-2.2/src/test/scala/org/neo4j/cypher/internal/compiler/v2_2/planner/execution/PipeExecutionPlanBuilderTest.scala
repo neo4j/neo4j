@@ -22,8 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.execution
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Collection, SignedDecimalIntegerLiteral, SignedIntegerLiteral}
-import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Identifier
-import org.neo4j.cypher.internal.compiler.v2_2.commands.{expressions => legacy, True, Equals}
+import org.neo4j.cypher.internal.compiler.v2_2.commands.{True, expressions => legacy}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.{EntityByIdExprs => PipeEntityByIdExprs, _}
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
@@ -190,6 +189,6 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
       AllNodesScan("a", Set.empty)(solved), "a", Direction.INCOMING, Seq(), "a", "r", ExpandInto)_
     val pipeInfo: PipeInfo = build(logicalPlan)
 
-    pipeInfo.pipe.asInstanceOf[RonjaPipe].estimatedCardinality.get should equal(105000)
+    pipeInfo.pipe.asInstanceOf[RonjaPipe].estimatedCardinality.get should equal(105000.0)
   }
 }

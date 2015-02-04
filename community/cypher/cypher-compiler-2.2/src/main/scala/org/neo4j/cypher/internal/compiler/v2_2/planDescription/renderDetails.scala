@@ -37,7 +37,7 @@ object renderDetails extends (InternalPlanDescription => String) {
       p =>
         val name = Some(names(p))
         val rows = p.arguments.collectFirst { case Rows(count) => count.toString}
-        val estimatedRows = p.arguments.collectFirst { case EstimatedRows(count) => count.toString}
+        val estimatedRows = p.arguments.collectFirst { case EstimatedRows(count) => "%.3f".format(count) }
         val dbHits = p.arguments.collectFirst { case DbHits(count) => count.toString}
         val ids = Some(p.orderedIdentifiers.filter(_.isNamed).mkString(", "))
         val other = Some(p.arguments.collect {
