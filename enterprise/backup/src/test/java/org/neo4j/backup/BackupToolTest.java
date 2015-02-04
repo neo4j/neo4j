@@ -295,4 +295,25 @@ public class BackupToolTest
 
         verifyZeroInteractions( service, systemOut );
     }
+
+    @Test
+    public void shouldRespectVerifyFlagWithLegacyArguments() throws BackupTool.ToolFailureException
+    {
+        // Given
+        String host = "localhost";
+        String targetDir = "/var/backup/neo4j/";
+        String[] args = {"-from", host, "-to", targetDir, "-verify", "false"};
+        BackupService service = mock( BackupService.class );
+        PrintStream systemOut = mock( PrintStream.class );
+
+        // When
+        new BackupTool( service, systemOut ).run( args );
+
+        // Then
+        verify( service ).doIncrementalBackupOrFallbackToFull( eq( host ), eq( BackupServer.DEFAULT_PORT ),
+                eq( targetDir ), eq( false ), any( Config.class ), eq( BackupClient.BIG_READ_TIMEOUT ) );
+        verify( systemOut ).println(
+                "Performing backup from '" + new HostnamePort( host, BackupServer.DEFAULT_PORT ) + "'" );
+        verify( systemOut ).println( "Done" );
+    }
 }
