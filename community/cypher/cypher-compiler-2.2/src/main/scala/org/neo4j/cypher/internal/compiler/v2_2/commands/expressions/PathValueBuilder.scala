@@ -26,8 +26,7 @@ import org.neo4j.helpers.ThisShouldNotHappenError
 final class PathValueBuilder {
   private val builder = Vector.newBuilder[PropertyContainer]
   private var nulled = false
-  private var initNode: Node = null
-  private var projectedDirection: Direction = null
+  private var previousNode: Node = null
   def result(): PathImpl = if (nulled) null else new PathImpl(builder.result(): _*)
 
   def clear(): PathValueBuilder =  {
@@ -37,30 +36,29 @@ final class PathValueBuilder {
   }
 
   def addNode(node: Node): PathValueBuilder = nullCheck(node) {
-    initNode = node
+    previousNode = node
     builder += node
     this
   }
 
   def addIncomingRelationship(rel: Relationship): PathValueBuilder = nullCheck(rel) {
     builder += rel
-    builder += rel.getStartNode
+    previousNode = rel.getStartNode
+    builder += previousNode
     this
   }
 
   def addOutgoingRelationship(rel: Relationship): PathValueBuilder = nullCheck(rel) {
     builder += rel
-    builder += rel.getEndNode
+    previousNode = rel.getEndNode
+    builder += previousNode
     this
   }
 
   def addUndirectedRelationship(rel: Relationship): PathValueBuilder = nullCheck(rel) {
-    checkDirection(rel)
-
-    //after call to checkDirection we must either be going outwards or inwards
-    if (projectedDirection == Direction.INCOMING) addIncomingRelationship(rel)
-    else if (projectedDirection == Direction.OUTGOING) addOutgoingRelationship(rel)
-    else throw new ThisShouldNotHappenError("pontus", "Invalid usage of PathValueBuilder")
+    if (rel.getStartNode == previousNode) addOutgoingRelationship(rel)
+    else if (rel.getEndNode == previousNode) addIncomingRelationship(rel)
+    else throw new ThisShouldNotHappenError("pontus", s"Invalid usage of PathValueBuilder, $previousNode must be a node in $rel")
   }
 
   def addIncomingRelationships(rels: Iterable[Relationship]): PathValueBuilder = nullCheck(rels) {
@@ -90,13 +88,5 @@ final class PathValueBuilder {
       this
 
     case _ => f
-  }
-
-  private def checkDirection(rel: Relationship) = {
-    if (projectedDirection == null) {
-      projectedDirection = if (rel.getStartNode == initNode) Direction.OUTGOING
-      else if (rel.getEndNode == initNode) Direction.INCOMING
-      else throw new ThisShouldNotHappenError("pontus", s"Invalid usage of PathValueBuilder, $initNode must be a node in $rel")
-    }
   }
 }
