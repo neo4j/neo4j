@@ -86,7 +86,7 @@ public class ImportTool
                         + "Note that file groups must be enclosed in quotation marks." ),
         RELATIONSHIP_DATA(
                 "relationships",
-                "[:REL_TYPE_1:REL_TYPE_2] \"<file1>" + MULTI_FILE_DELIMITER + "<file2>" +
+                "[:RELATIONSHIP_TYPE] \"<file1>" + MULTI_FILE_DELIMITER + "<file2>" +
                 MULTI_FILE_DELIMITER + "...\"",
                 "Relationship CSV header and data. Multiple files will be logically seen as one big file "
                         + "from the perspective of the importer. "
