@@ -19,9 +19,13 @@
  */
 package org.neo4j.test;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertThat;
+
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+import org.neo4j.kernel.impl.util.Charsets;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -40,7 +44,7 @@ import java.util.logging.StreamHandler;
 /**
  * Mutes outputs such as System.out, System.err and java.util.logging for example when running a test.
  * It's also a {@link TestRule} which makes it fit in nicely in JUnit.
- * 
+ * <p/>
  * The muting occurs visitor-style and if there's an exception in the code executed when being muted
  * all the logging that was temporarily muted will be resent to the peers as if they weren't muted to begin with.
  */
@@ -50,7 +54,7 @@ public final class Mute implements TestRule
     {
         return new Mute( mutables );
     }
-    
+
     public static Mute muteAll()
     {
         return mute( System.out, System.err, java_util_logging );
@@ -86,6 +90,13 @@ public final class Mute implements TestRule
             final PrintStream old = replace( new PrintStream( buffer ) );
             return new Voice()
             {
+                @Override
+                void assertSilence()
+                {
+                    String out = new String( buffer.toByteArray(), Charsets.UTF_8 );
+                    assertThat( "Expected this channel to be silent.'", out, equalTo( "" ) );
+                }
+
                 @Override
                 void restore( boolean failure ) throws IOException
                 {
@@ -130,6 +141,13 @@ public final class Mute implements TestRule
                 return new Voice()
                 {
                     @Override
+                    void assertSilence()
+                    {
+                        // By, frustrating, design. JUL is all-global, we can't stop our dependencies from using it.
+                        // Ensuring this gets piped to the right place is done elsewhere.
+                    }
+
+                    @Override
                     void restore( boolean failure ) throws IOException
                     {
                         for ( Handler handler : handlers )
@@ -159,11 +177,12 @@ public final class Mute implements TestRule
         }
         finally
         {
-            releaseVoices( voices, failure );
+            releaseVoices( voices, failure, failure );
         }
     }
 
     private final Mutable[] mutables;
+    private volatile boolean assertSilence = false;
 
     private Mute( Mutable[] mutables )
     {
@@ -187,7 +206,7 @@ public final class Mute implements TestRule
                 }
                 finally
                 {
-                    releaseVoices( voices, failure );
+                    releaseVoices( voices, failure, assertSilence );
                 }
             }
         };
@@ -198,8 +217,19 @@ public final class Mute implements TestRule
         Voice mute();
     }
 
+    public Mute withSilenceAssertion()
+    {
+        assertSilence = true;
+        return this;
+    }
+
     private static abstract class Voice
     {
+        /**
+         * Assert that this voice did not have any output sent to it
+         */
+        abstract void assertSilence();
+
         abstract void restore( boolean failure ) throws IOException;
     }
 
@@ -219,13 +249,13 @@ public final class Mute implements TestRule
         {
             if ( !ok )
             {
-                releaseVoices( voices, false );
+                releaseVoices( voices, false, false );
             }
         }
         return voices;
     }
 
-    void releaseVoices( Voice[] voices, boolean failure )
+    void releaseVoices( Voice[] voices, boolean failure, boolean assertSilence )
     {
         List<Throwable> failures = null;
         try
@@ -242,7 +272,14 @@ public final class Mute implements TestRule
             {
                 try
                 {
-                    voice.restore( failure );
+                    if ( assertSilence )
+                    {
+                        voice.assertSilence();
+                    }
+                }
+                catch( AssertionError e )
+                {
+                    throw e;
                 }
                 catch ( Throwable exception )
                 {

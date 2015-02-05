@@ -63,6 +63,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.database.InjectableProvider;
+import org.neo4j.server.logging.JettyLoggerAdapter;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.security.ssl.KeyStoreInformation;
 import org.neo4j.server.security.ssl.SslSocketConnectorFactory;
@@ -124,11 +125,14 @@ public class Jetty9WebServer implements WebServer
     private final SslSocketConnectorFactory sslSocketFactory = new SslSocketConnectorFactory();
     private final HttpConnectorFactory connectorFactory = new HttpConnectorFactory();
     private File requestLoggingConfiguration;
+
+    private final Logging logging;
     private final ConsoleLogger console;
     private final StringLogger log;
 
     public Jetty9WebServer( Logging logging )
     {
+        this.logging = logging;
         this.console = logging.getConsoleLog( getClass() );
         this.log = logging.getMessagesLog( getClass() );
     }
@@ -136,6 +140,8 @@ public class Jetty9WebServer implements WebServer
     @Override
     public void init()
     {
+        JettyLoggerAdapter.setGlobalLogging( logging );
+        System.setProperty( "org.eclipse.jetty.util.log.class", JettyLoggerAdapter.class.getName() );
     }
 
     @Override

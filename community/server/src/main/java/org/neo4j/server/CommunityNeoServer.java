@@ -71,17 +71,20 @@ public class CommunityNeoServer extends AbstractNeoServer
      * Should use the new constructor with {@link ConfigurationBuilder}
      */
     @Deprecated
-    public CommunityNeoServer( Configurator configurator, Database.Factory dbFactory, InternalAbstractGraphDatabase.Dependencies dependencies)
+    public CommunityNeoServer( Configurator configurator, Database.Factory dbFactory, InternalAbstractGraphDatabase
+            .Dependencies dependencies )
     {
         super( configurator, dbFactory, dependencies );
     }
 
-    public CommunityNeoServer( ConfigurationBuilder configurator, InternalAbstractGraphDatabase.Dependencies dependencies )
+    public CommunityNeoServer( ConfigurationBuilder configurator, InternalAbstractGraphDatabase.Dependencies
+            dependencies )
     {
         this( configurator, lifecycleManagingDatabase( EMBEDDED ), dependencies );
     }
 
-    public CommunityNeoServer( ConfigurationBuilder configurator, Database.Factory dbFactory, InternalAbstractGraphDatabase.Dependencies dependencies)
+    public CommunityNeoServer( ConfigurationBuilder configurator, Database.Factory dbFactory,
+                               InternalAbstractGraphDatabase.Dependencies dependencies )
     {
         super( configurator, dbFactory, dependencies );
     }
@@ -90,22 +93,22 @@ public class CommunityNeoServer extends AbstractNeoServer
     protected PreFlightTasks createPreflightTasks()
     {
         Logging logging = dependencies.logging();
-		return new PreFlightTasks( logging,
-				// TODO: Move the config check into bootstrapper
-				//new EnsureNeo4jPropertiesExist(configurator.configuration()),
-				new EnsurePreparedForHttpLogging(configurator.configuration()),
-				new PerformUpgradeIfNecessary(getConfig(),
-						configurator.getDatabaseTuningProperties(), logging, StoreUpgrader.NO_MONITOR),
-				new PerformRecoveryIfNecessary(getConfig(),
-						configurator.getDatabaseTuningProperties(), System.out, logging));
-	}
+        return new PreFlightTasks( logging,
+                // TODO: Move the config check into bootstrapper
+                //new EnsureNeo4jPropertiesExist(configurator.configuration()),
+                new EnsurePreparedForHttpLogging( configurator.configuration() ),
+                new PerformUpgradeIfNecessary( getConfig(),
+                        configurator.getDatabaseTuningProperties(), logging, StoreUpgrader.NO_MONITOR ),
+                new PerformRecoveryIfNecessary( getConfig(),
+                        configurator.getDatabaseTuningProperties(), System.out, logging ) );
+    }
 
     @Override
     protected Iterable<ServerModule> createServerModules()
     {
         Logging logging = dependencies.logging();
         return Arrays.asList(
-                new DBMSModule(webServer, security, configurator.configuration() ),
+                new DBMSModule( webServer, security, configurator.configuration() ),
                 new RESTApiModule( webServer, database, configurator.configuration(), logging ),
                 new ManagementApiModule( webServer, configurator.configuration() ),
                 new ThirdPartyJAXRSModule( webServer, configurator.configuration(), logging, this ),
@@ -117,8 +120,8 @@ public class CommunityNeoServer extends AbstractNeoServer
     @Override
     protected WebServer createWebServer()
     {
-		return new Jetty9WebServer( dependencies.logging());
-	}
+        return new Jetty9WebServer( dependencies.logging() );
+    }
 
     @Override
     public Iterable<AdvertisableService> getServices()
