@@ -503,7 +503,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
       """MATCH (src:LeftLabel), (dst:RightLabel)
         |MERGE (src)-[r:IS_RELATED_TO ]->(dst)
         |ON CREATE SET r.p3 = 42;""".stripMargin)
-    println(result.executionPlanDescription())
+
     result.executionPlanDescription().toString should not include "Eager"
   }
 }

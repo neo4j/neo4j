@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{LeafPlanner, Log
 
 object argumentLeafPlanner extends LeafPlanner {
   def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext) = {
-    val givenNodeIds = qg.argumentIds intersect qg.patternNodes
-    if (givenNodeIds.isEmpty)
+    val ids = qg.patternNodes ++ qg.patternRelationships.map(_.name).toSet
+    if ((qg.argumentIds intersect ids).isEmpty)
       Seq.empty
     else
       Seq(planQueryArgumentRow(qg))

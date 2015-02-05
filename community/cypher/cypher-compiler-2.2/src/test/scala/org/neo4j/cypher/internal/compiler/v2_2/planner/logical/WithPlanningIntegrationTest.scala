@@ -71,7 +71,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val plan = planFor("MATCH (a)-[r]->(b) WITH r LIMIT 1 MATCH (u)-[r]->(v) RETURN r").plan
 
     plan.toString should equal(
-      "Projection(Selection(List(Equals(Identifier(u),Identifier(u$$$_))),Apply(Limit(Expand(AllNodesScan(IdName(b),Set()),IdName(b),INCOMING,List(),IdName(a),IdName(r),ExpandAll),UnsignedDecimalIntegerLiteral(1)),ProjectEndpoints(AllNodesScan(IdName(u),Set(IdName(r))),IdName(r),IdName(u$$$_),IdName(v),true,SimplePatternLength))),Map(r -> Identifier(r)))")
+      "Projection(Apply(Limit(Expand(AllNodesScan(IdName(b),Set()),IdName(b),INCOMING,List(),IdName(a),IdName(r),ExpandAll),UnsignedDecimalIntegerLiteral(1)),ProjectEndpoints(Argument(Set(IdName(r))),IdName(r),IdName(u),IdName(v),true,SimplePatternLength)),Map(r -> Identifier(r)))")
   }
 
   test("should build plans that project endpoints of re-matched reversed directed relationship arguments") {

@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.LazyLabel
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{Limit, _}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter.unnestOptional
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{Limit, _}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport2, PlannerQuery}
 import org.neo4j.graphdb.Direction
 
@@ -98,21 +98,17 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       Limit(Expand(AllNodesScan(IdName("b1"), _), _, _, _, _, _, _), _),
       Optional(
       Selection(
-      predicates1,
+      predicates,
       ProjectEndpoints(
-      Selection(predicates2, AllNodesScan(IdName("a2"), args)),
-      IdName("r"), IdName("b2"), IdName("a2$$$_"), true, SimplePatternLength
+      Argument(args),
+      IdName("r"), IdName("b2"), IdName("a2"), true, SimplePatternLength
       )
       )
       )
       ), _) =>
         args should equal(Set(IdName("r"), IdName("a1")))
-
-        val predicate1: Expression = Equals(Identifier("a2")_, Identifier("a2$$$_")_)_
-        predicates1 should equal(Seq(predicate1))
-
-        val predicate2: Expression = Equals(Identifier("a1")_, Identifier("a2")_)_
-        predicates2 should equal(Seq(predicate2))
+        val predicate: Expression = Equals(Identifier("a1")_, Identifier("a2")_)_
+        predicates should equal(Seq(predicate))
     }
   }
 
@@ -121,17 +117,13 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       case Projection(Apply(
       Limit(Expand(AllNodesScan(IdName("b1"), _), _, _, _, _, _, _), _),
       Optional(
-      Selection(
-      predicates,
       ProjectEndpoints(
-      AllNodesScan(IdName("a2"), args),
-      IdName("r"), IdName("a2$$$_"), IdName("b2"), true, SimplePatternLength
-      )
+      Argument(args),
+      IdName("r"), IdName("a2"), IdName("b2"), true, SimplePatternLength
       )
       )
       ), _) =>
-        val predicate: Expression = Equals(Identifier("a2")_, Identifier("a2$$$_")_)_
-        predicates should equal(Seq(predicate))
+        args should equal(Set(IdName("r")))
     }
   }
 

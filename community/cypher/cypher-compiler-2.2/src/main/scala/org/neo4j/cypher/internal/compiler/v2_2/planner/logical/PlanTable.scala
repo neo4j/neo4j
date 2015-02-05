@@ -72,6 +72,8 @@ object GreedyPlanTable {
         new GreedyPlanTable(oldPlansNotCoveredByNewPlan + (newPlan.solved.lastQueryGraph -> newPlan))
       }
     }
+
+    override def toString(): String = s"PlanTable:\n${m.toString()}"
   }
 }
 

@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher
 
-import org.scalatest.Matchers
 import org.neo4j.cypher.internal.PathImpl
-import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
+import org.scalatest.Matchers
 
 class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Matchers with NewPlannerTestSupport {
 
@@ -295,4 +295,19 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     ))
   }
 
+  test("MATCH ()-[r]->() WHERE ()-[r]-(:A) RETURN r") {
+    graph.inTx {
+      (1 to 10000).foreach { i =>
+        createLabeledNode("A")
+        createNode()
+      }
+    }
+
+    val r = relate(createNode(),  createLabeledNode("A"), "T")
+
+    val result = executeWithNewPlanner("PROFILE MATCH ()-[r]->() WHERE ()-[r]-(:A) RETURN r")
+
+    result.columnAs[Relationship]("r").toList should equal(List(r))
+    result.executionPlanDescription().toString should not include "NodeByLabelScan"
+  }
 }
