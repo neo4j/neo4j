@@ -24,24 +24,26 @@ angular.module('neo4jApp.controllers')
   .controller 'ChangePasswordCtrl', [
     '$scope'
     'AuthService'
+    'ConnectionStatusService'
     'Frame'
     'Settings'
-    ($scope, AuthService, Frame, Settings) ->
+    ($scope, AuthService, ConnectionStatusService, Frame, Settings) ->
       $scope.new_password = ''
       $scope.new_password2 = ''
       $scope.current_password = ''
       $scope.password_changed = false
       $scope.$parent.error_text = ''
-      $scope.static_user = angular.copy(AuthService.getCurrentUser())
-      $scope.static_is_authenticated = AuthService.isAuthenticated()
+      $scope.static_user = ConnectionStatusService.connectedAsUser()
+      $scope.static_is_authenticated = ConnectionStatusService.isConnected()
 
       $scope.showCurrentPasswordField = ->
         !$scope.$parent.password_change_required
 
       $scope.setNewPassword = ->
-        is_authenticated = AuthService.isAuthenticated()
+        is_authenticated = ConnectionStatusService.isConnected()
         $scope.$parent.error_text = ''
         $scope.current_password = $scope.$parent.current_password if $scope.$parent.password_change_required
+        $scope.static_user = ConnectionStatusService.connectedAsUser()
 
         if not $scope.current_password.length
           $scope.$parent.error_text += 'You have to enter your current password. '
@@ -52,8 +54,8 @@ angular.module('neo4jApp.controllers')
         return if $scope.$parent.error_text.length
 
         AuthService.setNewPassword($scope.current_password, $scope.new_password).then(
-          -> 
-          
+          ->
+
             #New user who just changed the default password.
             if not is_authenticated
               $scope.$parent.defaultPasswordChanged()
