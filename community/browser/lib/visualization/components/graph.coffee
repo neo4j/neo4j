@@ -11,6 +11,27 @@ class neo.models.Graph
   relationships: ->
     @_relationships
 
+  groupedRelationships: ->
+    class NodePair
+      constructor: (node1, node2) ->
+        @relationships = []
+        if node1.id < node2.id
+          @nodeA = node1
+          @nodeB = node2
+        else
+          @nodeA = node2
+          @nodeB = node1
+
+      toString: ->
+        "#{@nodeA.id}:#{@nodeB.id}"
+    groups = {}
+    for relationship in @_relationships
+      nodePair = new NodePair(relationship.source, relationship.target)
+      nodePair = groups[nodePair] ? nodePair
+      nodePair.relationships.push relationship
+      groups[nodePair] = nodePair
+    (pair for ignored, pair of groups)
+
   addNodes: (nodes) =>
     for node in nodes
       if !@findNode(node.id)?

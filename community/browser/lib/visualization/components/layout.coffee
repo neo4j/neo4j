@@ -7,10 +7,10 @@ neo.layout = do ->
     _force.init = (render) ->
       forceLayout = {}
 
-      linkDistance = 60
+      linkDistance = 45
 
       d3force = d3.layout.force()
-      .linkDistance(linkDistance)
+      .linkDistance((relationship) -> relationship.source.radius + relationship.target.radius + linkDistance)
       .charge(-1000)
 
       newStatsBucket = ->
@@ -44,6 +44,9 @@ neo.layout = do ->
           while step-- and now() - startTick < maxComputeTime
             startCalcs = now()
             currentStats.layoutSteps++
+
+            neo.collision.avoidOverlap d3force.nodes()
+
             if d3Tick()
               maxStepsPerTick = 2
               return true
@@ -53,10 +56,13 @@ neo.layout = do ->
 
       accelerateLayout()
 
+      oneRelationshipPerPairOfNodes = (graph) ->
+        (pair.relationships[0] for pair in graph.groupedRelationships())
+
       forceLayout.update = (graph, size) ->
 
         nodes         = neo.utils.cloneArray(graph.nodes())
-        relationships = graph.relationships()
+        relationships = oneRelationshipPerPairOfNodes(graph)
 
         radius = nodes.length * linkDistance / (Math.PI * 2)
         center =
