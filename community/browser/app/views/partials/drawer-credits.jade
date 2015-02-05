@@ -27,18 +27,18 @@ h4 About Neo4j
     li Contribute code on
       a.no-icon(href='http://github.com/neo4j')  Github
     
-  h5 Feedback Graph
+  h5 Feedback
   p 
     b Suggestions:
-    p What do you want to do? How did you try to do it? What would you suggest?
-      form(ng-submit="newMessage(suggestion)")
-        input.form-control(type='text', placeholder='{{suggestionPlaceholder}}', ng-model='suggestion')    
+  p What do you want to do? How did you try to do it? What would you suggest?
+    form(ng-submit="newMessage(suggestion)")
+      input.form-control(type='text', placeholder='{{suggestionPlaceholder}}', ng-model='suggestion')    
   p 
     b Options:
     ul(ng-controller="SettingsCtrl")  
-      li Share non-sensitive usage data? &nbsp;
+      li Share non-sensitive data? &nbsp;
         input(type="checkbox", ng-model="settings.shouldReportUdc", ng-change="save()")
-      li Accept optional feedback replies? &nbsp;
+      li Accept replies from us? &nbsp;
         input(type="checkbox", ng-model="settings.acceptsReplies", ng-change="save()")
         
   h5 Thanks
