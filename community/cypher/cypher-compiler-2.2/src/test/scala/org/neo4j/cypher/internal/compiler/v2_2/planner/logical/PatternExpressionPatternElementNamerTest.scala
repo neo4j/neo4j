@@ -52,6 +52,24 @@ class PatternExpressionPatternElementNamerTest extends CypherFunSuite with Logic
     processMap(map) should equal(Map(52 -> "  UNNAMED53"))
   }
 
+  test("should rename multiple nodes") {
+    val original = parsePatternExpression("WITH {r} AS r LIMIT 1 RETURN ()-[r]->()")
+    val (actual, map) = PatternExpressionPatternElementNamer(original)
+    val expected = parsePatternExpression("WITH {r} AS r LIMIT 1 RETURN (`  UNNAMED30`)-[r]->(`  UNNAMED38`)")
+
+    actual should equal(expected)
+    processMap(map) should equal(Map(29 -> "  UNNAMED30", 37 -> "  UNNAMED38"))
+  }
+
+  test("should rename multiple relationships") {
+    val original = parsePatternExpression("WITH {a} AS a, {b} AS b, {c} AS c LIMIT 1 RETURN (a)-[]-(b)-[]-(c)")
+    val (actual, map) = PatternExpressionPatternElementNamer(original)
+    val expected = parsePatternExpression("WITH {a} AS a, {b} AS b, {c} AS c LIMIT 1 RETURN (a)-[`  UNNAMED53`]-(b)-[`  UNNAMED60`]-(c)")
+
+    actual should equal(expected)
+    processMap(map) should equal(Map(52 -> "  UNNAMED53", 59 -> "  UNNAMED60"))
+  }
+
   private def processMap(map: Map[PatternElement, Identifier]) = {
     map.collect {
       case (pattern: NodePattern, ident) => pattern.position.offset -> ident.name

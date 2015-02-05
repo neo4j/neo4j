@@ -171,4 +171,21 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     val result = executeWithNewPlanner("match p = shortestpath((a:A)-[r]->(n)) return nodes(p) as nodes").columnAs[List[Node]]("nodes").toSet
     result should equal(Set(List(nodeA, nodeB)))
   }
+
+  test("handle combination of shortestPath and pattern expressions") {
+    val a = createLabeledNode("A")
+    val b1 = createLabeledNode("B")
+    val b2 = createLabeledNode("B")
+    val c = createLabeledNode("C")
+    relate(a, b1, "R")
+    relate(b1, b2, "R")
+    relate(b2, c, "R")
+
+    val query = """MATCH path = allShortestPaths((a:A)-[:R*0..100]-(c:C))
+                  |WITH nodes(path) AS pathNodes
+                  |WITH pathNodes[0] AS p, pathNodes[3] as c
+                  |RETURN length((c)-[:R]-(:B)-[:R]-(:B)-[:R]-(p)) AS res""".stripMargin
+
+    executeWithNewPlanner(query).toList should equal(List(Map("res" -> 1)))
+  }
 }

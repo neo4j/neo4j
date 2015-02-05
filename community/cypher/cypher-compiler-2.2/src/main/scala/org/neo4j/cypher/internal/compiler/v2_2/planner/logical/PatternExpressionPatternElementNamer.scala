@@ -34,19 +34,18 @@ object PatternExpressionPatternElementNamer {
 
   private def nameUnnamedPatternElements(expr: PatternExpression): Map[PatternElement, Identifier] = {
     val unnamedElements = findPatternElements(expr.pattern).filter(_.identifier.isEmpty)
-    val unnamedMap: Map[PatternElement, Identifier] = unnamedElements.map {
+    IdentityMap(unnamedElements.map {
       case elem: NodePattern =>
         elem -> Identifier(UnNamedNameGenerator.name(elem.position.bumped()))(elem.position)
       case elem@RelationshipChain(_, relPattern, _) =>
         elem -> Identifier(UnNamedNameGenerator.name(relPattern.position.bumped()))(relPattern.position)
-    }.toMap
-    unnamedMap
+    }: _*)
   }
 
   private case object findPatternElements {
-    def apply(astNode: ASTNode): Set[PatternElement] = astNode.treeFold(Set.empty[PatternElement]) {
+    def apply(astNode: ASTNode): Seq[PatternElement] = astNode.treeFold(Seq.empty[PatternElement]) {
       case patternElement: PatternElement =>
-        (acc, children) => children(acc + patternElement)
+        (acc, children) => children(acc :+ patternElement)
 
       case patternExpr: PatternExpression =>
         (acc, _) => acc
