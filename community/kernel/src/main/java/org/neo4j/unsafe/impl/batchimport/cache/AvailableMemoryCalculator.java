@@ -39,19 +39,29 @@ public interface AvailableMemoryCalculator
         @Override
         public long availableOffHeapMemory()
         {
+            return osBean().getFreePhysicalMemorySize();
+        }
+
+        private com.sun.management.OperatingSystemMXBean osBean()
+        {
             com.sun.management.OperatingSystemMXBean bean =
                     (com.sun.management.OperatingSystemMXBean)
                     java.lang.management.ManagementFactory.getOperatingSystemMXBean();
-            long osMemory = bean.getTotalPhysicalMemorySize();
-            return osMemory-Runtime.getRuntime().maxMemory();
+            return bean;
         }
 
         @Override
         public long availableHeapMemory()
         {
+            Runtime runtime = runtime();
+            return runtime.maxMemory() - runtime.totalMemory();
+        }
+
+        private Runtime runtime()
+        {
             System.gc();
             Runtime runtime = Runtime.getRuntime();
-            return runtime.maxMemory() - runtime.totalMemory();
+            return runtime;
         }
 
         @Override

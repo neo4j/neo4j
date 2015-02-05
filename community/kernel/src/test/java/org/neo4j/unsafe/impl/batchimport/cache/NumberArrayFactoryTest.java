@@ -20,26 +20,30 @@
 package org.neo4j.unsafe.impl.batchimport.cache;
 
 import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 public class NumberArrayFactoryTest
 {
-    private static final int KILO = 1024;
+    private static final long KILO = 1024;
     private static final long MEGA = KILO*KILO;
 
     @Test
-    public void shouldAllocateOnHeapIfAvailable() throws Exception
+    public void shouldPickFirstAvailableCandidateLongArray() throws Exception
     {
         // GIVEN
-        AvailableMemoryCalculator memory = mock( AvailableMemoryCalculator.class );
-        when( memory.availableHeapMemory() ).thenReturn( 10*MEGA );
-        NumberArrayFactory factory = new NumberArrayFactory.Auto( memory, 10*KILO );
+        NumberArrayFactory factory = new NumberArrayFactory.Auto( NumberArrayFactory.HEAP );
 
         // WHEN
-        LongArray array = factory.newLongArray( 1*KILO, 0 );
+        LongArray array = factory.newLongArray( 1*KILO, -1 );
         array.set( 1*KILO-10, 12345 );
 
         // THEN
@@ -48,38 +52,73 @@ public class NumberArrayFactoryTest
     }
 
     @Test
-    public void shouldAllocateOffHeapIfNotEnoughHeapAvailable() throws Exception
+    public void shouldPickFirstAvailableCandidateLongArrayWhenSomeDontHaveEnoughMemory() throws Exception
     {
         // GIVEN
-        AvailableMemoryCalculator memory = mock( AvailableMemoryCalculator.class );
-        when( memory.availableHeapMemory() ).thenReturn( 1*MEGA );
-        when( memory.availableOffHeapMemory() ).thenReturn( 10*MEGA );
-        NumberArrayFactory factory = new NumberArrayFactory.Auto( memory, 10*KILO );
+        NumberArrayFactory lowMemoryFactory = mock( NumberArrayFactory.class );
+        doThrow( OutOfMemoryError.class ).when( lowMemoryFactory ).newLongArray( anyLong(), anyLong() );
+        NumberArrayFactory factory = new NumberArrayFactory.Auto( lowMemoryFactory, NumberArrayFactory.HEAP );
 
         // WHEN
-        LongArray array = factory.newLongArray( 1*MEGA, 0 );
-        array.set( 1*MEGA-10, 12345 );
+        LongArray array = factory.newLongArray( 1*KILO, -1 );
+        array.set( 1*KILO-10, 12345 );
 
         // THEN
-        assertTrue( array instanceof OffHeapLongArray );
-        assertEquals( 12345, array.get( 1*MEGA-10 ) );
+        verify( lowMemoryFactory, times( 1 ) ).newLongArray( 1*KILO, -1 );
+        assertTrue( array instanceof HeapLongArray );
+        assertEquals( 12345, array.get( 1*KILO-10 ) );
     }
 
     @Test
-    public void shouldAllocateDynamicGrowingInBothHeapAndOffHeapIfEnoughCollectiveMemoryAvailable() throws Exception
+    public void shouldThrowOomOnNotEnoughMemory() throws Exception
     {
         // GIVEN
-        AvailableMemoryCalculator memory = mock( AvailableMemoryCalculator.class );
-        when( memory.availableHeapMemory() ).thenReturn( 5*MEGA );
-        when( memory.availableOffHeapMemory() ).thenReturn( 5*MEGA );
-        NumberArrayFactory factory = new NumberArrayFactory.Auto( memory, 10*KILO );
+        NumberArrayFactory lowMemoryFactory = mock( NumberArrayFactory.class );
+        doThrow( OutOfMemoryError.class ).when( lowMemoryFactory ).newLongArray( anyLong(), anyLong() );
+        NumberArrayFactory factory = new NumberArrayFactory.Auto( lowMemoryFactory );
 
         // WHEN
-        LongArray array = factory.newLongArray( 1*MEGA, 0 ); // i.e. 8 Mb
-        array.set( 1*MEGA-10, 12345 );
+        try
+        {
+            factory.newLongArray( 1*KILO, -1 );
+            fail( "Should have thrown" );
+        }
+        catch ( OutOfMemoryError e )
+        {
+            // THEN OK
+        }
+    }
+
+    @Test
+    public void shouldPickFirstAvailableCandidateIntArray() throws Exception
+    {
+        // GIVEN
+        NumberArrayFactory factory = new NumberArrayFactory.Auto( NumberArrayFactory.HEAP );
+
+        // WHEN
+        IntArray array = factory.newIntArray( 1*KILO, -1 );
+        array.set( 1*KILO-10, 12345 );
 
         // THEN
-        assertTrue( array instanceof DynamicLongArray );
-        assertEquals( 12345, array.get( 1*MEGA-10 ) );
+        assertTrue( array instanceof HeapIntArray );
+        assertEquals( 12345, array.get( 1*KILO-10 ) );
+    }
+
+    @Test
+    public void shouldPickFirstAvailableCandidateIntArrayWhenSomeDontHaveEnoughMemory() throws Exception
+    {
+        // GIVEN
+        NumberArrayFactory lowMemoryFactory = mock( NumberArrayFactory.class );
+        doThrow( OutOfMemoryError.class ).when( lowMemoryFactory ).newIntArray( anyLong(), anyInt() );
+        NumberArrayFactory factory = new NumberArrayFactory.Auto( lowMemoryFactory, NumberArrayFactory.HEAP );
+
+        // WHEN
+        IntArray array = factory.newIntArray( 1*KILO, -1 );
+        array.set( 1*KILO-10, 12345 );
+
+        // THEN
+        verify( lowMemoryFactory, times( 1 ) ).newIntArray( 1*KILO, -1 );
+        assertTrue( array instanceof HeapIntArray );
+        assertEquals( 12345, array.get( 1*KILO-10 ) );
     }
 }
