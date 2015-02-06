@@ -37,6 +37,14 @@ case object rewriteEqualityToInCollection extends Rewriter {
     case e@Equals(a:FunctionInvocation, b:FunctionInvocation)
       if a.function == Some(functions.Id) && b.function == Some(functions.Id) => e
 
+    // id(a) = b.prop is also not rewritten to IN predicates as they cannot be optimized later on
+    case e@Equals(a:FunctionInvocation, b:Property)
+      if a.function == Some(functions.Id) => e
+
+    // a.prop = id(b) is also not rewritten to IN predicates as they cannot be optimized later on
+    case e@Equals(a:Property, b:FunctionInvocation)
+      if b.function == Some(functions.Id) => e
+
     // id(a) = value => id(a) IN [value]
     case predicate@Equals(func@FunctionInvocation(_, _, IndexedSeq(idExpr)), idValueExpr)
       if func.function == Some(functions.Id) =>
