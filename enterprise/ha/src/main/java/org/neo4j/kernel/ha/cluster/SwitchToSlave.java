@@ -29,7 +29,6 @@ import javax.transaction.TransactionManager;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
@@ -93,7 +92,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.kernel.monitoring.StoreCopyMonitor;
 
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
 import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
@@ -118,19 +116,17 @@ public class SwitchToSlave
     private final HaIdGeneratorFactory idGeneratorFactory;
     private final DelegateInvocationHandler<Master> masterDelegateHandler;
     private final ClusterMemberAvailability clusterMemberAvailability;
-    private final ClusterClient clusterClient;
     private final RequestContextFactory requestContextFactory;
     private final UpdateableSchemaState updateableSchemaState;
     private final Monitors monitors;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensions;
-
-    private MasterClientResolver masterClientResolver;
+    private final MasterClientResolver masterClientResolver;
 
     public SwitchToSlave( ConsoleLogger console, Config config, DependencyResolver resolver,
             HaIdGeneratorFactory idGeneratorFactory, Logging logging,
             DelegateInvocationHandler<Master> masterDelegateHandler,
-            ClusterMemberAvailability clusterMemberAvailability, ClusterClient clusterClient,
-            RequestContextFactory requestContextFactory, UpdateableSchemaState updateableSchemaState, Monitors monitors,
+            ClusterMemberAvailability clusterMemberAvailability, RequestContextFactory requestContextFactory,
+            UpdateableSchemaState updateableSchemaState, MasterClientResolver masterClientResolver, Monitors monitors,
             Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
         this.console = console;
@@ -145,7 +141,7 @@ public class SwitchToSlave
         this.kernelExtensions = kernelExtensions;
         this.msgLog = logging.getMessagesLog( getClass() );
         this.masterDelegateHandler = masterDelegateHandler;
-        this.clusterClient = clusterClient;
+        this.masterClientResolver = masterClientResolver;
     }
 
     /**
@@ -167,13 +163,6 @@ public class SwitchToSlave
                 masterUri );
 
         assert masterUri != null; // since we are here it must already have been set from outside
-
-        this.masterClientResolver = new MasterClientResolver( logging, clusterClient, clusterMemberAvailability, msgLog,
-                config.get( HaSettings.read_timeout ).intValue(),
-                config.get( HaSettings.lock_read_timeout ).intValue(),
-                config.get( HaSettings.max_concurrent_channels_per_slave ).intValue(),
-                config.get( HaSettings.com_chunk_size ).intValue()  );
-
 
         HaXaDataSourceManager xaDataSourceManager = resolver.resolveDependency(
                 HaXaDataSourceManager.class );

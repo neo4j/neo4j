@@ -73,6 +73,8 @@ import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.DefaultSlaveFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.Slaves;
+import org.neo4j.kernel.ha.com.slave.InvalidEpochExceptionHandler;
+import org.neo4j.kernel.ha.com.slave.MasterClientResolver;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.ha.lock.LockManagerModeSwitcher;
 import org.neo4j.kernel.ha.management.ClusterDatabaseInfoProvider;
@@ -413,10 +415,25 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         idGeneratorFactory = new HaIdGeneratorFactory( masterDelegateInvocationHandler, logging,
                 requestContextFactory );
 
+        InvalidEpochExceptionHandler invalidEpochHandler = new InvalidEpochExceptionHandler()
+        {
+            @Override
+            public void handle()
+            {
+                highAvailabilityModeSwitcher.forceElections();
+            }
+        };
+
+        MasterClientResolver masterClientResolver = new MasterClientResolver( logging, invalidEpochHandler,
+                config.get( HaSettings.read_timeout ).intValue(),
+                config.get( HaSettings.lock_read_timeout ).intValue(),
+                config.get( HaSettings.max_concurrent_channels_per_slave ),
+                config.get( HaSettings.com_chunk_size ).intValue() );
+
         SwitchToSlave switchToSlave = new SwitchToSlave( logging.getConsoleLog( HighAvailabilityModeSwitcher.class ),
                 config, getDependencyResolver(), (HaIdGeneratorFactory) idGeneratorFactory, logging,
-                masterDelegateInvocationHandler, clusterMemberAvailability, clusterClient, requestContextFactory,
-                updateableSchemaState, monitors, kernelExtensions.listFactories() );
+                masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory,
+                updateableSchemaState, masterClientResolver, monitors, kernelExtensions.listFactories() );
 
         SwitchToMaster switchToMaster = new SwitchToMaster( logging, msgLog, this,
                 (HaIdGeneratorFactory) idGeneratorFactory, config, getDependencyResolver(),

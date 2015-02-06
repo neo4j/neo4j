@@ -93,5 +93,5 @@ public interface MasterClient extends Master
     public Response<Void> copyTransactions( RequestContext context, final String ds, final long startTxId,
             final long endTxId );
 
-    public void addComExceptionHandler( ComExceptionHandler handler );
+    public void setComExceptionHandler( ComExceptionHandler handler );
 }
