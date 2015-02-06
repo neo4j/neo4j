@@ -69,7 +69,7 @@ class KeysFunctionTest extends CypherFunSuite {
     // THEN
     result should equal(Seq.empty)
   }
-  
+
   test("test using a literal map") {
     // GIVEN
     val queryContext = mock[QueryContext]

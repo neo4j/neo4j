@@ -52,6 +52,8 @@ class FunctionsTest extends RefcardTest with QueryStatisticsTestSupport {
         Map("expr" -> "10")
       case "parameters=toFloat" =>
         Map("expr" -> "10.1")
+      case "parameters=map" =>
+        Map("expr" -> Map("name" -> "Bob"))
       case "" =>
         Map()
     }
@@ -98,5 +100,12 @@ RETURN
 
 toFloat({expr})###
 
-Converts the given input in a floating point number if possible; otherwise it returns +NULL+."""
+Converts the given input in a floating point number if possible; otherwise it returns +NULL+.
+
+###assertion=returns-one parameters=map
+RETURN
+
+keys({expr})###
+
+Returns a collection of string representations for the property names of a node, relationship, or map."""
 }
