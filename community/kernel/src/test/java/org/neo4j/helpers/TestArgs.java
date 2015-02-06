@@ -252,8 +252,8 @@ public class TestArgs
 
         // Then
         assertEquals( Collections.<String>emptyList(), orphans );
-        assertTrue( args.getBoolean( "foo", false, false ) );
-        assertTrue( args.getBoolean( "bar", false, false ) );
+        assertTrue( args.getBoolean( "foo", false, true ) );
+        assertTrue( args.getBoolean( "bar", false, true ) );
     }
 
     @Test
@@ -268,7 +268,7 @@ public class TestArgs
         // Then
         assertEquals( Arrays.<String>asList() , orphans );
         assertFalse( args.getBoolean( "foo", false, false ) );
-        assertTrue( args.getBoolean( "bar", false, false ) );
+        assertTrue( args.getBoolean( "bar", false, true ) );
     }
 
     @Test
@@ -287,9 +287,44 @@ public class TestArgs
         assertEquals( 120, args.getNumber( "size", 0 ).intValue() );
         assertEquals( "ShereKhan", args.get( "name" ) );
 
-        assertTrue( args.getBoolean( "big", false, false ) );
+        assertTrue( args.getBoolean( "big", false, true ) );
         assertTrue( args.getBoolean( "soft", false, false ) );
         assertFalse( args.getBoolean( "saysMeow", true, true ) );
+    }
+
+    @Test
+    public void shouldHandleFlagSpecifiedAsLastArgument()
+    {
+        // Given
+        Args args = Args.withFlags( "flag1", "flag2" ).parse(
+                "-key=Foo", "-flag1", "false", "-value", "Bar", "-flag2", "false" );
+
+        // When
+        List<String> orphans = args.orphans();
+
+        // Then
+        assertTrue( "Orphan args expected to be empty, but were: " + orphans, orphans.isEmpty() );
+        assertEquals( "Foo", args.get( "key" ) );
+        assertEquals( "Bar", args.get( "value" ) );
+        assertFalse( "flag1", args.getBoolean( "flag1", true ) );
+        assertFalse( "flag1", args.getBoolean( "flag2", true ) );
+    }
+
+    @Test
+    public void shouldRecognizeFlagsOfAnyForm()
+    {
+        // Given
+        Args args = Args.withFlags( "flag1", "flag2", "flag3" ).parse(
+                "-key1=Foo", "-flag1", "-key1", "Bar", "-flag2=true", "-key3=Baz", "-flag3", "true" );
+
+        // When
+        List<String> orphans = args.orphans();
+
+        // Then
+        assertTrue( "Orphan args expected to be empty, but were: " + orphans, orphans.isEmpty() );
+        assertTrue( args.getBoolean( "flag1", false, true ) );
+        assertTrue( args.getBoolean( "flag2", false, false ) );
+        assertTrue( args.getBoolean( "flag3", false, false ) );
     }
 
     @Test
