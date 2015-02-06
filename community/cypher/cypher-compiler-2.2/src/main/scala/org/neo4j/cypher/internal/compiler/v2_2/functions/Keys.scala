@@ -30,7 +30,8 @@ case object Keys extends Function with SimpleTypedFunction {
 
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTNode), outputType = CTCollection(CTString)),
-    Signature(argumentTypes = Vector(CTRelationship), outputType = CTCollection(CTString))
+    Signature(argumentTypes = Vector(CTRelationship), outputType = CTCollection(CTString)),
+    Signature(argumentTypes = Vector(CTMap), outputType = CTCollection(CTString))
   )
 
   def asCommandExpression(invocation: ast.FunctionInvocation) =

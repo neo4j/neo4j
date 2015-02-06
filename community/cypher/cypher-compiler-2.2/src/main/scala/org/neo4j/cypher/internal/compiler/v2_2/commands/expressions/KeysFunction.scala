@@ -21,44 +21,38 @@ package org.neo4j.cypher.internal.compiler.v2_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
-import pipes.QueryState
-import symbols._
-import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
-import org.neo4j.graphdb.{Relationship, Node}
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.IsMap
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
+import org.neo4j.graphdb.{Node, Relationship}
 
-case class KeysFunction(nodeOrRelationshipExpr: Expression) extends NullInNullOutExpression(nodeOrRelationshipExpr) {
+case class KeysFunction(expr: Expression) extends NullInNullOutExpression(expr) {
 
-  override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) = value match {
-    case node: Node        =>
-                              val queryCtx: QueryContext = state.query
-                              queryCtx.getPropertiesForNode(node.getId).map { case (v) =>
-                                queryCtx.getPropertyKeyName(v.toInt)
-                              }.toList
-    case rel: Relationship =>
-                              val queryCtx: QueryContext = state.query
-                              queryCtx.getPropertiesForRelationship(rel.getId).map { case (v) =>
-                                queryCtx.getPropertyKeyName(v.toInt)
-                              }.toList
-    case x => throw new CypherTypeException("Expected `%s` to be a node or relationship, but it was ``".format(nodeOrRelationshipExpr, x.getClass.getSimpleName))
+  override def compute(value: Any, ctx: ExecutionContext)(implicit state: QueryState) = value match {
+    case IsMap(map) => map(state.query).keys.toList
+
+    case x =>
+      throw new CypherTypeException(s"""Expected ${expr} to be a node, relationship,or a literal map,
+           |but it was ${x.getClass.getSimpleName}""".stripMargin)
   }
 
-  def rewrite(f: (Expression) => Expression) = f(KeysFunction(nodeOrRelationshipExpr.rewrite(f)))
+  def rewrite(f: (Expression) => Expression) = f(KeysFunction(expr.rewrite(f)))
 
-  def arguments = Seq(nodeOrRelationshipExpr)
+  def arguments = Seq(expr)
 
-  def symbolTableDependencies = nodeOrRelationshipExpr.symbolTableDependencies
+  def symbolTableDependencies = expr.symbolTableDependencies
 
-  protected def calculateType(symbols: SymbolTable) = nodeOrRelationshipExpr match {
-    case node: Node => nodeOrRelationshipExpr.evaluateType(CTNode, symbols)
-    case rel : Relationship => nodeOrRelationshipExpr.evaluateType(CTRelationship, symbols)
+  protected def calculateType(symbols: SymbolTable) = expr match {
+    case node: Node => expr.evaluateType(CTNode, symbols)
+    case rel: Relationship => expr.evaluateType(CTRelationship, symbols)
     case _ => CTCollection(CTString)
   }
 
-  def localEffects(symbols: SymbolTable) = nodeOrRelationshipExpr match {
+  def localEffects(symbols: SymbolTable) = expr match {
     case i: Identifier => symbols.identifiers(i.entityName) match {
-      case _: NodeType         => Effects.READS_NODES
+      case _: NodeType => Effects.READS_NODES
       case _: RelationshipType => Effects.READS_RELATIONSHIPS
-      case _                   => Effects.NONE
+      case _ => Effects.NONE
     }
     case _ => Effects.NONE
   }
