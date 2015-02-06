@@ -78,6 +78,8 @@ import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.com.master.SlaveFactory;
 import org.neo4j.kernel.ha.com.master.Slaves;
+import org.neo4j.kernel.ha.com.slave.InvalidEpochExceptionHandler;
+import org.neo4j.kernel.ha.com.slave.MasterClientResolver;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.ha.lock.LockManagerModeSwitcher;
@@ -137,6 +139,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     private HighAvailabilityMemberContext memberContext;
     private ClusterClient clusterClient;
     private ClusterMemberAvailability clusterMemberAvailability;
+    private HighAvailabilityModeSwitcher highAvailabilityModeSwitcher;
     private long stateSwitchTimeoutMillis;
     private TransactionCommittingResponseUnpacker responseUnpacker;
     private Provider<KernelAPI> kernelProvider;
@@ -470,14 +473,30 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         ConsoleLogger consoleLog = logging.getConsoleLog( HighAvailabilityModeSwitcher.class );
 
+        InvalidEpochExceptionHandler invalidEpochHandler = new InvalidEpochExceptionHandler()
+        {
+            @Override
+            public void handle()
+            {
+                highAvailabilityModeSwitcher.forceElections();
+            }
+        };
+
+        MasterClientResolver masterClientResolver = new MasterClientResolver( logging, responseUnpacker,
+                invalidEpochHandler,
+                config.get( HaSettings.read_timeout ).intValue(),
+                config.get( HaSettings.lock_read_timeout ).intValue(),
+                config.get( HaSettings.max_concurrent_channels_per_slave ),
+                config.get( HaSettings.com_chunk_size ).intValue() );
+
         SwitchToSlave switchToSlaveInstance = new SwitchToSlave( consoleLog, config, getDependencyResolver(),
                 (HaIdGeneratorFactory) idGeneratorFactory,
-                logging, masterDelegateInvocationHandler, clusterMemberAvailability, clusterClient,
-                requestContextFactory, kernelExtensions.listFactories(), responseUnpacker,
+                logging, masterDelegateInvocationHandler, clusterMemberAvailability,
+                requestContextFactory, kernelExtensions.listFactories(), masterClientResolver,
                 monitors.newMonitor( ByteCounterMonitor.class, SlaveServer.class ),
                 monitors.newMonitor( RequestMonitor.class, SlaveServer.class ),
                 monitors.newMonitor( SwitchToSlave.Monitor.class ),
-                monitors.newMonitor( StoreCopyMonitor.class ));
+                monitors.newMonitor( StoreCopyMonitor.class ) );
 
         SwitchToMaster switchToMasterInstance = new SwitchToMaster( logging, consoleLog, this,
                 (HaIdGeneratorFactory) idGeneratorFactory, config, dependencies.provideDependency( SlaveFactory.class ),
@@ -486,9 +505,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 monitors.newMonitor( RequestMonitor.class, MasterServer.class ),
                 monitors.newMonitor( MasterImpl.Monitor.class, MasterImpl.class ) );
 
-        HighAvailabilityModeSwitcher highAvailabilityModeSwitcher =
-                new HighAvailabilityModeSwitcher( switchToSlaveInstance, switchToMasterInstance,
-                        clusterClient, clusterMemberAvailability, getDependencyResolver(), logging );
+        highAvailabilityModeSwitcher = new HighAvailabilityModeSwitcher( switchToSlaveInstance, switchToMasterInstance,
+                clusterClient, clusterMemberAvailability, getDependencyResolver(), logging );
 
         clusterClient.addBindingListener( highAvailabilityModeSwitcher );
         memberStateMachine.addHighAvailabilityMemberListener( highAvailabilityModeSwitcher );

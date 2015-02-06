@@ -150,18 +150,19 @@ public class ClusterTopologyChangesIT
 
         // whole cluster looks fine, but slaves have stale value of the epoch
         cluster.await( allSeesAllAsAvailable() );
+        HighlyAvailableGraphDatabase newMaster = cluster.getMaster();
+        HighlyAvailableGraphDatabase newSlave1 = cluster.getAnySlave();
+        HighlyAvailableGraphDatabase newSlave2 = cluster.getAnySlave( newSlave1 );
 
-        // attempt to perform tx on slave1 throws InvalidEpochException, election is triggered
-        assertHasInvalidEpoch( slave1 );
-        // tx on slave2 might fail with InvalidEpochException or might succeed because election was triggered by slave1
-        safeCreateNodeOn( slave2 );
+        // attempt to perform transactions on both slaves throws, election is triggered
+        attemptTransactions( newSlave1, newSlave2 );
 
-        // THEN: InvalidEpochException handled and election triggered, cluster feels good and able to serve transactions
+        // THEN: done with election, cluster feels good and able to serve transactions
         cluster.await( allSeesAllAsAvailable() );
 
-        assertNotNull( createNodeOn( master ) );
-        assertNotNull( createNodeOn( slave1 ) );
-        assertNotNull( createNodeOn( slave2 ) );
+        assertNotNull( createNodeOn( newMaster ) );
+        assertNotNull( createNodeOn( newSlave1 ) );
+        assertNotNull( createNodeOn( newSlave2 ) );
     }
 
     @Test
@@ -265,14 +266,17 @@ public class ClusterTopologyChangesIT
                 new NotElectableElectionCredentialsProvider(), new ObjectStreamFactory(), new ObjectStreamFactory() );
     }
 
-    private static void safeCreateNodeOn( HighlyAvailableGraphDatabase db )
+    private static void attemptTransactions( HighlyAvailableGraphDatabase... dbs )
     {
-        try
+        for ( HighlyAvailableGraphDatabase db : dbs )
         {
-            createNodeOn( db );
-        }
-        catch ( Exception ignored )
-        {
+            try
+            {
+                createNodeOn( db );
+            }
+            catch ( Exception ignored )
+            {
+            }
         }
     }
 

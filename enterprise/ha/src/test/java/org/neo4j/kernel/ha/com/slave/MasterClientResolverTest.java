@@ -20,31 +20,19 @@
 package org.neo4j.kernel.ha.com.slave;
 
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.neo4j.cluster.client.ClusterClient;
-import org.neo4j.cluster.member.ClusterMemberAvailability;
-import org.neo4j.com.ComExceptionHandler;
 import org.neo4j.com.IllegalProtocolVersionException;
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.kernel.ha.MasterClient210;
 import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 
 public class MasterClientResolverTest
 {
@@ -52,8 +40,8 @@ public class MasterClientResolverTest
     public void shouldResolveMasterClientFactory() throws Exception
     {
         // Given
-        List<ComExceptionHandler> handlers = new ArrayList<>( 2 );
-        MasterClientResolver resolver = newMasterClientResolver( handlers );
+        MasterClientResolver resolver = new MasterClientResolver( new DevNullLoggingService(),
+                ResponseUnpacker.NO_OP_RESPONSE_UNPACKER, mock( InvalidEpochExceptionHandler.class ), 1, 1, 1, 1024 );
 
         LifeSupport life = new LifeSupport();
         try
@@ -74,10 +62,7 @@ public class MasterClientResolverTest
                 "Protocol is too modern" );
 
         // When
-        for ( ComExceptionHandler handler : handlers )
-        {
-            handler.handle( illegalProtocolVersionException );
-        }
+        resolver.handle( illegalProtocolVersionException );
 
         // Then
         life = new LifeSupport();
@@ -93,26 +78,5 @@ public class MasterClientResolverTest
         {
             life.shutdown();
         }
-    }
-
-    private static MasterClientResolver newMasterClientResolver( final List<ComExceptionHandler> comExceptionHandlers )
-    {
-        MasterClientResolver resolver = new MasterClientResolver( new DevNullLoggingService(), StringLogger.DEV_NULL,
-                mock( ResponseUnpacker.class ), mock( ClusterClient.class ), mock( ClusterMemberAvailability.class ),
-                1, 1, 1, 1024 );
-
-        MasterClientResolver resolverSpy = spy( resolver );
-        doAnswer( new Answer<Void>()
-        {
-            @Override
-            public Void answer( InvocationOnMock invocation ) throws Throwable
-            {
-                ComExceptionHandler handler = (ComExceptionHandler) invocation.getArguments()[1];
-                comExceptionHandlers.add( handler );
-                return null;
-            }
-        } ).when( resolverSpy ).addComExceptionHandler( any( MasterClient.class ), any( ComExceptionHandler.class ) );
-
-        return resolverSpy;
     }
 }

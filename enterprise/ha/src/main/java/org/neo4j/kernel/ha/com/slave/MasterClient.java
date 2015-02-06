@@ -128,7 +128,7 @@ public interface MasterClient extends Master
     @Override
     public Response<Void> copyStore( RequestContext context, final StoreWriter writer );
 
-    public void addComExceptionHandler( ComExceptionHandler handler );
+    public void setComExceptionHandler( ComExceptionHandler handler );
 
     public ProtocolVersion getProtocolVersion();
 }

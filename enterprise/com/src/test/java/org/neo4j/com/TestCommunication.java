@@ -398,7 +398,7 @@ public class TestCommunication
 
         life.add( builder.server( communication ) );
         MadeUpClient client = life.add( builder.client() );
-        client.addComExceptionHandler( handler );
+        client.setComExceptionHandler( handler );
 
         life.start();
 
