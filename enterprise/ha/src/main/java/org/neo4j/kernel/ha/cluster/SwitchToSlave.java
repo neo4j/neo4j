@@ -22,6 +22,7 @@ package org.neo4j.kernel.ha.cluster;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
+
 import javax.transaction.TransactionManager;
 
 import org.neo4j.cluster.ClusterSettings;
@@ -103,9 +104,9 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.kernel.monitoring.StoreCopyMonitor;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.first;
@@ -318,10 +319,9 @@ public class SwitchToSlave
         return true;
     }
 
-    private void checkDataConsistency( HaXaDataSourceManager xaDataSourceManager, MasterClient masterClient,
-                                       RequestContextFactory requestContextFactory,
-                                       NeoStoreXaDataSource nioneoDataSource, URI masterUri,
-                                       boolean masterIsOld ) throws Throwable
+    void checkDataConsistency( HaXaDataSourceManager xaDataSourceManager, MasterClient masterClient,
+            RequestContextFactory requestContextFactory, NeoStoreXaDataSource nioneoDataSource, URI masterUri,
+            boolean masterIsOld ) throws Throwable
     {
         // Must be called under lock on XaDataSourceManager
         try
@@ -393,7 +393,7 @@ public class SwitchToSlave
         }
     }
 
-    private void checkMyStoreIdAndMastersStoreId( NeoStoreXaDataSource nioneoDataSource, boolean masterIsOld )
+    void checkMyStoreIdAndMastersStoreId( NeoStoreXaDataSource nioneoDataSource, boolean masterIsOld )
     {
         if ( !masterIsOld )
         {
@@ -530,7 +530,7 @@ public class SwitchToSlave
         }
     }
 
-    private void stopServicesAndHandleBranchedStore( BranchedDataPolicy branchPolicy ) throws Throwable
+    void stopServicesAndHandleBranchedStore( BranchedDataPolicy branchPolicy ) throws Throwable
     {
         for ( int i = SERVICES_TO_RESTART_FOR_STORE_COPY.length - 1; i >= 0; i-- )
         {
@@ -541,7 +541,7 @@ public class SwitchToSlave
         branchPolicy.handle( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) );
     }
 
-    private void checkDataConsistencyWithMaster( URI masterUri, Master master, NeoStoreXaDataSource nioneoDataSource )
+    void checkDataConsistencyWithMaster( URI masterUri, Master master, NeoStoreXaDataSource nioneoDataSource )
             throws NoSuchLogVersionException
     {
         long myLastCommittedTx = nioneoDataSource.getLastCommittedTxId();
@@ -550,10 +550,10 @@ public class SwitchToSlave
         {
             myMaster = nioneoDataSource.getMasterForCommittedTx( myLastCommittedTx );
         }
-        catch ( IOException e )
+        catch ( NoSuchLogVersionException e )
         {
             msgLog.logMessage( "Failed to get master ID for txId " + myLastCommittedTx + ".", e );
-            return;
+            throw e;
         }
         catch ( Exception e )
         {
