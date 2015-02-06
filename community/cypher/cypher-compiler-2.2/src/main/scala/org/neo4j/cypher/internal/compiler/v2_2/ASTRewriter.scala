@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.conditions._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{NotEquals, Statement, UnaliasedReturnItem}
+import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.{ApplyRewriter, RewriterCondition, RewriterStepSequencer}
 
 class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters: Boolean = true) {
@@ -53,7 +53,8 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters
       enableCondition(normalizedEqualsArguments),
       addUniquenessPredicates,
       isolateAggregation,
-      enableCondition(aggregationsAreIsolated)
+      enableCondition(aggregationsAreIsolated),
+      getDegreeOptimizer
     )
 
     val rewrittenStatement = statement.rewrite(contract.rewriter).asInstanceOf[ast.Statement]
@@ -62,3 +63,5 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters
     (rewrittenStatement, extractedParameters, contract.postConditions)
   }
 }
+
+

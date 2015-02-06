@@ -83,6 +83,7 @@ object ExpressionConverters {
       case e: ast.ReduceExpression => e.asCommandReduce
       case e: ast.PathExpression => e.asCommandProjectedPath
       case e: ast.NestedPipeExpression => e.asPipeCommand
+      case e: ast.GetDegree => e.asCommandGetDegree
       case _ =>
         throw new ThisShouldNotHappenError("cleishm", s"Unknown expression type during transformation (${expression.getClass})")
     }
@@ -96,6 +97,13 @@ object ExpressionConverters {
         case c: commands.Predicate => c
         case c => commands.CoercedPredicate(c)
       }
+    }
+  }
+
+  implicit class GetDegreeConverter(val original: ast.GetDegree) extends AnyVal {
+    def asCommandGetDegree = {
+      val typ = original.relType.map(_.name)
+      commandexpressions.GetDegree(original.node.asCommandExpression, typ, original.dir)
     }
   }
 

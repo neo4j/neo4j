@@ -147,7 +147,7 @@ object QueryPlanningStrategy {
       case expr @ PatternExpression(pattern) =>
         val (plan, namedExpr) =  planPatternExpression(planArguments ++ exprArguments(expr), expr)
         NestedPlanExpression(plan, namedExpr)(namedExpr.position)
-    }
+    }                                  // LENGTH( a-->() )
 
     def apply(that: AnyRef): AnyRef = bottomUp(instance).apply(that)
   }

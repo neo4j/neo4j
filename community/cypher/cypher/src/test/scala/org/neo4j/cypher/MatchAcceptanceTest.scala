@@ -25,6 +25,10 @@ import scala.collection.JavaConverters._
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
+  test("get degree fuckers") {
+    executeWithNewPlanner("MATCH a RETURN length(a-->())")
+  }
+
   test("should be able to use multiple MATCH clauses to do a cartesian product") {
     createNode("value" -> 1)
     createNode("value" -> 2)
