@@ -19,23 +19,6 @@
  */
 package org.neo4j.com;
 
-import static org.neo4j.com.Protocol.addLengthFieldPipes;
-import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
-import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
-import static org.neo4j.helpers.NamedThreadFactory.named;
-
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -47,6 +30,17 @@ import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
+
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Triplet;
@@ -56,6 +50,11 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.com.Protocol.addLengthFieldPipes;
+import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
+import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
+import static org.neo4j.helpers.NamedThreadFactory.named;
 
 /**
  * A means for a client to communicate with a {@link Server}. It
@@ -85,7 +84,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     private final int maxUnusedChannels;
     private final StoreId storeId;
     private ResourceReleaser resourcePoolReleaser;
-    private final List<ComExceptionHandler> comExceptionHandlers;
+    private ComExceptionHandler comExceptionHandler;
 
     private final RequestMonitor requestMonitor;
 
@@ -102,7 +101,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         this.readTimeout = readTimeout;
         // ResourcePool no longer controls max concurrent channels. Use this value for the pool size
         this.maxUnusedChannels = maxConcurrentChannels;
-        this.comExceptionHandlers = new ArrayList<>( 2 );
+        this.comExceptionHandler = ComExceptionHandler.NO_OP;
         this.address = new InetSocketAddress( hostNameOrIp, port );
         this.protocol = createProtocol( chunkSize, protocolVersion.getApplicationProtocol() );
 
@@ -193,7 +192,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         bootstrap.releaseExternalResources();
         bossExecutor.shutdownNow();
         workerExecutor.shutdownNow();
-        comExceptionHandlers.clear();
+        comExceptionHandler = ComExceptionHandler.NO_OP;
         msgLog.logMessage( toString() + " shutdown", true );
     }
 
@@ -253,10 +252,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         {
             failure = e;
             success = false;
-            for ( ComExceptionHandler handler : comExceptionHandlers )
-            {
-                handler.handle( e );
-            }
+            comExceptionHandler.handle( e );
             throw e;
         }
         catch ( Throwable e )
@@ -340,9 +336,9 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         return pipeline;
     }
 
-    public void addComExceptionHandler( ComExceptionHandler handler )
+    public void setComExceptionHandler( ComExceptionHandler handler )
     {
-        comExceptionHandlers.add( handler );
+        comExceptionHandler = (handler == null) ? ComExceptionHandler.NO_OP : handler;
     }
 
     protected byte getInternalProtocolVersion()

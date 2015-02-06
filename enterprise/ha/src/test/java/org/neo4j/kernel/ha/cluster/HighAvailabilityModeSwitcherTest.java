@@ -19,25 +19,17 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.PENDING;
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.TO_SLAVE;
+import org.junit.Test;
+import org.mockito.InOrder;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.net.URI;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.protocol.election.Election;
@@ -49,6 +41,21 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.PENDING;
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.TO_SLAVE;
 
 public class HighAvailabilityModeSwitcherTest
 {
@@ -242,6 +249,105 @@ public class HighAvailabilityModeSwitcherTest
         verifyZeroInteractions( switchToSlave );
             // And an error must be logged
         verify( msgLog, times( 1 ) ).error( anyString() );
+    }
+
+    @Test
+    public void shouldPerformForcedElections()
+    {
+        // Given
+        ClusterMemberAvailability memberAvailability = mock( ClusterMemberAvailability.class );
+        Election election = mock( Election.class );
+
+        HighAvailabilityModeSwitcher modeSwitcher = new HighAvailabilityModeSwitcher( mock( SwitchToSlave.class ),
+                mock( SwitchToMaster.class ), election, memberAvailability, dependencyResolverMock(),
+                new DevNullLoggingService() );
+
+        // When
+        modeSwitcher.forceElections();
+
+        // Then
+        InOrder inOrder = inOrder( memberAvailability, election );
+        inOrder.verify( memberAvailability ).memberIsUnavailable( HighAvailabilityModeSwitcher.SLAVE );
+        inOrder.verify( election ).performRoleElections();
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    public void shouldPerformForcedElectionsOnlyOnce()
+    {
+        // Given: HAMS
+        ClusterMemberAvailability memberAvailability = mock( ClusterMemberAvailability.class );
+        Election election = mock( Election.class );
+
+        HighAvailabilityModeSwitcher modeSwitcher = new HighAvailabilityModeSwitcher( mock( SwitchToSlave.class ),
+                mock( SwitchToMaster.class ), election, memberAvailability, dependencyResolverMock(),
+                new DevNullLoggingService() );
+
+        // When: reelections are forced multiple times
+        modeSwitcher.forceElections();
+        modeSwitcher.forceElections();
+        modeSwitcher.forceElections();
+
+        // Then: instance sens out memberIsUnavailable and asks for elections and does this only once
+        InOrder inOrder = inOrder( memberAvailability, election );
+        inOrder.verify( memberAvailability ).memberIsUnavailable( HighAvailabilityModeSwitcher.SLAVE );
+        inOrder.verify( election ).performRoleElections();
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    public void shouldAllowForcedElectionsAfterModeSwitch() throws Throwable
+    {
+        // Given
+        SwitchToSlave switchToSlave = mock( SwitchToSlave.class );
+        when( switchToSlave.switchToSlave( any( LifeSupport.class ), any( URI.class ), any( URI.class ),
+                any( CancellationRequest.class ) ) ).thenReturn( URI.create( "http://localhost" ) );
+        ClusterMemberAvailability memberAvailability = mock( ClusterMemberAvailability.class );
+        Election election = mock( Election.class );
+
+        final CountDownLatch modeSwitchHappened = new CountDownLatch( 1 );
+
+        HighAvailabilityModeSwitcher modeSwitcher = new HighAvailabilityModeSwitcher( switchToSlave,
+                mock( SwitchToMaster.class ), election, memberAvailability, dependencyResolverMock(),
+                new DevNullLoggingService() )
+        {
+            @Override
+            ScheduledExecutorService createExecutor()
+            {
+                ScheduledExecutorService executor = mock( ScheduledExecutorService.class );
+
+                doAnswer( new Answer()
+                {
+                    @Override
+                    public Object answer( InvocationOnMock invocation ) throws Throwable
+                    {
+                        ((Runnable) invocation.getArguments()[0]).run();
+                        modeSwitchHappened.countDown();
+                        return mock( Future.class );
+                    }
+                } ).when( executor ).submit( any( Runnable.class ) );
+
+                return executor;
+            }
+        };
+
+        modeSwitcher.init();
+        modeSwitcher.start();
+
+        modeSwitcher.forceElections();
+        reset( memberAvailability, election );
+
+        // When
+        modeSwitcher.masterIsAvailable( new HighAvailabilityMemberChangeEvent( PENDING, TO_SLAVE, new InstanceId( 1 ),
+                URI.create( "http://localhost:9090?serverId=42" ) ) );
+        modeSwitchHappened.await();
+        modeSwitcher.forceElections();
+
+        // Then
+        InOrder inOrder = inOrder( memberAvailability, election );
+        inOrder.verify( memberAvailability ).memberIsUnavailable( HighAvailabilityModeSwitcher.SLAVE );
+        inOrder.verify( election ).performRoleElections();
+        inOrder.verifyNoMoreInteractions();
     }
 
     private static DependencyResolver dependencyResolverMock()

@@ -19,78 +19,73 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import java.io.IOException;
-import java.net.URI;
-
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.cluster.client.ClusterClient;
+import java.io.IOException;
+import java.net.URI;
+import javax.transaction.TransactionManager;
+
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.kernel.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.BranchedDataException;
 import org.neo4j.kernel.ha.BranchedDataPolicy;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HaXaDataSourceManager;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
+import org.neo4j.kernel.ha.com.slave.MasterClientResolver;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
+import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.logging.SystemOutLogging;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.test.Mute;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
 public class SwitchToSlaveTest
 {
     private SwitchToSlave switchToSlave;
-    private boolean methodCalled;
-
-    @Rule
-    public Mute mute = Mute.muteAll();
 
     @Before
+    @SuppressWarnings( "unchecked" )
     public void setUp()
     {
         // create a store with a wrong tx
         ConsoleLogger console = mock( ConsoleLogger.class );
-        Config config = new Config();
-        DependencyResolver resolver = mock( DependencyResolver.class );
+        Config config = configMock();
+        DependencyResolver resolver = dependencyResolverMock();
         HaIdGeneratorFactory idGeneratorFactory = mock( HaIdGeneratorFactory.class );
-        Logging logging = new SystemOutLogging();
+        Logging logging = new DevNullLoggingService();
         DelegateInvocationHandler<Master> masterDelegateHandler = mock( DelegateInvocationHandler.class );
         ClusterMemberAvailability clusterMemberAvailability = mock( ClusterMemberAvailability.class );
-        ClusterClient clusterClient = mock( ClusterClient.class );
         RequestContextFactory requestContextFactory = mock( RequestContextFactory.class );
         UpdateableSchemaState updateableSchemaState = mock( UpdateableSchemaState.class );
+        MasterClientResolver masterClientResolver = mock( MasterClientResolver.class );
         Monitors monitors = mock( Monitors.class );
         Iterable<KernelExtensionFactory<?>> kernelExtensions = mock( Iterable.class );
 
-        switchToSlave = new SwitchToSlave( console, config, resolver, idGeneratorFactory, logging,
-                masterDelegateHandler, clusterMemberAvailability, clusterClient, requestContextFactory,
-                updateableSchemaState, monitors, kernelExtensions )
-        {
-            @Override
-            void stopServicesAndHandleBranchedStore( BranchedDataPolicy branchPolicy ) throws Throwable
-            {
-                methodCalled = true;
-                return;
-            }
-        };
-        methodCalled = false;
+        switchToSlave = spy( new SwitchToSlave( console, config, resolver, idGeneratorFactory, logging,
+                masterDelegateHandler, clusterMemberAvailability, requestContextFactory, updateableSchemaState,
+                masterClientResolver, monitors, kernelExtensions ) );
     }
 
     @Test
@@ -110,7 +105,7 @@ public class SwitchToSlaveTest
         try
         {
             switchToSlave.checkDataConsistencyWithMaster( masterUri, master, nioneoDataSource );
-            fail();
+            fail( "Should have thrown " + BranchedDataException.class.getSimpleName() + " exception" );
         }
         catch ( BranchedDataException e )
         {
@@ -122,7 +117,6 @@ public class SwitchToSlaveTest
     public void shouldHandleBranchedStoreWhenFailedToGetMasterForCommittedTxWithIOException() throws Throwable
     {
         // Given
-        assertFalse( methodCalled );
         NeoStoreXaDataSource nioneoDataSource = mock( NeoStoreXaDataSource.class );
 
         // When
@@ -133,41 +127,72 @@ public class SwitchToSlaveTest
         try
         {
             switchToSlave.checkDataConsistency( mock( HaXaDataSourceManager.class ), mock( MasterClient.class ),
-                    mock( RequestContextFactory.class ), nioneoDataSource, null, true /*set true to skip some check*/);
-            fail();
+                    mock( RequestContextFactory.class ), nioneoDataSource, null, true /*set true to skip some check*/ );
+            fail( "Should have thrown " + BranchedDataException.class.getSimpleName() + " exception" );
         }
         catch ( BranchedDataException e )
         {
+            // good we got the expected exception
         }
 
         // Then
-        assertTrue( methodCalled );
+        verify( switchToSlave ).stopServicesAndHandleBranchedStore( any( BranchedDataPolicy.class ) );
     }
 
     @Test
-    public void shouldHandleBranchedStoreWhenFailedToGetMasterForCommittedTxWithNoSuchLogVersionException() throws Throwable
+    public void shouldHandleBranchedStoreWhenFailedToGetMasterForCommittedTxWithNoSuchLogVersionException()
+            throws Throwable
     {
         // Given
-        assertFalse( methodCalled );
         NeoStoreXaDataSource nioneoDataSource = mock( NeoStoreXaDataSource.class );
 
         // When
         long fakeTxId = 2L; // any tx id
         when( nioneoDataSource.getLastCommittedTxId() ).thenReturn( fakeTxId );
-        when( nioneoDataSource.getMasterForCommittedTx( fakeTxId ) ).thenThrow( new NoSuchLogVersionException( fakeTxId ) );
+        when( nioneoDataSource.getMasterForCommittedTx( fakeTxId ) )
+                .thenThrow( new NoSuchLogVersionException( fakeTxId ) );
 
         try
         {
             switchToSlave.checkDataConsistency( mock( HaXaDataSourceManager.class ), mock( MasterClient.class ),
-                    mock( RequestContextFactory.class ), nioneoDataSource, null, true /*set true to skip some check*/);
-            fail();
+                    mock( RequestContextFactory.class ), nioneoDataSource, null, true /*set true to skip some check*/ );
+            fail( "Should have thrown " + NoSuchLogVersionException.class.getSimpleName() + " exception" );
         }
         catch ( NoSuchLogVersionException e )
         {
+            // good we got the expected exception
         }
 
         // Then
-        assertTrue( methodCalled );
+        verify( switchToSlave ).stopServicesAndHandleBranchedStore( any( BranchedDataPolicy.class ) );
     }
 
+    private static Config configMock()
+    {
+        Config config = mock( Config.class );
+        when( config.get( HaSettings.branched_data_policy ) ).thenReturn( mock( BranchedDataPolicy.class ) );
+        return config;
+    }
+
+    private static DependencyResolver dependencyResolverMock()
+    {
+        DependencyResolver resolver = mock( DependencyResolver.class );
+
+        when( resolver.resolveDependency( StoreLockerLifecycleAdapter.class ) ).thenReturn(
+                mockWithLifecycle( StoreLockerLifecycleAdapter.class ) );
+        when( resolver.resolveDependency( XaDataSourceManager.class ) ).thenReturn(
+                mockWithLifecycle( XaDataSourceManager.class ) );
+        when( resolver.resolveDependency( TransactionManager.class ) ).thenReturn(
+                mockWithLifecycle( TransactionManager.class ) );
+        when( resolver.resolveDependency( NodeManager.class ) ).thenReturn(
+                mockWithLifecycle( NodeManager.class ) );
+        when( resolver.resolveDependency( IndexStore.class ) ).thenReturn(
+                mockWithLifecycle( IndexStore.class ) );
+        return resolver;
+    }
+
+    private static <T> T mockWithLifecycle( Class<T> clazz )
+    {
+        return mock( clazz, withSettings().extraInterfaces( Lifecycle.class ) );
+    }
 }
