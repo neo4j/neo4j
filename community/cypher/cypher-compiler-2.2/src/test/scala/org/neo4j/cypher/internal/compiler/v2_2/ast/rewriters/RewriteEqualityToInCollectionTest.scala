@@ -62,9 +62,11 @@ class RewriteEqualityToInCollectionTest extends CypherFunSuite with AstRewriting
   }
 
   test("MATCH a,b WHERE id(a) = b.prop (dependencies on the RHS)") {
-    shouldRewrite(
-      "MATCH a,b WHERE b.prop = id(a)",
-      "MATCH a,b WHERE b.prop IN [id(a)]")
+    shouldNotRewrite("MATCH a,b WHERE id(a) = b.prop")
+  }
+
+  test("MATCH a,b WHERE a.prop = id(b) (dependencies on the RHS)") {
+    shouldNotRewrite("MATCH a,b WHERE a.prop = id(b)")
   }
 
   test("MATCH a,b WHERE a.prop = b.prop (dependencies on the RHS)") {
