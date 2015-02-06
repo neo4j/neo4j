@@ -31,7 +31,9 @@ import static org.neo4j.unsafe.impl.batchimport.input.Group.GLOBAL;
  */
 public class InputRelationship extends InputEntity
 {
-    private final long id;
+    public static final long NO_SPECIFIC_ID = -1L;
+
+    private long id = NO_SPECIFIC_ID;
     private final Object startNode;
     private final Object endNode;
     private String type;
@@ -39,21 +41,20 @@ public class InputRelationship extends InputEntity
     private final Group startNodeGroup;
     private final Group endNodeGroup;
 
-    public InputRelationship( long id,
+    public InputRelationship(
             Object[] properties, Long firstPropertyId, Object startNode, Object endNode,
             String type, Integer typeId )
     {
-        this( id, properties, firstPropertyId, GLOBAL, startNode, GLOBAL, endNode, type, typeId );
+        this( properties, firstPropertyId, GLOBAL, startNode, GLOBAL, endNode, type, typeId );
     }
 
-    public InputRelationship( long id,
+    public InputRelationship(
             Object[] properties, Long firstPropertyId,
             Group startNodeGroups, Object startNode,
             Group endNodeGroups, Object endNode,
             String type, Integer typeId )
     {
         super( properties, firstPropertyId );
-        this.id = id;
         this.startNodeGroup = startNodeGroups;
         this.startNode = startNode;
         this.endNodeGroup = endNodeGroups;
@@ -62,8 +63,19 @@ public class InputRelationship extends InputEntity
         this.typeId = typeId;
     }
 
-    public long id()
+    public void setSpecificId( long id )
     {
+        this.id = id;
+    }
+
+    public boolean hasSpecificId()
+    {
+        return id != NO_SPECIFIC_ID;
+    }
+
+    public long specificId()
+    {
+        assert hasSpecificId() : "Didn't have specific id set";
         return id;
     }
 

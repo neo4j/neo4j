@@ -35,11 +35,6 @@ public class Stage
     private final List<Step<?>> pipeline = new ArrayList<>();
     private final StageExecution execution;
 
-    public Stage( String name, Configuration config )
-    {
-        this( name, config, true );
-    }
-
     public Stage( String name, Configuration config, boolean orderedTickets )
     {
         this.execution = new StageExecution( name, config, pipeline, orderedTickets );

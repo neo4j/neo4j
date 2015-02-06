@@ -350,7 +350,7 @@ public class StoreMigrator implements StoreMigrationParticipant
                 parallel(), readAdditionalIds( storeDir, lastTxId, lastTxChecksum ), AvailableMemoryCalculator.RUNTIME );
         Iterable<InputNode> nodes = legacyNodesAsInput( legacyStore );
         Iterable<InputRelationship> relationships = legacyRelationshipsAsInput( legacyStore );
-        importer.doImport( Inputs.input( nodes, relationships, IdMappers.actual(), IdGenerators.fromInput() ) );
+        importer.doImport( Inputs.input( nodes, relationships, IdMappers.actual(), IdGenerators.fromInput(), true ) );
 
         // During migration the batch importer only writes node, relationship, relationship group and counts stores.
         // Delete the property store files from the batch import migration so that even if we won't
@@ -588,8 +588,10 @@ public class StoreMigrator implements StoreMigrationParticipant
                     @Override
                     protected InputRelationship underlyingObjectToObject( RelationshipRecord record )
                     {
-                        return new InputRelationship( record.getId(), NO_PROPERTIES, record.getNextProp(),
-                                                      record.getFirstNode(), record.getSecondNode(), null, record.getType() );
+                        InputRelationship result = new InputRelationship( NO_PROPERTIES, record.getNextProp(),
+                                record.getFirstNode(), record.getSecondNode(), null, record.getType() );
+                        result.setSpecificId( record.getId() );
+                        return result;
                     }
                 };
             }

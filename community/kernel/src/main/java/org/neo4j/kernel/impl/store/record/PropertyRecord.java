@@ -122,7 +122,7 @@ public class PropertyRecord extends Abstract64BitRecord
         deletedRecords.add( record );
     }
 
-    public void addPropertyBlock(PropertyBlock block)
+    public void addPropertyBlock( PropertyBlock block )
     {
         assert size() + block.getSize() <= PropertyType.getPayloadSize() :
                 "Exceeded capacity of property record " + this

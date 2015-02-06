@@ -28,10 +28,14 @@ public class ReusableIteratorCostume<T> implements Iterator<T>
 {
     private T[] items;
     private int cursor;
+    private int offset;
+    private int length;
 
-    public Iterator<T> dressArray( T[] items )
+    public Iterator<T> dressArray( T[] items, int offset, int length )
     {
         this.items = items;
+        this.offset = offset;
+        this.length = length;
         this.cursor = 0;
         return this;
     }
@@ -39,13 +43,13 @@ public class ReusableIteratorCostume<T> implements Iterator<T>
     @Override
     public boolean hasNext()
     {
-        return cursor < items.length;
+        return cursor < length;
     }
 
     @Override
     public T next()
     {
-        return items[cursor++];
+        return items[offset+cursor++];
     }
 
     @Override

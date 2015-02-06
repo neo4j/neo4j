@@ -106,8 +106,8 @@ public class CsvInputTest
 
         // WHEN/THEN
         Iterator<InputRelationship> relationships = input.relationships().iterator();
-        assertRelationship( relationships.next(), 0L, "node1", "node2", "KNOWS", properties( "since", 1234567L ) );
-        assertRelationship( relationships.next(), 1L, "node2", "node10", "HACKS", properties( "since", 987654L ) );
+        assertRelationship( relationships.next(), "node1", "node2", "KNOWS", properties( "since", 1234567L ) );
+        assertRelationship( relationships.next(), "node2", "node10", "HACKS", properties( "since", 987654L ) );
     }
 
     @Test
@@ -262,9 +262,9 @@ public class CsvInputTest
         // WHEN/THEN
         try ( ResourceIterator<InputRelationship> relationships = input.relationships().iterator() )
         {
-            assertRelationship( relationships.next(), 0L, 0L, 1L, defaultType, NO_PROPERTIES );
-            assertRelationship( relationships.next(), 1L, 1L, 2L, customType, NO_PROPERTIES );
-            assertRelationship( relationships.next(), 2L, 2L, 1L, defaultType, NO_PROPERTIES );
+            assertRelationship( relationships.next(), 0L, 1L, defaultType, NO_PROPERTIES );
+            assertRelationship( relationships.next(), 1L, 2L, customType, NO_PROPERTIES );
+            assertRelationship( relationships.next(), 2L, 1L, defaultType, NO_PROPERTIES );
             assertFalse( relationships.hasNext() );
         }
     }
@@ -284,7 +284,7 @@ public class CsvInputTest
         // WHEN/THEN
         try ( ResourceIterator<InputRelationship> relationships = input.relationships().iterator() )
         {
-            assertRelationship( relationships.next(), 0L, 0L, 1L, type, NO_PROPERTIES );
+            assertRelationship( relationships.next(), 0L, 1L, type, NO_PROPERTIES );
             try
             {
                 relationships.next();
@@ -537,8 +537,8 @@ public class CsvInputTest
 
         // WHEN/THEN
         Iterator<InputRelationship> relationships = input.relationships().iterator();
-        assertRelationship( relationships.next(), 0, startNodeGroup, 123L, endNodeGroup, 234L, "TYPE", properties() );
-        assertRelationship( relationships.next(), 1, startNodeGroup, 345L, endNodeGroup, 456L, "TYPE", properties() );
+        assertRelationship( relationships.next(), startNodeGroup, 123L, endNodeGroup, 234L, "TYPE", properties() );
+        assertRelationship( relationships.next(), startNodeGroup, 345L, endNodeGroup, 456L, "TYPE", properties() );
         assertFalse( relationships.hasNext() );
     }
 
@@ -559,8 +559,8 @@ public class CsvInputTest
         try ( ResourceIterator<InputRelationship> relationships = input.relationships().iterator() )
         {
             // THEN
-            assertRelationship( relationships.next(), 0, 0L, 1L, defaultType, properties( "name", "First" ) );
-            assertRelationship( relationships.next(), 1, 2L, 3L, defaultType, properties( "name", "Second" ) );
+            assertRelationship( relationships.next(), 0L, 1L, defaultType, properties( "name", "First" ) );
+            assertRelationship( relationships.next(), 2L, 3L, defaultType, properties( "name", "Second" ) );
             assertFalse( relationships.hasNext() );
         }
     }
@@ -663,19 +663,19 @@ public class CsvInputTest
         };
     }
 
-    private void assertRelationship( InputRelationship relationship, long id,
+    private void assertRelationship( InputRelationship relationship,
             Object startNode, Object endNode, String type, Object[] properties )
     {
-        assertRelationship( relationship, id, GLOBAL, startNode, GLOBAL, endNode, type, properties );
+        assertRelationship( relationship, GLOBAL, startNode, GLOBAL, endNode, type, properties );
     }
 
-    private void assertRelationship( InputRelationship relationship, long id,
+    private void assertRelationship( InputRelationship relationship,
             Group startNodeGroup, Object startNode,
             Group endNodeGroup, Object endNode,
             String type, Object[] properties )
     {
-        assertEquals( id, relationship.id() );
-        assertEquals( startNodeGroup.id(), relationship.startNodeGroup().id() );
+        assertFalse( relationship.hasSpecificId() );
+        assertEquals( startNodeGroup, relationship.startNodeGroup() );
         assertEquals( startNode, relationship.startNode() );
         assertEquals( endNodeGroup.id(), relationship.endNodeGroup().id() );
         assertEquals( endNode, relationship.endNode() );

@@ -21,7 +21,6 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.function.Function;
-import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.unsafe.impl.batchimport.input.DataException;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
@@ -33,8 +32,6 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
  */
 class InputRelationshipDeserializer extends InputEntityDeserializer<InputRelationship>
 {
-    private final IdSequence idSequence;
-
     // Additional data
     private String type;
     private Object startNode;
@@ -42,11 +39,10 @@ class InputRelationshipDeserializer extends InputEntityDeserializer<InputRelatio
     private final Group startNodeGroup;
     private final Group endNodeGroup;
 
-    InputRelationshipDeserializer( Header header, CharSeeker data, int delimiter, IdSequence idSequence,
+    InputRelationshipDeserializer( Header header, CharSeeker data, int delimiter,
             Function<InputRelationship,InputRelationship> decorator, Groups groups )
     {
         super( header, data, delimiter, decorator );
-        this.idSequence = idSequence;
         this.startNodeGroup = groups.getOrCreate( header.entry( Type.START_ID ).groupName() );
         this.endNodeGroup = groups.getOrCreate( header.entry( Type.END_ID ).groupName() );    }
 
@@ -70,7 +66,7 @@ class InputRelationshipDeserializer extends InputEntityDeserializer<InputRelatio
     @Override
     protected InputRelationship convertToInputEntity( Object[] properties )
     {
-        return new InputRelationship( idSequence.nextId(), properties, null,
+        return new InputRelationship( properties, null,
                 startNodeGroup, startNode, endNodeGroup, endNode, type, null );
     }
 

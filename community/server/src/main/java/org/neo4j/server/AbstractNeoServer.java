@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.servlet.Filter;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -38,7 +39,6 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.RunCarefully;
 import org.neo4j.helpers.Settings;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
@@ -82,8 +82,8 @@ import org.neo4j.server.rest.transactional.TransitionalPeriodTransactionMessCont
 import org.neo4j.server.rest.web.DatabaseActions;
 import org.neo4j.server.rrd.RrdDbProvider;
 import org.neo4j.server.rrd.RrdFactory;
-import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.server.security.auth.AuthManager;
+import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.server.security.ssl.KeyStoreFactory;
 import org.neo4j.server.security.ssl.KeyStoreInformation;
 import org.neo4j.server.security.ssl.SslCertificateFactory;

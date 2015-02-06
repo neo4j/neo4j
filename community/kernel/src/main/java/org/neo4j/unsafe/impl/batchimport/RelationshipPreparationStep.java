@@ -19,9 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import java.util.List;
-
-import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
@@ -32,7 +30,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
  * This step is also parallelizable so if it becomes a bottleneck then more processors will automatically
  * be assigned to it.
  */
-public class RelationshipPreparationStep extends ExecutorServiceStep<List<InputRelationship>>
+public class RelationshipPreparationStep extends ExecutorServiceStep<Batch<InputRelationship,RelationshipRecord>>
 {
     private final IdMapper idMapper;
 
@@ -43,15 +41,16 @@ public class RelationshipPreparationStep extends ExecutorServiceStep<List<InputR
     }
 
     @Override
-    protected Object process( long ticket, List<InputRelationship> batch )
+    protected Object process( long ticket, Batch<InputRelationship,RelationshipRecord> batch )
     {
-        long[] ids = new long[batch.size()*2];
-        int index = 0;
-        for ( InputRelationship batchRelationship : batch )
+        InputRelationship[] input = batch.input;
+        long[] ids = batch.ids = new long[input.length*2];
+        for ( int i = 0; i < input.length; i++ )
         {
-            ids[index++] = idMapper.get( batchRelationship.startNode(), batchRelationship.startNodeGroup() );
-            ids[index++] = idMapper.get( batchRelationship.endNode(), batchRelationship.endNodeGroup() );
+            InputRelationship batchRelationship = input[i];
+            ids[i*2] = idMapper.get( batchRelationship.startNode(), batchRelationship.startNodeGroup() );
+            ids[i*2+1] = idMapper.get( batchRelationship.endNode(), batchRelationship.endNodeGroup() );
         }
-        return Pair.of( batch, ids );
+        return batch;
     }
 }

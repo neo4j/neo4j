@@ -19,12 +19,13 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import java.util.List;
+import java.util.Arrays;
 
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
+import org.neo4j.kernel.impl.util.MovingAverage;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
@@ -36,12 +37,13 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingP
  * {@link BatchEntity}. This step is designed to handle multiple threads doing the property encoding,
  * since property encoding is potentially the most costly step in this {@link Stage}.
  */
-public class PropertyEncoderStep<ENTITY extends PrimitiveRecord,INPUT extends InputEntity>
-        extends ExecutorServiceStep<List<BatchEntity<ENTITY,INPUT>>>
+public class PropertyEncoderStep<RECORD extends PrimitiveRecord,INPUT extends InputEntity>
+        extends ExecutorServiceStep<Batch<INPUT,RECORD>>
 {
     private final BatchingPropertyKeyTokenRepository propertyKeyHolder;
     private final int arrayDataSize;
     private final int stringDataSize;
+    private final MovingAverage averageBlocksPerBatch;
 
     protected PropertyEncoderStep( StageControl control, Configuration config, int numberOfExecutors,
             BatchingPropertyKeyTokenRepository propertyKeyHolder,
@@ -51,33 +53,44 @@ public class PropertyEncoderStep<ENTITY extends PrimitiveRecord,INPUT extends In
         this.propertyKeyHolder = propertyKeyHolder;
         this.arrayDataSize = propertyStore.getArrayStore().dataSize();
         this.stringDataSize = propertyStore.getStringStore().dataSize();
+        this.averageBlocksPerBatch = new MovingAverage( config.movingAverageSize() );
     }
 
     @Override
-    protected Object process( long ticket, List<BatchEntity<ENTITY,INPUT>> batch )
+    protected Object process( long ticket, Batch<INPUT,RECORD> batch )
     {
         RelativeIdRecordAllocator stringAllocator = new RelativeIdRecordAllocator( stringDataSize );
         RelativeIdRecordAllocator arrayAllocator = new RelativeIdRecordAllocator( arrayDataSize );
         PropertyCreator propertyCreator = new PropertyCreator( stringAllocator, arrayAllocator, null, null );
-        for ( BatchEntity<ENTITY,INPUT> entity : batch )
+
+        int blockCountGuess = (int) averageBlocksPerBatch.average();
+        PropertyBlock[] propertyBlocks = new PropertyBlock[blockCountGuess == 0
+                ? batch.input.length
+                : blockCountGuess + batch.input.length / 20 /*some upper margin*/];
+        int blockCursor = 0;
+
+        for ( int i = 0; i < batch.input.length; i++ )
         {
-            INPUT input = entity.input();
             stringAllocator.initialize();
             arrayAllocator.initialize();
 
-            if ( input.hasFirstPropertyId() )
-            {   // Here we have the properties already "encoded", so just set the correct id in the entity record.
-                long nextProp = input.firstPropertyId();
-                entity.record().setNextProp( nextProp );
-            }
-            else
+            INPUT input = batch.input[i];
+            if ( !input.hasFirstPropertyId() )
             {   // Encode the properties and attach the blocks to the BatchEntity.
                 // Dynamic records for each entity will start from 0, they will be reassigned later anyway
-                PropertyBlock[] blocks = propertyKeyHolder.propertyKeysAndValues(
-                        entity.input().properties(), propertyCreator );
-                entity.setPropertyBlocks( blocks );
+                int count = input.properties().length >> 1;
+                if ( blockCursor+count > propertyBlocks.length )
+                {
+                    propertyBlocks = Arrays.copyOf( propertyBlocks, propertyBlocks.length << 1 );
+                }
+                propertyKeyHolder.propertyKeysAndValues( propertyBlocks, blockCursor,
+                        input.properties(), propertyCreator );
+                batch.propertyBlocksLengths[i] = count;
+                blockCursor += count;
             }
         }
+        batch.propertyBlocks = propertyBlocks;
+        averageBlocksPerBatch.add( blockCursor );
         return batch;
     }
 }

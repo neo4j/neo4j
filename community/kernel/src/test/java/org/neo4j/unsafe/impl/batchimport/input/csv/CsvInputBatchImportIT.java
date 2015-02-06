@@ -65,11 +65,13 @@ import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 
-import static java.lang.String.format;
-import static java.lang.System.currentTimeMillis;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+
+import static java.lang.String.format;
+import static java.lang.System.currentTimeMillis;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.nested;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.values;
@@ -214,7 +216,7 @@ public class CsvInputBatchImportIT
         List<InputRelationship> relationships = new ArrayList<>();
         for ( int i = 0; i < 1000; i++ )
         {
-            relationships.add( new InputRelationship( i, NO_PROPERTIES, null,
+            relationships.add( new InputRelationship( NO_PROPERTIES, null,
                     nodeData.get( random.nextInt( nodeData.size() ) ).id(),
                     nodeData.get( random.nextInt( nodeData.size() ) ).id(),
                     "TYPE_" + random.nextInt( 3 ), null ) );

@@ -55,6 +55,12 @@ public class IdGenerators
 
             return inputLongId;
         }
+
+        @Override
+        public boolean dependsOnInput()
+        {
+            return true;
+        }
     }
 
     /**
@@ -71,6 +77,12 @@ public class IdGenerators
             public long generate( Object inputId )
             {
                 return id++;
+            }
+
+            @Override
+            public boolean dependsOnInput()
+            {
+                return false;
             }
         };
     }

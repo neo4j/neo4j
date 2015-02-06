@@ -39,7 +39,7 @@ public class StageTest
         int batchSize = 10;
         long batches = 1000;
         final long items = batches*batchSize;
-        stage.add( new ProducerStep<Object>( stage.control(), "Producer", batchSize, 100 )
+        stage.add( new ProducerStep<Object>( stage.control(), "Producer", batchSize, 100, Object.class )
         {
             private long i = 0;
             private final Object theObject = new Object();

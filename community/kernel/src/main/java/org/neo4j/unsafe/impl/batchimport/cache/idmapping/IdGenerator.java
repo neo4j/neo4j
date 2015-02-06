@@ -27,4 +27,6 @@ import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 public interface IdGenerator
 {
     long generate( Object inputId );
+
+    boolean dependsOnInput();
 }

@@ -21,43 +21,23 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 
-/**
- * Partly built entity, such as a node or relationship, which moves through processing pipelines during
- * {@link ParallelBatchImporter batch import}.
- */
-public class BatchEntity<RECORD extends PrimitiveRecord,INPUT extends InputEntity>
+public class Batch<INPUT,RECORD extends PrimitiveRecord>
 {
-    private static final PropertyBlock[] NO_PROPERTY_BLOCKS = new PropertyBlock[0];
+    public final INPUT[] input;
+    public RECORD[] records;
+    public final int[] propertyBlocksLengths;
+    // This is a special succer. All property blocks for ALL records in this batch sits in this
+    // single array. The number of property blocks for a given record sits in propertyBlocksLengths
+    // using the same index as the record. So it's a collective size suitable for complete looping
+    // over the batch.
+    public PropertyBlock[] propertyBlocks;
+    // Used by relationship staged to query idMapper and store ids here
+    public long[] ids;
 
-    private final RECORD record;
-    private final INPUT input;
-    private PropertyBlock[] propertyBlocks = NO_PROPERTY_BLOCKS;
-
-    public BatchEntity( RECORD record, INPUT input )
+    public Batch( INPUT[] input )
     {
-        this.record = record;
         this.input = input;
-    }
-
-    public RECORD record()
-    {
-        return record;
-    }
-
-    public INPUT input()
-    {
-        return input;
-    }
-
-    public void setPropertyBlocks( PropertyBlock[] propertyBlocks )
-    {
-        this.propertyBlocks = propertyBlocks;
-    }
-
-    public PropertyBlock[] getPropertyBlocks()
-    {
-        return propertyBlocks;
+        this.propertyBlocksLengths = new int[input.length];
     }
 }

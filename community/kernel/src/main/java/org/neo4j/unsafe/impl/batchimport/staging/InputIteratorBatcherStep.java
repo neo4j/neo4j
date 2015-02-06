@@ -17,22 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport;
+package org.neo4j.unsafe.impl.batchimport.staging;
 
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.unsafe.impl.batchimport.staging.Stage;
+import org.neo4j.unsafe.impl.batchimport.Batch;
+import org.neo4j.unsafe.impl.batchimport.BatchImporter;
+import org.neo4j.unsafe.impl.batchimport.InputIterator;
 
 /**
- * {@link Stage} that has just a single {@link NodeStoreProcessorStep} where a custom {@link StoreProcessor}
- * is passed in.
+ * {@link IteratorBatcherStep} that is tailored to the {@link BatchImporter} as it produces {@link Batch}
+ * objects.
  */
-public class NodeStoreProcessorStage extends Stage
+public class InputIteratorBatcherStep<T> extends IteratorBatcherStep<T>
 {
-    public NodeStoreProcessorStage( String name, Configuration config, NodeStore store,
-            StoreProcessor<NodeRecord> processor )
+    public InputIteratorBatcherStep( StageControl control, String name, int batchSize, int movingAverageSize,
+            InputIterator<T> data, Class<T> itemClass )
     {
-        super( name, config, true );
-        add( new NodeStoreProcessorStep( control(), name, config, store, processor ) );
+        super( control, name, batchSize, movingAverageSize, data, itemClass );
+    }
+
+    @SuppressWarnings( { "rawtypes", "unchecked" } )
+    @Override
+    protected Object constructBatch( T[] batch )
+    {
+        return new Batch( batch );
     }
 }

@@ -19,10 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -40,39 +36,55 @@ import static org.neo4j.graphdb.Direction.INCOMING;
  * relationship ids are kept in {@link NodeRelationshipLink node cache}, which is a point of scalability issues,
  * although mitigated using multi-pass techniques.
  */
-public class RelationshipEncoderStep extends ExecutorServiceStep<Pair<List<InputRelationship>,long[]>>
+public class RelationshipEncoderStep extends ExecutorServiceStep<Batch<InputRelationship,RelationshipRecord>>
 {
     private final BatchingTokenRepository<?> relationshipTypeRepository;
     private final RelationshipStore relationshipStore;
     private final NodeRelationshipLink nodeRelationshipLink;
 
+    // There are two "modes" in generating relationship ids
+    // - ids are decided by InputRelationship#id() (f.ex. store migration, where ids should be kept intact).
+    //   nextRelationshipId will not be used, and all InputRelationships will have to specify ids
+    // - ids are incremented for each one, starting at a specific id (0 on empty db)
+    //   nextRelationshipId is used and _no_ id from InputRelationship is used, rather no id is allowed to be specified.
+    private final boolean specificIds;
+    private long nextRelationshipId;
+
     public RelationshipEncoderStep( StageControl control,
             Configuration config,
             BatchingTokenRepository<?> relationshipTypeRepository,
             RelationshipStore relationshipStore,
-            NodeRelationshipLink nodeRelationshipLink )
+            NodeRelationshipLink nodeRelationshipLink,
+            boolean specificIds )
     {
         super( control, "RELATIONSHIP", config.workAheadSize(), config.movingAverageSize(), 1 );
         this.relationshipTypeRepository = relationshipTypeRepository;
         this.relationshipStore = relationshipStore;
         this.nodeRelationshipLink = nodeRelationshipLink;
+        this.specificIds = specificIds;
     }
 
     @Override
-    protected Object process( long ticket, Pair<List<InputRelationship>,long[]> batch )
+    protected Object process( long ticket, Batch<InputRelationship,RelationshipRecord> batch )
     {
-        List<BatchEntity<RelationshipRecord,InputRelationship>> entities = new ArrayList<>( batch.first().size() );
-        long[] startAndEndNodeIds = batch.other();
-        int index = 0;
-        for ( InputRelationship batchRelationship : batch.first() )
+        InputRelationship[] input = batch.input;
+        batch.records = new RelationshipRecord[input.length];
+        long[] ids = batch.ids;
+        for ( int i = 0; i < input.length; i++ )
         {
-            long relationshipId = batchRelationship.id();
-            long startNodeId = startAndEndNodeIds[index++];
-            long endNodeId = startAndEndNodeIds[index++];
+            InputRelationship batchRelationship = input[i];
+            if ( specificIds != batchRelationship.hasSpecificId() )
+            {
+                throw new IllegalStateException( "Input was declared to have specificRelationshipIds=" +
+                        specificIds + ", but " + batchRelationship + " didn't honor that" );
+            }
+            long relationshipId = specificIds ? batchRelationship.specificId() : nextRelationshipId++;
+            long startNodeId = ids[i*2];
+            long endNodeId = ids[i*2+1];
             relationshipStore.setHighestPossibleIdInUse( relationshipId );
             int typeId = batchRelationship.hasTypeId() ? batchRelationship.typeId() :
                     relationshipTypeRepository.getOrCreateId( batchRelationship.type() );
-            RelationshipRecord relationshipRecord = new RelationshipRecord( relationshipId,
+            RelationshipRecord relationshipRecord = batch.records[i] = new RelationshipRecord( relationshipId,
                     startNodeId, endNodeId, typeId );
             relationshipRecord.setInUse( true );
 
@@ -95,8 +107,7 @@ public class RelationshipEncoderStep extends ExecutorServiceStep<Pair<List<Input
             relationshipRecord.setFirstInSecondChain( false );
             relationshipRecord.setFirstPrevRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
             relationshipRecord.setSecondPrevRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
-            entities.add( new BatchEntity<>( relationshipRecord, batchRelationship ) );
         }
-        return entities;
+        return batch;
     }
 }

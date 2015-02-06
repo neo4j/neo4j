@@ -82,8 +82,10 @@ public class EncodingIdMapper implements IdMapper
     private boolean readyForUse;
     private long[][] sortBuckets;
     private long size;
-    private final List<IdGroup> idGroups = new ArrayList<>();
+
+    private final IdGroup[] idGroups = new IdGroup[10];
     private IdGroup currentIdGroup;
+    private int idGroupsCursor;
 
     public EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Radix radix )
     {
@@ -151,15 +153,15 @@ public class EncodingIdMapper implements IdMapper
         // Create the new group
         if ( newGroup )
         {
-            idGroups.add( currentIdGroup = new IdGroup( group, dataCache.highestSetIndex() ) );
+            idGroups[idGroupsCursor++] = currentIdGroup = new IdGroup( group, dataCache.highestSetIndex() );
         }
     }
 
     private void endPreviousGroup()
     {
-        if ( !idGroups.isEmpty() )
+        if ( idGroupsCursor > 0 )
         {
-            idGroups.get( idGroups.size() - 1 ).setHighDataIndex( dataCache.highestSetIndex() );
+            idGroups[idGroupsCursor - 1].setHighDataIndex( dataCache.highestSetIndex() );
         }
     }
 
