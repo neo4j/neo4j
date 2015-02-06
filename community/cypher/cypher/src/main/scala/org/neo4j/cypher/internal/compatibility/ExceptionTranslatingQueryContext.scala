@@ -37,7 +37,6 @@ class ExceptionTranslatingQueryContext(inner: QueryContext) extends DelegatingQu
   override def createNode(): Node =
     translateException(super.createNode())
 
-
   override def createRelationship(start: Node, end: Node, relType: String): Relationship =
     translateException(super.createRelationship(start, end, relType))
 
@@ -71,7 +70,6 @@ class ExceptionTranslatingQueryContext(inner: QueryContext) extends DelegatingQu
   override def getPropertiesForRelationship(relId: Long): Iterator[Long] =
     translateException(super.getPropertiesForRelationship(relId))
 
-
   override def getPropertyKeyName(propertyKeyId: Int): String =
     translateException(super.getPropertyKeyName(propertyKeyId))
 
@@ -95,6 +93,12 @@ class ExceptionTranslatingQueryContext(inner: QueryContext) extends DelegatingQu
 
   override def getNodesByLabel(id: Int): Iterator[Node] =
     translateException(super.getNodesByLabel(id))
+
+  override def nodeGetDegree(node: Long, dir: Direction): Int =
+    translateException(super.nodeGetDegree(node, dir))
+
+  override def nodeGetDegree(node: Long, dir: Direction, relTypeId: Int): Int =
+    translateException(super.nodeGetDegree(node, dir, relTypeId))
 
   override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V =
     translateException(super.getOrCreateFromSchemaState(key, creator))

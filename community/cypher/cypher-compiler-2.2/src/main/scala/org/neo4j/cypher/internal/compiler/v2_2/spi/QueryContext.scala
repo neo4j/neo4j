@@ -103,6 +103,10 @@ trait QueryContext extends TokenContext {
   def relationshipStartNode(rel: Relationship): Node
 
   def relationshipEndNode(rel: Relationship): Node
+
+  def nodeGetDegree(node: Long, dir: Direction): Int
+
+  def nodeGetDegree(node: Long, dir: Direction, relTypeId: Int): Int
 }
 
 trait LockingQueryContext extends QueryContext {

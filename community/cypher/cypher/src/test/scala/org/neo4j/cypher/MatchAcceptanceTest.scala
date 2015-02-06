@@ -25,8 +25,33 @@ import scala.collection.JavaConverters._
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
-  test("get degree fuckers") {
-    executeWithNewPlanner("MATCH a RETURN length(a-->())")
+  test("Get node degree via length of pattern expression") {
+    val node = createLabeledNode("X")
+    relate(node, createNode())
+    relate(node, createNode())
+    relate(node, createNode())
+
+    executeScalarWithNewPlanner[Int]("MATCH (a:X) RETURN length(a-->())") should equal(3)
+  }
+
+  test("Get node degree via length of pattern expression that specifies a relationship type") {
+    val node = createLabeledNode("X")
+    relate(node, createNode())
+    relate(node, createNode())
+    relate(node, createNode())
+    relate(node, createNode(), "AFFE")
+
+    executeScalarWithNewPlanner[Int]("MATCH (a:X) RETURN length(a-[:REL]->())") should equal(3)
+  }
+
+  test("Get node degree via length of pattern expression that specifies multiple relationship types") {
+    val node = createLabeledNode("X")
+    relate(node, createNode())
+    relate(node, createNode())
+    relate(node, createNode())
+    relate(node, createNode(), "AFFE")
+
+    executeScalarWithNewPlanner[Int]("MATCH (a:X) RETURN length(a-[:REL|AFFE]->())") should equal(4)
   }
 
   test("should be able to use multiple MATCH clauses to do a cartesian product") {

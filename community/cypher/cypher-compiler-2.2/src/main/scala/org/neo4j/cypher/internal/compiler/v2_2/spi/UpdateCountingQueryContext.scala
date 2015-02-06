@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.spi
 
 import java.util.concurrent.atomic.AtomicInteger
 import org.neo4j.cypher.internal.compiler.v2_2.InternalQueryStatistics
-import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
+import org.neo4j.graphdb.{Direction, PropertyContainer, Relationship, Node}
 
 class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryContext(inner) {
 
@@ -100,6 +100,8 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     inner.dropUniqueConstraint(labelId, propertyKeyId)
     constraintsRemoved.increase()
   }
+
+  override def nodeGetDegree(node: Long, dir: Direction): Int = super.nodeGetDegree(node, dir)
 
   class Counter {
     val counter: AtomicInteger = new AtomicInteger()

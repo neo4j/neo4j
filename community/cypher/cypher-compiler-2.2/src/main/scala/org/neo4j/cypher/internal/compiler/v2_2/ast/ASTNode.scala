@@ -47,10 +47,11 @@ trait ASTNode
       val constructor = this.copyConstructor
       val params = constructor.getParameterTypes
       val args = children.toVector
-      if ((params.length == args.length + 1) && params.last.isAssignableFrom(classOf[InputPosition]))
-        constructor.invoke(this, args :+ this.position: _*).asInstanceOf[this.type]
-      else
-        constructor.invoke(this, args: _*).asInstanceOf[this.type]
+      val hasExtraParam = params.length == args.length + 1
+      val lastParamIsPos = params.last.isAssignableFrom(classOf[InputPosition])
+      val ctorArgs = if (hasExtraParam && lastParamIsPos) args :+ this.position else args
+      val duped = constructor.invoke(this, ctorArgs: _*)
+      duped.asInstanceOf[this.type]
     }
 }
 

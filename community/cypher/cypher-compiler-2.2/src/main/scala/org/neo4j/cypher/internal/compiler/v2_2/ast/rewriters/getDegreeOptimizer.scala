@@ -25,9 +25,9 @@ import org.neo4j.graphdb.Direction
 
 // Rewrites queries to allow using the much faster getDegree method on the nodes
 case object getDegreeOptimizer extends Rewriter {
-  def apply(that: AnyRef): AnyRef = findingRewriter(that)
+  def apply(that: AnyRef): AnyRef = bottomUp(instance)(that)
 
-  private val findingRewriter: Rewriter = bottomUp(Rewriter.lift {
+  val instance: Rewriter = Rewriter.lift {
     case func@FunctionInvocation(_, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None, _), RelationshipPattern(None, _, types, None, None, dir), NodePattern(None, List(), None, _))))))
       if func.function == Some(functions.Length) =>
         calculateUsingGetDegree(func, node, types, dir)
@@ -35,11 +35,11 @@ case object getDegreeOptimizer extends Rewriter {
     case func@FunctionInvocation(_, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None, _), RelationshipPattern(None, _, types, None, None, dir), NodePattern(Some(node), List(), None, _))))))
       if func.function == Some(functions.Length) =>
       calculateUsingGetDegree(func, node, types, dir.reverse())
-  })
+  }
 
   def calculateUsingGetDegree(func: FunctionInvocation, node: Identifier, types: Seq[RelTypeName], dir: Direction): Expression = {
     types
-      .map(typ => GetDegree(node, Some(typ), dir)(typ.position))
+      .map(typ => GetDegree(node.copyId, Some(typ), dir)(typ.position))
       .reduceOption[Expression](Add(_, _)(func.position))
       .getOrElse(GetDegree(node, None, dir)(func.position))
   }

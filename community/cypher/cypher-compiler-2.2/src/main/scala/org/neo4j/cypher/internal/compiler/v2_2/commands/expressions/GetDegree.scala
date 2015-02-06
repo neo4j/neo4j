@@ -20,19 +20,24 @@
 package org.neo4j.cypher.internal.compiler.v2_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.{CypherType, SymbolTable, _}
 import org.neo4j.cypher.internal.compiler.v2_2.{CypherTypeException, ExecutionContext}
 import org.neo4j.graphdb.{Direction, DynamicRelationshipType, Node}
 
 case class GetDegree(node: Expression, typ: Option[String], direction: Direction) extends NullInNullOutExpression(node) {
 
-  val getDegree: Node => Int = typ match {
-    case (None)       => (n) => n.getDegree(direction)
-    case (Some(t))    => (n) => n.getDegree(DynamicRelationshipType.withName(t), direction)
+  val getDegree: (QueryContext, Long) => Int = typ match {
+    case None    => (qtx, node) => qtx.nodeGetDegree(node, direction)
+    case Some(t) => (qtx, node) =>
+      qtx.getOptRelTypeId(t) match {
+        case None            => 0
+        case Some(relTypeId) => qtx.nodeGetDegree(node, direction, relTypeId)
+      }
   }
 
   def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = value match {
-    case n: Node => getDegree(n)
+    case n: Node => getDegree(state.query, n.getId)
     case other   => throw new CypherTypeException(s"Type mismatch: expected a node but was $other of type ${other.getClass.getSimpleName}")
   }
 
