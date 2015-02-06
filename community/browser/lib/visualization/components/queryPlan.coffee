@@ -372,6 +372,7 @@ neo.queryPlan = (element)->
                 data: (d) -> if d.operatorType is 'Result' then [] else [d]
                 selections: (enter, update) ->
                   rotateForExpand = (d) ->
+                    d3.transform()
                     "translate(#{operatorHeaderHeight / 2}, #{operatorHeaderHeight / 2}) " +
                     "rotate(#{if d.expanded then 90 else 0}) " +
                     "scale(0.5)"
@@ -385,7 +386,9 @@ neo.queryPlan = (element)->
 
                   update
                   .transition()
-                  .attr('transform', rotateForExpand)
+                  .attrTween('transform', (d, i, a) ->
+                    d3.interpolateString(a, rotateForExpand(d))
+                  )
 
               'text.title':
                 data: (d) -> [d]
