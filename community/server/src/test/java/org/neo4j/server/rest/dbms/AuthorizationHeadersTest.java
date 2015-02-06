@@ -24,8 +24,8 @@ import java.nio.charset.Charset;
 import com.sun.jersey.core.util.Base64;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.server.rest.dbms.AuthorizationHeaders.extractToken;
+import static org.junit.Assert.*;
+import static org.neo4j.server.rest.dbms.AuthorizationHeaders.decode;
 
 public class AuthorizationHeadersTest
 {
@@ -33,31 +33,31 @@ public class AuthorizationHeadersTest
     public void shouldParseHappyPath() throws Exception
     {
         // Given
-        String token = "12345";
-        String header = "Basic realm=\"Neo4j\" " + base64(":" + token);
+        String username = "jake";
+        String password = "qwerty123456";
+        String header = "Basic realm=\"Neo4j\" " + base64( username + ":" + password );
 
         // When
-        String parsed = extractToken( header );
+        String[] parsed = decode( header );
 
         // Then
-        assertEquals(token, parsed);
+        assertEquals( username, parsed[0] );
+        assertEquals( password, parsed[1] );
     }
 
     @Test
     public void shouldHandleSadPaths() throws Exception
     {
         // When & then
-        assertEquals("",  extractToken( "" ));
-        assertEquals("",  extractToken( null ));
-        assertEquals("",  extractToken( "Basic" ));
-        assertEquals("",  extractToken( "Basic realm=\"Neo4j\" not valid value" ));
-        assertEquals("",  extractToken( "Basic realm=\"Neo4j\" " + base64("") ));
-        assertEquals("",  extractToken( "Basic realm=\"Neo4j\" " + base64(":") ));
+        assertNull( decode( "" ) );
+        assertNull( decode( "Basic" ) );
+        assertNull( decode( "Basic realm=\"Neo4j\" not valid value" ) );
+        assertNull( decode( "Basic realm=\"Neo4j\" " + base64( "" ) ) );
     }
 
-    private String base64(String value)
+    private String base64( String value )
     {
         return new String( Base64.encode( value ), Charset
-                .forName( "UTF-8" ));
+                .forName( "UTF-8" ) );
     }
 }

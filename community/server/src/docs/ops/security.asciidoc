@@ -22,30 +22,34 @@ org.neo4j.server.webserver.port=7474
 If you need to enable access from external hosts, configure the Web server in the _conf/neo4j-server.properties_ by setting the property +org.neo4j.server.webserver.address=0.0.0.0+ to enable access from any host.
 
 [[security-server-auth]]
-== Authorization ==
+== Server authentication and authorization ==
 
-Neo4j allows you to require clients to supply an authorization token to gain access the REST API.
-This will disallow anyone without a valid authorization token access to the database.
+Neo4j requires clients to supply authentication credentials when accessing the
+REST API. Without valid credentials, access to the database will be forbidden.
 
-The authorization data is stored under _data/dbms/authorization_.
-This file can be copied over to other neo4j instances to ensure they share the same username/password and authorization token.
+The authentication and authorization data is stored under _data/dbms/auth_.
+If necessary, this file can be copied over to other neo4j instances to ensure
+they share the same username/password (see <<rest-api-security-copy-config>>).
 
-Please refer to <<rest-api-security>> for details on this API.
+Please refer to <<rest-api-security>> for additional details. When access Neo4j over
+unsecured networks, ensure HTTPS is configured and used for access (see <<security-server-https>>).
+
+If necessary, authentication may be disabled. This will allow any client to access
+the database without supplying authentication credentials.
 
 [source,properties]
 ----
-# Enable authorization
-dbms.security.authorization_enabled=true
+# Disable authorization
+dbms.security.auth_enabled=false
 ----
 
-NOTE: Authorization is enabled by default.
+WARNING: Disabling authentication is not recommended, and should only be done if
+the operator has a good understanding of their network security, including protection
+against http://en.wikipedia.org/wiki/Cross-site_scripting[cross-site scripting (XSS)]
+attacks via user browsers. Developers should not disable authentication if they
+have a local installation using the default listening ports.
 
-== Arbitrary code execution ==
-
-By default, the Neo4j Server comes with some places where arbitrary code code execution can happen. These are the <<rest-api-traverse>> REST endpoints.
-To secure these, either disable them completely by removing offending plugins from the server classpath, or secure access to these URLs through proxies or Authorization Rules.
-Also, the Java Security Manager, see http://docs.oracle.com/javase/7/docs/technotes/guides/security/index.html can be used to secure parts of the codebase.
-
+[[security-server-https]]
 == HTTPS support ==
 
 The Neo4j server includes built in support for SSL encrypted communication over HTTPS.
@@ -80,7 +84,13 @@ org.neo4j.server.webserver.https.enabled=true
 org.neo4j.server.webserver.https.port=443
 ----
 
-== Server Authorization Rules ==
+== Arbitrary code execution ==
+
+By default, the Neo4j Server comes with some places where arbitrary code code execution can happen. These are the <<rest-api-traverse>> REST endpoints.
+To secure these, either disable them completely by removing offending plugins from the server classpath, or secure access to these URLs through proxies or Authorization Rules.
+Also, the Java Security Manager, see http://docs.oracle.com/javase/7/docs/technotes/guides/security/index.html can be used to secure parts of the codebase.
+
+== Server authorization rules ==
 
 Administrators may require more fine-grained security policies in addition to the basic authorization and/or IP-level restrictions on the Web server.
 Neo4j server supports administrators in allowing or disallowing access the specific aspects of the database based on credentials that users or applications provide.
@@ -89,19 +99,21 @@ To facilitate domain-specific authorization policies in Neo4j Server, security r
 This makes scenarios like user and role based security and authentication against external lookup services possible.
 See +org.neo4j.server.rest.security.SecurityRule+ in the javadocs downloadable from http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.neo4j.app%22%20AND%20a%3A%22neo4j-server%22[Maven Central (org.neo4j.app:neo4j-server)].
 
+CAUTION: The use of Server Authorization Rules may interact unexpectedly with the built-in <<security-server-auth>>, if enabled.
+
 include::enforcing-server-authorization-rules.asciidoc[]
 
 include::using-wildcards-to-target-security-rules.asciidoc[]
 
 include::using-complex-wildcards-to-target-security-rules.asciidoc[]
 
-== Hosted Scripting ==
+== Hosted scripting ==
 
 [IMPORTANT]
 The neo4j server exposes remote scripting functionality by default that allow full access to the underlying system.
 Exposing your server without implementing a security layer poses a substantial security vulnerability.
 
-== Security in Depth ==
+== Security in depth ==
 
 Although the Neo4j server has a number of security features built-in (see the above chapters), for sensitive deployments it is often sensible to front against the outside world it with a proxy like Apache `mod_proxy` footnote:[http://httpd.apache.org/docs/2.2/mod/mod_proxy.html].
 

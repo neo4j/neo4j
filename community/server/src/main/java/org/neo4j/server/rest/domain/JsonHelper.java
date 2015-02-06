@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.codehaus.jackson.JsonGenerator;
+import org.codehaus.jackson.JsonLocation;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 
@@ -64,6 +65,12 @@ public class JsonHelper
         try
         {
             return OBJECT_MAPPER.readValue( json, Object.class );
+        }
+        catch ( org.codehaus.jackson.JsonParseException e )
+        {
+            String message = e.getMessage().split( "\\r?\\n" )[0];
+            JsonLocation location = e.getLocation();
+            throw new JsonParseException( String.format( "%s [line: %d, column: %d]", message, location.getLineNr(), location.getColumnNr() ), e );
         }
         catch ( IOException e )
         {

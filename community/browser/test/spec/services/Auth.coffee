@@ -7,85 +7,64 @@ describe 'Service: AuthService', () ->
   Settings = {}
   httpBackend = {}
   AuthDataService = {}
-  SavedAuthServiceState = {}
+  ConnectionStatusService = {}
   beforeEach ->
     module 'neo4jApp.services'
 
   beforeEach ->
-    inject(($rootScope, _AuthService_, _Settings_, _AuthDataService_, $httpBackend) ->
+    inject(($rootScope, _AuthService_, _Settings_, _AuthDataService_, _ConnectionStatusService_, $httpBackend) ->
       $scope = $rootScope
       AuthService = _AuthService_
       Settings = _Settings_
       AuthDataService = _AuthDataService_
+      ConnectionStatusService = _ConnectionStatusService_
       httpBackend = $httpBackend
     )
 
-  describe ' - Basic Auth tests', ->
+  describe ' - Auth tests', ->
 
-    it ' - Persist auth token on successful authentication, generation of new token and manual update of token', ->
-      success_response = 
-        username: 'test'
-        authorization_token: 'longtoken'
-      httpBackend.expect('POST', "#{Settings.endpoint.auth}")
-        .respond(200, JSON.stringify(success_response));
+    it ' - Persist auth data in localstorage', ->
+      httpBackend.when('GET', "#{Settings.endpoint.rest}/")
+        .respond(->
+          return [200, JSON.stringify({})]
+        )
+
       data = {}
       AuthService.authenticate('test', 'test')
-        .then( (response) -> 
+        .then( (response) ->
           data = response.data
         )
       $scope.$apply() if not $scope.$$phase
       httpBackend.flush()
-      expect(':' + data.authorization_token).toBe(AuthDataService.getAuthToken())
-      
-      token_reply = 
-        authorization_token: 'newtoken'
 
-      httpBackend.when('POST', "#{Settings.endpoint.authUser}/test/authorization_token"
-        , {password: 'test'}
-        , (headers) ->
-          expect(headers.Authorization).toBe('Basic Omxvbmd0b2tlbg==')
-          headers
-      )
-      .respond(200, JSON.stringify(token_reply))
-      AuthService.generateNewAuthToken('test')
-      $scope.$apply() if not $scope.$$phase
-      httpBackend.flush()
-      expect(':newtoken').toBe(AuthDataService.getAuthToken())
-      
+      expect(AuthDataService.getAuthData()).toBe('dGVzdDp0ZXN0')
+      expect(ConnectionStatusService.connectedAsUser()).toBe('test')
 
-      httpBackend.expect('POST', "#{Settings.endpoint.authUser}/test/authorization_token")
-        .respond(200, JSON.stringify({}))
-      AuthService.setNewAuthToken('test', 'manualnewtoken')
-      $scope.$apply() if not $scope.$$phase
-      httpBackend.flush()
-      expect(':manualnewtoken').toBe(AuthDataService.getAuthToken())
-
-
-    it ' - Flag is_authenticated is true on successful authentication', ->
-      success_response = 
-        username: 'neo4j'
-        authorization_token: 'longtoken'
-      httpBackend.expect('POST', "#{Settings.endpoint.auth}").respond(200, JSON.stringify(success_response));
-      AuthService.authenticate('test', 'test')
-      $scope.$apply() if not $scope.$$phase
-      httpBackend.flush()
-      expect(AuthService.isAuthenticated()).toBe true
-      
 
     it ' - Empty auth token in persistent storage on unsuccessful authentication', ->
-      AuthDataService.setAuthData('sample')
-      httpBackend.expect('POST', "#{Settings.endpoint.auth}").respond(422, JSON.stringify({}));
-      httpBackend.expect('GET', "#{Settings.endpoint.auth}").respond(401, JSON.stringify({}));
+      ConnectionStatusService.setConnectionAuthData('sample', 'error')
+      httpBackend.when('GET', "#{Settings.endpoint.rest}/").respond(401, JSON.stringify({}))
       AuthService.authenticate('test', 'test')
       $scope.$apply() if not $scope.$$phase
       httpBackend.flush()
-      expect(AuthDataService.getAuthToken()).toBeFalsy()
-      expect(AuthService.isAuthenticated()).toBe false
+      expect(AuthDataService.getAuthData()).toBeFalsy()
 
-    it ' - isAuthenticated should always be true when auth is disabled on server', ->
-      AuthDataService.setAuthData('sample')
-      httpBackend.expect('GET', "#{Settings.endpoint.auth}").respond(200, JSON.stringify({}));
-      AuthService.forget()
+    it ' - ConnectionStatusSummary should be correct when auth FAILED', ->
+      ConnectionStatusService.setConnectionAuthData('sample', 'error')
+      httpBackend.when('GET', "#{Settings.endpoint.rest}/").respond(401, JSON.stringify({}))
+      AuthService.hasValidAuthorization()
       $scope.$apply() if not $scope.$$phase
       httpBackend.flush()
-      expect(AuthService.isAuthenticated()).toBe true
+      status = ConnectionStatusService.getConnectionStatusSummary()
+      expect(status.user).toBeFalsy()
+      expect(status.is_connected).toBe false
+      expect(status.authorization_required).toBe true
+
+    it ' - ConnectionStatusSummary should be correct when auth is disabled on server', ->
+      httpBackend.when('GET', "#{Settings.endpoint.rest}/").respond(200, JSON.stringify({}))
+      AuthService.hasValidAuthorization()
+      $scope.$apply() if not $scope.$$phase
+      httpBackend.flush()
+      status = ConnectionStatusService.getConnectionStatusSummary()
+      expect(status.is_connected).toBe true
+      expect(status.authorization_required).toBe false

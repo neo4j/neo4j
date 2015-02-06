@@ -44,14 +44,4 @@ public class AuthorizationRepresentation extends ObjectRepresentation
     {
         return ValueRepresentation.uri( format( "/user/%s/password", user.name() ) );
     }
-
-    @Override
-    void extraData( MappingSerializer serializer )
-    {
-        if( !user.passwordChangeRequired() )
-        {
-            serializer.putString( "authorization_token", user.token() );
-            serializer.putUri( "authorization_token_change", format( "/user/%s/authorization_token", user.name() ));
-        }
-    }
 }

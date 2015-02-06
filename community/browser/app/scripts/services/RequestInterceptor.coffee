@@ -24,8 +24,9 @@ angular.module('neo4jApp.services')
   .factory('RequestInterceptor', [
     'AuthDataService'
     (AuthDataService) ->
-      interceptor = 
+      interceptor =
         request: (config) ->
+          return config if config.skipAuthHeader
           header = AuthDataService.getAuthData()
           if header then config.headers['Authorization'] = "Basic #{header}"
           config

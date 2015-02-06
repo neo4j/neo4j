@@ -22,7 +22,6 @@ package org.neo4j.server.security.auth;
 import java.io.IOException;
 
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
-import org.neo4j.server.security.auth.exception.IllegalTokenException;
 import org.neo4j.server.security.auth.exception.IllegalUsernameException;
 
 /**
@@ -32,28 +31,27 @@ public interface UserRepository
 {
     public User findByName( String name );
 
-    public User findByToken( String token );
-
     /** Create a user, given that the users token is unique.
      * @param user the new user object
      * @throws IllegalUsernameException if the username is not valid
-     * @throws IllegalTokenException if the users token is invalid or already in use
      */
-    public void create( User user ) throws IllegalUsernameException, IllegalTokenException, IOException;
+    public void create( User user ) throws IllegalUsernameException, IOException;
 
     /** Update a user, given that the users token is unique.
      * @param existingUser the existing user object, which must match the current state in this repository
      * @param updatedUser the updated user object
-     * @throws IllegalTokenException if the user token is invalid or already in use
      * @throws ConcurrentModificationException if the existingUser does not match the current state in the repository
      */
-    public void update( User existingUser, User updatedUser ) throws IllegalTokenException, ConcurrentModificationException, IOException;
+    public void update( User existingUser, User updatedUser ) throws ConcurrentModificationException, IOException;
+
+    /** Deletes a user.
+     * @param user the user to delete
+     * @return true if the user was found and deleted
+     */
+    public boolean delete( User user ) throws IOException;
 
     int numberOfUsers();
 
     /** Utility for API consumers to tell if #save() will accept a given username */
     boolean isValidName( String name );
-
-    /** Utility for API consumers to tell if #save() will accept a given token */
-    boolean isValidToken( String token );
 }

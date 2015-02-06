@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.util.List;
 
 import org.neo4j.kernel.impl.util.Charsets;
+import org.neo4j.kernel.impl.util.Codecs;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -38,10 +39,8 @@ public class UserSerializationTest
         UserSerialization serialization = new UserSerialization();
 
         List<User> users = asList(
-                new User( "Steve", "12345", Privileges.ADMIN, new Credentials( "SomeSalt", "SomeAlgo", "1234321" ),
-                        false ),
-                new User( "Bob", "54321", Privileges.ADMIN, new Credentials( "OtherSalt", "OtherAlgo", "0987654" ),
-                        false ) );
+                new User( "Steve", Credential.forPassword( "1234321" ), false ),
+                new User( "Bob", Credential.forPassword( "0987654" ), false ) );
 
         // When
         byte[] serialized = serialization.serialize( users );
@@ -59,17 +58,19 @@ public class UserSerializationTest
     {
         // Given
         UserSerialization serialization = new UserSerialization();
+        byte[] salt1 = new byte[] { (byte) 0xa5, (byte) 0x43 };
+        byte[] hash1 = new byte[] { (byte) 0xfe, (byte) 0x00, (byte) 0x56, (byte) 0xc3, (byte) 0x7e };
+        byte[] salt2 = new byte[] { (byte) 0x34, (byte) 0xa4 };
+        byte[] hash2 = new byte[] { (byte) 0x0e, (byte) 0x1f, (byte) 0xff, (byte) 0xc2, (byte) 0x3e };
 
         // When
         List<User> deserialized = serialization.deserializeUsers(
-                ("Steve:12345:SomeAlgo,1234321,SomeSalt:\n" +
-                 "Bob:abcde:OtherAlgo,0987654,OtherSalt:password_change_required") .getBytes( Charsets.UTF_8 ) );
+                ("Steve:SHA-256,FE0056C37E,A543:\n" +
+                 "Bob:SHA-256,0E1FFFC23E,34A4:password_change_required\n") .getBytes( Charsets.UTF_8 ) );
 
         // Then
         assertThat( deserialized, equalTo( asList(
-                new User( "Steve", "12345", Privileges.ADMIN, new Credentials( "SomeSalt", "SomeAlgo", "1234321" ),
-                        false ),
-                new User( "Bob", "abcde", Privileges.ADMIN, new Credentials( "OtherSalt", "OtherAlgo", "0987654" ),
-                        true ) ) ) );
+                new User( "Steve", new Credential( salt1, hash1 ), false ),
+                new User( "Bob", new Credential( salt2, hash2 ), true ) ) ) );
     }
 }

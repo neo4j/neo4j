@@ -31,7 +31,6 @@ angular.module('neo4jApp.settings', ['neo4jApp.utils'])
       rest: restAPI
       cypher: "#{restAPI}/cypher"
       transaction: "#{restAPI}/transaction"
-      auth: "#{baseURL}/authentication"
       authUser: "#{baseURL}/user"
     host: baseURL
     maxExecutionTime: 3600 # in seconds

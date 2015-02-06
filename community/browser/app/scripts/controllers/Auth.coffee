@@ -24,16 +24,17 @@ angular.module('neo4jApp.controllers')
   .controller 'AuthCtrl', [
     '$scope'
     'AuthService'
+    'ConnectionStatusService'
     'Frame'
     'Settings'
-    ($scope, AuthService, Frame, Settings) ->
+    ($scope, AuthService, ConnectionStatusService, Frame, Settings) ->
       $scope.username = 'neo4j'
       $scope.password = ''
       $scope.error_text = ''
       $scope.current_password = ''
-      $scope.static_user = angular.copy(AuthService.getCurrentUser())
-      $scope.static_is_authenticated = AuthService.isAuthenticated()
-
+      $scope.connection_summary = ConnectionStatusService.getConnectionStatusSummary()
+      $scope.static_user = $scope.connection_summary.user
+      $scope.static_is_authenticated = $scope.connection_summary.is_connected
 
       $scope.authenticate = ->
         $scope.error_text = ''
@@ -44,26 +45,26 @@ angular.module('neo4jApp.controllers')
         return if $scope.error_text.length
 
         AuthService.authenticate($scope.username, $scope.password).then(
-          (r) -> 
+          (r) ->
               $scope.error_text = ''
-              if r.data.password_change_required
-                $scope.current_password = $scope.password
-                return $scope.password_change_required = true 
-              
-              $scope.static_user = angular.copy(AuthService.getCurrentUser())
-              $scope.static_is_authenticated = AuthService.isAuthenticated()
-              
+              $scope.connection_summary = ConnectionStatusService.getConnectionStatusSummary()
+              $scope.static_user = $scope.connection_summary.user
+              $scope.static_is_authenticated = $scope.connection_summary.is_connected
+
               Frame.create({input:"#{Settings.cmdchar}play welcome"})
               $scope.focusEditor()
           ,
-          (r) -> 
+          (r) ->
+            if r.status is 403 and r.data.password_change?.length
+              $scope.current_password = $scope.password
+              return $scope.password_change_required = true
             $scope.error_text = r.data.errors[0].message or "Server response code: #{r.status}"
         )
 
       $scope.defaultPasswordChanged = ->
         AuthService.hasValidAuthorization().then(->
           $scope.password_change_required = false
-          $scope.static_user = angular.copy(AuthService.getCurrentUser())
-          $scope.static_is_authenticated = AuthService.isAuthenticated()
+          $scope.static_user = ConnectionStatusService.connectedAsUser()
+          $scope.static_is_authenticated = ConnectionStatusService.isConnected()
         )
   ]

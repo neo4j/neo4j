@@ -29,10 +29,13 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
-import org.neo4j.server.security.auth.exception.IllegalTokenException;
 import org.neo4j.server.security.auth.exception.IllegalUsernameException;
+
+import static java.lang.String.format;
 
 /**
  * Stores user auth data. In memory, but backed by persistent storage so changes to this repository will survive
@@ -51,32 +54,25 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
 
     /** Quick lookup of users by name */
     private final Map<String, User> usersByName = new ConcurrentHashMap<>();
-
-    /** Quick lookup of users by token */
-    private final Map<String, User> usersByToken = new ConcurrentHashMap<>();
+    private final StringLogger log;
 
     /** Master list of users */
     private volatile List<User> users = new ArrayList<>();
 
     private final UserSerialization serialization = new UserSerialization();
 
-    public FileUserRepository( FileSystemAbstraction fs, File file )
+    public FileUserRepository( FileSystemAbstraction fs, File file, Logging logging )
     {
         this.fs = fs;
         this.dbFile = file;
         this.tempFile = new File(file.getAbsolutePath() + ".tmp");
+        this.log = logging.getMessagesLog( getClass() );
     }
 
     @Override
     public User findByName( String name )
     {
         return usersByName.get( name );
-    }
-
-    @Override
-    public User findByToken( String name )
-    {
-        return usersByToken.get( name );
     }
 
     @Override
@@ -95,29 +91,21 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
     }
 
     @Override
-    public void create( User user ) throws IllegalUsernameException, IllegalTokenException, IOException
+    public void create( User user ) throws IllegalUsernameException, IOException
     {
         if ( !isValidName( user.name() ) )
         {
             throw new IllegalUsernameException( "'" + user.name() + "' is not a valid user name." );
         }
-        if ( !isValidToken( user.token() ) )
-        {
-            throw new IllegalTokenException( "Invalid token" );
-        }
 
         synchronized (this)
         {
-            // Check for existing user or token
+            // Check for existing user
             for ( User other : users )
             {
                 if ( other.name().equals( user.name() ) )
                 {
                     throw new IllegalUsernameException( "The specified user already exists" );
-                }
-                if ( other.token().equals( user.token() ) )
-                {
-                    throw new IllegalTokenException( "The specified token is already in use" );
                 }
             }
 
@@ -126,21 +114,16 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
             commitToDisk();
 
             usersByName.put( user.name(), user );
-            usersByToken.put( user.token(), user );
         }
     }
 
     @Override
-    public void update( User existingUser, User updatedUser ) throws IllegalTokenException, ConcurrentModificationException, IOException
+    public void update( User existingUser, User updatedUser ) throws ConcurrentModificationException, IOException
     {
         // Assert input is ok
         if ( !existingUser.name().equals( updatedUser.name() ) )
         {
             throw new IllegalArgumentException( "updatedUser has a different name" );
-        }
-        if ( !isValidToken( updatedUser.token() ) )
-        {
-            throw new IllegalTokenException( "Invalid token" );
         }
 
         synchronized (this)
@@ -154,9 +137,6 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
                 {
                     foundUser = true;
                     newUsers.add( updatedUser );
-                } else if ( other.token().equals( updatedUser.token() ) )
-                {
-                    throw new IllegalTokenException( "The specified token is already in use" );
                 } else
                 {
                     newUsers.add( other );
@@ -173,9 +153,38 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
             commitToDisk();
 
             usersByName.put( updatedUser.name(), updatedUser );
-            usersByToken.remove( existingUser.token() );
-            usersByToken.put( updatedUser.token(), updatedUser );
         }
+    }
+
+    @Override
+    public boolean delete( User user ) throws IOException
+    {
+        boolean foundUser = false;
+        synchronized (this)
+        {
+            // Copy-on-write for the users list
+            List<User> newUsers = new ArrayList<>();
+            for ( User other : users )
+            {
+                if ( other.name().equals( user.name() ) )
+                {
+                    foundUser = true;
+                } else
+                {
+                    newUsers.add( other );
+                }
+            }
+
+            if ( foundUser )
+            {
+                users = newUsers;
+
+                commitToDisk();
+
+                usersByName.remove( user.name() );
+            }
+        }
+        return foundUser;
     }
 
     @Override
@@ -188,16 +197,6 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
     public boolean isValidName( String name )
     {
         return name.matches( "^[a-zA-Z0-9_]+$" );
-    }
-
-    @Override
-    public boolean isValidToken( String token )
-    {
-        if (token == null)
-        {
-            throw new IllegalArgumentException( "token should not be null" );
-        }
-        return token.matches( "^[a-fA-F0-9]+$" );
     }
 
     /* Assumes synchronization elsewhere */
@@ -240,19 +239,20 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
                     if(read == -1) break;
                     offset += read;
                 }
-                loadedUsers = serialization.deserializeUsers( bytes );
-            }
 
-            if(loadedUsers == null)
+                loadedUsers = serialization.deserializeUsers( bytes );
+            } catch ( UserSerialization.FormatException e )
             {
-                throw new IllegalStateException( "Failed to read authentication file: " + fileToLoadFrom.getAbsolutePath() );
+                log.error( format( "Ignoring authorization file \"%s\" (%s)", fileToLoadFrom.getAbsolutePath(), e.getMessage() ) );
+                loadedUsers = new ArrayList<>();
             }
 
             users = loadedUsers;
+
+            usersByName.clear();
             for ( User user : users )
             {
                 usersByName.put( user.name(), user );
-                usersByToken.put( user.token(), user );
             }
         }
     }

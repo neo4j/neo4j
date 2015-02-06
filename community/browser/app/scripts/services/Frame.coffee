@@ -67,7 +67,7 @@ angular.module('neo4jApp.services')
             timer = Timer.start()
             @startTime = timer.started()
             intrPromise = intrFn(query, $q.defer())
-            @terminate = => 
+            @terminate = =>
               @isTerminating = yes
               intrPromise?.transaction?.rollback()?.then( =>
                 @isTerminating = no

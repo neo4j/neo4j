@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -30,152 +31,110 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.server.rest.repr.AuthorizationRepresentation;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.ExceptionRepresentation;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
-import org.neo4j.server.security.auth.SecurityCentral;
+import org.neo4j.server.security.auth.AuthManager;
 import org.neo4j.server.security.auth.User;
-import org.neo4j.server.security.auth.exception.IllegalTokenException;
-import org.neo4j.server.security.auth.exception.TooManyAuthenticationAttemptsException;
 
-import static org.neo4j.server.rest.web.CustomStatusType.TOO_MANY;
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static org.neo4j.server.rest.web.CustomStatusType.UNPROCESSABLE;
 
 @Path("/user")
 public class UserService
 {
-    public static final String USERNAME = "username";
     public static final String PASSWORD = "password";
-    public static final String NEW_AUTHORIZATION_TOKEN = "new_authorization_token";
-    public static final String NEW_PASSWORD = "new_password";
 
-    private final SecurityCentral security;
+    private final AuthManager authManager;
     private final InputFormat input;
     private final OutputFormat output;
-    private final ConsoleLogger log;
 
-    public UserService(@Context SecurityCentral security, @Context InputFormat input, @Context OutputFormat output,
-                       @Context ConsoleLogger log)
+    public UserService( @Context AuthManager authManager, @Context InputFormat input, @Context OutputFormat output )
     {
-        this.security = security;
+        this.authManager = authManager;
         this.input = input;
         this.output = output;
-        this.log = log;
+    }
+
+    @GET
+    @Path("/{username}")
+    public Response getUser( @PathParam("username") String username, @Context HttpServletRequest req )
+    {
+        if ( !req.getUserPrincipal().getName().equals( username ) )
+        {
+            return output.notFound();
+        }
+
+        final User currentUser = authManager.getUser( username );
+        if ( currentUser == null )
+        {
+            return output.notFound();
+        }
+        return output.ok( new AuthorizationRepresentation( currentUser ) );
     }
 
     @POST
-    @Path("/{user}/authorization_token")
-    public Response regenerateToken( @PathParam( "user" ) String user, @Context HttpServletRequest req, String payload)
+    @Path("/{username}/password")
+    public Response setPassword( @PathParam("username") String username, @Context HttpServletRequest req, String payload )
     {
+        if ( !req.getUserPrincipal().getName().equals( username ) )
+        {
+            return output.notFound();
+        }
+
+        final Map<String, Object> deserialized;
         try
         {
-            Map<String,Object> deserialized = input.readMap( payload );
+            deserialized = input.readMap( payload );
+        } catch ( BadInputException e )
+        {
+            return output.response( BAD_REQUEST, new ExceptionRepresentation(
+                    new Neo4jError( Status.Request.InvalidFormat, e.getMessage() ) ) );
+        }
 
-            String password = getString( deserialized, PASSWORD );
-
-            if( security.authenticate( user, password ))
-            {
-                User updatedUser;
-                if( deserialized.containsKey( NEW_AUTHORIZATION_TOKEN ) )
-                {
-                    updatedUser = security.setToken( user, getString( deserialized, NEW_AUTHORIZATION_TOKEN ) );
-                }
-                else
-                {
-                    updatedUser = security.regenerateToken( user );
-                }
-                return output.ok( new AuthorizationRepresentation( updatedUser ) );
-            }
-            else
-            {
-                log.warn( "Failed authentication attempt for '%s' from %s", user, req.getRemoteAddr() );
-            }
-
+        Object o = deserialized.get( PASSWORD );
+        if ( o == null )
+        {
             return output.response( UNPROCESSABLE, new ExceptionRepresentation(
-                    new Neo4jError( Status.Security.AuthenticationFailed, "Invalid username and/or password." ) ) );
+                    new Neo4jError( Status.Request.InvalidFormat, String.format( "Required parameter '%s' is missing.", PASSWORD ) ) ) );
         }
-        catch ( BadInputException | IllegalTokenException e )
+        if ( !( o instanceof String ) )
         {
-            return output.badRequestWithoutLegacyStacktrace( e );
+            return output.response( UNPROCESSABLE, new ExceptionRepresentation(
+                    new Neo4jError( Status.Request.InvalidFormat, String.format( "Expected '%s' to be a string.", PASSWORD ) ) ) );
         }
-        catch ( IllegalArgumentException e )
+        String newPassword = (String) o;
+
+        final User currentUser = authManager.getUser( username );
+        if (currentUser == null)
         {
-            return output.response( UNPROCESSABLE, new ExceptionRepresentation( new Neo4jError( Status.Request.Invalid, e.getMessage() ) ) );
+            return output.notFound();
         }
-        catch ( TooManyAuthenticationAttemptsException e )
+
+        if ( currentUser.credentials().matchesPassword( newPassword ) )
         {
-            return output.response( TOO_MANY, new ExceptionRepresentation( new Neo4jError( e.status(), e ) ) );
+            return output.response( UNPROCESSABLE, new ExceptionRepresentation(
+                    new Neo4jError( Status.Request.Invalid, "Old password and new password cannot be the same." ) ) );
         }
-        catch ( IOException e )
+
+        final User updatedUser;
+        try
+        {
+            updatedUser = authManager.setPassword( username, newPassword );
+        } catch ( IOException e )
         {
             return output.serverErrorWithoutLegacyStacktrace( e );
         }
+
+        if (updatedUser == null)
+        {
+            return output.notFound();
+        }
+
+        return output.ok();
     }
 
-    @POST
-    @Path("/{user}/password")
-    public Response setPassword( @PathParam( "user" ) String user, @Context HttpServletRequest req, String payload )
-    {
-        try
-        {
-            Map<String,Object> deserialized = input.readMap( payload );
-
-            String password = getString( deserialized, PASSWORD );
-            String newPassword = getString( deserialized, NEW_PASSWORD );
-
-            if(password.equals( newPassword ))
-            {
-                return output.response( UNPROCESSABLE, new ExceptionRepresentation(
-                        new Neo4jError( Status.Request.Invalid, "Old password and new password cannot be the same." ) ) );
-            }
-
-            if( security.authenticate( user, password ))
-            {
-                User updatedUser = security.setPassword( user, newPassword );
-                return output.ok( new AuthorizationRepresentation( updatedUser ) );
-            }
-            else
-            {
-                log.warn( "Failed authentication attempt for '%s' from %s", user, req.getRemoteAddr() );
-            }
-
-            return output.response( UNPROCESSABLE, new ExceptionRepresentation(
-                    new Neo4jError( Status.Security.AuthenticationFailed, "Invalid username and/or password." ) ) );
-        }
-        catch ( BadInputException e )
-        {
-            return output.badRequestWithoutLegacyStacktrace( e );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            return output.response( UNPROCESSABLE, new ExceptionRepresentation( new Neo4jError( Status.Request.Invalid, e.getMessage() ) ) );
-        }
-        catch ( TooManyAuthenticationAttemptsException e )
-        {
-            return output.response( TOO_MANY, new ExceptionRepresentation( new Neo4jError( e.status(), e ) ) );
-        }
-        catch ( IOException e )
-        {
-            return output.serverErrorWithoutLegacyStacktrace( e );
-        }
-    }
-
-    private String getString( Map<String, Object> data, String key ) throws IllegalArgumentException
-    {
-        Object o = data.get( key );
-        if( o == null )
-        {
-            throw new IllegalArgumentException( String.format("Required parameter '%s' is missing.", key) );
-        }
-        if(!(o instanceof String))
-        {
-            throw new IllegalArgumentException( String.format("Expected '%s' to be a string.", key) );
-        }
-
-        return (String)o;
-    }
 }
