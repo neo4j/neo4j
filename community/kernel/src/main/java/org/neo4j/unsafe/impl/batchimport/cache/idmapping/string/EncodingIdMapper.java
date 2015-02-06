@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -83,7 +84,7 @@ public class EncodingIdMapper implements IdMapper
     private long[][] sortBuckets;
     private long size;
 
-    private final IdGroup[] idGroups = new IdGroup[10];
+    private IdGroup[] idGroups = new IdGroup[10];
     private IdGroup currentIdGroup;
     private int idGroupsCursor;
 
@@ -153,6 +154,10 @@ public class EncodingIdMapper implements IdMapper
         // Create the new group
         if ( newGroup )
         {
+            if ( idGroupsCursor >= idGroups.length )
+            {
+                idGroups = Arrays.copyOf( idGroups, idGroups.length*2 );
+            }
             idGroups[idGroupsCursor++] = currentIdGroup = new IdGroup( group, dataCache.highestSetIndex() );
         }
     }

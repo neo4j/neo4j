@@ -69,7 +69,7 @@ public class PropertyDeduplicatorTestUtil
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
             PropertyRecord propertyRecord = propertyStore.getRecord( nextProp );
-            for ( PropertyBlock propertyBlock : propertyRecord.getPropertyBlocks() )
+            for ( PropertyBlock propertyBlock : propertyRecord )
             {
                 if ( propertyBlock.getKeyIndexId() == original.id() )
                 {

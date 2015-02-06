@@ -49,6 +49,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 
+import static org.neo4j.helpers.collection.IteratorUtil.asList;
+
 public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S extends RecordStore<R>>
 {
     // Constants for the contents of the existing record
@@ -490,7 +492,7 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
 
         private void ensureHeavy( PropertyStore store, PropertyRecord record )
         {
-            for ( PropertyBlock propertyBlock : record.getPropertyBlocks() )
+            for ( PropertyBlock propertyBlock : record )
             {
                 store.ensureHeavy( propertyBlock );
             }
@@ -509,8 +511,8 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
             assertThat( "getId", actualRecord.getId(), is( expectedRecord.getId() ) );
             assertThat( "getLongId", actualRecord.getLongId(), is( expectedRecord.getLongId() ) );
 
-            List<PropertyBlock> actualBlocks = actualRecord.getPropertyBlocks();
-            List<PropertyBlock> expectedBlocks = expectedRecord.getPropertyBlocks();
+            List<PropertyBlock> actualBlocks = asList( (Iterable<PropertyBlock>) actualRecord );
+            List<PropertyBlock> expectedBlocks = asList( (Iterable<PropertyBlock>) expectedRecord );
             assertThat( "getPropertyBlocks().size", actualBlocks.size(), is( expectedBlocks.size() ) );
             for ( int i = 0; i < actualBlocks.size(); i++ )
             {

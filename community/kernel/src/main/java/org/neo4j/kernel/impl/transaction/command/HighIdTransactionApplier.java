@@ -85,7 +85,7 @@ public class HighIdTransactionApplier implements NeoCommandHandler
     {
         PropertyStore propertyStore = neoStore.getPropertyStore();
         track( propertyStore, command );
-        for ( PropertyBlock block : command.getAfter().getPropertyBlocks() )
+        for ( PropertyBlock block : command.getAfter() )
         {
             switch ( block.getType() )
             {

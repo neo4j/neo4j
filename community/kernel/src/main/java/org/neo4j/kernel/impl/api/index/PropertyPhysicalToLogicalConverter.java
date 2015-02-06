@@ -128,7 +128,7 @@ public class PropertyPhysicalToLogicalConverter
 
     private void mapBlocks( PropertyRecord record, Map<Integer, PropertyBlock> blocks )
     {
-        for ( PropertyBlock block : record.getPropertyBlocks() )
+        for ( PropertyBlock block : record )
         {
             blocks.put( block.getKeyIndexId(), block );
         }

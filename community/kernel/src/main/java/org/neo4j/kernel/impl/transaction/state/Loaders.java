@@ -107,7 +107,7 @@ public class Loaders
             @Override
             public void ensureHeavy( PropertyRecord record )
             {
-                for ( PropertyBlock block : record.getPropertyBlocks() )
+                for ( PropertyBlock block : record )
                 {
                     store.ensureHeavy( block );
                 }

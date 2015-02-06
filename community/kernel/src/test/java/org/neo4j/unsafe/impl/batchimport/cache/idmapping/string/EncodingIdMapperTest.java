@@ -389,6 +389,27 @@ public class EncodingIdMapperTest
         assertEquals( 2L, mapper.get( "10", thirdGroup ) );
     }
 
+    @Test
+    public void shouldHandleManyGroups() throws Exception
+    {
+        // GIVEN
+        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new LongEncoder(), new Radix.String() );
+        int size = 100;
+
+        // WHEN
+        for ( int i = 0; i < size; i++ )
+        {
+            mapper.put( i, i, new Group.Adapter( i, "" + i ) );
+        }
+        mapper.prepare( null ); // this test should have been set up to not run into collisions
+
+        // THEN
+        for ( int i = 0; i < size; i++ )
+        {
+            assertEquals( i, mapper.get( i, new Group.Adapter( i, "" + i ) ) );
+        }
+    }
+
     private class ValueGenerator implements ResourceIterable<Object>
     {
         private final int size;

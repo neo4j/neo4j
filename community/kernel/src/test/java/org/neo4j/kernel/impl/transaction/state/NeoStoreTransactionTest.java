@@ -19,6 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.mockito.Matchers;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,14 +40,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.mockito.Matchers;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -107,8 +107,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
-import static java.lang.Integer.parseInt;
-
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -127,6 +125,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
+import static java.lang.Integer.parseInt;
 
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
@@ -441,11 +441,11 @@ public class NeoStoreTransactionTest
                 {
                     PropertyRecord before = ((PropertyCommand) element).getBefore();
                     assertFalse( before.inUse() );
-                    assertEquals( Collections.<PropertyBlock>emptyList(), before.getPropertyBlocks() );
+                    assertFalse( before.iterator().hasNext() );
 
                     PropertyRecord after = ((PropertyCommand) element).getAfter();
                     assertTrue( after.inUse() );
-                    assertEquals( 1, count( after.getPropertyBlocks() ) );
+                    assertEquals( 1, count( after ) );
                 }
                 return true;
             }
@@ -872,7 +872,7 @@ public class NeoStoreTransactionTest
             {
                 if ( record.getPrevProp() != Record.NO_NEXT_PROPERTY.intValue() )
                 {
-                    for ( PropertyBlock block : record.getPropertyBlocks() )
+                    for ( PropertyBlock block : record )
                     {
                         assertTrue( block.isLight() );
                     }

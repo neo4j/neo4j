@@ -459,10 +459,9 @@ public class CommandWriter implements NeoCommandHandler
             // prop chain
             channel.putLong( -1 ); // 8
         }
-        channel.put( (byte) record.getPropertyBlocks().size() ); // 1
-        for ( int i = 0; i < record.getPropertyBlocks().size(); i++ )
+        channel.put( (byte) record.numberOfProperties() ); // 1
+        for ( PropertyBlock block : record )
         {
-            PropertyBlock block = record.getPropertyBlocks().get( i );
             assert block.getSize() > 0 : record + " seems kinda broken";
             writePropertyBlock( block );
         }

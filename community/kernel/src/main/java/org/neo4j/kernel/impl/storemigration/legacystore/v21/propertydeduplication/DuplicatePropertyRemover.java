@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 
 class DuplicatePropertyRemover
 {
-    private NodeStore nodeStore;
+    private final NodeStore nodeStore;
     private final PropertyStore propertyStore;
 
     DuplicatePropertyRemover( NodeStore nodeStore, PropertyStore propertyStore )
@@ -38,7 +38,7 @@ class DuplicatePropertyRemover
 
     public void fixUpPropertyLinksAroundUnusedRecord( NodeRecord nodeRecord, PropertyRecord duplicateRecord )
     {
-        assert duplicateRecord.getPropertyBlocks().isEmpty();
+        assert !duplicateRecord.iterator().hasNext();
         long headProp = nodeRecord.getNextProp();
         if ( duplicateRecord.getId() == headProp ) {
             nodeRecord.setNextProp( duplicateRecord.getNextProp() );

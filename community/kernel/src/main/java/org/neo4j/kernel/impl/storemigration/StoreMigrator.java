@@ -535,7 +535,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         for ( PropertyRecord propertyRecord : loop( legacyStore.getPropertyStoreReader().readPropertyStore() ) )
         {
             // Translate property keys
-            for ( PropertyBlock block : propertyRecord.getPropertyBlocks() )
+            for ( PropertyBlock block : propertyRecord )
             {
                 int key = block.getKeyIndexId();
                 Integer translation = propertyKeyTranslation.get( key );

@@ -20,7 +20,6 @@
 package org.neo4j.perftest.enterprise.generator;
 
 import java.util.EnumMap;
-import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -45,12 +44,13 @@ class PropertyStats extends RecordStore.Processor<RuntimeException>
     @Override
     public void processProperty( RecordStore<PropertyRecord> store, PropertyRecord property )
     {
-        List<PropertyBlock> blocks = property.getPropertyBlocks();
-        update( sizeHistogram, blocks.size() );
-        for ( PropertyBlock block : blocks )
+        int size = 0;
+        for ( PropertyBlock block : property )
         {
             update( typeHistogram, block.getType() );
+            size++;
         }
+        update( sizeHistogram, size );
     }
 
     private <T> void update( Map<T,Long> histogram, T key )

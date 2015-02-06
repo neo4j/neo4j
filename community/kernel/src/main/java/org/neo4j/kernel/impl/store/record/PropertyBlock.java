@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store.record;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -36,7 +37,7 @@ public class PropertyBlock implements Cloneable
     private static final long KEY_BITMASK = 0xFFFFFFL;
 
     private static final int MAX_ARRAY_TOSTRING_SIZE = 4;
-    private final List<DynamicRecord> valueRecords = new LinkedList<>();
+    private List<DynamicRecord> valueRecords;
     private long[] valueBlocks;
 
     public PropertyType getType()
@@ -70,17 +71,30 @@ public class PropertyBlock implements Cloneable
     {
         valueBlocks = new long[1];
         valueBlocks[0] = value;
-        valueRecords.clear();
+        if ( valueRecords != null )
+        {
+            valueRecords.clear();
+        }
     }
 
     public void addValueRecord( DynamicRecord record )
     {
+        if ( valueRecords == null )
+        {
+            valueRecords = new LinkedList<>();
+        }
         valueRecords.add( record );
+    }
+
+    public void setValueRecords( List<DynamicRecord> valueRecords )
+    {
+        assert this.valueRecords == null || this.valueRecords.isEmpty() : this.valueRecords.toString();
+        this.valueRecords = valueRecords;
     }
 
     public List<DynamicRecord> getValueRecords()
     {
-        return valueRecords;
+        return valueRecords != null ? valueRecords : Collections.<DynamicRecord>emptyList();
     }
 
     public long getSingleValueBlock()
@@ -118,7 +132,7 @@ public class PropertyBlock implements Cloneable
 
     public boolean isLight()
     {
-        return valueRecords.isEmpty();
+        return valueRecords == null || valueRecords.isEmpty();
     }
 
     public void setValueBlocks( long[] blocks )
@@ -127,7 +141,10 @@ public class PropertyBlock implements Cloneable
         assert ( blocks == null || blocks.length <= expectedPayloadSize) : (
                 "I was given an array of size " + blocks.length +", but I wanted it to be " + expectedPayloadSize );
         this.valueBlocks = blocks;
-        valueRecords.clear();
+        if ( valueRecords != null )
+        {
+            valueRecords.clear();
+        }
     }
 
     /**
@@ -212,9 +229,12 @@ public class PropertyBlock implements Cloneable
         {
             result.valueBlocks = valueBlocks.clone();
         }
-        for ( DynamicRecord valueRecord : valueRecords )
+        if ( valueRecords != null )
         {
-            result.valueRecords.add( valueRecord.clone() );
+            for ( DynamicRecord valueRecord : valueRecords )
+            {
+                result.addValueRecord( valueRecord.clone() );
+            }
         }
         return result;
     }

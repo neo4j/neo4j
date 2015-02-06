@@ -611,7 +611,7 @@ public class DiskLayer implements StoreReadLayer
         List<DefinedProperty> properties = new ArrayList<>();
         for ( PropertyRecord record : records )
         {
-            for ( PropertyBlock block : record.getPropertyBlocks() )
+            for ( PropertyBlock block : record )
             {
                 properties.add( block.getType().readProperty( block.getKeyIndexId(), block, propertyStoreProvider ) );
             }

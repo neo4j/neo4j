@@ -62,7 +62,7 @@ public class PropertyTraverser
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
             PropertyRecord propRecord = propertyRecords.getOrLoad( nextProp, null ).forReadingData();
-            for ( PropertyBlock propBlock : propRecord.getPropertyBlocks() )
+            for ( PropertyBlock propBlock : propRecord )
             {
                 collector.receive( propBlock );
             }

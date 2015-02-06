@@ -157,7 +157,7 @@ public class IndexConsultedPropertyBlockSweeperTest
     {
         int propertyKeyId = propertyKeys.get( indexedPropKey );
         PropertyRecord propertyRecord = propertyStore.getRecord( propertyId );
-        for ( PropertyBlock propertyBlock : propertyRecord.getPropertyBlocks() )
+        for ( PropertyBlock propertyBlock : propertyRecord )
         {
             long[] valueBlocks = propertyBlock.getValueBlocks();
             valueBlocks[1] += 2; // Change the value to something non-indexed!

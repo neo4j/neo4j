@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import org.neo4j.kernel.impl.store.PropertyType;
 
@@ -32,14 +34,20 @@ import org.neo4j.kernel.impl.store.PropertyType;
  * variable length, a full PropertyRecord can be holding just one
  * PropertyBlock.
  */
-public class PropertyRecord extends Abstract64BitRecord
+public class PropertyRecord extends Abstract64BitRecord implements Iterable<PropertyBlock>, Iterator<PropertyBlock>
 {
     private long nextProp = Record.NO_NEXT_PROPERTY.intValue();
     private long prevProp = Record.NO_PREVIOUS_PROPERTY.intValue();
-    private final List<PropertyBlock> blockRecords = new ArrayList<PropertyBlock>( 4 );
+    private final PropertyBlock[] blockRecords =
+            new PropertyBlock[PropertyType.getPayloadSizeLongs() /*we can have at most these many*/];
+    private int blockRecordsCursor;
     private long entityId = -1;
     private Boolean nodeIdSet;
-    private final List<DynamicRecord> deletedRecords = new LinkedList<>();
+    private List<DynamicRecord> deletedRecords;
+
+    // state for the Iterator aspect of this class.
+    private int blockRecordsIteratorCursor;
+    private boolean canRemoveFromIterator;
 
     public PropertyRecord( long id )
     {
@@ -99,26 +107,71 @@ public class PropertyRecord extends Abstract64BitRecord
     public int size()
     {
         int result = 0;
-        for ( PropertyBlock blockRecord : blockRecords )
+        for ( int i = 0; i < blockRecordsCursor; i++ )
         {
-            result += blockRecord.getSize();
+            result += blockRecords[i].getSize();
         }
         return result;
     }
 
-    public List<PropertyBlock> getPropertyBlocks()
+    public int numberOfProperties()
     {
-        return blockRecords;
+        return blockRecordsCursor;
+    }
+
+    @Override
+    public Iterator<PropertyBlock> iterator()
+    {
+        blockRecordsIteratorCursor = 0;
+        canRemoveFromIterator = false;
+        return this;
+    }
+
+    @Override
+    public boolean hasNext()
+    {
+        return blockRecordsIteratorCursor < blockRecordsCursor;
+    }
+
+    @Override
+    public PropertyBlock next()
+    {
+        if ( !hasNext() )
+        {
+            throw new NoSuchElementException();
+        }
+        canRemoveFromIterator = true;
+        return blockRecords[blockRecordsIteratorCursor++];
+    }
+
+    @Override
+    public void remove()
+    {
+        if ( !canRemoveFromIterator )
+        {
+            throw new IllegalStateException(
+                    "cursor:" + blockRecordsIteratorCursor + " canRemove:" + canRemoveFromIterator );
+        }
+
+        if ( --blockRecordsCursor > --blockRecordsIteratorCursor )
+        {
+            blockRecords[blockRecordsIteratorCursor] = blockRecords[blockRecordsCursor];
+        }
+        canRemoveFromIterator = false;
     }
 
     public List<DynamicRecord> getDeletedRecords()
     {
-        return deletedRecords;
+        return deletedRecords != null ? deletedRecords : Collections.<DynamicRecord>emptyList();
     }
 
     public void addDeletedRecord( DynamicRecord record )
     {
         assert !record.inUse();
+        if ( deletedRecords == null )
+        {
+            deletedRecords = new LinkedList<>();
+        }
         deletedRecords.add( record );
     }
 
@@ -129,7 +182,7 @@ public class PropertyRecord extends Abstract64BitRecord
                 + ". My current size is reported as " + size() + "The added block was " + block +
                 " (note that size is " + block.getSize() + ")";
 
-        blockRecords.add( block );
+        blockRecords[blockRecordsCursor++] = block;
     }
 
     public void setPropertyBlock( PropertyBlock block )
@@ -140,8 +193,9 @@ public class PropertyRecord extends Abstract64BitRecord
 
     public PropertyBlock getPropertyBlock( int keyIndex )
     {
-        for ( PropertyBlock block : blockRecords )
+        for ( int i = 0; i < blockRecordsCursor; i++ )
         {
+            PropertyBlock block = blockRecords[i];
             if ( block.getKeyIndexId() == keyIndex )
             {
                 return block;
@@ -152,14 +206,24 @@ public class PropertyRecord extends Abstract64BitRecord
 
     public PropertyBlock removePropertyBlock( int keyIndex )
     {
-        for ( int i = 0; i < blockRecords.size(); i++ )
+        for ( int i = 0; i < blockRecordsCursor; i++ )
         {
-            if ( blockRecords.get( i ).getKeyIndexId() == keyIndex )
+            if ( blockRecords[i].getKeyIndexId() == keyIndex )
             {
-                return blockRecords.remove( i );
+                PropertyBlock block = blockRecords[i];
+                if ( --blockRecordsCursor > i )
+                {
+                    blockRecords[i] = blockRecords[blockRecordsCursor];
+                }
+                return block;
             }
         }
         return null;
+    }
+
+    public void clearPropertyBlocks()
+    {
+        blockRecordsCursor = 0;
     }
 
     public long getNextProp()
@@ -182,13 +246,16 @@ public class PropertyRecord extends Abstract64BitRecord
         {
             buf.append( nodeIdSet ? ",node=" : ",rel=" ).append( entityId );
         }
-        for ( PropertyBlock block : blockRecords )
+        for ( int i = 0; i < blockRecordsCursor; i++ )
         {
-            buf.append( ',' ).append( block );
+            buf.append( ',' ).append( blockRecords[i] );
         }
-        for ( DynamicRecord dyn : deletedRecords )
+        if ( deletedRecords != null )
         {
-            buf.append( ",del:" ).append( dyn );
+            for ( DynamicRecord dyn : deletedRecords )
+            {
+                buf.append( ",del:" ).append( dyn );
+            }
         }
         buf.append( "]" );
         return buf.toString();
@@ -218,13 +285,17 @@ public class PropertyRecord extends Abstract64BitRecord
         result.prevProp = prevProp;
         result.entityId = entityId;
         result.nodeIdSet = nodeIdSet;
-        for ( PropertyBlock block : blockRecords )
+        for ( int i = 0; i < blockRecordsCursor; i++ )
         {
-            result.blockRecords.add( block.clone() );
+            result.blockRecords[i] = blockRecords[i].clone();
         }
-        for ( DynamicRecord deletedRecord : deletedRecords )
+        result.blockRecordsCursor = blockRecordsCursor;
+        if ( deletedRecords != null )
         {
-            result.deletedRecords.add( deletedRecord.clone() );
+            for ( DynamicRecord deletedRecord : deletedRecords )
+            {
+                result.addDeletedRecord( deletedRecord.clone() );
+            }
         }
         return result;
     }

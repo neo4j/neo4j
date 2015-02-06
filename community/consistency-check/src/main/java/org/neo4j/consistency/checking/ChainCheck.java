@@ -57,7 +57,7 @@ public class ChainCheck<RECORD extends PrimitiveRecord, REPORT extends Consisten
     {
         int[] toStartWith = new int[ MAX_BLOCK_PER_RECORD_COUNT ];
         int index = 0;
-        for ( PropertyBlock propertyBlock : property.getPropertyBlocks() )
+        for ( PropertyBlock propertyBlock : property )
         {
             toStartWith[index++] = propertyBlock.getKeyIndexId();
         }

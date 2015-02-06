@@ -210,7 +210,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         ArrayList<NodePropertyUpdate> updates = new ArrayList<>();
         for ( PropertyRecord propertyRecord : propertyStore.getPropertyRecordChain( firstPropertyId ) )
         {
-            for ( PropertyBlock property : propertyRecord.getPropertyBlocks() )
+            for ( PropertyBlock property : propertyRecord )
             {
                 Object value = property.getType().getValue( property, propertyStore );
                 updates.add( NodePropertyUpdate.add( node.getId(), property.getKeyIndexId(), value, labels ) );
@@ -339,7 +339,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
                 {
                     return null;
                 }
-                blocks = records.next().getPropertyBlocks().iterator();
+                blocks = records.next().iterator();
             }
         }
     }

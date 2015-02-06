@@ -213,7 +213,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
 
             // Then go through the blocks
             int longsAppended = 0; // For marking the end of blocks
-            for ( PropertyBlock block : record.getPropertyBlocks() )
+            for ( PropertyBlock block : record )
             {
                 long[] propBlockValues = block.getValueBlocks();
                 for ( long propBlockValue : propBlockValues )
@@ -242,7 +242,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
         if ( record.inUse() )
         {
             // Go through the blocks
-            for ( PropertyBlock block : record.getPropertyBlocks() )
+            for ( PropertyBlock block : record )
             {
                 /*
                  * For each block we need to update its dynamic record chain if
@@ -501,14 +501,14 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
 
             // Fall back to dynamic string store
             byte[] encodedString = encodeString( string );
-            Collection<DynamicRecord> valueRecords = new ArrayList<>();
+            List<DynamicRecord> valueRecords = new ArrayList<>();
             allocateStringRecords( valueRecords, encodedString, stringAllocator );
             setSingleBlockValue( block, keyId, PropertyType.STRING, first( valueRecords ).getId() );
             for ( DynamicRecord valueRecord : valueRecords )
             {
                 valueRecord.setType( PropertyType.STRING.intValue() );
-                block.addValueRecord( valueRecord );
             }
+            block.setValueRecords( valueRecords );
         }
         else if ( value instanceof Integer )
         {
@@ -560,14 +560,14 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
             }
 
             // Fall back to dynamic array store
-            Collection<DynamicRecord> arrayRecords = new ArrayList<>();
+            List<DynamicRecord> arrayRecords = new ArrayList<>();
             allocateArrayRecords( arrayRecords, value, arrayAllocator );
             setSingleBlockValue( block, keyId, PropertyType.ARRAY, first( arrayRecords ).getId() );
             for ( DynamicRecord valueRecord : arrayRecords )
             {
                 valueRecord.setType( PropertyType.ARRAY.intValue() );
-                block.addValueRecord( valueRecord );
             }
+            block.setValueRecords( arrayRecords );
         }
         else
         {

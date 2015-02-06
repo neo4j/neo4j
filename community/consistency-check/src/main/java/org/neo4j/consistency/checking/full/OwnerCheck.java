@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 
 import static java.util.Collections.unmodifiableMap;
+
 import static org.neo4j.consistency.RecordType.ARRAY_PROPERTY;
 import static org.neo4j.consistency.RecordType.PROPERTY_KEY_NAME;
 import static org.neo4j.consistency.RecordType.RELATIONSHIP_TYPE_NAME;
@@ -212,8 +213,7 @@ class OwnerCheck implements CheckDecorator
                     }
                     if ( dynamics != null )
                     {
-                        List<PropertyBlock> blocks = record.getPropertyBlocks();
-                        for ( PropertyBlock block : blocks )
+                        for ( PropertyBlock block : record )
                         {
                             RecordType type = recordType( block.forceGetType() );
                             if ( type != null )

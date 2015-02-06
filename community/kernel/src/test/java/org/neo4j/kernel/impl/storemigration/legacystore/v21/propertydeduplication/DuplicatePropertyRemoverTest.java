@@ -54,6 +54,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+
 public class DuplicatePropertyRemoverTest
 {
     @ClassRule
@@ -156,7 +158,7 @@ public class DuplicatePropertyRemoverTest
             assertNull( propertyBlock );
             nextPropId = propRecord.getNextProp();
 
-            propBlockCount += propRecord.getPropertyBlocks().size();
+            propBlockCount += count( (Iterable<PropertyBlock>) propRecord );
         }
         assertEquals( prevProBlockCount - 1, propBlockCount );
     }
@@ -225,7 +227,7 @@ public class DuplicatePropertyRemoverTest
                 found = true;
                 propertyStore.updateRecord( propertyRecord );
 
-                if ( propertyRecord.getPropertyBlocks().isEmpty() )
+                if ( !propertyRecord.iterator().hasNext() )
                 {
                     remover.fixUpPropertyLinksAroundUnusedRecord( nodeRecord, propertyRecord );
                 }
