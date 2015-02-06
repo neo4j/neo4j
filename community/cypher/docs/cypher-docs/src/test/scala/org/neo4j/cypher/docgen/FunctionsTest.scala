@@ -131,6 +131,22 @@ class FunctionsTest extends DocumentingTestBase {
       assertions = (p) => assertEquals(2, p.columnAs[Int]("length(p)").toList.head))
   }
 
+  @Test def length2() {
+    testThis(
+      title = "LENGTH of pattern expression",
+      syntax = "LENGTH( pattern expression )",
+      arguments = List("pattern expression" -> "A pattern expression that returns a collection"),
+      text = """
+          |This is the same `LENGTH()` method described before,
+          |but instead of passing in a collection directly, you provide a pattern expression
+          |that can be used in a match query to provide a new set of results.
+          |The length of the results is calculated, not the length of the expression itself.
+        |""".stripMargin,
+      queryText = """match (a) where a.name='Alice' return length( (a)-->()-->() ) as fof""",
+      returns = """The number of sub-graphs matching the pattern expression is returned by the query.""",
+      assertions = (p) => assertEquals(3, p.columnAs[Int]("fof").toList.head))
+  }
+
   @Test def labels() {
     testThis(
       title = "LABELS",
