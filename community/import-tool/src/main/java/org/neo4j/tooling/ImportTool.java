@@ -29,7 +29,6 @@ import java.util.Map.Entry;
 
 import org.neo4j.function.Function;
 import org.neo4j.function.Function2;
-import org.neo4j.function.Functions;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Args.Option;
 import org.neo4j.helpers.collection.IterableWrapper;
@@ -60,6 +59,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
+import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_NODE_DECORATOR;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.additiveLabels;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.defaultRelationshipType;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
@@ -192,7 +192,10 @@ public class ImportTool
             enableStacktrace = args.getBoolean( Options.STACKTRACE.key(), Boolean.FALSE, Boolean.TRUE );
             processors = args.getNumber( Options.PROCESSORS.key(), null );
             IdType idType = args.interpretOption( Options.ID_TYPE.key(), withDefault( IdType.STRING ), TO_ID_TYPE );
-            input = input( nodesFiles, relationshipsFiles, INPUT_FILES_EXTRACTOR, idType, csvConfiguration( args ) );
+            input = new CsvInput(
+                    nodeData( nodesFiles ), defaultFormatNodeFileHeader(),
+                    relationshipData( relationshipsFiles ), defaultFormatRelationshipFileHeader(),
+                    idType, csvConfiguration( args ) );
         }
         catch ( IllegalArgumentException e )
         {
@@ -238,19 +241,6 @@ public class ImportTool
                 }
             }
         }
-    }
-
-    private static Input input( Collection<Option<File[]>> nodesFiles, Collection<Option<File[]>> relationshipsFiles,
-            Function2<Args,String,Collection<Option<File[]>>> inputFilesExtractor,
-            IdType idType, Configuration configuration )
-    {
-        Iterable<DataFactory<InputNode>> nodeData = nodeData( nodesFiles );
-        Iterable<DataFactory<InputRelationship>> relationshipData = relationshipData( relationshipsFiles );
-
-        return new CsvInput(
-                nodeData, defaultFormatNodeFileHeader(),
-                relationshipData, defaultFormatRelationshipFileHeader(),
-                idType, configuration );
     }
 
     private static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration( final Number processors )
@@ -315,7 +305,7 @@ public class ImportTool
             {
                 Function<InputNode,InputNode> decorator = input.metadata() != null
                         ? additiveLabels( input.metadata().split( ":" ) )
-                        : Functions.<InputNode>identity();
+                        : NO_NODE_DECORATOR;
                 return data( decorator, input.value() );
             }
         };

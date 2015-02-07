@@ -100,4 +100,7 @@ public class InputEntityDecorators
             }
         };
     }
+
+    public static final Function<InputNode,InputNode> NO_NODE_DECORATOR = Functions.identity();
+    public static final Function<InputRelationship,InputRelationship> NO_RELATIONSHIP_DECORATOR = Functions.identity();
 }
