@@ -34,9 +34,12 @@ import org.neo4j.csv.reader.Mark;
 import org.neo4j.csv.reader.Readables;
 import org.neo4j.function.Factory;
 import org.neo4j.function.Function;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.unsafe.impl.batchimport.input.DuplicateHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
+import org.neo4j.unsafe.impl.batchimport.input.InputNode;
+import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.MissingHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 
@@ -495,5 +498,17 @@ public class DataFactories
 
             return new Header.Entry( name, type, groupName, extractor );
         }
+    }
+
+    @SafeVarargs
+    public static Iterable<DataFactory<InputNode>> nodeData( DataFactory<InputNode>... factories )
+    {
+        return Iterables.iterable( factories );
+    }
+
+    @SafeVarargs
+    public static Iterable<DataFactory<InputRelationship>> relationshipData( DataFactory<InputRelationship>... factories )
+    {
+        return Iterables.iterable( factories );
     }
 }

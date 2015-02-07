@@ -22,7 +22,6 @@ package org.neo4j.unsafe.impl.batchimport.input;
 import java.io.File;
 import java.util.Iterator;
 
-import org.neo4j.function.Functions;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
@@ -30,11 +29,15 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput;
-import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories;
-import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactory;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 
-import static org.neo4j.helpers.collection.Iterables.iterable;
+import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_NODE_DECORATOR;
+import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_RELATIONSHIP_DECORATOR;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.data;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.nodeData;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.relationshipData;
 
 public class Inputs
 {
@@ -74,14 +77,10 @@ public class Inputs
     public static Input csv( File nodes, File relationships, IdType idType,
             Configuration configuration )
     {
-        Iterable<DataFactory<InputNode>> nodeData =
-                iterable( DataFactories.data( Functions.<InputNode>identity(), nodes ) );
-        Iterable<DataFactory<InputRelationship>> relationshipData =
-                iterable( DataFactories.data( Functions.<InputRelationship>identity(), relationships ) );
         return new CsvInput(
-                nodeData, DataFactories.defaultFormatNodeFileHeader(),
-                relationshipData, DataFactories.defaultFormatRelationshipFileHeader(),
-                idType, configuration );
+                nodeData( data( NO_NODE_DECORATOR, nodes ) ), defaultFormatNodeFileHeader(),
+                relationshipData( data( NO_RELATIONSHIP_DECORATOR, relationships ) ),
+                defaultFormatRelationshipFileHeader(), idType, configuration );
     }
 
     public static <T> InputIterable<T> asInputIterable( final Iterable<T> iterable )

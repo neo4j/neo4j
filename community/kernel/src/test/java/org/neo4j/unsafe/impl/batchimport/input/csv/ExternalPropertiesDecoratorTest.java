@@ -28,7 +28,6 @@ import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.Readables;
 import org.neo4j.function.Factory;
 import org.neo4j.function.Function;
-import org.neo4j.function.Functions;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.UpdateBehaviour;
@@ -38,6 +37,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_NODE_DECORATOR;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 
 public class ExternalPropertiesDecoratorTest
@@ -55,7 +55,7 @@ public class ExternalPropertiesDecoratorTest
         Configuration config = Configuration.COMMAS;
         IdType idType = IdType.STRING;
         Function<InputNode,InputNode> externalPropertiesDecorator = new ExternalPropertiesDecorator(
-                DataFactories.<InputNode>data( Functions.<InputNode>identity(), readable( propertyData ) ),
+                DataFactories.<InputNode>data( NO_NODE_DECORATOR, readable( propertyData ) ),
                 defaultFormatNodeFileHeader(), config, idType, UpdateBehaviour.ADD );
 
         // WHEN
@@ -82,7 +82,7 @@ public class ExternalPropertiesDecoratorTest
         Configuration config = Configuration.COMMAS;
         IdType idType = IdType.STRING;
         Function<InputNode,InputNode> externalPropertiesDecorator = new ExternalPropertiesDecorator(
-                DataFactories.<InputNode>data( Functions.<InputNode>identity(), readable( propertyData ) ),
+                DataFactories.<InputNode>data( NO_NODE_DECORATOR, readable( propertyData ) ),
                 defaultFormatNodeFileHeader(), config, idType, UpdateBehaviour.ADD );
 
         // WHEN
