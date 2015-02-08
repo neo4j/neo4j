@@ -28,7 +28,7 @@ object pickBestPlan extends CandidateSelector {
   def apply(plans: Seq[LogicalPlan])(implicit context: LogicalPlanningContext): Option[LogicalPlan] = {
     val costs = context.cost
     val comparePlans = (c: LogicalPlan) =>
-      (-c.solved.numHints, costs(c, context.cardinalityInput), -c.availableSymbols.size)
+      (-c.solved.numHints, costs(c, context.cardinalityInput).gummyBears, -c.availableSymbols.size)
 
     if (VERBOSE) {
       val sortedPlans = plans.sortBy(comparePlans)

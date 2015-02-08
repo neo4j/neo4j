@@ -41,6 +41,7 @@ BSD - Scala License
 
 BSD License
   Scala Compiler
+  scala-parser-combinators
 
 HSQLDB License, a BSD open source license
   HyperSQL Database

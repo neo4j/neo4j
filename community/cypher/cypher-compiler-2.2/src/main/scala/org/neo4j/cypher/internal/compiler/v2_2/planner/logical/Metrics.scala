@@ -68,12 +68,14 @@ case class Cost(gummyBears: Double) extends Ordered[Cost] {
   def +(other: Cost): Cost = other.gummyBears + gummyBears
   def *(other: Multiplier): Cost = gummyBears * other.coefficient
   def +(other: CostPerRow): CostPerRow = other.cost * gummyBears
-  def compare(that: Cost): Int = gummyBears.compare(that.gummyBears)
+  //def compare(that: Cost): Double = gummyBears.compare(that.gummyBears)
   def unary_-(): Cost = Cost(-gummyBears)
+  override def compare(that: Cost): Int = gummyBears.compare(that.gummyBears)
 }
 
 object Cost {
   implicit def lift(amount: Double): Cost = Cost(amount)
+  implicit def CostOrdering: Ordering[Cost] = Ordering.by(_.gummyBears.toLong)
 }
 
 case class Cardinality(amount: Double) extends Ordered[Cardinality] {

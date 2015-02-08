@@ -111,7 +111,7 @@
 
     <dependency>
       <groupId>org.parboiled</groupId>
-      <artifactId>parboiled-scala_2.10</artifactId>
+      <artifactId>parboiled-scala_2.11</artifactId>
     </dependency>
 
     <dependency>
