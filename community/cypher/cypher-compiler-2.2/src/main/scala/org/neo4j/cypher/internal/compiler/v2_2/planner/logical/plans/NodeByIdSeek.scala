@@ -25,20 +25,29 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.ExpressionCo
 import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 
 sealed trait EntityByIdRhs {
+  def mapExpressions(f: Expression => Expression): EntityByIdRhs
+
   def asEntityByIdRhs: CommandEntityByIdRhs
 }
 
 case class EntityByIdParameter(parameter: Parameter) extends EntityByIdRhs {
+  self =>
+
+  override def mapExpressions(f: Expression => Expression): EntityByIdParameter = self
+
   def asEntityByIdRhs =
     CommandEntityByIdParameter(parameter.asCommandParameter)
 }
 
 case class EntityByIdExprs(exprs: Seq[Expression]) extends EntityByIdRhs {
+  override def mapExpressions(f: Expression => Expression): EntityByIdExprs = copy(exprs.map(f))
+
   def asEntityByIdRhs =
     CommandEntityByIdExprs(exprs.asCommandExpressions)
 }
 
 case class NodeByIdSeek(idName: IdName, nodeIds: EntityByIdRhs, argumentIds: Set[IdName])(val solved: PlannerQuery)
-  extends LogicalLeafPlan {
+  extends LogicalLeafPlan with LogicalPlanWithoutExpressions {
+
   def availableSymbols: Set[IdName] = argumentIds + idName
 }

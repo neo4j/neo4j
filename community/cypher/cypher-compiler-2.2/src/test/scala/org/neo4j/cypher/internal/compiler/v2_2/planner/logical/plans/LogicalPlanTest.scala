@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, PlannerQuery}
 
 class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
-  case class TestPlan()(val solved: PlannerQuery) extends LogicalPlan {
+  case class TestPlan()(val solved: PlannerQuery) extends LogicalPlan with LogicalPlanWithoutExpressions {
     def lhs: Option[LogicalPlan] = ???
     def availableSymbols: Set[IdName] = ???
     def rhs: Option[LogicalPlan] = ???

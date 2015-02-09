@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.{Comparer, ExecutionContext}
 trait SortDescription {
   def id: String
 }
+
 case class Ascending(id:String) extends SortDescription
 case class Descending(id:String) extends SortDescription
 

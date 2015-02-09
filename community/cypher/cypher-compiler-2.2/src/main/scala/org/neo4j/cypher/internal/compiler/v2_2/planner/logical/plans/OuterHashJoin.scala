@@ -21,8 +21,11 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 
-case class OuterHashJoin(nodes: Set[IdName], left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery) extends LogicalPlan {
+case class OuterHashJoin(nodes: Set[IdName], left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery)
+  extends LogicalPlan with LogicalPlanWithoutExpressions {
+
   val lhs = Some(left)
   val rhs = Some(right)
+
   val availableSymbols = left.availableSymbols ++ right.availableSymbols
 }

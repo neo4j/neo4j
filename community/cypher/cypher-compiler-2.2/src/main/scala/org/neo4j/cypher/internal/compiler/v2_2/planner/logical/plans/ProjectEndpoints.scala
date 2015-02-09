@@ -27,7 +27,9 @@ case class ProjectEndpoints(left: LogicalPlan,
                             end: IdName,
                             directed: Boolean,
                             length: PatternLength)
-                           (val solved: PlannerQuery) extends LogicalPlan {
+                           (val solved: PlannerQuery)
+  extends LogicalPlan with LogicalPlanWithoutExpressions {
+
   val lhs = Some(left)
   def rhs = None
 

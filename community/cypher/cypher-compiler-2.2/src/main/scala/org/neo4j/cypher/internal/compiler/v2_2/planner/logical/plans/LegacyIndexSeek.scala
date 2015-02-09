@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v2_2.ast.LegacyIndexHint
 import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 
-case class LegacyIndexSeek(idName: IdName, hint: LegacyIndexHint, argumentIds: Set[IdName])(val solved: PlannerQuery) extends LogicalLeafPlan {
+case class LegacyIndexSeek(idName: IdName, hint: LegacyIndexHint, argumentIds: Set[IdName])(val solved: PlannerQuery)
+  extends LogicalLeafPlan with LogicalPlanWithoutExpressions {
+
   def availableSymbols = argumentIds + idName
 }

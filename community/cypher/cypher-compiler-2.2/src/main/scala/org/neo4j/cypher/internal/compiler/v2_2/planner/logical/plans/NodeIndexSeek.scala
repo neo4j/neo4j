@@ -29,5 +29,9 @@ case class NodeIndexSeek(idName: IdName,
                          valueExpr: QueryExpression[Expression],
                          argumentIds: Set[IdName])
                         (val solved: PlannerQuery) extends LogicalLeafPlan {
+
   def availableSymbols = argumentIds + idName
+
+  override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
+    copy(valueExpr = valueExpr.map(f(argumentIds, _)))(solved)
 }
