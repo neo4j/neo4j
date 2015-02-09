@@ -347,17 +347,14 @@ object LogicalPlanProducer extends CollectionSupport {
       inner.solved.updateGraph(_.addShortestPath(shortestPaths))
     )
 
-  def planEndpointProjection(inner: LogicalPlan, start: IdName, end: IdName, predicates: Seq[Expression], patternRel: PatternRelationship) = {
+  def planEndpointProjection(inner: LogicalPlan, start: IdName, startInScope: Boolean, end: IdName, endInScope: Boolean, patternRel: PatternRelationship) = {
     val solved = inner.solved.updateGraph(_.addPatternRel(patternRel))
-
     val relTypes = patternRel.types.asNonEmptyOption
     val directed = patternRel.dir != Direction.BOTH
-    val projectedPlan: (PlannerQuery) => ProjectEndpoints =
-      ProjectEndpoints(inner, patternRel.name, start, end, relTypes, directed, patternRel.length)
-    if (predicates.isEmpty)
-      projectedPlan(solved)
-    else
-      Selection(predicates, projectedPlan(inner.solved))(solved)
+    ProjectEndpoints(inner, patternRel.name,
+      start, startInScope,
+      end, endInScope,
+      relTypes, directed, patternRel.length)(solved)
   }
 
   def planUnion(left: LogicalPlan, right: LogicalPlan): LogicalPlan = {

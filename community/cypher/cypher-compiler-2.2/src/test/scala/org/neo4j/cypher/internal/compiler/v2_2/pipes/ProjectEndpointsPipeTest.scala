@@ -53,11 +53,30 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      ProjectEndpointsPipe(left, "r", "a", "b", None, directed = true, simpleLength = true)().
+      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, None, directed = true, simpleLength = true)().
         createResults(queryState).toList
 
     // then
     result should equal(List(Map("r" -> rel, "a" -> node1, "b" -> node2)))
+  }
+  test("projects endpoints of a directed, simple relationship with start in scope which doesn't match") {
+    // given
+
+    val rel = newMockedRelationship(12, node1, node2)
+    when(query.relationshipStartNode(rel)).thenReturn(node1)
+    when(query.relationshipEndNode(rel)).thenReturn(node2)
+
+    val left = newMockedPipe("r",
+      row("r" -> rel, "a" -> node2)
+    )
+
+    // when
+    val result =
+      ProjectEndpointsPipe(left, "r", "a", startInScope = true, "b", endInScope = false, None, directed = true, simpleLength = true)().
+        createResults(queryState).toList
+
+    // then
+    result should be(empty)
   }
 
   test("projects endpoints of a directed, simple relationship with type") {
@@ -77,11 +96,53 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      ProjectEndpointsPipe(left, "r", "a", "b", Some(LazyTypes(Seq("A"))), directed = true, simpleLength = true)().
+      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, Some(LazyTypes(Seq("A"))), directed = true, simpleLength = true)().
         createResults(queryState).toList
 
     // then
     result should equal(List(Map("r" -> rel1, "a" -> node1, "b" -> node2)))
+  }
+
+  test("projects endpoints of a directed, simple relationship with start in scope") {
+    // given
+
+    val rel = newMockedRelationship(12, node1, node2)
+    when(query.relationshipStartNode(rel)).thenReturn(node1)
+    when(query.relationshipEndNode(rel)).thenReturn(node2)
+
+    val left = newMockedPipe("r",
+      row("r" -> rel, "a" -> node1),
+      row("r" -> rel, "a" -> node3)
+    )
+
+    // when
+    val result =
+      ProjectEndpointsPipe(left, "r", "a", startInScope = true, "b", endInScope = false, None, directed = true, simpleLength = true)().
+        createResults(queryState).toList
+
+    // then
+    result should equal(List(Map("r" -> rel, "a" -> node1, "b" -> node2)))
+  }
+
+  test("projects endpoints of a directed, simple relationship with end in scope") {
+    // given
+
+    val rel = newMockedRelationship(12, node1, node2)
+    when(query.relationshipStartNode(rel)).thenReturn(node1)
+    when(query.relationshipEndNode(rel)).thenReturn(node2)
+
+    val left = newMockedPipe("r",
+      row("r" -> rel, "b" -> node2),
+      row("r" -> rel, "b" -> node3)
+    )
+
+    // when
+    val result =
+      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = true, None, directed = true, simpleLength = true)().
+        createResults(queryState).toList
+
+    // then
+    result should equal(List(Map("r" -> rel, "a" -> node1, "b" -> node2)))
   }
 
   test("projects endpoints of an undirected, simple relationship") {
@@ -97,7 +158,31 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      ProjectEndpointsPipe(left, "r", "a", "b", None, directed = false, simpleLength = true)().
+      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false,  None, directed = false, simpleLength = true)().
+        createResults(queryState).toList
+
+    // then
+    result should equal(List(
+      Map("r" -> rel, "a" -> node1, "b" -> node2),
+      Map("r" -> rel, "a" -> node2, "b" -> node1)
+    ))
+  }
+
+  test("projects endpoints of an undirected, simple relationship with start in scope") {
+    // given
+
+    val rel = newMockedRelationship(12, node1, node2)
+    when(query.relationshipStartNode(rel)).thenReturn(node1)
+    when(query.relationshipEndNode(rel)).thenReturn(node2)
+
+    val left = newMockedPipe("r",
+      row("r" -> rel, "a" -> node1),
+      row("r" -> rel, "a" -> node2)
+    )
+
+    // when
+    val result =
+      ProjectEndpointsPipe(left, "r", "a", startInScope = true, "b", endInScope = false, None, directed = false, simpleLength = true)().
         createResults(queryState).toList
 
     // then
@@ -124,7 +209,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      ProjectEndpointsPipe(left, "r", "a", "b", Some(LazyTypes(Seq("B"))), directed = false, simpleLength = true)().
+      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, Some(LazyTypes(Seq("B"))), directed = false, simpleLength = true)().
         createResults(queryState).toList
 
     // then
@@ -155,7 +240,37 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      ProjectEndpointsPipe(left, "r", "a", "b", None, directed = true, simpleLength = false)().
+      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, None, directed = true, simpleLength = false)().
+        createResults(queryState).toList
+
+    // then
+    result should equal(List(
+      Map("r" -> rels, "a" -> node1, "b" -> node4)
+    ))
+  }
+
+  test("projects endpoints of a directed, var length relationship with both start and end in scope") {
+    // given
+
+    val rel1 = newMockedRelationship(12, node1, node2)
+    val rel2 = newMockedRelationship(23, node2, node3)
+    val rel3 = newMockedRelationship(34, node3, node4)
+
+    when(query.relationshipStartNode(rel1)).thenReturn(node1)
+    when(query.relationshipEndNode(rel1)).thenReturn(node2)
+    when(query.relationshipStartNode(rel2)).thenReturn(node2)
+    when(query.relationshipEndNode(rel2)).thenReturn(node3)
+    when(query.relationshipStartNode(rel3)).thenReturn(node3)
+    when(query.relationshipEndNode(rel3)).thenReturn(node4)
+
+    val rels = Seq(rel1, rel2, rel3)
+    val left = newMockedPipe("r",
+      row("r" -> rels, "a" -> node1, "b" -> node4)
+    )
+
+    // when
+    val result =
+      ProjectEndpointsPipe(left, "r", "a", startInScope = true, "b", endInScope = true, None, directed = true, simpleLength = false)().
         createResults(queryState).toList
 
     // then
@@ -185,7 +300,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      ProjectEndpointsPipe(left, "r", "a", "b", Some(LazyTypes(Seq("A"))), directed = true, simpleLength = false)().
+      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, Some(LazyTypes(Seq("A"))), directed = true, simpleLength = false)().
         createResults(queryState).toList
 
     // then
@@ -215,7 +330,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      ProjectEndpointsPipe(left, "r", "a", "b", Some(LazyTypes(Seq("A"))), directed = true, simpleLength = false)().
+      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, Some(LazyTypes(Seq("A"))), directed = true, simpleLength = false)().
         createResults(queryState).toList
 
     // then
@@ -245,8 +360,72 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      ProjectEndpointsPipe(left, "r", "a", "b", None, directed = false, simpleLength = false)().
+      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, None, directed = false, simpleLength = false)().
       createResults(queryState).toList
+
+    // then
+    result should equal(List(
+      Map("r" -> rels, "a" -> node1, "b" -> node4),
+      Map("r" -> reversedRels, "a" -> node4, "b" -> node1)
+    ))
+  }
+
+  test("projects endpoints of an undirected, var length relationship with end in scope which doesn't match") {
+    // given
+
+    val rel1 = newMockedRelationship(12, node1, node2)
+    val rel2 = newMockedRelationship(23, node2, node3)
+    val rel3 = newMockedRelationship(34, node3, node4)
+
+    when(query.relationshipStartNode(rel1)).thenReturn(node1)
+    when(query.relationshipEndNode(rel1)).thenReturn(node2)
+    when(query.relationshipStartNode(rel2)).thenReturn(node2)
+    when(query.relationshipEndNode(rel2)).thenReturn(node3)
+    when(query.relationshipStartNode(rel3)).thenReturn(node3)
+    when(query.relationshipEndNode(rel3)).thenReturn(node4)
+
+    val rels = Seq(rel1, rel2, rel3)
+    val reversedRels = Seq(rel3, rel2, rel1)
+
+    val left = newMockedPipe("r",
+      row("r" -> rels, "b" -> node3)
+    )
+
+    // when
+    val result =
+      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = true, None, directed = false, simpleLength = false)().
+      createResults(queryState).toList
+
+    // then
+    result should be(empty)
+  }
+
+  test("projects endpoints of an undirected, var length relationship with end in scope") {
+    // given
+
+    val rel1 = newMockedRelationship(12, node1, node2)
+    val rel2 = newMockedRelationship(23, node2, node3)
+    val rel3 = newMockedRelationship(34, node3, node4)
+
+    when(query.relationshipStartNode(rel1)).thenReturn(node1)
+    when(query.relationshipEndNode(rel1)).thenReturn(node2)
+    when(query.relationshipStartNode(rel2)).thenReturn(node2)
+    when(query.relationshipEndNode(rel2)).thenReturn(node3)
+    when(query.relationshipStartNode(rel3)).thenReturn(node3)
+    when(query.relationshipEndNode(rel3)).thenReturn(node4)
+
+    val rels = Seq(rel1, rel2, rel3)
+    val reversedRels = Seq(rel3, rel2, rel1)
+
+    val left = newMockedPipe("r",
+      row("r" -> rels, "b" -> node1),
+      row("r" -> rels, "b" -> node4)
+    )
+
+    // when
+    val result =
+      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = true, None, directed = false, simpleLength = false)().
+        createResults(queryState).toList
 
     // then
     result should equal(List(
@@ -265,7 +444,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      ProjectEndpointsPipe(left, "r", "a", "b", None, directed = true, simpleLength = false)().
+      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, None, directed = true, simpleLength = false)().
         createResults(queryState).toList
 
     // then
@@ -282,7 +461,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      ProjectEndpointsPipe(left, "r", "a", "b", None, directed = false, simpleLength = false)().
+      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, None, directed = false, simpleLength = false)().
         createResults(queryState).toList
 
     // then

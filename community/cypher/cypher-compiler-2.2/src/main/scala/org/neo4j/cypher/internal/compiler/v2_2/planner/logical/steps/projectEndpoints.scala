@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_2.InputPosition.NONE
-import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer.planEndpointProjection
@@ -40,22 +38,11 @@ object projectEndpoints extends CandidateGenerator[PlanTable] {
 
   private def doPlan(plan: LogicalPlan, patternRel: PatternRelationship): LogicalPlan = {
     val (start, end) = patternRel.inOrder
-    val (projectedStart, optStartPredicate) = projectAndSelectIfNecessary(plan.availableSymbols, start)
-    val (projectedEnd, optEndPredicate) = projectAndSelectIfNecessary(plan.availableSymbols, end)
-    val predicates = Seq(optStartPredicate, optEndPredicate).flatten
-    planEndpointProjection(plan, projectedStart, projectedEnd, predicates, patternRel)
+    val isStartInScope = plan.availableSymbols(start)
+    val isEndInScope = plan.availableSymbols(end)
+    planEndpointProjection(plan, start, isStartInScope, end, isEndInScope, patternRel)
   }
 
-  private def projectAndSelectIfNecessary(inScope: Set[IdName], node: IdName): (IdName, Option[Expression]) =
-    if (inScope(node)) {
-      val projected = freshName(node)
-      (projected, Some(areEqual(node, projected)))
-    } else
-      (node, None)
-
-  private def areEqual(left: IdName, right: IdName) = Equals(Identifier(left.name)(NONE), Identifier(right.name)(NONE))(NONE)
-
-  private def freshName(idName: IdName) = IdName(idName.name + "$$$_")
 
   private def canProjectPatternRelationshipEndpoints(plan: LogicalPlan, patternRel: PatternRelationship) = {
     val inScope = plan.availableSymbols(patternRel.name)

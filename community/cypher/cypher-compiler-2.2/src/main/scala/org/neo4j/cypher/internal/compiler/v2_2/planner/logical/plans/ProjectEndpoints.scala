@@ -25,7 +25,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 case class ProjectEndpoints(left: LogicalPlan,
                             rel: IdName,
                             start: IdName,
+                            startInScope: Boolean,
                             end: IdName,
+                            endInScope: Boolean,
                             types: Option[Seq[RelTypeName]],
                             directed: Boolean,
                             length: PatternLength)
