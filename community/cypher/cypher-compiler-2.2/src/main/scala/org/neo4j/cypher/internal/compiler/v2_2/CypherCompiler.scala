@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CachedMetricsFac
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{Logger, PlanContext}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
-import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
 trait SemanticCheckMonitor {
@@ -71,7 +70,6 @@ object CypherCompilerFactory {
     val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
     val planner = new Planner(monitors, metricsFactory, planningMonitor, clock, acceptQuery = acceptor)
     val pipeBuilder = new LegacyVsNewPipeBuilder(new LegacyPipeBuilder(monitors), planner, planBuilderMonitor)
-    val executionMonitor = monitors.newMonitor[QueryExecutionMonitor](monitorTag)
     val execPlanBuilder = new ExecutionPlanBuilder(graph, statsDivergenceThreshold, queryPlanTTL, clock, pipeBuilder)
     val planCacheFactory = () => new LRUCache[PreparedQuery, ExecutionPlan](queryCacheSize)
     monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), monitorTag)
@@ -99,7 +97,6 @@ object CypherCompilerFactory {
     val rewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag))
     val pipeBuilder = new LegacyPipeBuilder(monitors)
 
-    val executionMonitor = monitors.newMonitor[QueryExecutionMonitor](monitorTag)
     val execPlanBuilder = new ExecutionPlanBuilder(graph, statsDivergenceThreshold, queryPlanTTL, clock, pipeBuilder)
     val planCacheFactory = () => new LRUCache[PreparedQuery, ExecutionPlan](queryCacheSize)
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
