@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer.planEndpointProjection
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CandidateGenerator, LogicalPlanningContext, PlanTable}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{PlanTransformer, CandidateGenerator, LogicalPlanningContext, PlanTable}
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 
 object projectEndpoints extends CandidateGenerator[PlanTable] with CollectionSupport {
@@ -35,13 +35,17 @@ object projectEndpoints extends CandidateGenerator[PlanTable] with CollectionSup
       patternRel <- queryGraph.patternRelationships
       if canProjectPatternRelationshipEndpoints(plan, patternRel)
     } yield {
-      val (start, end) = patternRel.inOrder
-      val (projectedStart, optStartPredicate) = projectAndSelectIfNecessary(plan.availableSymbols, start)
-      val (projectedEnd, optEndPredicate) = projectAndSelectIfNecessary(plan.availableSymbols, end)
-      val optRelPredicate = patternRel.types.asNonEmptyOption.map(hasType(patternRel.name))
-      val predicates = Seq(optStartPredicate, optEndPredicate, optRelPredicate).flatten
-      planEndpointProjection(plan, projectedStart, projectedEnd, predicates, patternRel)
+      doPlan(plan, patternRel)
     }
+  }
+
+  private def doPlan(plan: LogicalPlan, patternRel: PatternRelationship): LogicalPlan = {
+    val (start, end) = patternRel.inOrder
+    val (projectedStart, optStartPredicate) = projectAndSelectIfNecessary(plan.availableSymbols, start)
+    val (projectedEnd, optEndPredicate) = projectAndSelectIfNecessary(plan.availableSymbols, end)
+    val optRelPredicate = patternRel.types.asNonEmptyOption.map(hasType(patternRel.name))
+    val predicates = Seq(optStartPredicate, optEndPredicate, optRelPredicate).flatten
+    planEndpointProjection(plan, projectedStart, projectedEnd, predicates, patternRel)
   }
 
   private def projectAndSelectIfNecessary(inScope: Set[IdName], node: IdName): (IdName, Option[Expression]) =
@@ -67,6 +71,17 @@ object projectEndpoints extends CandidateGenerator[PlanTable] with CollectionSup
     val inScope = plan.availableSymbols(patternRel.name)
     val solved = plan.solved.graph.patternRelationships(patternRel)
     inScope && !solved
+  }
+
+  object all extends PlanTransformer[QueryGraph] {
+    override def apply(plan: LogicalPlan, qg: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan =
+      qg.patternRelationships.foldLeft(plan) { (accPlan, patternRel) =>
+        if (canProjectPatternRelationshipEndpoints(accPlan, patternRel)) {
+          doPlan(accPlan, patternRel)
+        } else {
+          accPlan
+        }
+      }
   }
 }
 

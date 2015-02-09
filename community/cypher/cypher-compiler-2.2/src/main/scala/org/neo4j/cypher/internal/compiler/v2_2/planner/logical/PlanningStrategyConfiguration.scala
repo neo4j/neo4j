@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps._
 
 case class PlanningStrategyConfiguration(
   leafPlanners: LeafPlannerList,
   applySelections: PlanTransformer[QueryGraph],
+  projectAllEndpoints: PlanTransformer[QueryGraph],
   pickBestCandidate: CandidateSelector
 )
 
@@ -32,6 +33,7 @@ object PlanningStrategyConfiguration {
   val default = PlanningStrategyConfiguration(
     pickBestCandidate = pickBestPlan,
     applySelections = selectPatternPredicates(selectCovered),
+    projectAllEndpoints = projectEndpoints.all,
     leafPlanners = LeafPlannerList(
       argumentLeafPlanner,
 

@@ -23,8 +23,21 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 
 case class LeafPlannerList(leafPlanners: LeafPlanner*) {
-  def candidates(qg: QueryGraph)(implicit context: LogicalPlanningContext): Iterable[Seq[LogicalPlan]] = {
-    val LogicalPlans = leafPlanners.flatMap(_(qg))
-    LogicalPlans.groupBy(_.availableSymbols).values
+  def candidates(qg: QueryGraph, f: (LogicalPlan, QueryGraph) => LogicalPlan)(implicit context: LogicalPlanningContext): Iterable[Seq[LogicalPlan]] = {
+    val logicalPlans = leafPlanners.flatMap(_(qg)).map(f(_,qg))
+
+    /*
+     * The filterNot here is needed since we introduce new variables (ending with '$$$_') when using projectEndPoints
+     * in order to  enforce equality with nodes already in scope.  The problem here is that if we do not filter out
+     * those '$$$_-variables' when grouping, plans which differ only for such '$$$_'-variables are not grouped together
+     * and so not compared by our pickBestPlan causing troubles when planning.  Particularly, we have seen better plan
+     * to be discarded due to the fact that they were not grouped together with plans containing extra '$$$_'-variables
+     * and so not properly compared with each other and worse later wrongly discarded since they were covering 'less'
+     * (no '$$$_'-variables) wrt the other plans.
+     *
+     * This is definitely a sub-optimal solution but needed until projectEndPoint is changed to not introduce such
+     * offending '$$$_'-variables.
+     */
+    logicalPlans.groupBy(_.availableSymbols.filterNot(_.name.endsWith("$$$_"))).values
   }
 }

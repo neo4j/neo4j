@@ -34,10 +34,11 @@ class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[PlanTable],
   import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.CandidateGenerator._
 
     val select = config.applySelections.asFunctionInContext
+    val projectAllEndpoints = config.projectAllEndpoints.asFunctionInContext
     val pickBest = config.pickBestCandidate.asFunctionInContext
 
     def generateLeafPlanTable(): PlanTable = {
-      val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph)
+      val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph, projectAllEndpoints)
       val leafPlanCandidateListsWithSelections = leafPlanCandidateLists.map(_.map(select(_, queryGraph)))
       val bestLeafPlans: Iterable[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(pickBest(_))
       val startTable: PlanTable = leafPlan.foldLeft(emptyPlanTable)(_ + _)

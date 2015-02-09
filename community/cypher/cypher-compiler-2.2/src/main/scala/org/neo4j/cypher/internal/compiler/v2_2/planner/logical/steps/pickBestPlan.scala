@@ -34,13 +34,15 @@ object pickBestPlan extends CandidateSelector {
       val sortedPlans = plans.sortBy(comparePlans)
 
       if (sortedPlans.size > 1) {
-        println("Get best of:")
+        println("- Get best of:")
         for (plan <- sortedPlans) {
-          println("* " + plan.toString + s"\n${costs(plan, context.cardinalityInput)}\n")
+          println(s"\t* ${plan.toString}")
+          println(s"\t\t${costs(plan, context.cardinalityInput)}")
         }
 
-        println("Best is:")
-        println(sortedPlans.head.toString)
+        println("- Best is:")
+        println(s"\t${sortedPlans.head.toString}")
+        println()
       }
 
       sortedPlans.headOption
