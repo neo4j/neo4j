@@ -22,7 +22,6 @@ package org.neo4j.server.rest.transactional;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 
 import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -80,20 +79,8 @@ public class TransactionFacade
         return new StatementDeserializer( input );
     }
 
-    public ExecutionResultSerializer serializer( OutputStream output, URI requestUri )
+    public ExecutionResultSerializer serializer( OutputStream output, URI baseUri )
     {
-        return new ExecutionResultSerializer( output, baseUri( requestUri ), log );
-    }
-
-    private URI baseUri( URI requestUri )
-    {
-        try
-        {
-            return new URI( requestUri + "db/data" );
-        }
-        catch ( URISyntaxException e )
-        {
-            throw new RuntimeException( e );
-        }
+        return new ExecutionResultSerializer( output, baseUri, log );
     }
 }
