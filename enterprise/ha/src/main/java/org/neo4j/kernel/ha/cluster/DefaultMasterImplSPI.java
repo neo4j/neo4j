@@ -53,7 +53,6 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.monitoring.StoreCopyMonitor;
 
 class DefaultMasterImplSPI implements MasterImpl.SPI
 {
