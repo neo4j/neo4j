@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planDescription
 
+import java.util.Locale
+
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.commands._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Identifier, LengthFunction}
@@ -26,8 +28,20 @@ import org.neo4j.cypher.internal.compiler.v2_2.commands.values.{KeyToken, TokenT
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.graphdb.Direction
+import org.scalatest.BeforeAndAfterAll
 
-class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
+class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfterAll {
+
+  private val defaultLocale = Locale.getDefault
+  override def beforeAll() {
+    //we change locale so we don't need to bother
+    //with number format and such here
+    Locale.setDefault(Locale.US)
+  }
+
+  override def afterAll() = {
+    Locale.setDefault(defaultLocale)
+  }
 
   val pipe = SingleRowPipe()(mock[PipeMonitor])
 
