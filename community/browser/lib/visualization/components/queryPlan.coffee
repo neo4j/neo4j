@@ -247,7 +247,7 @@ neo.queryPlan = (element)->
         data: links,
         selections: (enter) ->
           enter.append('g')
-          .attr('class', 'link')
+          .attr('class', 'link layer')
         children:
 
           'path':
@@ -319,7 +319,7 @@ neo.queryPlan = (element)->
         selections: (enter, update) ->
           enter
           .append('g')
-          .attr('class', 'operator')
+          .attr('class', 'operator layer')
 
           update
           .transition()

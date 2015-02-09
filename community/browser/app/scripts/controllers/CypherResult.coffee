@@ -105,12 +105,18 @@ angular.module('neo4jApp.controllers')
     # and forward them down to the child controller that has access to
     # the required SVG elements.
     $scope.$on('frame.export.graph.svg', ->
-      console.log 'frame.export.graph.svg'
       $scope.$broadcast('export.graph.svg')
     )
 
     $scope.$on('frame.export.plan.svg', ->
-      console.log 'frame.export.plan.svg'
       $scope.$broadcast('export.plan.svg')
+    )
+
+    $scope.$on('frame.export.graph.png', ->
+      $scope.$broadcast('export.graph.png')
+    )
+
+    $scope.$on('frame.export.plan.png', ->
+      $scope.$broadcast('export.plan.png')
     )
   ]

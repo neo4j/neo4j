@@ -23,14 +23,43 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 angular.module('neo.exportable', ['neo.csv'])
   .service('exportService', [
     '$window'
-    ($window) ->
+    'Canvg'
+    'Utils'
+    ($window, Canvg, Utils) ->
       download: (filename, mime, data) ->
         if !!navigator.userAgent.match(/Version\/[\d\.]+.*Safari/)
           # Safari doesn't support window.saveAs(); just open in a new window instead
-          $window.open("data:#{mime};base64," + btoa(unescape(encodeURIComponent(data))))
+          if typeof(data) == 'object'
+            data = Utils.ua2text data
+          else
+            data = unescape(encodeURIComponent(data))
+          $window.open("data:#{mime};base64," + btoa(data))
           return true
         blob = new Blob([data], {type: mime})
         $window.saveAs(blob, filename)
+
+      downloadWithDataURI: (filename, dataURI) ->
+        byteString = null
+        if dataURI.split(',')[0].indexOf('base64') >= 0
+            byteString = atob(dataURI.split(',')[1])
+        else
+            byteString = unescape(dataURI.split(',')[1])
+        mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0]
+
+        ia = new Uint8Array(byteString.length)
+        for i in [0..byteString.length]
+            ia[i] = byteString.charCodeAt(i)
+        @download filename, mimeString, ia
+
+      downloadPNGFromSVG: (svgObj, filename) ->
+        svgData = new XMLSerializer().serializeToString(svgObj.node())
+        canvas = document.createElement("canvas")
+        canvas.width = svgObj.attr('width')
+        canvas.height = svgObj.attr('height')
+        Canvg(canvas, svgData)
+        png = canvas.toDataURL("image/png")
+        @downloadWithDataURI("#{filename}.png", png)
+
   ])
   .directive('exportable', [->
     restrict: 'A'
@@ -46,6 +75,14 @@ angular.module('neo.exportable', ['neo.csv'])
 
         $scope.exportPlanSVG = ->
           $scope.$emit('frame.export.plan.svg')
+          true
+
+        $scope.exportGraphPNG = ->
+          $scope.$emit('frame.export.graph.png')
+          true
+
+        $scope.exportPlanPNG = ->
+          $scope.$emit('frame.export.plan.png')
           true
 
         $scope.exportJSON = (data) ->

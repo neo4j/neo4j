@@ -21,12 +21,37 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 'use strict';
 angular.module('neo4jApp.directives')
   .directive('neoGraph', [
-    ()->
-      require: 'ngController'
-      restrict: 'A'
-      link: (scope, elm, attr, ngCtrl) ->
+    'exportService'
+    'SVGUtils'
+    (exportService, SVGUtils)->
+      dir =
+        require: 'ngController'
+        restrict: 'A'
+      dir.link = (scope, elm, attr, ngCtrl) ->
         unbind = scope.$watch attr.graphData, (graph) ->
           return unless graph
           ngCtrl.render(graph)
+
+          scope.$on('export.graph.svg', ->
+            svg = SVGUtils.prepareForExport elm, dir.getDimensions(ngCtrl.getGraphView())
+            exportService.download('graph.svg', 'image/svg+xml', new XMLSerializer().serializeToString(svg.node()))
+            svg.remove()
+          )
+          scope.$on('export.graph.png', ->
+            svg = SVGUtils.prepareForExport elm, dir.getDimensions(ngCtrl.getGraphView())
+            exportService.downloadPNGFromSVG(svg, 'graph')
+            svg.remove()
+          )
+
           unbind()
+
+      dir.getDimensions = (view) ->
+        boundingBox = view.boundingBox()
+        dimensions =
+          width: boundingBox.width
+          height: boundingBox.height
+          viewBox: [boundingBox.x, boundingBox.y, boundingBox.width, boundingBox.height].join(' ')
+        dimensions
+
+      dir
   ])

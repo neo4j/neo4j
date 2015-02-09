@@ -32,10 +32,10 @@ angular.module('neo4jApp.controllers')
     'CircularLayout'
     'GraphExplorer'
     'GraphStyle'
-    'CypherGraphModel',
-    'exportService'
-    ($attrs, $element, $parse, $window, $rootScope, $scope, $interval, CircularLayout, GraphExplorer, GraphStyle, CypherGraphModel, exportService) ->
+    'CypherGraphModel'
+    ($attrs, $element, $parse, $window, $rootScope, $scope, $interval, CircularLayout, GraphExplorer, GraphStyle, CypherGraphModel) ->
       graphView = null
+      @getGraphView = -> return graphView
 
       measureSize = ->
         width: $element.width()
@@ -68,25 +68,6 @@ angular.module('neo4jApp.controllers')
         selectItem(selectedItem)
 
       $rootScope.$on 'layout.changed', (-> graphView?.resize())
-
-      $scope.$on('export.graph.svg', ->
-        svg = d3.select(document.createElementNS('http://www.w3.org/2000/svg', 'svg'))
-        svg.append('title').text('Neo4j Graph Visualization')
-        svg.append('desc').text('Created using Neo4j (http://www.neo4j.com/)')
-        d3.select($element.get(0)).selectAll('g.layer').each(->
-          svg.node().appendChild($(this).clone().get(0))
-        )
-        svg.selectAll('.overlay, .ring').remove()
-        svg.selectAll('text').attr('font-family', 'sans-serif')
-
-        boundingBox = graphView.boundingBox()
-        svg.attr('width', boundingBox.width)
-        svg.attr('height', boundingBox.height)
-        svg.attr('viewBox', [boundingBox.x, boundingBox.y, boundingBox.width, boundingBox.height].join(' '))
-
-        exportService.download('graph.svg', 'image/svg+xml', new XMLSerializer().serializeToString(svg.node()))
-        svg.remove()
-      )
 
       @render = (initialGraph) ->
         graph = initialGraph
