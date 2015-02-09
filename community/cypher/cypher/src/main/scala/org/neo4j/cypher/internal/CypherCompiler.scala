@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compatibility._
-import org.neo4j.cypher.internal.compiler.v2_2.{Rule, Cost, Conservative, PlannerName}
+import org.neo4j.cypher.internal.compiler.v2_2.spi.Logger
+import org.neo4j.cypher.internal.compiler.v2_2.{Conservative, Cost, PlannerName, Rule}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.InternalAbstractGraphDatabase
 import org.neo4j.kernel.api.KernelAPI
-import org.neo4j.kernel.impl.util.StringLogger
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
 object CypherCompiler {
@@ -47,8 +47,8 @@ class CypherCompiler(graph: GraphDatabaseService,
                      defaultVersion: CypherVersion,
                      defaultPlanner: PlannerName,
                      optionParser: CypherOptionParser,
-                     logger: StringLogger) {
-  import CypherCompiler._
+                     logger: Logger) {
+  import org.neo4j.cypher.internal.CypherCompiler._
 
   private val queryCacheSize: Int = getQueryCacheSize
   private val queryPlanTTL: Long = getQueryPlanTTL

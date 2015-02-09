@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher
 
+import org.mockito.Mockito.{atLeastOnce, verify}
+import org.neo4j.cypher.internal.compiler.v2_2.spi.Logger
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api
-import org.neo4j.kernel.impl.util.TestLogger
-import org.neo4j.kernel.impl.util.TestLogger.LogCall
 
 import scala.collection.Map
 
@@ -111,7 +111,7 @@ class CypherCompilerStringCacheMonitoringAcceptanceTest extends ExecutionEngineF
 
   test("should log on cache evictions") {
     // given
-    val logger: TestLogger = new TestLogger()
+    val logger = mock[Logger]
     val engine = new ExecutionEngine(graph, logger)
     val counter = new CacheCounter()
     kernelMonitors.addMonitorListener(counter)
@@ -126,7 +126,7 @@ class CypherCompilerStringCacheMonitoringAcceptanceTest extends ExecutionEngineF
     engine.execute(query).toList
 
     // then
-    logger.assertAtLeastOnce(LogCall.info(s"Discarded stale query from the query cache: $query"))
+    verify(logger, atLeastOnce()).info(s"Discarded stale query from the query cache: $query")
   }
 }
 

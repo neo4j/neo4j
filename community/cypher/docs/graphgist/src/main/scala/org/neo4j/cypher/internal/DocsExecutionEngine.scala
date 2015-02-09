@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.{ ExecutionEngine, ExtendedExecutionResult, SyntaxException }
+import org.neo4j.cypher.internal.compiler.v2_2.spi.{DevNullLogger, Logger}
+import org.neo4j.cypher.{ExecutionEngine, ExtendedExecutionResult, SyntaxException}
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.kernel.impl.util.StringLogger
-import org.neo4j.kernel.impl.query.QueryExecutionMonitor
-import org.neo4j.kernel.impl.query.QuerySession
+import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
 
-class DocsExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL)
+class DocsExecutionEngine(graph: GraphDatabaseService, logger: Logger = DevNullLogger.instance)
   (implicit monitor: QueryExecutionMonitor, session: QuerySession)
   extends ExecutionEngine(graph, logger) {
 
