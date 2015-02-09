@@ -24,10 +24,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer.planEndpointProjection
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{PlanTransformer, CandidateGenerator, LogicalPlanningContext, PlanTable}
-import org.neo4j.cypher.internal.helpers.CollectionSupport
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CandidateGenerator, LogicalPlanningContext, PlanTable, PlanTransformer}
 
-object projectEndpoints extends CandidateGenerator[PlanTable] with CollectionSupport {
+object projectEndpoints extends CandidateGenerator[PlanTable] {
 
   def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
     for {
@@ -43,8 +42,7 @@ object projectEndpoints extends CandidateGenerator[PlanTable] with CollectionSup
     val (start, end) = patternRel.inOrder
     val (projectedStart, optStartPredicate) = projectAndSelectIfNecessary(plan.availableSymbols, start)
     val (projectedEnd, optEndPredicate) = projectAndSelectIfNecessary(plan.availableSymbols, end)
-    val optRelPredicate = patternRel.types.asNonEmptyOption.map(hasType(patternRel.name))
-    val predicates = Seq(optStartPredicate, optEndPredicate, optRelPredicate).flatten
+    val predicates = Seq(optStartPredicate, optEndPredicate).flatten
     planEndpointProjection(plan, projectedStart, projectedEnd, predicates, patternRel)
   }
 
@@ -54,14 +52,6 @@ object projectEndpoints extends CandidateGenerator[PlanTable] with CollectionSup
       (projected, Some(areEqual(node, projected)))
     } else
       (node, None)
-
-
-  private def hasType(rel: IdName)(relTypeNames: Seq[RelTypeName]): Expression = {
-    In(
-      FunctionInvocation(FunctionName("type")(NONE), Identifier(rel.name)(NONE))(NONE),
-      Collection(relTypeNames.map(relType => StringLiteral(relType.name)(relType.position)))(NONE)
-    )(NONE)
-  }
 
   private def areEqual(left: IdName, right: IdName) = Equals(Identifier(left.name)(NONE), Identifier(right.name)(NONE))(NONE)
 

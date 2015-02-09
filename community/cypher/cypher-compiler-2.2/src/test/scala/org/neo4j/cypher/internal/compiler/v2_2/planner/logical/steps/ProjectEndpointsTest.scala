@@ -59,9 +59,7 @@ class ProjectEndpointsTest
     val qg = QueryGraph.empty.addPatternRel(patternRel)
 
     projectEndpoints(planTable, qg) should equal(Seq(
-      planEndpointProjection(
-        inputPlan, aName, bName,
-        Seq(In(FunctionInvocation(FunctionName("type")_, Identifier("r")_)_, Collection(Seq(StringLiteral("X")_))_)_), patternRel)
+      planEndpointProjection(inputPlan, aName, bName, Seq(), patternRel)
     ))
   }
 

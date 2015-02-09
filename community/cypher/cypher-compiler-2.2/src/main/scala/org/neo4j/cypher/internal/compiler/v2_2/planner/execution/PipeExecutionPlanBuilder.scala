@@ -60,8 +60,8 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
         case Projection(left, expressions) =>
           ProjectionNewPipe(buildPipe(left, input), Eagerly.immutableMapValues(expressions, buildExpression))()
 
-        case ProjectEndpoints(left, rel, start, end, directed, length) =>
-          ProjectEndpointsPipe(buildPipe(left, input), rel.name, start.name, end.name, directed, length.isSimple)()
+        case ProjectEndpoints(left, rel, start, end, types, directed, length) =>
+          ProjectEndpointsPipe(buildPipe(left, input), rel.name, start.name, end.name, types.map(LazyTypes.apply), directed, length.isSimple)()
 
         case sr @ SingleRow() =>
           SingleRowPipe()
