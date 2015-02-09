@@ -19,36 +19,66 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.junit.Rule;
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.Writer;
+import java.io.IOException;
+import java.nio.file.CopyOption;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.spi.FileSystemProvider;
+import java.util.Arrays;
+import java.util.Collection;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+import org.neo4j.graphdb.mockfs.DelegatingFileSystem;
+import org.neo4j.graphdb.mockfs.DelegatingFileSystemProvider;
+import org.neo4j.kernel.impl.util.Charsets;
 import org.neo4j.kernel.impl.util.TestLogging;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
-import org.neo4j.test.EphemeralFileSystemRule;
 
 import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.error;
 import static org.neo4j.kernel.logging.DevNullLoggingService.DEV_NULL;
 
+@RunWith(Parameterized.class)
 public class FileUserRepositoryTest
 {
-    public @Rule EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private final FileSystem fs;
+    private Path authFile;
+
+    @Parameters(name = "{1} filesystem")
+    public static Collection<Object[]> data()
+    {
+        return Arrays.asList( new Object[][]{
+                        {Configuration.unix(), "unix"},
+                        {Configuration.osX(), "osX"},
+                        {Configuration.windows(), "windows"}}
+        );
+    }
+
+    public FileUserRepositoryTest( Configuration fsConfig, String fsType )
+    {
+        fs = Jimfs.newFileSystem( fsConfig );
+        authFile = fs.getPath( "dbms", "auth.db" );
+    }
 
     @Test
     public void shouldStoreAndRetriveUsersByName() throws Exception
     {
         // Given
-        FileUserRepository users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ), DEV_NULL );
+        FileUserRepository users = new FileUserRepository( authFile, DEV_NULL );
         User user = new User( "jake", Credential.INACCESSIBLE, true );
         users.create( user );
 
@@ -56,18 +86,18 @@ public class FileUserRepositoryTest
         User result = users.findByName( user.name() );
 
         // Then
-        assertThat(result, equalTo(user));
+        assertThat( result, equalTo( user ) );
     }
 
     @Test
     public void shouldPersistUsers() throws Throwable
     {
         // Given
-        FileUserRepository users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ), DEV_NULL );
+        FileUserRepository users = new FileUserRepository( authFile, DEV_NULL );
         User user = new User( "jake", Credential.INACCESSIBLE, true );
         users.create( user );
 
-        users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ), DEV_NULL );
+        users = new FileUserRepository( authFile, DEV_NULL );
         users.start();
 
         // When
@@ -81,7 +111,7 @@ public class FileUserRepositoryTest
     public void shouldNotFindUserAfterDelete() throws Throwable
     {
         // Given
-        FileUserRepository users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ), DEV_NULL );
+        FileUserRepository users = new FileUserRepository( authFile, DEV_NULL );
         User user = new User( "jake", Credential.INACCESSIBLE, true );
         users.create( user );
 
@@ -96,7 +126,7 @@ public class FileUserRepositoryTest
     public void shouldNotAllowComplexNames() throws Exception
     {
         // Given
-        FileUserRepository users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ), DEV_NULL );
+        FileUserRepository users = new FileUserRepository( authFile, DEV_NULL );
 
         // When
         assertTrue( users.isValidName( "neo4j" ) );
@@ -110,33 +140,56 @@ public class FileUserRepositoryTest
     }
 
     @Test
-    public void shouldRecoverIfCrashedDuringWrite() throws Throwable
+    public void shouldRecoverIfCrashedDuringMove() throws Throwable
     {
         // Given
-        File dbFile = new File( "dbms/auth.db" );
-        FileUserRepository users = new FileUserRepository( fsRule.get(), dbFile, DEV_NULL );
-        User user = new User( "jake", Credential.INACCESSIBLE, true );
-        users.create( user );
+        final IOException exception = new IOException( "simulated IO Exception on create" );
+        FileSystem moveFailingFileSystem = new DelegatingFileSystem( fs )
+        {
+            @Override
+            protected DelegatingFileSystemProvider createDelegate( FileSystemProvider provider )
+            {
+                return new WrappedProvider( provider, this )
+                {
+                    @Override
+                    public void move( Path source, Path target, CopyOption... options ) throws IOException
+                    {
+                        if ( authFile.getFileName().toString().equals( target.getFileName().toString() ) )
+                        {
+                            throw exception;
+                        }
+                        super.move( source, target, options );
+                    }
+                };
+            }
+        };
 
-        // And given we emulate having crashed when writing
-        File tempFile = new File( dbFile.getAbsolutePath() + ".tmp" );
-        fsRule.get().renameFile( dbFile, tempFile );
+        Path authFile = moveFailingFileSystem.getPath( "dbms", "auth.db" );
+
+        FileUserRepository users = new FileUserRepository( authFile, DEV_NULL );
+        users.start();
+        User user = new User( "jake", Credential.INACCESSIBLE, true );
 
         // When
-        users = new FileUserRepository( fsRule.get(), dbFile, DEV_NULL );
-        users.start();
+        try
+        {
+            users.create( user );
+            fail( "Expected an IOException" );
+        } catch ( IOException e )
+        {
+            assertSame( exception, e );
+        }
 
         // Then
-        assertFalse(fsRule.get().fileExists( tempFile ));
-        assertTrue(fsRule.get().fileExists( dbFile ));
-        assertThat( users.findByName( user.name() ), equalTo(user));
+        assertFalse( Files.exists( authFile ) );
+        assertFalse( Files.newDirectoryStream( authFile.getParent() ).iterator().hasNext() );
     }
 
     @Test
     public void shouldThrowIfUpdateChangesName() throws Throwable
     {
         // Given
-        FileUserRepository users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ), DEV_NULL );
+        FileUserRepository users = new FileUserRepository( authFile, DEV_NULL );
         User user = new User( "jake", Credential.INACCESSIBLE, true );
         users.create( user );
 
@@ -158,7 +211,7 @@ public class FileUserRepositoryTest
     public void shouldThrowIfExistingUserDoesNotMatch() throws Throwable
     {
         // Given
-        FileUserRepository users = new FileUserRepository( fsRule.get(), new File( "dbms/auth.db" ), DEV_NULL );
+        FileUserRepository users = new FileUserRepository( authFile, DEV_NULL );
         User user = new User( "jake", Credential.INACCESSIBLE, true );
         users.create( user );
         User modifiedUser = new User( "jake", Credential.forPassword( "foo" ), false );
@@ -179,21 +232,18 @@ public class FileUserRepositoryTest
     public void shouldIgnoreInvalidEntries() throws Throwable
     {
         // Given
-        FileSystemAbstraction fs = fsRule.get();
-        File authFile = new File( "auth.db" );
         TestLogging testLogging = new TestLogging();
-
-        Writer writer = fs.openAsWriter( authFile, "UTF-8", false );
-        writer.write( "neo4j:fc4c600b43ffe4d5857b4439c35df88f:SHA-256,A42E541F276CF17036DB7818F8B09B1C229AAD52A17F69F4029617F3A554640F,FB7E8AE08A6A7C741F678AD22217808F:" );
-        writer.close();
+        Files.createDirectories( authFile.getParent() );
+        Files.write( authFile,
+                "neo4j:fc4c600b43ffe4d5857b4439c35df88f:SHA-256,A42E541F276CF17036DB7818F8B09B1C229AAD52A17F69F4029617F3A554640F,FB7E8AE08A6A7C741F678AD22217808F:\n".getBytes( Charsets.UTF_8 ) );
 
         // When
-        FileUserRepository users = new FileUserRepository( fs, authFile, testLogging );
+        FileUserRepository users = new FileUserRepository( authFile, testLogging );
         users.start();
 
         // Then
         assertThat( users.numberOfUsers(), equalTo( 0 ) );
         testLogging.getMessagesLog( FileUserRepository.class ).assertExactly(
-                error( format( "Ignoring authorization file \"%s\" (wrong number of line fields [line 1])", authFile.getAbsolutePath() ) ) );
+                error( format( "Ignoring authorization file \"%s\" (wrong number of line fields [line 1])", authFile.toAbsolutePath() ) ) );
     }
 }

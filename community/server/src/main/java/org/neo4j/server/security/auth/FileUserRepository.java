@@ -19,16 +19,14 @@
  */
 package org.neo4j.server.security.auth;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
@@ -36,6 +34,8 @@ import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 import org.neo4j.server.security.auth.exception.IllegalUsernameException;
 
 import static java.lang.String.format;
+import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 /**
  * Stores user auth data. In memory, but backed by persistent storage so changes to this repository will survive
@@ -43,14 +43,7 @@ import static java.lang.String.format;
  */
 public class FileUserRepository extends LifecycleAdapter implements UserRepository
 {
-    private final FileSystemAbstraction fs;
-    private final File dbFile;
-
-    /**
-     * Used while writing to the dbfile, the whole file is first written to this file, so that we can recover
-     * if we crash.
-     */
-    private final File tempFile;
+    private final Path authFile;
 
     /** Quick lookup of users by name */
     private final Map<String, User> usersByName = new ConcurrentHashMap<>();
@@ -61,11 +54,9 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
 
     private final UserSerialization serialization = new UserSerialization();
 
-    public FileUserRepository( FileSystemAbstraction fs, File file, Logging logging )
+    public FileUserRepository( Path file, Logging logging )
     {
-        this.fs = fs;
-        this.dbFile = file;
-        this.tempFile = new File(file.getAbsolutePath() + ".tmp");
+        this.authFile = file.toAbsolutePath();
         this.log = logging.getMessagesLog( getClass() );
     }
 
@@ -78,15 +69,9 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
     @Override
     public void start() throws Throwable
     {
-        if(fs.fileExists( dbFile ))
+        if ( Files.exists( authFile ) )
         {
-            loadUsersFromFile(dbFile);
-        }
-        else if(fs.fileExists( tempFile ))
-        {
-            fs.renameFile( tempFile, dbFile );
-            loadUsersFromFile( dbFile );
-            fs.deleteFile( tempFile );
+            loadUsersFromFile();
         }
     }
 
@@ -111,7 +96,7 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
 
             users.add( user );
 
-            commitToDisk();
+            saveUsersToFile();
 
             usersByName.put( user.name(), user );
         }
@@ -150,7 +135,7 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
 
             users = newUsers;
 
-            commitToDisk();
+            saveUsersToFile();
 
             usersByName.put( updatedUser.name(), updatedUser );
         }
@@ -179,7 +164,7 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
             {
                 users = newUsers;
 
-                commitToDisk();
+                saveUsersToFile();
 
                 usersByName.remove( user.name() );
             }
@@ -199,61 +184,45 @@ public class FileUserRepository extends LifecycleAdapter implements UserReposito
         return name.matches( "^[a-zA-Z0-9_]+$" );
     }
 
-    /* Assumes synchronization elsewhere */
-    private void commitToDisk() throws IOException
+    private void saveUsersToFile() throws IOException
     {
-        writeUsersToFile( tempFile );
-        writeUsersToFile( dbFile );
-        fs.deleteFile( tempFile );
-    }
+        Path directory = authFile.getParent();
+        Files.createDirectories( directory );
 
-    private void writeUsersToFile( File fileToWriteTo ) throws IOException
-    {
-        if(!fs.fileExists( fileToWriteTo.getParentFile() ))
+        Path tempFile = Files.createTempFile( directory, authFile.getFileName().toString() + "-", ".tmp" );
+        try
         {
-            fs.mkdirs( fileToWriteTo.getParentFile() );
-        }
-        if(fs.fileExists( fileToWriteTo ))
+            Files.write( tempFile, serialization.serialize( users ) );
+            Files.move( tempFile, authFile, ATOMIC_MOVE, REPLACE_EXISTING );
+        } catch ( Throwable e )
         {
-            fs.deleteFile( fileToWriteTo );
-        }
-        try(OutputStream out = fs.openAsOutputStream( fileToWriteTo, false ))
-        {
-            out.write( serialization.serialize( users ) );
-            out.flush();
+            Files.delete( tempFile );
+            throw e;
         }
     }
 
-    private void loadUsersFromFile( File fileToLoadFrom ) throws IOException
+    private void loadUsersFromFile() throws IOException
     {
-        if(fs.fileExists( fileToLoadFrom ))
+        byte[] fileBytes = Files.readAllBytes( authFile );
+        List<User> loadedUsers;
+        try
         {
-            List<User> loadedUsers;
-            try(InputStream in = fs.openAsInputStream( fileToLoadFrom ))
-            {
-                byte[] bytes = new byte[(int)fs.getFileSize( fileToLoadFrom )];
-                int offset = 0;
-                while(offset < bytes.length)
-                {
-                    int read = in.read( bytes, offset, bytes.length - offset );
-                    if(read == -1) break;
-                    offset += read;
-                }
+            loadedUsers = serialization.deserializeUsers( fileBytes );
+        } catch ( UserSerialization.FormatException e )
+        {
+            log.error( format( "Ignoring authorization file \"%s\" (%s)", authFile.toAbsolutePath(), e.getMessage() ) );
+            loadedUsers = new ArrayList<>();
+        }
 
-                loadedUsers = serialization.deserializeUsers( bytes );
-            } catch ( UserSerialization.FormatException e )
-            {
-                log.error( format( "Ignoring authorization file \"%s\" (%s)", fileToLoadFrom.getAbsolutePath(), e.getMessage() ) );
-                loadedUsers = new ArrayList<>();
-            }
+        if ( loadedUsers == null )
+        {
+            throw new IllegalStateException( "Failed to read authentication file: " + authFile );
+        }
 
-            users = loadedUsers;
-
-            usersByName.clear();
-            for ( User user : users )
-            {
-                usersByName.put( user.name(), user );
-            }
+        users = loadedUsers;
+        for ( User user : users )
+        {
+            usersByName.put( user.name(), user );
         }
     }
 }
