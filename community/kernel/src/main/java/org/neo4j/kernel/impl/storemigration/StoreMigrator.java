@@ -45,7 +45,6 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.core.Token;
-import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NeoStore.Position;
@@ -152,9 +151,7 @@ public class StoreMigrator implements StoreMigrationParticipant
     @Override
     public boolean needsMigration( File storeDir ) throws IOException
     {
-        NeoStoreUtil neoStoreUtil = new NeoStoreUtil( storeDir, fileSystem );
-        String versionAsString = NeoStore.versionLongToString( neoStoreUtil.getStoreVersion() );
-        boolean sameVersion = CommonAbstractStore.ALL_STORES_VERSION.equals( versionAsString );
+        boolean sameVersion = upgradableDatabase.hasCurrentVersion( fileSystem, storeDir );
         if ( !sameVersion )
         {
             upgradableDatabase.checkUpgradeable( storeDir );
@@ -170,7 +167,7 @@ public class StoreMigrator implements StoreMigrationParticipant
      * {@link StoreMigrationParticipant#migrate(java.io.File, java.io.File, org.neo4j.kernel.api.index.SchemaIndexProvider, org.neo4j.io.pagecache.PageCache)}
      * hasn't been run.
      */
-    private String versionToUpgradeFrom( FileSystemAbstraction fileSystem, File storeDir )
+    private String versionToUpgradeFrom( File storeDir )
     {
         if ( versionToUpgradeFrom == null )
         {
@@ -192,7 +189,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         // Write the tx checksum to file in migrationDir, because we need it later when moving files into storeDir
         writeLastTxChecksum( migrationDir, lastTxChecksum );
 
-        if ( versionToUpgradeFrom( fileSystem, storeDir ).equals( Legacy21Store.LEGACY_VERSION ) )
+        if ( versionToUpgradeFrom( storeDir ).equals( Legacy21Store.LEGACY_VERSION ) )
         {
             // create counters from scratch
             final LifeSupport life = new LifeSupport();
@@ -335,7 +332,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         prepareBatchImportMigration( storeDir, migrationDir );
 
         LegacyStore legacyStore;
-        switch ( versionToUpgradeFrom )
+        switch ( versionToUpgradeFrom( storeDir ) )
         {
             case Legacy19Store.LEGACY_VERSION:
                 legacyStore = new Legacy19Store( fileSystem, new File( storeDir, NeoStore.DEFAULT_NAME ) );
@@ -344,7 +341,7 @@ public class StoreMigrator implements StoreMigrationParticipant
                 legacyStore = new Legacy20Store( fileSystem, new File( storeDir, NeoStore.DEFAULT_NAME ) );
                 break;
             default:
-                throw new IllegalStateException( "Unknown version to upgrade from: " + versionToUpgradeFrom );
+                throw new IllegalStateException( "Unknown version to upgrade from: " + versionToUpgradeFrom( storeDir ) );
         }
 
         BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsolutePath(), fileSystem,
@@ -639,7 +636,7 @@ public class StoreMigrator implements StoreMigrationParticipant
 
         Iterable<StoreFile> filesToMove;
         StoreFile[] idFilesToDelete;
-        switch ( versionToUpgradeFrom( fileSystem, storeDir ) )
+        switch ( versionToUpgradeFrom( storeDir ) )
         {
             case Legacy19Store.LEGACY_VERSION:
                 filesToMove = Arrays.asList(
@@ -682,7 +679,7 @@ public class StoreMigrator implements StoreMigrationParticipant
                 idFilesToDelete = new StoreFile[]{};
                 break;
             default:
-                throw new IllegalStateException( "Unknown version to upgrade from: " + versionToUpgradeFrom );
+                throw new IllegalStateException( "Unknown version to upgrade from: " + versionToUpgradeFrom( storeDir ) );
         }
 
         StoreFile.fileOperation( DELETE, fileSystem, migrationDir, null,

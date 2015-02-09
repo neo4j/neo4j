@@ -165,8 +165,6 @@ public class ParallelBatchImporter implements BatchImporter
             // Switch to reverse updating mode and release references that are no longer used so they can be collected
             writerFactory.awaitEverythingWritten();
             neoStore.switchToUpdateMode();
-            idMapper = null;
-            idGenerator = null;
 
             // Remaining node processors
             nodeLabelsCache = new NodeLabelsCache( AUTO, neoStore.getLabelRepository().getHighId() );
@@ -184,14 +182,14 @@ public class ParallelBatchImporter implements BatchImporter
 
             // Determine if we have enough available memory to be able to execute all remaining processors
             // in parallel.
-            if ( enoughAvailableMemoryForRemainingProcessors( nodeRelationshipLink ) )
+            if ( disableParallelizationSinceItCausesWrongCountsComputations() && enoughAvailableMemoryForRemainingProcessors( nodeRelationshipLink ) )
             {
                 // Stages 4, 5, 6 and 7
-                executeStages( new NodeStoreProcessorStage( "Node --> Relationship + counts", config,
+                executeStages( new NodeStoreProcessorStage( "Node --> Relationship + Node counts", config,
                         neoStore.getNodeStore(), new StoreProcessor.Multiple<>(
                                 nodeFirstRelationshipProcessor, nodeCountsProcessor ) ) );
                 nodeRelationshipLink.clearRelationships();
-                executeStages( new RelationshipStoreProcessorStage( "Relationship --> Relationship + counts", config,
+                executeStages( new RelationshipStoreProcessorStage( "Relationship --> Relationship + Relationship counts", config,
                         neoStore.getRelationshipStore(), new StoreProcessor.Multiple<>(
                                 relationshipLinkerProcessor, relationshipCountsProcessor ) ) );
             }
@@ -210,10 +208,10 @@ public class ParallelBatchImporter implements BatchImporter
                 nodeRelationshipLink = null;
 
                 // Stage 6 -- count nodes per label and labels per node
-                executeStages( new NodeStoreProcessorStage( "Node --> Relationship", config,
+                executeStages( new NodeStoreProcessorStage( "Node --> Node counts", config,
                         neoStore.getNodeStore(), nodeCountsProcessor ) );
                 // Stage 7 -- count label-[type]->label
-                executeStages( new RelationshipStoreProcessorStage( "Relationship --> Relationship", config,
+                executeStages( new RelationshipStoreProcessorStage( "Relationship --> Relationship Count", config,
                         neoStore.getRelationshipStore(), relationshipCountsProcessor ) );
             }
 
@@ -239,6 +237,13 @@ public class ParallelBatchImporter implements BatchImporter
                 nodeLabelsCache.close();
             }
         }
+    }
+
+    private boolean disableParallelizationSinceItCausesWrongCountsComputations()
+    {
+        // we have seen wrongly computed node counts when this stages parallelization is allowed
+        // better being safe and disable it for now until we can fix it
+        return false;
     }
 
     private boolean enoughAvailableMemoryForRemainingProcessors( NodeRelationshipLink nodeRelationshipLink )

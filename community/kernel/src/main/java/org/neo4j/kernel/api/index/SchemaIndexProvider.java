@@ -28,10 +28,12 @@ import java.util.List;
 import org.neo4j.graphdb.DependencyResolver.SelectionStrategy;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
@@ -96,41 +98,47 @@ import static org.neo4j.kernel.extension.KernelExtensionUtil.servicesClassPathEn
  * {@link #getOnlineAccessor(long, IndexConfiguration, IndexSamplingConfig) online accessor} to
  * write to the index.
  */
-public abstract class SchemaIndexProvider extends LifecycleAdapter
-        implements Comparable<SchemaIndexProvider>
+public abstract class SchemaIndexProvider extends LifecycleAdapter implements Comparable<SchemaIndexProvider>
 {
     public static final SchemaIndexProvider NO_INDEX_PROVIDER =
-            new SchemaIndexProvider( new Descriptor("no-index-provider", "1.0"), -1 )
-    {
-        private final IndexAccessor singleWriter = new IndexAccessor.Adapter();
-        private final IndexPopulator singlePopulator = new IndexPopulator.Adapter();
+            new SchemaIndexProvider( new Descriptor( "no-index-provider", "1.0" ), -1 )
+            {
+                private final IndexAccessor singleWriter = new IndexAccessor.Adapter();
+                private final IndexPopulator singlePopulator = new IndexPopulator.Adapter();
 
-        @Override
-        public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration config,
-                                                IndexSamplingConfig samplingConfig )
-        {
-            return singleWriter;
-        }
+                @Override
+                public IndexAccessor getOnlineAccessor( long indexId, IndexConfiguration config,
+                                                        IndexSamplingConfig samplingConfig )
+                {
+                    return singleWriter;
+                }
 
-        @Override
-        public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexConfiguration config,
-                                            IndexSamplingConfig samplingConfig )
-        {
-            return singlePopulator;
-        }
+                @Override
+                public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexConfiguration config,
+                                                    IndexSamplingConfig samplingConfig )
+                {
+                    return singlePopulator;
+                }
 
-        @Override
-        public InternalIndexState getInitialState( long indexId )
-        {
-            return InternalIndexState.POPULATING;
-        }
+                @Override
+                public InternalIndexState getInitialState( long indexId )
+                {
+                    return InternalIndexState.POPULATING;
+                }
 
-        @Override
-        public String getPopulationFailure( long indexId ) throws IllegalStateException
-        {
-            throw new IllegalStateException();
-        }
-    };
+                @Override
+                public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs,
+                                                                            UpgradableDatabase upgradableDatabase )
+                {
+                    return StoreMigrationParticipant.NOT_PARTICIPATING;
+                }
+
+                @Override
+                public String getPopulationFailure( long indexId ) throws IllegalStateException
+                {
+                    throw new IllegalStateException();
+                }
+            };
 
     public static final SelectionStrategy HIGHEST_PRIORITIZED_OR_NONE =
             new SelectionStrategy()
@@ -238,10 +246,8 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter
         return new File( new File( new File( storeDir, "schema" ), "index" ), key );
     }
 
-    public StoreMigrationParticipant storeMigrationParticipant()
-    {
-        return StoreMigrationParticipant.NOT_PARTICIPATING;
-    }
+    public abstract StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs,
+                                                                         UpgradableDatabase upgradableDatabase );
 
     /**
      * Provides a snapshot of meta files about this index provider, not the indexes themselves.

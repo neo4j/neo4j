@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -31,6 +32,8 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.register.Register;
 import org.neo4j.test.DoubleLatch;
 
@@ -123,5 +126,12 @@ public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
     public int compareTo( SchemaIndexProvider o )
     {
         return 1;
+    }
+
+    @Override
+    public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs,
+                                                                UpgradableDatabase upgradableDatabase )
+    {
+        return StoreMigrationParticipant.NOT_PARTICIPATING;
     }
 }

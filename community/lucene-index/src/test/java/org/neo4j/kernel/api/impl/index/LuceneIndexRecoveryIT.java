@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.apache.lucene.store.Directory;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -26,12 +32,6 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipOutputStream;
-
-import org.apache.lucene.store.Directory;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -50,7 +50,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 

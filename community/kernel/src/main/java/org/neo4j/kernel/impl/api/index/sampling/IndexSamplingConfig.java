@@ -54,4 +54,34 @@ public class IndexSamplingConfig
     {
         return backgroundSampling;
     }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        IndexSamplingConfig that = (IndexSamplingConfig) o;
+
+        return backgroundSampling == that.backgroundSampling &&
+               bufferSize == that.bufferSize &&
+               Double.compare( that.updateRatio, updateRatio ) == 0;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = bufferSize;
+        long temp = Double.doubleToLongBits( updateRatio );
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
+        result = 31 * result + (backgroundSampling ? 1 : 0);
+        return result;
+    }
 }

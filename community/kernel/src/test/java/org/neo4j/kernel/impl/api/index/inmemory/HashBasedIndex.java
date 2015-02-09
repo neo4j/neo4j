@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.index.inmemory;
 
+import java.lang.reflect.Array;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -150,6 +152,36 @@ class HashBasedIndex extends InMemoryIndexImplementation
     {
         Set<Long> candidates = data().get( propertyValue );
         return candidates != null && candidates.contains( nodeId ) ? 1 : 0;
+    }
+
+    @Override
+    public Set<Class> valueTypesInIndex()
+    {
+        if ( data == null )
+        {
+            return Collections.emptySet();
+        }
+        Set<Class> result = new HashSet<>();
+        for ( Object value : data.keySet() )
+        {
+            if ( value instanceof Number )
+            {
+                result.add( Number.class );
+            }
+            else if ( value instanceof String )
+            {
+                result.add( String.class );
+            }
+            else if ( value instanceof Boolean )
+            {
+                result.add( Boolean.class );
+            }
+            else if ( value instanceof ArrayKey )
+            {
+                result.add( Array.class );
+            }
+        }
+        return result;
     }
 
     @Override

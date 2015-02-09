@@ -44,6 +44,7 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+
 import static java.lang.Long.parseLong;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;

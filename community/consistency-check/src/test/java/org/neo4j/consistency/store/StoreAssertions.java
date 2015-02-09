@@ -52,7 +52,7 @@ public class StoreAssertions
                         dir.getAbsolutePath(),
                         configuration,
                         ProgressMonitorFactory.NONE,
-                        StringLogger.DEV_NULL
+                        StringLogger.SYSTEM_ERR
                 );
 
         assertTrue( result.isSuccessful() );

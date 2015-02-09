@@ -28,13 +28,17 @@ import org.junit.Test;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.reflect.Array;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -50,6 +54,8 @@ public class LuceneIndexAccessorReaderTest
     private final IndexSearcher searcher = mock( IndexSearcher.class );
     private final IndexReader reader = mock( IndexReader.class );
     private final TermEnum terms = mock( TermEnum.class );
+    private final LuceneIndexAccessorReader accessor =
+            new LuceneIndexAccessorReader( searcher, documentLogic, closeable, NEVER_CANCELLED, BUFFER_SIZE_LIMIT );
 
     @Before
     public void setup() throws IOException
@@ -61,13 +67,9 @@ public class LuceneIndexAccessorReaderTest
     @Test
     public void shouldProvideTheIndexUniqueValuesForAnEmptyIndex() throws Exception
     {
-        // Given
-        final LuceneIndexAccessorReader accessor =
-                new LuceneIndexAccessorReader( searcher, documentLogic, closeable, NEVER_CANCELLED, BUFFER_SIZE_LIMIT );
-
         // When
         final DoubleLongRegister output = Registers.newDoubleLongRegister();
-        long indexSize = sampleAccessor( accessor, output );
+        long indexSize = accessor.sampleIndex( output );
 
         // Then
         assertEquals( 0, indexSize );
@@ -86,12 +88,9 @@ public class LuceneIndexAccessorReaderTest
                 new Term( "string", "ccc" )
         );
 
-        final LuceneIndexAccessorReader accessor =
-                new LuceneIndexAccessorReader( searcher, documentLogic, closeable, NEVER_CANCELLED, BUFFER_SIZE_LIMIT );
-
         // When
         final DoubleLongRegister output = Registers.newDoubleLongRegister();
-        long indexSize = sampleAccessor( accessor, output );
+        long indexSize = accessor.sampleIndex( output );
 
         // Then
         assertEquals( 3, indexSize );
@@ -110,13 +109,10 @@ public class LuceneIndexAccessorReaderTest
                 new Term( "string", "bbb" )
         );
 
-        final LuceneIndexAccessorReader accessor =
-                new LuceneIndexAccessorReader( searcher, documentLogic, closeable, NEVER_CANCELLED, BUFFER_SIZE_LIMIT );
-
         // When
 
         final DoubleLongRegister output = Registers.newDoubleLongRegister();
-        long indexSize = sampleAccessor( accessor, output );
+        long indexSize = accessor.sampleIndex( output );
 
         // Then
         assertEquals( 1, indexSize );
@@ -130,13 +126,11 @@ public class LuceneIndexAccessorReaderTest
         // Given
         final IOException ioex = new IOException();
         when( terms.next() ).thenThrow( ioex );
-        final LuceneIndexAccessorReader accessor =
-                new LuceneIndexAccessorReader( searcher, documentLogic, closeable, NEVER_CANCELLED, BUFFER_SIZE_LIMIT );
 
         // When
         try
         {
-            sampleAccessor( accessor, Registers.newDoubleLongRegister() );
+            accessor.sampleIndex( Registers.newDoubleLongRegister() );
             fail( "should have thrown" );
         }
         catch ( RuntimeException ex )
@@ -146,9 +140,66 @@ public class LuceneIndexAccessorReaderTest
         }
     }
 
-    private long sampleAccessor( LuceneIndexAccessorReader reader, DoubleLongRegister output )
-            throws IndexNotFoundKernelException
+    @Test
+    public void shouldReturnNoValueTypesIfTheIndexIsEmpty() throws Exception
     {
-        return reader.sampleIndex( output );
+        // Given
+        when( terms.next() ).thenReturn( false );
+
+        // When
+        final Set<Class> types = accessor.valueTypesInIndex();
+
+        // Then
+        assertTrue( types.isEmpty() );
+    }
+
+    @Test
+    public void shouldReturnAllValueTypesContainedInTheIndex1() throws Exception
+    {
+        // Given
+        when( terms.next() ).thenReturn( true, true, true, false );
+        when( terms.term() ).thenReturn( new Term( "array" ), new Term( "string" ), new Term( "array" ) );
+
+        // When
+        final Set<Class> types = accessor.valueTypesInIndex();
+
+        // Then
+
+        assertEquals( new HashSet<Class>( Arrays.asList( Array.class, String.class ) ), types );
+    }
+
+    @Test
+    public void shouldReturnAllValueTypesContainedInTheIndex2() throws Exception
+    {
+        // Given
+        when( terms.next() ).thenReturn( true, true, true, true, false );
+        when( terms.term() )
+                .thenReturn( new Term( "array" ), new Term( "number" ), new Term( "string" ), new Term( "bool" ) );
+
+        // When
+        final Set<Class> types = accessor.valueTypesInIndex();
+
+        // Then
+        assertEquals( new HashSet<Class>( Arrays.asList( Array.class, Number.class, String.class, Boolean.class ) ), types );
+    }
+
+    @Test
+    public void shouldWrapIOExceptionInRuntimeExceptionWhenAskingAllValueTypes() throws Exception
+    {
+        // Given
+        final IOException ioex = new IOException();
+        when( terms.next() ).thenThrow( ioex );
+
+        // When
+        try
+        {
+            accessor.valueTypesInIndex();
+            fail("Should have thrown");
+        }
+        catch ( RuntimeException ex )
+        {
+            // then
+            assertSame( ioex, ex.getCause() );
+        }
     }
 }

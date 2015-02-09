@@ -101,6 +101,8 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
+import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
+import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
@@ -552,7 +554,8 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
     // of the dependency tree, starting at the bottom
     private void upgradeStore( File store, StoreUpgrader storeMigrationProcess, SchemaIndexProvider indexProvider )
     {
-        storeMigrationProcess.addParticipant( indexProvider.storeMigrationParticipant() );
+        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( fs ) );
+        storeMigrationProcess.addParticipant( indexProvider.storeMigrationParticipant( fs, upgradableDatabase ) );
         storeMigrationProcess.migrateIfNeeded( store.getParentFile(), indexProvider, pageCache );
     }
 

@@ -58,7 +58,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
  */
 public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
 {
-    public static final String ALL_STORES_VERSION = "v0.A.4";
+    public static final String ALL_STORES_VERSION = "v0.A.5";
     public static final String UNKNOWN_VERSION = "Unknown";
     protected final Config configuration;
     protected final PageCache pageCache;

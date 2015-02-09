@@ -19,6 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -29,18 +36,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -55,13 +56,13 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -71,7 +72,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.getIndexes;
 import static org.neo4j.graphdb.Neo4jMatchers.hasSize;
@@ -267,7 +267,8 @@ public class IndexRecoveryIT
                 .thenReturn( TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR );
         when( mockedIndexProvider.compareTo( any( SchemaIndexProvider.class ) ) )
                 .thenReturn( 1 ); // always pretend to have highest priority
-        when( mockedIndexProvider.storeMigrationParticipant() ).thenReturn( NOT_PARTICIPATING );
+        when( mockedIndexProvider.storeMigrationParticipant(
+                any( FileSystemAbstraction.class), any( UpgradableDatabase.class)) ).thenReturn( NOT_PARTICIPATING );
     }
 
     @SuppressWarnings("deprecation")

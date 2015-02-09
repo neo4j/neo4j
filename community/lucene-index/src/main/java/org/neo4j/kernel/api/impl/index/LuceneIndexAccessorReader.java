@@ -29,6 +29,9 @@ import org.apache.lucene.search.TermQuery;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.reflect.Array;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.CancellationRequest;
@@ -37,6 +40,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 
+import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.*;
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
 import static org.neo4j.register.Register.DoubleLong;
 
@@ -116,6 +120,43 @@ class LuceneIndexAccessorReader implements IndexReader
         {
             throw new RuntimeException( e );
         }
+    }
+
+    @Override
+    public Set<Class> valueTypesInIndex()
+    {
+        Set<Class> types = new HashSet<>();
+        try ( TermEnum terms = luceneIndexReader().terms() )
+        {
+            while ( terms.next() )
+            {
+                String field = terms.term().field();
+                if ( !NODE_ID_KEY.equals( field ) )
+                {
+                    switch ( ValueEncoding.fromKey( field ) )
+                    {
+                    case Number:
+                        types.add( Number.class );
+                        break;
+                    case String:
+                        types.add( String.class );
+                        break;
+                    case Array:
+                        types.add( Array.class );
+                        break;
+                    case Bool:
+                        types.add( Boolean.class );
+                        break;
+                    }
+                }
+            }
+
+        }
+        catch ( IOException ex )
+        {
+            throw new RuntimeException( ex );
+        }
+        return types;
     }
 
     @Override
