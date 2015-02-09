@@ -21,6 +21,7 @@ package org.neo4j.com.storecopy;
 
 import java.io.IOException;
 
+import org.neo4j.com.ComException;
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
@@ -229,6 +230,10 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
             try
             {
                 obligationFulfiller.fulfill( txId );
+            }
+            catch ( IllegalStateException e )
+            {
+                throw new ComException( "Failed to pull updates", e );
             }
             catch ( InterruptedException e )
             {
