@@ -19,13 +19,9 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -37,21 +33,14 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.test.DatabaseRule;
-import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.ImpermanentDatabaseRule;
+import org.neo4j.test.EmbeddedDatabaseRule;
 
 public class NeoStoresIT
 {
-    public final
-    @Rule
-    EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-
-    public final
-    @Rule
-    DatabaseRule db = new ImpermanentDatabaseRule() {
+    public final @Rule DatabaseRule db = new EmbeddedDatabaseRule()
+    {
         @Override
         protected void configure( GraphDatabaseBuilder builder )
         {
@@ -59,9 +48,6 @@ public class NeoStoresIT
             builder.setConfig(  GraphDatabaseSettings.dense_node_threshold, "1");
         }
     };
-
-    private EphemeralFileSystemAbstraction fileSystem;
-    private File storeDir;
 
     private static final DynamicRelationshipType FRIEND = DynamicRelationshipType.withName( "FRIEND" );
 
@@ -97,19 +83,9 @@ public class NeoStoresIT
             "ALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALALONG!!";
 
 
-    @Before
-    public void setup() throws IOException
-    {
-        fileSystem = fsRule.get();
-        storeDir = new File( "/tmp/foobar" );
-
-        fileSystem.mkdir( storeDir.getParentFile() );
-        fileSystem.create( storeDir );
-    }
-
     @Test
     public void shouldWriteOutTheDynamicChainBeforeUpdatingThePropertyRecord()
-            throws IOException, ExecutionException, InterruptedException
+            throws InterruptedException
     {
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 
@@ -158,7 +134,7 @@ public class NeoStoresIT
 
     @Test
     public void shouldWriteOutThePropertyRecordBeforeReferencingItFromANodeRecord()
-            throws IOException, ExecutionException, InterruptedException
+            throws InterruptedException
     {
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 
@@ -209,7 +185,7 @@ public class NeoStoresIT
 
     @Test
     public void shouldWriteOutThePropertyRecordBeforeReferencingItFromARelationshipRecord()
-            throws IOException, ExecutionException, InterruptedException
+            throws InterruptedException
     {
         final long node1Id;
         final long node2Id;
