@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2
 
 import scala.annotation.tailrec
 import scala.collection.mutable
+import scala.reflect.ClassTag
 
 object Foldable {
   implicit class TreeAny(val that: Any) extends AnyVal {
@@ -97,7 +98,7 @@ object Foldable {
     }
 
   @tailrec
-  private def findAcc[A: Manifest](remaining: mutable.ArrayStack[Any]): A =
+  private def findAcc[A : ClassTag](remaining: mutable.ArrayStack[Any]): A =
     if (remaining.isEmpty) {
       throw new NoSuchElementException
     } else {

@@ -31,6 +31,8 @@ trait ASTNode
 //  with ToPrettyString[ASTNode]
 {
 
+  self =>
+
   import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
   import org.neo4j.cypher.internal.compiler.v2_2.Rewritable._
 
@@ -51,7 +53,7 @@ trait ASTNode
       val lastParamIsPos = params.last.isAssignableFrom(classOf[InputPosition])
       val ctorArgs = if (hasExtraParam && lastParamIsPos) args :+ this.position else args
       val duped = constructor.invoke(this, ctorArgs: _*)
-      duped.asInstanceOf[this.type]
+      duped.asInstanceOf[self.type]
     }
 }
 

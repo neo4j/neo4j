@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.{NestedPlanExpression, Patter
 import org.neo4j.cypher.internal.compiler.v2_2.{bottomUp, IdentityMap, Rewriter}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalPlan}
 
-case class planExpressionRewriter(rewriterFactory: (Set[IdName], Expression, LogicalPlanningContext) => Rewriter) extends PlanRewriterFactory {
+case class planExpressionRewriter(rewriterFactory: (Set[IdName], Expression, LogicalPlanningContext) => Rewriter) extends (LogicalPlanningContext => Rewriter) {
 
   def apply(context: LogicalPlanningContext): Rewriter = Rewriter.lift {
     case plan: LogicalPlan =>

@@ -24,29 +24,42 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.{NestedPlanExpression, Patter
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 
 // Rewrite pattern expressions to nested plan expressions by planning them using the given context
-case class patternExpressionRewriter(planArguments: Set[IdName], expression: Expression, context: LogicalPlanningContext) extends Rewriter {
+case class patternExpressionRewriter(planArguments: Set[IdName], context: LogicalPlanningContext) extends Rewriter {
 
     import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
 
-    val exprScopes = expression.inputs.map { case (k, v) => k -> v.map(IdName.fromIdentifier)}
-    val exprScopeMap = IdentityMap(exprScopes: _*)
+    def apply(that: AnyRef): AnyRef = that match {
+      case  expression: Expression =>
+        val exprScopes = expression.inputs.map { case (k, v) => k -> v.map(IdName.fromIdentifier)}
+        val exprScopeMap = IdentityMap(exprScopes: _*)
 
-    def apply(that: AnyRef): AnyRef = {
-        val replacements = that.treeFold(Map.empty[Ref[Expression], Expression]) {
+        // Build an identity map of replacements
+        val replacements = that.treeFold(IdentityMap.empty[AnyRef, AnyRef]) {
+
+          // replace pattern expressions with their plan and also register
+          // the contained pattern expression for no further processing
+          // by this tree fold
           case expr @ PatternExpression(pattern) =>
             (acc, children) =>
-              val (plan, namedExpr) = QueryPlanningStrategy.planPatternExpression(planArguments ++ exprScopeMap(expr), expr)(context)
-              children(acc.updated(Ref(expr), NestedPlanExpression(plan, namedExpr)(namedExpr.position)))
-          case _: NestedPlanExpression =>
+              // only process pattern expressions that were not contained in previously seen nested plans
+              if (acc.contains(expr)) {
+                children(acc)
+              } else {
+                val arguments = planArguments ++ exprScopeMap(expr)
+                val (plan, namedExpr) = context.strategy.planPatternExpression(arguments, expr)(context)
+                val uniqueNamedExpr = namedExpr.copy() // safeguard against expr == namedExpr
+                val accWithPlan = acc.updated(expr, NestedPlanExpression(plan, uniqueNamedExpr)(uniqueNamedExpr.position))
+                children(accWithPlan)
+              }
+
+          // Never ever replace pattern expressions in nested plan expressions in the original expression
+          case NestedPlanExpression(_, pattern) =>
             (acc, children) =>
-              acc
+              val accWithPattern = acc.updated(pattern, pattern)
+              children(accWithPattern)
         }
 
-        val rewriter = Rewriter.lift {
-          case expr: PatternExpression if replacements.contains(Ref(expr)) =>
-            replacements(Ref(expr))
-        }
-
-        bottomUp(rewriter)(that)
+        // Apply replacements, descending into the replacements themselves recursively
+        expression.endoRewrite(recursivelyReplace(replacements))
     }
 }

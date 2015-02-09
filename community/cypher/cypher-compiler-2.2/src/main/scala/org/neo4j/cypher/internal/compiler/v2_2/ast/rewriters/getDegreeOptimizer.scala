@@ -28,10 +28,13 @@ case object getDegreeOptimizer extends Rewriter {
   def apply(that: AnyRef): AnyRef = bottomUp(instance)(that)
 
   val instance: Rewriter = Rewriter.lift {
+
+    // LENGTH( (a)-[]->() )
     case func@FunctionInvocation(_, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None, _), RelationshipPattern(None, _, types, None, None, dir), NodePattern(None, List(), None, _))))))
       if func.function == Some(functions.Length) =>
         calculateUsingGetDegree(func, node, types, dir)
 
+    // LENGTH( ()-[]->(a) )
     case func@FunctionInvocation(_, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None, _), RelationshipPattern(None, _, types, None, None, dir), NodePattern(Some(node), List(), None, _))))))
       if func.function == Some(functions.Length) =>
       calculateUsingGetDegree(func, node, types, dir.reverse())

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2
 
 import java.lang.reflect.Method
+
 import scala.annotation.tailrec
 import scala.collection.mutable.{HashMap => MutableHashMap}
 
@@ -169,6 +170,34 @@ object bottomUp {
   }
 
   def apply(rewriter: Rewriter) = new BottomUpRewriter(rewriter)
+}
+
+object recursivelyReplace {
+  def apply(replacements: IdentityMap[AnyRef, AnyRef]): Rewriter =
+    new RecursivelyReplacingRewriter(replacements)
+}
+
+class RecursivelyReplacingRewriter(replacements: IdentityMap[AnyRef, AnyRef]) extends Rewriter {
+  import Foldable._
+  import Rewritable._
+
+  def apply(that: AnyRef): AnyRef = {
+    val replacement = replacements.getOrElse(that, that)
+
+    //this piece of code is used a lot and has been through profiling
+    //please don't just remove it because it is ugly looking
+    val children = replacement.children.toList
+    val buffer = new Array[AnyRef](children.size)
+    val it = children.iterator
+    var index = 0
+    while (it.hasNext) {
+      buffer(index) = apply(it.next())
+      index += 1
+    }
+
+    val rewrittenThat = replacement.dup(buffer)
+    rewrittenThat
+  }
 }
 
 case class repeat(rewriter: Rewriter) extends Rewriter {
