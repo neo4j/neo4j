@@ -46,7 +46,9 @@ public class RepeatRule implements TestRule
         public abstract int times();
     }
 
-    private static class RepeatStatement extends Statement
+    private int count;
+
+    private class RepeatStatement extends Statement
     {
         private final int times;
         private final Statement statement;
@@ -60,7 +62,7 @@ public class RepeatRule implements TestRule
         @Override
         public void evaluate() throws Throwable
         {
-            for ( int i = 0; i < times; i++ )
+            for ( count = 0; count < times; count++ )
             {
                 statement.evaluate();
             }
@@ -76,5 +78,16 @@ public class RepeatRule implements TestRule
             return new RepeatStatement( repeat.times(), base );
         }
         return base;
+    }
+
+    /**
+     * Get the current count. This can be used (for example) in a non-suspending breakpoint at the beginning of a
+     * test to print out what iteration is currently running.
+     *
+     * @return current count
+     */
+    public int getCount()
+    {
+        return count;
     }
 }
