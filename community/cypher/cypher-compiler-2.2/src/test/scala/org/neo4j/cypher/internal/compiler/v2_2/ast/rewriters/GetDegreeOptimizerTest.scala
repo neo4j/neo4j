@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, AllNodesScan}
 import org.neo4j.cypher.internal.compiler.v2_2.{DummyPosition, Rewriter}
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.graphdb.Direction
@@ -79,9 +81,22 @@ class GetDegreeOptimizerTest extends CypherFunSuite with RewriteTest {
     doesNotRewrite("MATCH n WHERE LENGTH((n)-->(:LABEL) ) RETURN n")
   }
 
-  test("does not rewrite patterns where both sides are named") {
-    doesNotRewrite("MATCH n WHERE LENGTH((n)-->(n)) RETURN n")
-    doesNotRewrite("MATCH n, m WHERE LENGTH((n)-->(m)) RETURN n")
+  test("does not rewrite expressions inside nested plans") {
+    val patternStatement = parseForRewriting("MATCH n WHERE (n)-[:X]->({prop: LENGTH((n)-[:X]->())}) RETURN n")
+    val patternExpression = findWherePredicate(patternStatement).asInstanceOf[PatternExpression]
+    val nestedPlanExpression = NestedPlanExpression(AllNodesScan(IdName("a"), Set.empty)(PlannerQuery.empty), patternExpression)(pos)
+
+    val degreeStatement = parseForRewriting("MATCH n WHERE LENGTH((n)-[:X]->()) RETURN n")
+    val degreeExpression = findWherePredicate(degreeStatement)
+
+    val expression = And(degreeExpression, nestedPlanExpression)(pos)
+
+    val result = expression.endoRewrite(getDegreeOptimizer)
+
+    val And(left, right) = result
+
+    left.isInstanceOf[GetDegree] should be(right = true)
+    right should equal(nestedPlanExpression)
   }
 
   private def doesNotRewrite(q: String) {
@@ -91,13 +106,10 @@ class GetDegreeOptimizerTest extends CypherFunSuite with RewriteTest {
     val original = findWherePredicate(statement)
 
     rewritten should equal(original)
-
   }
-
 
   def findWherePredicate(x: Statement): Expression =
     x.findByClass[Where].expression
-
 
   def rewriterUnderTest: Rewriter = getDegreeOptimizer
 }

@@ -30,36 +30,59 @@ case class patternExpressionRewriter(planArguments: Set[IdName], context: Logica
 
     def apply(that: AnyRef): AnyRef = that match {
       case  expression: Expression =>
-        val exprScopes = expression.inputs.map { case (k, v) => k -> v.map(IdName.fromIdentifier)}
-        val exprScopeMap = IdentityMap(exprScopes: _*)
+        val scopeMap = computeScopeMap(expression)
 
-        // Build an identity map of replacements
-        val replacements = that.treeFold(IdentityMap.empty[AnyRef, AnyRef]) {
+        // build an identity map of replacements
+        val replacements = computeReplacements(scopeMap, that)
 
-          // replace pattern expressions with their plan and also register
-          // the contained pattern expression for no further processing
-          // by this tree fold
-          case expr @ PatternExpression(pattern) =>
-            (acc, children) =>
-              // only process pattern expressions that were not contained in previously seen nested plans
-              if (acc.contains(expr)) {
-                children(acc)
-              } else {
-                val arguments = planArguments ++ exprScopeMap(expr)
-                val (plan, namedExpr) = context.strategy.planPatternExpression(arguments, expr)(context)
-                val uniqueNamedExpr = namedExpr.copy() // safeguard against expr == namedExpr
-                val accWithPlan = acc.updated(expr, NestedPlanExpression(plan, uniqueNamedExpr)(uniqueNamedExpr.position))
-                children(accWithPlan)
-              }
+        // apply replacements, descending into the replacements themselves recursively
+        val rewriter = createReplacer(replacements)
 
-          // Never ever replace pattern expressions in nested plan expressions in the original expression
-          case NestedPlanExpression(_, pattern) =>
-            (acc, children) =>
-              val accWithPattern = acc.updated(pattern, pattern)
-              children(accWithPattern)
-        }
-
-        // Apply replacements, descending into the replacements themselves recursively
-        expression.endoRewrite(recursivelyReplace(replacements))
+        val result = expression.endoRewrite(rewriter)
+        result
     }
+
+  private def computeScopeMap(expression: Expression) = {
+    val exprScopes = expression.inputs.map {
+      case (k, v) => k -> v.map(IdName.fromIdentifier)
+    }
+    IdentityMap(exprScopes: _*)
+  }
+
+  private def computeReplacements(scopeMap: IdentityMap[Expression, Set[IdName]], that: AnyRef): IdentityMap[AnyRef, AnyRef] = {
+    that.treeFold(IdentityMap.empty[AnyRef, AnyRef]) {
+
+      // replace pattern expressions with their plan and also register
+      // the contained pattern expression for no further processing
+      // by this tree fold
+      case expr@PatternExpression(pattern) =>
+        (acc, children) =>
+          // only process pattern expressions that were not contained in previously seen nested plans
+          if (acc.contains(expr)) {
+            children(acc)
+          } else {
+            val arguments = planArguments ++ scopeMap(expr)
+            val (plan, namedExpr) = context.strategy.planPatternExpression(arguments, expr)(context)
+            val uniqueNamedExpr = namedExpr.copy()
+            val nestedPlan = NestedPlanExpression(plan, uniqueNamedExpr)(uniqueNamedExpr.position)
+            children(acc.updated(expr, nestedPlan))
+          }
+
+      // Never ever replace pattern expressions in nested plan expressions in the original expression
+      case NestedPlanExpression(_, pattern) =>
+        (acc, children) =>
+          children(acc.updated(pattern, pattern))
+    }
+  }
+
+  private def createReplacer(replacements: IdentityMap[AnyRef, AnyRef]): replace =
+    replace { replacer => that => replacements.get(that) match {
+
+      // nested plans are already rewritten by strategy.planPatternExpression
+      case Some(plan: NestedPlanExpression) => replacer.stop(plan)
+
+      // traverse down in all other cases (just like bottomUp would do)
+      case _ => replacer.expand(that)
+    }
+  }
 }

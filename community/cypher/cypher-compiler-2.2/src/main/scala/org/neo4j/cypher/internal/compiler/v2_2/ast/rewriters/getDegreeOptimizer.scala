@@ -25,20 +25,33 @@ import org.neo4j.graphdb.Direction
 
 // Rewrites queries to allow using the much faster getDegree method on the nodes
 case object getDegreeOptimizer extends Rewriter {
-  def apply(that: AnyRef): AnyRef = bottomUp(instance)(that)
+  def apply(that: AnyRef): AnyRef = instance(that)
 
-  val instance: Rewriter = Rewriter.lift {
+  val instance = replace(replacer => {
+    // Top-Down:
+    // Do not traverse into NestedPlanExpressions as they have been optimized already by an earlier call to plan
+    case that: NestedPlanExpression =>
+      replacer.stop(that)
 
-    // LENGTH( (a)-[]->() )
-    case func@FunctionInvocation(_, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None, _), RelationshipPattern(None, _, types, None, None, dir), NodePattern(None, List(), None, _))))))
-      if func.function == Some(functions.Length) =>
-        calculateUsingGetDegree(func, node, types, dir)
+    case that =>
+      // Bottom-up:
+      // Replace function invocations with more efficient expressions
+      replacer.expand(that) match {
 
-    // LENGTH( ()-[]->(a) )
-    case func@FunctionInvocation(_, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None, _), RelationshipPattern(None, _, types, None, None, dir), NodePattern(Some(node), List(), None, _))))))
-      if func.function == Some(functions.Length) =>
-      calculateUsingGetDegree(func, node, types, dir.reverse())
-  }
+        // LENGTH( (a)-[]->() )
+        case func@FunctionInvocation(_, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None, _), RelationshipPattern(None, _, types, None, None, dir), NodePattern(None, List(), None, _))))))
+          if func.function == Some(functions.Length) =>
+          calculateUsingGetDegree(func, node, types, dir)
+
+        // LENGTH( ()-[]->(a) )
+        case func@FunctionInvocation(_, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None, _), RelationshipPattern(None, _, types, None, None, dir), NodePattern(Some(node), List(), None, _))))))
+          if func.function == Some(functions.Length) =>
+          calculateUsingGetDegree(func, node, types, dir.reverse())
+
+        case rewritten =>
+          rewritten
+      }
+  })
 
   def calculateUsingGetDegree(func: FunctionInvocation, node: Identifier, types: Seq[RelTypeName], dir: Direction): Expression = {
     types
