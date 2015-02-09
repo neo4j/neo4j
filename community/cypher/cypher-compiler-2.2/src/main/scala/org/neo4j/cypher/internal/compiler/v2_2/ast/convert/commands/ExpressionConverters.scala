@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import commands.{expressions => commandexpressions, values => commandvalues, Predicate => CommandPredicate}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Expression => CommandExpression, ProjectedPath}
 import commands.values.TokenType._
+import org.neo4j.cypher.internal.compiler.v2_2.parser.{convertLikeToRegex, LikeParser}
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.graphdb.Direction
@@ -47,6 +48,8 @@ object ExpressionConverters {
       case e: ast.NotEquals => e.asCommandNotEquals
       case e: ast.RegexMatch => e.asCommandRegex
       case e: ast.In => e.asCommandIn
+      case e: ast.Like => e.asCommandRegex
+      case e: ast.NotLike => e.asCommandNegatedRegex
       case e: ast.IsNull => e.asCommandIsNull
       case e: ast.IsNotNull => e.asCommandIsNotNull
       case e: ast.LessThan => e.asCommandLessThan
@@ -196,6 +199,27 @@ object ExpressionConverters {
     }
   }
 
+  implicit class LikeConverter(val e: ast.Like) extends AnyVal {
+    implicit def translateToRegex(s: String) = {
+      val likeParser = new LikeParser(e.escape)
+      convertLikeToRegex(likeParser(s), e.caseInsensitive)
+    }
+
+    def asCommandRegex = e.rhs.asCommandExpression match {
+      case nullLiteral@commandexpressions.Literal(null) => nullLiteral
+      case commandexpressions.Literal(v) => {
+        val literal = StringLiteral(translateToRegex(v.asInstanceOf[String]))(e.position)
+        commands.LiteralRegularExpression(e.lhs.asCommandExpression, literal.asCommandLiteral)
+      }
+      case command => commands.RegularExpression(e.lhs.asCommandExpression, command)(translateToRegex)
+    }
+  }
+
+  implicit class NotLikeConverter(val e: ast.NotLike) extends AnyVal {
+    def asCommandNegatedRegex =
+      commands.Not(ast.Like(e.lhs, e.rhs, e.escape, e.caseInsensitive)(e.position).asCommandPredicate)
+  }
+
   implicit class InConverter(val e: ast.In) extends AnyVal {
     def asCommandIn =
       commands.AnyInCollection(
@@ -252,7 +276,7 @@ object ExpressionConverters {
       commandexpressions.Subtract(e.lhs.asCommandExpression, e.rhs.asCommandExpression)
   }
 
-  implicit class UnarySubtactConverter(val e: ast.UnarySubtract) extends AnyVal {
+  implicit class UnarySubtractConverter(val e: ast.UnarySubtract) extends AnyVal {
     def asCommandSubtract = commandexpressions.Subtract(commandexpressions.Literal(0), e.rhs.asCommandExpression)
   }
 

@@ -288,7 +288,6 @@ class CypherParserTest extends CypherFunSuite {
         returns(ReturnItem(Identifier("a"), "a")))
   }
 
-
   test("shouldHandleRegularComparison") {
     expectQuery(
       "start a = node(1) where \"Andres\" =~ 'And.*' return a",
@@ -299,6 +298,50 @@ class CypherParserTest extends CypherFunSuite {
     )
   }
 
+  test("should translate LIKE to a regular expression") {
+    expectQuery(
+      "RETURN 'Pontus' LIKE 'Pont%' as result",
+      Query.
+        matches().
+        returns(ReturnItem(LiteralRegularExpression(Literal("Pontus"), Literal("""\QPont\E.*""")), "result"))
+    )
+  }
+
+  test("should translate NOT LIKE to a negated regular expression") {
+    expectQuery(
+      "RETURN 'Pontus' NOT LIKE 'Pont%' as result",
+      Query.
+        matches().
+        returns(ReturnItem(Not(LiteralRegularExpression(Literal("Pontus"), Literal("""\QPont\E.*"""))), "result"))
+    )
+  }
+
+  test("should translate ILIKE to a regular expression") {
+    expectQuery(
+      "RETURN 'Pontus' ILIKE 'Pont%' as result",
+      Query.
+        matches().
+        returns(ReturnItem(LiteralRegularExpression(Literal("Pontus"), Literal("""(?i)\QPont\E.*""")), "result"))
+    )
+  }
+
+  test("should translate NOT ILIKE to a negated regular expression") {
+    expectQuery(
+      "RETURN 'Pontus' NOT ILIKE 'Pont%' as result",
+      Query.
+        matches().
+        returns(ReturnItem(Not(LiteralRegularExpression(Literal("Pontus"), Literal("""(?i)\QPont\E.*"""))), "result"))
+    )
+  }
+
+  test("should handle LIKE ... ESCAPE") {
+    expectQuery(
+      "RETURN 'Pontus' LIKE 'Pont%' ESCAPE 't' as result",
+      Query.
+        matches().
+        returns(ReturnItem(LiteralRegularExpression(Literal("Pontus"), Literal("""\QPon\E\Q%\E""")), "result"))
+    )
+  }
 
   test("shouldHandleMultipleRegularComparison") {
     expectQuery(
