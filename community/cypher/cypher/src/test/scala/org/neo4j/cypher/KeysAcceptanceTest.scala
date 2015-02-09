@@ -82,7 +82,6 @@ class KeysAcceptanceTest extends ExecutionEngineFunSuite  with QueryStatisticsTe
     result.columnAs[String]("theProps").toList  should equal(List())
   }
 
-
   test("Using keys() function with RELATIONSHIP NULL result") {
 
     val r = relate(createNode(), createNode(), "KNOWS")
@@ -90,5 +89,20 @@ class KeysAcceptanceTest extends ExecutionEngineFunSuite  with QueryStatisticsTe
     val result = execute("optional match ()-[r:KNOWS]-() where id(r) = " + r.getId + " unwind (keys(r)) AS x return distinct(x) as theProps")
 
     result.columnAs[String]("theProps").toList should equal(List())
+  }
+
+  test("Using keys() on literal maps") {
+
+    val result = execute("""return keys({name:'Alice', age:38, address:{city:'London', residential:true}}) as k""")
+
+    result.toList should equal(List(Map("k" -> Seq("name", "age", "address"))))
+  }
+
+  test("Using keys() with map from parameter") {
+
+    val result = execute("""return keys({param}) as k""",
+      "param"->Map("name" -> "Alice", "age" -> 38, "address" -> Map("city" -> "London", "residential" -> true)))
+
+    result.toList should equal(List(Map("k" -> Seq("name", "age", "address"))))
   }
 }

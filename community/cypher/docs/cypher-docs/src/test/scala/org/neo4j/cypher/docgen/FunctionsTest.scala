@@ -167,8 +167,8 @@ class FunctionsTest extends DocumentingTestBase {
     testThis(
       title = "KEYS",
       syntax = "KEYS(  property-container )",
-      arguments = List("property-container" -> "A node or a relationship."),
-      text = """Returns a collection of string representations for the properties names from a node or relationship.""",
+      arguments = List("property-container" -> "A node, a relationship, or a literal map."),
+      text = """Returns a collection of string representations for the property names of a node, relationship, or map.""",
       queryText = """match (a) where a.name='Alice' return keys(a)""",
       returns = """The name of the properties of `n` is returned by the query.""",
       assertions = {

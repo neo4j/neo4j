@@ -20,12 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_2.commands.expressions
 
 import org.mockito.Mockito._
-import org.mockito.invocation.InvocationOnMock
-import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryStateHelper
-import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
+import org.neo4j.cypher.internal.compiler.v2_2.spi.{Operations, QueryContext}
 import org.neo4j.graphdb.Node
 
 class KeysFunctionTest extends CypherFunSuite {
@@ -35,15 +33,13 @@ class KeysFunctionTest extends CypherFunSuite {
     val node = mock[Node]
     val queryContext = mock[QueryContext]
 
-    val ls = List(11,12,13)
-    val lsValues = List("theProp1","OtherProp","MoreProp")
-    when(queryContext.getPropertiesForNode(node.getId)).then(new Answer[Iterator[Long]]() {
-      def answer(invocation: InvocationOnMock): Iterator[Long] = ls.toIterator.map(_.toLong)
-    })
+    val ops = mock[Operations[Node]]
+    when(queryContext.nodeOps).thenReturn(ops)
+    when(ops.propertyKeyIds(node.getId)).thenReturn(Iterator(11, 12, 13))
 
-    when(queryContext.getPropertyKeyName(11)).thenReturn(lsValues(0))
-    when(queryContext.getPropertyKeyName(12)).thenReturn(lsValues(1))
-    when(queryContext.getPropertyKeyName(13)).thenReturn(lsValues(2))
+    when(queryContext.getPropertyKeyName(11)).thenReturn("theProp1")
+    when(queryContext.getPropertyKeyName(12)).thenReturn("OtherProp")
+    when(queryContext.getPropertyKeyName(13)).thenReturn("MoreProp")
 
     val state = QueryStateHelper.emptyWith(query = queryContext)
     val ctx = ExecutionContext() += ("n" -> node)
@@ -52,21 +48,17 @@ class KeysFunctionTest extends CypherFunSuite {
     val result = KeysFunction(Identifier("n"))(ctx)(state)
 
     // THEN
-    result should equal(lsValues)
+    result should equal(Seq("theProp1","OtherProp","MoreProp"))
   }
 
   test("test without Property Keys ") {
-
     // GIVEN
-    val expectedNull: Any = null
     val node = mock[Node]
     val queryContext = mock[QueryContext]
+    val ops = mock[Operations[Node]]
+    when(queryContext.nodeOps).thenReturn(ops)
+    when(ops.propertyKeyIds(node.getId)).thenReturn(Iterator.empty)
 
-    val ls = List()
-
-    when(queryContext.getPropertiesForNode(node.getId)).then(new Answer[Iterator[Long]]() {
-      def answer(invocation: InvocationOnMock): Iterator[Long] = ls.toIterator
-    })
 
     val state = QueryStateHelper.emptyWith(query = queryContext)
     val ctx = ExecutionContext() += ("n" -> node)
@@ -74,9 +66,19 @@ class KeysFunctionTest extends CypherFunSuite {
     // WHEN
     val result = KeysFunction(Identifier("n"))(ctx)(state)
 
-
     // THEN
-    //result should equal(expectedNull)
-    result should equal(List())
+    result should equal(Seq.empty)
+  }
+
+  test("test using a literal map") {
+    // GIVEN
+    val queryContext = mock[QueryContext]
+    val state = QueryStateHelper.emptyWith(query = queryContext)
+    val ctx = ExecutionContext.empty
+
+    // WHEN
+    val result = KeysFunction(LiteralMap(Map("foo" -> Literal(1), "bar" -> Literal(2), "baz" -> Literal(3))))(ctx)(state)
+
+    result should equal(Seq("foo", "bar", "baz"))
   }
 }
