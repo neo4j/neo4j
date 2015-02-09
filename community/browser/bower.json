@@ -30,7 +30,8 @@
     "json3": "3.3.0",
     "local-storage-js": "latest",
     "modernizr": "git+https://github.com/ejoubaud/bower-modernizr.git#2.6.2",
-    "UUID.js": "git@github.com:LiosK/UUID.js.git"
+    "UUID.js": "git@github.com:LiosK/UUID.js.git",
+    "canvg": "https://canvg.googlecode.com/files/canvg-1.3.zip"
   },
   "devDependencies": {
     "angular-mocks": "~1.3.0",
