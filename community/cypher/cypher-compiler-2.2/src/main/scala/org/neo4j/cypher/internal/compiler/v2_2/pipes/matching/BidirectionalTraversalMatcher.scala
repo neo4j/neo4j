@@ -25,7 +25,7 @@ import pipes.{EntityProducer, QueryState}
 import org.neo4j.graphdb.{Node, Path}
 import org.neo4j.graphdb.traversal._
 import org.neo4j.kernel.{StandardBranchCollisionDetector, Uniqueness, Traversal}
-import org.neo4j.kernel.impl.traversal.BranchCollisionPolicy
+import org.neo4j.graphdb.traversal.BranchCollisionPolicy
 import collection.JavaConverters._
 
 class BidirectionalTraversalMatcher(steps: ExpanderStep,

@@ -23,6 +23,7 @@ import java.util.{Map => JavaMap}
 
 import org.neo4j.cypher.internal.compiler.v2_2.parser.ParserMonitor
 import org.neo4j.cypher.internal.compiler.v2_2.prettifier.Prettifier
+import org.neo4j.cypher.internal.compiler.v2_2.spi.{DevNullLogger, Logger}
 import org.neo4j.cypher.internal.compiler.v2_2.{Cost, CypherCacheMonitor, MonitoringCacheAccessor, PlannerName}
 import org.neo4j.cypher.internal.{CypherCompiler, _}
 import org.neo4j.graphdb.GraphDatabaseService
@@ -31,14 +32,13 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.query.{QueryEngineProvider, QueryExecutionMonitor, QuerySession}
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
-import org.neo4j.kernel.impl.util.StringLogger
 import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase, api, monitoring}
 
 import scala.collection.JavaConverters._
 
 trait StringCacheMonitor extends CypherCacheMonitor[String, api.Statement]
 
-class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL) {
+class ExecutionEngine(graph: GraphDatabaseService, logger: Logger = DevNullLogger.instance) {
 
   require(graph != null, "Can't work with a null graph database")
 
@@ -198,7 +198,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   def prettify(query: String): String = Prettifier(query)
 
-  private def createCompiler(logger: StringLogger): CypherCompiler = {
+  private def createCompiler(logger: Logger): CypherCompiler = {
     val version = CypherVersion(optGraphSetting[String](
       graph, GraphDatabaseSettings.cypher_parser_version, CypherVersion.vDefault.name))
     val planner = PlannerName(optGraphSetting[String](

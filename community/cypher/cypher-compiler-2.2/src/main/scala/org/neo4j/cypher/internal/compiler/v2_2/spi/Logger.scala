@@ -17,21 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal
+package org.neo4j.cypher.internal.compiler.v2_2.spi
 
-import org.neo4j.cypher.ExecutionEngine
-import org.neo4j.cypher.internal.compiler.v2_2.spi.{DevNullLogger, Logger}
-import org.neo4j.graphdb.GraphDatabaseService
+trait Logger {
+  def info(msg: String)
 
-/**
- * This is used by {@link org.neo4j.cypher.javacompat.internal.ServerExecutionEngine} to provide additional
- * API to REST server
- *
- */
-class ServerExecutionEngine(graph: GraphDatabaseService, logger: Logger = DevNullLogger.instance)
-  extends ExecutionEngine(graph, logger) {
+  def warn(msg: String)
 
-  def isPeriodicCommit(query: String) = parseQuery(query).isPeriodicCommit
+  def error(msg: String)
+
+  def debug(msg: String)
 }
 
+object DevNullLogger {
 
+  val instance = new Logger {
+    override def info(msg: String) {}
+
+    override def warn(msg: String) {}
+
+    override def error(msg: String) {}
+
+    override def debug(msg: String) {}
+  }
+}

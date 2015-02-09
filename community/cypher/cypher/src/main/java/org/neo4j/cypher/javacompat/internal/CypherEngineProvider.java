@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.javacompat.internal;
 
+import org.neo4j.cypher.internal.compiler.v2_2.spi.Logger;
+import org.neo4j.cypher.internal.spi.v2_2.DefaultLogger;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
@@ -37,6 +39,7 @@ public class CypherEngineProvider extends QueryEngineProvider
     protected QueryExecutionEngine createEngine( GraphDatabaseAPI graphAPI )
     {
         Logging logging = graphAPI.getDependencyResolver().resolveDependency( Logging.class );
-        return new ServerExecutionEngine( graphAPI, logging.getMessagesLog( QueryExecutionEngine.class ) );
+        Logger logger = new DefaultLogger( logging.getMessagesLog( QueryExecutionEngine.class ) );
+        return new ServerExecutionEngine( graphAPI, logger );
     }
 }
