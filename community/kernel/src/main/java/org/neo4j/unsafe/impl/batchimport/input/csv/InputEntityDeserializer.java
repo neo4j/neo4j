@@ -47,7 +47,7 @@ abstract class InputEntityDeserializer<ENTITY extends InputEntity> extends Prefe
     protected final Header header;
     private final CharSeeker data;
     private final Mark mark = new Mark();
-    private final int[] delimiter;
+    private final int delimiter;
     private final Function<ENTITY,ENTITY> decorator;
 
     // Data
@@ -55,7 +55,7 @@ abstract class InputEntityDeserializer<ENTITY extends InputEntity> extends Prefe
     private Object[] properties = new Object[10*2];
     private int propertiesCursor;
 
-    InputEntityDeserializer( Header header, CharSeeker data, int[] delimiter, Function<ENTITY,ENTITY> decorator )
+    InputEntityDeserializer( Header header, CharSeeker data, int delimiter, Function<ENTITY,ENTITY> decorator )
     {
         this.header = header;
         this.data = data;

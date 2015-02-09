@@ -43,7 +43,7 @@ class CSVResources(cleaner: TaskCloser) extends ExternalResource {
     val delimiter: Char = fieldTerminator.map(_.charAt(0)).getOrElse(CSVResources.DEFAULT_FIELD_TERMINATOR)
     val seeker = CharSeekers.charSeeker(reader, CSVResources.DEFAULT_BUFFER_SIZE, true, CSVResources.DEFAULT_QUOTE_CHAR)
     val extractor = new Extractors(delimiter).string()
-    val delimiters = Array(delimiter.toInt)
+    val intDelimiter = delimiter.toInt
     val mark = new Mark
 
     cleaner.addTask(_ => {
@@ -54,7 +54,7 @@ class CSVResources(cleaner: TaskCloser) extends ExternalResource {
       private def readNextRow: Array[String] = {
         val buffer = new ArrayBuffer[String]
         breakable {
-          while (seeker.seek(mark, delimiters)) {
+          while (seeker.seek(mark, intDelimiter)) {
             val success = seeker.tryExtract(mark, extractor)
             buffer += (if (success) extractor.value() else null)
             if (mark.isEndOfLine) break

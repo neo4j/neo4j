@@ -46,7 +46,7 @@ class InputNodeDeserializer extends InputEntityDeserializer<InputNode>
     private int labelsCursor;
     private final Group group;
 
-    InputNodeDeserializer( Header header, CharSeeker data, int[] delimiter, Function<InputNode,InputNode> decorator,
+    InputNodeDeserializer( Header header, CharSeeker data, int delimiter, Function<InputNode,InputNode> decorator,
             boolean idsAreExternal, Groups groups )
     {
         super( header, data, delimiter, decorator );

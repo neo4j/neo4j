@@ -501,14 +501,14 @@ public class BufferedCharSeekerTest
         return builder.toString();
     }
 
-    private void assertNextValue( CharSeeker seeker, Mark mark, int[] delimiter, String expectedValue )
+    private void assertNextValue( CharSeeker seeker, Mark mark, int delimiter, String expectedValue )
             throws IOException
     {
         assertTrue( seeker.seek( mark, delimiter ) );
         assertEquals( expectedValue, seeker.extract( mark, extractors.string() ).value() );
     }
 
-    private void assertNextValueNotExtracted( CharSeeker seeker, Mark mark, int[] delimiter ) throws IOException
+    private void assertNextValueNotExtracted( CharSeeker seeker, Mark mark, int delimiter ) throws IOException
     {
         assertTrue( seeker.seek( mark, delimiter ) );
         assertFalse( seeker.tryExtract( mark, extractors.string() ) );
@@ -548,8 +548,8 @@ public class BufferedCharSeekerTest
         return seeker( wrap( new StringReader( data ) ), bufferSize );
     }
 
-    private static final int[] TAB = new int[] { '\t' };
-    private static final int[] COMMA = new int[] { ',' };
+    private static final int TAB = '\t';
+    private static final int COMMA = ',';
     private static final Random random = new Random();
     private final Extractors extractors = new Extractors( ',' );
     private final Mark mark = new Mark();

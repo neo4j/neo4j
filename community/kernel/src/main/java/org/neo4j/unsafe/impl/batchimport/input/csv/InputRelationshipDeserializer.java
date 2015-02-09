@@ -42,7 +42,7 @@ class InputRelationshipDeserializer extends InputEntityDeserializer<InputRelatio
     private final Group startNodeGroup;
     private final Group endNodeGroup;
 
-    InputRelationshipDeserializer( Header header, CharSeeker data, int[] delimiter, IdSequence idSequence,
+    InputRelationshipDeserializer( Header header, CharSeeker data, int delimiter, IdSequence idSequence,
             Function<InputRelationship,InputRelationship> decorator, Groups groups )
     {
         super( header, data, delimiter, decorator );

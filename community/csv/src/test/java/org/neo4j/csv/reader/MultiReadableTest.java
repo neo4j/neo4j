@@ -151,5 +151,5 @@ public class MultiReadableTest
 
     private final Mark mark = new Mark();
     private final Extractors extractors = new Extractors( ';' );
-    private final int[] delimiter = new int[] {','};
+    private final int delimiter = ',';
 }

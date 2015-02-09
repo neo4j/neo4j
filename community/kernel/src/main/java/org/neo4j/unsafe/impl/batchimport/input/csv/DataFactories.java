@@ -304,7 +304,7 @@ public class DataFactories
                 Mark mark = new Mark();
                 Extractors extractors = new Extractors( config.arrayDelimiter() );
                 Extractor<?> idExtractor = idType.extractor( extractors );
-                int[] delimiter = new int[] {config.delimiter()};
+                int delimiter = config.delimiter();
                 List<Header.Entry> columns = new ArrayList<>();
                 for ( int i = 0; !mark.isEndOfLine() && headerSeeker.seek( mark, delimiter ); i++ )
                 {
