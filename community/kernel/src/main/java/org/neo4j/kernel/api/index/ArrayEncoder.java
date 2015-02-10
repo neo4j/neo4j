@@ -34,25 +34,25 @@ public class ArrayEncoder
         @Override
         protected void encodeBufferPrefix( OutputStream out ) throws IOException
         {
-            // don't initialize the non-thread-safe state
+            // don't initialize the non-thread-safe state and make sure we don't add any buffer prefix
         }
 
         @Override
         protected void encodeBufferSuffix( OutputStream outputStream ) throws IOException
         {
-            // nothing to do here
+            // make sure we don't add any buffer suffix
         }
 
         @Override
         protected void encodeLinePrefix( OutputStream outputStream, int i ) throws IOException
         {
-            // nothing to do here
+            // make sure we don't add any line prefix
         }
 
         @Override
         protected void encodeLineSuffix( OutputStream out ) throws IOException
         {
-            // don't use the non-thread-safe state, but do nothing
+            // don't use the non-thread-safe state and make sure we don't add any line suffix
         }
     };
 

@@ -22,7 +22,9 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -101,6 +103,7 @@ public class SchemaIndexMigrator implements StoreMigrationParticipant
     {
         File indexRoot = getRootDirectory( storeDir, schemaIndexProvider.getProviderDescriptor().getKey() );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
+        List<File> indexesToBeDeleted = new ArrayList<>();
         try ( SchemaStore schema = schemaStoreProvider.provide( storeDir, pageCache ) )
         {
             Iterator<SchemaRule> rules = schema.loadAllSchemaRules();
@@ -115,12 +118,18 @@ public class SchemaIndexMigrator implements StoreMigrationParticipant
                     {
                         if ( reader.valueTypesInIndex().contains( Array.class ) )
                         {
-                            fileSystem.deleteRecursively( new File( indexRoot, "" + rule.getId() ) );
+                            indexesToBeDeleted.add( new File( indexRoot, "" + rule.getId() ) );
                         }
                     }
                 }
             }
         }
+
+        for ( File index : indexesToBeDeleted )
+        {
+            fileSystem.deleteRecursively( index );
+        }
+
     }
 
     @Override
