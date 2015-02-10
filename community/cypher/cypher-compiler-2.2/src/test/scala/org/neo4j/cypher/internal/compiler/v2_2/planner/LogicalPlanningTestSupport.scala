@@ -176,7 +176,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   implicit def idName(name: String): IdName = IdName(name)
 }
 
-case class FakePlan(availableSymbols: Set[IdName])(val solved: PlannerQuery) extends LogicalPlan {
+case class FakePlan(availableSymbols: Set[IdName])(val solved: PlannerQuery) extends LogicalPlan with LogicalPlanWithoutExpressions {
   def rhs = None
   def lhs = None
 }

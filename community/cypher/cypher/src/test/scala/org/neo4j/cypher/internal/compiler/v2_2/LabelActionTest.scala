@@ -157,4 +157,8 @@ class SnitchingQueryContext extends QueryContext {
   def relationshipEndNode(rel: Relationship) = ???
 
   def getRelationshipsForIds(node: Node, dir: Direction, types: Option[Seq[Int]]): Iterator[Relationship] = ???
+
+  def nodeGetDegree(node: Long, dir: Direction): Int = ???
+
+  def nodeGetDegree(node: Long, dir: Direction, relTypeId: Int): Int = ???
 }

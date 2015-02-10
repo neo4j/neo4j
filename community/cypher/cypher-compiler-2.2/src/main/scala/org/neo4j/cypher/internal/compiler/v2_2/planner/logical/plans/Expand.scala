@@ -27,7 +27,14 @@ sealed trait ExpansionMode
 case object ExpandAll extends ExpansionMode
 case object ExpandInto extends ExpansionMode
 
-case class Expand(left: LogicalPlan, from: IdName, dir: Direction, types: Seq[RelTypeName], to: IdName, relName: IdName, mode: ExpansionMode = ExpandAll)(val solved: PlannerQuery) extends LogicalPlan {
+case class Expand(left: LogicalPlan,
+                  from: IdName,
+                  dir: Direction,
+                  types: Seq[RelTypeName],
+                  to: IdName, relName: IdName,
+                  mode: ExpansionMode = ExpandAll)(val solved: PlannerQuery)
+  extends LogicalPlan with LogicalPlanWithoutExpressions {
+
   val lhs = Some(left)
   def rhs = None
 

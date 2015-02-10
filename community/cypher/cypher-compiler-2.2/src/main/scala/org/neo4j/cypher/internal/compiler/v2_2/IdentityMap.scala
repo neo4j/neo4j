@@ -25,6 +25,7 @@ import java.util
 
 object IdentityMap {
   def empty[K, V]: IdentityMap[K, V] = IdentityMap()
+
   def apply[K, V](elems: (K, V)*): IdentityMap[K, V] = {
     val idMap = new util.IdentityHashMap[K, V]()
     elems.foreach {
@@ -35,6 +36,9 @@ object IdentityMap {
 }
 
 case class IdentityMap[K, V] private (idMap: util.IdentityHashMap[K, V] = new util.IdentityHashMap[K, V]()) extends Map[K, V] {
+
+  self =>
+
   override def get(key: K): Option[V] =
     idMap.get(key) match {
       case null => None

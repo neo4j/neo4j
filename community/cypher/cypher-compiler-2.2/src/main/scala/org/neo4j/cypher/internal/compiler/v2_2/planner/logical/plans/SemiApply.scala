@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 
 case class SemiApply(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery)
-  extends AbstractSemiApply(left, right, solved)
+  extends AbstractSemiApply(left, right, solved) with LogicalPlanWithoutExpressions
 
 case class AntiSemiApply(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery)
-  extends AbstractSemiApply(left, right, solved)
+  extends AbstractSemiApply(left, right, solved) with LogicalPlanWithoutExpressions
 
 abstract class AbstractSemiApply(left: LogicalPlan, right: LogicalPlan, solved: PlannerQuery) extends LogicalPlan {
   val lhs = Some(left)

@@ -22,8 +22,11 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 
 
-case class CartesianProduct(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery) extends LogicalPlan {
+case class CartesianProduct(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery)
+  extends LogicalPlan with LogicalPlanWithoutExpressions {
+
   val lhs = Some(left)
   val rhs = Some(right)
+
   def availableSymbols = left.availableSymbols ++ right.availableSymbols
 }

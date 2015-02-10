@@ -17,21 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
+package org.neo4j.cypher.internal.compiler.v2_2.ast
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
+import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
+import org.neo4j.graphdb.Direction
 
-case class SingleRow()
-  extends LogicalLeafPlan with LogicalPlanWithoutExpressions {
+case class GetDegree(node: Expression, relType: Option[RelTypeName], dir: Direction)(val position: InputPosition)
+  extends Expression with SimpleTyping {
+  protected def possibleTypes = CTAny.covariant
 
-  def availableSymbols = argumentIds
-
-  def argumentIds = Set.empty
-
-  def solved = PlannerQuery.empty
-
-  override def dup(children: Seq[AnyRef]) = {
-    assert(children.isEmpty)
-    SingleRow().asInstanceOf[this.type]
-  }
+  override def semanticCheck(ctx: SemanticContext) =
+      node.semanticCheck(ctx) chain
+      node.expectType(CTNode.covariant) chain
+      super.semanticCheck(ctx)
 }

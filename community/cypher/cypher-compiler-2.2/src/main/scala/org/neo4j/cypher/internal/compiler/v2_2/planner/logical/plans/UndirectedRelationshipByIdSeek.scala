@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 
 case class UndirectedRelationshipByIdSeek(idName: IdName,
@@ -26,7 +27,10 @@ case class UndirectedRelationshipByIdSeek(idName: IdName,
                                           leftNode: IdName,
                                           rightNode: IdName,
                                           argumentIds: Set[IdName])(val solved: PlannerQuery)
-extends LogicalLeafPlan {
+  extends LogicalLeafPlan {
 
   def availableSymbols = argumentIds ++ Set(idName, leftNode, rightNode)
+
+  override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
+    copy(relIds = relIds.mapExpressions(f(argumentIds, _)))(solved)
 }

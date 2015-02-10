@@ -84,7 +84,13 @@ abstract class LogicalPlan
         constructor.invoke(this, args: _*).asInstanceOf[this.type]
     }
 
-  def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan = self
+  def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan
+}
+
+trait LogicalPlanWithoutExpressions {
+  self: LogicalPlan =>
+
+  override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan = self
 }
 
 abstract class LogicalLeafPlan extends LogicalPlan {

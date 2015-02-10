@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 
 class IdentityMapTest extends CypherFunSuite {
+
   case class Val()
 
   test("should store and retrieve based on object identity") {
@@ -61,5 +62,14 @@ class IdentityMapTest extends CypherFunSuite {
     assert(map.get(y) === None)
     assert(updatedMap.get(x) === Some("x'"))
     assert(updatedMap.get(y) === Some("y"))
+  }
+
+  test("should know contained keys") {
+    val k1 = Val()
+    val k2 = Val()
+    val map = IdentityMap(k1 -> "x")
+
+    assert(map.contains(k1))
+    assert(!map.contains(k2))
   }
 }

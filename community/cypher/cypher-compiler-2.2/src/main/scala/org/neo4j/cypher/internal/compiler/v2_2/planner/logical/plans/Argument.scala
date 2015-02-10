@@ -25,7 +25,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
 // Argument is used inside of an Apply to feed the row from the LHS of the Apply to the leaf of the RHS
 case class Argument(argumentIds: Set[IdName])(val solved: PlannerQuery)
-                    (val typeInfo: Map[String, CypherType] = argumentIds.map( id => id.name -> CTNode).toMap) extends LogicalLeafPlan {
+                    (val typeInfo: Map[String, CypherType] = argumentIds.map( id => id.name -> CTNode).toMap)
+  extends LogicalLeafPlan with LogicalPlanWithoutExpressions {
+
   def availableSymbols = argumentIds
 
   override def dup(children: Seq[AnyRef]) = children.size match {

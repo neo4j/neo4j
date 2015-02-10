@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2
 
 import java.lang.reflect.Method
+
 import scala.annotation.tailrec
 import scala.collection.mutable.{HashMap => MutableHashMap}
 
@@ -41,7 +42,7 @@ object Rewritable {
   }
 
   implicit class DuplicatableAny(val that: AnyRef) extends AnyVal {
-    import Foldable._
+    import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
 
     def dup(children: Seq[AnyRef]): AnyRef = that match {
       case a: Rewritable =>
@@ -67,7 +68,7 @@ object Rewritable {
   }
 
   implicit class DuplicatableProduct(val product: Product) extends AnyVal {
-    import Foldable._
+    import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
 
     def dup(children: Seq[AnyRef]): Product = product match {
       case a: Rewritable =>
@@ -102,7 +103,7 @@ trait Rewritable {
 }
 
 object inSequence {
-  import Rewritable._
+  import org.neo4j.cypher.internal.compiler.v2_2.Rewritable._
 
   class InSequenceRewriter(rewriters: Seq[Rewriter]) extends Rewriter {
     def apply(that: AnyRef): AnyRef = {
@@ -122,8 +123,8 @@ object inSequence {
 }
 
 object topDown {
-  import Foldable._
-  import Rewritable._
+  import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
+  import org.neo4j.cypher.internal.compiler.v2_2.Rewritable._
 
   class TopDownRewriter(rewriter: Rewriter) extends Rewriter {
     def apply(that: AnyRef): AnyRef = {
@@ -147,8 +148,8 @@ object topDown {
 }
 
 object bottomUp {
-  import Foldable._
-  import Rewritable._
+  import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
+  import org.neo4j.cypher.internal.compiler.v2_2.Rewritable._
 
   class BottomUpRewriter(val rewriter: Rewriter) extends Rewriter {
     def apply(that: AnyRef): AnyRef = {
@@ -169,6 +170,40 @@ object bottomUp {
   }
 
   def apply(rewriter: Rewriter) = new BottomUpRewriter(rewriter)
+}
+
+trait Replacer {
+  def expand(replacement: AnyRef): AnyRef
+  def stop(replacement: AnyRef): AnyRef
+}
+
+case class replace(strategy: (Replacer => (AnyRef => AnyRef))) extends Rewriter {
+
+  self =>
+
+  import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
+  import org.neo4j.cypher.internal.compiler.v2_2.Rewritable._
+
+  private val cont = strategy(new Replacer {
+    def expand(replacement: AnyRef) = {
+      //this piece of code is used a lot and has been through profiling
+      //please don't just remove it because it is ugly looking
+      val children = replacement.children.toList
+      val buffer = new Array[AnyRef](children.size)
+      val it = children.iterator
+      var index = 0
+      while (it.hasNext) {
+        buffer(index) = apply(it.next())
+        index += 1
+      }
+
+      replacement.dup(buffer)
+    }
+
+    def stop(replacement: AnyRef) = replacement
+  })
+
+  def apply(that: AnyRef): AnyRef = cont(that)
 }
 
 case class repeat(rewriter: Rewriter) extends Rewriter {

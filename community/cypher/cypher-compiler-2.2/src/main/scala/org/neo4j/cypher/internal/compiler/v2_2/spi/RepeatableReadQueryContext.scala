@@ -36,6 +36,16 @@ final class RepeatableReadQueryContext(inner: QueryContext, locker: Locker) exte
     inner.getLabelsForNode(node)
   }
 
+  override def nodeGetDegree(node: Long, dir: Direction): Int = {
+    lockNode(node)
+    inner.nodeGetDegree(node, dir)
+  }
+
+  override def nodeGetDegree(node: Long, dir: Direction, relTypeId: Int): Int = {
+    lockNode(node)
+    inner.nodeGetDegree(node, dir, relTypeId)
+  }
+
   override def isLabelSetOnNode(label: Int, node: Long): Boolean = {
     lockNode(node)
     inner.isLabelSetOnNode(label, node)

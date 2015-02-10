@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2
 
 import scala.annotation.tailrec
 import scala.collection.mutable
+import scala.reflect.ClassTag
 
 object Foldable {
   implicit class TreeAny(val that: Any) extends AnyVal {
@@ -54,6 +55,9 @@ object Foldable {
 
     def exists(f: PartialFunction[Any, Boolean]) =
       existsAcc(mutable.ArrayStack(that), f.lift)
+
+    def findByClass[A : Manifest]: A =
+      findAcc[A](mutable.ArrayStack(that))
   }
 
   @tailrec
@@ -90,6 +94,18 @@ object Foldable {
           true
         case _ =>
           existsAcc(remaining ++= that.reverseChildren, f)
+      }
+    }
+
+  @tailrec
+  private def findAcc[A : ClassTag](remaining: mutable.ArrayStack[Any]): A =
+    if (remaining.isEmpty) {
+      throw new NoSuchElementException
+    } else {
+      val that = remaining.pop()
+      that match {
+        case x: A => x
+        case _ => findAcc(remaining ++= that.reverseChildren)
       }
     }
 }

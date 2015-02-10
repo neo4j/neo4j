@@ -102,7 +102,7 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph])
     }
 
     private def rhsPlan(planArguments: Set[IdName], pattern: PatternExpression)(implicit context: LogicalPlanningContext): LogicalPlan = {
-      val (plan, _) = QueryPlanningStrategy.planPatternExpression(planArguments, pattern)
+      val (plan, _) = context.strategy.planPatternExpression(planArguments, pattern)
       plan
     }
 

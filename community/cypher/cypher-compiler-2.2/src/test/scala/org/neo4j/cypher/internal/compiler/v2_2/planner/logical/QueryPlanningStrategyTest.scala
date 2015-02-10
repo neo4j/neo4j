@@ -29,38 +29,50 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSuppo
 class QueryPlanningStrategyTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("names unnamed patterns when planning pattern expressions") {
+
     // given
-    implicit val context = LogicalPlanningContext(null, null, SemanticTable(), mock[QueryGraphSolver], QueryGraphCardinalityInput.empty)
+    val expectedPlan = mock[LogicalPlan]
+    val solver = new TentativeQueryGraphSolver {
+      override def tryPlan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): Option[LogicalPlan] = ???
+      override def emptyPlanTable: PlanTable = ???
+      override def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = expectedPlan
+    }
+
+    implicit val context = LogicalPlanningContext(null, null, SemanticTable(), solver, QueryGraphCardinalityInput.empty)
     val patExpr = parsePatternExpression("WITH {a} AS a, {r} AS r, {b} AS b LIMIT 1 RETURN ()-[]->(b)")
 
     // when
-    val (_, namedExpr) = QueryPlanningStrategy.planPatternExpression(Set.empty, patExpr)
+    val (producedPlan, namedExpr) = solver.planPatternExpression(Set.empty, patExpr)
 
     // then
     val expectedExpr = parsePatternExpression("WITH {a} AS a, {r} AS r, {b} AS b LIMIT 1 RETURN (`  UNNAMED50`)-[`  UNNAMED52`]->(b)")
 
     expectedExpr should equal(namedExpr)
+    expectedPlan should equal(producedPlan)
   }
 
   test("build correct semantic table when planning pattern expressions") {
 
-    // then
-    val solver = new QueryGraphSolver {
+    // given
+    val expectedPlan = mock[LogicalPlan]
+    val solver = new QueryGraphSolver with PatternExpressionSolving {
       override def emptyPlanTable: PlanTable = ???
       override def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = {
         val table = context.semanticTable
         table.isNode(Identifier("  UNNAMED50")(InputPosition(49, 1, 50))) should be(true)
         table.isRelationship(Identifier("  UNNAMED52")(InputPosition(51, 1, 52))) should be(true)
-        null
+        expectedPlan
       }
     }
 
-    // given
     implicit val context = LogicalPlanningContext(null, null, SemanticTable(), solver, QueryGraphCardinalityInput.empty)
     val patExpr = parsePatternExpression("WITH {a} AS a, {r} AS r, {b} AS b LIMIT 1 RETURN ()-[]->(b)")
 
     // when
-    QueryPlanningStrategy.planPatternExpression(Set.empty, patExpr)
+    val (producedPlan, _) = solver.planPatternExpression(Set.empty, patExpr)
+
+    // then
+    expectedPlan should equal(producedPlan)
   }
 
   private def parsePatternExpression(query: String): PatternExpression = {

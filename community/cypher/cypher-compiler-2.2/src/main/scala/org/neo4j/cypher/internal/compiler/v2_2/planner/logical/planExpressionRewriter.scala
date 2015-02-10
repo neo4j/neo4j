@@ -17,21 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
+package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{NestedPlanExpression, PatternExpression, Expression}
+import org.neo4j.cypher.internal.compiler.v2_2.{bottomUp, IdentityMap, Rewriter}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalPlan}
 
-case class SingleRow()
-  extends LogicalLeafPlan with LogicalPlanWithoutExpressions {
+case class planExpressionRewriter(rewriterFactory: (Set[IdName], Expression, LogicalPlanningContext) => Rewriter) extends (LogicalPlanningContext => Rewriter) {
 
-  def availableSymbols = argumentIds
-
-  def argumentIds = Set.empty
-
-  def solved = PlannerQuery.empty
-
-  override def dup(children: Seq[AnyRef]) = {
-    assert(children.isEmpty)
-    SingleRow().asInstanceOf[this.type]
+  def apply(context: LogicalPlanningContext): Rewriter = Rewriter.lift {
+    case plan: LogicalPlan =>
+      plan.mapExpressions {
+        case (arguments, expression) =>
+          val rewriter = rewriterFactory(arguments, expression, context)
+          expression.endoRewrite(rewriter)
+      }
   }
 }
+
+

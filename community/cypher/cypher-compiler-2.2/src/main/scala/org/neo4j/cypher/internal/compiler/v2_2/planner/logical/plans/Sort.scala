@@ -22,8 +22,11 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.SortDescription
 import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 
-case class Sort(left: LogicalPlan, sortItems: Seq[SortDescription])(val solved: PlannerQuery) extends LogicalPlan {
+case class Sort(left: LogicalPlan, sortItems: Seq[SortDescription])(val solved: PlannerQuery)
+  extends LogicalPlan with LogicalPlanWithoutExpressions {
+
   val lhs = Some(left)
   val rhs = None
+
   def availableSymbols = left.availableSymbols
 }
