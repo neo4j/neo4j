@@ -40,6 +40,7 @@ import org.junit.runners.Parameterized;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -55,6 +56,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
@@ -72,9 +74,12 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NodeLabels;
+import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -84,13 +89,16 @@ import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.Integer.parseInt;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -176,6 +184,8 @@ public class BatchInsertTest
     }
 
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+
+    @Rule public final PageCacheRule pageCacheRule = new PageCacheRule();
 
     private Map<String, String> configuration()
     {
@@ -284,6 +294,15 @@ public class BatchInsertTest
                 // Shouldn't be necessary to set dense node threshold since it's a stick config
                 .setConfig( configuration() )
                 .newGraphDatabase();
+    }
+
+    private NeoStore switchToNeoStore( BatchInserter inserter )
+    {
+        inserter.shutdown();
+        File dir = new File( inserter.getStoreDir() );
+        PageCache pageCache = pageCacheRule.getPageCache( fs.get() );
+        StoreFactory storeFactory = new StoreFactory( fs.get(), dir, pageCache, StringLogger.DEV_NULL, new Monitors() );
+        return storeFactory.newNeoStore( false );
     }
 
     @Test
@@ -1276,6 +1295,61 @@ public class BatchInsertTest
         // THEN
         assertEquals( 21, gottenRelationships.size() );
         inserter.shutdown();
+    }
+
+    @Test
+    public void shouldNotCreateSameLabelTwiceOnSameNode() throws Exception
+    {
+        // GIVEN
+        BatchInserter inserter = newBatchInserter();
+
+        // WHEN
+        long nodeId = inserter.createNode( map( "itemId", 1000l ), DynamicLabel.label( "Item" ),
+                DynamicLabel.label( "Item" ) );
+
+        // THEN
+        NeoStore neoStore = switchToNeoStore( inserter );
+        try
+        {
+            NodeRecord node = neoStore.getNodeStore().getRecord( nodeId );
+            NodeLabels labels = NodeLabelsField.parseLabelsField( node );
+            long[] labelIds = labels.get( neoStore.getNodeStore() );
+            assertEquals( 1, labelIds.length );
+        }
+        finally
+        {
+            neoStore.close();
+        }
+    }
+
+    @Test
+    public void shouldSortLabelIdsWhenGetOrCreate() throws Exception
+    {
+        // GIVEN
+        BatchInserter inserter = newBatchInserter();
+
+        // WHEN
+        long nodeId = inserter.createNode( map( "Item", 123456789123l ), DynamicLabel.label( "AA" ),
+                DynamicLabel.label( "BB" ), DynamicLabel.label( "CC" ), DynamicLabel.label( "DD" ) );
+        inserter.setNodeLabels( nodeId, DynamicLabel.label( "CC" ), DynamicLabel.label( "AA" ),
+                DynamicLabel.label( "DD" ), DynamicLabel.label( "EE" ), DynamicLabel.label( "FF" ) );
+
+        // THEN
+        NeoStore neoStore = switchToNeoStore( inserter );
+        try
+        {
+            NodeRecord node = neoStore.getNodeStore().getRecord( nodeId );
+            NodeLabels labels = NodeLabelsField.parseLabelsField( node );
+
+            long[] labelIds = labels.get( neoStore.getNodeStore() );
+            long[] sortedLabelIds = labelIds.clone();
+            Arrays.sort( sortedLabelIds );
+            assertArrayEquals( sortedLabelIds, labelIds );
+        }
+        finally
+        {
+            neoStore.close();
+        }
     }
 
     private void createRelationships( BatchInserter inserter, long node, RelationshipType relType,

@@ -69,10 +69,11 @@ public class InlineNodeLabels implements NodeLabels
     @Override
     public Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator allocator )
     {
-        return put( node, labelIds, nodeStore, allocator );
+        Arrays.sort( labelIds );
+        return putSorted( node, labelIds, nodeStore, allocator );
     }
 
-    public static Collection<DynamicRecord> put( NodeRecord node, long[] labelIds, NodeStore nodeStore,
+    public static Collection<DynamicRecord> putSorted( NodeRecord node, long[] labelIds, NodeStore nodeStore,
             DynamicRecordAllocator allocator )
     {
         if ( tryInlineInNodeRecord( node, labelIds, node.getDynamicLabelRecords() ) )
@@ -80,7 +81,7 @@ public class InlineNodeLabels implements NodeLabels
             return Collections.emptyList();
         }
 
-        return DynamicNodeLabels.put( node, labelIds, nodeStore, allocator );
+        return DynamicNodeLabels.putSorted( node, labelIds, nodeStore, allocator );
     }
 
     @Override
@@ -89,7 +90,7 @@ public class InlineNodeLabels implements NodeLabels
         long[] augmentedLabelIds = labelCount( labelField ) == 0 ? new long[]{labelId} :
                                    concatAndSort( parseInlined( labelField ), labelId );
 
-        return put( augmentedLabelIds, nodeStore, allocator );
+        return putSorted( node, augmentedLabelIds, nodeStore, allocator );
     }
 
     @Override

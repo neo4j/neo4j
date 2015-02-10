@@ -85,10 +85,11 @@ public class DynamicNodeLabels implements NodeLabels
     @Override
     public Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator allocator )
     {
-        return put( node, labelIds, nodeStore, allocator );
+        Arrays.sort( labelIds );
+        return putSorted( node, labelIds, nodeStore, allocator );
     }
 
-    public static Collection<DynamicRecord> put( NodeRecord node, long[] labelIds, NodeStore nodeStore,
+    public static Collection<DynamicRecord> putSorted( NodeRecord node, long[] labelIds, NodeStore nodeStore,
             DynamicRecordAllocator allocator )
     {
         long existingLabelsField = node.getLabelField();

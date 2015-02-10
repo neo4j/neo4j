@@ -89,7 +89,7 @@ public final class NodeEncoderStep extends ExecutorServiceStep<List<InputNode>>
             else
             {
                 long[] labels = labelHolder.getOrCreateIds( batchNode.labels() );
-                InlineNodeLabels.put( nodeRecord, labels, null, nodeStore.getDynamicLabelStore() );
+                InlineNodeLabels.putSorted( nodeRecord, labels, null, nodeStore.getDynamicLabelStore() );
             }
         }
         return entities;
