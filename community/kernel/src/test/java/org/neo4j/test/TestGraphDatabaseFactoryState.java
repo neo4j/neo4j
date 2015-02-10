@@ -21,6 +21,7 @@ package org.neo4j.test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public class TestGraphDatabaseFactoryState extends GraphDatabaseFactoryState
 {
@@ -44,6 +45,7 @@ public class TestGraphDatabaseFactoryState extends GraphDatabaseFactoryState
     {
         return fileSystem;
     }
+
 
     public void setFileSystem( FileSystemAbstraction fileSystem )
     {

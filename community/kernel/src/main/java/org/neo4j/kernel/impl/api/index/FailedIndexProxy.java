@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 import static org.neo4j.helpers.FutureAdapter.VOID;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
@@ -37,19 +38,24 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
 {
     protected final IndexPopulator populator;
     private final String indexUserDescription;
+    private final StringLogger logger;
 
-    public FailedIndexProxy(IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
-                            String indexUserDescription,
-                            IndexPopulator populator, IndexPopulationFailure populationFailure)
+    public FailedIndexProxy( IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
+            String indexUserDescription,
+            IndexPopulator populator, IndexPopulationFailure populationFailure, StringLogger logger )
     {
         super( descriptor, providerDescriptor, populationFailure );
         this.populator = populator;
         this.indexUserDescription = indexUserDescription;
+        this.logger = logger;
     }
 
     @Override
     public Future<Void> drop() throws IOException
     {
+        String message = "FailedIndexProxy#drop index on " + indexUserDescription + " dropped due to:\n" +
+                     getPopulationFailure().asString();
+        logger.info( message );
         populator.drop();
         return VOID;
     }
