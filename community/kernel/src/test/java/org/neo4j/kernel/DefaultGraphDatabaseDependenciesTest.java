@@ -23,7 +23,9 @@ import org.hamcrest.Matcher;
 import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.BufferingLogging;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -61,7 +63,8 @@ public class DefaultGraphDatabaseDependenciesTest
     public void canSpecifyLoggerAndSettingsClasses()
     {
         Logging logging = new BufferingLogging();
-        GraphDatabaseDependencies deps = new DefaultGraphDatabaseDependencies( logging, A.class, B.class );
+        GraphDatabaseDependencies deps = new DefaultGraphDatabaseDependencies( logging, new Monitors(),
+                A.class, B.class );
         assertThat( deps.logging(), sameInstance( logging ) );
         verifySettingsClasses( deps, A.class, B.class );
     }

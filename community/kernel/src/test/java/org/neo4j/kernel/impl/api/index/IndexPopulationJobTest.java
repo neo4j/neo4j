@@ -592,7 +592,7 @@ public class IndexPopulationJobTest
                 format( ":%s(%s)", label.name(), propertyKey ),
                 failureDelegateFactory,
                 populator, flipper, storeView,
-                stateHolder, new SingleLoggingService( logger ) );
+                stateHolder, new SingleLoggingService( logger ), IndexingService.NO_MONITOR );
     }
 
     private long createNode( Map<String, Object> properties, Label... labels )

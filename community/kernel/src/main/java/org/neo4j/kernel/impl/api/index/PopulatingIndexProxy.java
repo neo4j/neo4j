@@ -58,14 +58,15 @@ public class PopulatingIndexProxy implements IndexProxy
                                  final IndexPopulator writer,
                                  FlippableIndexProxy flipper,
                                  IndexStoreView storeView, final String indexUserDescription,
-                                 UpdateableSchemaState updateableSchemaState, Logging logging )
+                                 UpdateableSchemaState updateableSchemaState, Logging logging,
+            IndexingService.Monitor monitor)
     {
         this.scheduler  = scheduler;
         this.descriptor = descriptor;
         this.providerDescriptor = providerDescriptor;
         this.job  = new IndexPopulationJob( descriptor, providerDescriptor,
                 indexUserDescription, failureDelegateFactory, writer, flipper, storeView,
-                updateableSchemaState, logging );
+                updateableSchemaState, logging, monitor );
     }
 
     @Override

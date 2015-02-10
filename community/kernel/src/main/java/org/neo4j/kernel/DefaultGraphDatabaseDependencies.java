@@ -28,6 +28,7 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public class DefaultGraphDatabaseDependencies extends GraphDatabaseDependencies
 {
@@ -38,18 +39,19 @@ public class DefaultGraphDatabaseDependencies extends GraphDatabaseDependencies
 
     public DefaultGraphDatabaseDependencies( Logging logging )
     {
-        this( logging, GraphDatabaseSettings.class );
+        this( logging, new Monitors(), GraphDatabaseSettings.class );
     }
 
     public DefaultGraphDatabaseDependencies( Class<?>... settingsClasses )
     {
-        this( null, settingsClasses );
+        this( null, new Monitors(),
+                settingsClasses );
     }
 
-    public DefaultGraphDatabaseDependencies( Logging logging, Class<?>... settingsClasses )
+    public DefaultGraphDatabaseDependencies( Logging logging, Monitors monitors, Class<?>... settingsClasses )
     {
         super(
-                logging,
+                monitors, logging,
                 Arrays.<Class<?>>asList( settingsClasses ),
                 Iterables.<KernelExtensionFactory<?>,KernelExtensionFactory>cast( Service.load( KernelExtensionFactory.class ) ),
                 Service.load( CacheProvider.class ),

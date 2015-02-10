@@ -711,8 +711,8 @@ public class XaResourceManager
 
     synchronized void checkXids() throws IOException
     {
-        msgLog.logMessage( "XaResourceManager[" + name + "] sorting " +
-                xidMap.size() + " xids" );
+        msgLog.debug( "XaResourceManager[" + name + "] sorting " +
+                      xidMap.size() + " xids" );
         Iterator<Xid> keyIterator = xidMap.keySet().iterator();
         LinkedList<Xid> xids = new LinkedList<>();
         while ( keyIterator.hasNext() )
@@ -769,7 +769,7 @@ public class XaResourceManager
     {
         if ( log.scanIsComplete() && recoveredTxCount == 0 )
         {
-            msgLog.logMessage( "XaResourceManager[" + name + "] checkRecoveryComplete " + xidMap.size() + " xids" );
+            msgLog.debug( "XaResourceManager[" + name + "] checkRecoveryComplete " + xidMap.size() + " xids" );
             // log.makeNewLog();
             tf.recoveryComplete();
             try
@@ -799,7 +799,7 @@ public class XaResourceManager
                 // TODO Why only printStackTrace?
                 e.printStackTrace();
             }
-            msgLog.logMessage( "XaResourceManager[" + name + "] recovery completed." );
+            msgLog.debug( "XaResourceManager[" + name + "] recovery completed." );
         }
     }
 
