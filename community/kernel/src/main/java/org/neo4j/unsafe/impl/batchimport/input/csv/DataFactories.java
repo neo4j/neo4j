@@ -43,7 +43,6 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.MissingHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 
-import static org.neo4j.csv.reader.BufferedCharSeeker.DEFAULT_BUFFER_SIZE;
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 import static org.neo4j.csv.reader.Readables.multipleFiles;
 
@@ -73,7 +72,7 @@ public class DataFactories
                     {
                         try
                         {
-                            return charSeeker( Readables.file( file ), DEFAULT_BUFFER_SIZE,
+                            return charSeeker( Readables.file( file ), config.bufferSize(),
                                     true, config.quotationCharacter() );
                         }
                         catch ( IOException e )
@@ -118,7 +117,7 @@ public class DataFactories
                     {
                         try
                         {
-                            return charSeeker( multipleFiles( files ), DEFAULT_BUFFER_SIZE,
+                            return charSeeker( multipleFiles( files ), config.bufferSize(),
                                                true, config.quotationCharacter() );
                         }
                         catch ( IOException e )
@@ -155,7 +154,7 @@ public class DataFactories
                     @Override
                     public CharSeeker stream()
                     {
-                        return charSeeker( readable.newInstance(), DEFAULT_BUFFER_SIZE,
+                        return charSeeker( readable.newInstance(), config.bufferSize(),
                                            true, config.quotationCharacter() );
                     }
 
@@ -278,7 +277,7 @@ public class DataFactories
         @Override
         public CharSeeker open( CharSeeker seeker, Configuration config ) throws IOException
         {
-            return charSeeker( readable, DEFAULT_BUFFER_SIZE, true, config.quotationCharacter() );
+            return charSeeker( readable, config.bufferSize(), true, config.quotationCharacter() );
         }
     }
 

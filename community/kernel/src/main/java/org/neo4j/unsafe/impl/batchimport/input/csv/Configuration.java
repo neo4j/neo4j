@@ -42,12 +42,20 @@ public interface Configuration
      */
     char quotationCharacter();
 
+    int bufferSize();
+
     public static abstract class Default implements Configuration
     {
         @Override
         public char quotationCharacter()
         {
             return BufferedCharSeeker.DEFAULT_QUOTE_CHAR;
+        }
+
+        @Override
+        public int bufferSize()
+        {
+            return BufferedCharSeeker.DEFAULT_BUFFER_SIZE;
         }
     }
 
@@ -80,4 +88,38 @@ public interface Configuration
             return ',';
         }
     };
+
+    public static class OverrideFromConfig implements Configuration
+    {
+        private final Configuration defaults;
+
+        public OverrideFromConfig( Configuration defaults )
+        {
+            this.defaults = defaults;
+        }
+
+        @Override
+        public char delimiter()
+        {
+            return defaults.delimiter();
+        }
+
+        @Override
+        public char arrayDelimiter()
+        {
+            return defaults.arrayDelimiter();
+        }
+
+        @Override
+        public char quotationCharacter()
+        {
+            return defaults.quotationCharacter();
+        }
+
+        @Override
+        public int bufferSize()
+        {
+            return defaults.bufferSize();
+        }
+    }
 }

@@ -597,7 +597,7 @@ public class CsvInputTest
 
     private Configuration customConfig( final char delimiter, final char arrayDelimiter, final char quote )
     {
-        return new Configuration()
+        return new Configuration.Default()
         {
             @Override
             public char quotationCharacter()
@@ -748,7 +748,7 @@ public class CsvInputTest
 
     private static CharSeeker charSeeker( String data )
     {
-        return new BufferedCharSeeker( wrap( new StringReader( data ) ) );
+        return new BufferedCharSeeker( wrap( new StringReader( data ) ), 1_000 );
     }
 
     @SuppressWarnings( { "rawtypes", "unchecked" } )

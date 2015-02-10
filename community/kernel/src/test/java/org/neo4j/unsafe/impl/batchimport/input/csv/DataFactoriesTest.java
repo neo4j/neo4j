@@ -19,10 +19,11 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
-import java.io.IOException;
-import java.io.StringReader;
-
 import org.junit.Test;
+
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
 
 import org.neo4j.csv.reader.BufferedCharSeeker;
 import org.neo4j.csv.reader.CharReadable;
@@ -200,8 +201,8 @@ public class DataFactoriesTest
     public void shouldParseHeaderFromFirstLineOfFirstInputFile() throws Exception
     {
         // GIVEN
-        final CharReadable firstSource = wrap( new StringReader( "id:ID\tname:String\tbirth_date:long" ) );
-        final CharReadable secondSource = wrap( new StringReader( "0\tThe node\t123456789" ) );
+        final Reader firstSource = new StringReader( "id:ID\tname:String\tbirth_date:long" );
+        final Reader secondSource = new StringReader( "0\tThe node\t123456789" );
         DataFactory<InputNode> dataFactory = data( Functions.<InputNode>identity(), new Factory<CharReadable>()
         {
             @Override

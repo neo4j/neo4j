@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A {@link Readable}, but focused on {@code char[]} instead of {@link CharBuffer}, with the main reaon
+ * A {@link Readable}, but focused on {@code char[]}, via a {@link SectionedCharBuffer} with one of the main reasons
  * that {@link Reader#read(CharBuffer)} creates a new {@code char[]} as big as the data it's about to read
  * every call. However {@link Reader#read(char[], int, int)} doesn't, and so leaves no garbage.
  *
@@ -41,16 +41,22 @@ import java.util.List;
 public interface CharReadable extends Closeable
 {
     /**
-     * Reads characters into a portion of an array. This method will block until some input is available,
-     * an I/O error occurs, or the end of the stream is reached.
+     * Reads characters into the {@link SectionedCharBuffer buffer}.
+     * This method will block until data is available, an I/O error occurs, or the end of the stream is reached.
+     * The caller is responsible for passing in {@code from} which index existing characters should be saved,
+     * using {@link SectionedCharBuffer#compact(SectionedCharBuffer, int) compaction}, before reading into the
+     * front section of the buffer, using {@link SectionedCharBuffer#readFrom(Reader)}.
+     * The returned {@link SectionedCharBuffer} can be the same as got passed in, or another buffer if f.ex.
+     * double-buffering is used. If this reader reached eof, i.e. equal state to that of {@link Reader#read(char[])}
+     * returning {@code -1} then {@link SectionedCharBuffer#hasAvailable()} for the returned instances will
+     * return {@code false}.
      *
-     * @param buffer {@code char[]} buffer to read the data into.
-     * @param offset offset at which to start storing characters in {@code buffer}.
-     * @param length maximum number of characters to read.
-     * @return the number of characters read, or -1 if the end of the stream has been reached.
+     * @param buffer {@link SectionedCharBuffer} to read new data into.
+     * @param from index into the buffer array where characters to save (compact) starts (inclusive).
+     * @return a {@link SectionedCharBuffer} containing new data.
      * @throws IOException if an I/O error occurs.
      */
-    int read( char[] buffer, int offset, int length ) throws IOException;
+    SectionedCharBuffer read( SectionedCharBuffer buffer, int from ) throws IOException;
 
     /**
      * @return a low-level byte-like position of f.ex. total number of read bytes.
@@ -63,6 +69,12 @@ public interface CharReadable extends Closeable
      * @param sourceMonitor notifies about when this readable potentially moves over to new data sources.
      */
     void addSourceMonitor( SourceMonitor sourceMonitor );
+
+    /**
+     * @return information about the current source of data, for example for a file, the file path and name.
+     */
+    @Override
+    String toString();
 
     public static abstract class Adapter implements CharReadable
     {
