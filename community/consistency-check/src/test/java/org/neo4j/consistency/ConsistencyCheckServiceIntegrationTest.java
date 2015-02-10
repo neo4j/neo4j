@@ -25,10 +25,15 @@ import java.util.Date;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.consistency.checking.GraphStoreFixture;
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -103,6 +108,37 @@ public class ConsistencyCheckServiceIntegrationTest
 
         // then
         assertTrue( "Inconsistency report file " + specificLogFile + " not generated", specificLogFile.exists() );
+    }
+
+    @Test
+    public void shouldNotReportDuplicateForHugeLongValues() throws Exception
+    {
+        // given
+        ConsistencyCheckService service = new ConsistencyCheckService();
+        Config configuration = new Config( stringMap(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( testDirectory.absolutePath() );
+
+        String propertyKey = "itemId";
+        Label label = DynamicLabel.label( "Item" );
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            set( db.createNode( label ), property( propertyKey, 973305894188596880L ) );
+            set( db.createNode( label ), property( propertyKey, 973305894188596864L ) );
+            tx.success();
+        }
+        db.shutdown();
+
+        // when
+        Result result = service.runFullConsistencyCheck( testDirectory.absolutePath(), configuration,
+                ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
+
+        // then
+        assertEquals( ConsistencyCheckService.Result.SUCCESS, result );
     }
 
     private void breakNodeStore() throws TransactionFailureException
