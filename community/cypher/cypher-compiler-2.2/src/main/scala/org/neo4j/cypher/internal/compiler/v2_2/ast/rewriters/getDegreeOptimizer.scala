@@ -40,12 +40,12 @@ case object getDegreeOptimizer extends Rewriter {
 
         // LENGTH( (a)-[]->() )
         case func@FunctionInvocation(_, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None, _), RelationshipPattern(None, _, types, None, None, dir), NodePattern(None, List(), None, _))))))
-          if func.function == Some(functions.Length) =>
+          if func.function == Some(functions.Length) || func.function == Some(functions.Size) =>
           calculateUsingGetDegree(func, node, types, dir)
 
         // LENGTH( ()-[]->(a) )
         case func@FunctionInvocation(_, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None, _), RelationshipPattern(None, _, types, None, None, dir), NodePattern(Some(node), List(), None, _))))))
-          if func.function == Some(functions.Length) =>
+          if func.function == Some(functions.Length) || func.function == Some(functions.Size) =>
           calculateUsingGetDegree(func, node, types, dir.reverse())
 
         case rewritten =>
