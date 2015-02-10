@@ -29,7 +29,8 @@ This class merges multiple IN predicates into larger ones.
 These can later be turned into index lookups or node-by-id ops
  */
 case object collapseInCollections extends Rewriter {
-  override def apply(that: AnyRef) = bottomUp(instance).apply(that)
+
+  override def apply(that: AnyRef) = bottomUp(instance)(that)
 
   case class InValue(lhs: Expression, expr: Expression)
 

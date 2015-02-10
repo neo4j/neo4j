@@ -36,7 +36,10 @@ case object inlineProjections extends Rewriter {
     val inlineReturnItemsInWith = Rewriter.lift(aliasedReturnItemRewriter(inlineIdentifiers.narrowed, context, inlineAliases = true))
     val inlineReturnItemsInReturn = Rewriter.lift(aliasedReturnItemRewriter(inlineIdentifiers.narrowed, context, inlineAliases = false))
 
-    val inliningRewriter: Rewriter = Rewriter.lift {
+    val inliningRewriter: Rewriter = replace(replacer => {
+      case expr: Expression =>
+        replacer.stop(expr)
+
       case withClause: With if !withClause.distinct =>
         withClause.copy(
           returnItems = withClause.returnItems.rewrite(inlineReturnItemsInWith).asInstanceOf[ReturnItems],
@@ -61,9 +64,12 @@ case object inlineProjections extends Rewriter {
 
       case clause: Clause =>
         inlineIdentifiers.narrowed(clause)
-    }
 
-    input.endoRewrite(topDown(inliningRewriter))
+      case astNode =>
+        replacer.expand(astNode)
+    })
+
+    input.endoRewrite(inliningRewriter)
   }
 
   private def findAllDependencies(identifier: Identifier, context: InliningContext): Set[Identifier] = {

@@ -25,7 +25,7 @@ import ast._
 
 case object addUniquenessPredicates extends Rewriter {
 
-  def apply(that: AnyRef): AnyRef = bottomUp(instance).apply(that)
+  def apply(that: AnyRef): AnyRef = instance(that)
 
   case class UniqueRel(identifier: Identifier, types: Set[RelTypeName]) {
     def name = identifier.name
@@ -34,7 +34,9 @@ case object addUniquenessPredicates extends Rewriter {
       types.nonEmpty && other.types.nonEmpty && (types intersect other.types).isEmpty
   }
 
-  private val instance: Rewriter = Rewriter.lift {
+  private val instance = replace(replacer => {
+    case expr: Expression =>
+        replacer.stop(expr)
 
     case m@Match(_, pattern: Pattern, _, where: Option[Where]) =>
       val uniqueRels: Seq[UniqueRel] = pattern.treeFold(Seq.empty[UniqueRel]) {
@@ -64,7 +66,10 @@ case object addUniquenessPredicates extends Rewriter {
         }
         m.copy(where = newWhere)(m.position)
       }
-  }
+
+    case astNode =>
+      replacer.expand(astNode)
+  })
 
   private def createPredicateFor(uniqueRels: Seq[UniqueRel], pos: InputPosition): Option[Expression] = {
     val predicates: Seq[Expression] = for {

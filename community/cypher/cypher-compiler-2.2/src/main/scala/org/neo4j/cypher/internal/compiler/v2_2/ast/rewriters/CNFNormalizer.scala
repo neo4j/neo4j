@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.repeat
 
 case object CNFNormalizer extends Rewriter {
-  def apply(that: AnyRef): AnyRef = instance.apply(that)
+
+  def apply(that: AnyRef): AnyRef = instance(that)
 
   private val instance: Rewriter = inSequence(
     deMorganRewriter,
@@ -35,7 +36,8 @@ case object CNFNormalizer extends Rewriter {
 }
 
 object deMorganRewriter extends Rewriter {
-  def apply(that: AnyRef): AnyRef = instance.apply(that)
+
+  def apply(that: AnyRef): AnyRef = instance(that)
 
   private val step = Rewriter.lift {
     case p@Xor(expr1, expr2) =>
@@ -50,7 +52,7 @@ object deMorganRewriter extends Rewriter {
 }
 
 object distributeLawsRewriter extends Rewriter {
-  def apply(that: AnyRef): AnyRef = instance.apply(that)
+  def apply(that: AnyRef): AnyRef = instance(that)
 
   private val step = Rewriter.lift {
     case p@Or(exp1, And(exp2, exp3)) => And(Or(exp1, exp2)(p.position), Or(exp1.endoRewrite(copyIdentifiers), exp3)(p.position))(p.position)

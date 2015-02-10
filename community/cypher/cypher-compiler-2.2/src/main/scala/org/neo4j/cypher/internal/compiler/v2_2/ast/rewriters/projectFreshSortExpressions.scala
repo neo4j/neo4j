@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.{InternalException, Rewriter, bottomUp}
+import org.neo4j.cypher.internal.compiler.v2_2.{replace, InternalException, Rewriter, bottomUp}
 
 /**
  * This rewriter ensures that WITH clauses containing a ORDER BY or WHERE are split, such that the ORDER BY or WHERE does not
@@ -54,10 +54,17 @@ case object projectFreshSortExpressions extends Rewriter {
       Seq(clause)
   }
 
-  private val instance: Rewriter = Rewriter.lift {
+  private val instance: Rewriter = replace(replacer => {
+
+    case expr: Expression =>
+      replacer.stop(expr)
+
     case query @ SingleQuery(clauses) =>
       query.copy(clauses = clauses.flatMap(clauseRewriter))(query.position)
-  }
+
+    case astNode =>
+      replacer.expand(astNode)
+  })
 
   private def orderByIdentifiers(orderBy: OrderBy): Set[Identifier] = orderBy.sortItems.flatMap {
     case item: SortItem => item.expression.dependencies

@@ -27,7 +27,8 @@ This class rewrites equality predicates into IN comparisons which can then be tu
 either index lookup or node-by-id operations
  */
 case object rewriteEqualityToInCollection extends Rewriter {
-  override def apply(that: AnyRef) = bottomUp(instance).apply(that)
+
+  override def apply(that: AnyRef) = bottomUp(instance)(that)
 
   private val instance: Rewriter = Rewriter.lift {
     // a.prop = b.prop are not rewritten, since they can't be turned into index lookups anyway
@@ -52,7 +53,6 @@ case object rewriteEqualityToInCollection extends Rewriter {
 
     // a.prop = value => a.prop IN [value]
     case predicate@Equals(prop@Property(id: Identifier, propKeyName), idValueExpr) =>
-
       In(prop, Collection(Seq(idValueExpr))(idValueExpr.position))(predicate.position)
   }
 }
