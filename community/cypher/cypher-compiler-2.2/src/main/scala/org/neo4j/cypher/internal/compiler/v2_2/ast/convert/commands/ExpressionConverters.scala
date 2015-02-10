@@ -388,7 +388,7 @@ object ExpressionConverters {
   }
 
   implicit class NestedExpressionPipeConverter(val e: ast.NestedPipeExpression) extends AnyVal {
-    def asPipeCommand: CommandExpression = commandexpressions.NestedPipe(e.pipe, e.path.asCommandProjectedPath)
+    def asPipeCommand: CommandExpression = commandexpressions.NestedPipeExpression(e.pipe, e.path.asCommandProjectedPath)
   }
 
   implicit class PathConverter(val e: ast.PathExpression) extends AnyVal {

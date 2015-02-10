@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.profiler
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{NestedPipe, ProjectedPath}
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{NestedPipeExpression, ProjectedPath}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{Argument, InternalPlanDescription}
@@ -103,7 +103,7 @@ class ProfilerTest extends CypherFunSuite {
     // GIVEN
     val projectedPath = mock[ProjectedPath]
     val DB_HITS = 100
-    val innerPipe = NestedPipe(new ProfilerTestPipe(SingleRowPipe(), "nested pipe", rows = 10, dbAccess = DB_HITS), projectedPath)
+    val innerPipe = NestedPipeExpression(new ProfilerTestPipe(SingleRowPipe(), "nested pipe", rows = 10, dbAccess = DB_HITS), projectedPath)
     val pipeUnderInspection = ProjectionNewPipe(SingleRowPipe(), Map("x" -> innerPipe))()
 
     val queryContext = mock[QueryContext]
@@ -123,9 +123,9 @@ class ProfilerTest extends CypherFunSuite {
     // GIVEN
     val projectedPath = mock[ProjectedPath]
     val DB_HITS = 100
-    val nestedExpression = NestedPipe(new ProfilerTestPipe(SingleRowPipe(), "nested pipe1", rows = 10, dbAccess = DB_HITS), projectedPath)
+    val nestedExpression = NestedPipeExpression(new ProfilerTestPipe(SingleRowPipe(), "nested pipe1", rows = 10, dbAccess = DB_HITS), projectedPath)
     val innerInnerPipe = ProjectionNewPipe(SingleRowPipe(), Map("y"->nestedExpression))()
-    val innerPipe = NestedPipe(new ProfilerTestPipe(innerInnerPipe, "nested pipe2", rows = 10, dbAccess = DB_HITS), projectedPath)
+    val innerPipe = NestedPipeExpression(new ProfilerTestPipe(innerInnerPipe, "nested pipe2", rows = 10, dbAccess = DB_HITS), projectedPath)
     val pipeUnderInspection = ProjectionNewPipe(SingleRowPipe(), Map("x" -> innerPipe))()
 
     val queryContext = mock[QueryContext]
