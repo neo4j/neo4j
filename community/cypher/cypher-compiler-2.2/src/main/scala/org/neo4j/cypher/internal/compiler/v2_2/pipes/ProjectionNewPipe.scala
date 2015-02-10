@@ -35,7 +35,9 @@ case class ProjectionNewPipe(source: Pipe, expressions: Map[String, Expression])
     source.symbols.add(newIdentifiers)
   }
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
+    //register as parent so that stats are associated with this pipe
+    state.decorator.registerParentPipe(this)
     input.map {
       original =>
         val m = MutableMaps.create(expressions.size)
@@ -46,6 +48,7 @@ case class ProjectionNewPipe(source: Pipe, expressions: Map[String, Expression])
 
         ExecutionContext(m)
     }
+  }
 
   override def planDescription =
     source.planDescription

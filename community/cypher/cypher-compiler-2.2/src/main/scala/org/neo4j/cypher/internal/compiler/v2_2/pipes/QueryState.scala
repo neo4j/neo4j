@@ -57,6 +57,8 @@ case class QueryState(db: GraphDatabaseService,
     params.getOrElse(key, throw new ParameterNotFoundException("Expected a parameter named " + key))
 
   def getStatistics = query.getOptStatistics.getOrElse(QueryState.defaultStatistics)
+
+  def withDecorator(decorator: PipeDecorator) = copy(decorator = decorator)
 }
 
 object QueryState {

@@ -36,6 +36,8 @@ case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])(val 
   val keyNames: Seq[String] = expressions.keys.toSeq
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+    //register as parent so that stats are associated with this pipe
+    state.decorator.registerParentPipe(this)
 
     // Run the return item expressions, and replace the execution context's with their values
     val returnExpressions = input.map(ctx => {

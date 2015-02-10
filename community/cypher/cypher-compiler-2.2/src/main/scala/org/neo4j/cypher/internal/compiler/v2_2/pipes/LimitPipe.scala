@@ -31,6 +31,9 @@ case class LimitPipe(source: Pipe, exp: Expression)
     if(input.isEmpty)
       return Iterator.empty
 
+    //register as parent so that stats are associated with this pipe
+    state.decorator.registerParentPipe(this)
+
     implicit val s = state
 
     val first: ExecutionContext = input.next()

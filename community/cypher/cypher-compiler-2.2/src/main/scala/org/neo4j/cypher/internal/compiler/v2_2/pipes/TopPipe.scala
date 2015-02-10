@@ -66,6 +66,9 @@ case class TopPipe(source: Pipe, sortDescription: List[SortItem], countExpressio
   def arrayEntry(ctx : ExecutionContext)(implicit qtx : QueryState) : SortDataWithContext = (sortItems.map(_(ctx)),ctx)
 
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+    //register as parent so that stats are associated with this pipe
+    state.decorator.registerParentPipe(this)
+
     implicit val s = state
     if (input.isEmpty)
       Iterator.empty
