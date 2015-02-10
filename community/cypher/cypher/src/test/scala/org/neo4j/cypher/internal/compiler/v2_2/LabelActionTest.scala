@@ -71,7 +71,6 @@ class SnitchingQueryContext extends QueryContext {
   var highLabelId: Int = 0
   var labels: Map[String, Int] = Map("green" -> 12, "blue" -> 42)
 
-
   override def setLabelsOnNode(n: Long, input: Iterator[Int]): Int = {
     node = n
     ids = input.toSeq
@@ -81,6 +80,8 @@ class SnitchingQueryContext extends QueryContext {
   def isOpen: Boolean = ???
 
   def isTopLevelTx: Boolean = ???
+
+  def getOrCreateRelTypeId(relTypeName: String) = ???
 
   def getOrCreateLabelId(labelName: String) = labels(labelName)
 

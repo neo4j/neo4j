@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import commands.{expressions => commandexpressions, values => commandvalues, Predicate => CommandPredicate}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Expression => CommandExpression, ProjectedPath}
 import commands.values.TokenType._
+import org.neo4j.cypher.internal.compiler.v2_2.commands.values.{UnresolvedRelType, UnresolvedProperty}
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.graphdb.Direction
@@ -102,7 +103,7 @@ object ExpressionConverters {
 
   implicit class GetDegreeConverter(val original: ast.GetDegree) extends AnyVal {
     def asCommandGetDegree = {
-      val typ = original.relType.map(_.name)
+      val typ = original.relType.map( relType => UnresolvedRelType(relType.name))
       commandexpressions.GetDegree(original.node.asCommandExpression, typ, original.dir)
     }
   }

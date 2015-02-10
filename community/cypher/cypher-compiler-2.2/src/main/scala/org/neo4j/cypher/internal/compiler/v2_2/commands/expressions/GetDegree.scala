@@ -19,21 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.commands.expressions
 
+import org.neo4j.cypher.internal.compiler.v2_2.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.{CypherType, SymbolTable, _}
 import org.neo4j.cypher.internal.compiler.v2_2.{CypherTypeException, ExecutionContext}
-import org.neo4j.graphdb.{Direction, DynamicRelationshipType, Node}
+import org.neo4j.graphdb.{Direction, Node}
 
-case class GetDegree(node: Expression, typ: Option[String], direction: Direction) extends NullInNullOutExpression(node) {
+case class GetDegree(node: Expression, typ: Option[KeyToken], direction: Direction) extends NullInNullOutExpression(node) {
 
   val getDegree: (QueryContext, Long) => Int = typ match {
     case None    => (qtx, node) => qtx.nodeGetDegree(node, direction)
-    case Some(t) => (qtx, node) =>
-      qtx.getOptRelTypeId(t) match {
-        case None            => 0
-        case Some(relTypeId) => qtx.nodeGetDegree(node, direction, relTypeId)
-      }
+    case Some(t) => (qtx, node) => t.getOptId(qtx) match {
+      case None            => 0
+      case Some(relTypeId) => qtx.nodeGetDegree(node, direction, relTypeId)
+    }
   }
 
   def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = value match {

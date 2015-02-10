@@ -104,6 +104,9 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   def createRelationship(start: Node, end: Node, relType: String) =
     start.createRelationshipTo(end, withName(relType))
 
+  def getOrCreateRelTypeId(relTypeName: String): Int =
+    statement.tokenWriteOperations().relationshipTypeGetOrCreateForName(relTypeName)
+
   def getLabelsForNode(node: Long) =
     JavaConversionSupport.asScala(statement.readOperations().nodeGetLabels(node))
 

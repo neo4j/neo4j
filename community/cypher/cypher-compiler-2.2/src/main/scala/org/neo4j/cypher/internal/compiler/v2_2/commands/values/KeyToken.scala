@@ -84,3 +84,7 @@ object UnresolvedLabel {
 object UnresolvedProperty {
   def apply(name: String): KeyToken = KeyToken.Unresolved(name, TokenType.PropertyKey)
 }
+
+object UnresolvedRelType {
+  def apply(name: String): KeyToken = KeyToken.Unresolved(name, TokenType.RelType)
+}
