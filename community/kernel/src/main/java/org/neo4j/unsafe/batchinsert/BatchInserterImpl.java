@@ -22,6 +22,7 @@ package org.neo4j.unsafe.batchinsert;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -637,11 +638,32 @@ public class BatchInserterImpl implements BatchInserter
     private long[] getOrCreateLabelIds( Label[] labels )
     {
         long[] ids = new long[labels.length];
+        int cursor = 0;
         for ( int i = 0; i < ids.length; i++ )
         {
-            ids[i] = getOrCreateLabelId( labels[i].name() );
+            int labelId = getOrCreateLabelId( labels[i].name() );
+            if ( !arrayContains( ids, cursor, labelId ) )
+            {
+                ids[cursor++] = labelId;
+            }
+        }
+        if ( cursor < ids.length )
+        {
+            ids = Arrays.copyOf( ids, cursor );
         }
         return ids;
+    }
+
+    private boolean arrayContains( long[] ids, int cursor, int labelId )
+    {
+        for ( int i = 0; i < cursor; i++ )
+        {
+            if ( ids[i] == labelId )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
