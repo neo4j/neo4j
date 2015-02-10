@@ -23,9 +23,11 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public class GraphDatabaseDependencies implements InternalAbstractGraphDatabase.Dependencies
 {
+    private Monitors monitors;
     private final Logging logging;
     private final Iterable<Class<?>> settingsClasses;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensions;
@@ -34,11 +36,12 @@ public class GraphDatabaseDependencies implements InternalAbstractGraphDatabase.
 
     @SuppressWarnings( "deprecation" )
     public GraphDatabaseDependencies(
-            Logging logging,
+            Monitors monitors, Logging logging,
             Iterable<Class<?>> settingsClasses,
             Iterable<KernelExtensionFactory<?>> kernelExtensions, Iterable<CacheProvider> cacheProviders,
             Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
     {
+        this.monitors = monitors;
         this.logging = logging;
         this.settingsClasses = settingsClasses;
         this.kernelExtensions = kernelExtensions;
@@ -50,6 +53,12 @@ public class GraphDatabaseDependencies implements InternalAbstractGraphDatabase.
     public Logging logging()
     {
         return logging;
+    }
+
+    @Override
+    public Monitors monitors()
+    {
+        return monitors;
     }
 
     @Override

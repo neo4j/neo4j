@@ -238,7 +238,7 @@ public abstract class CommonAbstractStore implements IdSequence
             {
                 if ( stringLogger != null )
                 {
-                    stringLogger.logMessage( getStorageFileName() + " non clean shutdown detected", true );
+                    stringLogger.debug( getStorageFileName() + " non clean shutdown detected" );
                 }
             }
         }
@@ -321,8 +321,8 @@ public abstract class CommonAbstractStore implements IdSequence
             throw new UnderlyingStorageException(
                     "Unable to rebuild id generator " + getStorageFileName(), e );
         }
-        stringLogger.logMessage( getStorageFileName() + " rebuild id generator, highId=" + getHighId() +
-                " defragged count=" + defraggedCount, true );
+        stringLogger.debug( getStorageFileName() + " rebuild id generator, highId=" + getHighId() +
+                            " defragged count=" + defraggedCount );
         stringLogger.debug( "[" + getStorageFileName() + "] high id=" + getHighId() +
                 " (defragged=" + defraggedCount + ")" );
 

@@ -798,8 +798,8 @@ public class XaLogicalLog implements LogLoader
         long lastCommittedTx = header[1];
         previousLogLastCommittedTx = lastCommittedTx;
         positionCache.putHeader( logVersion, previousLogLastCommittedTx );
-        msgLog.logMessage( "[" + logFileName + "] logVersion=" + logVersion +
-                " with committed tx=" + lastCommittedTx, true );
+        msgLog.debug( "[" + logFileName + "] logVersion=" + logVersion +
+                      " with committed tx=" + lastCommittedTx );
         long logEntriesFound = 0;
         long lastEntryPos = fileChannel.position();
         fileChannel = new BufferedFileChannel( fileChannel, bufferMonitor );
@@ -814,8 +814,8 @@ public class XaLogicalLog implements LogLoader
         fileChannel = ((BufferedFileChannel) fileChannel).getSource();
         fileChannel.position( lastEntryPos );
 
-        msgLog.logMessage( "[" + logFileName + "] entries found=" + logEntriesFound +
-                " lastEntryPos=" + lastEntryPos, true );
+        msgLog.debug( "[" + logFileName + "] entries found=" + logEntriesFound +
+                      " lastEntryPos=" + lastEntryPos );
 
         // zero out the slow way since windows don't support truncate very well
         sharedBuffer.clear();
@@ -838,16 +838,16 @@ public class XaLogicalLog implements LogLoader
         fileChannel.position( lastEntryPos );
         scanIsComplete = true;
         String recoveryCompletedMessage = openedLogicalLogMessage( logFileName, lastRecoveredTx, false );
-        msgLog.logMessage( recoveryCompletedMessage );
+        msgLog.info( recoveryCompletedMessage );
 
         xaRm.checkXids();
         if ( xidIdentMap.size() == 0 )
         {
-            msgLog.logMessage( "Recovery on log [" + logFileName + "] completed." );
+            msgLog.debug( "Recovery on log [" + logFileName + "] completed." );
         }
         else
         {
-            msgLog.logMessage( "Recovery on log [" + logFileName +
+            msgLog.debug( "Recovery on log [" + logFileName +
                     "] completed with " + xidIdentMap + " prepared transactions found." );
             for ( LogEntry.Start startEntry : xidIdentMap.values() )
             {

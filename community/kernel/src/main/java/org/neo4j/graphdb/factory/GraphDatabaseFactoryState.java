@@ -29,6 +29,7 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 
@@ -39,6 +40,7 @@ public class GraphDatabaseFactoryState
     private List<CacheProvider> cacheProviders;
     private List<TransactionInterceptorProvider> txInterceptorProviders;
     private Logging logging;
+    private Monitors monitors;
 
     public GraphDatabaseFactoryState() {
         settingsClasses = new ArrayList<>();
@@ -59,6 +61,7 @@ public class GraphDatabaseFactoryState
         cacheProviders = new ArrayList<>( previous.cacheProviders );
         txInterceptorProviders = new ArrayList<>( previous.txInterceptorProviders );
         logging = previous.logging;
+        monitors = previous.monitors;
     }
 
     public Iterable<KernelExtensionFactory<?>> getKernelExtension()
@@ -114,9 +117,14 @@ public class GraphDatabaseFactoryState
         this.logging = logging;
     }
 
+    public void setMonitors(Monitors monitors)
+    {
+        this.monitors = monitors;
+    }
+
     public Dependencies databaseDependencies()
     {
-        return new GraphDatabaseDependencies(
+        return new GraphDatabaseDependencies(monitors,
                 logging,
                 settingsClasses,
                 kernelExtensions,

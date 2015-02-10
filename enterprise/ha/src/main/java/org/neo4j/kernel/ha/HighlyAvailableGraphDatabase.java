@@ -134,7 +134,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                                          Iterable<CacheProvider> cacheProviders,
                                          Iterable<TransactionInterceptorProvider> txInterceptorProviders )
     {
-        this( storeDir, params, new GraphDatabaseDependencies( null,
+        this( storeDir, params, new GraphDatabaseDependencies( null, null,
                 Arrays.<Class<?>>asList( GraphDatabaseSettings.class, ClusterSettings.class, HaSettings.class ),
                 kernelExtensions, cacheProviders, txInterceptorProviders ) );
     }

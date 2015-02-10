@@ -105,6 +105,8 @@ public class IndexingService extends LifecycleAdapter
         void applyingRecoveredData( Collection<Long> nodeIds );
 
         void appliedRecoveredData( Iterable<NodePropertyUpdate> updates );
+
+        void verifyDeferredConstraints();
     }
 
     public static abstract class MonitorAdapter implements Monitor
@@ -117,6 +119,12 @@ public class IndexingService extends LifecycleAdapter
         @Override
         public void applyingRecoveredData( Collection<Long> nodeIds )
         {   // Do nothing
+        }
+
+        @Override
+        public void verifyDeferredConstraints()
+        {
+            // Do nothing
         }
     }
 
@@ -479,12 +487,13 @@ public class IndexingService extends LifecycleAdapter
             getPopulatorFromProvider( providerDescriptor, ruleId, descriptor, new IndexConfiguration( constraint ) );
 
         FailedIndexProxyFactory failureDelegateFactory =
-            new FailedPopulatingIndexProxyFactory( descriptor, providerDescriptor, populator, indexUserDescription );
+            new FailedPopulatingIndexProxyFactory( descriptor, providerDescriptor, populator, indexUserDescription,
+                    logger );
 
         PopulatingIndexProxy populatingIndex =
             new PopulatingIndexProxy( scheduler, descriptor, providerDescriptor,
                     failureDelegateFactory, populator, flipper, storeView,
-                indexUserDescription, updateableSchemaState, logging );
+                indexUserDescription, updateableSchemaState, logging, monitor );
         flipper.flipTo( populatingIndex );
 
         // Prepare for flipping to online mode
@@ -549,7 +558,7 @@ public class IndexingService extends LifecycleAdapter
         String indexUserDescription = indexUserDescription(descriptor, providerDescriptor);
         IndexProxy result =
             new FailedIndexProxy( descriptor, providerDescriptor, indexUserDescription,
-                                  indexPopulator, populationFailure );
+                                  indexPopulator, populationFailure, logger );
         result = contractCheckedProxy( result, true );
         return result;
     }

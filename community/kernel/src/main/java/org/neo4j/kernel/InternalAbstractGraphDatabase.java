@@ -196,6 +196,8 @@ public abstract class InternalAbstractGraphDatabase
          */
         Logging logging();
 
+        Monitors monitors();
+
         Iterable<Class<?>> settingsClasses();
 
         Iterable<KernelExtensionFactory<?>> kernelExtensions();
@@ -296,6 +298,7 @@ public abstract class InternalAbstractGraphDatabase
         config = new Config( params, getSettingsClasses(
                 dependencies.settingsClasses(), dependencies.kernelExtensions(), dependencies.cacheProviders() ) );
         this.logging = dependencies.logging();
+        this.monitors = dependencies.monitors();
 
         this.kernelExtensions = new KernelExtensions(
                 dependencies.kernelExtensions(),
@@ -433,7 +436,10 @@ public abstract class InternalAbstractGraphDatabase
         }
 
         // Component monitoring
-        this.monitors = createMonitors();
+        if ( this.monitors == null )
+        {
+            this.monitors = createMonitors();
+        }
 
         // Apply autoconfiguration for memory settings
         AutoConfigurator autoConfigurator = new AutoConfigurator( fileSystem,
