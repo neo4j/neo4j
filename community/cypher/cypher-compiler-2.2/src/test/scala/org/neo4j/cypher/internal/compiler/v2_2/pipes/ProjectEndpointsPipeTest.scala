@@ -59,6 +59,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     // then
     result should equal(List(Map("r" -> rel, "a" -> node1, "b" -> node2)))
   }
+
   test("projects endpoints of a directed, simple relationship with start in scope which doesn't match") {
     // given
 
@@ -68,6 +69,26 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
 
     val left = newMockedPipe("r",
       row("r" -> rel, "a" -> node2)
+    )
+
+    // when
+    val result =
+      ProjectEndpointsPipe(left, "r", "a", startInScope = true, "b", endInScope = false, None, directed = true, simpleLength = true)().
+        createResults(queryState).toList
+
+    // then
+    result should be(empty)
+  }
+
+  test("should work if in scope there are non-node object with the same name as the start node") {
+    // given
+
+    val rel = newMockedRelationship(12, node1, node2)
+    when(query.relationshipStartNode(rel)).thenReturn(node1)
+    when(query.relationshipEndNode(rel)).thenReturn(node2)
+
+    val left = newMockedPipe("r",
+      row("r" -> rel, "a" -> 42)
     )
 
     // when
