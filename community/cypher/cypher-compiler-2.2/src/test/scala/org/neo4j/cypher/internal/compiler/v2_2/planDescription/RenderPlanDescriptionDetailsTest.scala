@@ -156,14 +156,14 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
     val arguments = Seq(
       Rows(42),
       DbHits(33))
-    val expandPipe = VarLengthExpandPipe(pipe, "from", "rel", "to", Direction.INCOMING, Direction.OUTGOING, LazyTypes.empty, 0, None)(Some(1L))(mock[PipeMonitor])
+    val expandPipe = VarLengthExpandPipe(pipe, "from", "rel", "to", Direction.INCOMING, Direction.OUTGOING, LazyTypes.empty, 0, None, nodeInScope = false)(Some(1L))(mock[PipeMonitor])
 
     renderDetails(expandPipe.planDescription) should equal(
-      """+-------------------+---------------+-------------+----------------------+
-        ||          Operator | EstimatedRows | Identifiers |                Other |
-        |+-------------------+---------------+-------------+----------------------+
-        || Var length expand |         1.000 |     rel, to | (from)-[rel:*]->(to) |
-        |+-------------------+---------------+-------------+----------------------+
+      """+----------------------+---------------+-------------+----------------------+
+        ||             Operator | EstimatedRows | Identifiers |                Other |
+        |+----------------------+---------------+-------------+----------------------+
+        || VarLengthExpand(All) |         1.000 |     rel, to | (from)-[rel:*]->(to) |
+        |+----------------------+---------------+-------------+----------------------+
         |""".stripMargin)
   }
 

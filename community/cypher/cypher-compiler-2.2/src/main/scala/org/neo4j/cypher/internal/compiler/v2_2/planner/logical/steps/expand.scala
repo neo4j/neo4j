@@ -36,10 +36,10 @@ object expand extends CandidateGenerator[PlanTable] {
       val dir = patternRel.directionRelativeTo(nodeId)
       val otherSide = patternRel.otherSide(nodeId)
       val overlapping = plan.availableSymbols.contains(otherSide)
+      val mode = if (overlapping) ExpandInto else ExpandAll
 
       patternRel.length match {
         case SimplePatternLength =>
-          val mode = if (overlapping) ExpandInto else ExpandAll
           planSimpleExpand(plan, nodeId, dir, otherSide, patternRel, mode)
 
         case length: VarPatternLength =>
@@ -49,35 +49,8 @@ object expand extends CandidateGenerator[PlanTable] {
               if identifier == relId || !innerPredicate.dependencies(relId) =>
               (identifier, innerPredicate) -> all
           }.unzip
-
-          val expandF =
-            (otherSide: IdName) =>
-              planVarExpand(plan, nodeId, dir, otherSide, patternRel, predicates, allPredicates, ExpandAll)
-
-          if (overlapping)
-            expandIntoAlreadyExistingNode(expandF, otherSide)
-          else
-            expandF(otherSide)
+          planVarExpand(plan, nodeId, dir, otherSide, patternRel, predicates, allPredicates, mode)
       }
     }
-  }
-
-  /*
-  If we are expanding into an identifier already in scope, we instead expand into a temporary identifier, and then check
-  that we expanded into the correct node.
-
-  Example:
-  MATCH (a)-[r]->(a)
-
-  is solved by something that looks like
-  MATCH (a)-[r]->($TEMP) WHERE $TEMP = a
-   */
-  private def expandIntoAlreadyExistingNode(f: IdName => LogicalPlan, otherSide: IdName)
-                                           (implicit context: LogicalPlanningContext): LogicalPlan = {
-    val temp = IdName(otherSide.name + "$$$")
-    val expand = f(temp)
-    val left = Identifier(otherSide.name)(null)
-    val right = Identifier(temp.name)(null)
-    planHiddenSelection(Seq(Equals(left, right)(null)), expand)
   }
 }

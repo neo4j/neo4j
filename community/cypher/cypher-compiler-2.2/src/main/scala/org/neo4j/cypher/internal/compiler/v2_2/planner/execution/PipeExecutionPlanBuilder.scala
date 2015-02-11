@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.StatementCon
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Expression, Identifier, NodeStartItem, RelTypeName}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{AggregationExpression, Expression => CommandExpression}
-import org.neo4j.cypher.internal.compiler.v2_2.commands.{EntityProducerFactory, True, Predicate => CommandPredicate}
+import org.neo4j.cypher.internal.compiler.v2_2.commands.{EntityProducerFactory, Predicate => CommandPredicate, True}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{PipeInfo, PlanFingerprint}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.{LazyTypes, _}
@@ -125,7 +125,12 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
             }
           }
 
-          VarLengthExpandPipe(buildPipe(left, input), fromName, relName, toName, dir, projectedDir, LazyTypes(types), min, max, predicate)()
+          val nodeInScope = expansionMode match {
+            case ExpandAll => false
+            case ExpandInto => true
+          }
+          VarLengthExpandPipe(buildPipe(left, input), fromName, relName, toName, dir, projectedDir,
+            LazyTypes(types), min, max, nodeInScope, predicate)()
 
         case NodeHashJoin(nodes, left, right) =>
           NodeHashJoinPipe(nodes.map(_.name), buildPipe(left, input), buildPipe(right, input))()

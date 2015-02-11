@@ -36,6 +36,7 @@ case class VarLengthExpandPipe(source: Pipe,
                                types: LazyTypes,
                                min: Int,
                                max: Option[Int],
+                               nodeInScope: Boolean,
                                filteringStep: (ExecutionContext, QueryState, Relationship) => Boolean = (_, _, _) => true)
                               (val estimatedCardinality: Option[Double] = None)
                               (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
@@ -75,12 +76,11 @@ case class VarLengthExpandPipe(source: Pipe,
 
     input.flatMap {
       row => {
-        val fromNode: Any = getFromNode(row)
-        fromNode match {
+        fetchFromContext(row, fromName) match {
           case n: Node =>
             val paths = varLengthExpand(n, state, max, row)
             paths.collect {
-              case (node, rels) if rels.length >= min =>
+              case (node, rels) if rels.length >= min && isToNodeValid(row, node) =>
                 row.newWith2(relName, rels, toName, node)
             }
 
@@ -90,11 +90,14 @@ case class VarLengthExpandPipe(source: Pipe,
     }
   }
 
-  def getFromNode(row: ExecutionContext): Any =
-    row.getOrElse(fromName, throw new InternalException(s"Expected to find a node at $fromName but found nothing"))
+  private def isToNodeValid(row: ExecutionContext, node: Any): Boolean =
+    !nodeInScope || fetchFromContext(row, toName) == node
+
+  def fetchFromContext(row: ExecutionContext, name: String): Any =
+    row.getOrElse(name, throw new InternalException(s"Expected to find a node at $name but found nothing"))
 
   def planDescription = source.planDescription.
-    andThen(this, "Var length expand", identifiers, ExpandExpression(fromName, relName, types.names, toName, projectedDir, varLength = true))
+    andThen(this, s"VarLengthExpand(${if (nodeInScope) "Into" else "All"})", identifiers, ExpandExpression(fromName, relName, types.names, toName, projectedDir, varLength = true))
 
   def symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
 

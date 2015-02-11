@@ -37,7 +37,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     // given
     val startNode = newMockedNode(1)
     val endNode = newMockedNode(2)
-    val relationship = newMockedRealtionship(1, startNode, endNode)
+    val relationship = newMockedRelationship(1, startNode, endNode)
     val query = mock[QueryContext]
     when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship]] {
       def answer(invocation: InvocationOnMock): Iterator[Relationship] = Iterator(relationship)
@@ -52,7 +52,120 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, None)()
+      VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = false)()
+      .createResults(queryState).toList
+
+    // then
+    val (single :: Nil) = result
+    single("a") should equal(startNode)
+    single("r") should equal(List(relationship))
+    single("b") should equal(endNode)
+  }
+
+  test("should support var length expand between two nodes when the end node is in scope") {
+    // given
+    val startNode = newMockedNode(1)
+    val endNode = newMockedNode(2)
+    val relationship = newMockedRelationship(1, startNode, endNode)
+    val query = mock[QueryContext]
+    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship]] {
+      def answer(invocation: InvocationOnMock): Iterator[Relationship] = Iterator(relationship)
+    })
+
+    val queryState = QueryStateHelper.emptyWith(query = query)
+
+    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTNode)))
+    when(left.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]] {
+      def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> startNode, "b" -> endNode))
+    })
+
+    // when
+    val result =
+      VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)()
+      .createResults(queryState).toList
+
+    // then
+    val (single :: Nil) = result
+    single("a") should equal(startNode)
+    single("r") should equal(List(relationship))
+    single("b") should equal(endNode)
+  }
+
+  test("should support var length expand between two nodes when a mismatching end node is in scope") {
+    // given
+    val startNode = newMockedNode(1)
+    val endNode = newMockedNode(2)
+    val relationship = newMockedRelationship(1, startNode, endNode)
+    val query = mock[QueryContext]
+    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship]] {
+      def answer(invocation: InvocationOnMock): Iterator[Relationship] = Iterator(relationship)
+    })
+
+    val queryState = QueryStateHelper.emptyWith(query = query)
+
+    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTNode)))
+    when(left.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]] {
+      def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> startNode, "b" -> newMockedNode(42)))
+    })
+
+    // when
+    val result =
+      VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)()
+      .createResults(queryState).toList
+
+    // then
+    result should be(empty)
+  }
+
+  test("should support var length expand between two nodes when something in scope is not a node") {
+    // given
+    val startNode = newMockedNode(1)
+    val endNode = newMockedNode(2)
+    val relationship = newMockedRelationship(1, startNode, endNode)
+    val query = mock[QueryContext]
+    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship]] {
+      def answer(invocation: InvocationOnMock): Iterator[Relationship] = Iterator(relationship)
+    })
+
+    val queryState = QueryStateHelper.emptyWith(query = query)
+
+    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTInteger)))
+    when(left.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]] {
+      def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(row("a" -> startNode, "b" -> 42))
+    })
+
+    // when
+    val result =
+      VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)()
+      .createResults(queryState).toList
+
+    // then
+    result should be(empty)
+  }
+
+  test("should support var length expand between two nodes when row in input are mixed with nodes matching and not matching") {
+    // given
+    val startNode = newMockedNode(1)
+    val endNode = newMockedNode(2)
+    val relationship = newMockedRelationship(1, startNode, endNode)
+    val query = mock[QueryContext]
+    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship]] {
+      def answer(invocation: InvocationOnMock): Iterator[Relationship] = Iterator(relationship)
+    })
+
+    val queryState = QueryStateHelper.emptyWith(query = query)
+
+    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTNode)))
+    when(left.createResults(queryState)).thenAnswer(new Answer[Iterator[ExecutionContext]] {
+      def answer(invocation: InvocationOnMock): Iterator[ExecutionContext] = Iterator(
+        row("a" -> startNode, "b" -> newMockedNode(42)),
+        row("a" -> startNode, "b" -> endNode)
+      )
+    })
+
+    // when
+    val result =
+      VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)()
       .createResults(queryState).toList
 
     // then
@@ -67,8 +180,8 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val startNode = newMockedNode(1)
     val middleNode = newMockedNode(2)
     val endNode = newMockedNode(3)
-    val leftRelationship = newMockedRealtionship(1, startNode, middleNode)
-    val rightRelationship = newMockedRealtionship(2, middleNode, endNode)
+    val leftRelationship = newMockedRelationship(1, startNode, middleNode)
+    val rightRelationship = newMockedRelationship(2, middleNode, endNode)
 
     val query = mock[QueryContext]
     replyWithMap(query, Map(
@@ -85,7 +198,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, None)().
+      VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = false)().
         createResults(queryState).toList
 
     // then
@@ -98,14 +211,81 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     second("b") should equal(endNode)
   }
 
+  test("should support var length expand between three nodes and end node in scope") {
+    // given
+    val startNode = newMockedNode(1)
+    val middleNode = newMockedNode(2)
+    val endNode = newMockedNode(3)
+    val leftRelationship = newMockedRelationship(1, startNode, middleNode)
+    val rightRelationship = newMockedRelationship(2, middleNode, endNode)
+
+    val query = mock[QueryContext]
+    replyWithMap(query, Map(
+        (startNode, Direction.OUTGOING) -> Seq(leftRelationship),
+        (middleNode, Direction.INCOMING) -> Seq(leftRelationship),
+        (middleNode, Direction.OUTGOING) -> Seq(rightRelationship),
+        (endNode, Direction.INCOMING) -> Seq(rightRelationship)
+      ).withDefaultValue(Seq.empty)
+    )
+    val queryState = QueryStateHelper.emptyWith(query = query)
+
+    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTNode)))
+    when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode, "b" -> endNode)))
+
+    // when
+    val result =
+      VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = false)().
+        createResults(queryState).toList
+
+    // then
+    val (first :: second :: Nil) = result
+    first("a") should equal(startNode)
+    first("r") should equal(List(leftRelationship))
+    first("b") should equal(middleNode)
+    second("a") should equal(startNode)
+    second("r") should equal(List(leftRelationship, rightRelationship))
+    second("b") should equal(endNode)
+  }
+
+  test("should support var length expand between three nodes and mismatching end node in scope") {
+    // given
+    val startNode = newMockedNode(1)
+    val middleNode = newMockedNode(2)
+    val endNode = newMockedNode(3)
+    val leftRelationship = newMockedRelationship(1, startNode, middleNode)
+    val rightRelationship = newMockedRelationship(2, middleNode, endNode)
+
+    val query = mock[QueryContext]
+    replyWithMap(query, Map(
+        (startNode, Direction.OUTGOING) -> Seq(leftRelationship),
+        (middleNode, Direction.INCOMING) -> Seq(leftRelationship),
+        (middleNode, Direction.OUTGOING) -> Seq(rightRelationship),
+        (endNode, Direction.INCOMING) -> Seq(rightRelationship)
+      ).withDefaultValue(Seq.empty)
+    )
+    val queryState = QueryStateHelper.emptyWith(query = query)
+
+    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTNode)))
+    val badNode: Node = newMockedNode(42)
+    when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode, "b" -> badNode)))
+
+    // when
+    val result =
+      VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)().
+        createResults(queryState).toList
+
+    // then
+    result should be(empty)
+  }
+
   test("should support var length expand between three nodes with multiple relationships") {
     // given
     val startNode = newMockedNode(1)
     val middleNode = newMockedNode(2)
     val endNode = newMockedNode(3)
-    val leftRelationship1 = newMockedRealtionship(1, startNode, middleNode)
-    val leftRelationship2 = newMockedRealtionship(2, startNode, middleNode)
-    val rightRelationship = newMockedRealtionship(3, middleNode, endNode)
+    val leftRelationship1 = newMockedRelationship(1, startNode, middleNode)
+    val leftRelationship2 = newMockedRelationship(2, startNode, middleNode)
+    val rightRelationship = newMockedRelationship(3, middleNode, endNode)
 
     val query = mock[QueryContext]
     replyWithMap(query, Map(
@@ -121,7 +301,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode)))
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, None)().
+    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = false)().
       createResults(queryState).toList
 
     // then
@@ -140,14 +320,81 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     fourth("b") should equal(endNode)
   }
 
+  test("should support var length expand between three nodes with multiple relationships with end node in scope") {
+    // given
+    val startNode = newMockedNode(1)
+    val middleNode = newMockedNode(2)
+    val endNode = newMockedNode(3)
+    val leftRelationship1 = newMockedRelationship(1, startNode, middleNode)
+    val leftRelationship2 = newMockedRelationship(2, startNode, middleNode)
+    val rightRelationship = newMockedRelationship(3, middleNode, endNode)
+
+    val query = mock[QueryContext]
+    replyWithMap(query, Map(
+        (startNode, Direction.OUTGOING) -> Seq(leftRelationship1, leftRelationship2),
+        (middleNode, Direction.INCOMING) -> Seq(leftRelationship1, leftRelationship2),
+        (middleNode, Direction.OUTGOING) -> Seq(rightRelationship),
+        (endNode, Direction.INCOMING) -> Seq(rightRelationship)
+      ).withDefaultValue(Seq.empty)
+    )
+    val queryState = QueryStateHelper.emptyWith(query = query)
+
+    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTNode)))
+    when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode, "b" -> endNode)))
+
+    // when
+    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)().
+      createResults(queryState).toList
+
+    // then
+    val (first :: second :: Nil) = result
+    first("a") should equal(startNode)
+    first("r") should equal(List(leftRelationship2, rightRelationship))
+    first("b") should equal(endNode)
+    second("a") should equal(startNode)
+    second("r") should equal(List(leftRelationship1, rightRelationship))
+    second("b") should equal(endNode)
+  }
+
+  test("should support var length expand between three nodes with multiple relationships with mismatching end node in scope") {
+    // given
+    val startNode = newMockedNode(1)
+    val middleNode = newMockedNode(2)
+    val endNode = newMockedNode(3)
+    val leftRelationship1 = newMockedRelationship(1, startNode, middleNode)
+    val leftRelationship2 = newMockedRelationship(2, startNode, middleNode)
+    val rightRelationship = newMockedRelationship(3, middleNode, endNode)
+
+    val query = mock[QueryContext]
+    replyWithMap(query, Map(
+        (startNode, Direction.OUTGOING) -> Seq(leftRelationship1, leftRelationship2),
+        (middleNode, Direction.INCOMING) -> Seq(leftRelationship1, leftRelationship2),
+        (middleNode, Direction.OUTGOING) -> Seq(rightRelationship),
+        (endNode, Direction.INCOMING) -> Seq(rightRelationship)
+      ).withDefaultValue(Seq.empty)
+    )
+    val queryState = QueryStateHelper.emptyWith(query = query)
+
+    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTNode)))
+    val badNode = newMockedNode(42)
+    when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode, "b" -> badNode)))
+
+    // when
+    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, None, nodeInScope = true)().
+      createResults(queryState).toList
+
+    // then
+    result should be(empty)
+  }
+
   test("should support var length expand between three nodes with multiple relationships and a fixed max length") {
     // given
     val startNode = newMockedNode(1)
     val middleNode = newMockedNode(2)
     val endNode = newMockedNode(3)
-    val leftRelationship1 = newMockedRealtionship(1, startNode, middleNode)
-    val leftRelationship2 = newMockedRealtionship(2, startNode, middleNode)
-    val rightRelationship = newMockedRealtionship(3, middleNode, endNode)
+    val leftRelationship1 = newMockedRelationship(1, startNode, middleNode)
+    val leftRelationship2 = newMockedRelationship(2, startNode, middleNode)
+    val rightRelationship = newMockedRelationship(3, middleNode, endNode)
 
     val query = mock[QueryContext]
     replyWithMap(query, Map(
@@ -163,7 +410,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode)))
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, Some(1))().
+    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, Some(1), nodeInScope = false)().
       createResults(queryState).toList
 
     // then
@@ -176,14 +423,48 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     second("b") should equal(middleNode)
   }
 
+  test("should support var length expand between three nodes with multiple relationships and a fixed max length and end node in scope") {
+    // given
+    val startNode = newMockedNode(1)
+    val middleNode = newMockedNode(2)
+    val endNode = newMockedNode(3)
+    val leftRelationship1 = newMockedRelationship(1, startNode, middleNode)
+    val leftRelationship2 = newMockedRelationship(2, startNode, middleNode)
+    val leftRelationship3 = newMockedRelationship(4, startNode, endNode)
+    val rightRelationship = newMockedRelationship(3, middleNode, endNode)
+
+    val query = mock[QueryContext]
+    replyWithMap(query, Map(
+        (startNode, Direction.OUTGOING) -> Seq(leftRelationship1, leftRelationship2, leftRelationship3),
+        (middleNode, Direction.INCOMING) -> Seq(leftRelationship1, leftRelationship2),
+        (middleNode, Direction.OUTGOING) -> Seq(rightRelationship),
+        (endNode, Direction.INCOMING) -> Seq(rightRelationship, leftRelationship3)
+      ).withDefaultValue(Seq.empty)
+    )
+    val queryState = QueryStateHelper.emptyWith(query = query)
+
+    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTNode)))
+    when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode, "b" -> endNode)))
+
+    // when
+    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 1, Some(1), nodeInScope = true)().
+      createResults(queryState).toList
+
+    // then
+    val (first :: Nil) = result
+    first("a") should equal(startNode)
+    first("r") should equal(List(leftRelationship3))
+    first("b") should equal(endNode)
+  }
+
   test("should support var length expand between three nodes with multiple relationships and fixed min and max lengths") {
     // given
     val startNode = newMockedNode(1)
     val middleNode = newMockedNode(2)
     val endNode = newMockedNode(3)
-    val leftRelationship1 = newMockedRealtionship(1, startNode, middleNode)
-    val leftRelationship2 = newMockedRealtionship(2, startNode, middleNode)
-    val rightRelationship = newMockedRealtionship(3, middleNode, endNode)
+    val leftRelationship1 = newMockedRelationship(1, startNode, middleNode)
+    val leftRelationship2 = newMockedRelationship(2, startNode, middleNode)
+    val rightRelationship = newMockedRelationship(3, middleNode, endNode)
 
     val query = mock[QueryContext]
     replyWithMap(query, Map(
@@ -199,7 +480,46 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode)))
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 2, Some(2))().
+    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().
+      createResults(queryState).toList
+
+    // then
+    val (first :: second :: Nil) = result
+    first("a") should equal(startNode)
+    first("r") should equal(List(leftRelationship2, rightRelationship))
+    first("b") should equal(endNode)
+    second("a") should equal(startNode)
+    second("r") should equal(List(leftRelationship1, rightRelationship))
+    second("b") should equal(endNode)
+  }
+
+  test("should support var length expand between three nodes with multiple relationships and fixed min and max lengths and end node in scope") {
+    // given
+    val startNode = newMockedNode(1)
+    val middleNode = newMockedNode(2)
+    val endNode = newMockedNode(3)
+    val otherNode = newMockedNode(4)
+    val leftRelationship1 = newMockedRelationship(1, startNode, middleNode)
+    val leftRelationship2 = newMockedRelationship(2, startNode, middleNode)
+    val rightRelationship = newMockedRelationship(3, middleNode, endNode)
+    val otherRelationship = newMockedRelationship(4, middleNode, otherNode)
+
+    val query = mock[QueryContext]
+    replyWithMap(query, Map(
+        (startNode, Direction.OUTGOING) -> Seq(leftRelationship1, leftRelationship2),
+        (middleNode, Direction.INCOMING) -> Seq(leftRelationship1, leftRelationship2),
+        (middleNode, Direction.OUTGOING) -> Seq(rightRelationship, otherRelationship),
+        (endNode, Direction.INCOMING) -> Seq(rightRelationship),
+        (otherNode, Direction.INCOMING) -> Seq(otherRelationship)
+      ).withDefaultValue(Seq.empty)
+    )
+    val queryState = QueryStateHelper.emptyWith(query = query)
+
+    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b"-> CTNode)))
+    when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> startNode, "b" -> endNode)))
+
+    // when
+    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = true)().
       createResults(queryState).toList
 
     // then
@@ -218,10 +538,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val startNode = newMockedNode(1)
     val middleNode = newMockedNode(2)
     val endNode = newMockedNode(3)
-    val initialRelationship = newMockedRealtionship(4, firstNode, startNode)
-    val leftRelationship1 = newMockedRealtionship(1, startNode, middleNode)
-    val leftRelationship2 = newMockedRealtionship(2, startNode, middleNode)
-    val rightRelationship = newMockedRealtionship(3, middleNode, endNode)
+    val initialRelationship = newMockedRelationship(4, firstNode, startNode)
+    val leftRelationship1 = newMockedRelationship(1, startNode, middleNode)
+    val leftRelationship2 = newMockedRelationship(2, startNode, middleNode)
+    val rightRelationship = newMockedRelationship(3, middleNode, endNode)
 
     val query = mock[QueryContext]
     replyWithMap(query, Map(
@@ -239,7 +559,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> firstNode)))
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 2, Some(3))().
+    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 2, Some(3), nodeInScope = false)().
       createResults(queryState).toList
 
     // then
@@ -258,13 +578,56 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     fourth("b") should equal(endNode)
   }
 
+  test("should support var length expand between three nodes with multiple relationships and fixed min and max lengths 2 with end node in scope") {
+    // given
+    val firstNode = newMockedNode(4)
+    val startNode = newMockedNode(1)
+    val middleNode = newMockedNode(2)
+    val endNode = newMockedNode(3)
+    val otherNode = newMockedNode(5)
+    val initialRelationship = newMockedRelationship(4, firstNode, startNode)
+    val leftRelationship1 = newMockedRelationship(1, startNode, middleNode)
+    val leftRelationship2 = newMockedRelationship(2, startNode, middleNode)
+    val rightRelationship = newMockedRelationship(3, middleNode, endNode)
+    val otherRelationship = newMockedRelationship(5, middleNode, otherNode)
+
+    val query = mock[QueryContext]
+    replyWithMap(query, Map(
+        (firstNode, Direction.OUTGOING) -> Seq(initialRelationship),
+        (startNode, Direction.INCOMING) -> Seq(initialRelationship),
+        (startNode, Direction.OUTGOING) -> Seq(leftRelationship1, leftRelationship2),
+        (middleNode, Direction.INCOMING) -> Seq(leftRelationship1, leftRelationship2),
+        (middleNode, Direction.OUTGOING) -> Seq(rightRelationship, otherRelationship),
+        (endNode, Direction.INCOMING) -> Seq(rightRelationship),
+        (otherNode, Direction.INCOMING) -> Seq(otherRelationship)
+      ).withDefaultValue(Seq.empty)
+    )
+    val queryState = QueryStateHelper.emptyWith(query = query)
+
+    val left = newMockedPipe(SymbolTable(Map("a" -> CTNode, "b" -> CTNode)))
+    when(left.createResults(queryState)).thenReturn(Iterator(row("a" -> firstNode, "b" -> endNode)))
+
+    // when
+    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING, LazyTypes.empty, 2, Some(3), nodeInScope = true)().
+      createResults(queryState).toList
+
+    // then
+    val (first :: second :: Nil) = result
+    first("a") should equal(firstNode)
+    first("r") should equal(List(initialRelationship, leftRelationship2, rightRelationship))
+    first("b") should equal(endNode)
+    second("a") should equal(firstNode)
+    second("r") should equal(List(initialRelationship, leftRelationship1, rightRelationship))
+    second("b") should equal(endNode)
+  }
+
   test("should project the relationship list in the right direction") {
     // given
     val startNode = newMockedNode(1)
     val middleNode = newMockedNode(2)
     val endNode = newMockedNode(3)
-    val leftRelationship = newMockedRealtionship(1, startNode, middleNode)
-    val rightRelationship = newMockedRealtionship(2, middleNode, endNode)
+    val leftRelationship = newMockedRelationship(1, startNode, middleNode)
+    val rightRelationship = newMockedRelationship(2, middleNode, endNode)
 
     val query = mock[QueryContext]
     replyWithMap(query, Map(
@@ -282,7 +645,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     // (b)-[r]->(a)
 
     // when
-    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.INCOMING, LazyTypes.empty, 1, None)().
+    val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.INCOMING, LazyTypes.empty, 1, None, nodeInScope = false)().
       createResults(queryState).toList
 
     // then
@@ -301,10 +664,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val startNode = newMockedNode(1)
     val middleNode = newMockedNode(2)
     val endNode = newMockedNode(3)
-    val initialRelationship = newMockedRealtionship(4, firstNode, startNode)
-    val leftRelationship1 = newMockedRealtionship(1, startNode, middleNode)
-    val leftRelationship2 = newMockedRealtionship(2, startNode, middleNode)
-    val rightRelationship = newMockedRealtionship(3, middleNode, endNode)
+    val initialRelationship = newMockedRelationship(4, firstNode, startNode)
+    val leftRelationship1 = newMockedRelationship(1, startNode, middleNode)
+    val leftRelationship2 = newMockedRelationship(2, startNode, middleNode)
+    val rightRelationship = newMockedRelationship(3, middleNode, endNode)
     val query = mock[QueryContext]
     replyWithMap(query, Map(
       (firstNode, Direction.OUTGOING) -> Seq(initialRelationship),
@@ -322,10 +685,9 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     def filteringStep(context: ExecutionContext, q: QueryState, rel: Relationship): Boolean = rel.getId != 2
 
-
     // when
     val result = VarLengthExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Direction.OUTGOING,
-                                     LazyTypes.empty, 3, None, filteringStep)().createResults(queryState).toList
+                                     LazyTypes.empty, 3, None, nodeInScope = false, filteringStep)().createResults(queryState).toList
 
     // then
     val (single :: Nil) = result
@@ -342,7 +704,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     node
   }
 
-  private def newMockedRealtionship(id: Int, startNode: Node, endNode: Node): Relationship = {
+  private def newMockedRelationship(id: Int, startNode: Node, endNode: Node): Relationship = {
     val relationship = mock[Relationship]
     when(relationship.getId).thenReturn(id)
     when(relationship.getStartNode).thenReturn(startNode)
