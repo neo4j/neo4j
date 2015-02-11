@@ -23,9 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.pipes.NodeIndexSeekPipe
 
 class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport{
   test("should be able to use indexes") {
-    // Given
-    execute("CREATE (_0:Matrix { name:'The Architect' }),(_1:Matrix { name:'Agent Smith' }),(_2:Matrix:Crew { name:'Cypher' }),(_3:Crew { name:'Trinity' }),(_4:Crew { name:'Morpheus' }),(_5:Crew { name:'Neo' }), _1-[:CODED_BY]->_0, _2-[:KNOWS]->_1, _4-[:KNOWS]->_3, _4-[:KNOWS]->_2, _5-[:KNOWS]->_4, _5-[:LOVES]->_3")
-    graph.createIndex("Crew", "name")
+    given()
 
     // When
     val result = executeWithNewPlanner("MATCH (n:Crew) WHERE n.name = 'Neo' RETURN n")
@@ -35,10 +33,7 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
   }
 
   test("should not forget predicates") {
-    // Given
-    execute("CREATE (_0:Matrix { name:'The Architect' }),(_1:Matrix { name:'Agent Smith' }),(_2:Matrix:Crew { name:'Cypher' }),(_3:Crew { name:'Trinity' }),(_4:Crew { name:'Morpheus' }),(_5:Crew { name:'Neo' }), _1-[:CODED_BY]->_0, _2-[:KNOWS]->_1, _4-[:KNOWS]->_3, _4-[:KNOWS]->_2, _5-[:KNOWS]->_4, _5-[:LOVES]->_3")
-    graph.createIndex("Crew", "name")
-
+    given()
 
     // When
     val result = executeWithNewPlanner("MATCH (n:Crew) WHERE n.name = 'Neo' AND n.name = 'Morpheus' RETURN n")
@@ -49,10 +44,8 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
   }
 
   test("should use index when there are multiple labels on the node") {
-    // Given
-    execute("CREATE (_0:Matrix { name:'The Architect' }),(_1:Matrix { name:'Agent Smith' }),(_2:Matrix:Crew { name:'Cypher' }),(_3:Crew { name:'Trinity' }),(_4:Crew { name:'Morpheus' }),(_5:Crew { name:'Neo' }), _1-[:CODED_BY]->_0, _2-[:KNOWS]->_1, _4-[:KNOWS]->_3, _4-[:KNOWS]->_2, _5-[:KNOWS]->_4, _5-[:LOVES]->_3")
-    graph.createIndex("Crew", "name")
-
+    given()
+    
     // When
     val result = executeWithNewPlanner("MATCH (n:Matrix:Crew) WHERE n.name = 'Neo' RETURN n")
 
@@ -66,6 +59,7 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
     val n1 = createLabeledNode(Map("id" -> 1), "Prop")
     val n2 = createLabeledNode(Map("id" -> 2), "Prop")
     val n3 = createLabeledNode(Map("id" -> 3), "Prop")
+    for (i <- 4 to 30) createLabeledNode(Map("id" -> i), "Prop")
 
     // When
     val result = executeWithNewPlanner("unwind [1,2,3] as x match (n:Prop) where n.id = x return n;")
@@ -105,4 +99,27 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
     }
     found shouldBe true
   }
+
+  private def given() {
+    execute(
+      """CREATE (architect:Matrix { name:'The Architect' }),
+        |       (smith:Matrix { name:'Agent Smith' }),
+        |       (cypher:Matrix:Crew { name:'Cypher' }),
+        |       (trinity:Crew { name:'Trinity' }),
+        |       (morpheus:Crew { name:'Morpheus' }),
+        |       (neo:Crew { name:'Neo' }), 
+        |       smith-[:CODED_BY]->architect, 
+        |       cypher-[:KNOWS]->smith, 
+        |       morpheus-[:KNOWS]->trinity, 
+        |       morpheus-[:KNOWS]->cypher, 
+        |       neo-[:KNOWS]->morpheus, 
+        |       neo-[:LOVES]->trinity""".stripMargin)
+
+    for (i <- 1 to 10) createLabeledNode(Map("name" -> ("Joe" + i)), "Crew")
+
+    for (i <- 1 to 10) createLabeledNode(Map("name" -> ("Smith" + i)), "Matrix")
+
+    graph.createIndex("Crew", "name")
+  }
+
 }
