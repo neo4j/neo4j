@@ -1,9 +1,7 @@
 [[query-aggregation]]
-Aggregation
-===========
+= Aggregation
 
 include::introduction.asciidoc[]
-
 
 The following examples are assuming the example graph structure below.
 
@@ -12,8 +10,10 @@ include::includes/cypher-aggregation-graph.asciidoc[]
 
 == COUNT ==
 
-+COUNT+ is used to count the number of rows.
-+COUNT+ can be used in two forms -- `COUNT(*)` which just counts the number of matching rows, and +COUNT(<identifier>)+, which counts the number of non-`NULL` values in +<identifier>+.
+[abstract]
+`COUNT` is used to count the number of rows.
+
+`COUNT` can be used in two forms -- `COUNT(*)` which just counts the number of matching rows, and `COUNT(<identifier>)`, which counts the number of non-`NULL` values in `<identifier>`.
 
 :leveloffset: 3
 

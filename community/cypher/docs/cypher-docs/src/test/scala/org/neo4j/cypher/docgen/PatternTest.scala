@@ -64,7 +64,10 @@ is described in more details in:
 The very simplest ``shape'' that can be described in a pattern is a node. A node is described using a pair of parentheses, and is typically given a name.
 For example:
 
-+`(a)`+
+[source,cypher]
+----
+(a)
+----
 
 This simple pattern describes a single node, and names that node using the identifier `a`.
 
@@ -76,21 +79,30 @@ More interesting is patterns that describe multiple nodes and relationships betw
 Cypher patterns describe relationships by employing an arrow between two nodes.
 For example:
 
-+`(a)-->(b)`+
+[source,cypher]
+----
+(a)-->(b)
+----
 
 This pattern describes a very simple data shape: two nodes, and a single relationship from one to the other.
 In this example, the two nodes are both named as `a` and `b` respectively, and the relationship is ``directed'': it goes from `a` to `b`.
 
 This way of describing nodes and relationships can be extended to cover an arbitrary number of nodes and the relationships between them, for example:
 
-+`(a)-->(b)<--(c)`+
+[source,cypher]
+----
+(a)-->(b)<--(c)
+----
 
 Such a series of connected nodes and relationships is called a "path".
 
 Note that the naming of the nodes in these patterns is only necessary should one need to refer to the same node again, either later in the pattern or elsewhere in the Cypher query.
 If this is not necessary then the name may be omitted, like so:
 
-+`(a)-->()<--(c)`+
+[source,cypher]
+----
+(a)-->()<--(c)
+----
 
 == Labels ==
 
@@ -98,11 +110,17 @@ In addition to simply describing the shape of a node in the pattern, one can als
 The most simple attribute that can be described in the pattern is a label that the node must have.
 For example:
 
-+`(a:User)-->(b)`+
+[source,cypher]
+----
+(a:User)-->(b)
+----
 
 One can also describe a node that has multiple labels:
 
-+`(a:User:Admin)-->(b)`+
+[source,cypher]
+----
+(a:User:Admin)-->(b)
+----
 
 == Specifying properties ==
 
@@ -110,10 +128,18 @@ Nodes and relationships are the fundamental structures in a graph. Neo4j uses pr
 
 Properties can be expressed in patterns using a map-construct: curly brackets surrounding a number of key-expression pairs, separated by commas.
 E.g. a node with two properties on it would look like:
-+`(a { name: "Andres", sport: "Brazilian Ju-Jitsu" })`.+
+
+[source,cypher]
+----
+(a { name: "Andres", sport: "Brazilian Ju-Jitsu" })
+----
 
 A relationship with expectations on it would could look like:
-+`(a)-[{blocked: false}]->(b)`.+
+
+[source,cypher]
+----
+(a)-[{blocked: false}]->(b)
+----
 
 When properties appear in patterns, they add an additional constraint to the shape of the data.
 In the case of a `CREATE` clause, the properties will be set in the newly created nodes and relationships.
@@ -129,62 +155,95 @@ The simplest way to describe a relationship is by using the arrow between two no
 Using this technique, you can describe that the relationship should exist and the directionality of it.
 If you don't care about the direction of the relationship, the arrow head can be omitted, like so:
 
-+`(a)--(b)`+
+[source,cypher]
+----
+(a)--(b)
+----
 
 As with nodes, relationships may also be given names.
 In this case, a pair of square brackets is used to break up the arrow and the identifier is placed between.
 For example:
 
-+`(a)-[r]->(b)`+
+[source,cypher]
+----
+(a)-[r]->(b)
+----
 
 Much like labels on nodes, relationships can have types.
 To describe a relationship with a specific type, you can specify this like so:
 
-+`(a)-[r:REL_TYPE]->(b)`+
+[source,cypher]
+----
+(a)-[r:REL_TYPE]->(b)
+----
 
 Unlike labels, relationships can only have one type.
 But if we'd like to describe some data such that the relationship could have any one of a set of types, then they can all be listed in the pattern, separating them with the pipe symbol `|` like this:
 
-+`(a)-[r:TYPE1|TYPE2]->(b)`+
+[source,cypher]
+----
+(a)-[r:TYPE1|TYPE2]->(b)
+----
 
 Note that this form of pattern can only be used to describe existing data (ie. when using a pattern with `MATCH` or as an expression).
 It will not work with `CREATE` or `MERGE`, since it's not possible to create a relationship with multiple types.
 
 As with nodes, the name of the relationship can always be omitted, in this case like so:
 
-+`(a)-[:REL_TYPE]->(b)`+
+[source,cypher]
+----
+(a)-[:REL_TYPE]->(b)
+----
 
 === Variable length ===
 
 Rather than describing a long path using a sequence of many node and relationship descriptions in a pattern, many relationships (and the intermediate nodes) can be described by specifying a length in the relationship description of a pattern.
 For example:
 
-+`(a)-[*2]->(b)`+
+[source,cypher]
+----
+(a)-[*2]->(b)
+----
 
 This describes a graph of three nodes and two relationship, all in one path (a path of length 2).
 This is equivalent to:
 
-+`(a)-->()-->(b)`+
+[source,cypher]
+----
+(a)-->()-->(b)
+----
 
 A range of lengths can also be specified: such relationship patterns are called ``variable length relationships''.
 For example:
 
-+`(a)-[*3..5]->(b)`+
+[source,cypher]
+----
+(a)-[*3..5]->(b)
+----
 
 This is a minimum length of 3, and a maximum of 5.
 It describes a graph of either 4 nodes and 3 relationships, 5 nodes and 4 relationships or 6 nodes and 5 relationships, all connected together in a single path.
 
 Either bound can be omitted. For example, to describe paths of length 3 or more, use:
 
-+`(a)-[*3..]->(b)`+
+[source,cypher]
+----
+(a)-[*3..]->(b)
+----
 
 And to describe paths of length 5 or less, use:
 
-+`(a)-[*..5]->(b)`+
+[source,cypher]
+----
+(a)-[*..5]->(b)
+----
 
 Both bounds can be omitted, allowing paths of any length to be described:
 
-+`(a)-[*]->(b)`+
+[source,cypher]
+----
+(a)-[*]->(b)
+----
 
 As a simple example, let's take the query below:
 
@@ -203,7 +262,10 @@ Note that variable length relationships can not be used with `CREATE` and `MERGE
 As described above, a series of connected nodes and relationships is called a "path". Cypher allows paths to be named
 using an identifer, like so:
 
-+`p = (a)-[*3..5]->(b)`+
+[source,cypher]
+----
+p = (a)-[*3..5]->(b)
+----
 
 You can do this in `MATCH`, `CREATE` and `MERGE`, but not when using patterns as expressions."""
 }

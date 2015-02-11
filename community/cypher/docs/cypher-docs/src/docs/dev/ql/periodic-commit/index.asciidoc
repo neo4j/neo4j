@@ -1,22 +1,21 @@
 [[query-periodic-commit]]
-Using Periodic Commit
-=====================
+= Using Periodic Commit
 
 NOTE: See <<cypherdoc-importing-csv-files-with-cypher>> on how to import data from CSV files.
 
-Updating very large amounts of data (e.g. when importing) with a single Cypher query may fail due to memory constraints. This will manifest
-itself as an +OutOfMemoryError+.
+Updating very large amounts of data (for example when importing) with a single Cypher query may fail due to memory constraints.
+This will manifest itself as an `OutOfMemoryError`.
 
-For this situation *only*, Cypher provides the global +USING PERIODIC COMMIT+ query hint for updating queries.
+For this situation _only,_ Cypher provides the global `USING PERIODIC COMMIT` query hint for updating queries.
+You can optionally set the limit for the number of rows per commit like so: `USING PERIODIC COMMIT 500`.
 
 Periodic Commit will process the rows until the number of rows reaches a limit.
 Then the current transaction will be committed and replaced with a newly opened transaction.
 If no limit is set, a default value will be used.
 
-See <<load-csv-importing-large-amounts-of-data>> in <<query-load-csv>> for examples of +USING PERIODIC COMMIT+ with and without setting the number of rows per commit.
+See <<load-csv-importing-large-amounts-of-data>> in <<query-load-csv>> for examples of `USING PERIODIC COMMIT` with and without setting the number of rows per commit.
 
 [IMPORTANT]
 Using periodic commit will prevent running out of memory when updating large amounts of data.
 However it will also break transactional isolation thus it should only be used where needed.
-
 

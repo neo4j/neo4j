@@ -54,7 +54,7 @@ There are three ways you can disable UDC:
  <dependency>
    <groupId>org.neo4j</groupId>
    <artifactId>neo4j</artifactId>
-   <version>${neo4j-version}</version>
+   <version>{neo4j-version}</version>
    <exclusions>
      <exclusion>
        <groupId>org.neo4j</groupId>
@@ -67,5 +67,4 @@ There are three ways you can disable UDC:
 . Lastly, if you are using a packaged version of Neo4j, and do not want to make any change to the jars, see below for the setting to use in _conf/neo4j.properties_ to disable UDC.
 
 include::{importdir}/neo4j-udc-docs-jar/ops/configuration-attributes.asciidoc[]
-
 

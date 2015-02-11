@@ -36,7 +36,7 @@ import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Matchers;
 
-import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult;
 import org.neo4j.cypher.javacompat.internal.DocsExecutionEngine;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.ResourceIterator;
@@ -54,7 +54,7 @@ import static org.junit.Assume.assumeFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class BlockTest
+public class BlockTypeTest
 {
     private GraphDatabaseService database;
     private DocsExecutionEngine engine;
@@ -324,7 +324,7 @@ public class BlockTest
                 "RETURN line;", "----" );
         Block block = new Block( myQuery, BlockType.CYPHER );
         DocsExecutionEngine engine = mock( DocsExecutionEngine.class );
-        ExtendedExecutionResult result = mock( ExtendedExecutionResult.class );
+        InternalExecutionResult result = mock( InternalExecutionResult.class );
         ResourceIterator iterator = mock( ResourceIterator.class );
         ArgumentCaptor<String> fileQuery = ArgumentCaptor.forClass( String.class );
         ArgumentCaptor<String> httpQuery = ArgumentCaptor.forClass( String.class );
@@ -332,7 +332,7 @@ public class BlockTest
         when( engine.profile( fileQuery.capture(), Matchers.eq( Collections.<String, Object>emptyMap() ) ) ).thenReturn(
                 result );
 
-        when( result.iterator() ).thenReturn( iterator );
+        when( result.javaIterator() ).thenReturn( iterator );
 
         when( engine.prettify( httpQuery.capture() ) ).thenReturn( "apa" );
 

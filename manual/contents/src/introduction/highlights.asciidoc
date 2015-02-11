@@ -2,7 +2,7 @@
 Neo4j Highlights
 ================
 
-As a robust, scalable and high-performance database, Neo4j is suitable for full enterprise deployment or a subset of the full server can be used in lightweight projects.
+As a robust, scalable and high-performance database, Neo4j is suitable for full enterprise deployment.
 
 It features:
 

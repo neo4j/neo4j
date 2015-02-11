@@ -36,7 +36,7 @@ Now let's look for friends of friends of Adam:
 [source,cypher]
 ----
 MATCH (user:User {name: 'Adam'})-[r1:FRIEND]-()-[r2:FRIEND]-(friend_of_a_friend)
-RETURN friend_of_a_friend
+RETURN friend_of_a_friend.name AS fofName
 ----
 
 [source,querytest]
@@ -56,7 +56,7 @@ If the query should return the user, it is possible to spread the matching over 
 ----
 MATCH (user:User {name: 'Adam'})-[r1:FRIEND]-(friend)
 MATCH (friend)-[r2:FRIEND]-(friend_of_a_friend)
-RETURN friend_of_a_friend
+RETURN friend_of_a_friend.name AS fofName
 ----
 
 [source,querytest]
@@ -74,7 +74,7 @@ Note that while the following query looks similar to the previous one, it is act
 ----
 MATCH (user:User {name: 'Adam'})-[r1:FRIEND]-(friend),
       (friend)-[r2:FRIEND]-(friend_of_a_friend)
-RETURN friend_of_a_friend
+RETURN friend_of_a_friend.name AS fofName
 ----
 
 Here, the +MATCH+ clause has a single pattern with two paths, while the previous query has two distinct patterns.

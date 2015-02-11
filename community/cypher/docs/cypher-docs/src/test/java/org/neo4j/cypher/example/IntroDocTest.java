@@ -66,13 +66,13 @@ public class IntroDocTest implements GraphHolder
             data.get();
             fw.append( "\nImagine an example graph like the following one:\n\n" );
             fw.append( AsciiDocGenerator.dumpToSeparateFileWithType( new File( DOCS_TARGET ), "intro.graph",
-                    AsciidocHelper.createGraphVizWithNodeId( "Example Graph",
+                    AsciidocHelper.createGraphViz( "Example Graph",
                             graphdb(), "cypher-intro" ) ) );
 
             fw.append( "\nFor example, here is a query which finds a user called John and John's friends (though not " +
                     "his direct friends) before returning both John and any friends-of-friends that are found." );
             fw.append( "\n\n" );
-            String query = "MATCH (john {name: 'John'})-[:friend]->()-[:friend]->(fof) RETURN john, fof ";
+            String query = "MATCH (john {name: 'John'})-[:friend]->()-[:friend]->(fof) RETURN john.name, fof.name ";
             fw.append( AsciiDocGenerator.dumpToSeparateFileWithType( new File( DOCS_TARGET ), "intro.query",
                     createCypherSnippet( query ) ) );
             fw.append( "\nResulting in:\n\n" );
@@ -85,7 +85,7 @@ public class IntroDocTest implements GraphHolder
                     + "only those followed users who have a +name+ property starting with +S+." );
             query = "MATCH (user)-[:friend]->(follower) WHERE "
                     + "user.name IN ['Joe', 'John', 'Sara', 'Maria', 'Steve'] AND follower.name =~ 'S.*' "
-                    + "RETURN user, follower.name ";
+                            + "RETURN user.name, follower.name ";
             fw.append( "\n\n" );
             fw.append( AsciiDocGenerator.dumpToSeparateFileWithType( new File( DOCS_TARGET ), "intro.query",
                     createCypherSnippet( query ) ) );

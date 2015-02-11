@@ -1,8 +1,8 @@
 [[query-create]]
-Create
-======
+= Create
 
-Creating graph elements -- nodes and relationships, is done with +CREATE+.
+[abstract]
+The `CREATE` clause is used to create graph elements -- nodes and relationships.
 
 [TIP]
 In the `CREATE` clause, patterns are used a lot.

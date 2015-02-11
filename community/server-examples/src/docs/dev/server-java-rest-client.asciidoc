@@ -14,6 +14,7 @@ which are easily https://jersey.java.net/nonav/documentation/1.9/user-guide.html
 == Start the server ==
 
 Before we can perform any actions on the server, we need to start it as per <<server-installation>>.
+Next up, we'll check the connection to the server:
 
 [snippet,java]
 ----
@@ -100,7 +101,7 @@ If everything goes well, we'll get a +204 No Content+ back indicating that the s
 === Adding relationships ===
 
 Now that we have nodes to represent Joe Strummer and The Clash, we can relate them.
-The REST API supports this through a +POST+ of a relationship representation to the start node of the relationship. 
+The REST API supports this through a +POST+ of a relationship representation to the start node of the relationship.
 Correspondingly in Java we +POST+ some JSON to the URI of our node that represents Joe Strummer,
 to establish a relationship between that node and the node representing The Clash.
 

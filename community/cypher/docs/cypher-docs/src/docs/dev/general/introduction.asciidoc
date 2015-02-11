@@ -26,7 +26,7 @@ Some of the collection semantics have been borrowed from languages such as Haske
 [[cypher-structure]]
 == Structure ==
 
-Cypher borrows it structure from SQL -- queries are built up using various clauses.
+Cypher borrows its structure from SQL -- queries are built up using various clauses.
 
 Clauses are chained together, and the they feed intermediate result sets between each other.
 For example, the matching identifiers from one +MATCH+ clause will be the context that the next clause exists in.

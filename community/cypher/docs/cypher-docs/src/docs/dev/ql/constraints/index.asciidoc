@@ -1,8 +1,7 @@
 [[query-constraints]]
+= Constraints
 
-Constraints
-===========
-
+[abstract]
 Neo4j helps enforce data integrity with the use of constraints.
 
 You can use unique constraints to ensure that property values are unique for all nodes with a specific label.

@@ -28,7 +28,7 @@
     <docs.tools>${project.build.directory}/tools</docs.tools>
     <docs.resources>${docs.tools}/main/resources</docs.resources>
     <neo4j.version>${project.version}</neo4j.version>
-    <doctools.version>28</doctools.version>
+    <doctools.version>29</doctools.version>
     <attach-docs-phase>none</attach-docs-phase>
     <licensing.phase>none</licensing.phase>
   </properties>

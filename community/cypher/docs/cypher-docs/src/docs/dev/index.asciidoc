@@ -7,6 +7,7 @@ Cypher Query Language
 The Cypher part is the authoritative source for details on the Cypher Query Language.
 For a short introduction, see <<cypher-introduction>>.
 To take your first steps with Cypher, see <<cypher-getting-started>>.
+For the terminology used, see <<terminology>>.
 --
 
 :leveloffset: 1

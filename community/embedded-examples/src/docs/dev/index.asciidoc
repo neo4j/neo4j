@@ -15,6 +15,10 @@ include::hello-world.asciidoc[]
 
 :leveloffset: 2
 
+include::property-values.asciidoc[]
+
+:leveloffset: 2
+
 include::new-index-users.asciidoc[]
 
 :leveloffset: 2

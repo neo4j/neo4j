@@ -1,8 +1,8 @@
 [[query-delete]]
-Delete
-======
+= Delete
 
-Deleting graph elements -- nodes and relationships, is done with +DELETE+.
+[abstract]
+The `DELETE` clause is used to delete graph elements -- nodes and relationships.
 
 For removing properties and labels, see <<query-remove>>.
 

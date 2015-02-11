@@ -1,11 +1,10 @@
 [[tutorials-java-embedded-hello-world]]
-Hello World
-===========
+= Hello World
 
 Learn how to create and access nodes and relationships.
 For information on project setup, see <<tutorials-java-embedded-setup>>.
 
-Remember, from <<what-is-a-graphdb>>, that a Neo4j graph consist of:
+Remember, from <<graphdb-neo4j>>, that a Neo4j graph consists of:
 
 * Nodes that are connected by
 * Relationships, with
@@ -16,7 +15,7 @@ All relationships have a type.
 For example, if the graph represents a social network, a relationship type could be +KNOWS+.
 If a relationship of the type +KNOWS+ connects two nodes, that probably represents two people that know each other.
 A lot of the semantics (that is the meaning) of a graph is encoded in the relationship types of the application.
-And although relationships are directed they are equally well traversed regardless of which direction they are traversed. 
+And although relationships are directed they are equally well traversed regardless of which direction they are traversed.
 
 [TIP]
 The source code of this example is found here:
@@ -92,7 +91,7 @@ Now, let's create a few nodes.
 The API is very intuitive.
 Feel free to have a look at the link:javadocs/[Neo4j Javadocs].
 They're included in the distribution, as well.
-Here's how to create a small graph consisting of two nodes, connected with one relationship and some properties: 
+Here's how to create a small graph consisting of two nodes, connected with one relationship and some properties:
 
 [snippet,java]
 ----
@@ -102,13 +101,13 @@ classifier=sources
 tag=addData
 ----
 
-We now have a graph that looks like this: 
+We now have a graph that looks like this:
 
 include::hello-world-java-graph.asciidoc[]
 
 == Print the result ==
 
-After we've created our graph, let's read from it and print the result. 
+After we've created our graph, let's read from it and print the result.
 
 [snippet,java]
 ----

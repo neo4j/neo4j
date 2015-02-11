@@ -69,7 +69,7 @@ class AggregationTest extends DocumentingTestBase {
   @Test def countNonNullValues() {
     testQuery(
       title = "Count non-null values",
-      text = "You can count the non-`null` values by using +count(<identifier>)+.",
+      text = "You can count the non-`NULL` values by using +count(<identifier>)+.",
       queryText = "match (n:Person) return count(n.property)",
       optionalResultExplanation = "The count of related nodes with the `property` property set is returned by the query.",
       assertions = p => assertEquals(Map("count(n.property)" -> 3), p.toList.head))
@@ -139,7 +139,7 @@ So, to count the number of unique eye colors from nodes related to `a`, this que
 Aggregate functions take multiple input values and calculate an aggregated value from them.
 Examples are +avg+ that calculates the average of multiple numeric values, or +min+ that finds the smallest numeric value in a set of values.
 
-Aggregation can be done over all the matching sub graphs, or it can be further divided by introducing key values.
+Aggregation can be done over all the matching subgraphs, or it can be further divided by introducing key values.
 These are non-aggregate expressions, that are used to group the values going into the aggregate functions.
 
 So, if the return statement looks something like this:
@@ -149,7 +149,7 @@ So, if the return statement looks something like this:
 RETURN n, count(*)
 ----
 
-We have two return expressions -- `n`, and `count(*)`.
+We have two return expressions: `n`, and `count(*)`.
 The first, `n`, is no aggregate function, and so it will be the grouping key.
 The latter, `count(*)` is an aggregate expression.
 So the matching subgraphs will be divided into different buckets, depending on the grouping key.

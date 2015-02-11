@@ -20,10 +20,11 @@
 package org.neo4j.doc.cypherdoc;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.cypher.javacompat.ExtendedExecutionResult;
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -38,25 +39,18 @@ class Result
     final Set<Long> nodeIds = new HashSet<>();
     final Set<Long> relationshipIds = new HashSet<>();
 
-    public Result( String query, ExtendedExecutionResult result, GraphDatabaseService database )
+    public Result( String query, InternalExecutionResult result, GraphDatabaseService database )
     {
         this.query = query;
         text = result.dumpToString();
         try (Transaction tx = database.beginTx())
         {
-            extract( result );
+            extract( result.javaIterator() );
         }
         String profileText;
         try
         {
-            if ( query.startsWith( "PROFILE" ) )
-            {
-                profileText = result.getExecutionPlanDescription().toString();
-            }
-            else
-            {
-                profileText = "Query wasn't profiled";
-            }
+            profileText = result.executionPlanDescription().toString();
         }
         catch ( Exception ex )
         {
@@ -72,10 +66,11 @@ class Result
         this.profile = "";
     }
 
-    private void extract( Iterable<?> source )
+    private void extract( Iterator<?> source )
     {
-        for ( Object item : source )
+        while ( source.hasNext() )
         {
+            Object item = source.next();
             if ( item instanceof Node )
             {
                 Node node = (Node) item;
@@ -102,11 +97,11 @@ class Result
             }
             else if ( item instanceof Map<?, ?> )
             {
-                extract( ( (Map<?, ?>) item ).values() );
+                extract( ((Map<?,?>) item).values().iterator() );
             }
             else if ( item instanceof Iterable<?> )
             {
-                extract( (Iterable<?>) item );
+                extract( ((Iterable<?>) item).iterator() );
             }
         }
     }

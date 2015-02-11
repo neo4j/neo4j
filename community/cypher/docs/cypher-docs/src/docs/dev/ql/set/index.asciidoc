@@ -1,7 +1,9 @@
 [[query-set]]
-Set
-===
-Updating labels on nodes and properties on nodes and relationships is done with the +SET+ clause.
+= Set
+
+[abstract]
+The `SET` clause is used to update labels on nodes and properties on nodes and relationships.
+
 +SET+ can also be used with maps from parameters to set properties.
 
 [NOTE]

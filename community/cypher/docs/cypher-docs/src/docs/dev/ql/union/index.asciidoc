@@ -1,15 +1,15 @@
 [[query-union]]
-Union
-=====
+= Union
 
-Combining results from multiple queries is done through the +UNION+ operator.
+[abstract]
+The `UNION` clause is used to combine the result of multiple queries.
 
-Combines the results of two or more queries into a single result set that includes all the rows that belong to all queries in the union.
+It combines the results of two or more queries into a single result set that includes all the rows that belong to all queries in the union.
 
-The number and the names of the columns must be identical in all queries combined by using +UNION+.
+The number and the names of the columns must be identical in all queries combined by using  `UNION`.
 
-To keep all the result rows, use +UNION+ +ALL+.
-Using just +UNION+ will combine and remove duplicates from the result set.
+To keep all the result rows, use `UNION ALL`.
+Using just `UNION` will combine and remove duplicates from the result set.
 
 .Graph
 include::includes/cypher-union-graph.asciidoc[]

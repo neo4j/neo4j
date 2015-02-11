@@ -1,9 +1,10 @@
 [[query-load-csv]]
-Load CSV
-========
+= Load CSV
 
-+LOAD CSV+ allows you to import data from CSV files.
-It is required to specify an identifier for the CSV data using +AS+.
+[abstract]
+`LOAD CSV` is used to import data from CSV files.
+
+It is required to specify an identifier for the CSV data using `AS`.
 See the examples below for further details.
 
 There is also a worked example, see <<cypherdoc-importing-csv-files-with-cypher>>.
@@ -22,7 +23,7 @@ include::import-data-from-a-csv-file-with-a-custom-field-delimiter.asciidoc[]
 
 include::importing-large-amounts-of-data.asciidoc[]
 
-:leveloffset: 3
+:leveloffset: 2
 
 include::setting-the-rate-of-periodic-commits.asciidoc[]
 
