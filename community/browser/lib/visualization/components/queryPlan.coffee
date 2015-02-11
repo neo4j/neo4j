@@ -243,316 +243,330 @@ neo.queryPlan = (element)->
           join(selection, child.value.children)
 
     join(svg, {
-      '.link':
-        data: links,
+      'g.layer.links':
+        data: [links]
         selections: (enter) ->
           enter.append('g')
-          .attr('class', 'link layer')
+          .attr('class', 'layer links')
         children:
 
-          'path':
-            data: (d) -> [d]
-            selections: (enter, update) ->
-              enter
-              .append('path')
-              .attr('fill', linkColor)
-
-              update
-              .transition()
-              .attr('d', (d) ->
-                width = Math.max(1, d.width)
-                sourceX = d.source.x + operatorWidth / 2
-                targetX = d.target.x + d.source.tx
-
-                sourceY = d.source.y + d.source.height
-                targetY = d.target.y
-                yi = d3.interpolateNumber(sourceY, targetY)
-
-                curvature = .5
-                control1 = yi(curvature)
-                control2 = yi(1 - curvature)
-                controlWidth = Math.min(width / Math.PI, (targetY - sourceY) / Math.PI)
-                if sourceX > targetX + width / 2
-                  controlWidth *= -1
-
-                [
-                  'M', (sourceX + width / 2), sourceY,
-                  'C', (sourceX + width / 2), control1 - controlWidth,
-                  (targetX + width), control2 - controlWidth,
-                  (targetX + width), targetY,
-                  'L', targetX, targetY,
-                  'C', targetX, control2 + controlWidth,
-                  (sourceX - width / 2), control1 + controlWidth,
-                  (sourceX - width / 2), sourceY,
-                  'Z'
-                ].join(' '))
-
-          'text':
-            data: (d) ->
-              x = d.source.x + operatorWidth / 2
-              y = d.source.y + d.source.height + operatorDetailHeight
-              source = d.source
-              [key, caption] = if source.Rows?
-                ['Rows', 'row']
-              else
-                ['EstimatedRows', 'estimated row']
-              [
-                { x: x, y: y, text: formatNumber(source[key]) + ' ', anchor: 'end' }
-                { x: x, y: y, text: plural(caption, source[key]), anchor: 'start' }
-              ]
-            selections: (enter, update) ->
-              enter
-              .append('text')
-              .attr('font-size', detailFontSize)
-              .attr('font-family', standardFont)
-
-              update
-              .transition()
-              .attr('x', (d) -> d.x)
-              .attr('y', (d) -> d.y)
-              .attr('text-anchor', (d) -> d.anchor)
-              .attr('xml:space', 'preserve')
-              .text((d) -> d.text)
-
-      '.operator':
-        data: operators
-        selections: (enter, update) ->
-          enter
-          .append('g')
-          .attr('class', 'operator layer')
-
-          update
-          .transition()
-          .attr('transform', (d) -> "translate(#{d.x},#{d.y})")
-        children:
-
-          'g.header':
-            data: (d) -> [d]
+          '.link':
+            data: ((d) -> d),
             selections: (enter) ->
-              enter
-              .append('g')
-              .attr('class', 'header')
-              .attr('pointer-events', 'all')
-              .on('click', (d) ->
-                d.expanded = !d.expanded
-                redisplay()
-              )
+              enter.append('g')
+              .attr('class', 'link')
             children:
 
-              'path.banner':
+              'path':
                 data: (d) -> [d]
                 selections: (enter, update) ->
                   enter
                   .append('path')
-                  .attr('class', 'banner')
-
-                  update
-                  .attr('d', (d) ->
-                    shaving =
-                      if d.height <= operatorHeaderHeight
-                        operatorCornerRadius
-                      else if d.height < operatorHeaderHeight + operatorCornerRadius
-                        operatorCornerRadius - Math.sqrt(Math.pow(operatorCornerRadius, 2) -
-                            Math.pow(operatorCornerRadius - d.height + operatorHeaderHeight, 2))
-                      else 0
-                    [
-                      'M', operatorWidth - operatorCornerRadius, 0
-                      'A', operatorCornerRadius, operatorCornerRadius, 0, 0, 1, operatorWidth, operatorCornerRadius
-                      'L', operatorWidth, operatorHeaderHeight - operatorCornerRadius
-                      'A', operatorCornerRadius, operatorCornerRadius, 0, 0, 1, operatorWidth - shaving, operatorHeaderHeight
-                      'L', shaving, operatorHeaderHeight
-                      'A', operatorCornerRadius, operatorCornerRadius, 0, 0, 1, 0, operatorHeaderHeight - operatorCornerRadius
-                      'L', 0, operatorCornerRadius
-                      'A', operatorCornerRadius, operatorCornerRadius, 0, 0, 1, operatorCornerRadius, 0
-                      'Z'
-                    ].join(' '))
-                  .style('fill', (d) -> color(d.operatorType).color)
-
-              'path.expand':
-                data: (d) -> if d.operatorType is 'Result' then [] else [d]
-                selections: (enter, update) ->
-                  rotateForExpand = (d) ->
-                    d3.transform()
-                    "translate(#{operatorHeaderHeight / 2}, #{operatorHeaderHeight / 2}) " +
-                    "rotate(#{if d.expanded then 90 else 0}) " +
-                    "scale(0.5)"
-
-                  enter
-                  .append('path')
-                  .attr('class', 'expand')
-                  .attr('fill', (d) -> color(d.operatorType)['text-color-internal'])
-                  .attr('d', 'M -5 -10 L 8.66 0 L -5 10 Z')
-                  .attr('transform', rotateForExpand)
+                  .attr('fill', linkColor)
 
                   update
                   .transition()
-                  .attrTween('transform', (d, i, a) ->
-                    d3.interpolateString(a, rotateForExpand(d))
-                  )
+                  .attr('d', (d) ->
+                    width = Math.max(1, d.width)
+                    sourceX = d.source.x + operatorWidth / 2
+                    targetX = d.target.x + d.source.tx
 
-              'text.title':
-                data: (d) -> [d]
-                selections: (enter) ->
-                  enter
-                  .append('text')
-                  .attr('class', 'title')
-                  .attr('font-size', operatorHeaderFontSize)
-                  .attr('font-family', standardFont)
-                  .attr('x', operatorHeaderHeight)
-                  .attr('y', 13)
-                  .attr('fill', (d) -> color(d.operatorType)['text-color-internal'])
-                  .text((d) -> d.operatorType)
+                    sourceY = d.source.y + d.source.height
+                    targetY = d.target.y
+                    yi = d3.interpolateNumber(sourceY, targetY)
 
-          'rect.outline':
-            data: (d) -> [d]
-            selections: (enter, update) ->
-              enter
-              .append('rect')
-              .attr('class', 'outline')
+                    curvature = .5
+                    control1 = yi(curvature)
+                    control2 = yi(1 - curvature)
+                    controlWidth = Math.min(width / Math.PI, (targetY - sourceY) / Math.PI)
+                    if sourceX > targetX + width / 2
+                      controlWidth *= -1
 
-              update
-              .transition()
-              .attr('width', operatorWidth)
-              .attr('height', (d) -> d.height)
-              .attr('rx', operatorCornerRadius)
-              .attr('ry', operatorCornerRadius)
-              .attr('fill', 'none')
-              .attr('stroke-width', 1)
-              .style('stroke', (d) -> color(d.operatorType)['border-color'])
-
-          'g.detail':
-            data: operatorDetails
-            selections: (enter, update, exit) ->
-              enter
-              .append('g')
-
-              update
-              .attr('class', (d) -> 'detail ' + d.className)
-              .attr('transform', (d) -> "translate(0, #{operatorHeaderHeight + d.y})")
-              .attr('font-family', (d) ->
-                if d.className is 'expression' or d.className is 'identifiers'
-                  fixedWidthFont
-                else
-                  standardFont)
-
-              exit.remove()
-            children:
+                    [
+                      'M', (sourceX + width / 2), sourceY,
+                      'C', (sourceX + width / 2), control1 - controlWidth,
+                      (targetX + width), control2 - controlWidth,
+                      (targetX + width), targetY,
+                      'L', targetX, targetY,
+                      'C', targetX, control2 + controlWidth,
+                      (sourceX - width / 2), control1 + controlWidth,
+                      (sourceX - width / 2), sourceY,
+                      'Z'
+                    ].join(' '))
 
               'text':
                 data: (d) ->
-                  if d.key
-                    [
-                      { text: d.value + ' ', anchor: 'end', x: operatorWidth / 2 }
-                      { text: d.key, anchor: 'start', x: operatorWidth / 2 }
-                    ]
+                  x = d.source.x + operatorWidth / 2
+                  y = d.source.y + d.source.height + operatorDetailHeight
+                  source = d.source
+                  [key, caption] = if source.Rows?
+                    ['Rows', 'row']
                   else
-                    [
-                      { text: d.value, anchor: 'start', x: operatorPadding }
-                    ]
-                selections: (enter, update, exit) ->
+                    ['EstimatedRows', 'estimated row']
+                  [
+                    { x: x, y: y, text: formatNumber(source[key]) + ' ', anchor: 'end' }
+                    { x: x, y: y, text: plural(caption, source[key]), anchor: 'start' }
+                  ]
+                selections: (enter, update) ->
                   enter
                   .append('text')
                   .attr('font-size', detailFontSize)
+                  .attr('font-family', standardFont)
 
                   update
+                  .transition()
                   .attr('x', (d) -> d.x)
+                  .attr('y', (d) -> d.y)
                   .attr('text-anchor', (d) -> d.anchor)
                   .attr('xml:space', 'preserve')
-                  .attr('fill', 'black')
-                  .transition()
-                  .each('end', ->
-                    update
-                    .text((d) -> d.text)
+                  .text((d) -> d.text)
+
+      'g.layer.operators':
+        data: [operators]
+        selections: (enter) ->
+          enter.append('g')
+          .attr('class', 'layer operators')
+        children:
+
+          '.operator':
+            data: ((d) -> d)
+            selections: (enter, update) ->
+              enter
+              .append('g')
+              .attr('class', 'operator')
+
+              update
+              .transition()
+              .attr('transform', (d) -> "translate(#{d.x},#{d.y})")
+            children:
+
+              'g.header':
+                data: (d) -> [d]
+                selections: (enter) ->
+                  enter
+                  .append('g')
+                  .attr('class', 'header')
+                  .attr('pointer-events', 'all')
+                  .on('click', (d) ->
+                    d.expanded = !d.expanded
+                    redisplay()
                   )
+                children:
+
+                  'path.banner':
+                    data: (d) -> [d]
+                    selections: (enter, update) ->
+                      enter
+                      .append('path')
+                      .attr('class', 'banner')
+
+                      update
+                      .attr('d', (d) ->
+                        shaving =
+                          if d.height <= operatorHeaderHeight
+                            operatorCornerRadius
+                          else if d.height < operatorHeaderHeight + operatorCornerRadius
+                            operatorCornerRadius - Math.sqrt(Math.pow(operatorCornerRadius, 2) -
+                                Math.pow(operatorCornerRadius - d.height + operatorHeaderHeight, 2))
+                          else 0
+                        [
+                          'M', operatorWidth - operatorCornerRadius, 0
+                          'A', operatorCornerRadius, operatorCornerRadius, 0, 0, 1, operatorWidth, operatorCornerRadius
+                          'L', operatorWidth, operatorHeaderHeight - operatorCornerRadius
+                          'A', operatorCornerRadius, operatorCornerRadius, 0, 0, 1, operatorWidth - shaving, operatorHeaderHeight
+                          'L', shaving, operatorHeaderHeight
+                          'A', operatorCornerRadius, operatorCornerRadius, 0, 0, 1, 0, operatorHeaderHeight - operatorCornerRadius
+                          'L', 0, operatorCornerRadius
+                          'A', operatorCornerRadius, operatorCornerRadius, 0, 0, 1, operatorCornerRadius, 0
+                          'Z'
+                        ].join(' '))
+                      .style('fill', (d) -> color(d.operatorType).color)
+
+                  'path.expand':
+                    data: (d) -> if d.operatorType is 'Result' then [] else [d]
+                    selections: (enter, update) ->
+                      rotateForExpand = (d) ->
+                        d3.transform()
+                        "translate(#{operatorHeaderHeight / 2}, #{operatorHeaderHeight / 2}) " +
+                        "rotate(#{if d.expanded then 90 else 0}) " +
+                        "scale(0.5)"
+
+                      enter
+                      .append('path')
+                      .attr('class', 'expand')
+                      .attr('fill', (d) -> color(d.operatorType)['text-color-internal'])
+                      .attr('d', 'M -5 -10 L 8.66 0 L -5 10 Z')
+                      .attr('transform', rotateForExpand)
+
+                      update
+                      .transition()
+                      .attrTween('transform', (d, i, a) ->
+                        d3.interpolateString(a, rotateForExpand(d))
+                      )
+
+                  'text.title':
+                    data: (d) -> [d]
+                    selections: (enter) ->
+                      enter
+                      .append('text')
+                      .attr('class', 'title')
+                      .attr('font-size', operatorHeaderFontSize)
+                      .attr('font-family', standardFont)
+                      .attr('x', operatorHeaderHeight)
+                      .attr('y', 13)
+                      .attr('fill', (d) -> color(d.operatorType)['text-color-internal'])
+                      .text((d) -> d.operatorType)
+
+              'rect.outline':
+                data: (d) -> [d]
+                selections: (enter, update) ->
+                  enter
+                  .append('rect')
+                  .attr('class', 'outline')
+
+                  update
+                  .transition()
+                  .attr('width', operatorWidth)
+                  .attr('height', (d) -> d.height)
+                  .attr('rx', operatorCornerRadius)
+                  .attr('ry', operatorCornerRadius)
+                  .attr('fill', 'none')
+                  .attr('stroke-width', 1)
+                  .style('stroke', (d) -> color(d.operatorType)['border-color'])
+
+              'g.detail':
+                data: operatorDetails
+                selections: (enter, update, exit) ->
+                  enter
+                  .append('g')
+
+                  update
+                  .attr('class', (d) -> 'detail ' + d.className)
+                  .attr('transform', (d) -> "translate(0, #{operatorHeaderHeight + d.y})")
+                  .attr('font-family', (d) ->
+                    if d.className is 'expression' or d.className is 'identifiers'
+                      fixedWidthFont
+                    else
+                      standardFont)
 
                   exit.remove()
+                children:
 
-              'path.divider':
+                  'text':
+                    data: (d) ->
+                      if d.key
+                        [
+                          { text: d.value + ' ', anchor: 'end', x: operatorWidth / 2 }
+                          { text: d.key, anchor: 'start', x: operatorWidth / 2 }
+                        ]
+                      else
+                        [
+                          { text: d.value, anchor: 'start', x: operatorPadding }
+                        ]
+                    selections: (enter, update, exit) ->
+                      enter
+                      .append('text')
+                      .attr('font-size', detailFontSize)
+
+                      update
+                      .attr('x', (d) -> d.x)
+                      .attr('text-anchor', (d) -> d.anchor)
+                      .attr('xml:space', 'preserve')
+                      .attr('fill', 'black')
+                      .transition()
+                      .each('end', ->
+                        update
+                        .text((d) -> d.text)
+                      )
+
+                      exit.remove()
+
+                  'path.divider':
+                    data: (d) ->
+                      if (d.className == 'padding')
+                        [d]
+                      else
+                        []
+                    selections: (enter, update) ->
+                      enter
+                      .append('path')
+                      .attr('class', 'divider')
+                      .attr('visibility', 'hidden')
+
+                      update
+                      .attr('d', [
+                            'M', 0, -operatorPadding * 2
+                            'L', operatorWidth, -operatorPadding * 2
+                          ].join(' '))
+                      .attr('stroke', dividerColor)
+                      .transition()
+                      .each('end', ->
+                        update
+                        .attr('visibility', 'visible')
+                      )
+
+              'path.cost':
+                data: (d) -> [d]
+                selections: (enter, update) ->
+                  enter
+                  .append('path')
+                  .attr('class', 'cost')
+                  .attr('fill', costColor)
+
+                  update
+                  .transition()
+                  .attr('d', (d) ->
+                    if d.costHeight < operatorCornerRadius
+                      shaving = operatorCornerRadius -
+                          Math.sqrt(Math.pow(operatorCornerRadius, 2) - Math.pow(operatorCornerRadius - d.costHeight, 2))
+                      [
+                        'M', operatorWidth - shaving, d.height - d.costHeight
+                        'A', operatorCornerRadius, operatorCornerRadius, 0, 0, 1, operatorWidth - operatorCornerRadius, d.height
+                        'L', operatorCornerRadius, d.height
+                        'A', operatorCornerRadius, operatorCornerRadius, 0, 0, 1, shaving, d.height - d.costHeight
+                        'Z'
+                      ].join(' ')
+                    else
+                      [
+                        'M', 0, d.height - d.costHeight
+                        'L', operatorWidth, d.height - d.costHeight
+                        'L', operatorWidth, d.height - operatorCornerRadius
+                        'A', operatorCornerRadius, operatorCornerRadius, 0, 0, 1, operatorWidth - operatorCornerRadius, d.height
+                        'L', operatorCornerRadius, d.height
+                        'A', operatorCornerRadius, operatorCornerRadius, 0, 0, 1, 0, d.height - operatorCornerRadius
+                        'Z'
+                      ].join(' ')
+
+                  )
+
+              'text.cost':
                 data: (d) ->
-                  if (d.className == 'padding')
-                    [d]
+                  if d.alwaysShowCost
+                    y = d.height - d.costHeight + operatorDetailHeight
+                    [
+                      { text: formatNumber(d.DbHits) + ' ', anchor: 'end', y: y }
+                      { text: 'db hits', anchor: 'start', y: y }
+                    ]
                   else
                     []
                 selections: (enter, update) ->
                   enter
-                  .append('path')
-                  .attr('class', 'divider')
-                  .attr('visibility', 'hidden')
+                  .append('text')
+                  .attr('class', 'cost')
+                  .attr('font-size', detailFontSize)
+                  .attr('font-family', standardFont)
+                  .attr('fill', 'white')
 
                   update
-                  .attr('d', [
-                        'M', 0, -operatorPadding * 2
-                        'L', operatorWidth, -operatorPadding * 2
-                      ].join(' '))
-                  .attr('stroke', dividerColor)
+                  .attr('x', operatorWidth / 2)
+                  .attr('text-anchor', (d) -> d.anchor)
+                  .attr('xml:space', 'preserve')
                   .transition()
+                  .attr('y', (d) -> d.y)
                   .each('end', ->
                     update
-                    .attr('visibility', 'visible')
+                    .text((d) -> d.text)
                   )
-
-          'path.cost':
-            data: (d) -> [d]
-            selections: (enter, update) ->
-              enter
-              .append('path')
-              .attr('class', 'cost')
-              .attr('fill', costColor)
-
-              update
-              .transition()
-              .attr('d', (d) ->
-                if d.costHeight < operatorCornerRadius
-                  shaving = operatorCornerRadius -
-                      Math.sqrt(Math.pow(operatorCornerRadius, 2) - Math.pow(operatorCornerRadius - d.costHeight, 2))
-                  [
-                    'M', operatorWidth - shaving, d.height - d.costHeight
-                    'A', operatorCornerRadius, operatorCornerRadius, 0, 0, 1, operatorWidth - operatorCornerRadius, d.height
-                    'L', operatorCornerRadius, d.height
-                    'A', operatorCornerRadius, operatorCornerRadius, 0, 0, 1, shaving, d.height - d.costHeight
-                    'Z'
-                  ].join(' ')
-                else
-                  [
-                    'M', 0, d.height - d.costHeight
-                    'L', operatorWidth, d.height - d.costHeight
-                    'L', operatorWidth, d.height - operatorCornerRadius
-                    'A', operatorCornerRadius, operatorCornerRadius, 0, 0, 1, operatorWidth - operatorCornerRadius, d.height
-                    'L', operatorCornerRadius, d.height
-                    'A', operatorCornerRadius, operatorCornerRadius, 0, 0, 1, 0, d.height - operatorCornerRadius
-                    'Z'
-                  ].join(' ')
-
-              )
-
-          'text.cost':
-            data: (d) ->
-              if d.alwaysShowCost
-                y = d.height - d.costHeight + operatorDetailHeight
-                [
-                  { text: formatNumber(d.DbHits) + ' ', anchor: 'end', y: y }
-                  { text: 'db hits', anchor: 'start', y: y }
-                ]
-              else
-                []
-            selections: (enter, update) ->
-              enter
-              .append('text')
-              .attr('class', 'cost')
-              .attr('font-size', detailFontSize)
-              .attr('font-family', standardFont)
-              .attr('fill', 'white')
-
-              update
-              .attr('x', operatorWidth / 2)
-              .attr('text-anchor', (d) -> d.anchor)
-              .attr('xml:space', 'preserve')
-              .transition()
-              .attr('y', (d) -> d.y)
-              .each('end', ->
-                update
-                .text((d) -> d.text)
-              )
     })
 
   display = (queryPlan) ->
