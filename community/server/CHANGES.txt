@@ -1,7 +1,14 @@
+2.2.0-M04
+---------
+o Authentication now applies to all REST endpoints, if enabled
+o Returned paths ends with '/' in response to "GET /". This avoids an unnecessary redirect,
+  for drivers that (properly) follow hyperlinks.
+o A couple of bugs regarding handling of labels in BatchInserter fixed.
+
 2.2.0-M01
 ---------
 o Authentication and authorization functionality is now available
-  through the ReST API
+  through the REST API
 o Configuration options are now located in ServerSettings class instead of being
   String constants in Configurator
 

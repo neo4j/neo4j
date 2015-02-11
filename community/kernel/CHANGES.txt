@@ -1,3 +1,9 @@
+2.2.0-M04
+---------
+o Default logical log rotation threshold is now 250Mb, minimum 1Mb
+o Import tool optimizations and a fixed Windows-specific memory issue around reading large files
+o Treats newlines in indexes platform independent. Automatic upgrade from previous minor version available
+
 2.2.0-M03
 ---------
 o Fixes issue with open file limit when using frequent PERIODIC COMMITs during import
