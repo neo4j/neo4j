@@ -31,6 +31,7 @@ import org.neo4j.consistency.checking.labelscan.LabelScanDocumentProcessor;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
@@ -120,8 +121,8 @@ public class ConsistencyCheckTasks
         if ( checkIndexes )
         {
             tasks.add( new RecordScanner<>( new IterableStore<>( nativeStores.getNodeStore() ), "NodeStoreToIndexes",
-                    progress, new NodeToLabelIndexesProcessor( reporter, indexes,
-                    new PropertyReader( (PropertyStore) nativeStores.getPropertyStore() ) ) ) );
+                    progress, new NodeToLabelIndexesProcessor( reporter, indexes, new PropertyReader(
+                            (PropertyStore) nativeStores.getPropertyStore(), (NodeStore) nativeStores.getNodeStore() ) ) ) );
         }
 
         int iPass = 0;
