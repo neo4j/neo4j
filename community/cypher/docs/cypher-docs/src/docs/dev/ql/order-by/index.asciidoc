@@ -1,10 +1,11 @@
 [[query-order]]
-Order by
-========
+= Order by
 
-To sort the output, use the +ORDER BY+ clause. Note that you can not sort on nodes or relationships,
-just on properties on these.
-+ORDER BY+ relies on comparisons to sort the output, see <<cypher-ordering>>.
+[abstract]
+The `ORDER BY` clause specifies that the output should be sorted.
+
+Note that you can not sort on nodes or relationships, just on properties on these.
+`ORDER BY` relies on comparisons to sort the output, see <<cypher-ordering>>.
 
 .Graph
 include::includes/cypher-orderby-graph.asciidoc[]

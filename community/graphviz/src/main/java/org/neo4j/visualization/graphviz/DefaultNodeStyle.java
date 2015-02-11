@@ -59,8 +59,8 @@ class DefaultNodeStyle implements NodeStyle
                     }
                 }
             }
-            stream.append( "|" );
         }
+        stream.append( "|" );
     }
 
     @Override

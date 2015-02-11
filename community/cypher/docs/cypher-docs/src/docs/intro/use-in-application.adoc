@@ -41,4 +41,4 @@ Location: http://localhost:7474/db/data/transaction/261
  "results":[{"columns":["p"],"data":[{"row":[{"name":"Clint Eastwood","born":1930}]}]}]}
 ----
 
-
+See <<rest-api-transactional>> for more information.

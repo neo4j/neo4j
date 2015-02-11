@@ -1,8 +1,8 @@
 [[query-limit]]
-Limit
-=====
+= Limit
 
-+LIMIT+ enables the return of only subsets of the total result.
+[abstract]
+`LIMIT` constrains the number of rows in the output.
 
 .Graph
 include::includes/cypher-limit-graph.asciidoc[]

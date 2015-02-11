@@ -15,7 +15,7 @@ An execution plan gives you a few distinct pieces information per operator in th
 `Operator`::
 The name of the operator.
 `EstimatedRows`::
-You will always see the estimated number of rows of your execution plan, if the cost based compiler has been used.
+You will see the estimated number of rows of your execution plan if the cost based compiler has been used.
 These metrics were not calculated in older versions of Cypher, so if your query is being compiled by an older compiler, you will not see the estimated number of rows.
 `Rows`::
 `DbHits`::

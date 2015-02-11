@@ -1,9 +1,8 @@
 [[query-schema-index]]
-Indexes
-=======
+= Indexes
 
 A database index is a redundant copy of information in the database for the purpose of making retrieving said data more efficient.
-This comes at the cost of additional storage costs and slower write performance.
+This comes at the cost of additional storage space and slower writes.
 
 Cypher allows the creation of indexes over a property for all nodes that have a given label.
 These indexes are automatically managed and kept up to date by the database whenever the graph is changed.

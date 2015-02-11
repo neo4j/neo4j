@@ -11,7 +11,7 @@
 
 Below are some starting points within this manual:
 
-* <<what-is-a-graphdb>>
+* <<graphdb-neo4j>>
 * <<cypher-query-lang>>
 * <<cypher-getting-started>>
 * <<rest-api>>

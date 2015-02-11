@@ -5,6 +5,7 @@ To get an overview of Cypher, continue reading <<cypher-introduction>>.
 The rest of this chapter deals with the context of Cypher statements, like for example transaction management and how to use parameters.
 For the Cypher language reference itself see other chapters at <<cypher-query-lang>>.
 To take your first steps with Cypher, see <<cypher-getting-started>>.
+For the terminology used, see <<terminology>>.
 
 :leveloffset: 2
 

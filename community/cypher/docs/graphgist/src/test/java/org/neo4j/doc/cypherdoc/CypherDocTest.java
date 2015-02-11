@@ -122,6 +122,13 @@ public class CypherDocTest
         String output = CypherDoc.parse( content, null, "http://url/" );
     }
 
+    @Test
+    public void test_rewindable_results() throws IOException
+    {
+        String content = FileUtils.readFileToString( resourceFile( "/patterns-in-practice.adoc" ) );
+        String output = CypherDoc.parse( content, null, "http://url/" );
+    }
+
     private File resourceFile( String resource ) throws IOException
     {
         try

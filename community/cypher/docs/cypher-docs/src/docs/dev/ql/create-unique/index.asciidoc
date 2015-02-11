@@ -1,6 +1,8 @@
 [[query-create-unique]]
-Create Unique
-=============
+= Create Unique
+
+[abstract]
+The `CREATE UNIQUE` clause is a mix of `MATCH` and `CREATE` -- it will match what it can, and create what is missing.
 
 == Introduction ==
 

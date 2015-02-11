@@ -36,7 +36,7 @@
     <itemizedlist>
       <listitem>
         <para>
-          <link linkend="what-is-a-graphdb">What is a graph database?</link>
+          <link linkend="graphdb-neo4j">What is the Neo4j graph database?</link>
         </para>
       </listitem>
       <listitem>

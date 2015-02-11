@@ -299,8 +299,8 @@ enum BlockType
                 }
                 if ( exec )
                 {
-                    state.latestResult = new Result( fileQuery, state.engine.profile( fileQuery, state.parameters ),
-                            state.database );
+                    state.latestResult =
+                            new Result( fileQuery, state.engine.profile( fileQuery, state.parameters ), state.database );
                     prettifiedStatements.add( state.engine.prettify( webQuery ) );
                     try (Transaction tx = state.database.beginTx())
                     {

@@ -19,9 +19,15 @@
  */
 package org.neo4j.cypher.javacompat;
 
+import java.util.Map;
+
 /**
  * Profiler statistics for a single execution step of a Cypher query execution plan
+ *
+ * @deprecated See {@link org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics} which you can get from an {@link org.neo4j.graphdb.ExecutionPlanDescription}
+ * when using {@link org.neo4j.graphdb.GraphDatabaseService#execute(String, Map)}.
  */
+@Deprecated
 public interface ProfilerStatistics
 {
     /**

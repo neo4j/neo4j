@@ -19,20 +19,26 @@
  */
 package org.neo4j.cypher.internal
 
+import java.util.{Map => JavaMap}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{DevNullLogger, Logger}
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
 import org.neo4j.cypher.{ExecutionEngine, ExtendedExecutionResult, SyntaxException}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
+import org.neo4j.cypher.internal.compatibility.{ExecutionResultWrapperFor2_2}
+import org.neo4j.cypher.internal.compiler.v2_2.PlannerName
+
+import scala.collection.JavaConverters._
 
 class DocsExecutionEngine(graph: GraphDatabaseService, logger: Logger = DevNullLogger.instance)
   (implicit monitor: QueryExecutionMonitor, session: QuerySession)
   extends ExecutionEngine(graph, logger) {
 
   @throws(classOf[SyntaxException])
-  override def profile(query: String, params: Map[String, Any]): ExtendedExecutionResult =
-    DocsExecutionResult(super.profile(query, params))
+  def internalProfile(query: String, params: JavaMap[String, Any]): InternalExecutionResult =
+    RewindableExecutionResult(super.profile(query, params.asScala.toMap))
 
   @throws(classOf[SyntaxException])
-  override def execute(query: String, params: Map[String, Any]): ExtendedExecutionResult =
-    DocsExecutionResult(super.execute(query, params))
+  def internalExecute(query: String, params: JavaMap[String, Any]): InternalExecutionResult =
+    RewindableExecutionResult(super.execute(query, params.asScala.toMap))
 }

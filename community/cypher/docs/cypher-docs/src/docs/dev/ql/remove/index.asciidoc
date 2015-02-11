@@ -1,7 +1,8 @@
 [[query-remove]]
-Remove
-======
-Removing properties and labels from graph elements is done using +REMOVE+.
+= Remove
+
+[abstract]
+The `REMOVE` clause is used to remove properties and labels from graph elements.
 
 For deleting nodes and relationships, see <<query-delete>>.
 

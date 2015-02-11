@@ -31,7 +31,10 @@ import org.neo4j.cypher.ProfilerStatisticsNotReadyException;
  *
  * Execution plans form a tree of execution steps.  Each step is described by a PlanDescription object.
  *
+ * @deprecated See {@link org.neo4j.graphdb.ExecutionPlanDescription} which you can get from {@link org.neo4j.graphdb.Result}
+ * when using {@link org.neo4j.graphdb.GraphDatabaseService#execute(String, Map)}.
  */
+@Deprecated
 public interface PlanDescription
 {
     /**

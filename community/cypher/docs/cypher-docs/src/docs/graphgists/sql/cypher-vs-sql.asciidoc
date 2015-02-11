@@ -123,7 +123,7 @@ In the +CREATE+ statements below, we tell Neo4j what data we want to have in the
 Simply put, the parentheses denote nodes, while the arrows (`-->`, or in our case with a relationship type included `-[:DIRECTED]->`) denote relationships.
 For the nodes we set identifiers like `TheMatrix` so we can easily refer to them later on in the statement.
 Note that the identifiers are scoped to the statement, and not visible to other Cypher statements.
-We could use identifiers for the relationships as well, but we don't need that in this case.
+We could use identifiers for the relationships as well, but there's no need for that in this case.
 
 [source,cypher]
 ----
@@ -160,7 +160,7 @@ CREATE
 
 == Simple read of data ==
 
-Let's find all entries in the +movie+ table and output their +title+ attribute:
+Let's find all entries in the +movie+ table and output their +title+ attribute in our RDBMS:
 
 [source,sql]
 ----
