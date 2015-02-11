@@ -33,8 +33,10 @@ import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
 import org.neo4j.kernel.impl.store.kvstore.AbstractKeyValueStore;
 import org.neo4j.kernel.impl.store.kvstore.CollectedMetadata;
+import org.neo4j.kernel.impl.store.kvstore.MetadataVisitor;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
 import org.neo4j.kernel.impl.store.kvstore.Rotation;
+import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
 import org.neo4j.kernel.impl.store.kvstore.WritableBuffer;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.register.Register;
@@ -165,20 +167,17 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey, Metadata, Me
     {
         try
         {
-            visitAll( new Visitor()
-            {
-                @Override
-                protected boolean visitKeyValuePair( CountsKey key, ReadableBuffer value )
-                {
-                    key.accept( visitor, value.getLong( 0 ), value.getLong( 8 ) );
-                    return true;
-                }
-            } );
+            visitAll( new DelegatingVisitor( visitor ) );
         }
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( e );
         }
+    }
+
+    void visitFile( File path, CountsVisitor visitor ) throws IOException
+    {
+        super.visitFile( path, new DelegatingVisitor( visitor ) );
     }
 
     @Override
@@ -216,7 +215,7 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey, Metadata, Me
     }
 
     @Override
-    protected CountsKey readKey( ReadableBuffer key )
+    protected CountsKey readKey( ReadableBuffer key ) throws UnknownKey
     {
         switch ( key.getByte( 0 ) )
         {
@@ -233,7 +232,7 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey, Metadata, Me
                 return CountsKeyFactory.indexSampleKey( key.getInt( 4 ), key.getInt( 8 ) );
             }
         default:
-            throw new IllegalArgumentException( "Unknown key type: " + key );
+            throw new UnknownKey( "Unknown key type: " + key );
         }
     }
 
@@ -292,6 +291,46 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey, Metadata, Me
     protected boolean hasMetadataChanges( Metadata metadata, Metadata.Diff diff )
     {
         return metadata != null && metadata.txId != diff.txId;
+    }
+
+    private class DelegatingVisitor extends Visitor implements MetadataVisitor<Metadata>
+    {
+        private final CountsVisitor visitor;
+
+        public DelegatingVisitor( CountsVisitor visitor )
+        {
+            this.visitor = visitor;
+        }
+
+        @Override
+        protected boolean visitKeyValuePair( CountsKey key, ReadableBuffer value )
+        {
+            key.accept( visitor, value.getLong( 0 ), value.getLong( 8 ) );
+            return true;
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public void visitMetadata( File path, Metadata metadata, int entryCount )
+        {
+            if ( visitor instanceof MetadataVisitor<?> )
+            {
+                ((MetadataVisitor<Metadata>) visitor).visitMetadata( path, metadata, entryCount );
+            }
+        }
+
+        @Override
+        protected boolean visitUnknownKey( UnknownKey exception, ReadableBuffer key, ReadableBuffer value )
+        {
+            if ( visitor instanceof UnknownKey.Visitor )
+            {
+                return ((UnknownKey.Visitor) visitor).visitUnknownKey( key, value );
+            }
+            else
+            {
+                return super.visitUnknownKey( exception, key, value );
+            }
+        }
     }
 
     private static class KeyFormat implements CountsVisitor

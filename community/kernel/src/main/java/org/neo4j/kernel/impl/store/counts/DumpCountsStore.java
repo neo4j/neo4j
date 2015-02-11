@@ -24,18 +24,23 @@ import java.io.IOException;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCache;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
-import org.neo4j.kernel.impl.store.kvstore.AbstractKeyValueVisitor;
+import org.neo4j.kernel.impl.store.kvstore.MetadataVisitor;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
+import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSampleKey;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexStatisticsKey;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
+import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
-public class DumpCountsStore implements AbstractKeyValueVisitor<CountsKey, Metadata>
+public class DumpCountsStore implements CountsVisitor, MetadataVisitor<Metadata>, UnknownKey.Visitor
 {
     public static void main( String[] args ) throws IOException
     {
@@ -53,7 +58,7 @@ public class DumpCountsStore implements AbstractKeyValueVisitor<CountsKey, Metad
             if ( fs.isDirectory( path ) )
             {
                 life.add( new StoreFactory( fs, path, pages, DEV_NULL, new Monitors() ).newCountsStore() )
-                    .visitFile( new DumpCountsStore() );
+                    .accept( new DumpCountsStore() );
             }
             else
             {
@@ -64,7 +69,7 @@ public class DumpCountsStore implements AbstractKeyValueVisitor<CountsKey, Metad
                 }
                 else
                 {
-                    life.add( tracker ).visitFile( new DumpCountsStore() );
+                    life.add( tracker ).accept( new DumpCountsStore() );
                 }
             }
         }
@@ -73,16 +78,43 @@ public class DumpCountsStore implements AbstractKeyValueVisitor<CountsKey, Metad
     @Override
     public void visitMetadata( File path, Metadata metadata, int entryCount )
     {
-        System.out.println( "Counts Store: " + path );
-        System.out.println( "\ttxId: " + metadata.txId );
-        System.out.println( "\tminor version: " + metadata.minorVersion );
-        System.out.println( "\tentries: " + entryCount );
+        System.out.println( "Counts Store:\t" + path );
+        System.out.println( "\ttxId:\t" + metadata.txId );
+        System.out.println( "\tminor version:\t" + metadata.minorVersion );
+        System.out.println( "\tentries:\t" + entryCount );
         System.out.println( "Entries:" );
     }
 
     @Override
-    public void visitData( CountsKey key, ReadableBuffer value )
+    public void visitNodeCount( int labelId, long count )
     {
-        System.out.println( "\t" + key + ": " + value );
+        System.out.println( "\t" + nodeKey( labelId ) + ":\t" + count );
+    }
+
+    @Override
+    public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
+    {
+        System.out.println( "\t" + relationshipKey( startLabelId, typeId, endLabelId ) + ":\t" + count );
+    }
+
+    @Override
+    public void visitIndexStatistics( int labelId, int propertyKeyId, long updates, long size )
+    {
+        System.out.println( "\t" + indexStatisticsKey( labelId, propertyKeyId ) +
+                            ":\tupdates=" + updates + ", size=" + size );
+    }
+
+    @Override
+    public void visitIndexSample( int labelId, int propertyKeyId, long unique, long size )
+    {
+        System.out.println( "\t" + indexSampleKey( labelId, propertyKeyId ) +
+                            ":\tunique=" + unique + ", size=" + size );
+    }
+
+    @Override
+    public boolean visitUnknownKey( ReadableBuffer key, ReadableBuffer value )
+    {
+        System.out.println( "\t" + key + ":\t" + value );
+        return true;
     }
 }

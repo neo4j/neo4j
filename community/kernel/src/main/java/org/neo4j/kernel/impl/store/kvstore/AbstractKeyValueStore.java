@@ -73,13 +73,37 @@ public abstract class AbstractKeyValueStore<Key, MetaData, MetaDiff> extends Lif
     /** Introspective feature, not thread safe. */
     protected final void visitAll( Visitor visitor ) throws IOException
     {
+        KeyValueStoreState<Key, MetaData> state = this.state;
+        if ( visitor instanceof MetadataVisitor<?> )
+        {
+            @SuppressWarnings("unchecked")
+            MetadataVisitor<MetaData> metadataVisitor = (MetadataVisitor<MetaData>) visitor;
+            metadataVisitor.visitMetadata( state.file(), metadata(), state.totalRecordsStored() );
+        }
         try ( DataProvider provider = state.dataProvider() )
         {
             transfer( provider, visitor );
         }
     }
 
-    protected abstract Key readKey( ReadableBuffer key );
+    protected final void visitFile( File path, Visitor visitor ) throws IOException
+    {
+        try ( KeyValueStoreFile<MetaData> file = state.openStoreFile( path ) )
+        {
+            if ( visitor instanceof MetadataVisitor<?> )
+            {
+                @SuppressWarnings("unchecked")
+                MetadataVisitor<MetaData> metadataVisitor = (MetadataVisitor<MetaData>) visitor;
+                metadataVisitor.visitMetadata( path, file.metadata(), file.recordCount() );
+            }
+            try ( DataProvider provider = file.dataProvider() )
+            {
+                transfer( provider, visitor );
+            }
+        }
+    }
+
+    protected abstract Key readKey( ReadableBuffer key ) throws UnknownKey;
 
     protected abstract void writeKey( Key key, WritableBuffer buffer );
 
@@ -143,28 +167,6 @@ public abstract class AbstractKeyValueStore<Key, MetaData, MetaDiff> extends Lif
         try ( LockWrapper ignored = readLock( updateLock ) )
         {
             state.apply( update );
-        }
-    }
-
-    public void visitFile( AbstractKeyValueVisitor<Key, MetaData> visitor ) throws IOException
-    {
-        KeyValueStoreState<Key, MetaData> state = this.state;
-        visitor.visitMetadata( state.file(), metadata(), state.totalRecordsStored() );
-        try ( DataProvider provider = state.dataProvider() )
-        {
-            transfer( provider, new DelegatingKeyValueVisitor( visitor ) );
-        }
-    }
-
-    public void visitFile( File path, AbstractKeyValueVisitor<Key, MetaData> visitor ) throws IOException
-    {
-        try ( KeyValueStoreFile<MetaData> file = state.openStoreFile( path ) )
-        {
-            visitor.visitMetadata( path, file.metadata(), file.recordCount() );
-            try ( DataProvider provider = file.dataProvider() )
-            {
-                transfer( provider, new DelegatingKeyValueVisitor( visitor ) );
-            }
         }
     }
 
@@ -280,27 +282,22 @@ public abstract class AbstractKeyValueStore<Key, MetaData, MetaDiff> extends Lif
         @Override
         public boolean visit( ReadableBuffer key, ReadableBuffer value )
         {
-            return visitKeyValuePair( readKey( key ), value );
+            try
+            {
+                return visitKeyValuePair( readKey( key ), value );
+            }
+            catch ( UnknownKey e )
+            {
+                return visitUnknownKey( e, key, value );
+            }
+        }
+
+        protected boolean visitUnknownKey( UnknownKey exception, ReadableBuffer key, ReadableBuffer value )
+        {
+            throw new IllegalArgumentException( exception.getMessage(), exception );
         }
 
         protected abstract boolean visitKeyValuePair( Key key, ReadableBuffer value );
-    }
-
-    private class DelegatingKeyValueVisitor extends Visitor
-    {
-        private final AbstractKeyValueVisitor<Key, MetaData> visitor;
-
-        DelegatingKeyValueVisitor( AbstractKeyValueVisitor<Key, MetaData> visitor )
-        {
-            this.visitor = visitor;
-        }
-
-        @Override
-        protected boolean visitKeyValuePair( Key key, ReadableBuffer value )
-        {
-            visitor.visitData( key, value );
-            return true;
-        }
     }
 
     private final class Format extends ProgressiveFormat<MetaData> implements KeyFormat<Key>
@@ -362,9 +359,16 @@ public abstract class AbstractKeyValueStore<Key, MetaData, MetaDiff> extends Lif
                 {
                     while ( provider.visit( key, value ) )
                     {
-                        if ( include( readKey( key ), value ) )
+                        try
                         {
-                            return true;
+                            if ( include( readKey( key ), value ) )
+                            {
+                                return true;
+                            }
+                        }
+                        catch ( UnknownKey e )
+                        {
+                            throw new IllegalArgumentException( e.getMessage(), e );
                         }
                     }
                     return false;

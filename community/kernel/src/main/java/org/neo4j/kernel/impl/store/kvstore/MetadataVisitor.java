@@ -17,14 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.kernel.impl.store.kvstore;
 
 import java.io.File;
 
-public interface AbstractKeyValueVisitor<Key, Meta>
+public interface MetadataVisitor<Meta>
 {
     void visitMetadata( File path, Meta metadata, int entryCount );
-
-    void visitData( Key key, ReadableBuffer value );
 }
