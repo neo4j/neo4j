@@ -51,6 +51,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.containsNoErrors;
@@ -560,6 +561,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
 
         final Future<Response> executeFuture = Executors.newSingleThreadExecutor().submit( new Callable<Response>()
         {
+            @Override
             public Response call()
             {
                 latch.countDown();
@@ -574,6 +576,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         // terminate
         final Future<Response> interruptFuture = Executors.newSingleThreadExecutor().submit( new Callable<Response>()
         {
+            @Override
             public Response call()
             {
                 try
@@ -752,6 +755,45 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
 
         assertThat( response.get( "errors" ).size(), equalTo( 0 ) );
     }
+
+    static PrintStream out = System.err;
+    @Test
+    public void rest_format_nodes_should_have_sensible_uris() throws Throwable
+    {
+        // when
+        Response rs = http.POST( "/db/data/transaction/commit", quotedJson(
+            "{ 'statements': [ { 'statement': 'CREATE (n:Foo:Bar) RETURN n', 'resultDataContents':['rest'] } ] }"
+        ));
+
+        // then
+        JsonNode restNode = rs.get( "results" ).get(0).get( "data" ).get( 0 ).get( "rest" ).get(0);
+
+        assertPath( restNode.get("labels"), "/node/\\d+/labels" );
+        assertPath( restNode.get("outgoing_relationships"), "/node/\\d+/relationships/out" );
+        assertPath( restNode.get( "traverse" ), "/node/\\d+/traverse/\\{returnType\\}" );
+        assertPath( restNode.get( "all_typed_relationships" ),
+                "/node/\\d+/relationships/all/\\{-list\\|&\\|types\\}" );
+        assertPath( restNode.get( "self" ), "/node/\\d+" );
+        assertPath( restNode.get( "property" ), "/node/\\d+/properties/\\{key\\}" );
+        assertPath( restNode.get( "properties" ), "/node/\\d+/properties" );
+        assertPath( restNode.get( "outgoing_typed_relationships" ),
+                "/node/\\d+/relationships/out/\\{-list\\|&\\|types\\}");
+        assertPath( restNode.get( "incoming_relationships" ), "/node/\\d+/relationships/in" );
+        assertPath( restNode.get( "create_relationship" ), "/node/\\d+/relationships" );
+        assertPath( restNode.get( "paged_traverse" ), "/node/\\d+/paged/traverse/\\{returnType\\}\\{\\?pageSize," +
+                                                      "leaseTime\\}");
+        assertPath( restNode.get( "all_relationships" ), "/node/\\d+/relationships/all" );
+        assertPath( restNode.get( "incoming_typed_relationships" ),
+                "/node/\\d+/relationships/in/\\{-list\\|&\\|types\\}");
+    }
+
+    private void assertPath( JsonNode jsonURIString, String path )
+    {
+        assertTrue("Expected a uri matching 'http://localhost:\\d+/db/data" + path + "', " +
+                   "but got '" + jsonURIString.asText() + "'.",
+                   jsonURIString.asText().matches( "http://localhost:\\d+/db/data" + path ));
+    }
+
 
     private HTTP.RawPayload singleStatement( String statement )
     {
