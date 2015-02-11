@@ -24,12 +24,14 @@ import ast._
 
 class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer) extends Rewriter {
 
-  def apply(that: AnyRef): AnyRef = topDown(instance).apply(that)
+  def apply(that: AnyRef): AnyRef = instance(that)
 
-  private val instance: Rewriter = Rewriter.lift {
+  private val instance = replace(replacer => {
+    case expr: Expression =>
+      replacer.stop(expr)
 
-   case m@Match(_, pattern, _, where) =>
-     val predicates = pattern.fold(Vector.empty[Expression]) {
+    case m@Match(_, pattern, _, where) =>
+      val predicates = pattern.fold(Vector.empty[Expression]) {
         case pattern: AnyRef if normalizer.extract.isDefinedAt(pattern) => acc => acc ++ normalizer.extract(pattern)
         case _                                                          => identity
       }
@@ -56,5 +58,8 @@ class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer) extends 
           where = newWhere
         )(m.position)
       }
-  }
+
+    case astNode =>
+      replacer.expand(astNode)
+  })
 }

@@ -28,75 +28,96 @@ import org.neo4j.graphdb.Direction
 
 class GetDegreeOptimizerTest extends CypherFunSuite with RewriteTest {
 
+  import org.scalatest.prop.TableDrivenPropertyChecks._
+
   val pos = DummyPosition(0)
 
-  test("rewrites length function for a simple pattern") {
-    val statement = parseForRewriting("MATCH n WHERE LENGTH((n)-->()) RETURN n")
-    val wherePredicate = findWherePredicate(statement.endoRewrite(getDegreeOptimizer))
+  val functionNames = Table("fun", "LENGTH", "SIZE")
 
-    wherePredicate should equal(GetDegree(Identifier("n")(pos), None, Direction.OUTGOING)(pos))
+  test("rewrites length function for a simple pattern") {
+    forAll(functionNames) { fun =>
+      val statement = parseForRewriting(s"MATCH n WHERE $fun((n)-->()) RETURN n")
+      val wherePredicate = findWherePredicate(statement.endoRewrite(getDegreeOptimizer))
+
+      wherePredicate should equal(GetDegree(Identifier("n")(pos), None, Direction.OUTGOING)(pos))
+    }
   }
 
-  test("rewrites length function for a simple pattern, incoming") {
-    val statement = parseForRewriting("MATCH n WHERE LENGTH((n)<--()) RETURN n")
-    val wherePredicate = findWherePredicate(statement.endoRewrite(getDegreeOptimizer))
 
-    wherePredicate should equal(GetDegree(Identifier("n")(pos), None, Direction.INCOMING)(pos))
+  test("rewrites length function for a simple pattern, incoming") {
+    forAll(functionNames) { fun =>
+      val statement = parseForRewriting(s"MATCH n WHERE $fun((n)<--()) RETURN n")
+      val wherePredicate = findWherePredicate(statement.endoRewrite(getDegreeOptimizer))
+
+      wherePredicate should equal(GetDegree(Identifier("n")(pos), None, Direction.INCOMING)(pos))
+    }
   }
 
   test("rewrites length function for a simple pattern, both ways") {
-    val statement = parseForRewriting("MATCH n WHERE LENGTH((n)--()) RETURN n")
-    val wherePredicate = findWherePredicate(statement.endoRewrite(getDegreeOptimizer))
+    forAll(functionNames) { fun =>
+      val statement = parseForRewriting(s"MATCH n WHERE $fun((n)--()) RETURN n")
+      val wherePredicate = findWherePredicate(statement.endoRewrite(getDegreeOptimizer))
 
-    wherePredicate should equal(GetDegree(Identifier("n")(pos), None, Direction.BOTH)(pos))
+      wherePredicate should equal(GetDegree(Identifier("n")(pos), None, Direction.BOTH)(pos))
+    }
   }
 
   test("rewrites length function for a simple pattern with reltype") {
-    val statement = parseForRewriting("MATCH n WHERE LENGTH((n)-[:X]->()) RETURN n")
-    val wherePredicate = findWherePredicate(statement.endoRewrite(getDegreeOptimizer))
+    forAll(functionNames) { fun =>
+      val statement = parseForRewriting(s"MATCH n WHERE $fun((n)-[:X]->()) RETURN n")
+      val wherePredicate = findWherePredicate(statement.endoRewrite(getDegreeOptimizer))
 
-    wherePredicate should equal(GetDegree(Identifier("n")(pos), Some(RelTypeName("X")(pos)), Direction.OUTGOING)(pos))
+      wherePredicate should equal(GetDegree(Identifier("n")(pos), Some(RelTypeName("X")(pos)), Direction.OUTGOING)(pos))
+    }
   }
 
   test("rewrites length function for a simple pattern with reltype where the known is on the RHS") {
-    val statement = parseForRewriting("MATCH n WHERE LENGTH(()-[:X]->(n)) RETURN n")
-    val wherePredicate = findWherePredicate(statement.endoRewrite(getDegreeOptimizer))
+    forAll(functionNames) { fun =>
+      val statement = parseForRewriting(s"MATCH n WHERE $fun(()-[:X]->(n)) RETURN n")
+      val wherePredicate = findWherePredicate(statement.endoRewrite(getDegreeOptimizer))
 
-    wherePredicate should equal(GetDegree(Identifier("n")(pos), Some(RelTypeName("X")(pos)), Direction.INCOMING)(pos))
+      wherePredicate should equal(GetDegree(Identifier("n")(pos), Some(RelTypeName("X")(pos)), Direction.INCOMING)(pos))
+    }
   }
 
   test("rewrites length function for a simple pattern with OR reltypes") {
-    val statement = parseForRewriting("MATCH n WHERE LENGTH((n)-[:X|Y]->()) RETURN n")
-    val wherePredicate = findWherePredicate(statement.endoRewrite(getDegreeOptimizer))
+    forAll(functionNames) { fun =>
+      val statement = parseForRewriting(s"MATCH n WHERE $fun((n)-[:X|Y]->()) RETURN n")
+      val wherePredicate = findWherePredicate(statement.endoRewrite(getDegreeOptimizer))
 
-    wherePredicate should equal(
-      Add(
-        GetDegree(Identifier("n")(pos), Some(RelTypeName("X")(pos)), Direction.OUTGOING)(pos),
-        GetDegree(Identifier("n")(pos), Some(RelTypeName("Y")(pos)), Direction.OUTGOING)(pos))(pos))
+      wherePredicate should equal(
+        Add(
+          GetDegree(Identifier("n")(pos), Some(RelTypeName("X")(pos)), Direction.OUTGOING)(pos),
+          GetDegree(Identifier("n")(pos), Some(RelTypeName("Y")(pos)), Direction.OUTGOING)(pos))(pos))
+    }
   }
 
   test("does not rewrite patterns where the unbound parts of the pattern have constraints on them") {
-    doesNotRewrite("MATCH n WHERE LENGTH((n)-[ {key: 42} ]->()) RETURN n")
-    doesNotRewrite("MATCH n WHERE LENGTH((n)-->( {key: 42} )) RETURN n")
-    doesNotRewrite("MATCH n WHERE LENGTH((n)-->(:LABEL) ) RETURN n")
+    forAll(functionNames) { fun =>
+      doesNotRewrite(s"MATCH n WHERE $fun((n)-[ {key: 42} ]->()) RETURN n")
+      doesNotRewrite(s"MATCH n WHERE $fun((n)-->( {key: 42} )) RETURN n")
+      doesNotRewrite(s"MATCH n WHERE $fun((n)-->(:LABEL) ) RETURN n")
+    }
   }
 
   test("does not rewrite expressions inside nested plans") {
-    val patternStatement = parseForRewriting("MATCH n WHERE (n)-[:X]->({prop: LENGTH((n)-[:X]->())}) RETURN n")
-    val patternExpression = findWherePredicate(patternStatement).asInstanceOf[PatternExpression]
-    val nestedPlanExpression = NestedPlanExpression(AllNodesScan(IdName("a"), Set.empty)(PlannerQuery.empty), patternExpression)(pos)
+    forAll(functionNames) { fun =>
+      val patternStatement = parseForRewriting(s"MATCH n WHERE (n)-[:X]->({prop: $fun((n)-[:X]->())}) RETURN n")
+      val patternExpression = findWherePredicate(patternStatement).asInstanceOf[PatternExpression]
+      val nestedPlanExpression = NestedPlanExpression(AllNodesScan(IdName("a"), Set.empty)(PlannerQuery.empty), patternExpression)(pos)
 
-    val degreeStatement = parseForRewriting("MATCH n WHERE LENGTH((n)-[:X]->()) RETURN n")
-    val degreeExpression = findWherePredicate(degreeStatement)
+      val degreeStatement = parseForRewriting(s"MATCH n WHERE $fun((n)-[:X]->()) RETURN n")
+      val degreeExpression = findWherePredicate(degreeStatement)
 
-    val expression = And(degreeExpression, nestedPlanExpression)(pos)
+      val expression = And(degreeExpression, nestedPlanExpression)(pos)
 
-    val result = expression.endoRewrite(getDegreeOptimizer)
+      val result = expression.endoRewrite(getDegreeOptimizer)
 
-    val And(left, right) = result
+      val And(left, right) = result
 
-    left.isInstanceOf[GetDegree] should be(right = true)
-    right should equal(nestedPlanExpression)
+      left.isInstanceOf[GetDegree] should be(right = true)
+      right should equal(nestedPlanExpression)
+    }
   }
 
   private def doesNotRewrite(q: String) {

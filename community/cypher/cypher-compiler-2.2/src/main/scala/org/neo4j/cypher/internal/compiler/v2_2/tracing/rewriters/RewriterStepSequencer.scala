@@ -28,7 +28,11 @@ case class RewriterContract(childRewriters: Seq[Rewriter], postConditions: Set[R
 }
 
 object RewriterStepSequencer {
-  def newDefault(sequenceName: String) = newValidating(sequenceName)
+  def newDefault(sequenceName: String): RewriterStepSequencer =
+    if (getClass.desiredAssertionStatus())
+      newValidating(sequenceName)
+    else
+      newPlain(sequenceName)
 
   def newPlain(sequenceName: String) =
     PlainRewriterStepSequencer(sequenceName, DefaultRewriterTaskProcessor(sequenceName))

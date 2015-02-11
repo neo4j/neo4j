@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.AggregationNameGenerator
-import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.compiler.v2_2.{replace, Rewriter, bottomUp}
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 
 /**
@@ -41,9 +41,13 @@ import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
  * RETURN { name: x1, count: x2 }
  */
 case object isolateAggregation extends Rewriter {
-  def apply(in: AnyRef): AnyRef = bottomUp(instance).apply(in)
+  def apply(that: AnyRef): AnyRef = instance(that)
 
-  private val instance = Rewriter.lift {
+  private val instance = replace(replacer => {
+
+    case expr: Expression =>
+      replacer.stop(expr)
+
     case q@SingleQuery(clauses) =>
 
       val newClauses = clauses.flatMap {
@@ -90,7 +94,10 @@ case object isolateAggregation extends Rewriter {
       }
 
       q.copy(clauses = newClauses)(q.position)
-  }
+
+    case astNode =>
+      replacer.expand(astNode)
+  })
 
   private def getExpressions(c: Clause): Seq[Expression] = c match {
     case clause: Return => clause.returnItems.items.map(_.expression)

@@ -39,9 +39,11 @@ case object projectNamedPaths extends Rewriter {
   /**
    * In order to safely project named paths we must also cary along the dependencies of the paths
    */
-  private def projectDependenciesRewriter(paths: Map[Identifier, PathExpression]) = Rewriter.lift {
-    case clause@With(_, ri: ReturnItems, _, _, _, _) => {
+  private def projectDependenciesRewriter(paths: Map[Identifier, PathExpression]) = replace(replacer => {
+    case expr: Expression =>
+      replacer.stop(expr)
 
+    case clause@With(_, ri: ReturnItems, _, _, _, _) =>
       val pathDependencies = clause.treeFold(Set.empty[Identifier]) {
         case step:PathStep => (acc, children) => children(acc ++ step.dependencies)
         case _ => (acc, children) => children(acc)
@@ -52,8 +54,10 @@ case object projectNamedPaths extends Rewriter {
       val newRi = ri.copy(items = newDeps)(ri.position)
 
       clause.copy(returnItems = newRi)(clause.position).endoRewrite(copyIdentifiers)
-    }
-  }
+
+    case astNode =>
+      replacer.expand(astNode)
+  })
 
   private def collectNamedPaths(input: AnyRef): Map[Identifier, PathExpression] = {
     input.treeFold(Map.empty[Identifier, PathExpression]) {
@@ -99,7 +103,9 @@ case object projectNamedPaths extends Rewriter {
     val namedPaths = collectNamedPaths(input)
     val blacklist = collectUninlinableIdentifiers(input)
 
-    bottomUp(inSequence(projectNamedPathsRewriter(namedPaths, blacklist),
-      projectDependenciesRewriter(namedPaths)))(input)
+    bottomUp(inSequence(
+      projectNamedPathsRewriter(namedPaths, blacklist),
+      projectDependenciesRewriter(namedPaths))
+    )(input)
   }
 }

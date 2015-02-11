@@ -37,6 +37,14 @@ object TokenType extends Enumeration {
 
     def getOrCreateIdForName(name: String, queryContext: QueryContext) = queryContext.getOrCreatePropertyKeyId(name)
   }
+
+  case object RelType extends TokenType {
+    def getOptIdForName(name: String, tokenContext: TokenContext) = tokenContext.getOptRelTypeId(name)
+
+    def getIdForNameOrFail(name: String, tokenContext: TokenContext) = tokenContext.getRelTypeId(name)
+
+    def getOrCreateIdForName(name: String, queryContext: QueryContext) = queryContext.getOrCreateRelTypeId(name)
+  }
 }
 
 trait TokenType  {

@@ -89,6 +89,7 @@ object CypherCompilerFactory {
       logger.info(s"Discarded stale query from the query cache: ${key.queryText}")
     }
   }
+
   def ruleBasedCompiler(graph: GraphDatabaseService, queryCacheSize: Int, statsDivergenceThreshold: Double,
                      queryPlanTTL: Long, clock: Clock, kernelMonitors: KernelMonitors): CypherCompiler = {
     val monitors = new Monitors(kernelMonitors)
