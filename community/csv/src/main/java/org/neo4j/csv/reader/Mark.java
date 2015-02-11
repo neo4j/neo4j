@@ -30,7 +30,6 @@ public class Mark
 {
     public static int END_OF_LINE_CHARACTER = -1;
 
-    private int lineNumber;
     private long startPosition;
     private long position;
     private int character;
@@ -42,9 +41,8 @@ public class Mark
      * @param character use {@code -1} to denote that the matching character was an end-of-line or end-of-file
      * @param quoted whether or not the original data was quoted.
      */
-    void set( int lineNumber, long startPosition, long position, int character, boolean quoted )
+    void set( long startPosition, long position, int character, boolean quoted )
     {
-        this.lineNumber = lineNumber;
         this.startPosition = startPosition;
         this.position = position;
         this.character = character;
@@ -60,11 +58,6 @@ public class Mark
     public boolean isEndOfLine()
     {
         return character == -1;
-    }
-
-    public int lineNumber()
-    {
-        return lineNumber;
     }
 
     public boolean isQuoted()
@@ -93,6 +86,6 @@ public class Mark
     @Override
     public String toString()
     {
-        return format( "Mark[line:%d, from:%d, to:%d, qutoed:%b]", lineNumber, startPosition, position, quoted);
+        return format( "Mark[from:%d, to:%d, qutoed:%b]", startPosition, position, quoted);
     }
 }

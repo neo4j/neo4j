@@ -28,9 +28,21 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
  */
 public interface Group extends PrimitiveIntPredicate
 {
+    /**
+     * @return id of this group, used for identifying this group.
+     */
     int id();
 
+    /**
+     * @return the name of this group.
+     */
     String name();
+
+    /**
+     * @return {@link #name()}.
+     */
+    @Override
+    String toString();
 
     public static class Adapter implements Group
     {
@@ -64,7 +76,7 @@ public interface Group extends PrimitiveIntPredicate
         @Override
         public String toString()
         {
-            return name;
+            return "(" + name + "," + id + ")";
         }
 
         @Override
@@ -92,7 +104,7 @@ public interface Group extends PrimitiveIntPredicate
         }
     }
 
-    public static final Group GLOBAL = new Adapter( 0, "global" )
+    public static final Group GLOBAL = new Adapter( 0, "global group" )
     {
         @Override
         public boolean accept( int value )

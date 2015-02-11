@@ -42,7 +42,8 @@ public class CharSeekers
      * @param quotationCharacter character to interpret quotation character.
      * @return a {@link CharSeeker} with optional {@link ThreadAheadReadable read-ahead} capability.
      */
-    public static CharSeeker charSeeker( CharReadable reader, int bufferSize, boolean readAhead, char quotationCharacter )
+    public static CharSeeker charSeeker( CharReadable reader, int bufferSize, boolean readAhead,
+            char quotationCharacter )
     {
         if ( readAhead )
         {   // Thread that always has one buffer read ahead
@@ -60,7 +61,8 @@ public class CharSeekers
      * @return {@link CharSeeker} reading and parsing data from {@code file}.
      * @throws FileNotFoundException if the specified {@code file} doesn't exist.
      */
-    public static CharSeeker charSeeker( CharReadable reader, char quotationCharacter ) throws FileNotFoundException
+    public static CharSeeker charSeeker( CharReadable reader, char quotationCharacter )
+            throws FileNotFoundException
     {
         return charSeeker( reader, DEFAULT_BUFFER_SIZE, true, quotationCharacter );
     }

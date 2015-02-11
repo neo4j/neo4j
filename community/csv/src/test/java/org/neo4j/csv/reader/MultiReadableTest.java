@@ -124,7 +124,7 @@ public class MultiReadableTest
             @Override
             public CharReadable next()
             {
-                return Readables.wrap( new StringReader( join( data[cursor++] ) ) );
+                return Readables.wrap( new StringReader( join( data[cursor++] ) ), "Reader" + cursor );
             }
 
             private String join( String[] strings )
@@ -151,5 +151,5 @@ public class MultiReadableTest
 
     private final Mark mark = new Mark();
     private final Extractors extractors = new Extractors( ';' );
-    private final int[] delimiter = new int[] {','};
+    private final int delimiter = ',';
 }

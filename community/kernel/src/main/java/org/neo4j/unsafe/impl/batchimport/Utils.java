@@ -110,6 +110,12 @@ public class Utils
                     {
                         return iterator.hasNext() ? iterator.next().id() : null;
                     }
+
+                    @Override
+                    public String toString()
+                    {
+                        return iterator.toString();
+                    }
                 };
             }
         };

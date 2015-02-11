@@ -23,6 +23,8 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.CharBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A {@link Readable}, but focused on {@code char[]} instead of {@link CharBuffer}, with the main reaon
@@ -54,4 +56,27 @@ public interface CharReadable extends Closeable
      * @return a low-level byte-like position of f.ex. total number of read bytes.
      */
     long position();
+
+    /**
+     * Add {@link SourceMonitor} to listen for when this readable potentially moves over to new data sources.
+     *
+     * @param sourceMonitor notifies about when this readable potentially moves over to new data sources.
+     */
+    void addSourceMonitor( SourceMonitor sourceMonitor );
+
+    public static abstract class Adapter implements CharReadable
+    {
+        protected final List<SourceMonitor> monitors = new ArrayList<>();
+
+        @Override
+        public void addSourceMonitor( SourceMonitor sourceMonitor )
+        {
+            monitors.add( sourceMonitor );
+        }
+
+        @Override
+        public void close() throws IOException
+        {   // Nothing to close
+        }
+    }
 }

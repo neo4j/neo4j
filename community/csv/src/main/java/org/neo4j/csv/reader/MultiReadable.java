@@ -29,16 +29,20 @@ import org.neo4j.collection.RawIterator;
  * Have multiple {@link CharReadable} instances look like one. The provided {@link CharReadable readables} should
  * be opened lazily, in {@link Iterator#next()}, and will be closed in here, if they implement {@link Closeable}.
  */
-public class MultiReadable implements CharReadable, Closeable
+public class MultiReadable extends CharReadable.Adapter implements Closeable
 {
     private final RawIterator<CharReadable,IOException> actual;
     private CharReadable current = Readables.EMPTY;
-    private int readFromCurrent;
     private long previousReadersCollectivePosition;
+    private boolean lastEndedInNewLine = true;
 
-    public MultiReadable( RawIterator<CharReadable,IOException> actual )
+    public MultiReadable( RawIterator<CharReadable,IOException> actual ) throws IOException
     {
         this.actual = actual;
+        if ( actual.hasNext() )
+        {
+            current = actual.next();
+        }
     }
 
     @Override
@@ -50,21 +54,29 @@ public class MultiReadable implements CharReadable, Closeable
             int readThisTime = current.read( buffer, offset + read, length - read );
             if ( readThisTime == -1 )
             {
-                if ( actual.hasNext() )
+                // Check if we've read anything at all before moving over to the new one.
+                // We do that so that we can get a "clean" move to the new source, so that
+                // information about progress and current source can be correctly provided by
+                // the caller of this method.
+                if ( read == 0 && actual.hasNext() )
                 {
                     previousReadersCollectivePosition += current.position();
                     closeCurrent();
                     current = actual.next();
+                    for ( SourceMonitor monitor : monitors )
+                    {
+                        monitor.notify( toString() );
+                    }
 
                     // Even if there's no line-ending at the end of this source we should introduce one
                     // otherwise the last line of this source and the first line of the next source will
                     // look like one long line.
-                    if ( readFromCurrent > 0 )
+                    if ( !lastEndedInNewLine )
                     {
                         buffer[offset + read++] = '\n';
                         previousReadersCollectivePosition++;
-                        readFromCurrent = 0;
                     }
+                    lastEndedInNewLine = false;
                 }
                 else
                 {
@@ -74,7 +86,7 @@ public class MultiReadable implements CharReadable, Closeable
             else
             {
                 read += readThisTime;
-                readFromCurrent += readThisTime;
+                lastEndedInNewLine = buffer[readThisTime-1] == '\n' || buffer[readThisTime-1] == '\r';
             }
         }
         return read == 0 ? -1 : read;
@@ -95,5 +107,11 @@ public class MultiReadable implements CharReadable, Closeable
     public long position()
     {
         return previousReadersCollectivePosition + current.position();
+    }
+
+    @Override
+    public String toString()
+    {
+        return current.toString();
     }
 }

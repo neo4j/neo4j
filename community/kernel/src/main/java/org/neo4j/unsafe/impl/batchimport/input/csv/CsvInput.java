@@ -47,7 +47,6 @@ public class CsvInput implements Input
     private final Header.Factory relationshipHeaderFactory;
     private final IdType idType;
     private final Configuration config;
-    private final int[] delimiter;
     private final BatchingIdSequence relationshipIds = new BatchingIdSequence();
     private final Groups groups = new Groups();
 
@@ -76,7 +75,6 @@ public class CsvInput implements Input
         this.relationshipHeaderFactory = relationshipHeaderFactory;
         this.idType = idType;
         this.config = config;
-        this.delimiter = new int[] {config.delimiter()};
     }
 
     private void assertSaneConfiguration( Configuration config )
@@ -112,7 +110,7 @@ public class CsvInput implements Input
                     protected InputIterator<InputNode> entityDeserializer( CharSeeker dataStream, Header dataHeader,
                             Function<InputNode,InputNode> decorator )
                     {
-                        return new InputNodeDeserializer( dataHeader, dataStream, delimiter, decorator,
+                        return new InputNodeDeserializer( dataHeader, dataStream, config.delimiter(), decorator,
                                 idType.idsAreExternal(), groups );
                     }
                 };
@@ -136,7 +134,7 @@ public class CsvInput implements Input
                     protected InputIterator<InputRelationship> entityDeserializer( CharSeeker dataStream,
                               Header dataHeader, Function<InputRelationship,InputRelationship> decorator )
                     {
-                        return new InputRelationshipDeserializer( dataHeader, dataStream, delimiter,
+                        return new InputRelationshipDeserializer( dataHeader, dataStream, config.delimiter(),
                                 relationshipIds, decorator, groups );
                     }
                 };

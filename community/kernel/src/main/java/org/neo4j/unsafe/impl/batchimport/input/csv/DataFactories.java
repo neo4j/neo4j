@@ -116,8 +116,15 @@ public class DataFactories
                     @Override
                     public CharSeeker stream()
                     {
-                        return charSeeker( multipleFiles( files ), DEFAULT_BUFFER_SIZE,
-                                           true, config.quotationCharacter() );
+                        try
+                        {
+                            return charSeeker( multipleFiles( files ), DEFAULT_BUFFER_SIZE,
+                                               true, config.quotationCharacter() );
+                        }
+                        catch ( IOException e )
+                        {
+                            throw new InputException( e.getMessage(), e );
+                        }
                     }
 
                     @Override
@@ -297,7 +304,7 @@ public class DataFactories
                 Mark mark = new Mark();
                 Extractors extractors = new Extractors( config.arrayDelimiter() );
                 Extractor<?> idExtractor = idType.extractor( extractors );
-                int[] delimiter = new int[] {config.delimiter()};
+                int delimiter = config.delimiter();
                 List<Header.Entry> columns = new ArrayList<>();
                 for ( int i = 0; !mark.isEndOfLine() && headerSeeker.seek( mark, delimiter ); i++ )
                 {

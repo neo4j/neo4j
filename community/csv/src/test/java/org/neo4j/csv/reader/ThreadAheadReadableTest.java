@@ -70,7 +70,7 @@ public class ThreadAheadReadableTest
         assertEquals( -1, aheadReadable.read( new char[10], 0, 10 ) );
     }
 
-    private static class MockedReader implements CharReadable
+    private static class MockedReader extends CharReadable.Adapter
     {
         private int bytesRead;
         private volatile int readsCompleted;

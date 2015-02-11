@@ -34,6 +34,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.UnexpectedEndOfInputException;
 
+import static java.lang.String.format;
 import static java.util.Arrays.copyOf;
 
 /**
@@ -43,19 +44,18 @@ import static java.util.Arrays.copyOf;
 abstract class InputEntityDeserializer<ENTITY extends InputEntity> extends PrefetchingIterator<ENTITY>
         implements InputIterator<ENTITY>
 {
-    private final Header header;
+    protected final Header header;
     private final CharSeeker data;
     private final Mark mark = new Mark();
-    private final int[] delimiter;
+    private final int delimiter;
     private final Function<ENTITY,ENTITY> decorator;
-    private int lineNumber;
 
     // Data
     // holder of properties, alternating key/value. Will grow with the entity having most properties.
     private Object[] properties = new Object[10*2];
     private int propertiesCursor;
 
-    InputEntityDeserializer( Header header, CharSeeker data, int[] delimiter, Function<ENTITY,ENTITY> decorator )
+    InputEntityDeserializer( Header header, CharSeeker data, int delimiter, Function<ENTITY,ENTITY> decorator )
     {
         this.header = header;
         this.data = data;
@@ -67,11 +67,10 @@ abstract class InputEntityDeserializer<ENTITY extends InputEntity> extends Prefe
     protected ENTITY fetchNextOrNull()
     {
         // Read a CSV "line" and convert the values into what they semantically mean.
-        lineNumber++;
         int fieldIndex = 0;
+        Header.Entry[] entries = header.entries();
         try
         {
-            Header.Entry[] entries = header.entries();
             for ( ; fieldIndex < entries.length; fieldIndex++ )
             {
                 // Seek the next value
@@ -148,11 +147,20 @@ abstract class InputEntityDeserializer<ENTITY extends InputEntity> extends Prefe
             {   // OK
             }
 
-            throw Exceptions.withMessage( e, "ERROR in input data on data line " + lineNumber + " in field " +
-                    (fieldIndex+1) + " (1-based)." +
-                    "\n  Header: " + header +
-                    "\n  Original error: " + e.getMessage() +
-                    (stringValue != null ? "\n  Raw field value: '" + stringValue + "'" : "") );
+            String message = format( "ERROR in input" +
+                    "%n  data source: %s" +
+                    "%n  in field: %s" +
+                    "%n  for header: %s" +
+                    "%n  raw field value: %s" +
+                    "%n  original error: %s",
+                    data, entries[fieldIndex] + ":" + (fieldIndex+1), header,
+                    stringValue != null ? stringValue : "??",
+                    e.getMessage() );
+            if ( e instanceof InputException )
+            {
+                throw Exceptions.withMessage( e, message );
+            }
+            throw new InputException( message, e );
         }
         finally
         {
@@ -215,5 +223,11 @@ abstract class InputEntityDeserializer<ENTITY extends InputEntity> extends Prefe
     public long position()
     {
         return data.position();
+    }
+
+    @Override
+    public String toString()
+    {
+        return data.toString();
     }
 }

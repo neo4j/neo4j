@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
+import java.io.IOException;
 import java.io.StringReader;
 
 import org.junit.Test;
@@ -206,7 +207,14 @@ public class DataFactoriesTest
             @Override
             public CharReadable newInstance()
             {
-                return multipleSources( firstSource, secondSource );
+                try
+                {
+                    return multipleSources( firstSource, secondSource );
+                }
+                catch ( IOException e )
+                {
+                    throw new RuntimeException( e );
+                }
             }
         } );
         Header.Factory headerFactory = defaultFormatNodeFileHeader();

@@ -24,9 +24,11 @@ import org.junit.Test;
 import java.util.List;
 
 import org.neo4j.kernel.impl.util.Charsets;
-import static java.util.Arrays.asList;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+
+import static java.util.Arrays.asList;
 
 public class UserSerializationTest
 {

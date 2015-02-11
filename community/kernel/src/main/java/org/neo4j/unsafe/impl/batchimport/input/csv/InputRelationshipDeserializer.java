@@ -42,14 +42,13 @@ class InputRelationshipDeserializer extends InputEntityDeserializer<InputRelatio
     private final Group startNodeGroup;
     private final Group endNodeGroup;
 
-    InputRelationshipDeserializer( Header header, CharSeeker data, int[] delimiter, IdSequence idSequence,
+    InputRelationshipDeserializer( Header header, CharSeeker data, int delimiter, IdSequence idSequence,
             Function<InputRelationship,InputRelationship> decorator, Groups groups )
     {
         super( header, data, delimiter, decorator );
         this.idSequence = idSequence;
         this.startNodeGroup = groups.getOrCreate( header.entry( Type.START_ID ).groupName() );
-        this.endNodeGroup = groups.getOrCreate( header.entry( Type.END_ID ).groupName() );
-    }
+        this.endNodeGroup = groups.getOrCreate( header.entry( Type.END_ID ).groupName() );    }
 
     @Override
     protected void handleValue( Header.Entry entry, Object value )

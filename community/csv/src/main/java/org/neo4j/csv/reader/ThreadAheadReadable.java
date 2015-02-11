@@ -22,6 +22,8 @@ package org.neo4j.csv.reader;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.CharBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.locks.LockSupport;
 
 import static java.lang.Math.min;
@@ -32,7 +34,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * Like an ordinary {@link CharReadable}, it's just that the reading happens in a separate thread, so when
  * a consumer wants to {@link #read(CharBuffer)} more data it's already available, merely a memcopy away.
  */
-public class ThreadAheadReadable extends Thread implements CharReadable, Closeable
+public class ThreadAheadReadable extends Thread implements CharReadable, Closeable, SourceMonitor
 {
     private static final long PARK_TIME = MILLISECONDS.toNanos( 100 );
 
@@ -45,6 +47,12 @@ public class ThreadAheadReadable extends Thread implements CharReadable, Closeab
     private volatile boolean eof;
     private volatile IOException ioException;
 
+    private final List<SourceMonitor> sourceMonitors = new ArrayList<>();
+    private String sourceDescription;
+    // the variable below is read and changed in both the ahead thread and the caller,
+    // but doesn't have to be volatile since it piggy-backs off of hasReadAhead.
+    private String newSourceDescription;
+
     private ThreadAheadReadable( CharReadable actual, int bufferSize  )
     {
         this.actual = actual;
@@ -52,6 +60,8 @@ public class ThreadAheadReadable extends Thread implements CharReadable, Closeab
         this.readAheadArray = new char[bufferSize];
         this.readAheadBuffer = CharBuffer.wrap( readAheadArray );
         this.readAheadBuffer.position( bufferSize );
+        this.sourceDescription = actual.toString();
+        actual.addSourceMonitor( this );
         setDaemon( true );
         start();
     }
@@ -82,6 +92,18 @@ public class ThreadAheadReadable extends Thread implements CharReadable, Closeab
         int bytesToCopy = min( readAheadBuffer.remaining(), length );
         arraycopy( readAheadArray, readAheadBuffer.position(), buffer, offset, bytesToCopy );
         readAheadBuffer.position( readAheadBuffer.position() + bytesToCopy );
+
+        // handle source notifications that has happened
+        if ( newSourceDescription != null )
+        {
+            sourceDescription = newSourceDescription;
+            // At this point the new source is official, so tell that to our external monitors
+            for ( SourceMonitor monitor : sourceMonitors )
+            {
+                monitor.notify( newSourceDescription );
+            }
+            newSourceDescription = null;
+        }
 
         // wake up the reader... there's stuff to do, data to read
         hasReadAhead = false;
@@ -163,6 +185,25 @@ public class ThreadAheadReadable extends Thread implements CharReadable, Closeab
     public long position()
     {
         return actual.position();
+    }
+
+    @Override
+    public void notify( String sourceDescription )
+    {   // Called when the underlying readable, read by the thread-ahead, changes source
+        newSourceDescription = sourceDescription;
+    }
+
+    @Override
+    public void addSourceMonitor( SourceMonitor sourceMonitor )
+    {
+        sourceMonitors.add( sourceMonitor );
+    }
+
+    @Override
+    public String toString()
+    {   // Returns the source information of where this reader is perceived to be. The fact that this
+        // thing reads ahead should be visible in this description.
+        return sourceDescription;
     }
 
     public static CharReadable threadAhead( CharReadable actual, int bufferSize )
