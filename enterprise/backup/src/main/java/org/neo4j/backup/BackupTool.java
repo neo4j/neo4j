@@ -58,6 +58,7 @@ public class BackupTool
     private static final String FROM = "from";
     private static final String VERIFY = "verify";
     private static final String CONFIG = "config";
+    private static final String FORENSICS = "gather-forensics";
     public static final String DEFAULT_SCHEME = "single";
 
     static final String MISMATCHED_STORE_ID = "You tried to perform a backup from database %s, " +
@@ -107,6 +108,7 @@ public class BackupTool
         String to = arguments.get( TO, null );
         boolean verify = arguments.getBoolean( VERIFY, true, true );
         Config tuningConfiguration = readTuningConfiguration( TO, arguments );
+        boolean forensics = arguments.getBoolean( FORENSICS, false, true );
 
         if (!from.contains( ":" ))
             from = "single://"+from;
@@ -175,7 +177,7 @@ public class BackupTool
             if (str.contains( "://" ))
                 str = str.split( "://" )[1];
             systemOut.println("Performing backup from '" + str + "'");
-            return doBackup( backupURI, to, verify, tuningConfiguration );
+            return doBackup( backupURI, to, verify, tuningConfiguration, forensics );
         }
         catch ( TransactionFailureException e )
         {
@@ -194,7 +196,7 @@ public class BackupTool
                             " - cannot continue, aborting.", e );
                 }
 
-                return doBackup( backupURI, to, verify, tuningConfiguration );
+                return doBackup( backupURI, to, verify, tuningConfiguration, forensics );
             }
             else
             {
@@ -243,12 +245,13 @@ public class BackupTool
         return new Config( specifiedProperties, GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
     }
 
-    private BackupOutcome doBackup( URI from, String to, boolean checkConsistency, Config tuningConfiguration ) throws ToolFailureException
+    private BackupOutcome doBackup( URI from, String to, boolean checkConsistency, Config tuningConfiguration,
+            boolean forensics ) throws ToolFailureException
     {
         try
         {
             BackupOutcome backupOutcome = backupService.doIncrementalBackupOrFallbackToFull( from.getHost(), extractPort( from ), to, checkConsistency,
-                tuningConfiguration );
+                tuningConfiguration, forensics );
             systemOut.println( "Done" );
             return backupOutcome;
         }

@@ -31,8 +31,6 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.BackupMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
-import java.util.concurrent.CountDownLatch;
-
 class BackupImpl implements TheBackupInterface
 {
     private final BackupMonitor backupMonitor;
@@ -47,7 +45,6 @@ class BackupImpl implements TheBackupInterface
     private SPI spi;
     private final XaDataSourceManager xaDataSourceManager;
     private final KernelPanicEventGenerator kpeg;
-    private CountDownLatch countDownLatch;
 
     public BackupImpl( StringLogger logger, SPI spi, XaDataSourceManager xaDataSourceManager,
                        KernelPanicEventGenerator kpeg,
@@ -60,12 +57,12 @@ class BackupImpl implements TheBackupInterface
         this.backupMonitor = monitors.newMonitor( BackupMonitor.class, getClass() );
     }
     
-    public Response<Void> fullBackup( StoreWriter writer )
+    public Response<Void> fullBackup( StoreWriter writer, boolean forensics )
     {
         backupMonitor.startCopyingFiles();
         RequestContext context = ServerUtil.rotateLogsAndStreamStoreFiles( spi.getStoreDir(),
                 xaDataSourceManager,
-                kpeg, logger, false, writer, backupMonitor );
+                kpeg, logger, forensics, writer, backupMonitor );
         writer.done();
         backupMonitor.finishedCopyingStoreFiles();
         return packResponse( context );
