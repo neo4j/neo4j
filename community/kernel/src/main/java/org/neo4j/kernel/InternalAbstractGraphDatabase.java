@@ -1071,7 +1071,6 @@ public abstract class InternalAbstractGraphDatabase
         {
             throw new NotFoundException( format( "Node %d not found", id ) );
         }
-        threadToTransactionBridge.assertInUnterminatedTransaction();
         try ( Statement statement = threadToTransactionBridge.instance() )
         {
             if ( !statement.readOperations().nodeExists( id ) )
@@ -1090,7 +1089,6 @@ public abstract class InternalAbstractGraphDatabase
         {
             throw new NotFoundException( format( "Relationship %d not found", id ) );
         }
-        threadToTransactionBridge.assertInUnterminatedTransaction();
         try ( Statement statement = threadToTransactionBridge.instance() )
         {
             if ( !statement.readOperations().relationshipExists( id ) )
