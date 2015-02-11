@@ -52,19 +52,26 @@ angular.module('neo4jApp.utils', [])
       rv.join("\n")
 
     @firstWord = (input) ->
-      input.split(/\n| /)[0] 
+      input.split(/\n| /)[0]
 
     @extendDeep = (dst) =>
       that = @
       angular.forEach(arguments, (obj) ->
-        if (obj != dst) 
+        if (obj != dst)
           angular.forEach(obj, (value, key)  ->
-            if (dst[key] && angular.isObject(dst[key])) 
+            if (dst[key] && angular.isObject(dst[key]))
               that.extendDeep(dst[key], value)
-            else if(!angular.isFunction(dst[key])) 
+            else if(!angular.isFunction(dst[key]))
               dst[key] = value
           )
       )
       dst
+
+    @ua2text = (ua) ->
+      s = ''
+      for i in [0..ua.length]
+        s = s + "" + String.fromCharCode ua[i]
+      s
+
     @
   ])

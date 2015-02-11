@@ -64,6 +64,9 @@
     <artifact id="bootstrap" name="bootstrap">
       <license>MIT</license>
     </artifact>
+    <artifact id="canvg" name="canvg">
+      <license>MIT</license>
+    </artifact>
     <artifact id="codemirror" name="CodeMirror">
       <license>MIT</license>
     </artifact>

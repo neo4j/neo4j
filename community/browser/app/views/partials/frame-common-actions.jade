@@ -6,6 +6,8 @@
         li
           a(exportable ng-click='exportGraphSVG()', ng-show='isActive("graph")') Export SVG
           a(exportable ng-click='exportPlanSVG()', ng-show='isActive("plan")') Export SVG
+          a(exportable ng-click='exportGraphPNG()', ng-show='isActive("graph")') Export PNG
+          a(exportable ng-click='exportPlanPNG()', ng-show='isActive("plan")') Export PNG
           a(exportable ng-click='exportJSON(frame.response)') Export JSON
           a(exportable ng-click='exportCSV(frame.response.table)') Export CSV
     li

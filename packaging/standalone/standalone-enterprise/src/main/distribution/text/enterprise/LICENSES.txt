@@ -1919,6 +1919,7 @@ MIT License
   arbor.js
   Blob.js
   bootstrap
+  canvg
   CodeMirror
   CodeMirror CSS
   Color picker

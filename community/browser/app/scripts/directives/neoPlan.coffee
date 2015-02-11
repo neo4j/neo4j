@@ -22,16 +22,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 angular.module('neo4jApp.directives')
   .directive('neoPlan', [
     'exportService'
-    (exportService)->
-      restrict: 'A'
-      link: (scope, elm, attr) ->
+    'SVGUtils'
+    (exportService, SVGUtils)->
+      dir =
+        restrict: 'A'
+      dir.link = (scope, elm, attr) ->
         unbind = scope.$watch attr.queryPlan, (plan) ->
           return unless plan
           display = () ->
             neo.queryPlan(elm.get(0)).display(plan)
           display()
           scope.$on('export.plan.svg', ->
-            exportService.download('plan.svg', 'image/svg+xml', new XMLSerializer().serializeToString(elm.get(0)))
+            svg = SVGUtils.prepareForExport(elm, dir.getDimensions(elm.get(0)))
+            exportService.download('plan.svg', 'image/svg+xml', new XMLSerializer().serializeToString(svg.node()))
+            svg.remove()
+          )
+          scope.$on('export.plan.png', ->
+            svg = SVGUtils.prepareForExport elm, dir.getDimensions(elm.get(0))
+            exportService.downloadPNGFromSVG(svg, 'plan')
+            svg.remove()
           )
           scope.toggleExpanded = (expanded) ->
             visit = (operator) ->
@@ -42,4 +51,13 @@ angular.module('neo4jApp.directives')
             visit plan.root
             display()
           unbind()
+
+      dir.getDimensions = (element)->
+        node = d3.select(element)
+        dimensions =
+          width: node.attr('width')
+          height: node.attr('height')
+          viewBox: node.attr('viewBox')
+        dimensions
+      dir
   ])
