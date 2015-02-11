@@ -156,7 +156,3 @@ class neo.utils.arcArrow
         'L', coord(endTangent(radius)),
         'A', arcRadius + radius, arcRadius + radius, 0, 0, negativeSweep, coord(startTangent(radius))
       ].join(' ')
-
-    @apex =
-      x: cx,
-      y: if cy > 0 then cy - arcRadius else cy + arcRadius

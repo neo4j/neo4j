@@ -1,6 +1,6 @@
 class neo.utils.straightArrow
 
-  constructor: (startRadius, endRadius, centreDistance, shaftRadius, headRadius, headHeight, captionLayout) ->
+  constructor: (startRadius, endRadius, centreDistance, shaftWidth, headWidth, headHeight, captionLayout) ->
 
     @length = centreDistance - (startRadius + endRadius)
 
@@ -8,6 +8,8 @@ class neo.utils.straightArrow
     startArrow = startRadius
     endShaft = startArrow + @shaftLength
     endArrow = startArrow + @length
+    shaftRadius = shaftWidth / 2
+    headRadius = headWidth / 2
 
     @midShaftPoint =
       x: startArrow + @shaftLength / 2

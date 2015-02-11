@@ -22,6 +22,9 @@ class neo.models.Graph
           @nodeA = node2
           @nodeB = node1
 
+      isLoop: ->
+        @nodeA is @nodeB
+
       toString: ->
         "#{@nodeA.id}:#{@nodeB.id}"
     groups = {}

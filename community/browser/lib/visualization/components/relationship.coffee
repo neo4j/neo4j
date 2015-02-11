@@ -9,3 +9,5 @@ class neo.models.Relationship
 
   isNode: false
   isRelationship: true
+  isLoop: ->
+    @source is @target
