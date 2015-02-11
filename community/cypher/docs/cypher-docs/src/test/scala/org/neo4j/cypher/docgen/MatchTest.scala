@@ -90,7 +90,7 @@ This is not recommended practice. See <<match-node-by-id>> for more information 
       text = "Multiple nodes are selected by specifying them in an IN clause.",
       queryText = "match n where id(n) in [%Charlie%, %Martin%, %Oliver%] return n",
       optionalResultExplanation = "This returns the nodes listed in the `IN` expression.",
-      (p) => assertEquals(List(node("Charlie"), node("Martin"), node("Oliver")), p.columnAs[Node]("n").toList))
+      (p) => assertEquals(Set(node("Charlie"), node("Martin"), node("Oliver")), p.columnAs[Node]("n").toSet))
   }
 
   @Test def start_with_multiple_nodes() {
