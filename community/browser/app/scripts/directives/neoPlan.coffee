@@ -27,8 +27,9 @@ angular.module('neo4jApp.directives')
       dir =
         restrict: 'A'
       dir.link = (scope, elm, attr) ->
-        unbind = scope.$watch attr.queryPlan, (plan) ->
-          return unless plan
+        unbind = scope.$watch attr.queryPlan, (originalPlan) ->
+          return unless originalPlan
+          plan = JSON.parse(JSON.stringify(originalPlan))
           display = () ->
             neo.queryPlan(elm.get(0)).display(plan)
           display()
