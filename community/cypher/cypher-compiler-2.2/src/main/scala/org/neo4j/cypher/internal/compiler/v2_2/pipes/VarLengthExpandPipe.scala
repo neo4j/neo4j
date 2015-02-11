@@ -70,6 +70,9 @@ case class VarLengthExpandPipe(source: Pipe,
   }
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+    //register as parent so that stats are associated with this pipe
+    state.decorator.registerParentPipe(this)
+
     input.flatMap {
       row => {
         val fromNode: Any = getFromNode(row)

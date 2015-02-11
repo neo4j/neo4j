@@ -254,6 +254,26 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     result.executionPlanDescription().toString should not include("EstimatedRows")
   }
 
+  test("planner cost match (p:Person {name:'Seymour'}) return (p)-[:RELATED_TO]->()") {
+    //GIVEN
+    val seymour = createLabeledNode(Map("name" -> "Seymour"), "Person")
+    relate(seymour, createLabeledNode(Map("name" -> "Buddy"), "Person"), "RELATED_TO")
+    relate(seymour, createLabeledNode(Map("name" -> "Boo Boo"), "Person"), "RELATED_TO")
+    relate(seymour, createLabeledNode(Map("name" -> "Walt"), "Person"), "RELATED_TO")
+    relate(seymour, createLabeledNode(Map("name" -> "Waker"), "Person"), "RELATED_TO")
+    relate(seymour, createLabeledNode(Map("name" -> "Zooey"), "Person"), "RELATED_TO")
+    relate(seymour, createLabeledNode(Map("name" -> "Franny"), "Person"), "RELATED_TO")
+
+    graph.createConstraint("Person", "name")
+
+    //WHEN
+    val result = profile("planner cost match (p:Person {name:'Seymour'}) return (p)-[:RELATED_TO]->()")
+
+    //THEN
+    assertDbHits(7)(result)("Projection")
+    assertDbHits(1)(result)("NodeUniqueIndexSeek")
+   }
+
   private def assertRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
     getPlanDescriptions(result, names).foreach {
       plan => assert(expectedRows === getArgument[Rows](plan).value, s" wrong row count for plan: ${plan.name}")

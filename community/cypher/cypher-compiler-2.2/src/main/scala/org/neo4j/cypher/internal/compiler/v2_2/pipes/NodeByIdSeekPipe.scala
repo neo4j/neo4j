@@ -48,6 +48,9 @@ case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: EntityByIdRhs)
   with RonjaPipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
+    //register as parent so that stats are associated with this pipe
+    state.decorator.registerParentPipe(this)
+
     val ctx = state.initialContext.getOrElse(ExecutionContext.empty)
     val nodeIds = nodeIdsExpr.expressions(ctx, state)
     new NodeIdSeekIterator(ident, ctx, state.query.nodeOps, nodeIds.iterator)

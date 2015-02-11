@@ -96,8 +96,12 @@ case class ExtractPipe(source: Pipe, expressions: Map[String, Expression], hack_
       applyExpressionsOverwritingOriginal
   }
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
+    //register as parent so that stats are associated with this pipe
+    state.decorator.registerParentPipe(this)
+
     input.map( ctx => applyExpressions(ctx, state) )
+  }
 
   override def planDescription = {
     val arguments = expressions.map(_._1).toSeq

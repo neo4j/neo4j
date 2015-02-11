@@ -30,9 +30,13 @@ case class LegacySortPipe(source: Pipe, sortDescription: List[SortItem])
               (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with ExecutionContextComparer {
   def symbols = source.symbols
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
+    //register as parent so that stats are associated with this pipe
+    state.decorator.registerParentPipe(this)
+
     input.toList.
       sortWith((a, b) => compareBy(a, b, sortDescription)(state)).iterator
+  }
 
   def planDescription =
     source.planDescription.andThen(this, "Sort", identifiers, sortDescription.map(item => LegacyExpression(item.expression)):_*)

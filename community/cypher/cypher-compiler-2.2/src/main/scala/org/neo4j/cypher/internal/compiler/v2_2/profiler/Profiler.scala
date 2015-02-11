@@ -29,9 +29,11 @@ import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 import scala.collection.mutable
 
 class Profiler extends PipeDecorator {
+  outerProfiler =>
 
   val dbHitsStats: mutable.Map[Pipe, ProfilingQueryContext] = mutable.Map.empty
   val rowStats: mutable.Map[Pipe, ProfilingIterator] = mutable.Map.empty
+  private var parentPipe: Option[Pipe] = None
 
 
   def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = {
@@ -44,13 +46,11 @@ class Profiler extends PipeDecorator {
   }
 
   def decorate(pipe: Pipe, state: QueryState): QueryState = {
-    val oldCount = dbHitsStats.get(pipe).map(_.count).getOrElse(0L)
-    val decoratedContext = state.query match {
-      case p: ProfilingQueryContext => new ProfilingQueryContext(p.inner, pipe, oldCount)
-      case _                        => new ProfilingQueryContext(state.query, pipe, oldCount)
-    }
+    val decoratedContext = dbHitsStats.getOrElseUpdate(pipe, state.query match {
+      case p: ProfilingQueryContext => new ProfilingQueryContext(p.inner, pipe)
+      case _ => new ProfilingQueryContext(state.query, pipe)
+    })
 
-    dbHitsStats(pipe) = decoratedContext
     state.copy(query = decoratedContext)
   }
 
@@ -70,6 +70,27 @@ class Profiler extends PipeDecorator {
           .addArgument(Arguments.DbHits(dbhits))
     }
   }
+
+  def innerDecorator: PipeDecorator = new PipeDecorator {
+    innerProfiler =>
+
+    def innerDecorator: PipeDecorator = innerProfiler
+
+    def decorate(pipe: Pipe, state: QueryState): QueryState =
+      outerProfiler.decorate(parentPipe.getOrElse(throw new IllegalStateException("Missing parent pipe")), state)
+
+
+    def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = iter
+
+    def decorate(plan: InternalPlanDescription, isProfileReady: => Boolean): InternalPlanDescription =
+      outerProfiler.decorate(plan, isProfileReady)
+
+    def registerParentPipe(pipe: Pipe) {}
+  }
+
+  def registerParentPipe(pipe: Pipe) =
+    parentPipe = Some(pipe)
+
 }
 
 trait Counter {
@@ -81,12 +102,9 @@ trait Counter {
   }
 }
 
-final class ProfilingQueryContext(val inner: QueryContext, val p: Pipe, startValue: Long)
+final class ProfilingQueryContext(val inner: QueryContext, val p: Pipe)
   extends DelegatingQueryContext(inner) with Counter {
-
   self =>
-
-  _count = startValue
 
   override protected def singleDbHit[A](value: A): A = {
     increment()

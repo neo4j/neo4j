@@ -30,6 +30,9 @@ case class LetSelectOrSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: Strin
                                    (implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
   def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+    //register as parent so that stats are associated with this pipe
+    state.decorator.registerParentPipe(this)
+
     input.map {
       (outerContext) =>
         val holds = predicate.isTrue(outerContext)(state) || {

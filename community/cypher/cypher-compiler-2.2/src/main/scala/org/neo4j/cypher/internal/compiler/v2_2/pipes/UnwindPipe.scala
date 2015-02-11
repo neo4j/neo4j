@@ -27,12 +27,16 @@ import org.neo4j.cypher.internal.helpers.CollectionSupport
 case class UnwindPipe(source: Pipe, collection: Expression, identifier: String)
                      (val estimatedCardinality: Option[Double] = None)(implicit monitor: PipeMonitor)
   extends PipeWithSource(source, monitor) with CollectionSupport with RonjaPipe {
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+    //register as parent so that stats are associated with this pipe
+    state.decorator.registerParentPipe(this)
+
     input.flatMap {
       context =>
         val seq = makeTraversable(collection(context)(state))
         seq.map(x => context.newWith1(identifier, x))
     }
+  }
 
   def planDescription: InternalPlanDescription =
     PlanDescriptionImpl(this, "UNWIND", SingleChild(source.planDescription), Seq(), identifiers)

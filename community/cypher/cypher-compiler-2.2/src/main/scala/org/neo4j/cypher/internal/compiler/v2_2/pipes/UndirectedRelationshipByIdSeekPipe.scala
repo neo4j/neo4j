@@ -31,6 +31,9 @@ case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: EntityBy
   with CollectionSupport
   with RonjaPipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
+    //register as parent so that stats are associated with this pipe
+    state.decorator.registerParentPipe(this)
+
     val ctx = state.initialContext.getOrElse(ExecutionContext.empty)
     val relIds = relIdExpr.expressions(ctx, state).flatMap(Option(_))
     new UndirectedRelationshipIdSeekIterator(ident, fromNode, toNode, ctx, state.query.relationshipOps, relIds.iterator)

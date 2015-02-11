@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.profiler
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{NestedPipeExpression, ProjectedPath}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{Argument, InternalPlanDescription}
@@ -36,7 +37,7 @@ class ProfilerTest extends CypherFunSuite {
   test("should report simplest case") {
     //GIVEN
     val start = SingleRowPipe()
-    val pipe = new ProfilerPipe(start, "foo", rows = 10, dbAccess = 20)
+    val pipe = new ProfilerTestPipe(start, "foo", rows = 10, dbAccess = 20)
     val queryContext = mock[QueryContext]
     val profiler = new Profiler
     val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
@@ -52,9 +53,9 @@ class ProfilerTest extends CypherFunSuite {
   test("should report multiple pipes case") {
     //GIVEN
     val start = SingleRowPipe()
-    val pipe1 = new ProfilerPipe(start, "foo", rows = 10, dbAccess = 25)
-    val pipe2 = new ProfilerPipe(pipe1, "bar", rows = 20, dbAccess = 40)
-    val pipe3 = new ProfilerPipe(pipe2, "baz", rows = 1, dbAccess = 2)
+    val pipe1 = new ProfilerTestPipe(start, "foo", rows = 10, dbAccess = 25)
+    val pipe2 = new ProfilerTestPipe(pipe1, "bar", rows = 20, dbAccess = 40)
+    val pipe3 = new ProfilerTestPipe(pipe2, "baz", rows = 1, dbAccess = 2)
     val queryContext = mock[QueryContext]
     val profiler = new Profiler
     val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
@@ -83,8 +84,8 @@ class ProfilerTest extends CypherFunSuite {
 
   test("should count stuff going through Apply multiple times") {
     // GIVEN
-    val lhs = new ProfilerPipe(SingleRowPipe(), "lhs", rows = 10, dbAccess = 10)
-    val rhs = new ProfilerPipe(SingleRowPipe(), "rhs", rows = 20, dbAccess = 30)
+    val lhs = new ProfilerTestPipe(SingleRowPipe(), "lhs", rows = 10, dbAccess = 10)
+    val rhs = new ProfilerTestPipe(SingleRowPipe(), "rhs", rows = 20, dbAccess = 30)
     val apply = new ApplyPipe(lhs, rhs)()
     val queryContext = mock[QueryContext]
     val profiler = new Profiler
@@ -98,15 +99,56 @@ class ProfilerTest extends CypherFunSuite {
     assertRecorded(decoratedResult, "rhs", expectedRows = 10*20, expectedDbHits = 10*30)
   }
 
+  test("count dbhits for NestedPipes") {
+    // GIVEN
+    val projectedPath = mock[ProjectedPath]
+    val DB_HITS = 100
+    val innerPipe = NestedPipeExpression(new ProfilerTestPipe(SingleRowPipe(), "nested pipe", rows = 10, dbAccess = DB_HITS), projectedPath)
+    val pipeUnderInspection = ProjectionNewPipe(SingleRowPipe(), Map("x" -> innerPipe))()
+
+    val queryContext = mock[QueryContext]
+    val profiler = new Profiler
+    val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
+
+    // WHEN we create the results,
+    materialize(pipeUnderInspection.createResults(queryState))
+    val description = pipeUnderInspection.planDescription
+    val decoratedResult = profiler.decorate(description, isProfileReady = true)
+
+    // THEN the ProjectionNewPipe has correctly recorded the dbhits
+    assertRecorded(decoratedResult, "Projection", expectedRows = 1, expectedDbHits = DB_HITS)
+  }
+
+  test("count dbhits for deeply nested NestedPipes") {
+    // GIVEN
+    val projectedPath = mock[ProjectedPath]
+    val DB_HITS = 100
+    val nestedExpression = NestedPipeExpression(new ProfilerTestPipe(SingleRowPipe(), "nested pipe1", rows = 10, dbAccess = DB_HITS), projectedPath)
+    val innerInnerPipe = ProjectionNewPipe(SingleRowPipe(), Map("y"->nestedExpression))()
+    val innerPipe = NestedPipeExpression(new ProfilerTestPipe(innerInnerPipe, "nested pipe2", rows = 10, dbAccess = DB_HITS), projectedPath)
+    val pipeUnderInspection = ProjectionNewPipe(SingleRowPipe(), Map("x" -> innerPipe))()
+
+    val queryContext = mock[QueryContext]
+    val profiler = new Profiler
+    val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
+
+    // WHEN we create the results,
+    materialize(pipeUnderInspection.createResults(queryState))
+    val description = pipeUnderInspection.planDescription
+    val decoratedResult = profiler.decorate(description, isProfileReady = true)
+
+    // THEN the ProjectionNewPipe has correctly recorded the dbhits
+    assertRecorded(decoratedResult, "Projection", expectedRows = 1, expectedDbHits = DB_HITS * 2)
+  }
+
   private def assertRecorded(result: InternalPlanDescription, name: String, expectedRows: Int, expectedDbHits: Int) {
     val pipeArgs: Seq[Argument] = result.find(name).flatMap(_.arguments)
-
-    pipeArgs.foreach {
+    pipeArgs shouldNot be(empty)
+    pipeArgs.collect {
       case DbHits(count) => count should equal(expectedDbHits)
-      case _ =>
     }
 
-    pipeArgs.collectFirst {
+    pipeArgs.collect {
       case Rows(seenRows) => seenRows should equal(expectedRows)
     }
   }
@@ -116,7 +158,7 @@ class ProfilerTest extends CypherFunSuite {
   }
 }
 
-case class ProfilerPipe(source: Pipe, name: String, rows: Int, dbAccess: Int)
+case class ProfilerTestPipe(source: Pipe, name: String, rows: Int, dbAccess: Int)  // MATCH a, ()-[r]->() WHERE id(r) = length(a-->())
                   (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
   def planDescription: InternalPlanDescription = source.planDescription.andThen(this, name, Set())
 

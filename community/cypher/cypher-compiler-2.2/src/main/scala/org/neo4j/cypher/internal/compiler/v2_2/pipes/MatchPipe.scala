@@ -34,6 +34,9 @@ case class MatchPipe(source: Pipe,
   val identifiersBoundInSource = identifiersInClause intersect source.symbols.keys.toSet
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
+    //register as parent so that stats are associated with this pipe
+    state.decorator.registerParentPipe(this)
+
     input.flatMap {
       ctx =>
         if (identifiersBoundInSource.exists(i => ctx(i) == null))

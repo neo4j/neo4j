@@ -30,6 +30,8 @@ case class OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+    //register as parent so that stats are associated with this pipe
+    state.decorator.registerParentPipe(this)
 
     implicit val s = state
 

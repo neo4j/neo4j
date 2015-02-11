@@ -47,6 +47,9 @@ case class NodeIndexSeekPipe(ident: String,
       (state: QueryState) => (x: Any) => state.query.exactIndexSearch(descriptor, x)
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
+    //register as parent so that stats are associated with this pipe
+    state.decorator.registerParentPipe(this)
+
     val index = indexFactory(state)
     val baseContext = state.initialContext.getOrElse(ExecutionContext.empty)
     val resultNodes = indexQuery(valueExpr, baseContext, state, index, label.name, propertyKey.name)

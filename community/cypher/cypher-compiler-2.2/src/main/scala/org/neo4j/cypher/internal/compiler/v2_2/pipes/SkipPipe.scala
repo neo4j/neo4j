@@ -28,6 +28,9 @@ case class SkipPipe(source: Pipe, exp: Expression)
                    (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with NumericHelper with RonjaPipe {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+    //register as parent so that stats are associated with this pipe
+    state.decorator.registerParentPipe(this)
+
     if(input.isEmpty)
       return Iterator.empty
 

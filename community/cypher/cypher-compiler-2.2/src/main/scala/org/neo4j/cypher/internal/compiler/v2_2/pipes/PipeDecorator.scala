@@ -31,6 +31,18 @@ trait PipeDecorator {
   def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext]
 
   def decorate(plan: InternalPlanDescription, isProfileReady: => Boolean): InternalPlanDescription
+
+  /*
+   * Returns the inner decorator of this decorator. The inner decorator is used for nested expressions
+   * where the `decorate` should refer to the parent pipe instead of the calling pipe.
+   */
+  def innerDecorator: PipeDecorator
+
+  /*
+   * Registers a parent pipe. Used by the innerDecorator to associate data with the parent pipe instead of
+   * the calling pipe.
+   */
+  def registerParentPipe(pipe: Pipe): Unit
 }
 
 object NullPipeDecorator extends PipeDecorator {
@@ -39,4 +51,8 @@ object NullPipeDecorator extends PipeDecorator {
   def decorate(plan: InternalPlanDescription, isProfileReady: => Boolean): InternalPlanDescription = plan
 
   def decorate(pipe: Pipe, state: QueryState): QueryState = state
+
+  def innerDecorator: PipeDecorator = NullPipeDecorator
+
+  def registerParentPipe(pipe: Pipe) {}
 }

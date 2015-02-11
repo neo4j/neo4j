@@ -31,6 +31,9 @@ case class SlicePipe(source: Pipe, skip: Option[Expression], limit: Option[Expre
   val symbols = source.symbols
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+    //register as parent so that stats are associated with this pipe
+    state.decorator.registerParentPipe(this)
+
     implicit val s = state
 
     if(input.isEmpty)

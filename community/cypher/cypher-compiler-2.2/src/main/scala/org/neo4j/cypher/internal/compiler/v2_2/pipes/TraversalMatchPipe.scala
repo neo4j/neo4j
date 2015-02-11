@@ -30,6 +30,9 @@ case class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Tr
                              (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
+    //register as parent so that stats are associated with this pipe
+    state.decorator.registerParentPipe(this)
+
     input.flatMap {
 
       case ctx =>
