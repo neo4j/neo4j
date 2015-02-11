@@ -83,6 +83,19 @@ public class DumpCountsStore implements AbstractKeyValueVisitor<CountsKey, Metad
     @Override
     public void visitData( CountsKey key, ReadableBuffer value )
     {
-        System.out.println( "\t" + key + ": " + value );
+        switch ( key.recordType() )
+        {
+        case ENTITY_NODE:
+        case ENTITY_RELATIONSHIP:
+            System.out.println( "\t" + key + ": " + value.getLong( 8 ) );
+            break;
+        case INDEX_STATISTICS:
+        case INDEX_SAMPLE:
+            System.out.println( "\t" + key + ": (" + value.getLong( 0 ) + ", " + value.getLong( 8 ) + ")" );
+            break;
+        default:
+            throw new IllegalStateException( "Unknown or empty key: " + key );
+        }
+
     }
 }
