@@ -340,6 +340,22 @@ neo.queryPlan = (element)->
               .attr('transform', (d) -> "translate(#{d.x},#{d.y})")
             children:
 
+              'rect.background':
+                data: (d) -> [d]
+                selections: (enter, update) ->
+                  enter
+                  .append('rect')
+                  .attr('class', 'background')
+
+                  update
+                  .transition()
+                  .attr('width', operatorWidth)
+                  .attr('height', (d) -> d.height)
+                  .attr('rx', operatorCornerRadius)
+                  .attr('ry', operatorCornerRadius)
+                  .attr('fill', 'white')
+                  .style('stroke', 'none')
+
               'g.header':
                 data: (d) -> [d]
                 selections: (enter) ->
@@ -416,23 +432,6 @@ neo.queryPlan = (element)->
                       .attr('y', 13)
                       .attr('fill', (d) -> color(d.operatorType)['text-color-internal'])
                       .text((d) -> d.operatorType)
-
-              'rect.outline':
-                data: (d) -> [d]
-                selections: (enter, update) ->
-                  enter
-                  .append('rect')
-                  .attr('class', 'outline')
-
-                  update
-                  .transition()
-                  .attr('width', operatorWidth)
-                  .attr('height', (d) -> d.height)
-                  .attr('rx', operatorCornerRadius)
-                  .attr('ry', operatorCornerRadius)
-                  .attr('fill', 'none')
-                  .attr('stroke-width', 1)
-                  .style('stroke', (d) -> color(d.operatorType)['border-color'])
 
               'g.detail':
                 data: operatorDetails
@@ -567,6 +566,23 @@ neo.queryPlan = (element)->
                     update
                     .text((d) -> d.text)
                   )
+
+              'rect.outline':
+                data: (d) -> [d]
+                selections: (enter, update) ->
+                  enter
+                  .append('rect')
+                  .attr('class', 'outline')
+
+                  update
+                  .transition()
+                  .attr('width', operatorWidth)
+                  .attr('height', (d) -> d.height)
+                  .attr('rx', operatorCornerRadius)
+                  .attr('ry', operatorCornerRadius)
+                  .attr('fill', 'none')
+                  .attr('stroke-width', 1)
+                  .style('stroke', (d) -> color(d.operatorType)['border-color'])
     })
 
   display = (queryPlan) ->
