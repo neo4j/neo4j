@@ -30,7 +30,7 @@ The full source code of the example is found here:
 https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/neo4j-harness/src/test/java/org/neo4j/harness/doc/ExtensionTestingDocTest.java[ExtensionTestingDocTest.java]
 
 
-If you are using the JUnit test framework, there is a JUnit rule available as well.
+If you are using the JUnit test framework, there is a JUnit rule available as well. Note the use of `server.httpURI().resolve( "myExtension" )` to ensure that the correct base URI is used.
 
 .JUnit example
 [snippet,java]

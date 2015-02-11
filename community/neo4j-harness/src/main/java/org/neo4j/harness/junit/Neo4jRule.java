@@ -33,6 +33,10 @@ import org.neo4j.harness.TestServerBuilders;
 /**
  * A convenience wrapper around {@link org.neo4j.harness.TestServerBuilder}, exposing it as a JUnit
  * {@link org.junit.Rule rule}.
+ *
+ * Note that it will try to start the web server on the standard 7474 port, but if that is not available
+ * (typically because you already have an instance of Neo4j running) it will try other ports. Therefore it is necessary
+ * for the test code to use {@link #httpURI()} and then {@link java.net.URI#resolve(String)} to create the URIs to be invoked.
  */
 public class Neo4jRule implements TestRule, TestServerBuilder
 {
