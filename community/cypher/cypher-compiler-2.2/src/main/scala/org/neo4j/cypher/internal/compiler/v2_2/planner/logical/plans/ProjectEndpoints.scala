@@ -19,12 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
+import org.neo4j.cypher.internal.compiler.v2_2.ast.RelTypeName
 import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 
 case class ProjectEndpoints(left: LogicalPlan,
                             rel: IdName,
                             start: IdName,
+                            startInScope: Boolean,
                             end: IdName,
+                            endInScope: Boolean,
+                            types: Option[Seq[RelTypeName]],
                             directed: Boolean,
                             length: PatternLength)
                            (val solved: PlannerQuery)
@@ -34,5 +38,4 @@ case class ProjectEndpoints(left: LogicalPlan,
   def rhs = None
 
   def availableSymbols: Set[IdName] = left.availableSymbols + rel + start + end
-
 }

@@ -26,9 +26,11 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{Limit => LimitPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.cypher.internal.compiler.v2_2.{InternalException, ast}
+import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.graphdb.Direction
 
-object LogicalPlanProducer {
+
+object LogicalPlanProducer extends CollectionSupport {
   def solvePredicate(plan: LogicalPlan, solved: Expression) =
      plan.updateSolved(_.updateGraph(_.addPredicates(solved)))
 
@@ -345,14 +347,14 @@ object LogicalPlanProducer {
       inner.solved.updateGraph(_.addShortestPath(shortestPaths))
     )
 
-  def planEndpointProjection(inner: LogicalPlan, start: IdName, end: IdName, predicates: Seq[Expression], patternRel: PatternRelationship) = {
+  def planEndpointProjection(inner: LogicalPlan, start: IdName, startInScope: Boolean, end: IdName, endInScope: Boolean, patternRel: PatternRelationship) = {
     val solved = inner.solved.updateGraph(_.addPatternRel(patternRel))
-
-    val projectedPlan = ProjectEndpoints(inner, patternRel.name, start, end, patternRel.dir != Direction.BOTH, patternRel.length)_
-    if (predicates.isEmpty)
-      projectedPlan(solved)
-    else
-      Selection(predicates, projectedPlan(inner.solved))(solved)
+    val relTypes = patternRel.types.asNonEmptyOption
+    val directed = patternRel.dir != Direction.BOTH
+    ProjectEndpoints(inner, patternRel.name,
+      start, startInScope,
+      end, endInScope,
+      relTypes, directed, patternRel.length)(solved)
   }
 
   def planUnion(left: LogicalPlan, right: LogicalPlan): LogicalPlan = {

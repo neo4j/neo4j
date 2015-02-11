@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.InputPosition.NONE
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
@@ -46,7 +45,7 @@ class ProjectEndpointsTest
     val qg = QueryGraph.empty.addPatternRel(patternRel)
 
     projectEndpoints(planTable, qg) should equal(Seq(
-      planEndpointProjection(inputPlan, aName, bName, Seq.empty, patternRel)
+      planEndpointProjection(inputPlan, aName, startInScope = false, bName, endInScope = false, patternRel)
     ))
   }
 
@@ -59,9 +58,7 @@ class ProjectEndpointsTest
     val qg = QueryGraph.empty.addPatternRel(patternRel)
 
     projectEndpoints(planTable, qg) should equal(Seq(
-      planEndpointProjection(
-        inputPlan, aName, bName,
-        Seq(In(FunctionInvocation(FunctionName("type")_, Identifier("r")_)_, Collection(Seq(StringLiteral("X")_))_)_), patternRel)
+      planEndpointProjection(inputPlan, aName, startInScope = false, bName, endInScope = false, patternRel)
     ))
   }
 
@@ -74,7 +71,7 @@ class ProjectEndpointsTest
     val qg = QueryGraph.empty.addPatternRel(patternRel)
 
     projectEndpoints(planTable, qg) should equal(Seq(
-      planEndpointProjection(inputPlan, bName, aName, Seq.empty, patternRel)
+      planEndpointProjection(inputPlan, bName, startInScope = false, aName, endInScope = false, patternRel)
     ))
   }
 
@@ -87,7 +84,7 @@ class ProjectEndpointsTest
     val qg = QueryGraph.empty.addPatternRel(patternRel)
 
     projectEndpoints(planTable, qg) should equal(Seq(
-      planEndpointProjection(inputPlan, freshName(aName), bName, Seq(freshlyEqualTo(aName)), patternRel)
+      planEndpointProjection(inputPlan, aName, startInScope = true, bName, endInScope = false, patternRel)
     ))
   }
 
@@ -100,7 +97,7 @@ class ProjectEndpointsTest
     val qg = QueryGraph.empty.addPatternRel(patternRel)
 
     projectEndpoints(planTable, qg) should equal(Seq(
-      planEndpointProjection(inputPlan, aName, freshName(bName), Seq(freshlyEqualTo(bName)), patternRel)
+      planEndpointProjection(inputPlan, aName, startInScope = false, bName, endInScope = true, patternRel)
     ))
   }
 
@@ -113,11 +110,7 @@ class ProjectEndpointsTest
     val qg = QueryGraph.empty.addPatternRel(patternRel)
 
     projectEndpoints(planTable, qg) should equal(Seq(
-      planEndpointProjection(inputPlan, freshName(aName), freshName(bName), Seq(freshlyEqualTo(aName), freshlyEqualTo(bName)), patternRel)
+      planEndpointProjection(inputPlan, aName, startInScope = true, bName, endInScope = true, patternRel)
     ))
   }
-
-  private def freshName(node: IdName) = node.name + "$$$_"
-
-  private def freshlyEqualTo(node: IdName): Expression = Equals(Identifier(node.name)(NONE), Identifier(freshName(node.name))(NONE))(NONE)
 }
