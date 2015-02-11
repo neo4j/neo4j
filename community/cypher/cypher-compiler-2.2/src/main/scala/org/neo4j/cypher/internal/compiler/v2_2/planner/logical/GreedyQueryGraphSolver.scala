@@ -59,7 +59,7 @@ class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[PlanTable],
           val candidatesPerIds: Map[Set[IdName], Seq[LogicalPlan]] =
             selected.foldLeft(Map.empty[Set[IdName], Seq[LogicalPlan]]) {
               case (acc, plan) =>
-                val ids = plan.availableSymbols.filterNot(_.name.endsWith("$$$"))
+                val ids = plan.availableSymbols
                 val candidates = acc.getOrElse(ids, Seq.empty) :+ plan
                 acc + (ids -> candidates)
             }
