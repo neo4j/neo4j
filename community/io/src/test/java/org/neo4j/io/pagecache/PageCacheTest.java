@@ -60,6 +60,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.monitoring.DefaultPageCacheMonitor;
 import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
+import org.neo4j.io.pagecache.monitoring.PinEvent;
 import org.neo4j.test.RepeatRule;
 
 import static org.hamcrest.Matchers.both;
@@ -2008,7 +2009,10 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
         // we brought up in the first next call. That's why we assert that we
         // have observed *at least* the countedPages number of faults.
         long faults = monitor.countFaults();
+        long bytesRead = monitor.countBytesRead();
         assertThat( "wrong count of faults", faults, greaterThanOrEqualTo( countedPages ) );
+        assertThat( "wrong number of bytes read",
+                bytesRead, greaterThanOrEqualTo( countedPages * filePageSize ) );
         // Every page we move forward can put the freelist behind so the cache
         // wants to evict more pages. Plus, every page fault we do could also
         // block and get a page directly transferred to it, and these kinds of
@@ -2063,7 +2067,57 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
         // that leaves a small window wherein we can race with eviction, have
         // the evictor flush the page, and then fault it back and mark it as
         // dirty again.
-        assertThat( monitor.countFlushes(), greaterThanOrEqualTo( pagesToGenerate ) );
+        long flushes = monitor.countFlushes();
+        long bytesWritten = monitor.countBytesWritten();
+        assertThat( "wrong count of flushes",
+                flushes, greaterThanOrEqualTo( pagesToGenerate ) );
+        assertThat( "wrong count of bytes written",
+                bytesWritten, greaterThanOrEqualTo( pagesToGenerate * filePageSize ) );
+    }
+
+    @Test
+    public void monitorMustBeNotifiedOfSharedAndExclusivePins() throws Exception
+    {
+        final AtomicInteger exclusiveCount = new AtomicInteger();
+        final AtomicInteger sharedCount = new AtomicInteger();
+
+        DefaultPageCacheMonitor monitor = new DefaultPageCacheMonitor()
+        {
+            @Override
+            public PinEvent beginPin( boolean exclusiveLock, long filePageId, PageSwapper swapper )
+            {
+                (exclusiveLock? exclusiveCount : sharedCount).getAndIncrement();
+                return super.beginPin( exclusiveLock, filePageId, swapper );
+            }
+        };
+        generateFileWithRecords( file, recordCount, recordSize );
+
+        getPageCache( fs, maxPages, pageCachePageSize, monitor );
+
+        int pinsForSharing = 13;
+        int pinsForExclusive = 42;
+
+        try ( PagedFile pagedFile = pageCache.map( file, filePageSize ) )
+        {
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+            {
+                for ( int i = 0; i < pinsForSharing; i++ )
+                {
+                    assertTrue( cursor.next() );
+                }
+            }
+
+            try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+            {
+                for ( int i = 0; i < pinsForExclusive; i++ )
+                {
+                    assertTrue( cursor.next() );
+                }
+            }
+        }
+
+        assertThat( "wrong shared pin count", sharedCount.get(), is( pinsForSharing ) );
+        assertThat( "wrong exclusive pin count", exclusiveCount.get(), is( pinsForExclusive ) );
     }
 
     @Test
