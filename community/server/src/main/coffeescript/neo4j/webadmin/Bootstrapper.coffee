@@ -39,8 +39,8 @@ define(
         jQuery.ajaxSetup({
           timeout : 1000 * 60 * 60 * 6 # Let requests run up to six hours
           beforeSend: (xhr) ->
-            token = localStorage.getItem("neo4j.authorization_token")
-            xhr.setRequestHeader("Authorization", "Basic realm=\"Neo4j\" " + token) unless token is null
+            auth_data = localStorage.getItem("neo4j.authorization_data")
+            xhr.setRequestHeader("Authorization", "Basic realm=\"Neo4j\" " + auth_data) unless auth_data is null
         })
 
         # Handle authorization errors

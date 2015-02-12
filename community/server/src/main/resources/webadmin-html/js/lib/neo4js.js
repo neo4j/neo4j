@@ -1185,7 +1185,7 @@ for(var a in this.services){this.serviceNames.push(a)
 }}return this.serviceNames
 }else{throw new Error("Service definition has not been loaded yet.")
 }},discoverServices:function(){var a=this;
-this.db.getDiscoveryDocument().then(function(b){a.db.web.get(b.management+"/",neo4j.proxy(function(d){this.services=d.services;
+this.db.getDiscoveryDocument().then(function(b){a.db.web.get(b.management,neo4j.proxy(function(d){this.services=d.services;
 for(var c in d.services){if(this[c]){this[c].makeAvailable(d.services[c])
 }}this.db.trigger("services.loaded")
 },a),neo4j.proxy(function(c){neo4j.log("Unable to fetch service descriptions for server "+this.url+". Server management will be unavailable.")
@@ -1253,7 +1253,7 @@ return this.getServiceDefinition().then(function(b,d,c){a.web.get(b.relationship
 }else{b(a)
 }})
 },getServiceDefinition:function(){if(typeof(this._serviceDefinitionPromise)==="undefined"){var a=this;
-this._serviceDefinitionPromise=this.getDiscoveryDocument().then(function(c,d,b){a.web.get(c.data+"/",d,b)
+this._serviceDefinitionPromise=this.getDiscoveryDocument().then(function(c,d,b){a.web.get(c.data,d,b)
 })
 }return this._serviceDefinitionPromise
 },getDiscoveryDocument:function(){if(typeof(this._discoveryDocumentPromise)==="undefined"){var a=this;
