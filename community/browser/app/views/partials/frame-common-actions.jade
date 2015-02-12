@@ -8,7 +8,7 @@
           a(exportable ng-click='exportPlanSVG()', ng-show='isActive("plan")') Export SVG
           a(exportable ng-click='exportGraphPNG()', ng-show='isActive("graph")') Export PNG
           a(exportable ng-click='exportPlanPNG()', ng-show='isActive("plan")') Export PNG
-          a(exportable ng-click='exportJSON(frame.response)') Export JSON
+          a(exportable ng-click='exportJSON(frame.response.table._response)') Export JSON
           a(exportable ng-click='exportCSV(frame.response.table)') Export CSV
     li
       a.button.fa.fa-expand(ng-click="toggleFullscreen(true)", tooltip-placement='bottom', tooltip='Fullscreen', ng-show='frame.fullscreenable')
