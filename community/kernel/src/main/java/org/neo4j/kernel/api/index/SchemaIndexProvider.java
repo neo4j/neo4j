@@ -220,7 +220,12 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
 
     protected File getRootDirectory( Config config, String key )
     {
-        return new File( new File( new File( config.get( store_dir ), "schema" ), "index" ), key );
+        return getRootDirectory( config.get( store_dir ), key );
+    }
+
+    public static File getRootDirectory( File storeDir, String key )
+    {
+        return new File( new File( new File( storeDir, "schema" ), "index" ), key );
     }
 
     public static class Descriptor
