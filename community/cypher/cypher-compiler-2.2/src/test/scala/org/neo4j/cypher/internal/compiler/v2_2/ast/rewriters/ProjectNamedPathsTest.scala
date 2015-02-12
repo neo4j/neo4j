@@ -80,7 +80,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     rewritten should equal(expected)
   }
 
-  //Make sure a is not projected twice
+  //don't project what is already projected
   test("MATCH p = (a) WITH p, a RETURN p" ) {
     val rewritten = projectionInlinedAst("MATCH p = (a) WITH p, a RETURN p")
     val a = Identifier("a")(pos)
