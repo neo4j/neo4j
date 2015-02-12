@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planDescription
 
 import org.neo4j.cypher.internal.compiler.v2_2.commands
-import org.neo4j.cypher.internal.compiler.v2_2.pipes.{Pipe, RonjaPipe, EntityByIdRhs => PipeEntityByIdRhs}
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.{EntityByIdRhs => PipeEntityByIdRhs, Pipe, RonjaPipe}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.graphdb.Direction
 
@@ -82,7 +82,10 @@ object InternalPlanDescription {
     case class KeyNames(keys: Seq[String]) extends Argument
     case class KeyExpressions(expressions: Seq[commands.expressions.Expression]) extends Argument
     case class EntityByIdRhs(value: PipeEntityByIdRhs) extends Argument
-    case class EstimatedRows(value: Double) extends Argument
+
+    case class EstimatedOperatorCardinality(value: Double) extends Argument
+
+    case class EstimatedProducedRows(value: Double) extends Argument
     case class Version(value: String) extends Argument {
       override def name = "version"
     }
@@ -129,8 +132,11 @@ final case class PlanDescriptionImpl(pipe: Pipe,
   self =>
 
   def arguments: Seq[Argument] = _arguments ++ (pipe match {
-    case r: RonjaPipe => r.estimatedCardinality.map(EstimatedRows.apply)
-    case _            => None
+    case r: RonjaPipe => Seq(
+      r.estimation.operatorCardinality.map(EstimatedOperatorCardinality.apply),
+      r.estimation.producedRows.map(EstimatedProducedRows.apply)
+    ).flatten
+    case _ => Seq.empty
   })
 
   def find(name: String): Seq[InternalPlanDescription] =

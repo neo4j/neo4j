@@ -28,11 +28,10 @@ import org.neo4j.cypher.internal.helpers.CollectionSupport
 
 
 case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: EntityByIdRhs, toNode: String, fromNode: String)
-                                           (val estimatedCardinality: Option[Double] = None)
+                                           (val estimation: Estimation = Estimation.empty)
                                            (implicit pipeMonitor: PipeMonitor)
-  extends Pipe
-  with CollectionSupport
-  with RonjaPipe {
+  extends Pipe with CollectionSupport with RonjaPipe {
+
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)
@@ -65,5 +64,5 @@ case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: EntityById
 
   override def localEffects = Effects.READS_ENTITIES
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  def withEstimation(estimation: Estimation): Pipe with RonjaPipe = copy()(estimation = estimation)
 }

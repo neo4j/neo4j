@@ -31,9 +31,10 @@ import scala.collection.JavaConverters._
 /**
  * Shortest pipe inserts a single shortest path between two already found nodes
  */
-case class ShortestPathPipe(source: Pipe, ast: ShortestPath)
-                           (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+case class ShortestPathPipe(source: Pipe, ast: ShortestPath)(val estimation: Estimation = Estimation.empty)
+                           (implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with CollectionSupport with RonjaPipe {
+
   private def pathName = ast.pathName
   private val expression = ShortestPathExpression(ast)
 
@@ -65,10 +66,10 @@ case class ShortestPathPipe(source: Pipe, ast: ShortestPath)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
+    copy(source = head)(estimation)
   }
 
   override def localEffects = Effects.READS_ENTITIES
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  def withEstimation(estimation: Estimation): Pipe with RonjaPipe = copy()(estimation = estimation)
 }

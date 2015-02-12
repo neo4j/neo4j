@@ -27,19 +27,11 @@ import org.neo4j.graphdb.{Direction, Node, Relationship}
 
 import scala.collection.mutable
 
-case class VarLengthExpandPipe(source: Pipe,
-                               fromName: String,
-                               relName: String,
-                               toName: String,
-                               dir: Direction,
-                               projectedDir: Direction,
-                               types: LazyTypes,
-                               min: Int,
-                               max: Option[Int],
-                               nodeInScope: Boolean,
+case class VarLengthExpandPipe(source: Pipe, fromName: String, relName: String, toName: String, dir: Direction,
+                               projectedDir: Direction, types: LazyTypes, min: Int, max: Option[Int], nodeInScope: Boolean,
                                filteringStep: (ExecutionContext, QueryState, Relationship) => Boolean = (_, _, _) => true)
-                              (val estimatedCardinality: Option[Double] = None)
-                              (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
+                              (val estimation: Estimation = Estimation.empty)(implicit pipeMonitor: PipeMonitor)
+  extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
   private def varLengthExpand(node: Node, state: QueryState, maxDepth: Option[Int],
                               row: ExecutionContext): Iterator[(Node, Seq[Relationship])] = {
@@ -105,9 +97,8 @@ case class VarLengthExpandPipe(source: Pipe,
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
-    copy(head)(estimatedCardinality)
+    copy(head)(estimation)
   }
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
-
+  def withEstimation(estimation: Estimation): Pipe with RonjaPipe = copy()(estimation = estimation)
 }

@@ -25,8 +25,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{InternalPlanDesc
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 
 case class UnwindPipe(source: Pipe, collection: Expression, identifier: String)
-                     (val estimatedCardinality: Option[Double] = None)(implicit monitor: PipeMonitor)
+                     (val estimation: Estimation = Estimation.empty)(implicit monitor: PipeMonitor)
   extends PipeWithSource(source, monitor) with CollectionSupport with RonjaPipe {
+
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)
@@ -47,8 +48,8 @@ case class UnwindPipe(source: Pipe, collection: Expression, identifier: String)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
+    copy(source = head)(estimation)
   }
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  def withEstimation(estimation: Estimation): Pipe with RonjaPipe = copy()(estimation = estimation)
 }

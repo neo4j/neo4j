@@ -30,7 +30,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
                                 start: String, startInScope: Boolean,
                                 end: String, endInScope: Boolean,
                                 relTypes: Option[LazyTypes], directed: Boolean, simpleLength: Boolean)
-                               (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+                               (val estimation: Estimation = Estimation.empty)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor)
   with CollectionSupport
   with RonjaPipe {
@@ -48,10 +48,10 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
-    copy(source = source)(estimatedCardinality)
+    copy(source = source)(estimation)
   }
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  def withEstimation(estimation: Estimation): Pipe with RonjaPipe = copy()(estimation = estimation)
 
   private def projector(qtx: QueryContext): Projector =
     if (simpleLength) project(qtx) else projectVarLength(qtx)

@@ -30,12 +30,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.symbols.{CTNode, SymbolTable}
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.index.IndexDescriptor
 
-case class NodeIndexSeekPipe(ident: String,
-                             label: LabelToken,
-                             propertyKey: PropertyKeyToken,
-                             valueExpr: QueryExpression[Expression],
-                             unique: Boolean = false)
-                            (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+case class NodeIndexSeekPipe(ident: String, label: LabelToken, propertyKey: PropertyKeyToken,
+                             valueExpr: QueryExpression[Expression], unique: Boolean = false)
+                            (val estimation: Estimation = Estimation.empty)(implicit pipeMonitor: PipeMonitor)
   extends Pipe with RonjaPipe {
 
   val descriptor = new IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
@@ -76,5 +73,5 @@ case class NodeIndexSeekPipe(ident: String,
 
   override def localEffects = Effects.READS_NODES
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  def withEstimation(estimation: Estimation): Pipe with RonjaPipe = copy()(estimation = estimation)
 }

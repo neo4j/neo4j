@@ -58,8 +58,10 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     val result = eengine.execute("explain match n return n")
     result.toList
     assert(result.planDescriptionRequested, "result not marked with planDescriptionRequested")
-    result.executionPlanDescription().toString should include("EstimatedRows")
-    result.executionPlanDescription().asJava.toString should include("EstimatedRows")
+    result.executionPlanDescription().toString should include("EstimatedOperatorCardinality")
+    result.executionPlanDescription().toString should include("EstimatedProducedRows")
+    result.executionPlanDescription().asJava.toString should include("EstimatedOperatorCardinality")
+    result.executionPlanDescription().asJava.toString should include("EstimatedProducedRows")
   }
 
   test("match n where not n-[:FOO]->() return *") {

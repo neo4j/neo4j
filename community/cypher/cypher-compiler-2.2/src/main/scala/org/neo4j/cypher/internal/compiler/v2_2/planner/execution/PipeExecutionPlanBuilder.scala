@@ -52,7 +52,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
     implicit val table: SemanticTable = context.semanticTable
     val updating = false
 
-    def buildPipe(plan: LogicalPlan, input: QueryGraphCardinalityInput): Pipe = {
+    def buildPipe(plan: LogicalPlan, input: QueryGraphCardinalityInput): Pipe with RonjaPipe = {
       implicit val monitor = monitors.newMonitor[PipeMonitor]()
       implicit val c = context.cardinality
 
@@ -97,7 +97,19 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
           FilterPipe(buildPipe(left, input), predicates.map(buildPredicate).reduce(_ ++ _))()
 
         case CartesianProduct(left, right) =>
-          CartesianProductPipe(buildPipe(left, input), buildPipe(right, input))()
+          val lhs = buildPipe(left, input)
+          val rhs = buildPipe(right, input)
+          val producedRows = lhs.estimation.producedRows.get
+
+          def amendProducedRowsWithin(pipe: Pipe with RonjaPipe): Pipe with RonjaPipe = {
+            val newSources = pipe.sources.toList.map(p => amendProducedRowsWithin(p.asInstanceOf[Pipe with RonjaPipe]))
+            val newEstimation = pipe.estimation.copy(producedRows = pipe.estimation.producedRows.map(_ * producedRows))
+            pipe.withEstimation(newEstimation).dup(newSources).asInstanceOf[Pipe with RonjaPipe]
+          }
+
+          val newRhs = amendProducedRowsWithin(rhs)
+
+          CartesianProductPipe(lhs, newRhs)()
 
         case Expand(left, IdName(fromName), dir, types: Seq[RelTypeName], IdName(toName), IdName(relName), ExpandAll) =>
           ExpandAllPipe(buildPipe(left, input), fromName, relName, toName, dir, LazyTypes(types))()
@@ -215,8 +227,8 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
           throw new CantHandleQueryException(x.toString)
       }
 
-      val cardinality = context.cardinality(plan, input)
-      result.withEstimatedCardinality(cardinality.amount)
+      val operatorCardinality = context.cardinality(plan, input)
+      result.withEstimation(Estimation(operatorCardinality, operatorCardinality))
     }
 
     object buildPipeExpressions extends Rewriter {

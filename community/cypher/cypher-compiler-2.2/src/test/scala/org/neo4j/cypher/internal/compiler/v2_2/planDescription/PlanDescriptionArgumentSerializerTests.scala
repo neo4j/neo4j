@@ -20,8 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planDescription
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.{ExpandExpression,
-EstimatedRows, DbHits, Rows}
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.graphdb.Direction
 
 class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
@@ -31,7 +30,8 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
   test("serialization should leave numeric arguments as numbers") {
     serialize(new DbHits(12)) shouldBe a [java.lang.Number]
     serialize(new Rows(12)) shouldBe a [java.lang.Number]
-    serialize(new EstimatedRows(12)) shouldBe a [java.lang.Number]
+    serialize(new EstimatedOperatorCardinality(12)) shouldBe a [java.lang.Number]
+    serialize(new EstimatedProducedRows(12)) shouldBe a [java.lang.Number]
   }
 
   test("ExpandExpression should look like Cypher syntax") {

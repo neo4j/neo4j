@@ -23,7 +23,7 @@ import java.lang.reflect.Method
 
 import org.neo4j.cypher.internal.compiler.v2_2.Foldable._
 import org.neo4j.cypher.internal.compiler.v2_2.Rewritable._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{Identifier, Expression}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{Expression, Identifier}
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
 import org.neo4j.cypher.internal.compiler.v2_2.{InternalException, Rewritable}

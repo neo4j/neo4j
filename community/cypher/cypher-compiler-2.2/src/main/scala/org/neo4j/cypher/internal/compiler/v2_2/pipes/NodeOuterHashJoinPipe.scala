@@ -29,9 +29,10 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 case class NodeOuterHashJoinPipe(nodeIdentifiers: Set[String], source: Pipe, inner: Pipe, nullableIdentifiers: Set[String])
-                                (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+                                (val estimation: Estimation = Estimation.empty)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
-  val nullColumns: Map[String, Any] = nullableIdentifiers.map(_ -> null).toMap
+
+  private val nullColumns: Map[String, Any] = nullableIdentifiers.map(_ -> null).toMap
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
 
@@ -75,12 +76,12 @@ case class NodeOuterHashJoinPipe(nodeIdentifiers: Set[String], source: Pipe, inn
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: inner :: Nil) = sources
-    copy(source = source, inner = inner)(estimatedCardinality)
+    copy(source = source, inner = inner)(estimation)
   }
 
   override def localEffects = Effects.NONE
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  def withEstimation(estimation: Estimation): Pipe with RonjaPipe = copy()(estimation = estimation)
 
   private def buildProbeTableAndFindNullRows(input: Iterator[ExecutionContext]): ProbeTable = {
     val probeTable = new ProbeTable()
