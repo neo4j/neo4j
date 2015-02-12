@@ -107,7 +107,7 @@ public class PropertyDeduplicator
             {
                 record = store.getRecord( propertyId );
 
-                List<PropertyBlock> propertyBlocks = record.getPropertyBlocks();
+                Iterable<PropertyBlock> propertyBlocks = record;
                 scanForDuplicates( propertyId, propertyBlocks );
 
                 propertyId = record.getNextProp();
@@ -137,8 +137,7 @@ public class PropertyDeduplicator
         return duplicateClusters;
     }
 
-    private void scanForDuplicates( long propertyId,
-                                    List<PropertyBlock> propertyBlocks )
+    private void scanForDuplicates( long propertyId, Iterable<PropertyBlock> propertyBlocks )
     {
         for ( PropertyBlock block : propertyBlocks )
         {

@@ -53,11 +53,11 @@ public class PropertyDeleter
             // TODO forChanging/forReading piggy-backing
             PropertyRecord propRecord = propertyChange.forChangingData();
             PropertyRecord before = propertyChange.getBefore();
-            for ( PropertyBlock block : before.getPropertyBlocks() )
+            for ( PropertyBlock block : before )
             {
                 result.put( block.getKeyIndexId(), block.newPropertyData( propertyStore ) );
             }
-            for ( PropertyBlock block : propRecord.getPropertyBlocks() )
+            for ( PropertyBlock block : propRecord )
             {
                 for ( DynamicRecord valueRecord : block.getValueRecords() )
                 {
@@ -70,7 +70,7 @@ public class PropertyDeleter
             propRecord.setInUse( false );
             propRecord.setChanged( primitive );
             // We do not remove them individually, but all together here
-            propRecord.getPropertyBlocks().clear();
+            propRecord.clearPropertyBlocks();
         }
         primitive.setNextProp( Record.NO_NEXT_PROPERTY.intValue() );
         return result;

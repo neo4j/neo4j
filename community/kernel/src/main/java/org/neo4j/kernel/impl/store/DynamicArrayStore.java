@@ -22,10 +22,8 @@ package org.neo4j.kernel.impl.store;
 import java.io.File;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -133,12 +131,13 @@ public class DynamicArrayStore extends AbstractDynamicStore
     private static void allocateFromString( Collection<DynamicRecord> target, String[] array,
             Iterator<DynamicRecord> recordsToUseFirst, DynamicRecordAllocator recordAllocator )
     {
-        List<byte[]> stringsAsBytes = new ArrayList<>();
+        byte[][] stringsAsBytes = new byte[array.length][];
         int totalBytesRequired = STRING_HEADER_SIZE; // 1b type + 4b array length
-        for ( String string : array )
+        for ( int i = 0; i < array.length; i++ )
         {
+            String string = array[i];
             byte[] bytes = PropertyStore.encodeString( string );
-            stringsAsBytes.add( bytes );
+            stringsAsBytes[i] = bytes;
             totalBytesRequired += 4/*byte[].length*/ + bytes.length;
         }
 

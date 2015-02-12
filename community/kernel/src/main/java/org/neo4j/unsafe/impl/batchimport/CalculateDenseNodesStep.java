@@ -19,9 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import java.util.List;
-
-import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
@@ -33,7 +31,7 @@ import static java.lang.Math.max;
 /**
  * Runs through relationship input and counts relationships per node so that dense nodes can be designated.
  */
-public class CalculateDenseNodesStep extends ExecutorServiceStep<Pair<List<InputRelationship>,long[]>>
+public class CalculateDenseNodesStep extends ExecutorServiceStep<Batch<InputRelationship,RelationshipRecord>>
 {
     private final NodeRelationshipLink nodeRelationshipLink;
     private long highestSeenNodeId;
@@ -46,14 +44,15 @@ public class CalculateDenseNodesStep extends ExecutorServiceStep<Pair<List<Input
     }
 
     @Override
-    protected Object process( long ticket, Pair<List<InputRelationship>,long[]> batch )
+    protected Object process( long ticket, Batch<InputRelationship,RelationshipRecord> batch )
     {
-        long[] startAndEndNodeIds = batch.other();
-        int index = 0;
-        for ( InputRelationship rel : batch.first() )
+        InputRelationship[] input = batch.input;
+        long[] ids = batch.ids;
+        for ( int i = 0; i < input.length; i++ )
         {
-            long startNode = startAndEndNodeIds[index++];
-            long endNode = startAndEndNodeIds[index++];
+            InputRelationship rel = input[i];
+            long startNode = ids[i*2];
+            long endNode = ids[i*2+1];
             ensureNodeFound( "start", rel, startNode );
             ensureNodeFound( "end", rel, endNode );
 

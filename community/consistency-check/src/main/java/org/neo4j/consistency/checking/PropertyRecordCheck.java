@@ -60,7 +60,7 @@ class PropertyRecordCheck
         // Previously referenced dynamic records should either still be referenced, or be deleted
         Map<Long, PropertyBlock> prevStrings = new HashMap<>();
         Map<Long, PropertyBlock> prevArrays = new HashMap<>();
-        for ( PropertyBlock block : oldRecord.getPropertyBlocks() )
+        for ( PropertyBlock block : oldRecord )
         {
             PropertyType type = block.getType();
             if ( type != null )
@@ -76,7 +76,7 @@ class PropertyRecordCheck
                 }
             }
         }
-        for ( PropertyBlock block : newRecord.getPropertyBlocks() )
+        for ( PropertyBlock block : newRecord )
         {
             PropertyType type = block.getType();
             if ( type != null )
@@ -121,7 +121,7 @@ class PropertyRecordCheck
         {
             field.checkConsistency( record, engine, records );
         }
-        for ( PropertyBlock block : record.getPropertyBlocks() )
+        for ( PropertyBlock block : record )
         {
             checkDataBlock( block, engine, records );
         }

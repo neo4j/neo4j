@@ -19,8 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.lang.reflect.Array;
+import java.util.Arrays;
 
 import static java.lang.System.currentTimeMillis;
 
@@ -31,11 +31,13 @@ import static java.lang.System.currentTimeMillis;
 public abstract class ProducerStep<T> extends AbstractStep<Void>
 {
     private final int batchSize;
+    private final Class<T> itemClass;
 
-    public ProducerStep( StageControl control, String name, int batchSize, int movingAverageSize )
+    public ProducerStep( StageControl control, String name, int batchSize, int movingAverageSize, Class<T> itemClass )
     {
         super( control, name, movingAverageSize );
         this.batchSize = batchSize;
+        this.itemClass = itemClass;
     }
 
     protected abstract T nextOrNull();
@@ -65,21 +67,21 @@ public abstract class ProducerStep<T> extends AbstractStep<Void>
 
     protected void process()
     {
-        List<T> batch = new ArrayList<>( batchSize );
+        T[] batch = newBatch();
         int size = 0;
         long startTime = currentTimeMillis();
         T next = null;
         while ( (next = nextOrNull()) != null )
         {
-            batch.add( next );
-            if ( ++size == batchSize )
+            batch[size++] = next;
+            if ( size == batchSize )
             {   // Full batch
                 totalProcessingTime.add( currentTimeMillis()-startTime );
 
                 // Increment both received and done batch count
-                sendDownstream( nextTicket(), batch );
+                sendDownstream( nextTicket(), constructBatch( batch ) );
 
-                batch = new ArrayList<>( batchSize );
+                batch = newBatch();
                 size = 0;
                 assertHealthy();
                 startTime = currentTimeMillis();
@@ -89,8 +91,19 @@ public abstract class ProducerStep<T> extends AbstractStep<Void>
         if ( size > 0 )
         {   // Last batch
             totalProcessingTime.add( currentTimeMillis()-startTime );
-            sendDownstream( nextTicket(), batch );
+            sendDownstream( nextTicket(), constructBatch( Arrays.copyOf( batch, size ) ) );
         }
+    }
+
+    protected Object constructBatch( T[] batch )
+    {
+        return batch;
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private T[] newBatch()
+    {
+        return (T[]) Array.newInstance( itemClass, batchSize );
     }
 
     private long nextTicket()

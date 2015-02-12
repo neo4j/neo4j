@@ -32,7 +32,7 @@ public class RelationshipStoreProcessorStage extends Stage
     public RelationshipStoreProcessorStage( String name, Configuration config,
             RelationshipStore store, StoreProcessor<RelationshipRecord> processor )
     {
-        super( name, config );
+        super( name, config, true );
         add( new RelationshipStoreProcessorStep( control(), name, config, store, processor ) );
     }
 }

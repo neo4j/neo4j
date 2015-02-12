@@ -36,9 +36,9 @@ public class IteratorBatcherStep<T> extends ProducerStep<T> implements StatsProv
     private final InputIterator<T> data;
 
     public IteratorBatcherStep( StageControl control, String name, int batchSize, int movingAverageSize,
-            InputIterator<T> data )
+            InputIterator<T> data, Class<T> itemClass )
     {
-        super( control, name, batchSize, movingAverageSize );
+        super( control, name, batchSize, movingAverageSize, itemClass );
         this.data = data;
     }
 

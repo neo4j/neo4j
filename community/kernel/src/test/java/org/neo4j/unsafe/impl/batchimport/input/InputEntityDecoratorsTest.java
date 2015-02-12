@@ -46,7 +46,7 @@ public class InputEntityDecoratorsTest
                 InputEntityDecorators.defaultRelationshipType( defaultType );
 
         // WHEN
-        InputRelationship relationship = new InputRelationship( 0, InputEntity.NO_PROPERTIES, null,
+        InputRelationship relationship = new InputRelationship( InputEntity.NO_PROPERTIES, null,
                 "start", "end", null, null );
         relationship = decorator.apply( relationship );
 
@@ -64,7 +64,7 @@ public class InputEntityDecoratorsTest
 
         // WHEN
         String customType = "CUSTOM_TYPE";
-        InputRelationship relationship = new InputRelationship( 0, InputEntity.NO_PROPERTIES, null,
+        InputRelationship relationship = new InputRelationship( InputEntity.NO_PROPERTIES, null,
                 "start", "end", customType, null );
         relationship = decorator.apply( relationship );
 
@@ -82,7 +82,7 @@ public class InputEntityDecoratorsTest
 
         // WHEN
         Integer typeId = 5;
-        InputRelationship relationship = new InputRelationship( 0, InputEntity.NO_PROPERTIES, null,
+        InputRelationship relationship = new InputRelationship( InputEntity.NO_PROPERTIES, null,
                 "start", "end", null, typeId );
         relationship = decorator.apply( relationship );
 

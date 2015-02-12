@@ -114,7 +114,7 @@ class NonIndexedConflictResolver implements PrimitiveLongObjectVisitor<List<Dupl
         public boolean visited( long propertyRecordId ) throws IOException
         {
             PropertyRecord record = store.getRecord( propertyRecordId );
-            for ( PropertyBlock block : record.getPropertyBlocks() )
+            for ( PropertyBlock block : record )
             {
                 if ( block.getKeyIndexId() == duplicateCluster.propertyKeyId )
                 {

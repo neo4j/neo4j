@@ -29,11 +29,39 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
  */
 public interface Input
 {
+    /**
+     * Provides all {@link InputNode input nodes} for an import. The returned {@link InputIterable iterable's}
+     * {@link InputIterable#iterator() iterator()} method may be called multiple times.
+     *
+     * @return an {@link InputIterable} which will provide all {@link InputNode input nodes} for the whole import.
+     */
     InputIterable<InputNode> nodes();
 
+    /**
+     * Provides all {@link InputRelationship input relationships} for an import. The returned
+     * {@link InputIterable iterable's} {@link InputIterable#iterator() iterator()} method may be called multiple times.
+     *
+     * @return an {@link InputIterable} which will provide all {@link InputRelationship input relationships}
+     * for the whole import.
+     */
     InputIterable<InputRelationship> relationships();
 
+    /**
+     * @return {@link IdMapper} which will get populated by {@link InputNode#id() input node ids}
+     * and later queried by {@link InputRelationship#startNode()} and {@link InputRelationship#endNode()} ids
+     * to resolve potentially temporary input node ids to actual node ids in the database.
+     */
     IdMapper idMapper();
 
+    /**
+     * @return {@link IdGenerator} which is responsible for generating actual node ids from input node ids.
+     */
     IdGenerator idGenerator();
+
+    /**
+     * @return whether or not {@link InputRelationship input relationships} returned by {@link #relationships()}
+     * specify specific actual relationship ids to be used in the database. Either all
+     * {@link InputRelationship input relationships} must specify specific ids or none.
+     */
+    boolean specificRelationshipIds();
 }

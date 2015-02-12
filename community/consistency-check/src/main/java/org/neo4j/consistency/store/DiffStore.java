@@ -150,7 +150,7 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
 
     private void updateDynamic( PropertyRecord record )
     {
-        for ( PropertyBlock block : record.getPropertyBlocks() )
+        for ( PropertyBlock block : record )
         {
             updateDynamic( block.getValueRecords() );
         }

@@ -179,7 +179,7 @@ public class StoreMigratorFrom21IT
                 continue;
             }
 
-            for ( PropertyBlock propertyBlock : propertyRecord.getPropertyBlocks() )
+            for ( PropertyBlock propertyBlock : propertyRecord )
             {
                 if ( !propertiesInUse.add( propertyBlock.getKeyIndexId() ) )
                 {

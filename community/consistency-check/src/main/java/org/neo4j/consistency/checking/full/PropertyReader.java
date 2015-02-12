@@ -52,7 +52,10 @@ public class PropertyReader implements PropertyLookup
         List<PropertyBlock> propertyBlocks = new ArrayList<>();
         for ( PropertyRecord record : records )
         {
-            propertyBlocks.addAll( record.getPropertyBlocks() );
+            for ( PropertyBlock block : record )
+            {
+                propertyBlocks.add( block );
+            }
         }
         return propertyBlocks;
     }

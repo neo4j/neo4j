@@ -19,9 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
@@ -41,7 +39,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 /**
  * Creates {@link NodeRecord nodes} with labels from input.
  */
-public final class NodeEncoderStep extends ExecutorServiceStep<List<InputNode>>
+public final class NodeEncoderStep extends ExecutorServiceStep<Batch<InputNode,NodeRecord>>
 {
     private final IdMapper idMapper;
     private final IdGenerator idGenerator;
@@ -64,11 +62,13 @@ public final class NodeEncoderStep extends ExecutorServiceStep<List<InputNode>>
     }
 
     @Override
-    protected Object process( long ticket, List<InputNode> batch )
+    protected Object process( long ticket, Batch<InputNode,NodeRecord> batch )
     {
-        List<BatchEntity<NodeRecord,InputNode>> entities = new ArrayList<>( batch.size() );
-        for ( InputNode batchNode : batch )
+        InputNode[] input = batch.input;
+        batch.records = new NodeRecord[input.length];
+        for ( int i = 0; i < input.length; i++ )
         {
+            InputNode batchNode = input[i];
             long nodeId = idGenerator.generate( batchNode.id() );
             if ( batchNode.id() != null )
             {
@@ -76,10 +76,9 @@ public final class NodeEncoderStep extends ExecutorServiceStep<List<InputNode>>
                 // later on, that's all. Anonymous nodes have null id.
                 idMapper.put( batchNode.id(), nodeId, batchNode.group() );
             }
-            NodeRecord nodeRecord = new NodeRecord( nodeId, false,
+            NodeRecord nodeRecord = batch.records[i] = new NodeRecord( nodeId, false,
                     NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
             nodeRecord.setInUse( true );
-            entities.add( new BatchEntity<>( nodeRecord, batchNode ) );
 
             // Labels
             if ( batchNode.hasLabelField() )
@@ -92,7 +91,7 @@ public final class NodeEncoderStep extends ExecutorServiceStep<List<InputNode>>
                 InlineNodeLabels.putSorted( nodeRecord, labels, null, nodeStore.getDynamicLabelStore() );
             }
         }
-        return entities;
+        return batch;
     }
 
     @Override

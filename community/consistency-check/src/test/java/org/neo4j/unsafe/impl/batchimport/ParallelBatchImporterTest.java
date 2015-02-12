@@ -162,7 +162,7 @@ public class ParallelBatchImporterTest
         {
             // WHEN
             inserter.doImport( Inputs.input( nodes( NODE_COUNT, inputIdGenerator ),
-                    relationships( relationshipCount, inputIdGenerator ), idMapper, idGenerator ) );
+                    relationships( relationshipCount, inputIdGenerator ), idMapper, idGenerator, false ) );
             // THEN
             GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
             try ( Transaction tx = db.beginTx() )
@@ -188,7 +188,7 @@ public class ParallelBatchImporterTest
                     out.println( inputIdGenerator );
                     for ( InputRelationship relationship : relationships( relationshipCount, inputIdGenerator ) )
                     {
-                        out.println( relationship.id() + " " +
+                        out.println( (relationship.hasSpecificId() ? relationship.specificId() + " " : "") +
                                 relationship.startNode() + "-[:" + relationship.type() + "]->" + relationship.endNode() );
                     }
                 }
@@ -257,18 +257,6 @@ public class ParallelBatchImporterTest
         Object randomExisting()
         {
             return strings.get( random.nextInt( strings.size() ) );
-        }
-
-        @Override
-        public String toString()
-        {
-            StringBuilder builder = new StringBuilder( "Nodes" );
-            long i = 0;
-            for ( String string : strings )
-            {
-                builder.append( "\n" ).append( i++ ).append( " " ).append( string );
-            }
-            return builder.toString();
         }
     }
 
@@ -379,7 +367,8 @@ public class ParallelBatchImporterTest
                             {
                                 Object startNode = idGenerator.randomExisting();
                                 Object endNode = idGenerator.randomExisting();
-                                return new InputRelationship( cursor, properties, null,
+                                return new InputRelationship(
+                                        properties, null,
                                         startNode, endNode,
                                         idGenerator.randomType(), null );
                             }

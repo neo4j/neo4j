@@ -48,7 +48,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.DynamicProcessorAssigner;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisor;
-import org.neo4j.unsafe.impl.batchimport.staging.IteratorBatcherStep;
+import org.neo4j.unsafe.impl.batchimport.staging.InputIteratorBatcherStep;
 import org.neo4j.unsafe.impl.batchimport.staging.MultiExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.staging.StageExecution;
@@ -158,8 +158,8 @@ public class ParallelBatchImporter implements BatchImporter
             }
 
             // Stage 3 -- relationships, properties
-            final RelationshipStage relationshipStage =
-                    new RelationshipStage( relationships, idMapper, neoStore, nodeRelationshipLink );
+            final RelationshipStage relationshipStage = new RelationshipStage( relationships, idMapper,
+                    neoStore, nodeRelationshipLink, input.specificRelationshipIds() );
             executeStages( relationshipStage );
 
             // Switch to reverse updating mode and release references that are no longer used so they can be collected
@@ -280,15 +280,15 @@ public class ParallelBatchImporter implements BatchImporter
         public NodeStage( InputIterable<InputNode> nodes, IdMapper idMapper, IdGenerator idGenerator,
                           BatchingNeoStore neoStore )
         {
-            super( "Nodes", config );
-            add( new IteratorBatcherStep<>( control(), ">", config.batchSize(), config.movingAverageSize(),
-                    nodes.iterator() ) );
+            super( "Nodes", config, idGenerator.dependsOnInput() );
+            add( new InputIteratorBatcherStep<>( control(), ">", config.batchSize(), config.movingAverageSize(),
+                    nodes.iterator(), InputNode.class ) );
 
             NodeStore nodeStore = neoStore.getNodeStore();
             PropertyStore propertyStore = neoStore.getPropertyStore();
+            add( new PropertyEncoderStep<>( control(), config, 1, neoStore.getPropertyKeyRepository(), propertyStore ) );
             add( new NodeEncoderStep( control(), config, idMapper, idGenerator,
                     neoStore.getLabelRepository(), nodeStore, idsOf( nodes ) ) );
-            add( new PropertyEncoderStep<>( control(), config, 1, neoStore.getPropertyKeyRepository(), propertyStore ) );
             add( new EntityStoreUpdaterStep<>( control(), config, nodeStore, propertyStore,
                     writeMonitor, writerFactory ) );
         }
@@ -299,9 +299,9 @@ public class ParallelBatchImporter implements BatchImporter
         public CalculateDenseNodesStage( InputIterable<InputRelationship> relationships,
                 NodeRelationshipLink nodeRelationshipLink, IdMapper idMapper )
         {
-            super( "Calculate dense nodes", config );
-            add( new IteratorBatcherStep<>( control(), ">", config.batchSize(), config.movingAverageSize(),
-                    relationships.iterator() ) );
+            super( "Calculate dense nodes", config, false );
+            add( new InputIteratorBatcherStep<>( control(), ">", config.batchSize(), config.movingAverageSize(),
+                    relationships.iterator(), InputRelationship.class ) );
 
             add( new RelationshipPreparationStep( control(), config, idMapper ) );
             add( new CalculateDenseNodesStep( control(), config, nodeRelationshipLink ) );
@@ -311,18 +311,18 @@ public class ParallelBatchImporter implements BatchImporter
     public class RelationshipStage extends Stage
     {
         public RelationshipStage( InputIterable<InputRelationship> relationships, IdMapper idMapper,
-                BatchingNeoStore neoStore, NodeRelationshipLink nodeRelationshipLink )
+                BatchingNeoStore neoStore, NodeRelationshipLink nodeRelationshipLink, boolean specificIds )
         {
-            super( "Relationships", config );
-            add( new IteratorBatcherStep<>( control(), ">", config.batchSize(), config.movingAverageSize(),
-                    relationships.iterator() ) );
+            super( "Relationships", config, false );
+            add( new InputIteratorBatcherStep<>( control(), ">", config.batchSize(), config.movingAverageSize(),
+                    relationships.iterator(), InputRelationship.class ) );
 
             RelationshipStore relationshipStore = neoStore.getRelationshipStore();
             PropertyStore propertyStore = neoStore.getPropertyStore();
             add( new RelationshipPreparationStep( control(), config, idMapper ) );
-            add( new RelationshipEncoderStep( control(), config,
-                    neoStore.getRelationshipTypeRepository(), relationshipStore, nodeRelationshipLink ) );
             add( new PropertyEncoderStep<>( control(), config, 1, neoStore.getPropertyKeyRepository(), propertyStore ) );
+            add( new RelationshipEncoderStep( control(), config,
+                    neoStore.getRelationshipTypeRepository(), relationshipStore, nodeRelationshipLink, specificIds ) );
             add( new EntityStoreUpdaterStep<>( control(), config,
                     relationshipStore, propertyStore, writeMonitor, writerFactory ) );
         }

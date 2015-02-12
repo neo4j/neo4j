@@ -168,17 +168,16 @@ public abstract class BatchingTokenRepository<T extends TokenRecord>
             return new PropertyKeyTokenRecord( key );
         }
 
-        public PropertyBlock[] propertyKeysAndValues( final Object[] properties,
-                final PropertyCreator creator )
+        public void propertyKeysAndValues( PropertyBlock[] target, int offset, Object[] properties,
+                PropertyCreator creator )
         {
-            PropertyBlock[] blocks = new PropertyBlock[properties.length >> 1];
-            for ( int i = 0, cursor = 0; i < blocks.length; i++ )
+            int count = properties.length >> 1;
+            for ( int i = 0, cursor = 0; i < count; i++ )
             {
                 int key = getOrCreateId( (String)properties[cursor++] );
                 Object value = properties[cursor++];
-                blocks[i] = creator.encodeValue( blocks[i] = new PropertyBlock(), key, value );
+                target[offset+i] = creator.encodeValue( new PropertyBlock(), key, value );
             }
-            return blocks;
         }
     }
 

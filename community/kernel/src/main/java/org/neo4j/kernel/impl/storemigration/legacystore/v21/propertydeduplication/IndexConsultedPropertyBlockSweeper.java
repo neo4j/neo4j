@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplicati
 
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -31,12 +30,12 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 
 class IndexConsultedPropertyBlockSweeper implements PrimitiveLongVisitor<IOException>
 {
-    private int propertyKeyId;
+    private final int propertyKeyId;
     private final IndexLookup.Index index;
     private final NodeRecord nodeRecord;
     boolean foundExact;
-    private PropertyStore propertyStore;
-    private DuplicatePropertyRemover propertyRemover;
+    private final PropertyStore propertyStore;
+    private final DuplicatePropertyRemover propertyRemover;
 
     public IndexConsultedPropertyBlockSweeper( int propertyKeyId, IndexLookup.Index index, NodeRecord nodeRecord,
                                                PropertyStore propertyStore, DuplicatePropertyRemover propertyRemover )
@@ -55,8 +54,7 @@ class IndexConsultedPropertyBlockSweeper implements PrimitiveLongVisitor<IOExcep
         PropertyRecord record = propertyStore.getRecord( propRecordId );
         boolean changed = false;
 
-        List<PropertyBlock> blocks = record.getPropertyBlocks();
-        Iterator<PropertyBlock> it = blocks.iterator();
+        Iterator<PropertyBlock> it = record.iterator();
         while ( it.hasNext() )
         {
             PropertyBlock block = it.next();
@@ -78,7 +76,7 @@ class IndexConsultedPropertyBlockSweeper implements PrimitiveLongVisitor<IOExcep
         }
         if ( changed )
         {
-            if ( blocks.isEmpty() )
+            if ( record.numberOfProperties() == 0 )
             {
                 propertyRemover.fixUpPropertyLinksAroundUnusedRecord( nodeRecord, record );
             }

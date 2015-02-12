@@ -42,7 +42,7 @@ import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.relation
 public class Inputs
 {
     public static Input input( final Iterable<InputNode> nodes, final Iterable<InputRelationship> relationships,
-            final IdMapper idMapper, final IdGenerator idGenerator )
+            final IdMapper idMapper, final IdGenerator idGenerator, final boolean specificRelationshipIds )
     {
         final InputIterable<InputNode> resourceNodes = asInputIterable( nodes );
         final InputIterable<InputRelationship> resourceRelationships = asInputIterable( relationships );
@@ -70,6 +70,12 @@ public class Inputs
             public IdGenerator idGenerator()
             {
                 return idGenerator;
+            }
+
+            @Override
+            public boolean specificRelationshipIds()
+            {
+                return specificRelationshipIds;
             }
         };
     }

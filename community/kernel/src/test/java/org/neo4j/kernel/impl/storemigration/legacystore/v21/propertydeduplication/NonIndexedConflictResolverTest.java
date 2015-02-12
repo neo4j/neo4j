@@ -52,6 +52,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication.PropertyDeduplicatorTestUtil.findTokenFor;
 import static org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication.PropertyDeduplicatorTestUtil.replacePropertyKey;
 
@@ -233,7 +234,7 @@ public class NonIndexedConflictResolverTest
         while ( propertyId != Record.NO_NEXT_PROPERTY.intValue() )
         {
             PropertyRecord record = propertyStore.getRecord( propertyId );
-            for ( PropertyBlock propertyBlock : record.getPropertyBlocks() )
+            for ( PropertyBlock propertyBlock : record )
             {
                 int propertyKeyId = propertyBlock.getKeyIndexId();
                 assertTrue( result.add( propertyKeyId ) );

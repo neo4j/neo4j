@@ -87,7 +87,7 @@ public class PropertyLoader
         {
             for ( PropertyRecord propRecord : chain )
             {
-                for ( PropertyBlock propBlock : propRecord.getPropertyBlocks() )
+                for ( PropertyBlock propBlock : propRecord )
                 {
                     receiver.receive( propBlock.newPropertyData( propertyStore ), propRecord.getId() );
                 }
