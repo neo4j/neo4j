@@ -19,14 +19,10 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Version;
@@ -34,65 +30,66 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
+
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.index.impl.lucene.LuceneDataSource.KEYWORD_ANALYZER;
+import static org.neo4j.kernel.api.impl.index.LuceneIndexWriter.isOnline;
 
-public class WriterLogicTest
+public class LuceneIndexWriterTest
 {
-
     @Test
     public void forceShouldSetOnlineStatus() throws Exception
     {
         // GIVEN
-        IndexWriter writer = newWriter();
+        LuceneIndexWriter writer = newWriter();
         writer.addDocument( newDocument() );
-        logic.commitAsOnline( writer );
-        
+        writer.commitAsOnline();
+
         // WHEN
-        writer.close( true );
+        writer.close();
 
         // THEN
-        assertTrue( "Should have had online status set", logic.isOnline( directory ) );
+        assertTrue( "Should have had online status set", isOnline( directory ) );
     }
-    
+
     @Test
     public void forceShouldKeepOnlineStatus() throws Exception
     {
         // GIVEN
-        IndexWriter writer = newWriter();
-        logic.commitAsOnline( writer );
-        
+        LuceneIndexWriter writer = newWriter();
+        writer.commitAsOnline();
+
         // WHEN
         writer.addDocument( newDocument() );
-        logic.commitAsOnline( writer );
-        writer.close( true );
+        writer.commitAsOnline();
+        writer.close();
 
         // THEN
-        assertTrue( "Should have had online status set", logic.isOnline( directory ) );
+        assertTrue( "Should have had online status set", isOnline( directory ) );
     }
-    
+
     @Test
     public void otherWriterSessionShouldKeepOnlineStatusEvenIfNotForcingBeforeClosing() throws Exception
     {
         // GIVEN
-        IndexWriter writer = newWriter();
-        logic.commitAsOnline( writer );
-        writer.close( true );
-        
+        LuceneIndexWriter writer = newWriter();
+        writer.commitAsOnline();
+        writer.close();
+
         // WHEN
         writer = newWriter();
         writer.addDocument( newDocument() );
-        writer.close( true );
+        writer.close();
 
         // THEN
-        assertTrue( "Should have had online status set", logic.isOnline( directory ) );
+        assertTrue( "Should have had online status set", isOnline( directory ) );
     }
-    
-    private final IndexWriterStatus logic = new IndexWriterStatus();
+
     private Directory directory;
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
-    
+
     @Before
     public void before() throws Exception
     {
@@ -105,13 +102,13 @@ public class WriterLogicTest
     {
         dirFactory.close();
     }
-    
-    private IndexWriter newWriter() throws IOException
+
+    private LuceneIndexWriter newWriter() throws IOException
     {
-        return new IndexWriter( directory, new IndexWriterConfig( Version.LUCENE_35, KEYWORD_ANALYZER ) );
+        return new LuceneIndexWriter( directory, new IndexWriterConfig( Version.LUCENE_36, KEYWORD_ANALYZER ) );
     }
-    
-    private Document newDocument()
+
+    private static Document newDocument()
     {
         Document doc = new Document();
         doc.add( new Field( "test", "test", Store.NO, Index.NOT_ANALYZED ) );

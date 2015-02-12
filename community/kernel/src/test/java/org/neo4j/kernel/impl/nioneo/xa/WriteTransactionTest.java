@@ -19,6 +19,14 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.mockito.InOrder;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,19 +38,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.PreparedIndexUpdates;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
@@ -50,7 +53,6 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.kernel.impl.api.index.IndexUpdates;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.TransactionState;
@@ -62,13 +64,15 @@ import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
-import org.neo4j.kernel.impl.nioneo.store.Record;
+import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
+import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField;
 import org.neo4j.kernel.impl.nioneo.xa.Command.PropertyCommand;
 import org.neo4j.kernel.impl.nioneo.xa.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
@@ -80,21 +84,25 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
+import static java.util.Collections.singleton;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyCollection;
+import static org.mockito.Matchers.argThat;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-
+import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
@@ -105,9 +113,12 @@ import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
 import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.nioneo.store.IndexRule.indexRule;
+import static org.neo4j.kernel.impl.nioneo.store.Record.NO_NEXT_PROPERTY;
+import static org.neo4j.kernel.impl.nioneo.store.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule.uniquenessConstraintRule;
 import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
+import static org.neo4j.test.IterableMatcher.matchesIterable;
 
 public class WriteTransactionTest
 {
@@ -685,7 +696,7 @@ public class WriteTransactionTest
 
             private void verifyPropertyRecord( PropertyRecord record )
             {
-                if ( record.getPrevProp() != Record.NO_NEXT_PROPERTY.intValue() )
+                if ( record.getPrevProp() != NO_NEXT_PROPERTY.intValue() )
                 {
                     for ( PropertyBlock block : record.getPropertyBlocks() )
                     {
@@ -701,6 +712,7 @@ public class WriteTransactionTest
     }
 
     @Test
+    @SuppressWarnings( "unchecked" )
     public void shouldCreateEqualNodePropertyUpdatesOnRecoveryOfCreatedNode() throws Exception
     {
         /* There was an issue where recovering a tx where a node with a label and a property
@@ -719,28 +731,29 @@ public class WriteTransactionTest
         prepareAndCommit( tx );
 
         // -- and a tx creating a node with that label and property key
-        IndexingService index = mock( IndexingService.class );
-        IteratorCollector<NodePropertyUpdate> indexUpdates = new IteratorCollector<>( 0 );
-        doAnswer( indexUpdates ).when( index ).updateIndexes( any( IndexUpdates.class ) );
+        IndexingService index = mock( IndexingService.class, RETURNS_MOCKS );
+        PreparedIndexUpdates preparedIndexUpdates = mock( PreparedIndexUpdates.class );
+        IteratorCollector<NodePropertyUpdate> indexUpdates = new IteratorCollector<>( 0, preparedIndexUpdates );
+        doAnswer( indexUpdates ).when( index ).prepare( any( Iterable.class ) );
         CommandCapturingVisitor commandCapturingVisitor = new CommandCapturingVisitor();
         tx = newWriteTransaction( index, commandCapturingVisitor );
         tx.nodeCreate( nodeId );
         tx.addLabelToNode( labelId, nodeId );
         tx.nodeAddProperty( nodeId, propertyKeyId, "Neo" );
         prepareAndCommit( tx );
-        verify( index, times( 1 ) ).updateIndexes( any( IndexUpdates.class ) );
+        verify( index, times( 1 ) ).prepare( any( Iterable.class ) );
         indexUpdates.assertContent( expectedUpdate );
 
         reset( index );
-        indexUpdates = new IteratorCollector<>( 0 );
-        doAnswer( indexUpdates ).when( index ).updateIndexes( any( IndexUpdates.class ) );
+        indexUpdates = new IteratorCollector<>( 0, preparedIndexUpdates );
+        doAnswer( indexUpdates ).when( index ).prepare( any( Iterable.class ) );
 
         // WHEN
         // -- later recovering that tx, there should be only one update
         tx = newWriteTransaction( index );
         commandCapturingVisitor.injectInto( tx );
         prepareAndCommitRecovered( tx );
-        verify( index, times( 1 ) ).updateIndexes( any( IndexUpdates.class ) );
+        verify( index, times( 1 ) ).prepare( any( Iterable.class ) );
         indexUpdates.assertContent( expectedUpdate );
     }
 
@@ -802,6 +815,101 @@ public class WriteTransactionTest
         verify( locks, times( 1 ) ).acquireNodeLock( nodes[5], LockService.LockType.WRITE_LOCK );
         // create and add-label goes into the NodeCommand, add property is a PropertyCommand == 2 updates
         verify( locks, times( 2 ) ).acquireNodeLock( nodes[6], LockService.LockType.WRITE_LOCK );
+    }
+
+    @Test
+    @SuppressWarnings( "unchecked" )
+    public void shouldUpdateIndexesDuringCommit() throws Exception
+    {
+        // Given
+        long node = neoStore.getNodeStore().nextId();
+        int label = 2;
+        int propertyKey = 3;
+        String value = "test";
+
+        PreparedIndexUpdates preparedIndexUpdates = mock( PreparedIndexUpdates.class );
+        when( mockIndexing.prepare( anyCollection() ) ).thenReturn( preparedIndexUpdates );
+        when( mockIndexing.canAcceptUpdates() ).thenReturn( true );
+        NeoStoreTransaction tx = newWriteTransaction( mockIndexing );
+
+        tx.nodeCreate( node );
+        tx.nodeAddProperty( node, propertyKey, value );
+        tx.addLabelToNode( label, node );
+
+        // When
+        prepareAndCommit( tx );
+
+        // Then
+        Set<NodePropertyUpdate> expectedUpdates = singleton( add( node, propertyKey, value, new long[]{label} ) );
+        InOrder inOrder = inOrder( mockIndexing );
+        inOrder.verify( mockIndexing ).prepare( argThat( matchesIterable( expectedUpdates ) ) );
+        inOrder.verify( mockIndexing ).canAcceptUpdates();
+        inOrder.verify( mockIndexing ).updateIndexes( preparedIndexUpdates );
+        verifyNoMoreInteractions( mockIndexing, preparedIndexUpdates );
+    }
+
+    @Test
+    @SuppressWarnings( "unchecked" )
+    public void shouldRollbackPreparedIndexChangesDuringRollback() throws Exception
+    {
+        // Given
+        long node = neoStore.getNodeStore().nextId();
+        int label = 2;
+        int propertyKey = 3;
+        String value = "test";
+
+        PreparedIndexUpdates preparedIndexUpdates = mock( PreparedIndexUpdates.class );
+        when( mockIndexing.prepare( anyCollection() ) ).thenReturn( preparedIndexUpdates );
+        NeoStoreTransaction tx = newWriteTransaction( mockIndexing );
+
+        tx.nodeCreate( node );
+        tx.nodeAddProperty( node, propertyKey, value );
+        tx.addLabelToNode( label, node );
+
+        // When
+        prepareAndRollback( tx );
+
+        // Then
+        Set<NodePropertyUpdate> expectedUpdates = singleton( add( node, propertyKey, value, new long[]{label} ) );
+        verify( mockIndexing ).prepare( argThat( matchesIterable( expectedUpdates ) ) );
+        verifyNoMoreInteractions( mockIndexing );
+        verify( preparedIndexUpdates ).rollback();
+        verifyNoMoreInteractions( preparedIndexUpdates );
+    }
+
+    @Test
+    @SuppressWarnings( "unchecked" )
+    public void shouldUpdateIndexesDuringRecoveredCommit() throws Exception
+    {
+        // Given
+        long nodeId = neoStore.getNodeStore().nextId();
+        int label = 2;
+        int propertyKey = 3;
+        String value = "42";
+
+        PreparedIndexUpdates preparedIndexUpdates = mock( PreparedIndexUpdates.class );
+        when( mockIndexing.prepare( anyCollection() ) ).thenReturn( preparedIndexUpdates );
+        when( mockIndexing.canAcceptUpdates() ).thenReturn( true );
+        NeoStoreTransaction tx = newWriteTransaction( mockIndexing );
+
+        tx.injectCommand( nodeWithLabelCommand( nodeId, label ) );
+        tx.injectCommand( propertyCommand( nodeId, propertyKey, value ) );
+
+        // When
+        tx.setRecovered();
+        try ( LockGroup lockGroup = new LockGroup() )
+        {
+            tx.commit( lockGroup );
+        }
+
+        // Then
+        Set<NodePropertyUpdate> expectedUpdates = singleton( add( nodeId, propertyKey, value, new long[]{label} ) );
+        InOrder inOrder = inOrder( mockIndexing );
+        inOrder.verify( mockIndexing ).canAcceptUpdates();
+        inOrder.verify( mockIndexing ).prepare( argThat( matchesIterable( expectedUpdates ) ) );
+        inOrder.verify( mockIndexing ).canAcceptUpdates();
+        inOrder.verify( mockIndexing ).updateIndexes( preparedIndexUpdates );
+        verifyNoMoreInteractions( mockIndexing, preparedIndexUpdates );
     }
 
     private String string( int length )
@@ -903,7 +1011,7 @@ public class WriteTransactionTest
         }
     }
 
-    private final IndexingService mockIndexing = mock( IndexingService.class );
+    private final IndexingService mockIndexing = mock( IndexingService.class, RETURNS_MOCKS );
     private final KernelTransactionImplementation kernelTransaction = mock( KernelTransactionImplementation.class );
 
     private NeoStoreTransaction newWriteTransaction( IndexingService indexing )
@@ -935,13 +1043,14 @@ public class WriteTransactionTest
                     null,
                     new KernelSchemaStateStore(),
                     new SingleLoggingService( DEV_NULL ), IndexingService.NO_MONITOR
-                );
+            );
         }
 
         @Override
-        public void updateIndexes( IndexUpdates updates )
+        public PreparedIndexUpdates prepare( Iterable<NodePropertyUpdate> updates )
         {
-            this.updates.addAll( asCollection( updates ) );
+            Iterables.addAll( this.updates, updates );
+            return PreparedIndexUpdates.NO_UPDATES; // todo: mock?
         }
     }
 
@@ -985,6 +1094,42 @@ public class WriteTransactionTest
         {
             tx.doCommit( lockGroup );
         }
+    }
+
+    private void prepareAndRollback( NeoStoreTransaction tx ) throws Exception
+    {
+        tx.doPrepare();
+        tx.doRollback();
+    }
+
+    private XaCommand nodeWithLabelCommand( long nodeId, int label )
+    {
+        NodeStore nodeStore = neoStore.getNodeStore();
+
+        NodeRecord before = new NodeRecord( nodeId, NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
+
+        NodeRecord after = new NodeRecord( nodeId, NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
+        NodeLabelsField.parseLabelsField( after ).add( label, nodeStore );
+        after.setInUse( true );
+
+        return new Command.NodeCommand( nodeStore, before, after );
+    }
+
+    private XaCommand propertyCommand( long nodeId, int propertyKey, String value )
+    {
+        PropertyStore propertyStore = neoStore.getPropertyStore();
+        long propertyRecordId = propertyStore.nextId();
+
+        PropertyRecord before = new PropertyRecord( propertyRecordId );
+        before.setNodeId( nodeId );
+
+        PropertyRecord after = new PropertyRecord( propertyRecordId );
+        after.setNodeId( nodeId );
+        PropertyBlock propertyBlock = new PropertyBlock();
+        propertyStore.encodeValue( propertyBlock, propertyKey, value );
+        after.setPropertyBlock( propertyBlock );
+
+        return new PropertyCommand( propertyStore, before, after );
     }
 
     public static final LabelScanStore NO_LABEL_SCAN_STORE = new LabelScanStore()
@@ -1047,11 +1192,13 @@ public class WriteTransactionTest
     private class IteratorCollector<T> implements Answer<Object>
     {
         private final int arg;
+        private final Object answer;
         private final List<T> elements = new ArrayList<>();
 
-        public IteratorCollector( int arg )
+        public IteratorCollector( int arg, Object answer )
         {
             this.arg = arg;
+            this.answer = answer;
         }
 
         @SafeVarargs
@@ -1073,7 +1220,7 @@ public class WriteTransactionTest
             {
                 collect( (Iterator) iterator );
             }
-            return null;
+            return answer;
         }
 
         private void collect( Iterator<T> iterator )

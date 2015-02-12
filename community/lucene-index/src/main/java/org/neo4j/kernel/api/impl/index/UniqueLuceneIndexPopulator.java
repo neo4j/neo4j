@@ -26,10 +26,10 @@ import java.util.Map;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TopDocs;
 
+import org.neo4j.kernel.api.index.PreparedIndexUpdates;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -51,10 +51,10 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
 
     UniqueLuceneIndexPopulator( int batchSize, LuceneDocumentStructure documentStructure,
                                 LuceneIndexWriterFactory indexWriterFactory,
-                                IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile,
+                                DirectoryFactory dirFactory, File dirFile,
                                 FailureStorage failureStorage, long indexId )
     {
-        super( documentStructure, indexWriterFactory, writerStatus, dirFactory, dirFile, failureStorage, indexId );
+        super( documentStructure, indexWriterFactory, dirFactory, dirFile, failureStorage, indexId );
         this.batchSize = batchSize;
     }
 
@@ -67,7 +67,7 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
     public void create() throws IOException
     {
         super.create();
-        searcherManager = new SearcherManager( writer, true, new SearcherFactory() );
+        searcherManager = writer.createSearcherManager();
     }
 
     @Override
@@ -133,14 +133,15 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
         return new IndexUpdater()
         {
             @Override
-            public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+            public PreparedIndexUpdates prepare( Iterable<NodePropertyUpdate> updates )
+                    throws IOException, IndexEntryConflictException
             {
-                add( update.getNodeId(), update.getValueAfter() );
-            }
+                for ( NodePropertyUpdate update : updates )
+                {
+                    add( update.getNodeId(), update.getValueAfter() );
+                }
 
-            @Override
-            public void close() throws IOException, IndexEntryConflictException
-            {
+                return PreparedIndexUpdates.NO_UPDATES;
             }
 
             @Override

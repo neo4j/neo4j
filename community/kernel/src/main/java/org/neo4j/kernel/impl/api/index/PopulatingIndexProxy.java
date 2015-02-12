@@ -29,16 +29,13 @@ import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.PreparedIndexUpdates;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.logging.Logging;
 
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 import static org.neo4j.kernel.impl.util.JobScheduler.Group.indexPopulation;
@@ -52,20 +49,14 @@ public class PopulatingIndexProxy implements IndexProxy
     private final IndexPopulationJob job;
 
     public PopulatingIndexProxy( JobScheduler scheduler,
-                                 final IndexDescriptor descriptor,
-                                 final SchemaIndexProvider.Descriptor providerDescriptor,
-                                 final FailedIndexProxyFactory failureDelegateFactory,
-                                 final IndexPopulator writer,
-                                 FlippableIndexProxy flipper,
-                                 IndexStoreView storeView, final String indexUserDescription,
-                                 UpdateableSchemaState updateableSchemaState, Logging logging )
+                                 IndexDescriptor descriptor,
+                                 SchemaIndexProvider.Descriptor providerDescriptor,
+                                 IndexPopulationJob indexPopulationJob )
     {
-        this.scheduler  = scheduler;
+        this.scheduler = scheduler;
         this.descriptor = descriptor;
         this.providerDescriptor = providerDescriptor;
-        this.job  = new IndexPopulationJob( descriptor, providerDescriptor,
-                indexUserDescription, failureDelegateFactory, writer, flipper, storeView,
-                updateableSchemaState, logging );
+        this.job = indexPopulationJob;
     }
 
     @Override
@@ -80,25 +71,9 @@ public class PopulatingIndexProxy implements IndexProxy
         return new IndexUpdater()
         {
             @Override
-            public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+            public PreparedIndexUpdates prepare( Iterable<NodePropertyUpdate> updates )
             {
-                switch( mode )
-                {
-                    case ONLINE:
-                        job.update( update );
-                        break;
-
-                    case RECOVERY:
-                        throw new UnsupportedOperationException( "Recovered updates shouldn't reach this place" );
-
-                    default:
-                        throw new ThisShouldNotHappenError( "Stefan", "Unsupported IndexUpdateMode" );
-                }
-            }
-
-            @Override
-            public void close() throws IOException, IndexEntryConflictException
-            {
+                return prepareUpdates( mode, updates );
             }
 
             @Override
@@ -186,5 +161,36 @@ public class PopulatingIndexProxy implements IndexProxy
     public String toString()
     {
         return getClass().getSimpleName() + "[job:" + job + "]";
+    }
+
+    private PreparedIndexUpdates prepareUpdates( final IndexUpdateMode mode, final Iterable<NodePropertyUpdate> updates )
+    {
+        return new PreparedIndexUpdates()
+        {
+            @Override
+            public void commit() throws IOException
+            {
+                if ( mode == IndexUpdateMode.ONLINE )
+                {
+                    for ( NodePropertyUpdate update : updates )
+                    {
+                        job.update( update );
+                    }
+                }
+                else if ( mode == IndexUpdateMode.RECOVERY )
+                {
+                    throw new UnsupportedOperationException( "Recovered updates shouldn't reach this place" );
+                }
+                else
+                {
+                    throw new ThisShouldNotHappenError( "Stefan", "Unsupported IndexUpdateMode: " + mode );
+                }
+            }
+
+            @Override
+            public void rollback()
+            {
+            }
+        };
     }
 }

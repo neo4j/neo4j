@@ -25,6 +25,7 @@ import java.io.IOException;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.PreparedIndexUpdates;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -213,28 +214,9 @@ class InMemoryIndex
         }
 
         @Override
-        public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+        public PreparedIndexUpdates prepare( Iterable<NodePropertyUpdate> updates )
         {
-            switch ( update.getUpdateMode() )
-            {
-            case ADDED:
-                InMemoryIndex.this.add( update.getNodeId(), update.getValueAfter(), applyIdempotently );
-                break;
-            case CHANGED:
-                InMemoryIndex.this.remove( update.getNodeId(), update.getValueBefore() );
-                add( update.getNodeId(), update.getValueAfter(), applyIdempotently );
-                break;
-            case REMOVED:
-                InMemoryIndex.this.remove( update.getNodeId(), update.getValueBefore() );
-                break;
-            default:
-                throw new UnsupportedOperationException();
-            }
-        }
-
-        @Override
-        public void close() throws IOException, IndexEntryConflictException
-        {
+            return new InMemoryPreparedIndexUpdates( updates, applyIdempotently );
         }
 
         @Override
@@ -244,6 +226,46 @@ class InMemoryIndex
             {
                 indexData.remove( nodeId );
             }
+        }
+    }
+
+    private class InMemoryPreparedIndexUpdates implements PreparedIndexUpdates
+    {
+        final Iterable<NodePropertyUpdate> updates;
+        final boolean applyIdempotently;
+
+        InMemoryPreparedIndexUpdates( Iterable<NodePropertyUpdate> updates, boolean applyIdempotently )
+        {
+            this.updates = updates;
+            this.applyIdempotently = applyIdempotently;
+        }
+
+        @Override
+        public void commit() throws IOException, IndexEntryConflictException
+        {
+            for ( NodePropertyUpdate update : updates )
+            {
+                switch ( update.getUpdateMode() )
+                {
+                case ADDED:
+                    InMemoryIndex.this.add( update.getNodeId(), update.getValueAfter(), applyIdempotently );
+                    break;
+                case CHANGED:
+                    InMemoryIndex.this.remove( update.getNodeId(), update.getValueBefore() );
+                    add( update.getNodeId(), update.getValueAfter(), applyIdempotently );
+                    break;
+                case REMOVED:
+                    InMemoryIndex.this.remove( update.getNodeId(), update.getValueBefore() );
+                    break;
+                default:
+                    throw new UnsupportedOperationException();
+                }
+            }
+        }
+
+        @Override
+        public void rollback()
+        {
         }
     }
 

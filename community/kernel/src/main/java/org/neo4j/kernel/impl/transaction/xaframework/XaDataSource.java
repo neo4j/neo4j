@@ -26,6 +26,7 @@ import java.nio.channels.ReadableByteChannel;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**

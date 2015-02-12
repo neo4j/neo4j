@@ -28,9 +28,11 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 import javax.transaction.xa.XAException;
@@ -42,6 +44,8 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.PreparedIndexUpdates;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdateNodeIdComparator;
@@ -266,6 +270,7 @@ public class NeoStoreTransaction extends XaTransaction
     private ArrayList<Command.LabelTokenCommand> labelTokenCommands;
     private ArrayList<Command.PropertyKeyTokenCommand> propertyKeyTokenCommands;
     private Command.NeoStoreCommand neoStoreCommand;
+    private PreparedIndexUpdates preparedIndexUpdates = PreparedIndexUpdates.NO_UPDATES;
 
     private boolean committed = false;
     private boolean prepared = false;
@@ -459,6 +464,8 @@ public class NeoStoreTransaction extends XaTransaction
                                                  + commands.size() + " instead";
         intercept( commands );
 
+        prepareIndexUpdates();
+
         for ( Command command : commands )
         {
             addCommand( command );
@@ -538,6 +545,8 @@ public class NeoStoreTransaction extends XaTransaction
         }
         try
         {
+            preparedIndexUpdates.rollback();
+
             boolean freeIds = neoStore.freeIdsDuringRollback();
             if ( relationshipTypeTokenRecords != null )
             {
@@ -747,6 +756,8 @@ public class NeoStoreTransaction extends XaTransaction
 
     private void applyCommit( LockGroup lockGroup, boolean isRecovered )
     {
+        prepareIndexUpdatesIfNeeded();
+
         committed = true;
         CommandSorter sorter = new CommandSorter();
         // reltypes
@@ -804,12 +815,7 @@ public class NeoStoreTransaction extends XaTransaction
             cacheAccess.applyLabelUpdates( labelUpdates );
         }
 
-        if ( !nodeCommands.isEmpty() || !propCommands.isEmpty() )
-        {
-            indexes.updateIndexes( new LazyIndexUpdates(
-                    getNodeStore(), getPropertyStore(),
-                    groupedNodePropertyCommands( propCommands ), new HashMap<>( nodeCommands ) ) );
-        }
+        updateIndexes();
 
         // schema rules. Execute these after generating the property updates so. If executed
         // before and we've got a transaction that sets properties/labels as well as creating an index
@@ -856,7 +862,57 @@ public class NeoStoreTransaction extends XaTransaction
         }
     }
 
-    private Collection<List<PropertyCommand>> groupedNodePropertyCommands( Iterable<PropertyCommand> propCommands )
+    /**
+     * It is possible to apply recovered and non-prepared transaction to live store in HA mode that's why might need
+     * to prepare index updates here.
+     */
+    private void prepareIndexUpdatesIfNeeded()
+    {
+        if ( !prepared && indexes.canAcceptUpdates() )
+        {
+            prepareIndexUpdates();
+        }
+    }
+
+    private void prepareIndexUpdates()
+    {
+        if ( !nodeCommands.isEmpty() || !propCommands.isEmpty() )
+        {
+            Iterable<NodePropertyUpdate> lazyUpdates = new LazyIndexUpdates(
+                    getNodeStore(), getPropertyStore(),
+                    groupedNodePropertyCommands( propCommands ), new HashMap<>( nodeCommands ) );
+
+            preparedIndexUpdates = indexes.prepare( lazyUpdates );
+        }
+    }
+
+    private void updateIndexes()
+    {
+        if ( indexes.canAcceptUpdates() )
+        {
+            indexes.updateIndexes( preparedIndexUpdates );
+        }
+        else
+        {
+            indexes.addRecoveredNodeIds( changedNodeIds() );
+        }
+    }
+
+    private Set<Long> changedNodeIds()
+    {
+        Set<Long> nodeIds = new HashSet<>( nodeCommands.keySet() );
+        for ( PropertyCommand propCmd : propCommands )
+        {
+            PropertyRecord record = propCmd.getAfter();
+            if ( record.isNodeSet() )
+            {
+                nodeIds.add( record.getNodeId() );
+            }
+        }
+        return nodeIds;
+    }
+
+    private static Map<Long,List<PropertyCommand>> groupedNodePropertyCommands( Iterable<PropertyCommand> propCommands )
     {
         // A bit too expensive data structure, but don't know off the top of my head how to make it better.
         Map<Long, List<PropertyCommand>> groups = new HashMap<>();
@@ -876,7 +932,7 @@ public class NeoStoreTransaction extends XaTransaction
             }
             group.add( command );
         }
-        return groups.values();
+        return groups;
     }
 
     public void commitChangesToCache()
@@ -1105,6 +1161,8 @@ public class NeoStoreTransaction extends XaTransaction
         relationshipTypeTokenCommands = null;
         labelTokenCommands = null;
         neoStoreCommand = null;
+
+        preparedIndexUpdates = PreparedIndexUpdates.NO_UPDATES;
     }
 
     private RelationshipTypeTokenStore getRelationshipTypeStore()
@@ -1831,7 +1889,7 @@ public class NeoStoreTransaction extends XaTransaction
     }
 
     private void connectRelationship( NodeRecord firstNode,
-                                      NodeRecord secondNode, RelationshipRecord rel )
+            NodeRecord secondNode, RelationshipRecord rel )
     {
         assert firstNode.getNextRel() != rel.getId();
         assert secondNode.getNextRel() != rel.getId();
@@ -2251,7 +2309,7 @@ public class NeoStoreTransaction extends XaTransaction
 
     public void createSchemaRule( SchemaRule schemaRule )
     {
-        for(DynamicRecord change : schemaRuleChanges.create( schemaRule.getId(), schemaRule ).forChangingData())
+        for (DynamicRecord change : schemaRuleChanges.create( schemaRule.getId(), schemaRule ).forChangingData())
         {
             change.setInUse( true );
             change.setCreated();
@@ -2385,6 +2443,16 @@ public class NeoStoreTransaction extends XaTransaction
             PropertyStore propertyStore, long nextProp, PropertyReceiver receiver )
     {
         Collection<PropertyRecord> chain = propertyStore.getPropertyRecordChain( nextProp );
+        if ( chain != null )
+        {
+            loadPropertyChain( chain, propertyStore, receiver );
+        }
+    }
+
+    static void loadProperties( PropertyStore propertyStore, long nextProp, PropertyReceiver receiver,
+            Map<Long,PropertyRecord> propertiesById )
+    {
+        Collection<PropertyRecord> chain = propertyStore.getPropertyRecordChain( nextProp, propertiesById );
         if ( chain != null )
         {
             loadPropertyChain( chain, propertyStore, receiver );

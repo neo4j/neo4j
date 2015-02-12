@@ -19,12 +19,11 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.File;
-import java.io.IOException;
-
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+
+import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.util.FailureStorage;
@@ -33,23 +32,20 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
 {
     protected final LuceneDocumentStructure documentStructure;
     private final LuceneIndexWriterFactory indexWriterFactory;
-    private final IndexWriterStatus writerStatus;
     private final DirectoryFactory dirFactory;
     private final File dirFile;
     private final FailureStorage failureStorage;
     private final long indexId;
 
-    protected IndexWriter writer;
+    protected LuceneIndexWriter writer;
     private Directory directory;
 
     LuceneIndexPopulator(
             LuceneDocumentStructure documentStructure, LuceneIndexWriterFactory indexWriterFactory,
-            IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile,
-            FailureStorage failureStorage, long indexId )
+            DirectoryFactory dirFactory, File dirFile, FailureStorage failureStorage, long indexId )
     {
         this.documentStructure = documentStructure;
         this.indexWriterFactory = indexWriterFactory;
-        this.writerStatus = writerStatus;
         this.dirFactory = dirFactory;
         this.dirFile = dirFile;
         this.failureStorage = failureStorage;
@@ -70,7 +66,7 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
     {
         if ( writer != null )
         {
-            writerStatus.close( writer );
+            writer.close();
         }
         
         try
@@ -99,14 +95,14 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
             if ( populationCompletedSuccessfully )
             {
                 flush();
-                writerStatus.commitAsOnline( writer );
+                writer.commitAsOnline();
             }
         }
         finally
         {
             if ( writer != null )
             {
-                writerStatus.close( writer );
+                writer.close();
             }
             if ( directory != null )
             {

@@ -73,7 +73,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
-import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
+import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.reserving;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
@@ -444,7 +444,7 @@ public class LuceneLabelScanStoreTest
         monitor = new TrackingMonitor();
         store = life.add( new LuceneLabelScanStore(
                 strategy,
-                directoryFactory, dir, new DefaultFileSystemAbstraction(), standard(), asStream( existingData ),
+                directoryFactory, dir, new DefaultFileSystemAbstraction(), reserving(), asStream( existingData ),
                 monitor ) );
         life.start();
         assertTrue( monitor.initCalled );

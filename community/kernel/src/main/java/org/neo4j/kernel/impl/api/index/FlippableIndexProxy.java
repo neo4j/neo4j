@@ -39,6 +39,7 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.PreparedIndexUpdates;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 
@@ -332,17 +333,54 @@ public class FlippableIndexProxy implements IndexProxy
         }
 
         @Override
-        public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+        public PreparedIndexUpdates prepare( Iterable<NodePropertyUpdate> updates )
+                throws IOException, IndexEntryConflictException
         {
-            delegate.process( update );
+            boolean superPrepared = false;
+            try
+            {
+                PreparedIndexUpdates preparedUpdates = super.prepare( updates );
+                superPrepared = true;
+                return new LockingPreparedUpdates( preparedUpdates );
+            }
+            finally
+            {
+                if ( !superPrepared )
+                {
+                    lock.readLock().unlock();
+                }
+            }
+        }
+    }
+
+    private class LockingPreparedUpdates implements PreparedIndexUpdates
+    {
+        final PreparedIndexUpdates delegate;
+
+        LockingPreparedUpdates( PreparedIndexUpdates delegate )
+        {
+            this.delegate = delegate;
         }
 
         @Override
-        public void close() throws IOException, IndexEntryConflictException
+        public void commit() throws IOException, IndexEntryConflictException
         {
             try
             {
-                delegate.close();
+                delegate.commit();
+            }
+            finally
+            {
+                lock.readLock().unlock();
+            }
+        }
+
+        @Override
+        public void rollback()
+        {
+            try
+            {
+                delegate.rollback();
             }
             finally
             {

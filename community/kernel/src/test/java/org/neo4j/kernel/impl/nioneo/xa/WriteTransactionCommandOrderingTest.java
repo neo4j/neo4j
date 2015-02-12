@@ -172,7 +172,7 @@ public class WriteTransactionCommandOrderingTest
 
     private NeoStoreTransaction newWriteTransaction() {
         NeoStoreTransaction tx = new NeoStoreTransaction( 0l, mock( XaLogicalLog.class ), TransactionState.NO_STATE,
-                store, mock( CacheAccessBackDoor.class ), mock( IndexingService.class ),
+                store, mock( CacheAccessBackDoor.class ), mock( IndexingService.class, RETURNS_MOCKS ),
                 WriteTransactionTest.NO_LABEL_SCAN_STORE, mock( IntegrityValidator.class ),
                 mock( KernelTransactionImplementation.class ), mock( LockService.class, RETURNS_MOCKS ) );
         tx.setCommitTxId( store.getLastCommittedTx() + 1 );

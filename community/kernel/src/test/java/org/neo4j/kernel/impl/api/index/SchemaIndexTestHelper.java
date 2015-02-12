@@ -30,6 +30,7 @@ import org.neo4j.helpers.FutureAdapter;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
@@ -71,12 +72,18 @@ public class SchemaIndexTestHelper
             return provider;
         }
     }
-    
+
     public static IndexProxy mockIndexProxy() throws IOException
+    {
+        return mockIndexProxy( SwallowingIndexUpdater.INSTANCE );
+    }
+
+    public static IndexProxy mockIndexProxy( IndexUpdater updater ) throws IOException
     {
         IndexProxy result = mock( IndexProxy.class );
         when( result.drop() ).thenReturn( FutureAdapter.VOID );
         when( result.close() ).thenReturn( FutureAdapter.VOID );
+        when( result.newUpdater( IndexUpdateMode.ONLINE ) ).thenReturn( updater );
         return result;
     }
     

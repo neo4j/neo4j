@@ -30,6 +30,7 @@ import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
+import org.neo4j.kernel.api.index.PreparedIndexUpdates;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -58,28 +59,18 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
                 return new DelegatingIndexUpdater( target.accessor.newUpdater( mode ) )
                 {
                     @Override
-                    public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+                    public PreparedIndexUpdates prepare( Iterable<NodePropertyUpdate> updates )
+                            throws IOException, IndexEntryConflictException
                     {
                         try
                         {
-                            delegate.process( update );
+                            PreparedIndexUpdates preparedUpdates = super.prepare( updates );
+                            return new FailuresRecordingPreparedUpdates( preparedUpdates );
                         }
                         catch ( IndexEntryConflictException conflict )
                         {
                             failures.add( conflict );
-                        }
-                    }
-
-                    @Override
-                    public void close() throws IOException, IndexEntryConflictException
-                    {
-                        try
-                        {
-                            delegate.close();
-                        }
-                        catch ( IndexEntryConflictException conflict )
-                        {
-                            failures.add( conflict );
+                            return PreparedIndexUpdates.NO_UPDATES;
                         }
                     }
                 };
@@ -144,6 +135,35 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
         {
             throw new IllegalStateException(
                     "Trying to activate failed index, should have checked the failures earlier..." );
+        }
+    }
+
+    private class FailuresRecordingPreparedUpdates implements PreparedIndexUpdates
+    {
+        final PreparedIndexUpdates delegate;
+
+        FailuresRecordingPreparedUpdates( PreparedIndexUpdates delegate )
+        {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void commit() throws IOException
+        {
+            try
+            {
+                delegate.commit();
+            }
+            catch ( IndexEntryConflictException conflict )
+            {
+                failures.add( conflict );
+            }
+        }
+
+        @Override
+        public void rollback()
+        {
+            delegate.rollback();
         }
     }
 }

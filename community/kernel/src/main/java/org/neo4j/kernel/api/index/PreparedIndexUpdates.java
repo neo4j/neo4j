@@ -17,33 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.api.index;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.api.index.PreparedIndexUpdates;
-import org.neo4j.kernel.api.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
-
-public abstract class DelegatingIndexUpdater implements IndexUpdater
+public interface PreparedIndexUpdates
 {
-    protected final IndexUpdater delegate;
-
-    public DelegatingIndexUpdater( IndexUpdater delegate )
+    static final PreparedIndexUpdates NO_UPDATES = new PreparedIndexUpdates()
     {
-        this.delegate = delegate;
-    }
+        @Override
+        public void commit()
+        {
+        }
 
-    @Override
-    public PreparedIndexUpdates prepare( Iterable<NodePropertyUpdate> updates ) throws IOException, IndexEntryConflictException
-    {
-        return delegate.prepare( updates );
-    }
+        @Override
+        public void rollback()
+        {
+        }
+    };
 
-    @Override
-    public void remove( Iterable<Long> nodeIds ) throws IOException
-    {
-        delegate.remove( nodeIds );
-    }
+    void commit() throws IOException, IndexEntryConflictException;
+
+    void rollback();
 }

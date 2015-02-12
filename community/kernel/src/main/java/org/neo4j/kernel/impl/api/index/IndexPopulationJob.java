@@ -26,8 +26,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
+import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
+import org.neo4j.kernel.api.index.PreparedIndexUpdates;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -225,16 +228,19 @@ public class IndexPopulationJob implements Runnable
     {
         if ( !queue.isEmpty() )
         {
-            try ( IndexUpdater updater = populator.newPopulatingUpdater( storeView ) )
+            IndexUpdater updater = populator.newPopulatingUpdater( storeView );
+
+            Iterable<NodePropertyUpdate> updates = Iterables.filter( new Predicate<NodePropertyUpdate>()
             {
-                for ( NodePropertyUpdate update : queue )
+                @Override
+                public boolean accept( NodePropertyUpdate update )
                 {
-                    if ( update.getNodeId() <= highestIndexedNodeId )
-                    {
-                        updater.process( update );
-                    }
+                    return update.getNodeId() <= highestIndexedNodeId;
                 }
-            }
+            }, queue );
+
+            PreparedIndexUpdates indexChanges = updater.prepare( updates );
+            indexChanges.commit();
         }
     }
 

@@ -26,6 +26,7 @@ import java.util.List;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.PreparedIndexUpdates;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -36,7 +37,7 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
 import static org.neo4j.helpers.collection.IteratorUtil.emptyListOf;
-import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
+import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.reserving;
 
 public class UniqueLuceneIndexAccessorTest
 {
@@ -119,8 +120,8 @@ public class UniqueLuceneIndexAccessorTest
 
     private UniqueLuceneIndexAccessor createAccessor() throws IOException
     {
-        return new UniqueLuceneIndexAccessor( new LuceneDocumentStructure(), standard(), new IndexWriterStatus(),
-                directoryFactory, indexDirectory );
+        return new UniqueLuceneIndexAccessor(
+                new LuceneDocumentStructure(), reserving(), directoryFactory, indexDirectory );
     }
 
     private NodePropertyUpdate add( long nodeId, Object propertyValue )
@@ -142,16 +143,12 @@ public class UniqueLuceneIndexAccessorTest
     {
         return AllNodesCollector.getAllNodes( directoryFactory, indexDirectory, propertyValue );
     }
-    
+
     private void updateAndCommit( IndexAccessor accessor, Iterable<NodePropertyUpdate> updates )
             throws IOException, IndexEntryConflictException
     {
-        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
-        {
-            for ( NodePropertyUpdate update : updates )
-            {
-                updater.process( update );
-            }
-        }
+        IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
+        PreparedIndexUpdates indexChanges = updater.prepare( updates );
+        indexChanges.commit();
     }
 }

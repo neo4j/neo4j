@@ -19,14 +19,24 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.IOException;
-
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.Collections;
 
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.PreparedIndexUpdates;
 import org.neo4j.test.DoubleLatch;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyCollection;
+import static org.mockito.Matchers.startsWith;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockIndexProxy;
 
 public class ContractCheckingIndexProxyTest
@@ -111,21 +121,19 @@ public class ContractCheckingIndexProxyTest
 
 
     @Test(expected = IllegalStateException.class)
-    public void shouldNotUpdateBeforeCreate() throws IOException, IndexEntryConflictException
+    public void shouldNotPrepareBeforeCreate() throws IOException, IndexEntryConflictException
     {
         // GIVEN
         IndexProxy inner = mockIndexProxy();
         IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
-        try (IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE ))
-        {
-            updater.process( null );
-        }
+        IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE );
+        updater.prepare( null );
     }
 
     @Test(expected = IllegalStateException.class)
-    public void shouldNotUpdateAfterClose() throws IOException, IndexEntryConflictException
+    public void shouldNotPrepareAfterClose() throws IOException, IndexEntryConflictException
     {
         // GIVEN
         IndexProxy inner = mockIndexProxy();
@@ -134,10 +142,8 @@ public class ContractCheckingIndexProxyTest
         // WHEN
         outer.start();
         outer.close();
-        try (IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE ))
-        {
-            updater.process( null );
-        }
+        IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE );
+        updater.prepare( null );
     }
 
     @Test(expected = IllegalStateException.class)
@@ -238,7 +244,7 @@ public class ContractCheckingIndexProxyTest
 
 
     @Test( expected = /* THEN */ IllegalStateException.class )
-    public void shouldNotCloseWhileUpdating() throws IOException
+    public void shouldNotCloseWhilePreparing() throws IOException
     {
         // GIVEN
         final DoubleLatch latch = new DoubleLatch();
@@ -259,9 +265,10 @@ public class ContractCheckingIndexProxyTest
             @Override
             public void run() throws IOException
             {
-                try (IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE ))
+                try
                 {
-                    updater.process( null );
+                    IndexUpdater updater = outer.newUpdater( IndexUpdateMode.ONLINE );
+                    updater.prepare( null );
                     latch.startAndAwaitFinish();
                 }
                 catch ( IndexEntryConflictException e )
@@ -318,7 +325,131 @@ public class ContractCheckingIndexProxyTest
             latch.finish();
         }
     }
-    
+
+    @Test
+    public void updaterShouldCloseOnCommit() throws IOException, IndexEntryConflictException
+    {
+        // Given
+        ContractCheckingIndexProxy proxy = newContractCheckingIndexProxy( mockIndexProxy() );
+        proxy.start();
+
+        // When
+        // new updater is created and prepared updates are committed
+        IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE );
+        updater.prepare( Collections.<NodePropertyUpdate>emptyList() ).commit();
+
+        // Then
+        // can close index proxy as there are no updates in progress
+        proxy.close();
+    }
+
+    @Test
+    public void updaterShouldCloseOnRollback() throws IOException, IndexEntryConflictException
+    {
+        // Given
+        ContractCheckingIndexProxy proxy = newContractCheckingIndexProxy( mockIndexProxy() );
+        proxy.start();
+
+        // When
+        // new updater is created and prepared updates are rolled back
+        IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE );
+        updater.prepare( Collections.<NodePropertyUpdate>emptyList() ).rollback();
+
+        // Then
+        // can close index proxy as there are no updates in progress
+        proxy.close();
+    }
+
+    @Test
+    @SuppressWarnings( "unchecked" )
+    public void updaterShouldCloseEvenIfDelegatePrepareThrows() throws Exception
+    {
+        // Given
+        // index updater delegate that throws
+        IndexUpdater throwingUpdater = mock( IndexUpdater.class );
+        when( throwingUpdater.prepare( anyCollection() ) ).thenThrow( IOException.class );
+        ContractCheckingIndexProxy proxy = newContractCheckingIndexProxy( mockIndexProxy( throwingUpdater ) );
+        proxy.start();
+
+        // When
+        // new updater is created and prepared updates are committed
+        IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE );
+        try
+        {
+            updater.prepare( Collections.<NodePropertyUpdate>emptyList() );
+            fail( "Should have thrown " + IOException.class.getSimpleName() );
+        }
+        catch ( IOException ignored )
+        {
+        }
+
+        // Then
+        // can close index proxy as there are no updates in progress
+        proxy.close();
+    }
+
+    @Test
+    @SuppressWarnings( "unchecked" )
+    public void updaterShouldCloseEvenIfDelegateCommitThrows() throws Exception
+    {
+        // Given
+        // index updater delegate that throws
+        IndexUpdater updaterMock = mock( IndexUpdater.class );
+        PreparedIndexUpdates updates = mock( PreparedIndexUpdates.class );
+        doThrow( IOException.class ).when( updates ).commit();
+        when( updaterMock.prepare( anyCollection() ) ).thenReturn( updates );
+        ContractCheckingIndexProxy proxy = newContractCheckingIndexProxy( mockIndexProxy( updaterMock ) );
+        proxy.start();
+
+        // When
+        // new updater is created and prepared updates are committed
+        IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE );
+        PreparedIndexUpdates prepared = updater.prepare( Collections.<NodePropertyUpdate>emptyList() );
+        try
+        {
+            prepared.commit();
+            fail( "Should have thrown " + IOException.class.getSimpleName() );
+        }
+        catch ( IOException ignored )
+        {
+        }
+
+        // Then
+        // can close index proxy as there are no updates in progress
+        proxy.close();
+    }
+
+    @Test
+    @SuppressWarnings( "unchecked" )
+    public void updaterShouldCloseEvenIfDelegateRollbackThrows() throws Exception
+    {
+        // Given
+        // index updater delegate that throws
+        IndexUpdater updaterMock = mock( IndexUpdater.class );
+        PreparedIndexUpdates updates = mock( PreparedIndexUpdates.class );
+        doThrow( IllegalArgumentException.class ).when( updates ).rollback();
+        when( updaterMock.prepare( anyCollection() ) ).thenReturn( updates );
+        ContractCheckingIndexProxy proxy = newContractCheckingIndexProxy( mockIndexProxy( updaterMock ) );
+        proxy.start();
+
+        // When
+        // new updater is created and prepared updates are committed
+        IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE );
+        PreparedIndexUpdates prepared = updater.prepare( Collections.<NodePropertyUpdate>emptyList() );
+        try
+        {
+            prepared.rollback();
+            fail( "Should have thrown " + IllegalArgumentException.class.getSimpleName() );
+        }
+        catch ( IllegalArgumentException ignored )
+        {
+        }
+
+        // Then
+        // can close index proxy as there are no updates in progress
+        proxy.close();
+    }
+
     private interface ThrowingRunnable
     {
         void run() throws IOException;

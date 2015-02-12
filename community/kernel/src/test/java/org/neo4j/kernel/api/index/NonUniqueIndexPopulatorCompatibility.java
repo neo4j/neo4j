@@ -22,13 +22,17 @@ package org.neo4j.kernel.api.index;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.Set;
+
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
+import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
 
+import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
@@ -127,10 +131,9 @@ public class NonUniqueIndexPopulatorCompatibility extends IndexProviderCompatibi
         // this update (using add())...
         populator.add( nodeId, propertyValue );
         // ...is the same as this update (using update())
-        try ( IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor ) )
-        {
-            updater.process( add( nodeId, propertyKeyId, propertyValue, new long[]{labelId} ) );
-        }
+        IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor );
+        NodePropertyUpdate add = add( nodeId, propertyKeyId, propertyValue, new long[]{labelId} );
+        updater.prepare( singleton( add ) ).commit();
 
         populator.close( true );
 

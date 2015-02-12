@@ -30,6 +30,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.kernel.api.index.PreparedIndexUpdates;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -42,7 +43,7 @@ import static org.junit.Assert.*;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
-import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
+import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.reserving;
 
 public class LuceneIndexIT
 {
@@ -94,7 +95,6 @@ public class LuceneIndexIT
     private final long nodeId = 1, nodeId2 = 2;
     private final Object value = "value";
     private final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
-    private final IndexWriterStatus writerLogic = new IndexWriterStatus();
     private LuceneIndexAccessor accessor;
     private DirectoryFactory dirFactory;
 
@@ -105,7 +105,7 @@ public class LuceneIndexIT
     public void before() throws Exception
     {
         dirFactory = DirectoryFactory.PERSISTENT;
-        accessor = new NonUniqueLuceneIndexAccessor( documentLogic, standard(), writerLogic, dirFactory, testDir.directory() );
+        accessor = new NonUniqueLuceneIndexAccessor( documentLogic, reserving(), dirFactory, testDir.directory() );
     }
 
     @After
@@ -123,12 +123,8 @@ public class LuceneIndexIT
     private void updateAndCommit( List<NodePropertyUpdate> nodePropertyUpdates )
             throws IOException, IndexEntryConflictException
     {
-        try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
-        {
-            for ( NodePropertyUpdate update : nodePropertyUpdates )
-            {
-                updater.process( update );
-            }
-        }
+        IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
+        PreparedIndexUpdates updates = updater.prepare( nodePropertyUpdates );
+        updates.commit();
     }
 }

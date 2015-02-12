@@ -17,13 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.api.impl.index;
 
-import java.util.Set;
+import java.io.IOException;
 
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
-
-public interface IndexUpdates extends Iterable<NodePropertyUpdate>
+class LuceneIndexCapacityExceededException extends IOException
 {
-    Set<Long> changedNodeIds();
+    LuceneIndexCapacityExceededException( String message )
+    {
+        super( message );
+    }
 }
