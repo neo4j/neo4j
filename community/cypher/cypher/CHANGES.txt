@@ -1,6 +1,18 @@
 2.2.0-M04
 ---------
 o Fixes #3910 - Semantic errors not propagated correctly to the user
+o Support ExpandInto mode for variable length paths
+o Faster performance when counting number of relationships
+o Support ExpandInto mode for projection of relationship end points
+o Estimated rows in plan descriptions are rounded to three decimals
+o Fixes DbHit counting for pattern expressions
+o Faster performance when starting a pattern expression from a relationship
+o Improved compile times by faster AST rewriting
+o Fixes problem where the rule planner was always used for pattern expressions
+o Adds the KEYS() function to Cypher
+o Better performance by allowing index lookups on the RHS of Apply
+o Fixes bug when using named paths and undirected relationships
+
 
 2.2.0-M03
 ---------
