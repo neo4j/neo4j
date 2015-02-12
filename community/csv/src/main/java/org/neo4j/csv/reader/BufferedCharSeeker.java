@@ -115,6 +115,7 @@ public class BufferedCharSeeker implements CharSeeker, SourceMonitor
                 }
                 else if ( isNewLine( ch ) )
                 {   // Encountered newline, done for now
+                    lineNumber++;
                     if ( bufferPos-1 == lineStartPos )
                     {   // We're at the start of this read so just skip it
                         seekStartPos++;
@@ -149,6 +150,7 @@ public class BufferedCharSeeker implements CharSeeker, SourceMonitor
                 }
                 else if ( isNewLine( ch ) )
                 {   // Found a new line, just keep going
+                    lineNumber++;
                     nextChar( skippedChars );
                 }
                 else if ( ch == BACK_SLASH )
@@ -185,12 +187,7 @@ public class BufferedCharSeeker implements CharSeeker, SourceMonitor
 
     private boolean isNewLine( int ch )
     {
-        if ( ch == EOL_CHAR )
-        {
-            lineNumber++;
-            return true;
-        }
-        return ch == EOL_CHAR_2;
+        return ch == EOL_CHAR || ch == EOL_CHAR_2;
     }
 
     private int peekChar() throws IOException
@@ -279,7 +276,7 @@ public class BufferedCharSeeker implements CharSeeker, SourceMonitor
     @Override
     public void notify( String sourceDescription )
     {
-        lineNumber = 1;
+        lineNumber = 0;
     }
 
     @Override
