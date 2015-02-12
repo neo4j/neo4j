@@ -2,22 +2,13 @@
 = Execution Plans =
 
 Cypher is a declarative query language.
-That means that a statement describes what should be done, and not how to actually do it.
-To actually be able to run a query, it needs to be transformed to an imperative solution for the statement.
+This means that a statement describes what should be done, and not how to actually do it.
+Before a query is run it is transformed into an imperative solution for the statement.
 This solution is called an execution plan.
 An execution plan is a tree composed of operators, each non-leaf feeding from one or two children.
-To analyze a query for performance improvements, it's essential to be able to understand how Neo4j is running your Cypher statements.
+To analyze a query for performance improvements, you will need understand how Neo4j is running your Cypher statements.
 
-There are two options to choose from when you want to look at execution plans:
-
-`EXPLAIN`::
-If you want to see the execution plan but not run the statement, prepend your Cypher statement with `EXPLAIN`.
-The statement will always return an empty result and make no changes to the database.
-
-`PROFILE`::
-If you want to run the statement and see which operators are doing most of the work, use `PROFILE`.
-This will run your statement and keep track of how many rows pass through each operator, and how much each operator needs to interact with the storage layer to retrieve the necessary data.
-Please note that _profiling your query uses more resources,_ so you should not profile unless you are actively working on a query.
+See <<how-do-i-profile-a-query>> for an explanation of how to view the execution plan for your query.
 
 An execution plan gives you a few distinct pieces information per operator in the plan:
 
@@ -37,24 +28,32 @@ You will find some of the operators used in execution plans in the following sec
 
 :leveloffset: 1
 
-include::ql/query-plan/anti-semi-apply.asciidoc[]
 include::ql/query-plan/all-nodes-scan.asciidoc[]
+include::ql/query-plan/anti-semi-apply.asciidoc[]
 include::ql/query-plan/cartesian-product.asciidoc[]
+include::ql/query-plan/constraint-operation.asciidoc[]
+include::ql/query-plan/distinct.asciidoc[]
 include::ql/query-plan/directed-relationship-by-id-seek.asciidoc[]
-include::ql/query-plan/expand.asciidoc[]
+include::ql/query-plan/eager-aggregation.asciidoc[]
+include::ql/query-plan/empty-result.asciidoc[]
+include::ql/query-plan/expand-all.asciidoc[]
+include::ql/query-plan/filter.asciidoc[]
+include::ql/query-plan/let-anti-semi-apply.asciidoc[]
+include::ql/query-plan/let-semi-apply.asciidoc[]
 include::ql/query-plan/limit.asciidoc[]
 include::ql/query-plan/node-by-label-scan.asciidoc[]
 include::ql/query-plan/node-by-id-seek.asciidoc[]
 include::ql/query-plan/node-index-seek.asciidoc[]
 include::ql/query-plan/node-unique-index-seek.asciidoc[]
+include::ql/query-plan/optional-expand-all.asciidoc[]
 include::ql/query-plan/projection.asciidoc[]
-include::ql/query-plan/optional-expand.asciidoc[]
-include::ql/query-plan/selection.asciidoc[]
 include::ql/query-plan/select-or-anti-semi-apply.asciidoc[]
 include::ql/query-plan/select-or-semi-apply.asciidoc[]
 include::ql/query-plan/semi-apply.asciidoc[]
 include::ql/query-plan/skip.asciidoc[]
 include::ql/query-plan/sort.asciidoc[]
-include::ql/query-plan/sorted-limit.asciidoc[]
+include::ql/query-plan/top.asciidoc[]
 include::ql/query-plan/undirected-relationship-by-id-seek.asciidoc[]
 include::ql/query-plan/union.asciidoc[]
+include::ql/query-plan/unwind.asciidoc[]
+include::ql/query-plan/update-graph.asciidoc[]

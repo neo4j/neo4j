@@ -49,7 +49,14 @@ class Result
         String profileText;
         try
         {
-            profileText = result.getExecutionPlanDescription().toString();
+            if ( query.startsWith( "PROFILE" ) )
+            {
+                profileText = result.getExecutionPlanDescription().toString();
+            }
+            else
+            {
+                profileText = "Query wasn't profiled";
+            }
         }
         catch ( Exception ex )
         {

@@ -39,9 +39,8 @@ include::schema.asciidoc[]
 
 :leveloffset: 1
 
-include::execution-plans.asciidoc[]
+include::query-tuning.asciidoc[]
 
 :leveloffset: 1
 
-include::query-tuning.asciidoc[]
-
+include::execution-plans.asciidoc[]

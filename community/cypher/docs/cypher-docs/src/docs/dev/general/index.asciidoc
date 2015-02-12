@@ -33,9 +33,3 @@ include::parameters.asciidoc[]
 :leveloffset: 2
 
 include::compatibility.asciidoc[]
-
-:leveloffset: 2
-
-include::plans.asciidoc[]
-
-
