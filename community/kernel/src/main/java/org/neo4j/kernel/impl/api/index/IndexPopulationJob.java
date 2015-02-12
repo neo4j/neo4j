@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 
 import static java.lang.String.format;
@@ -46,7 +47,6 @@ import static java.lang.Thread.currentThread;
 import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
 import static org.neo4j.helpers.ValueGetter.NO_VALUE;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
-import static org.neo4j.register.Register.DoubleLongRegister;
 
 /**
  * Represents one job of initially populating an index over existing data in the database.
@@ -61,6 +61,7 @@ public class IndexPopulationJob implements Runnable
     private final IndexConfiguration config;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
 
+    private final IndexingService.Monitor monitor;
     private final IndexPopulator populator;
     private final FlippableIndexProxy flipper;
     private final IndexStoreView storeView;
@@ -83,7 +84,8 @@ public class IndexPopulationJob implements Runnable
                               FlippableIndexProxy flipper,
                               IndexStoreView storeView,
                               UpdateableSchemaState updateableSchemaState,
-                              Logging logging)
+                              Logging logging,
+                              IndexingService.Monitor monitor )
     {
         this.descriptor = descriptor;
         this.config = config;
@@ -94,6 +96,7 @@ public class IndexPopulationJob implements Runnable
         this.updateableSchemaState = updateableSchemaState;
         this.indexUserDescription = indexUserDescription;
         this.failureDelegate = failureDelegateFactory;
+        this.monitor = monitor;
         this.log = logging.getMessagesLog( getClass() );
         this.indexCountsRemover = IndexCountsRemover.Factory.create( storeView, descriptor );
     }
@@ -178,7 +181,7 @@ public class IndexPopulationJob implements Runnable
                 // place is that we would otherwise introduce a race condition where updates could come
                 // in to the old context, if something failed in the job we send to the flipper.
                 flipper.flipTo( new FailedIndexProxy( descriptor, config, providerDescriptor, indexUserDescription,
-                                                      populator, failure( t ), indexCountsRemover ) );
+                                                      populator, failure( t ), indexCountsRemover, log ) );
             }
             finally
             {
@@ -233,6 +236,7 @@ public class IndexPopulationJob implements Runnable
 
     private void verifyDeferredConstraints() throws IndexPopulationFailedKernelException
     {
+        monitor.verifyDeferredConstraints();
         try
         {
             populator.verifyDeferredConstraints( storeView );

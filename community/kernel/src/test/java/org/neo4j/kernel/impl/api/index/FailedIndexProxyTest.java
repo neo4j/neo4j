@@ -19,17 +19,19 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
+import org.junit.Test;
 
 import java.io.IOException;
 
-import org.junit.Test;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public class FailedIndexProxyTest
 {
@@ -45,8 +47,9 @@ public class FailedIndexProxyTest
     public void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped() throws IOException
     {
         // given
+        StringLogger log = mock( StringLogger.class );
         FailedIndexProxy index = new FailedIndexProxy( descriptor, config, providerDescriptor, userDescription,
-                indexPopulator, indexPopulationFailure, indexCountsRemover );
+                indexPopulator, indexPopulationFailure, indexCountsRemover, log );
 
         // when
         index.drop();
@@ -55,5 +58,19 @@ public class FailedIndexProxyTest
         verify( indexPopulator ).drop();
         verify( indexCountsRemover ).remove();
         verifyNoMoreInteractions( indexPopulator, indexCountsRemover );
+    }
+
+    @Test
+    public void shouldLogReasonForDroppingIndex() throws IOException
+    {
+        // given
+        StringLogger log = mock( StringLogger.class );
+
+        // when
+        new FailedIndexProxy( new IndexDescriptor( 0, 0 ), config, new SchemaIndexProvider.Descriptor( "foo", "bar" ), "foo",
+                mock( IndexPopulator.class ), IndexPopulationFailure.failure( "it broke" ), indexCountsRemover, log ).drop();
+
+        // then
+        verify(log).info( "FailedIndexProxy#drop index on foo dropped due to:\nit broke" );
     }
 }

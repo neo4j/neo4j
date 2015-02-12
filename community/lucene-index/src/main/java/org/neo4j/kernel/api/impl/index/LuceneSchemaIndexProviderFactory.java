@@ -31,7 +31,7 @@ import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFa
 public class LuceneSchemaIndexProviderFactory extends
         KernelExtensionFactory<LuceneSchemaIndexProviderFactory.Dependencies>
 {
-    static final String KEY = "lucene";
+    public static final String KEY = "lucene";
 
     public static final SchemaIndexProvider.Descriptor PROVIDER_DESCRIPTOR =
             new SchemaIndexProvider.Descriptor( KEY, "1.0" );

@@ -45,6 +45,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -370,16 +371,18 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         }
 
         List<String> directoryPathItems = splitPath( directory );
-        List<File> found = new ArrayList<>();
-        for ( Map.Entry<File,EphemeralFileData> file : files.entrySet() )
+        Set<File> found = new HashSet<>();
+        Iterator<File> files = new CombiningIterator<>( asList( this.files.keySet().iterator(), directories.iterator() ) );
+        while ( files.hasNext() )
         {
-            File fileName = file.getKey();
-            List<String> fileNamePathItems = splitPath( fileName );
+            File file = files.next();
+            List<String> fileNamePathItems = splitPath( file );
             if ( directoryMatches( directoryPathItems, fileNamePathItems ) )
             {
                 found.add( constructPath( fileNamePathItems, directoryPathItems.size() + 1 ) );
             }
         }
+
         return found.toArray( new File[found.size()] );
     }
 
@@ -393,11 +396,12 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         }
 
         List<String> directoryPathItems = splitPath( directory );
-        List<File> found = new ArrayList<>();
-        for ( Map.Entry<File,EphemeralFileData> file : files.entrySet() )
+        Set<File> found = new HashSet<>();
+        Iterator<File> files = new CombiningIterator<>( asList( this.files.keySet().iterator(), directories.iterator() ) );
+        while ( files.hasNext() )
         {
-            File fileName = file.getKey();
-            List<String> fileNamePathItems = splitPath( fileName );
+            File file = files.next();
+            List<String> fileNamePathItems = splitPath( file );
             if ( directoryMatches( directoryPathItems, fileNamePathItems ) )
             {
                 File path = constructPath( fileNamePathItems, directoryPathItems.size() + 1 );
@@ -1267,7 +1271,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     }
 
     // Copied from kernel since we don't want to depend on that module here
-    public static abstract class PrefetchingIterator<T> implements Iterator<T>
+    private static abstract class PrefetchingIterator<T> implements Iterator<T>
     {
         boolean hasFetchedNext;
         T nextObject;
@@ -1325,5 +1329,54 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     	{
     		throw new UnsupportedOperationException();
     	}
+    }
+
+    private static class CombiningIterator<T> extends PrefetchingIterator<T>
+    {
+        private Iterator<? extends Iterator<T>> iterators;
+        private Iterator<T> currentIterator;
+
+        public CombiningIterator( Iterable<? extends Iterator<T>> iterators )
+        {
+            this( iterators.iterator() );
+        }
+
+        public CombiningIterator( Iterator<? extends Iterator<T>> iterators )
+        {
+            this.iterators = iterators;
+        }
+
+        public CombiningIterator( T first, Iterator<T> rest )
+        {
+            this( Collections.<Iterator<T>>emptyList() );
+            this.hasFetchedNext = true;
+            this.nextObject = first;
+            this.currentIterator = rest;
+        }
+
+        @Override
+        protected T fetchNextOrNull()
+        {
+            if ( currentIterator == null || !currentIterator.hasNext() )
+            {
+                while ( (currentIterator = nextIteratorOrNull()) != null )
+                {
+                    if ( currentIterator.hasNext() )
+                    {
+                        break;
+                    }
+                }
+            }
+            return currentIterator != null && currentIterator.hasNext() ? currentIterator.next() : null;
+        }
+
+        protected Iterator<T> nextIteratorOrNull()
+        {
+            if(iterators.hasNext())
+            {
+                return iterators.next();
+            }
+            return null;
+        }
     }
 }

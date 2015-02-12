@@ -107,6 +107,8 @@ public class IndexingService extends LifecycleAdapter
         void appliedRecoveredData( Iterable<NodePropertyUpdate> updates );
 
         void populationCompleteOn( IndexDescriptor descriptor );
+
+        void verifyDeferredConstraints();
     }
 
     public static abstract class MonitorAdapter implements Monitor
@@ -124,6 +126,12 @@ public class IndexingService extends LifecycleAdapter
         @Override
         public void populationCompleteOn( IndexDescriptor descriptor )
         {   // Do nothing
+        }
+
+        @Override
+        public void verifyDeferredConstraints()
+        {
+            // Do nothing
         }
     }
 
