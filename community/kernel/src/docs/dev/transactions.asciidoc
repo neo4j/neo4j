@@ -92,6 +92,34 @@ Deadlocks caused by the use of other synchronization than the locks managed by N
 Since all operations in the Neo4j API are thread safe unless specified otherwise, there is no need for external synchronization.
 Other code that requires synchronization should be synchronized in such a way that it never performs any Neo4j operation in the synchronized block.
 
+=== Deadlock handling example code ===
+When dealing with deadlocks in code, there are several issues you may want to address:
+
+* Only do a limited amount of retries, and fail if a threshold is reached.
+* Pause between each attempt to allow the other transaction to finish before trying again.
+* A retry-loop can be useful not only for deadlocks, but for other types of transient errors as well.
+
+Here's an example of what such a retry block might look like when taking all these things into consideration:
+[snippet,java]
+----
+component=neo4j-kernel
+source=examples/DeadlockDocTest.java
+tag=retry
+----
+
+The above is the gist of what such a retry block would look like, and which you can customize to fit your needs.
+
+=== Handling deadlocks using TransactionTemplate ===
+If you don't want to write the code in the previous section yourself, there is a class called `org.neo4j.helpers.TransactionTemplate` that will help you achieve the same thing, and more. Below is an example of how to create, customize, and use this template for retries in transactions.
+[snippet,java]
+----
+component=neo4j-kernel
+source=examples/DeadlockDocTest.java
+tag=template
+----
+
+The `TransactionTemplate` uses a fluent API for configuration, and you can choose whether to set everything at once, or (as in the example) provide some details just before using it. The template allows setting a predicate for what exceptions to retry on, and also allows for easy monitoring of events that takes place.
+
 [[transactions-delete]]
 == Delete semantics ==
 

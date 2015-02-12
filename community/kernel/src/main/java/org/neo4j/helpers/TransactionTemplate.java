@@ -25,6 +25,10 @@ import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.TransactionTerminatedException;
+
+import static org.neo4j.helpers.Predicates.not;
+import static org.neo4j.helpers.Predicates.or;
 
 /**
  * Neo4j transaction template that automates the retry-on-exception logic. It uses the builder
@@ -34,7 +38,7 @@ import org.neo4j.graphdb.TransactionFailureException;
  * First instantiate and configure the template using the fluent API methods, and then
  * invoke execute which will begin/commit transactions in a loop for the specified number of times.
  * <p/>
- * By default all exceptions (except Errors) cause a retry, and the monitor does nothing, but these can be overridden
+ * By default all exceptions (except Errors and TransactionTerminatedException) cause a retry, and the monitor does nothing, but these can be overridden
  * with
  * custom behaviour.
  */
@@ -76,21 +80,13 @@ public class TransactionTemplate
 
     public TransactionTemplate()
     {
-        this( null, new Monitor.Adapter(), 0, 0, new Predicate<Throwable>()
-        {
-            @Override
-            public boolean accept( Throwable exception )
-            {
-                if ( exception instanceof Error )
-                { return false; }
-
-                return true;
-            }
-        } );
+        this( null, new Monitor.Adapter(), 0, 0, not( or(
+                Predicates.<Throwable>instanceOf( Error.class ),
+                Predicates.<Throwable>instanceOf( TransactionTerminatedException.class ) ) ));
     }
 
     public TransactionTemplate( GraphDatabaseService gds, Monitor monitor, int retries,
-            long backoff, Predicate<Throwable> retryPredicate )
+                                long backoff, Predicate<Throwable> retryPredicate )
     {
         this.gds = gds;
         this.monitor = monitor;
@@ -124,7 +120,7 @@ public class TransactionTemplate
         return new TransactionTemplate( gds, monitor, retries, backoff, retryPredicate );
     }
 
-    public <T> T execute( Function<Transaction,T> txFunction )
+    public <T> T execute( Function<Transaction, T> txFunction )
             throws TransactionFailureException
     {
         Throwable txEx = null;
@@ -142,7 +138,9 @@ public class TransactionTemplate
                 txEx = ex;
 
                 if ( !retryPredicate.accept( ex ) )
-                { break; }
+                {
+                    break;
+                }
             }
 
             if ( i < retries - 1 )
