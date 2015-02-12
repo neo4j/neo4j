@@ -30,7 +30,7 @@ To only rollback changes made in a nested transaction is not possible.
 
 The interaction cycle of working with transactions looks like this:
 
-. Begin a transaction.	
+. Begin a transaction.
 . Perform database operations.
 . Mark the transaction as successful or not.
 . Finish the transaction.
@@ -64,14 +64,16 @@ For example, if a write lock is taken on a common node or relationship, then all
 [[transactions-locking]]
 == Default locking behavior ==
 
-* When adding, changing or removing a property on a node or relationship a write lock will be taken on the specific node or relationship. 	
-* When creating or deleting a node a write lock will be taken for the specific node. 	
+* When adding, changing or removing a property on a node or relationship a write lock will be taken on the specific node or relationship.
+* When creating or deleting a node a write lock will be taken for the specific node.
 * When creating or deleting a relationship a write lock will be taken on the specific relationship and both its nodes.
 
 The locks will be added to the transaction and released when the transaction finishes.
 
 [[transactions-deadlocks]]
 == Deadlocks ==
+
+=== Understanding deadlocks ===
 
 Since locks are used it is possible for deadlocks to happen.
 Neo4j will however detect any deadlock (caused by acquiring a lock) before they happen and throw an exception.
@@ -91,6 +93,65 @@ This can for example be achieved by letting a single thread do all updates of a 
 Deadlocks caused by the use of other synchronization than the locks managed by Neo4j can still happen.
 Since all operations in the Neo4j API are thread safe unless specified otherwise, there is no need for external synchronization.
 Other code that requires synchronization should be synchronized in such a way that it never performs any Neo4j operation in the synchronized block.
+
+[[transactions-deadlocks-code]]
+=== Deadlock handling example code ===
+
+Below you'll find examples of how deadlocks can be handled in server extensions/plugins or when using Neo4j embedded.
+
+TIP: The full source code used for the code snippets can be found at https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/kernel/src/test/java/examples/DeadlockDocTest.java[DeadlockDocTest.java].
+
+When dealing with deadlocks in code, there are several issues you may want to address:
+
+* Only do a limited amount of retries, and fail if a threshold is reached.
+* Pause between each attempt to allow the other transaction to finish before trying again.
+* A retry-loop can be useful not only for deadlocks, but for other types of transient errors as well.
+
+In the following sections you'll find example code in Java which shows how this can be implemented.
+
+[[transactions-deadlocks-template]]
+==== Handling deadlocks using TransactionTemplate ====
+
+If you don't want to write all the code yourself, there is a class called +link:javadocs/org/neo4j/helpers/TransactionTemplate.html[TransactionTemplate]+ that will help you achieve what's needed.
+Below is an example of how to create, customize, and use this template for retries in transactions.
+
+First, define the base template:
+
+[snippet,java]
+----
+component=neo4j-kernel
+source=examples/DeadlockDocTest.java
+tag=template
+----
+
+Next, specify the database to use and a function to execute:
+
+[snippet,java]
+----
+component=neo4j-kernel
+source=examples/DeadlockDocTest.java
+tag=usage-template
+----
+
+The operations that could lead to a deadlock should go into the `apply` method.
+
+The `TransactionTemplate` uses a fluent API for configuration, and you can choose whether to set everything at once, or (as in the example) provide some details just before using it.
+The template allows setting a predicate for what exceptions to retry on, and also allows for easy monitoring of events that take place.
+
+[[transactions-deadlocks-loop]]
+==== Handling deadlocks using a retry loop ====
+
+If you want to roll your own retry-loop code, see below for inspiration.
+Here's an example of what a retry block might look like:
+
+[snippet,java]
+----
+component=neo4j-kernel
+source=examples/DeadlockDocTest.java
+tag=retry
+----
+
+The above is the gist of what such a retry block would look like, and which you can customize to fit your needs.
 
 [[transactions-delete]]
 == Delete semantics ==
