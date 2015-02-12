@@ -33,6 +33,8 @@ import static org.junit.Assert.fail;
 
 public class TestProperties extends AbstractNeo4jTestCase
 {
+    private static final int VALUE_RANGE_SPLIT = 20;
+
     @Test
     public void addAndRemovePropertiesWithinOneTransaction() throws Exception
     {
@@ -147,9 +149,11 @@ public class TestProperties extends AbstractNeo4jTestCase
     public void byteRange() throws Exception
     {
         Node node = getGraphDb().createNode();
-        for ( byte i = Byte.MIN_VALUE; i < Byte.MAX_VALUE; i++ )
+        byte stride = Byte.MAX_VALUE/VALUE_RANGE_SPLIT;
+        for ( byte i = Byte.MIN_VALUE; i < Byte.MAX_VALUE; )
         {
             setPropertyAndAssertIt( node, i );
+            i = i > 0 && Byte.MAX_VALUE-i < stride ? Byte.MAX_VALUE : (byte)(i + stride);
         }
     }
 
@@ -157,9 +161,11 @@ public class TestProperties extends AbstractNeo4jTestCase
     public void charRange() throws Exception
     {
         Node node = getGraphDb().createNode();
-        for ( char i = Character.MIN_VALUE; i < Character.MAX_VALUE; i++ )
+        char stride = Character.MAX_VALUE/VALUE_RANGE_SPLIT;
+        for ( char i = Character.MIN_VALUE; i < Character.MAX_VALUE; )
         {
             setPropertyAndAssertIt( node, i );
+            i = i > 0 && Character.MAX_VALUE-i < stride ? Character.MAX_VALUE : (char)(i + stride);
         }
     }
 
@@ -167,53 +173,61 @@ public class TestProperties extends AbstractNeo4jTestCase
     public void shortRange() throws Exception
     {
         Node node = getGraphDb().createNode();
-        for ( short i = Short.MIN_VALUE; i < Short.MAX_VALUE; i++ )
+        short stride = Short.MAX_VALUE/VALUE_RANGE_SPLIT;
+        for ( short i = Short.MIN_VALUE; i < Short.MAX_VALUE; )
         {
             setPropertyAndAssertIt( node, i );
+            i = i > 0 && Short.MAX_VALUE-i < stride ? Short.MAX_VALUE : (short)(i + stride);
         }
     }
 
     @Test
     public void intRange() throws Exception
     {
-        int step = 30001;
         Node node = getGraphDb().createNode();
-        for ( int i = Integer.MIN_VALUE; i < Integer.MAX_VALUE-step; i += step )
+        int stride = Integer.MAX_VALUE/VALUE_RANGE_SPLIT;
+        for ( int i = Integer.MIN_VALUE; i < Integer.MAX_VALUE; )
         {
             setPropertyAndAssertIt( node, i );
+            i = i > 0 && Integer.MAX_VALUE-i < stride ? Integer.MAX_VALUE : i + stride;
         }
     }
 
     @Test
     public void longRange() throws Exception
     {
-        long step = 120000000000001L;
         Node node = getGraphDb().createNode();
-        for ( long i = Long.MIN_VALUE; i < Long.MAX_VALUE-step; i += step )
+        long stride = Long.MAX_VALUE/VALUE_RANGE_SPLIT;
+        for ( long i = Long.MIN_VALUE; i < Long.MAX_VALUE; )
         {
             setPropertyAndAssertIt( node, i );
+            i = i > 0 && Long.MAX_VALUE-i < stride ? Long.MAX_VALUE : i + stride;
         }
     }
 
     @Test
     public void floatRange() throws Exception
     {
-        float step = 1234567890123456789012345678901234.1234F;
         Node node = getGraphDb().createNode();
-        for ( float i = Float.MIN_VALUE; i < Float.MAX_VALUE-step; i += step )
+        float stride = 16f;
+        for ( float i = Float.MIN_VALUE; i < Float.MAX_VALUE; )
         {
             setPropertyAndAssertIt( node, i );
+            setPropertyAndAssertIt( node, -i );
+            i *= stride;
         }
     }
 
     @Test
     public void doubleRange() throws Exception
     {
-        double step = 12.345;
         Node node = getGraphDb().createNode();
-        for ( double i = Double.MIN_VALUE; i < Double.MAX_VALUE; i += step, step *= 1.004D )
+        double stride = 4194304d; // 2^23
+        for ( double i = Double.MIN_VALUE; i < Double.MAX_VALUE; )
         {
             setPropertyAndAssertIt( node, i );
+            setPropertyAndAssertIt( node, -i );
+            i *= stride;
         }
     }
 
@@ -227,7 +241,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     public void loadManyProperties() throws Exception
     {
         Node node = getGraphDb().createNode();
-        for ( int i = 0; i < 1000; i++ )
+        for ( int i = 0; i < 200; i++ )
         {
             node.setProperty( "property " + i, "value" );
         }
