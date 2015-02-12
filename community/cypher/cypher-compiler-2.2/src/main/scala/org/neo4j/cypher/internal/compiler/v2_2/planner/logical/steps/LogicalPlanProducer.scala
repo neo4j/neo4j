@@ -58,7 +58,6 @@ object LogicalPlanProducer extends CollectionSupport {
       solved = left.solved.updateTailOrSelf(_.withTail(right.solved)))
 
   def planCartesianProduct(left: LogicalPlan, right: LogicalPlan) = {
-    assert((left.solved.graph.allCoveredIds intersect right.solved.graph.allCoveredIds).isEmpty)
     CartesianProduct(left, right)(
       left.solved ++ right.solved)
   }

@@ -1886,4 +1886,21 @@ return b
       path.relationships().asScala.toList should equal(Seq(fourToThree, threeToTwo, twoToOne))
     }
   }
+
+  test("should handle cartesian products even when same argument exists on both sides") {
+    val node1 = createNode()
+    val node2 = createNode()
+    val r = relate(node1, node2)
+
+    val query = """PLANNER COST WITH [{0}, {1}] AS x, count(*) as y
+                  |MATCH (n) WHERE ID(n) IN x
+                  |MATCH (m) WHERE ID(m) IN x
+                  |MATCH paths = allShortestPaths((n)-[*..1]-(m))
+                  |RETURN paths""".stripMargin
+
+    val result = executeWithNewPlanner(query, "0" -> node1.getId, "1" -> node2.getId)
+    graph.inTx(
+      result.toSet should equal(Set(Map("paths" -> new PathImpl(node1, r, node2)), Map("paths" -> new PathImpl(node2, r, node1))))
+    )
+  }
 }
