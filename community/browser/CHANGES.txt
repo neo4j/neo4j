@@ -1,6 +1,9 @@
 2.2.0-M04
 ---------
-o Username & password is now used for all interactions.
+o Username & password are now used for all interactions.
+o Export graph and query plan as PNG images.
+o Export query plan as JSON.
+o Loop relationship rendering.
 
 2.2.0-M03
 ---------
