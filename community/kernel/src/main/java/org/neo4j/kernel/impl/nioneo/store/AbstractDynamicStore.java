@@ -585,10 +585,10 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
             throw new UnderlyingStorageException(
                     "Unable to rebuild id generator " + getStorageFileName(), e );
         }
-        stringLogger.debug( "[" + getStorageFileName() + "] high id=" + getHighId()
-                            + " (defragged=" + defraggedCount + ")" );
-        stringLogger.logMessage( getStorageFileName() + " rebuild id generator, highId=" + getHighId() +
-                                 " defragged count=" + defraggedCount, true );
+        stringLogger.debug( "[" + getStorageFileName() + "] high id=" + getHighId() +
+                " (defragged=" + defraggedCount + ")" );
+        stringLogger.debug( getStorageFileName() + " rebuild id generator, highId=" + getHighId() +
+                " defragged count=" + defraggedCount );
         closeIdGenerator();
         openIdGenerator();
     }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
 
 import java.io.EOFException;
@@ -54,7 +55,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     {
         super( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, 1 );
         this.directoryFactory = directoryFactory;
-        this.rootDirectory = getRootDirectory( config, LuceneSchemaIndexProviderFactory.KEY );
+        this.rootDirectory = getRootDirectory( config.get( store_dir ), LuceneSchemaIndexProviderFactory.KEY );
         this.folderLayout = new FolderLayout( rootDirectory );
         this.failureStorage = new FailureStorage( folderLayout );
     }

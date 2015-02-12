@@ -742,8 +742,8 @@ public class XaResourceManager
 
     synchronized void checkXids() throws IOException
     {
-        msgLog.logMessage( "XaResourceManager[" + name + "] sorting " +
-                xidMap.size() + " xids" );
+        msgLog.debug( "XaResourceManager[" + name + "] sorting " +
+                      xidMap.size() + " xids" );
         Iterator<Xid> keyIterator = xidMap.keySet().iterator();
         LinkedList<Xid> xids = new LinkedList<>();
         while ( keyIterator.hasNext() )
@@ -825,7 +825,7 @@ public class XaResourceManager
                 // TODO: Why are we not throwing this?
                 msgLog.error( "Recovery error while committing unrecovered exception.", e );
             }
-            msgLog.info( "XaResourceManager[" + name + "] recovery completed." );
+            msgLog.debug( "XaResourceManager[" + name + "] recovery completed." );
         }
     }
 

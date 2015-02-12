@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.index;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
@@ -31,16 +32,18 @@ public class FailedPopulatingIndexProxyFactory implements FailedIndexProxyFactor
     private final SchemaIndexProvider.Descriptor providerDescriptor;
     private final IndexPopulator populator;
     private final String indexUserDescription;
+    private final StringLogger logger;
 
     FailedPopulatingIndexProxyFactory( IndexDescriptor descriptor,
-                                       SchemaIndexProvider.Descriptor providerDescriptor,
-                                       IndexPopulator populator,
-                                       String indexUserDescription )
+            SchemaIndexProvider.Descriptor providerDescriptor,
+            IndexPopulator populator,
+            String indexUserDescription, StringLogger logger )
     {
         this.descriptor = descriptor;
         this.providerDescriptor = providerDescriptor;
         this.populator = populator;
         this.indexUserDescription = indexUserDescription;
+        this.logger = logger;
     }
 
     @Override
@@ -49,6 +52,6 @@ public class FailedPopulatingIndexProxyFactory implements FailedIndexProxyFactor
         return
             new FailedIndexProxy(
                 descriptor, providerDescriptor,
-                indexUserDescription, populator, failure( failure ) );
+                indexUserDescription, populator, failure( failure ), logger );
     }
 }

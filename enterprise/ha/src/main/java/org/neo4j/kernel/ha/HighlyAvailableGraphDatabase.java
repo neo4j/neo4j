@@ -29,8 +29,6 @@ import java.util.List;
 import java.util.Map;
 import javax.transaction.Transaction;
 
-import org.jboss.netty.logging.InternalLoggerFactory;
-
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -140,8 +138,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                                          Iterable<CacheProvider> cacheProviders,
                                          Iterable<TransactionInterceptorProvider> txInterceptorProviders )
     {
-        this( storeDir, params, new GraphDatabaseDependencies( null,
-                Arrays.asList( GraphDatabaseSettings.class, ClusterSettings.class, HaSettings.class ),
+        this( storeDir, params, new GraphDatabaseDependencies( null, null,
+                Arrays.<Class<?>>asList( GraphDatabaseSettings.class, ClusterSettings.class, HaSettings.class ),
                 kernelExtensions, cacheProviders, txInterceptorProviders ) );
     }
 

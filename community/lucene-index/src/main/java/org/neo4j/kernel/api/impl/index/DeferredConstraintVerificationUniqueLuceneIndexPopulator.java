@@ -74,11 +74,6 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
     }
 
     @Override
-    public void drop()
-    {
-    }
-
-    @Override
     protected void flush() throws IOException
     {
         // no need to do anything yet.

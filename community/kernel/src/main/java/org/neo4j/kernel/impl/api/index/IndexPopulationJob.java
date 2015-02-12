@@ -61,6 +61,7 @@ public class IndexPopulationJob implements Runnable
 
     private final IndexDescriptor descriptor;
     private final FailedIndexProxyFactory failureDelegate;
+    private IndexingService.Monitor monitor;
     private final IndexPopulator populator;
     private final FlippableIndexProxy flipper;
     private final UpdateableSchemaState updateableSchemaState;
@@ -71,12 +72,13 @@ public class IndexPopulationJob implements Runnable
     private volatile boolean cancelled;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
 
-    public IndexPopulationJob(IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
-                              String indexUserDescription,
-                              FailedIndexProxyFactory failureDelegateFactory,
-                              IndexPopulator populator, FlippableIndexProxy flipper,
-                              IndexStoreView storeView, UpdateableSchemaState updateableSchemaState,
-                              Logging logging)
+    public IndexPopulationJob( IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
+            String indexUserDescription,
+            FailedIndexProxyFactory failureDelegateFactory,
+            IndexPopulator populator, FlippableIndexProxy flipper,
+            IndexStoreView storeView, UpdateableSchemaState updateableSchemaState,
+            Logging logging,
+            IndexingService.Monitor monitor )
     {
         this.descriptor = descriptor;
         this.providerDescriptor = providerDescriptor;
@@ -86,6 +88,7 @@ public class IndexPopulationJob implements Runnable
         this.updateableSchemaState = updateableSchemaState;
         this.indexUserDescription = indexUserDescription;
         this.failureDelegate = failureDelegateFactory;
+        this.monitor = monitor;
         this.log = logging.getMessagesLog( getClass() );
     }
 
@@ -159,7 +162,7 @@ public class IndexPopulationJob implements Runnable
                 // place is that we would otherwise introduce a race condition where updates could come
                 // in to the old context, if something failed in the job we send to the flipper.
                 flipper.flipTo( new FailedIndexProxy( descriptor, providerDescriptor, indexUserDescription,
-                                                      populator, failure( t ) ) );
+                                                      populator, failure( t ), log ) );
             }
             finally
             {
@@ -210,6 +213,7 @@ public class IndexPopulationJob implements Runnable
             }
         });
         storeScan.run();
+        monitor.verifyDeferredConstraints();
         try
         {
             populator.verifyDeferredConstraints( storeView );

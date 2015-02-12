@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -55,6 +56,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.neo4j.helpers.Function;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -343,14 +345,16 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
             return null;
 
         List<String> directoryPathItems = splitPath( directory );
-        List<File> found = new ArrayList<>();
-        for ( Map.Entry<File, EphemeralFileData> file : files.entrySet() )
+
+        Set<File> found = new HashSet<>();
+        Iterable<File> files = Iterables.concat( this.files.keySet(), directories );
+        for ( File file : files )
         {
-            File fileName = file.getKey();
-            List<String> fileNamePathItems = splitPath( fileName );
+            List<String> fileNamePathItems = splitPath( file );
             if ( directoryMatches( directoryPathItems, fileNamePathItems ) )
                 found.add( constructPath( fileNamePathItems, directoryPathItems.size()+1 ) );
         }
+
         return found.toArray( new File[found.size()] );
     }
 
@@ -362,11 +366,11 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
             return null;
 
         List<String> directoryPathItems = splitPath( directory );
-        List<File> found = new ArrayList<>();
-        for ( Map.Entry<File, EphemeralFileData> file : files.entrySet() )
+        Set<File> found = new HashSet<>();
+        Iterable<File> files = Iterables.concat( this.files.keySet(), directories );
+        for ( File file : files )
         {
-            File fileName = file.getKey();
-            List<String> fileNamePathItems = splitPath( fileName );
+            List<String> fileNamePathItems = splitPath( file );
             if ( directoryMatches( directoryPathItems, fileNamePathItems ) )
             {
                 File path = constructPath( fileNamePathItems, directoryPathItems.size() + 1 );

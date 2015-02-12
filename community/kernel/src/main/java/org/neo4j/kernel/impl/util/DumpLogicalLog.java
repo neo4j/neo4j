@@ -192,12 +192,13 @@ public class DumpLogicalLog
         return getTimeZone( arguments.get( "timezone", DEFAULT_TIME_ZONE.getID() ) );
     }
 
-    protected static String[] filenamesOf( String filenameOrDirectory, final String prefix )
+    protected String[] filenamesOf( String filenameOrDirectory, final String prefix )
     {
+
         File file = new File( filenameOrDirectory );
-        if ( file.isDirectory() )
+        if ( fileSystem.isDirectory(file) )
         {
-            File[] files = file.listFiles( new FilenameFilter()
+            File[] files = fileSystem.listFiles( file , new FilenameFilter()
             {
                 @Override
                 public boolean accept( File dir, String name )
