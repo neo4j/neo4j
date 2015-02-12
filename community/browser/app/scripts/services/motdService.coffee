@@ -22,9 +22,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 angular.module('neo4jApp.services')
   .factory 'motdService', [
-    'rssFeedService', 
-    'motdFeedParser'
-    (rssFeedService, motdFeedParser) ->
+    'rssFeedService',
+    'motdFeedParser',
+    'Settings'
+    (rssFeedService, motdFeedParser, Settings) ->
       class Motd
 
         choices =
@@ -76,7 +77,6 @@ angular.module('neo4jApp.services')
         emptiness: ""
 
         constructor: ->
-          @refresh()
 
         setCallToActionVersion: (version) ->
           return if @cta_version is version
@@ -85,22 +85,22 @@ angular.module('neo4jApp.services')
 
         getCallToActionFeedItem: (feed) ->
           that = @
-          match_filter = 
+          match_filter =
             version: (val) ->
-              return true unless val 
+              return true unless val
               re = new RegExp('^' + val)
               res = re.test(that.cta_version)
-            combo: (val) -> 
+            combo: (val) ->
               return false unless val
               res = /^!/.test val
           item = motdFeedParser.getFirstMatch(feed, match_filter)
 
           if not item?.d
-            match_filter = 
-              version: (val) -> 
+            match_filter =
+              version: (val) ->
                 return true unless val
                 re = new RegExp('^' + val)
-                hit = re.test(that.cta_version) 
+                hit = re.test(that.cta_version)
                 return hit or val is 'neo4j'
             item = motdFeedParser.getFirstMatch(feed, match_filter)
           item.bang = motdFeedParser.explodeTags(item.t).combo?.replace(/[^a-z]*/ig, '')
@@ -113,7 +113,8 @@ angular.module('neo4jApp.services')
           @emptiness = @pickRandomlyFrom(choices.emptiness)
           @disconnected = @pickRandomlyFrom(choices.disconnected)
           @callToAction = @pickRandomlyFrom(choices.callToAction)
-          
+
+          return if Settings.enableMotd is false
           rssFeedService.get().then (feed) => @callToAction = @getCallToActionFeedItem feed
 
 
