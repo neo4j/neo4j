@@ -58,7 +58,7 @@ public class BufferedCharSeeker implements CharSeeker, SourceMonitor
     // bufferPos when we started reading the current field
     private int seekStartPos;
     // effectively 1-based value of which logical "line" we're reading a.t.m.
-    private int lineNumber = 1;
+    private int lineNumber;
     // flag to know if we've read to the end
     private boolean eof;
     // char to recognize as quote start/end
@@ -115,7 +115,6 @@ public class BufferedCharSeeker implements CharSeeker, SourceMonitor
                 }
                 else if ( isNewLine( ch ) )
                 {   // Encountered newline, done for now
-                    lineNumber++;
                     if ( bufferPos-1 == lineStartPos )
                     {   // We're at the start of this read so just skip it
                         seekStartPos++;
@@ -150,7 +149,10 @@ public class BufferedCharSeeker implements CharSeeker, SourceMonitor
                 }
                 else if ( isNewLine( ch ) )
                 {   // Found a new line, just keep going
-                    lineNumber++;
+                    if ( ch == EOL_CHAR )
+                    {
+                        lineNumber++;
+                    }
                     nextChar( skippedChars );
                 }
                 else if ( ch == BACK_SLASH )
@@ -171,6 +173,7 @@ public class BufferedCharSeeker implements CharSeeker, SourceMonitor
         }
 
         // We found the last value of the line or stream
+        lineNumber++;
         lineStartPos = bufferPos;
         mark.set( seekStartPos, bufferPos - endOffset - skippedChars, END_OF_LINE_CHARACTER, isQuoted );
         return true;
