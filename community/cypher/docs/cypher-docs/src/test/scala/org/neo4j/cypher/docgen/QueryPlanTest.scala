@@ -194,10 +194,10 @@ class QueryPlanTest extends DocumentingTestBase {
     profileQuery(
       title = "Cartesian Product",
       text =
-        """Produces a cross product of the two inputs -- each row coming from the left child will be matched with all the rows from the right child operator.
-          |The following query will join all the people with all the locations and return the cartesian product of the nodes with those labels.
+        """Produces a cartesian product of the two inputs -- each row coming from the left child will be combined with all the rows from the right child operator.
+          |The following query will produce all combinations of people and teams. With five people and two teams we will see ten combinations. This is analogous to the 'cross join' in SQL which is also defined as a 'cartesian product'.
         """.stripMargin,
-      queryText = """MATCH (p:Person), (l:Location) RETURN p, l""",
+      queryText = """MATCH (p:Person), (t:Team) RETURN p, t""",
       assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("CartesianProduct"))
     )
   }
