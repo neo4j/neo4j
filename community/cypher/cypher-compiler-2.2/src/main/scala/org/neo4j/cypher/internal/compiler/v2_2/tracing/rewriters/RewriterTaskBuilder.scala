@@ -21,44 +21,21 @@ package org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_2.Rewriter
 
-import scala.annotation.tailrec
-
 case object RewriterTaskBuilder {
 
-  def apply(steps: Seq[RewriterStep]): Seq[RewriterTask] = State()(steps)
-
-  final private case class State(
-    conditions: Set[RewriterCondition] = Set.empty,
-    previousName: Option[String] = None,
-    tasks: Seq[RewriterTask] = Seq.empty
-  ) {
-
-    self =>
-    @tailrec
-    def apply(steps: Seq[RewriterStep]): Seq[RewriterTask] = steps match {
-      case Seq(hd, tl @_*) =>
-        hd match {
-          case ApplyRewriter(name, rewriter) =>
-            withConditionsAppended.withRewriterAppended(name, rewriter).apply(tl)
-
-          case EnableRewriterCondition(cond) =>
-            copy(conditions + cond)(tl)
-
-          case DisableRewriterCondition(cond) =>
-            copy(conditions - cond)(tl)
-
-          case EmptyRewriterStep =>
-            self(tl)
-        }
-
-      case _ =>
-        withConditionsAppended.tasks
-    }
-
-    private def withRewriterAppended(name: String, rewriter: Rewriter) =
-      copy(previousName = Some(name), tasks = tasks :+ RunRewriter(name, rewriter))
-
-    private def withConditionsAppended =
-      if (conditions.isEmpty) self else copy(tasks = tasks :+ RunConditions(previousName, conditions))
+  private case class State(conditions: Set[RewriterCondition] = Set.empty,
+                           previousName: Option[String] = None,
+                           tasks: Seq[RewriterTask] = Seq.empty) {
+    def +(name: String, rewriter: Rewriter) =
+      copy(previousName = Some(name), tasks = allTasks :+ RunRewriter(name, rewriter))
+    def +(condition: RewriterCondition) = copy(conditions = conditions + condition)
+    def -(condition: RewriterCondition) = copy(conditions = conditions - condition)
+    def allTasks = if (conditions.isEmpty) tasks else tasks :+ RunConditions(previousName, conditions)
   }
+
+  def apply(steps: Seq[RewriterStep]): Seq[RewriterTask] = steps.foldLeft(State()) {
+    case (state, ApplyRewriter(name, rewriter)) => state +(name, rewriter)
+    case (state, EnableRewriterCondition(condition)) => state + condition
+    case (state, DisableRewriterCondition(condition)) => state - condition
+  }.allTasks
 }

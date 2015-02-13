@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 
 import collection.mutable
 
-case class RewriterContract(childRewriters: Seq[Rewriter], postConditions: Set[RewriterCondition] = Set.empty) {
+case class RewriterContract(childRewriters: Seq[Rewriter], postConditions: Set[RewriterCondition]) {
   val rewriter = inSequence(childRewriters: _*)
 }
 
@@ -44,56 +44,36 @@ object RewriterStepSequencer {
     ValidatingRewriterStepSequencer(sequenceName, TracingRewriterTaskProcessor(sequenceName, onlyIfChanged))
 }
 
-trait RewriterStepSequencer extends mutable.Builder[RewriterStep, RewriterContract] {
-
+trait RewriterStepSequencer extends ((RewriterStep*) => RewriterContract) {
   self =>
 
-  private var _steps: mutable.Builder[RewriterStep, Seq[RewriterStep]] = Seq.newBuilder
+  private val _steps: mutable.Builder[RewriterStep, Seq[RewriterStep]] = Seq.newBuilder
 
   def withPrecondition(conditions: Set[RewriterCondition]) = {
-    conditions.foldLeft(self) {
-      case (acc, cond) => acc += EnableRewriterCondition(cond)
-    }
-  }
-
-  def apply(steps: RewriterStep*) = {
-    steps.foldLeft(self) {
-      case (acc, step) => acc += step
-    }.result()
-  }
-
-  override def +=(elem: RewriterStep): this.type = {
-    _steps += elem
+    conditions.foldLeft(_steps) { (acc, cond) => acc += EnableRewriterCondition(cond)}
     self
   }
 
-  def result() = result(_steps.result())
+  def apply(steps: RewriterStep*): RewriterContract =
+    internalResult(steps.foldLeft(_steps) { (acc, step) => acc += step }.result())
 
-  protected def result(steps: Seq[RewriterStep]): RewriterContract
-
-  def clear(): Unit = {
-    _steps.clear()
-  }
+  protected def internalResult(steps: Seq[RewriterStep]): RewriterContract
 }
 
 case class PlainRewriterStepSequencer(sequenceName: String, taskProcessor: RewriterTaskProcessor) extends RewriterStepSequencer {
 
-  protected def result(steps: Seq[RewriterStep]): RewriterContract = {
-    val tasks = steps.collect { case ApplyRewriter(name, rewriter) => RunRewriter(name, rewriter) }
-    val rewriters = tasks.map(taskProcessor)
-    RewriterContract(rewriters)
+  protected def internalResult(steps: Seq[RewriterStep]): RewriterContract = {
+    val rewriters = steps.collect { case ApplyRewriter(name, rewriter) => taskProcessor(RunRewriter(name, rewriter)) }
+    RewriterContract(rewriters, Set.empty)
   }
 }
 
 case class ValidatingRewriterStepSequencer(sequenceName: String, taskProcessor: RewriterTaskProcessor) extends RewriterStepSequencer {
 
-  protected def result(steps: Seq[RewriterStep]): RewriterContract = {
+  protected def internalResult(steps: Seq[RewriterStep]): RewriterContract = {
     val tasks = RewriterTaskBuilder(steps)
     val rewriters = tasks.map(taskProcessor)
-    val postConditions: Set[RewriterCondition] = tasks.lastOption match {
-      case Some(task: RunConditions) => task.conditions
-      case _                         => Set.empty
-    }
+    val postConditions = tasks.lastOption.collect { case task: RunConditions => task.conditions }.getOrElse(Set.empty)
     RewriterContract(rewriters, postConditions)
   }
 }

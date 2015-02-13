@@ -22,20 +22,16 @@ package org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters
 import org.neo4j.cypher.internal.compiler.v2_2._
 
 object RewriterStep {
-   type Named[T] = Product with T
+   implicit def namedProductRewriter(p: Product with Rewriter): ApplyRewriter = ApplyRewriter(p.productPrefix, p)
 
-   implicit def namedProductRewriter(p: Named[Rewriter]) = ApplyRewriter(p.productPrefix, p)
-   implicit def productRewriterCondition(p: Condition) = RewriterCondition(p.name, p)
-
-   def enableCondition(p: Condition) = EnableRewriterCondition(p)
-   def disableCondition(p: Condition) = DisableRewriterCondition(p)
+   def enableCondition(p: Condition) = EnableRewriterCondition(RewriterCondition(p.name, p))
+   def disableCondition(p: Condition) = DisableRewriterCondition(RewriterCondition(p.name, p))
  }
 
 sealed trait RewriterStep
 final case class ApplyRewriter(name: String, rewriter: Rewriter) extends RewriterStep
 final case class EnableRewriterCondition(cond: RewriterCondition) extends RewriterStep
 final case class DisableRewriterCondition(cond: RewriterCondition) extends RewriterStep
-case object EmptyRewriterStep extends RewriterStep
 
 trait Condition extends (Any => Seq[String]) {
    def name: String
