@@ -1,59 +1,42 @@
 [[execution-plans]]
 = Execution Plans =
 
-Cypher is a declarative query language.
-This means that a statement describes what should be done, and not how to actually do it.
-Before a query is run it is transformed into an imperative solution for the statement.
-This solution is called an execution plan.
-An execution plan is a tree composed of operators, each non-leaf feeding from one or two children.
-To analyze a query for performance improvements, you will need understand how Neo4j is running your Cypher statements.
+Cypher breaks down the work of executing a query into small pieces called operators.
+Each operator is responsible for a small part of the overall query.
+The operators are connected together in a pattern called a execution plan.
 
-See <<how-do-i-profile-a-query>> for an explanation of how to view the execution plan for your query.
+Each operator is annotated with statistics.
 
-An execution plan gives you a few distinct pieces information per operator in the plan:
-
-`Operator`::
-The name of the operator.
-`EstimatedRows`::
-You will see the estimated number of rows of your execution plan if the cost based compiler has been used.
-These metrics were not calculated in older versions of Cypher, so if your query is being compiled by an older compiler, you will not see the estimated number of rows.
 `Rows`::
+The number of rows that the operator produced. Only available if the query was profiled.
+`EstimatedRows`::
+If Neo4j used the cost-based compiler you will see the estimated number of rows that will be produced by the operator.
+The compiler uses this estimate to choose a suitable execution plan.
 `DbHits`::
-If you have profiled your query, you will also see the number of rows that actually passed through an operator, and how many `DbHits` were needed to execute that operator.
-A `DbHit` is a call to the IO subsystem of Neo4j -- something needed to be fetched either from cache or from disk.
+Each operator will ask the Neo4j storage engine to do work such as retrieving or updating data.
+A _database hit_ is an abstract unit of this storage engine work.
 
-If the `EstimatedRows` and the actual `Rows` passed through an operator are very far from each other, this could be a problem with outdated statistics.
+See <<how-do-i-profile-a-query>> for how to view the execution plan for your query.
 
-You will find some of the operators used in execution plans in the following sections.
+For a deeper understanding of how each operator works, see the relavent section.
+Operators are grouped into high-level categories.
 
 :leveloffset: 1
 
-include::ql/query-plan/all-nodes-scan.asciidoc[]
-include::ql/query-plan/anti-semi-apply.asciidoc[]
-include::ql/query-plan/cartesian-product.asciidoc[]
-include::ql/query-plan/constraint-operation.asciidoc[]
-include::ql/query-plan/distinct.asciidoc[]
-include::ql/query-plan/directed-relationship-by-id-seek.asciidoc[]
-include::ql/query-plan/eager-aggregation.asciidoc[]
-include::ql/query-plan/empty-result.asciidoc[]
-include::ql/query-plan/expand-all.asciidoc[]
-include::ql/query-plan/filter.asciidoc[]
-include::ql/query-plan/let-anti-semi-apply.asciidoc[]
-include::ql/query-plan/let-semi-apply.asciidoc[]
-include::ql/query-plan/limit.asciidoc[]
-include::ql/query-plan/node-by-label-scan.asciidoc[]
-include::ql/query-plan/node-by-id-seek.asciidoc[]
-include::ql/query-plan/node-index-seek.asciidoc[]
-include::ql/query-plan/node-unique-index-seek.asciidoc[]
-include::ql/query-plan/optional-expand-all.asciidoc[]
-include::ql/query-plan/projection.asciidoc[]
-include::ql/query-plan/select-or-anti-semi-apply.asciidoc[]
-include::ql/query-plan/select-or-semi-apply.asciidoc[]
-include::ql/query-plan/semi-apply.asciidoc[]
-include::ql/query-plan/skip.asciidoc[]
-include::ql/query-plan/sort.asciidoc[]
-include::ql/query-plan/top.asciidoc[]
-include::ql/query-plan/undirected-relationship-by-id-seek.asciidoc[]
-include::ql/query-plan/union.asciidoc[]
-include::ql/query-plan/unwind.asciidoc[]
-include::ql/query-plan/update-graph.asciidoc[]
+include::execution-plan-groups/starting-query.asciidoc[]
+
+:leveloffset: 1
+
+include::execution-plan-groups/expand.asciidoc[]
+
+:leveloffset: 1
+
+include::execution-plan-groups/combining.asciidoc[]
+
+:leveloffset: 1
+
+include::execution-plan-groups/row.asciidoc[]
+
+:leveloffset: 1
+
+include::execution-plan-groups/update.asciidoc[]

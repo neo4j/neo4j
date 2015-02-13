@@ -34,6 +34,3 @@ include::ql/union/index.asciidoc[]
 include::ql/using/index.asciidoc[]
 
 :leveloffset: 0
-
-
-
