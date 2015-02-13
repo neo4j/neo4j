@@ -83,7 +83,7 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
     resultingPlanTable.plans.head should equal(expectedResult)
   }
 
-  test("should not try to solve optional match if cross product still needed") {
+  test("should not try to solve optional match if cartesian product still needed") {
     // Given
     val qg = QueryGraph(
       patternNodes = Set("a", "b") // MATCH a, b
