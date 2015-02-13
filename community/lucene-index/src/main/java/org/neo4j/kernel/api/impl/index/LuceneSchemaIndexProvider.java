@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
-import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.store.Directory;
 
 import java.io.EOFException;
 import java.io.File;
@@ -29,8 +29,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.store.Directory;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -40,6 +38,10 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.kernel.api.index.util.FolderLayout;
 import org.neo4j.kernel.configuration.Config;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
+import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.tracking;
+import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.reserving;
 
 public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 {
@@ -66,15 +68,14 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
         if ( config.isUnique() )
         {
             return new DeferredConstraintVerificationUniqueLuceneIndexPopulator(
-                    documentStructure, standard(), writerStatus,
-                    directoryFactory, folderLayout.getFolder( indexId ), failureStorage,
-                    indexId, descriptor );
+                    documentStructure, tracking(), writerStatus, directoryFactory,
+                    folderLayout.getFolder( indexId ), failureStorage, indexId, descriptor );
         }
         else
         {
             return new NonUniqueLuceneIndexPopulator(
-                    NonUniqueLuceneIndexPopulator.DEFAULT_QUEUE_THRESHOLD, documentStructure, standard(), writerStatus,
-                    directoryFactory, folderLayout.getFolder( indexId ), failureStorage, indexId );
+                    NonUniqueLuceneIndexPopulator.DEFAULT_QUEUE_THRESHOLD, documentStructure, tracking(),
+                    writerStatus, directoryFactory, folderLayout.getFolder( indexId ), failureStorage, indexId );
         }
     }
 
@@ -83,12 +84,12 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     {
         if ( config.isUnique() )
         {
-            return new UniqueLuceneIndexAccessor( documentStructure, standard(), writerStatus, directoryFactory,
+            return new UniqueLuceneIndexAccessor( documentStructure, reserving(), writerStatus, directoryFactory,
                     folderLayout.getFolder( indexId ) );
         }
         else
         {
-            return new NonUniqueLuceneIndexAccessor( documentStructure, standard(), writerStatus, directoryFactory,
+            return new NonUniqueLuceneIndexAccessor( documentStructure, reserving(), writerStatus, directoryFactory,
                     folderLayout.getFolder( indexId ) );
         }
     }

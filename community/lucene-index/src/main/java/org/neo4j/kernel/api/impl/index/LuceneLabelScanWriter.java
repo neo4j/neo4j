@@ -32,8 +32,10 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.impl.index.bitmaps.Bitmap;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 public class LuceneLabelScanWriter implements LabelScanWriter
@@ -56,7 +58,7 @@ public class LuceneLabelScanWriter implements LabelScanWriter
     }
 
     @Override
-    public void write( NodeLabelUpdate update ) throws IOException
+    public void write( NodeLabelUpdate update ) throws IOException, IndexCapacityExceededException
     {
         long range = format.bitmapFormat().rangeOf( update.getNodeId() );
 
@@ -77,9 +79,19 @@ public class LuceneLabelScanWriter implements LabelScanWriter
     @Override
     public void close() throws IOException
     {
-        flush();
-        storage.releaseSearcher( searcher );
-        storage.refreshSearcher();
+        try
+        {
+            flush();
+        }
+        catch ( IndexCapacityExceededException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+        finally
+        {
+            storage.releaseSearcher( searcher );
+            storage.refreshSearcher();
+        }
     }
 
     private Map<Long/*range*/, Bitmap> readLabelBitMapsInRange( IndexSearcher searcher, long range ) throws IOException
@@ -103,7 +115,7 @@ public class LuceneLabelScanWriter implements LabelScanWriter
     }
 
 
-    private void flush() throws IOException
+    private void flush() throws IOException, IndexCapacityExceededException
     {
         if ( currentRange < 0 )
         {

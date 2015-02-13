@@ -187,6 +187,7 @@ public interface Status
         NoSuchSchemaRule( DatabaseError, "The request referred to a schema rule that does not exist." ),
 
         LabelLimitReached( ClientError, "The maximum number of labels supported has been reached, no more labels can be created." ),
+        IndexLimitReached( ClientError, "The maximum number of index entries supported has been reached, no more entities can be indexed." ),
 
         ;
 

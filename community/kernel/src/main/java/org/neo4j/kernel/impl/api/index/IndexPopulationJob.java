@@ -27,6 +27,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
@@ -205,7 +206,7 @@ public class IndexPopulationJob implements Runnable
                     populator.add( update.getNodeId(), update.getValueAfter() );
                     populateFromQueueIfAvailable( update.getNodeId() );
                 }
-                catch ( IndexEntryConflictException | IOException conflict )
+                catch ( IndexEntryConflictException | IndexCapacityExceededException | IOException conflict )
                 {
                     throw new IndexPopulationFailedKernelException( descriptor, indexUserDescription, conflict );
                 }
@@ -225,7 +226,7 @@ public class IndexPopulationJob implements Runnable
     }
 
     private void populateFromQueueIfAvailable( final long highestIndexedNodeId )
-            throws IndexEntryConflictException, IOException
+            throws IndexEntryConflictException, IndexCapacityExceededException, IOException
     {
         if ( !queue.isEmpty() )
         {

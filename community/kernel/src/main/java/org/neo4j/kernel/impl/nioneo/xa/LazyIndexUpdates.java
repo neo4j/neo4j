@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.nioneo.xa;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -51,12 +52,12 @@ class LazyIndexUpdates implements IndexUpdates
 {
     private final NodeStore nodeStore;
     private final PropertyStore propertyStore;
-    private final Collection<List<PropertyCommand>> propCommands;
+    private final Map<Long,List<PropertyCommand>> propCommands;
     private final Map<Long, NodeCommand> nodeCommands;
     private Collection<NodePropertyUpdate> updates;
 
     public LazyIndexUpdates( NodeStore nodeStore, PropertyStore propertyStore,
-                             Collection<List<PropertyCommand>> propCommands, Map<Long, NodeCommand> nodeCommands )
+                             Map<Long,List<PropertyCommand>> propCommands, Map<Long, NodeCommand> nodeCommands )
     {
         this.nodeStore = nodeStore;
         this.propertyStore = propertyStore;
@@ -78,7 +79,7 @@ class LazyIndexUpdates implements IndexUpdates
     public Set<Long> changedNodeIds()
     {
         Set<Long> nodeIds = new HashSet<>( nodeCommands.keySet() );
-        for ( List<PropertyCommand> propCmd : propCommands )
+        for ( List<PropertyCommand> propCmd : propCommands.values() )
         {
             PropertyRecord record = propCmd.get( 0 ).getAfter();
             if ( record.isNodeSet() )
@@ -101,7 +102,7 @@ class LazyIndexUpdates implements IndexUpdates
     private void gatherUpdatesFromPropertyCommands( Collection<NodePropertyUpdate> updates,
                                                     Map<Pair<Long, Integer>, NodePropertyUpdate> propertyLookup )
     {
-        for ( List<PropertyCommand> propertyCommands : propCommands )
+        for ( List<PropertyCommand> propertyCommands : propCommands.values() )
         {
             // Let after state of first command here be representative of the whole group
             PropertyRecord representative = propertyCommands.get( 0 ).getAfter();
@@ -170,6 +171,11 @@ class LazyIndexUpdates implements IndexUpdates
             }
 
             LabelChangeSummary summary = new LabelChangeSummary( labelsBefore, labelsAfter );
+            if ( !summary.hasAddedLabels() && !summary.hasRemovedLabels() )
+            {
+                continue;
+            }
+
             Iterator<DefinedProperty> properties = nodeFullyLoadProperties( nodeId );
             while ( properties.hasNext() )
             {
@@ -193,7 +199,28 @@ class LazyIndexUpdates implements IndexUpdates
     private Iterator<DefinedProperty> nodeFullyLoadProperties( long nodeId )
     {
         IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
-        NeoStoreTransaction.loadProperties( propertyStore, nodeCommands.get( nodeId ).getAfter().getNextProp(), receiver );
+        Map<Long,PropertyRecord> propertiesById = propertiesFromCommandsForNode( nodeId );
+        NeoStoreTransaction.loadProperties(
+                propertyStore, nodeCommands.get( nodeId ).getAfter().getNextProp(), receiver, propertiesById );
         return receiver;
+    }
+
+    private Map<Long,PropertyRecord> propertiesFromCommandsForNode( long nodeId )
+    {
+        List<PropertyCommand> propertyCommands = propCommands.get( nodeId );
+        if ( propertyCommands == null )
+        {
+            return Collections.emptyMap();
+        }
+        Map<Long,PropertyRecord> result = new HashMap<>( propertyCommands.size(), 1 );
+        for ( PropertyCommand command : propertyCommands )
+        {
+            PropertyRecord after = command.getAfter();
+            if ( after.inUse() && after.isNodeSet() )
+            {
+                result.put( after.getId(), after );
+            }
+        }
+        return result;
     }
 }

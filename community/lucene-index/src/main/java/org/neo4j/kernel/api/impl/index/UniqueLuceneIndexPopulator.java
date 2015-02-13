@@ -26,15 +26,16 @@ import java.util.Map;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TopDocs;
 
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.Reservation;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 
 /**
@@ -50,7 +51,7 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
     private Map<Object, Long> currentBatch = newBatchMap();
 
     UniqueLuceneIndexPopulator( int batchSize, LuceneDocumentStructure documentStructure,
-                                LuceneIndexWriterFactory indexWriterFactory,
+                                IndexWriterFactory<LuceneIndexWriter> indexWriterFactory,
                                 IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile,
                                 FailureStorage failureStorage, long indexId )
     {
@@ -67,7 +68,7 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
     public void create() throws IOException
     {
         super.create();
-        searcherManager = new SearcherManager( writer, true, new SearcherFactory() );
+        searcherManager = writer.createSearcherManager();
     }
 
     @Override
@@ -83,7 +84,8 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
     }
 
     @Override
-    public void add( long nodeId, Object propertyValue ) throws IndexEntryConflictException, IOException
+    public void add( long nodeId, Object propertyValue )
+            throws IndexEntryConflictException, IOException, IndexCapacityExceededException
     {
         Long previousEntry = currentBatch.get( propertyValue );
         if ( previousEntry == null )
@@ -133,7 +135,14 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
         return new IndexUpdater()
         {
             @Override
-            public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+            public Reservation validate( Iterable<NodePropertyUpdate> updates ) throws IOException
+            {
+                return Reservation.EMPTY;
+            }
+
+            @Override
+            public void process( NodePropertyUpdate update )
+                    throws IOException, IndexEntryConflictException, IndexCapacityExceededException
             {
                 add( update.getNodeId(), update.getValueAfter() );
             }
