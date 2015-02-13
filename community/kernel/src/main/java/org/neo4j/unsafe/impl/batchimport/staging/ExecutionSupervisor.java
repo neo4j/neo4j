@@ -45,7 +45,16 @@ public class ExecutionSupervisor
         this( Clock.SYSTEM_CLOCK, monitor );
     }
 
-    public void supervise( StageExecution... executions )
+    /**
+     * Supervises {@link StageExecution}, provides continuous information to the {@link ExecutionMonitor}
+     * and returns when the execution is done or an error occurs, in which case an exception is thrown.
+     *
+     * Made synchronized to ensure that only one set of executions take place at any given time
+     * and also to make sure the calling thread goes through a memory barrier (useful both before and after execution).
+     *
+     * @param executions {@link StageExecution} instances to supervise simultaneously.
+     */
+    public synchronized void supervise( StageExecution... executions )
     {
         long startTime = currentTimeMillis();
         start( executions );
@@ -108,10 +117,5 @@ public class ExecutionSupervisor
                 break;
             }
         }
-    }
-
-    public void done( long totalTimeMillis )
-    {
-        monitor.done( totalTimeMillis );
     }
 }

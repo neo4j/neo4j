@@ -33,7 +33,7 @@ public class NodeStoreProcessorStep extends StoreProcessorStep<NodeRecord>
     protected NodeStoreProcessorStep( StageControl control, String name, Configuration config, NodeStore nodeStore,
             StoreProcessor<NodeRecord> processor )
     {
-        super( control, name, config.batchSize(), config.movingAverageSize(), nodeStore, processor );
+        super( control, name, config.batchSize(), config.movingAverageSize(), nodeStore, processor, false );
         this.nodeStore = nodeStore;
     }
 

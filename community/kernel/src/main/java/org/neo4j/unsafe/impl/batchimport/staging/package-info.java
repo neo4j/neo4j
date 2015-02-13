@@ -17,34 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-package org.neo4j.kernel.lifecycle;
-
 /**
- * Convenient use of a {@link LifeSupport}, effectively making one or more {@link Lifecycle} look and feel
- * like one {@link AutoCloseable}.
+ * Generic staging framework and generic implementations of such used to execute batches in parallel.
+ *
+ * @see Stage
+ * @see Step
  */
-public class Lifespan implements AutoCloseable
-{
-    private final LifeSupport life = new LifeSupport();
-
-    public Lifespan( Lifecycle... subjects )
-    {
-        for ( Lifecycle subject : subjects )
-        {
-            life.add( subject );
-        }
-        life.start();
-    }
-
-    public <T> T add( T subject )
-    {
-        return life.add( subject );
-    }
-
-    @Override
-    public void close()
-    {
-        life.shutdown();
-    }
-}
+package org.neo4j.unsafe.impl.batchimport.staging;

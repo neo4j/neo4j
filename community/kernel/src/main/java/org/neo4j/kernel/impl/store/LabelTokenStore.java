@@ -43,7 +43,7 @@ public class LabelTokenStore extends TokenStore<LabelTokenRecord>
     }
 
     public static final String TYPE_DESCRIPTOR = "LabelTokenStore";
-    private static final int RECORD_SIZE = 1/*inUse*/ + 4/*nameId*/;
+    public static final int RECORD_SIZE = 1/*inUse*/ + 4/*nameId*/;
 
     public LabelTokenStore(
             File fileName,

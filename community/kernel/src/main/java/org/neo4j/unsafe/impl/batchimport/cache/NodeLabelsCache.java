@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.cache;
 import org.neo4j.kernel.impl.util.Bits;
 
 import static java.lang.Integer.numberOfLeadingZeros;
+import static java.lang.Math.max;
 
 import static org.neo4j.kernel.impl.util.Bits.bitsFromLongs;
 
@@ -50,7 +51,7 @@ public class NodeLabelsCache implements MemoryStatsVisitor.Home
     {
         this.cache = cacheFactory.newDynamicLongArray( chunkSize, 0 );
         this.spillOver = cacheFactory.newDynamicLongArray( chunkSize / 5, 0 ); // expect way less of these
-        this.bitsPerLabel = Integer.SIZE-numberOfLeadingZeros( highLabelId );
+        this.bitsPerLabel = max( Integer.SIZE-numberOfLeadingZeros( highLabelId ), 1 );
 
         int worstCaseLongsNeeded = ((bitsPerLabel * (highLabelId+1 /*length slot*/)) - 1) / Long.SIZE + 1;
         this.labelScratch = new long[worstCaseLongsNeeded];

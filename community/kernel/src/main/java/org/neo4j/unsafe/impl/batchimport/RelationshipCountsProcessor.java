@@ -40,7 +40,7 @@ public class RelationshipCountsProcessor implements StoreProcessor<RelationshipR
     private final int anyLabel;
     private final int anyRelationshipType;
 
-    protected RelationshipCountsProcessor( NodeLabelsCache nodeLabelCache,
+    public RelationshipCountsProcessor( NodeLabelsCache nodeLabelCache,
             int highLabelId, int highRelationshipTypeId, CountsTracker countsTracker )
     {
         this.nodeLabelCache = nodeLabelCache;
@@ -52,13 +52,8 @@ public class RelationshipCountsProcessor implements StoreProcessor<RelationshipR
         this.anyRelationshipType = highRelationshipTypeId;
     }
 
-    @Override
-    public boolean process( RelationshipRecord record )
+    public void process( long startNode, int type, long endNode )
     {
-        long startNode = record.getFirstNode();
-        long endNode = record.getSecondNode();
-        int type = record.getType();
-
         // Below is logic duplication of CountsState#addRelationship
 
         counts[anyLabel][anyRelationshipType][anyLabel]++;
@@ -96,7 +91,12 @@ public class RelationshipCountsProcessor implements StoreProcessor<RelationshipR
             counts[anyLabel][anyRelationshipType][endNodeLabelId]++;
             counts[anyLabel][type][endNodeLabelId]++;
         }
+    }
 
+    @Override
+    public boolean process( RelationshipRecord record )
+    {
+        process( record.getFirstNode(), record.getType(), record.getSecondNode() );
         // No need to update the store, we're just reading things here
         return false;
     }
@@ -104,28 +104,28 @@ public class RelationshipCountsProcessor implements StoreProcessor<RelationshipR
     @Override
     public void done()
     {
-        for ( int startNodeLabelId = 0; startNodeLabelId < counts.length; startNodeLabelId++ )
+        try ( CountsAccessor.Updater countsUpdater = countsTracker.updater() )
         {
-            long[][] types = counts[startNodeLabelId];
-            for ( int typeId = 0; typeId < types.length; typeId++ )
+            for ( int startNodeLabelId = 0; startNodeLabelId < counts.length; startNodeLabelId++ )
             {
-                long[] endNodeLabelIds = types[typeId];
-                for ( int endNodeLabelId = 0; endNodeLabelId < endNodeLabelIds.length; endNodeLabelId++ )
+                long[][] types = counts[startNodeLabelId];
+                for ( int typeId = 0; typeId < types.length; typeId++ )
                 {
-                    if ( !COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS )
+                    long[] endNodeLabelIds = types[typeId];
+                    for ( int endNodeLabelId = 0; endNodeLabelId < endNodeLabelIds.length; endNodeLabelId++ )
                     {
-                        if ( startNodeLabelId != anyLabel && endNodeLabelId != anyLabel )
+                        if ( !COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS )
                         {
-                            continue;
+                            if ( startNodeLabelId != anyLabel && endNodeLabelId != anyLabel )
+                            {
+                                continue;
+                            }
                         }
-                    }
-                    int startLabel = startNodeLabelId == anyLabel ? ReadOperations.ANY_LABEL : startNodeLabelId;
-                    int type = typeId == anyRelationshipType ? ReadOperations.ANY_RELATIONSHIP_TYPE : typeId;
-                    int endLabel = endNodeLabelId == anyLabel ? ReadOperations.ANY_LABEL : endNodeLabelId;
-                    long count = endNodeLabelIds[endNodeLabelId];
-                    try ( CountsAccessor.Updater updater = countsTracker.updater() )
-                    {
-                        updater.incrementRelationshipCount( startLabel, type, endLabel, count );
+                        int startLabel = startNodeLabelId == anyLabel ? ReadOperations.ANY_LABEL : startNodeLabelId;
+                        int type = typeId == anyRelationshipType ? ReadOperations.ANY_RELATIONSHIP_TYPE : typeId;
+                        int endLabel = endNodeLabelId == anyLabel ? ReadOperations.ANY_LABEL : endNodeLabelId;
+                        long count = endNodeLabelIds[endNodeLabelId];
+                        countsUpdater.incrementRelationshipCount( startLabel, type, endLabel, count );
                     }
                 }
             }
