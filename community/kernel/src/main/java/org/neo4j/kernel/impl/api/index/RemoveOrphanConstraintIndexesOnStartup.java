@@ -59,6 +59,7 @@ public class RemoveOrphanConstraintIndexesOnStartup
                     statement.schemaWriteOperations().uniqueIndexDrop( index );
                 }
             }
+            transaction.success();
         }
         catch ( KernelException e )
         {

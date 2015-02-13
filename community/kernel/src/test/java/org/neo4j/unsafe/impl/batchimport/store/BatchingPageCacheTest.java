@@ -19,13 +19,14 @@
  */
 package org.neo4j.unsafe.impl.batchimport.store;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import org.junit.Rule;
-import org.junit.Test;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
@@ -37,11 +38,13 @@ import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Mode;
 import org.neo4j.unsafe.impl.batchimport.store.io.Monitor;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+
 import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRONOUS;
 import static org.neo4j.unsafe.impl.batchimport.store.io.Monitor.NO_MONITOR;
 
@@ -52,7 +55,7 @@ public class BatchingPageCacheTest
     {
         // GIVEN
         int numberOfRecords = 100;
-        PageCache pageCache = new BatchingPageCache( FS, numberOfRecords, SYNCHRONOUS, NO_MONITOR, Mode.APPEND_ONLY );
+        PageCache pageCache = new BatchingPageCache( FS, numberOfRecords, 1, SYNCHRONOUS, NO_MONITOR, Mode.APPEND_ONLY );
         File file = directory.file( "store" );
         PagedFile pagedFile = pageCache.map( file, recordSize*recordsPerPage /* =90 */ );
 
@@ -82,7 +85,7 @@ public class BatchingPageCacheTest
         int pageSize = 100;
         File file = directory.file( "store" );
         fillFileWithByteContents( file );
-        PageCache pageCache = new BatchingPageCache( FS, pageSize, SYNCHRONOUS, NO_MONITOR, Mode.UPDATE );
+        PageCache pageCache = new BatchingPageCache( FS, pageSize, 1, SYNCHRONOUS, NO_MONITOR, Mode.UPDATE );
         PagedFile pagedFile = pageCache.map( file, pageSize );
 
         // WHEN
@@ -121,7 +124,7 @@ public class BatchingPageCacheTest
         File file = directory.file( "store" );
         fillFileWithByteContents( file );
 
-        PageCache pageCache = new BatchingPageCache( FS, pageSize, SYNCHRONOUS, monitor, Mode.APPEND_ONLY );
+        PageCache pageCache = new BatchingPageCache( FS, pageSize, 1, SYNCHRONOUS, monitor, Mode.APPEND_ONLY );
         PagedFile pagedFile = pageCache.map( file, pageSize );
 
         // WHEN
@@ -154,7 +157,7 @@ public class BatchingPageCacheTest
         fillFileWithByteContents( file );
 
         byte[] someBytes = new byte[]{1, 2, 3, 4, 5};
-        PageCache pageCache = new BatchingPageCache( FS, pageSize, SYNCHRONOUS, NO_MONITOR, Mode.APPEND_ONLY );
+        PageCache pageCache = new BatchingPageCache( FS, pageSize, 1, SYNCHRONOUS, NO_MONITOR, Mode.APPEND_ONLY );
         PagedFile pagedFile = pageCache.map( file, pageSize );
 
         // And Given I've used the cursor a bit

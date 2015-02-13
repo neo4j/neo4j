@@ -37,9 +37,15 @@ public interface Configuration
     int batchSize();
 
     /**
-     * Heap dedicated to buffering data to be written to each store file.
+     * Memory dedicated to buffering data to be written to each store file.
      */
     int fileChannelBufferSize();
+
+    /**
+     * Some files require a bigger buffer to avoid some performance culprits imposed by the OS.
+     * This is a multiplier for how many times bigger such buffers are compared to {@link #fileChannelBufferSize()}.
+     */
+    int bigFileChannelBufferSizeMultiplier();
 
     /**
      * Number of batches that a step can queue up before awaiting the downstream step to catch up.
@@ -101,6 +107,12 @@ public interface Configuration
             // as many as the other types of batches.
             return roundToClosest( batchSize() * 40 /*some kind of record size average*/,
                     OPTIMAL_FILE_CHANNEL_CHUNK_SIZE );
+        }
+
+        @Override
+        public int bigFileChannelBufferSizeMultiplier()
+        {
+            return 50;
         }
 
         private int roundToClosest( int value, int divisible )
@@ -169,6 +181,12 @@ public interface Configuration
         public int fileChannelBufferSize()
         {
             return defaults.fileChannelBufferSize();
+        }
+
+        @Override
+        public int bigFileChannelBufferSizeMultiplier()
+        {
+            return defaults.bigFileChannelBufferSizeMultiplier();
         }
 
         @Override

@@ -19,10 +19,10 @@
  */
 package org.neo4j.unsafe.impl.batchimport.store;
 
-import java.io.File;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -52,7 +52,7 @@ public class BatchingNeoStoreTest
         someDataInTheDatabase();
 
         // WHEN
-        PageCache pageCache = new BatchingPageCache( fsr.get(), 10_000, SYNCHRONOUS, NO_MONITOR, APPEND_ONLY );
+        PageCache pageCache = new BatchingPageCache( fsr.get(), 10_000, 1, SYNCHRONOUS, NO_MONITOR, APPEND_ONLY );
         try
         {
             new BatchingNeoStore( fsr.get(), storeDir.getAbsolutePath(), DEFAULT, NO_MONITOR,
