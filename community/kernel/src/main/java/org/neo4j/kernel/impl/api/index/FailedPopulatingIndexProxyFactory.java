@@ -23,6 +23,7 @@ import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
@@ -34,13 +35,15 @@ public class FailedPopulatingIndexProxyFactory implements FailedIndexProxyFactor
     private final IndexPopulator populator;
     private final String indexUserDescription;
     private final IndexCountsRemover indexCountsRemover;
+    private final StringLogger logger;
 
     FailedPopulatingIndexProxyFactory( IndexDescriptor descriptor,
                                        IndexConfiguration configuration,
                                        SchemaIndexProvider.Descriptor providerDescriptor,
                                        IndexPopulator populator,
                                        String indexUserDescription,
-                                       IndexCountsRemover indexCountsRemover )
+                                       IndexCountsRemover indexCountsRemover,
+                                       StringLogger logger )
     {
         this.descriptor = descriptor;
         this.configuration = configuration;
@@ -48,6 +51,7 @@ public class FailedPopulatingIndexProxyFactory implements FailedIndexProxyFactor
         this.populator = populator;
         this.indexUserDescription = indexUserDescription;
         this.indexCountsRemover = indexCountsRemover;
+        this.logger = logger;
     }
 
     @Override
@@ -56,6 +60,6 @@ public class FailedPopulatingIndexProxyFactory implements FailedIndexProxyFactor
         return
             new FailedIndexProxy(
                 descriptor, configuration, providerDescriptor,
-                indexUserDescription, populator, failure( failure ), indexCountsRemover );
+                indexUserDescription, populator, failure( failure ), indexCountsRemover, logger );
     }
 }

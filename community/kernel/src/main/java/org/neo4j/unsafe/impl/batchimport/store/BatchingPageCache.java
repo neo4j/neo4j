@@ -26,7 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.collection.pool.Pool;
-import org.neo4j.helpers.Factory;
+import org.neo4j.function.Factory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
@@ -128,17 +128,19 @@ public class BatchingPageCache implements PageCache
     }
 
     private final int pageSize;
+    private final int bigFileMultiplier;
     private final FileSystemAbstraction fs;
     private final Map<File, BatchingPagedFile> pagedFiles = new HashMap<>();
     private final WriterFactory writerFactory;
     private final Monitor monitor;
     private Mode mode;
 
-    public BatchingPageCache( FileSystemAbstraction fs, int pageSize, WriterFactory writerFactory,
-            Monitor monitor, Mode mode )
+    public BatchingPageCache( FileSystemAbstraction fs, int pageSize, int bigFileMultiplier,
+            WriterFactory writerFactory, Monitor monitor, Mode mode )
     {
         this.fs = fs;
         this.pageSize = pageSize;
+        this.bigFileMultiplier = bigFileMultiplier;
         this.writerFactory = writerFactory;
         this.monitor = monitor;
         this.mode = mode;
@@ -177,7 +179,8 @@ public class BatchingPageCache implements PageCache
         // The current solution is to, when reading a file backwards, read it in
         // much bigger chunks. When doing so the OS doesn't seem to cache the file
         // like described above.
-        return file.getName().endsWith( StoreFactory.RELATIONSHIP_STORE_NAME ) ? pageSize * 50 : pageSize;
+        return file.getName().endsWith( StoreFactory.RELATIONSHIP_STORE_NAME )
+                ? pageSize * bigFileMultiplier : pageSize;
     }
 
     void unmap( BatchingPagedFile pagedFile ) throws IOException
@@ -305,7 +308,14 @@ public class BatchingPageCache implements PageCache
                 @Override
                 public ByteBuffer newInstance()
                 {
-                    return ByteBuffer.allocateDirect( pageSize );
+                    try
+                    {
+                        return ByteBuffer.allocateDirect( pageSize );
+                    }
+                    catch ( OutOfMemoryError e )
+                    {
+                        return ByteBuffer.allocate( pageSize );
+                    }
                 }
             } );
             this.currentBuffer = bufferPool.acquire();

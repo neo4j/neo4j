@@ -19,6 +19,22 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
+import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.kernel.impl.cache.NoCacheProvider;
+import org.neo4j.test.TargetDirectory;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -26,22 +42,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration.cache_type;
 import static org.neo4j.test.TargetDirectory.forTest;
-
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.impl.cache.CacheProvider;
-import org.neo4j.kernel.impl.cache.NoCacheProvider;
-import org.neo4j.test.TargetDirectory;
 
 public class CommitContentionTests
 {
@@ -147,6 +147,11 @@ public class CommitContentionTests
                     {
                         super.transactionFinished( successful );
 
+                        if ( isTheRemoveOrphanedConstraintIndexesOnStartupTransaction() )
+                        {
+                            return;
+                        }
+
 
                         if ( successful )
                         {
@@ -161,6 +166,18 @@ public class CommitContentionTests
 
                             waitForSecondTransactionToFinish();
                         }
+                    }
+
+                    private boolean isTheRemoveOrphanedConstraintIndexesOnStartupTransaction()
+                    {
+                        for ( StackTraceElement element : Thread.currentThread().getStackTrace() )
+                        {
+                            if ( element.getClassName().contains( RemoveOrphanConstraintIndexesOnStartup.class.getSimpleName() ) )
+                            {
+                                return true;
+                            }
+                        }
+                        return false;
                     }
                 };
             }

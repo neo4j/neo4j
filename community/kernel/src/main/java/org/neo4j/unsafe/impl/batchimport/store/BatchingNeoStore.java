@@ -85,7 +85,7 @@ public class BatchingNeoStore implements AutoCloseable
                 new File( storeDir ) );
 
         this.pageCacheFactory = new BatchingPageCache( fileSystem, config.fileChannelBufferSize(),
-                writerFactory, writeMonitor, APPEND_ONLY );
+                config.bigFileChannelBufferSizeMultiplier(), writerFactory, writeMonitor, APPEND_ONLY );
         this.neoStore = newNeoStore( pageCacheFactory );
         flushNeoStoreAndAwaitEverythingWritten();
         if ( alreadyContainsData( neoStore ) )
@@ -125,6 +125,7 @@ public class BatchingNeoStore implements AutoCloseable
     public static void createStore( FileSystemAbstraction fileSystem, String storeDir ) throws IOException
     {
         PageCache pageCache = new BatchingPageCache( fileSystem, Configuration.DEFAULT.fileChannelBufferSize(),
+                Configuration.DEFAULT.bigFileChannelBufferSizeMultiplier(),
                 BatchingPageCache.SYNCHRONOUS, Monitor.NO_MONITOR, APPEND_ONLY );
         StoreFactory storeFactory = new StoreFactory(
                 fileSystem, new File( storeDir ), pageCache, StringLogger.DEV_NULL, new Monitors() );

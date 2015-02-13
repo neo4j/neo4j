@@ -47,7 +47,7 @@ public class GraphDatabaseDependencies implements InternalAbstractGraphDatabase.
                                               Iterables.toList( Service.load( QueryEngineProvider.class ) ) );
     }
 
-    private Monitors monitors;
+    private final Monitors monitors;
     private final Logging logging;
     private final List<Class<?>> settingsClasses;
     private final List<KernelExtensionFactory<?>> kernelExtensions;

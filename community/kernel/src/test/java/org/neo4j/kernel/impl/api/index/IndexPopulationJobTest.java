@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.mockito.Matchers;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
@@ -27,12 +33,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.mockito.Matchers;
 
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
@@ -65,6 +65,8 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.SingleLoggingService;
+import org.neo4j.register.Register.DoubleLong;
+import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.DoubleLatch;
@@ -72,8 +74,6 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
-
-import static java.lang.String.format;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -89,6 +89,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import static java.lang.String.format;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -97,8 +99,6 @@ import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.error;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
-import static org.neo4j.register.Register.DoubleLong;
-import static org.neo4j.register.Register.DoubleLongRegister;
 
 public class IndexPopulationJobTest
 {
@@ -635,7 +635,7 @@ public class IndexPopulationJobTest
                 format( ":%s(%s)", label.name(), propertyKey ),
                 failureDelegateFactory,
                 populator, flipper, storeView,
-                stateHolder, new SingleLoggingService( logger ) );
+                stateHolder, new SingleLoggingService( logger ), IndexingService.NO_MONITOR );
     }
 
     private IndexDescriptor indexDescriptor( Label label, String propertyKey )

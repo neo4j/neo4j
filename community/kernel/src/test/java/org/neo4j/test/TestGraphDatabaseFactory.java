@@ -27,6 +27,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * Test factory for graph databases
@@ -79,6 +80,12 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
     public TestGraphDatabaseFactory setFileSystem( FileSystemAbstraction fileSystem )
     {
         getCurrentState().setFileSystem( fileSystem );
+        return this;
+    }
+
+    public GraphDatabaseFactory setMonitors( Monitors monitors )
+    {
+        getCurrentState().setMonitors( monitors );
         return this;
     }
     

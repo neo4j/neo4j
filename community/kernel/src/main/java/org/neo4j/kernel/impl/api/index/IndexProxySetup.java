@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.logging.Logging;
 
 import static java.lang.String.format;
+
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 public class IndexProxySetup
@@ -83,12 +84,13 @@ public class IndexProxySetup
                 providerDescriptor,
                 populator,
                 indexUserDescription,
-                IndexCountsRemover.Factory.create( storeView, descriptor )
+                IndexCountsRemover.Factory.create( storeView, descriptor ),
+                logging.getMessagesLog( getClass() )
         );
 
         PopulatingIndexProxy populatingIndex =
                 new PopulatingIndexProxy( scheduler, descriptor, config, failureDelegateFactory, populator, flipper,
-                        storeView, updateableSchemaState, logging, indexUserDescription, providerDescriptor );
+                        storeView, updateableSchemaState, logging, indexUserDescription, providerDescriptor, monitor );
         flipper.flipTo( populatingIndex );
 
         // Prepare for flipping to online mode
@@ -171,7 +173,8 @@ public class IndexProxySetup
                 indexUserDescription,
                 indexPopulator,
                 populationFailure,
-                IndexCountsRemover.Factory.create( storeView, descriptor )
+                IndexCountsRemover.Factory.create( storeView, descriptor ),
+                logging.getMessagesLog( getClass() )
         );
         proxy = new ContractCheckingIndexProxy( proxy, true );
         return proxy;

@@ -64,7 +64,8 @@ public class PopulatingIndexProxy implements IndexProxy
                                  UpdateableSchemaState updateableSchemaState,
                                  Logging logging,
                                  String indexUserDescription,
-                                 SchemaIndexProvider.Descriptor providerDescriptor )
+                                 SchemaIndexProvider.Descriptor providerDescriptor,
+                                 IndexingService.Monitor monitor )
     {
         this.scheduler = scheduler;
         this.descriptor = descriptor;
@@ -72,7 +73,7 @@ public class PopulatingIndexProxy implements IndexProxy
         this.providerDescriptor = providerDescriptor;
         this.job = new IndexPopulationJob( descriptor, configuration, providerDescriptor,
                 indexUserDescription, failureDelegateFactory, writer, flipper, storeView,
-                updateableSchemaState, logging );
+                updateableSchemaState, logging, monitor );
     }
 
     @Override

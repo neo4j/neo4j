@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -77,7 +77,7 @@ public class AbstractDynamicStoreTest
     private AbstractDynamicStore newTestableDynamicStore()
     {
         return new AbstractDynamicStore( fileName, new Config(), IdType.ARRAY_BLOCK, new DefaultIdGeneratorFactory(),
-                new BatchingPageCache( fsr.get(), 1000, BatchingPageCache.SYNCHRONOUS, mock( Monitor.class ), Mode.UPDATE ),
+                new BatchingPageCache( fsr.get(), 1000, 1, BatchingPageCache.SYNCHRONOUS, mock( Monitor.class ), Mode.UPDATE ),
                 fsr.get(), StringLogger.DEV_NULL, StoreVersionMismatchHandler.ALLOW_OLD_VERSION, new Monitors() )
         {
             @Override
