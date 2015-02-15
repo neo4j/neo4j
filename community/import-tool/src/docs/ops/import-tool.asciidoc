@@ -188,6 +188,10 @@ include::custom-delimiter-quotation-command.adoc[]
 When dealing with very large CSV files it's more convenient to have the header in a separate file.
 This makes it easier to edit the header as you avoid having to open a huge data file just to change it.
 
+[TIP]
++import-tool+ can also process single file compressed archives.
+e.g. `--nodes nodes.csv.gz` or `--relationships rels.zip`
+
 We'll use the same data as in the previous example but put the headers in separate files.
 
 .movies3-header.csv
