@@ -49,26 +49,6 @@
       <plugin>
         <groupId>org.scalastyle</groupId>
         <artifactId>scalastyle-maven-plugin</artifactId>
-        <version>0.6.0</version>
-        <configuration>
-            <verbose>false</verbose>
-            <failOnViolation>true</failOnViolation>
-            <includeTestSourceDirectory>true</includeTestSourceDirectory>
-            <failOnWarning>false</failOnWarning>
-            <inputEncoding>UTF-8</inputEncoding>
-            <sourceDirectory>${basedir}/src/main/scala</sourceDirectory>
-            <testSourceDirectory>${basedir}/src/test/scala</testSourceDirectory>
-            <configLocation>${project.basedir}/scalastyle_config.xml</configLocation>
-            <outputFile>${basedir}/target/scalastyle-output.xml</outputFile>
-            <outputEncoding>UTF-8</outputEncoding>
-        </configuration>
-        <executions>
-            <execution>
-                <goals>
-                    <goal>check</goal>
-                </goals>
-            </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>
