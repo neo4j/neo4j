@@ -24,9 +24,10 @@ import java.util.Map;
 
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult;
-import org.neo4j.cypher.internal.compiler.v2_2.spi.DevNullLogger;
-import org.neo4j.cypher.internal.compiler.v2_2.spi.Logger;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 /**
  * To run a Cypher query in internal Neo4j documentation-related tests you can use this class.
@@ -41,9 +42,7 @@ public class DocsExecutionEngine
      */
     public DocsExecutionEngine( GraphDatabaseService database )
     {
-        inner =
-                (org.neo4j.cypher.internal.DocsExecutionEngine) createInnerEngine( database,
-                        (Logger) DevNullLogger.instance() );
+        this( database, DEV_NULL );
     }
 
     /**
@@ -52,13 +51,13 @@ public class DocsExecutionEngine
      * @param database The database to wrap
      * @param logger A logger for cypher-statements
      */
-    public DocsExecutionEngine( GraphDatabaseService database, Logger logger )
+    public DocsExecutionEngine( GraphDatabaseService database, StringLogger logger )
     {
         inner = (org.neo4j.cypher.internal.DocsExecutionEngine) createInnerEngine( database, logger );
     }
 
     protected
-    org.neo4j.cypher.ExecutionEngine createInnerEngine( GraphDatabaseService database, Logger logger )
+    org.neo4j.cypher.ExecutionEngine createInnerEngine( GraphDatabaseService database, StringLogger logger )
     {
         return new org.neo4j.cypher.internal.DocsExecutionEngine( database, logger, null, null );
     }

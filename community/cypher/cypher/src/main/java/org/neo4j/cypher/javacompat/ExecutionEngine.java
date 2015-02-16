@@ -22,10 +22,10 @@ package org.neo4j.cypher.javacompat;
 import java.util.Map;
 
 import org.neo4j.cypher.CypherException;
-import org.neo4j.cypher.internal.compiler.v2_2.spi.DevNullLogger;
-import org.neo4j.cypher.internal.compiler.v2_2.spi.Logger;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.impl.util.StringLogger;
 
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 /**
  * To run a Cypher query, use this class.
@@ -43,7 +43,7 @@ public class ExecutionEngine
      */
     public ExecutionEngine( GraphDatabaseService database )
     {
-        inner = createInnerEngine( database, DevNullLogger.instance() );
+        inner = createInnerEngine( database, DEV_NULL );
     }
 
     /**
@@ -51,12 +51,13 @@ public class ExecutionEngine
      * @param database The database to wrap
      * @param logger A logger for cypher-statements
      */
-    public ExecutionEngine( GraphDatabaseService database, Logger logger )
+    public ExecutionEngine( GraphDatabaseService database, StringLogger logger )
     {
         inner = createInnerEngine( database, logger );
     }
 
-    protected org.neo4j.cypher.ExecutionEngine createInnerEngine( GraphDatabaseService database, Logger logger )
+    protected
+    org.neo4j.cypher.ExecutionEngine createInnerEngine( GraphDatabaseService database, StringLogger logger )
     {
         return new org.neo4j.cypher.ExecutionEngine( database, logger );
     }
