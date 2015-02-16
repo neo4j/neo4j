@@ -107,7 +107,6 @@ public class TestSlaveOnlyCluster
     private ClusterManager createCluster( String dirname, int... slaveIds ) throws URISyntaxException
     {
         final File dir = directory.cleanDirectory( dirname );
-        System.out.println( dir );
         final ClusterManager.Provider provider = fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() );
         final Map<Integer, Map<String, String>> instanceConfig = new HashMap<>( slaveIds.length );
         for ( int slaveId : slaveIds )
