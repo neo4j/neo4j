@@ -35,8 +35,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import static java.lang.Math.min;
-
 import static org.neo4j.csv.reader.Readables.wrap;
 
 public class BufferedCharSeekerTest
@@ -191,7 +189,7 @@ public class BufferedCharSeekerTest
     {
         // GIVEN
         seeker = seeker( "12,34,56\n789,901,23", 9 );
-        // read more here          ^
+        // read more here          ^        ^
 
         // WHEN
         assertTrue( seeker.seek( mark, COMMA ) );
@@ -358,6 +356,10 @@ public class BufferedCharSeekerTest
     {
         // GIVEN
         seeker = seeker( "\"value \"\"one\"\"\"\t\"\"\"value\"\" two\"\t\"va\"\"lue\"\" three\"" );
+
+        // "value ""one"""
+        // """value"" two"
+        // "va""lue"" three"
 
         // WHEN/THEN
         assertTrue( seeker.seek( mark, TAB ) );
@@ -567,26 +569,22 @@ public class BufferedCharSeekerTest
 
     private static class ControlledCharReadable extends CharReadable.Adapter
     {
-        private final char[] chars;
+        private final StringReader reader;
         private final int maxBytesPerRead;
         private int position;
 
         ControlledCharReadable( String data, int maxBytesPerRead )
         {
+            this.reader = new StringReader( data );
             this.maxBytesPerRead = maxBytesPerRead;
-            this.chars = data.toCharArray();
         }
 
         @Override
-        public int read( char[] buffer, int offset, int length ) throws IOException
+        public SectionedCharBuffer read( SectionedCharBuffer buffer, int from ) throws IOException
         {
-            int remaining = chars.length-position;
-            int toRead = min( min( length, maxBytesPerRead ), remaining );
-            for ( int i = 0; i < toRead; i++ )
-            {
-                buffer[offset+i] = chars[position++];
-            }
-            return toRead;
+            buffer.compact( buffer, from );
+            buffer.readFrom( reader, maxBytesPerRead );
+            return buffer;
         }
 
         @Override

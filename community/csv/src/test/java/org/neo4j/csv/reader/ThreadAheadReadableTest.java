@@ -21,10 +21,14 @@ package org.neo4j.csv.reader;
 
 import org.junit.Test;
 
+import java.io.CharArrayReader;
 import java.io.IOException;
 import java.util.concurrent.locks.LockSupport;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+
+import static java.util.Arrays.copyOfRange;
 
 public class ThreadAheadReadableTest
 {
@@ -32,76 +36,97 @@ public class ThreadAheadReadableTest
     public void shouldReadAhead() throws Exception
     {
         // GIVEN
-        MockedReader actual = new MockedReader( 20 );
-        int bufferSize = 10;
+        TrackingReader actual = new TrackingReader( 23 );
+        int bufferSize = 5;
         CharReadable aheadReader = ThreadAheadReadable.threadAhead( actual, bufferSize );
+        SectionedCharBuffer buffer = new SectionedCharBuffer( bufferSize );
 
         // WHEN starting it up it should read and fill the buffer to the brim
         assertEquals( bufferSize, actual.awaitCompletedReadAttempts( 1 ) );
 
-        // WHEN we grab a couple of bytes off of the actual reader, the read-ahead reader should immediately
-        // fill those bytes up with new data.
-        assertEquals( 7, aheadReader.read( new char[7], 0, 7 ) );
-        assertEquals( bufferSize+7, actual.awaitCompletedReadAttempts( 2 ) );
+        // WHEN we read one buffer
+        int read = 0;
+        buffer = aheadReader.read( buffer, buffer.front() );
+        assertBuffer( chars( read, bufferSize ), buffer, 0, bufferSize );
+        read += buffer.available();
 
-        // WHEN reading a bit more
-        assertEquals( 10, aheadReader.read( new char[10], 0, 10 ) );
-        assertEquals( 20, actual.awaitCompletedReadAttempts( 3 ) );
+        // and simulate reading all characters, i.e. back section will be empty in the new buffer
+        buffer = aheadReader.read( buffer, buffer.front() );
+        assertBuffer( chars( read, bufferSize ), buffer, 0, bufferSize );
+        read += buffer.available();
 
-        // WHEN reaching the end
-        assertEquals( 3, aheadReader.read( new char[5], 0, 5 /*anything more than 3*/ ) );
-        assertEquals( 20, actual.awaitCompletedReadAttempts( 4 ) );
+        // then simulate reading some characters, i.e. back section will contain some characters
+        int keep = 2;
+        buffer = aheadReader.read( buffer, buffer.front()-keep );
+        assertBuffer( chars( read-keep, bufferSize+keep ), buffer, keep, bufferSize );
+        read += buffer.available();
 
-        // THEN we should have reached the end
-        assertEquals( -1, aheadReader.read( new char[2], 0, 2 ) );
+        keep = 3;
+        buffer = aheadReader.read( buffer, buffer.front()-keep );
+        assertBuffer( chars( read-keep, bufferSize+keep ), buffer, keep, bufferSize );
+        read += buffer.available();
+
+        keep = 1;
+        buffer = aheadReader.read( buffer, buffer.front()-keep );
+        assertEquals( 3, buffer.available() );
+        assertBuffer( chars( read-keep, buffer.available()+keep ), buffer, keep, 3 );
+        read += buffer.available();
+        assertEquals( 23, read );
     }
 
     @Test
     public void shouldHandleReadAheadEmptyData() throws Exception
     {
         // GIVEN
-        MockedReader actual = new MockedReader( 0 );
-        CharReadable aheadReadable = ThreadAheadReadable.threadAhead( actual, 10 );
+        TrackingReader actual = new TrackingReader( 0 );
+        int bufferSize = 10;
+        CharReadable aheadReadable = ThreadAheadReadable.threadAhead( actual, bufferSize );
 
         // WHEN
         actual.awaitCompletedReadAttempts( 1 );
 
         // THEN
-        assertEquals( -1, aheadReadable.read( new char[10], 0, 10 ) );
+        SectionedCharBuffer buffer = new SectionedCharBuffer( bufferSize );
+        buffer = aheadReadable.read( buffer, buffer.front() );
+        assertEquals( buffer.pivot(), buffer.back() );
+        assertEquals( buffer.pivot(), buffer.front() );
     }
 
-    private static class MockedReader extends CharReadable.Adapter
+    private void assertBuffer( char[] expectedChars, SectionedCharBuffer buffer, int charsInBack, int charsInFront )
+    {
+        assertEquals( buffer.pivot()-charsInBack, buffer.back() );
+        assertEquals( buffer.pivot()+charsInFront, buffer.front() );
+        assertArrayEquals( expectedChars, copyOfRange( buffer.array(), buffer.back(), buffer.front() ) );
+    }
+
+    private static class TrackingReader extends CharReadable.Adapter
     {
         private int bytesRead;
         private volatile int readsCompleted;
-        private final int length;
+        private final CharReadable actual;
 
-        public MockedReader( int length )
+        public TrackingReader( int length )
         {
-            this.length = length;
+            this.actual = Readables.wrap( new CharArrayReader( chars( 0, length ) ) );
         }
 
         @Override
-        public int read( char[] buffer, int offset, int len ) throws IOException
+        public SectionedCharBuffer read( SectionedCharBuffer buffer, int from ) throws IOException
         {
             try
             {
-                if ( bytesRead == length )
-                {   // eof
-                    return -1;
-                }
-
-                int count = 0;
-                while ( count < len && bytesRead < length )
-                {
-                    buffer[offset + count++] = (char) bytesRead++;
-                }
-                return count;
+                return registerBytesRead( actual.read( buffer, from ) );
             }
             finally
             {
                 readsCompleted++;
             }
+        }
+
+        private SectionedCharBuffer registerBytesRead( SectionedCharBuffer buffer )
+        {
+            bytesRead += buffer.available();
+            return buffer;
         }
 
         @Override
@@ -121,7 +146,17 @@ public class ThreadAheadReadableTest
         @Override
         public long position()
         {
-            return bytesRead;
+            return actual.position();
         }
+    }
+
+    private static char[] chars( int start, int length )
+    {
+        char[] result = new char[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            result[i] = (char) (start+i);
+        }
+        return result;
     }
 }

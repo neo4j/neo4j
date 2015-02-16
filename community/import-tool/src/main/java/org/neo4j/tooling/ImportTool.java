@@ -362,7 +362,7 @@ public class ImportTool
                 args.interpretOption( Options.ARRAY_DELIMITER.key(), Converters.<Character>optional(), DELIMITER_CONVERTER );
         final Character specificQuote =
                 args.interpretOption( Options.QUOTE.key(), Converters.<Character>optional(), Converters.toCharacter() );
-        return new Configuration()
+        return new Configuration.Default()
         {
             @Override
             public char delimiter()

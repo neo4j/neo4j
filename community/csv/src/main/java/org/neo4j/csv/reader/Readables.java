@@ -38,8 +38,6 @@ import java.util.zip.ZipFile;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.function.RawFunction;
 
-import static java.lang.Math.max;
-
 /**
  * Means of instantiating common {@link CharReadable} instances.
  *
@@ -67,9 +65,9 @@ public class Readables
     public static final CharReadable EMPTY = new CharReadable.Adapter()
     {
         @Override
-        public int read( char[] buffer, int offset, int length ) throws IOException
+        public SectionedCharBuffer read( SectionedCharBuffer buffer, int from ) throws IOException
         {
-            return -1;
+            return buffer;
         }
 
         @Override
@@ -90,23 +88,22 @@ public class Readables
         }
     };
 
+    /**
+     * Remember that the {@link Reader#toString()} must provide a description of the data source.
+     */
     public static CharReadable wrap( final Reader reader )
-    {
-        return wrap( reader, reader.toString() );
-    }
-
-    public static CharReadable wrap( final Reader reader, final String toString )
     {
         return new CharReadable.Adapter()
         {
             private long position;
 
             @Override
-            public int read( char[] buffer, int offset, int length ) throws IOException
+            public SectionedCharBuffer read( SectionedCharBuffer buffer, int from ) throws IOException
             {
-                int read = reader.read( buffer, offset, length );
-                position += max( read, 0 );
-                return read;
+                buffer.compact( buffer, from );
+                buffer.readFrom( reader );
+                position += buffer.available();
+                return buffer;
             }
 
             @Override
@@ -124,22 +121,29 @@ public class Readables
             @Override
             public String toString()
             {
-                return toString;
+                return reader.toString();
             }
         };
     }
 
-    private static final RawFunction<File,CharReadable,IOException> FROM_FILE = new RawFunction<File,CharReadable,IOException>()
+    private static final RawFunction<File,Reader,IOException> FROM_FILE = new RawFunction<File,Reader,IOException>()
     {
         @Override
-        public CharReadable apply( File file ) throws IOException
+        public Reader apply( final File file ) throws IOException
         {
             int magic = magic( file );
             if ( magic == ZIP_MAGIC )
             {   // ZIP file
                 ZipFile zipFile = new ZipFile( file );
                 ZipEntry entry = getSingleSuitableEntry( zipFile );
-                return wrap( new InputStreamReader( zipFile.getInputStream( entry ) ), file.getPath() );
+                return new InputStreamReader( zipFile.getInputStream( entry ) )
+                {
+                    @Override
+                    public String toString()
+                    {
+                        return file.getPath();
+                    }
+                };
             }
             else if ( (magic >>> 16) == GZIP_MAGIC )
             {   // GZIP file. GZIP isn't an archive like ZIP, so this is purely data that is compressed.
@@ -148,10 +152,24 @@ public class Readables
                 // the data will look like garbage and the reader will fail for whatever it will be used for.
                 // TODO add tar support
                 GZIPInputStream zipStream = new GZIPInputStream( new FileInputStream( file ) );
-                return wrap( new InputStreamReader( zipStream ), file.getPath() );
+                return new InputStreamReader( zipStream )
+                {
+                    @Override
+                    public String toString()
+                    {
+                        return file.getPath();
+                    }
+                };
             }
 
-            return wrap( new FileReader( file ), file.getPath() );
+            return new FileReader( file )
+            {
+                @Override
+                public String toString()
+                {
+                    return file.getPath();
+                }
+            };
         }
 
         private ZipEntry getSingleSuitableEntry( ZipFile zipFile ) throws IOException
@@ -206,11 +224,11 @@ public class Readables
                name.contains( "/." );
     }
 
-    private static final RawFunction<CharReadable,CharReadable,IOException> IDENTITY =
-            new RawFunction<CharReadable,CharReadable,IOException>()
+    private static final RawFunction<Reader,Reader,IOException> IDENTITY =
+            new RawFunction<Reader,Reader,IOException>()
     {
         @Override
-        public CharReadable apply( CharReadable in )
+        public Reader apply( Reader in )
         {
             return in;
         }
@@ -218,7 +236,7 @@ public class Readables
 
     public static CharReadable file( File file ) throws IOException
     {
-        return FROM_FILE.apply( file );
+        return wrap( FROM_FILE.apply( file ) );
     }
 
     public static CharReadable multipleFiles( File... files ) throws IOException
@@ -226,7 +244,7 @@ public class Readables
         return new MultiReadable( iterator( files, FROM_FILE ) );
     }
 
-    public static CharReadable multipleSources( CharReadable... sources ) throws IOException
+    public static CharReadable multipleSources( Reader... sources ) throws IOException
     {
         return new MultiReadable( iterator( sources, IDENTITY ) );
     }
@@ -236,7 +254,7 @@ public class Readables
         return new MultiReadable( iterator( files, FROM_FILE ) );
     }
 
-    public static CharReadable multipleSources( RawIterator<CharReadable,IOException> sources ) throws IOException
+    public static CharReadable multipleSources( RawIterator<Reader,IOException> sources ) throws IOException
     {
         return new MultiReadable( sources );
     }

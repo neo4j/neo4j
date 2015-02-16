@@ -31,6 +31,7 @@ import org.neo4j.function.Function;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.UpdateBehaviour;
+import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.OverrideFromConfig;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -52,7 +53,7 @@ public class ExternalPropertiesDecoratorTest
                 "1,mattiasp@someother.com\n" +
                 "3,chris@abc\n" +
                 "4,dude@yo";
-        Configuration config = Configuration.COMMAS;
+        Configuration config = config();
         IdType idType = IdType.STRING;
         Function<InputNode,InputNode> externalPropertiesDecorator = new ExternalPropertiesDecorator(
                 DataFactories.<InputNode>data( NO_NODE_DECORATOR, readable( propertyData ) ),
@@ -79,7 +80,7 @@ public class ExternalPropertiesDecoratorTest
                 "1,mattias@some.com;mattiasp@someother.com\n" +
                 "3,chris@abc\n" +
                 "4,dude@yo";
-        Configuration config = Configuration.COMMAS;
+        Configuration config = config();
         IdType idType = IdType.STRING;
         Function<InputNode,InputNode> externalPropertiesDecorator = new ExternalPropertiesDecorator(
                 DataFactories.<InputNode>data( NO_NODE_DECORATOR, readable( propertyData ) ),
@@ -131,6 +132,18 @@ public class ExternalPropertiesDecoratorTest
             public CharReadable newInstance()
             {
                 return Readables.wrap( new StringReader( data ) );
+            }
+        };
+    }
+
+    private OverrideFromConfig config()
+    {
+        return new Configuration.OverrideFromConfig( Configuration.COMMAS )
+        {
+            @Override
+            public int bufferSize()
+            {
+                return 1_000;
             }
         };
     }
