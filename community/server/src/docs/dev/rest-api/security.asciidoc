@@ -24,6 +24,8 @@ include::authenticate-to-access-the-server.asciidoc[]
 
 include::incorrect-authentication.asciidoc[]
 
+include::too-many-failed-auth-attempts.asciidoc[]
+
 include::required-password-changes.asciidoc[]
 
 :leveloffset: 1
