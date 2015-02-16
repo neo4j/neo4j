@@ -78,7 +78,7 @@ public abstract class AbstractKeyValueStore<Key, MetaData, MetaDiff> extends Lif
         {
             @SuppressWarnings("unchecked")
             MetadataVisitor<MetaData> metadataVisitor = (MetadataVisitor<MetaData>) visitor;
-            metadataVisitor.visitMetadata( state.file(), metadata(), state.totalRecordsStored() );
+            metadataVisitor.visitMetadata( state.file(), metadata(), state.totalEntriesStored() );
         }
         try ( DataProvider provider = state.dataProvider() )
         {
@@ -94,7 +94,7 @@ public abstract class AbstractKeyValueStore<Key, MetaData, MetaDiff> extends Lif
             {
                 @SuppressWarnings("unchecked")
                 MetadataVisitor<MetaData> metadataVisitor = (MetadataVisitor<MetaData>) visitor;
-                metadataVisitor.visitMetadata( path, file.metadata(), file.recordCount() );
+                metadataVisitor.visitMetadata( path, file.metadata(), file.entryCount() );
             }
             try ( DataProvider provider = file.dataProvider() )
             {
@@ -134,9 +134,9 @@ public abstract class AbstractKeyValueStore<Key, MetaData, MetaDiff> extends Lif
         return state.metadata();
     }
 
-    public int totalRecordsStored()
+    public int totalEntriesStored()
     {
-        return state.totalRecordsStored();
+        return state.totalEntriesStored();
     }
 
     public final File currentFile()

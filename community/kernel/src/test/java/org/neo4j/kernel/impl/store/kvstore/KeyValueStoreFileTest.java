@@ -47,6 +47,7 @@ public class KeyValueStoreFileTest
         assertEquals( "(two pages) at beginning of second page", 1, findPage( 11, page( 1, 10 ), page( 11, 20 ) ) );
         assertEquals( "(two pages) at end of first page", 0, findPage( 10, page( 1, 10 ), page( 11, 20 ) ) );
         assertEquals( "(two pages) between pages (-> second page)", 1, findPage( 11, page( 1, 10 ), page( 21, 30 ) ) );
+        assertEquals( "(two pages) between pages (-> second page)", 1, findPage( 11, page( 1, 10 ), page( 12, 30 ) ) );
         assertEquals( "(two pages) after pages", 2, findPage( 31, page( 1, 10 ), page( 21, 30 ) ) );
 
         assertEquals( "(three pages) after pages", 3, findPage( 100, page( 1, 10 ), page( 21, 30 ), page( 41, 50 ) ) );
@@ -218,8 +219,8 @@ public class KeyValueStoreFileTest
             BigEndianByteArrayBuffer value = new BigEndianByteArrayBuffer( this.value );
             writeDataEntry( key, searchKey, value );
             Arrays.fill( this.value, (byte) 0 );
-            return KeyValueStoreFile.recordOffset( this, searchKey, new BigEndianByteArrayBuffer( this.key ), value,
-                                                   headerRecords, headerRecords + dataRecords );
+            return KeyValueStoreFile.findEntryOffset( this, searchKey, new BigEndianByteArrayBuffer( this.key ), value,
+                                                      headerRecords, headerRecords + dataRecords );
         }
 
         abstract void writeDataEntry( int record, WritableBuffer key, WritableBuffer value );

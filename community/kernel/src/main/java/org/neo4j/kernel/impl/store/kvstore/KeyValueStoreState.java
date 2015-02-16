@@ -30,7 +30,7 @@ abstract class KeyValueStoreState<Key, Meta>
 
     public abstract boolean hasChanges();
 
-    public abstract int totalRecordsStored();
+    public abstract int totalEntriesStored();
 
     // Data access
 
@@ -173,7 +173,7 @@ abstract class KeyValueStoreState<Key, Meta>
         }
 
         @Override
-        public final int totalRecordsStored()
+        public final int totalEntriesStored()
         {
             throw invalidState();
         }

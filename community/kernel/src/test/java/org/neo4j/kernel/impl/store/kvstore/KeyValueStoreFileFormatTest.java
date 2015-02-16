@@ -229,6 +229,35 @@ public class KeyValueStoreFileFormatTest
         }
     }
 
+    @Test
+    public void shouldNotFindAnythingWhenSearchKeyIsAfterTheLastKey() throws Exception
+    {
+        // given
+        Format format = new Format();
+        Map<String, byte[]> metadata = new HashMap<>();
+        Map<String, String> config = new HashMap<>();
+        config.put( GraphDatabaseSettings.pagecache_memory.name(), "8M" );
+        config.put( GraphDatabaseSettings.mapped_memory_page_size.name(), "128" );
+        Data data = data( // two full pages (and nothing more)
+                // page 0
+                entry( bytes( 12 ), bytes( 'v', 'a', 'l', 1 ) ),
+                entry( bytes( 13 ), bytes( 'v', 'a', 'l', 2 ) ),
+                // page 1
+                entry( bytes( 15 ), bytes( 'v', 'a', 'l', 3 ) ),
+                entry( bytes( 16 ), bytes( 'v', 'a', 'l', 4 ) ),
+                entry( bytes( 17 ), bytes( 'v', 'a', 'l', 5 ) ),
+                entry( bytes( 18 ), bytes( 'v', 'a', 'l', 6 ) ) );
+
+        // when
+        try ( KeyValueStoreFile<Map<String, byte[]>> file = format.create( config, metadata, data ) )
+        // then
+        {
+            assertFind( file, 14, 15, false, new Bytes( 'v', 'a', 'l', 3 ) ); // after the first page
+            assertFind( file, 19, 25, false ); // after the second page
+            assertFind( file, 18, 25, true, new Bytes( 'v', 'a', 'l', 6 ) ); // last entry of the last page
+        }
+    }
+
     private static void assertFind( KeyValueStoreFile<?> file, int min, int max, boolean exact, Bytes... expected )
             throws IOException
     {

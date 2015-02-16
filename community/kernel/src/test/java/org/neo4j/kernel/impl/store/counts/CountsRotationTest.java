@@ -78,7 +78,7 @@ public class CountsRotationTest
                                                            new File( dir.getPath(), COUNTS_STORE_BASE ) ) );
             assertEquals( BASE_TX_ID, store.txId() );
 //            assertEquals( BASE_MINOR_VERSION + 1, store.minorVersion() );
-            assertEquals( 0, store.totalRecordsStored() );
+            assertEquals( 0, store.totalEntriesStored() );
             assertEquals( 0, allRecords( store ).size() );
         }
 
@@ -88,7 +88,7 @@ public class CountsRotationTest
                                                            new File( dir.getPath(), COUNTS_STORE_BASE ) ) );
             assertEquals( BASE_TX_ID, store.txId() );
             assertEquals( BASE_MINOR_VERSION, store.minorVersion() );
-            assertEquals( 0, store.totalRecordsStored() );
+            assertEquals( 0, store.totalEntriesStored() );
             assertEquals( 0, allRecords( store ).size() );
         }
     }
@@ -119,7 +119,7 @@ public class CountsRotationTest
             assertEquals( BASE_TX_ID + 1 + 1, store.txId() );
             assertEquals( BASE_MINOR_VERSION, store.minorVersion() );
             // one for all nodes and one for the created "A" label
-            assertEquals( 1 + 1, store.totalRecordsStored() );
+            assertEquals( 1 + 1, store.totalEntriesStored() );
             assertEquals( 1 + 1, allRecords( store ).size() );
         }
     }
@@ -160,7 +160,7 @@ public class CountsRotationTest
             assertEquals( BASE_TX_ID + 1 + 1, store.txId() );
             assertEquals( BASE_MINOR_VERSION, store.minorVersion() );
             // one for all nodes and one for the created "B" label
-            assertEquals( 1 + 1, store.totalRecordsStored() );
+            assertEquals( 1 + 1, store.totalEntriesStored() );
             assertEquals( 1 + 1, allRecords( store ).size() );
         }
 

@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.store.kvstore;
 
 abstract class Metadata<META>
 {
-    abstract int headerRecords();
+    abstract int headerEntries();
 
-    abstract int totalRecords();
+    abstract int totalEntries();
 
     abstract META metadata();
 
