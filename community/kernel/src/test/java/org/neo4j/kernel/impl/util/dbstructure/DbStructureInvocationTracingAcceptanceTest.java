@@ -43,6 +43,7 @@ import javax.tools.ToolProvider;
 
 import org.junit.Test;
 
+import org.neo4j.helpers.collection.Visitable;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 

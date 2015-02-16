@@ -19,7 +19,7 @@
  */
 package org.neo4j.helpers.collection;
 
-public interface Visitable<T>
+public interface Visitable<V>
 {
-    void accept(Visitor<T, RuntimeException> visitor);
+    void accept( V visitor );
 }
