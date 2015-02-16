@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 angular.module('neo4jApp.controllers')
   .controller 'CypherResultCtrl', ['$rootScope', '$scope', ($rootScope, $scope) ->
 
+    $scope.displayInternalRelationships = $rootScope.stickyDisplayInternalRelationships ? true
     $scope.availableModes = []
     $scope.$watch 'frame.response', (resp) ->
       return unless resp
@@ -86,6 +87,17 @@ angular.module('neo4jApp.controllers')
         joinedMessages = messages.join(', ')
         "#{joinedMessages.substring(0, 1).toUpperCase()}#{joinedMessages.substring(1)}."
 
+    $scope.graphStatistics = (frame) ->
+      if frame?.response
+        graph = frame.response.graph
+        plural = (collection, noun) ->
+          "#{collection.length} #{noun}#{if collection.length is 1 then '' else 's'}"
+        message = "Displaying #{plural(graph.nodes(), 'node')}, #{plural(graph.relationships(), 'relationship')}"
+        internalRelationships = graph.relationships().filter((r) -> r.internal)
+        if internalRelationships.length > 0
+          message += " (including  #{plural(internalRelationships, 'auto-connected relationship')})"
+        message + '.'
+
     $scope.planStatistics = (frame) ->
       if frame?.response?.table?._response.plan?
         root = frame.response.table._response.plan.root
@@ -119,4 +131,7 @@ angular.module('neo4jApp.controllers')
     $scope.$on('frame.export.plan.png', ->
       $scope.$broadcast('export.plan.png')
     )
+
+    $scope.toggleDisplayInternalRelationships = ->
+      $scope.displayInternalRelationships = !$scope.displayInternalRelationships
   ]

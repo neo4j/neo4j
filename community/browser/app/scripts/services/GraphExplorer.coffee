@@ -28,38 +28,43 @@ angular.module('neo4jApp.services')
     'Settings'
     ($q, Cypher, CypherGraphModel, Settings) ->
       return  {
-        exploreNeighboursWithInternalRelationships: (node, graph) ->
+        exploreNeighbours: (node, graph, withInternalRelationships) ->
           q = $q.defer()
-          @exploreNeighbours(node).then (neighboursResult) =>
+          @findNeighbours(node).then (neighboursResult) =>
             if neighboursResult.nodes.length > Settings.maxNeighbours
               return q.reject('Sorry! Too many neighbours')
             graph.addNodes(neighboursResult.nodes.map(CypherGraphModel.convertNode()))
             graph.addRelationships(neighboursResult.relationships.map(CypherGraphModel.convertRelationship(graph)))
-            @internalRelationships(graph.nodes()).then (result) =>
-              graph.addRelationships(result.relationships.map(CypherGraphModel.convertRelationship(graph)))
+            if withInternalRelationships
+              @internalRelationships(graph, graph.nodes(), neighboursResult.nodes).then ->
+                q.resolve()
+            else
               q.resolve()
           q.promise
 
-        exploreNeighbours: (node) ->
+        findNeighbours: (node) ->
           q = $q.defer()
           Cypher.transaction()
           .commit("MATCH (a)-[r]-() WHERE id(a)= #{node.id} RETURN r;")
           .then(q.resolve)
           q.promise
 
-        internalRelationships: (nodes) ->
+        internalRelationships: (graph, existingNodes, newNodes) ->
           q = $q.defer()
-          if nodes.length is 0
+          if newNodes.length is 0
             q.resolve()
             return q.promise
-          ids = nodes.map((node) -> node.id)
+          newNodeIds = newNodes.map((node) -> node.id)
+          existingNodeIds = existingNodes.map((node) -> node.id).concat(newNodeIds)
           Cypher.transaction()
           .commit("""
-            MATCH a -[r]-> b WHERE id(a) IN[#{ids.join(',')}]
-            AND id(b) IN[#{ids.join(',')}]
+            MATCH a -[r]- b WHERE id(a) IN[#{existingNodeIds.join(',')}]
+            AND id(b) IN[#{newNodeIds.join(',')}]
             RETURN r;"""
           )
-          .then(q.resolve)
+          .then (result) =>
+            graph.addInternalRelationships(result.relationships.map(CypherGraphModel.convertRelationship(graph)))
+            q.resolve()
           q.promise
       }
   ]

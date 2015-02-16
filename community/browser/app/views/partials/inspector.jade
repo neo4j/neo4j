@@ -6,8 +6,15 @@
 
 .inspector-footer(ng-if="Inspector.length == 0")
   .inspector-footer-row
-    span
-      | Displaying
-      ng-pluralize(count='frame.response.graph.nodes().length', when="{one: '1 node', other: '{} nodes'}")
-      | ,
-      ng-pluralize(count='frame.response.graph.relationships().length', when="{one: '1 relationship', other: '{} relationships'}")
+    span {{ graphStatistics(frame) }}
+    .actions.status-bar-actions
+      .toggle(ng-click='toggleDisplayInternalRelationships()')
+        a.toggle-text Auto-connect
+        .switch
+          label
+            .switch-inner(ng-class="{right: displayInternalRelationships}")
+              span.right-text
+                | ON
+              .handle
+              span.left-text
+                | OFF
