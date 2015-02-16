@@ -73,7 +73,7 @@ trait Pipe extends Effectful {
 
   def sources: Seq[Pipe]
 
-  def localEffects: Effects = Effects.ALL
+  def localEffects: Effects
 
   def effects: Effects = localEffects
 
@@ -126,8 +126,7 @@ abstract class PipeWithSource(source: Pipe, val monitor: PipeMonitor) extends Pi
 
   override val sources: Seq[Pipe] = Seq(source)
 
-  override def effects =
-    sources.foldLeft(localEffects)(_ | _.effects)
+  override def effects = sources.foldLeft(localEffects)(_ | _.effects)
 
   def exists(pred: Pipe => Boolean) = pred(this) || source.exists(pred)
 }

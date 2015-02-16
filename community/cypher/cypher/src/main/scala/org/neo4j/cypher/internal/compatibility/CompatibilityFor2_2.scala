@@ -43,7 +43,7 @@ import scala.collection.JavaConverters._
 import scala.util.Try
 
 object helpers {
-  implicit def monitorFailure(t: Throwable)(implicit monitor: QueryExecutionMonitor, session: QuerySession) = {
+  implicit def monitorFailure(t: Throwable)(implicit monitor: QueryExecutionMonitor, session: QuerySession): Unit = {
     monitor.endFailure(session, t)
   }
 }
@@ -147,7 +147,6 @@ trait CompatibilityFor2_2 {
     def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, executionMode: ExecutionMode, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
       implicit val s = session
       exceptionHandlerFor2_2.runSafely {
-
         ExecutionResultWrapperFor2_2(inner.run(queryContext(graph, txInfo), executionMode, params), inner.plannerUsed)
       }
     }

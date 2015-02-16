@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.mutation
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Identifier, Expression}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
@@ -64,5 +64,12 @@ case class DeleteEntityAction(elementToDelete: Expression)
 
   def symbolTableDependencies = elementToDelete.symbolTableDependencies
 
-  def localEffects(symbols: SymbolTable) = Effects.WRITES_ENTITIES
+  def localEffects(symbols: SymbolTable) = elementToDelete match {
+    case i: Identifier => symbols.identifiers(i.entityName) match {
+      case _: NodeType         => Effects.WRITES_NODES
+      case _: RelationshipType => Effects.WRITES_RELATIONSHIPS
+      case _                   => Effects.NONE
+    }
+    case _ => Effects.WRITES_ENTITIES
+  }
 }

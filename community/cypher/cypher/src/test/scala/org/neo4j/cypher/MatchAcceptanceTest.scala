@@ -1774,7 +1774,6 @@ return b
                   |  MERGE (project)–[:HAS_FOLDER]->(folder))
                   |RETURN DISTINCT project""".stripMargin
 
-
     //WHEN
     val first = eengine.execute(query).toList
     val second = eengine.execute(query).toList
