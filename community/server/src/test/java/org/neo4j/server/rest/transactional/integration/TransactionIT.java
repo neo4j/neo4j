@@ -19,9 +19,6 @@
  */
 package org.neo4j.server.rest.transactional.integration;
 
-import org.codehaus.jackson.JsonNode;
-import org.junit.Test;
-
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
@@ -35,6 +32,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import org.codehaus.jackson.JsonNode;
+import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
+import org.neo4j.server.web.XForwardUtil;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.HTTP.Response;
 import org.neo4j.tooling.GlobalGraphOperations;
@@ -105,7 +106,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         assertHasTxLocation( begin );
 
         // execute
-         http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
+        http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE n' } ] }" ) );
 
         // rollback
         Response commit = http.DELETE( begin.location() );
@@ -217,7 +218,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     {
         // begin and execute and commit "resultDataContents":["REST"]
         HTTP.RawPayload payload = quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n {a: 1}) return n', " +
-                                              "'resultDataContents' : ['REST'] } ] }" );
+                "'resultDataContents' : ['REST'] } ] }" );
         Response begin = http.POST( "/db/data/transaction/commit", payload );
 
         assertThat( begin.status(), equalTo( 200 ) );
@@ -304,7 +305,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     @Test
     public void begin_and_execute_cypher_21_periodic_commit_that_returns_data_and_commit() throws Exception
     {
-        ServerTestUtils.withCSVFile( 1, new ServerTestUtils.BlockWithCSVFileURL() {
+        ServerTestUtils.withCSVFile( 1, new ServerTestUtils.BlockWithCSVFileURL()
+        {
             @Override
             public void execute( String url ) throws Exception
             {
@@ -313,7 +315,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
                 // begin and execute and commit
                 Response response = http.POST(
                         "/db/data/transaction/commit",
-                        quotedJson( "{ 'statements': [ { 'statement': 'CYPHER 2.1 USING PERIODIC COMMIT LOAD CSV FROM \\\"" + url + "\\\" AS line CREATE (n {id: 23}) RETURN n' } ] }" )
+                        quotedJson( "{ 'statements': [ { 'statement': 'CYPHER 2.1 USING PERIODIC COMMIT LOAD CSV FROM" +
+                                " \\\"" + url + "\\\" AS line CREATE (n {id: 23}) RETURN n' } ] }" )
                 );
 
                 assertThat( response.status(), equalTo( 200 ) );
@@ -321,9 +324,9 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
                 assertThat( response, containsNoErrors() );
 
                 JsonNode columns = response.get( "results" ).get( 0 ).get( "columns" );
-                assertThat(columns.toString(), equalTo("[\"n\"]"));
+                assertThat( columns.toString(), equalTo( "[\"n\"]" ) );
 
-                assertThat(countNodes(), equalTo(nodesInDatabaseBeforeTransaction + 1));
+                assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );
             }
         } );
     }
@@ -756,42 +759,81 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         assertThat( response.get( "errors" ).size(), equalTo( 0 ) );
     }
 
-    static PrintStream out = System.err;
     @Test
-    public void rest_format_nodes_should_have_sensible_uris() throws Throwable
+    public void restFormatNodesShouldHaveSensibleUris() throws Throwable
     {
+        // given
+        final String hostname = "localhost";
+        final String scheme = "http";
+
         // when
         Response rs = http.POST( "/db/data/transaction/commit", quotedJson(
-            "{ 'statements': [ { 'statement': 'CREATE (n:Foo:Bar) RETURN n', 'resultDataContents':['rest'] } ] }"
-        ));
+                "{ 'statements': [ { 'statement': 'CREATE (n:Foo:Bar) RETURN n', 'resultDataContents':['rest'] } ] }"
+        ) );
 
         // then
-        JsonNode restNode = rs.get( "results" ).get(0).get( "data" ).get( 0 ).get( "rest" ).get(0);
+        JsonNode restNode = rs.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "rest" ).get( 0 );
 
-        assertPath( restNode.get("labels"), "/node/\\d+/labels" );
-        assertPath( restNode.get("outgoing_relationships"), "/node/\\d+/relationships/out" );
-        assertPath( restNode.get( "traverse" ), "/node/\\d+/traverse/\\{returnType\\}" );
+        assertPath( restNode.get( "labels" ), "/node/\\d+/labels", hostname, scheme );
+        assertPath( restNode.get( "outgoing_relationships" ), "/node/\\d+/relationships/out", hostname, scheme );
+        assertPath( restNode.get( "traverse" ), "/node/\\d+/traverse/\\{returnType\\}", hostname, scheme );
         assertPath( restNode.get( "all_typed_relationships" ),
-                "/node/\\d+/relationships/all/\\{-list\\|&\\|types\\}" );
-        assertPath( restNode.get( "self" ), "/node/\\d+" );
-        assertPath( restNode.get( "property" ), "/node/\\d+/properties/\\{key\\}" );
-        assertPath( restNode.get( "properties" ), "/node/\\d+/properties" );
+                "/node/\\d+/relationships/all/\\{-list\\|&\\|types\\}", hostname, scheme );
+        assertPath( restNode.get( "self" ), "/node/\\d+", hostname, scheme );
+        assertPath( restNode.get( "property" ), "/node/\\d+/properties/\\{key\\}", hostname, scheme );
+        assertPath( restNode.get( "properties" ), "/node/\\d+/properties", hostname, scheme );
         assertPath( restNode.get( "outgoing_typed_relationships" ),
-                "/node/\\d+/relationships/out/\\{-list\\|&\\|types\\}");
-        assertPath( restNode.get( "incoming_relationships" ), "/node/\\d+/relationships/in" );
-        assertPath( restNode.get( "create_relationship" ), "/node/\\d+/relationships" );
+                "/node/\\d+/relationships/out/\\{-list\\|&\\|types\\}", hostname, scheme );
+        assertPath( restNode.get( "incoming_relationships" ), "/node/\\d+/relationships/in", hostname, scheme );
+        assertPath( restNode.get( "create_relationship" ), "/node/\\d+/relationships", hostname, scheme );
         assertPath( restNode.get( "paged_traverse" ), "/node/\\d+/paged/traverse/\\{returnType\\}\\{\\?pageSize," +
-                                                      "leaseTime\\}");
-        assertPath( restNode.get( "all_relationships" ), "/node/\\d+/relationships/all" );
+                "leaseTime\\}", "localhost", scheme );
+        assertPath( restNode.get( "all_relationships" ), "/node/\\d+/relationships/all", hostname, scheme );
         assertPath( restNode.get( "incoming_typed_relationships" ),
-                "/node/\\d+/relationships/in/\\{-list\\|&\\|types\\}");
+                "/node/\\d+/relationships/in/\\{-list\\|&\\|types\\}", hostname, scheme );
     }
 
-    private void assertPath( JsonNode jsonURIString, String path )
+    @Test
+    public void restFormattedNodesShouldHaveSensibleUrisWhenUsingXForwardHeader() throws Throwable
     {
-        assertTrue("Expected a uri matching 'http://localhost:\\d+/db/data" + path + "', " +
-                   "but got '" + jsonURIString.asText() + "'.",
-                   jsonURIString.asText().matches( "http://localhost:\\d+/db/data" + path ));
+        // given
+        final String hostname = "dummy.example.org";
+        final String scheme = "http";
+        
+        // when
+        Response rs = http.withHeaders( XForwardUtil.X_FORWARD_HOST_HEADER_KEY, hostname )
+                .POST( "/db/data/transaction/commit", quotedJson(
+                        "{ 'statements': [ { 'statement': 'CREATE (n:Foo:Bar) RETURN n', " +
+                                "'resultDataContents':['rest'] } ] }"
+                ) );
+
+        // then
+        JsonNode restNode = rs.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "rest" ).get( 0 );
+
+        assertPath( restNode.get( "labels" ), "/node/\\d+/labels", hostname, scheme );
+        assertPath( restNode.get( "outgoing_relationships" ), "/node/\\d+/relationships/out", hostname, scheme );
+        assertPath( restNode.get( "traverse" ), "/node/\\d+/traverse/\\{returnType\\}", hostname, scheme );
+        assertPath( restNode.get( "all_typed_relationships" ),
+                "/node/\\d+/relationships/all/\\{-list\\|&\\|types\\}", hostname, scheme );
+        assertPath( restNode.get( "self" ), "/node/\\d+", hostname, scheme );
+        assertPath( restNode.get( "property" ), "/node/\\d+/properties/\\{key\\}", hostname, scheme );
+        assertPath( restNode.get( "properties" ), "/node/\\d+/properties", hostname, scheme );
+        assertPath( restNode.get( "outgoing_typed_relationships" ),
+                "/node/\\d+/relationships/out/\\{-list\\|&\\|types\\}", hostname, scheme );
+        assertPath( restNode.get( "incoming_relationships" ), "/node/\\d+/relationships/in", hostname, scheme );
+        assertPath( restNode.get( "create_relationship" ), "/node/\\d+/relationships", hostname, scheme );
+        assertPath( restNode.get( "paged_traverse" ), "/node/\\d+/paged/traverse/\\{returnType\\}\\{\\?pageSize," +
+                "leaseTime\\}", hostname, scheme );
+        assertPath( restNode.get( "all_relationships" ), "/node/\\d+/relationships/all", hostname, scheme );
+        assertPath( restNode.get( "incoming_typed_relationships" ),
+                "/node/\\d+/relationships/in/\\{-list\\|&\\|types\\}", hostname, scheme );
+    }
+
+    private void assertPath( JsonNode jsonURIString, String path, String hostname, final String scheme )
+    {
+        assertTrue( "Expected a uri matching '" + scheme + "://" + hostname + ":\\d+/db/data" + path + "', " +
+                        "but got '" + jsonURIString.asText() + "'.",
+                jsonURIString.asText().matches( scheme + "://" + hostname + ":\\d+/db/data" + path ) );
     }
 
 
