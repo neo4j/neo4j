@@ -20,11 +20,14 @@
 package org.neo4j.kernel.impl.util.dbstructure;
 
 import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintWriter;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.helpers.Pair;
+
+import static java.lang.String.format;
 
 public class DbStructureTool
 {
@@ -33,46 +36,95 @@ public class DbStructureTool
         throw new IllegalStateException( "Should not be instantiated" );
     }
 
-    public static void main( String[] args ) throws FileNotFoundException
+    public static void main( String[] args ) throws IOException
     {
         if ( args.length != 2 && args.length != 3 )
         {
-            System.err.println( "arguments: <generated clazz name> [<output source root>] <database dir>" );
+            System.err.println( "arguments: <generated class name> [<output source root>] <database dir>" );
             System.exit( 1 );
         }
 
         boolean writeToFile = args.length == 3;
-        String generatedClazz = args[0];
+        String generatedClassWithPackage = args[0];
         String dbDir = writeToFile ? args[2] : args[1];
+
+        Pair<String, String> parsedGenerated = parseClassNameWithPackage( generatedClassWithPackage );
+        String generatedClassPackage = parsedGenerated.first();
+        String generatedClassName = parsedGenerated.other();
+
+        String generator = format( "%s %s [<output source root>] <db-dir>",
+                DbStructureTool.class.getCanonicalName(),
+                generatedClassWithPackage
+        );
 
         GraphDatabaseService graph = new GraphDatabaseFactory().newEmbeddedDatabase( dbDir );
         try
         {
-            InvocationTracer<DbStructureVisitor> tracer = new InvocationTracer<>( generatedClazz, DbStructureVisitor.class );
-            DbStructureVisitor visitor = tracer.newProxy();
-            DbStructureGuide guide = new DbStructureGuide( graph );
-            guide.accept( visitor );
-
             if ( writeToFile )
             {
                 File sourceRoot = new File( args[1] );
-                String outputPackageDir = tracer.getGeneratedPackageName().replace( '.', File.separatorChar );
-                String outputFileName = tracer.getGeneratedClassName() + ".java";
+                String outputPackageDir = generatedClassPackage.replace( '.', File.separatorChar );
+                String outputFileName = generatedClassName + ".java";
                 File outputDir = new File( sourceRoot, outputPackageDir );
                 File outputFile = new File( outputDir, outputFileName );
                 try ( PrintWriter writer = new PrintWriter( outputFile ) )
                 {
-                    writer.print( tracer.toString() );
+                    traceDb( generator, generatedClassPackage, generatedClassName, graph, writer );
                 }
             }
             else
             {
-                System.out.print( tracer.toString() );
+                traceDb( generator, generatedClassPackage, generatedClassName, graph, System.out );
             }
         }
         finally
         {
             graph.shutdown();
         }
+    }
+
+    private static void traceDb( String generator,
+                                 String generatedClazzPackage, String generatedClazzName,
+                                 GraphDatabaseService graph,
+                                 Appendable output )
+            throws IOException
+    {
+        InvocationTracer<DbStructureVisitor> tracer = new InvocationTracer<>(
+                generator,
+                generatedClazzPackage,
+                generatedClazzName,
+                DbStructureVisitor.class,
+                DbStructureArgumentFormatter.INSTANCE,
+                output
+        );
+
+        DbStructureVisitor visitor = tracer.newProxy();
+        DbStructureGuide guide = new DbStructureGuide( graph );
+        guide.accept( visitor );
+        tracer.close();
+    }
+
+    private static Pair<String, String> parseClassNameWithPackage( String classNameWithPackage )
+    {
+        if ( classNameWithPackage.contains( "%" ) )
+        {
+            throw new IllegalArgumentException(
+                "Format character in generated class name: " + classNameWithPackage
+            );
+        }
+
+        int index = classNameWithPackage.lastIndexOf( "." );
+
+        if ( index < 0 )
+        {
+            throw new IllegalArgumentException(
+                "Expected fully qualified class name but got: " + classNameWithPackage
+            );
+        }
+
+        return Pair.of(
+            classNameWithPackage.substring( 0, index ),
+            classNameWithPackage.substring( index + 1 )
+        );
     }
 }

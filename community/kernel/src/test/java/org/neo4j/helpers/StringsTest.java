@@ -64,4 +64,19 @@ public class StringsTest
         recursiveArray[1] = recursiveArray;
         assertEquals( "[10.12345, [...], String]", prettyPrint( recursiveArray ) );
     }
+
+    @Test
+    public void testEscape()
+    {
+        assertEquals( "abc", Strings.escape( "abc" ) );
+        assertEquals( "Abc", Strings.escape( "Abc" ) );
+        assertEquals( "a\\\"bc", Strings.escape( "a\"bc" ) );
+        assertEquals( "a\\\'bc", Strings.escape( "a\'bc" ) );
+        assertEquals( "a\\\\bc", Strings.escape( "a\\bc" ) );
+        assertEquals( "a\\nbc", Strings.escape( "a\nbc" ) );
+        assertEquals( "a\\tbc", Strings.escape( "a\tbc" ) );
+        assertEquals( "a\\rbc", Strings.escape( "a\rbc" ) );
+        assertEquals( "a\\bbc", Strings.escape( "a\bbc" ) );
+        assertEquals( "a\\fbc", Strings.escape( "a\fbc" ) );
+    }
 }

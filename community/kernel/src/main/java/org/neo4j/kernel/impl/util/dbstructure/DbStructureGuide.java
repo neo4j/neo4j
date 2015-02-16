@@ -200,43 +200,59 @@ public class DbStructureGuide implements Visitable<DbStructureVisitor>
     }
     private void showRelCounts( ReadOperations read, DbStructureVisitor visitor )
     {
-        // wildcard lhs and rhs
-        for ( RelationshipType relType : Iterables.append( WILDCARD_REL_TYPE, glops.getAllRelationshipTypes() ) )
-        {
-            int relTypeId = relType == WILDCARD_REL_TYPE ? ANY_RELATIONSHIP_TYPE : read.relationshipTypeGetForName( relType.name() );
+        // all wildcards
+        noSide( read, visitor, WILDCARD_REL_TYPE, ANY_RELATIONSHIP_TYPE );
 
-            String userDescription = format("MATCH ()-[%s]->() RETURN count(*)", colon( relType.name() ));
-            long amount = read.countsForRelationship( ANY_LABEL, relTypeId, ANY_LABEL );
-
-            visitor.visitRelCount( ANY_LABEL, relTypeId, ANY_LABEL, userDescription, amount );
-        }
-
-        // one label defined
+        // one label only
         for ( Label label : glops.getAllLabels() )
         {
             int labelId = read.labelGetForName( label.name() );
 
-            for ( RelationshipType relType : Iterables.append( WILDCARD_REL_TYPE, glops.getAllRelationshipTypes() ) )
+            leftSide( read, visitor, label, labelId, WILDCARD_REL_TYPE, ANY_RELATIONSHIP_TYPE );
+            rightSide( read, visitor, label, labelId, WILDCARD_REL_TYPE, ANY_RELATIONSHIP_TYPE );
+        }
+
+        // fixed rel type
+        for ( RelationshipType relType : glops.getAllRelationshipTypes() )
+        {
+            int relTypeId = read.relationshipTypeGetForName( relType.name() );
+            noSide( read, visitor, relType, relTypeId );
+
+            for ( Label label : glops.getAllLabels() )
             {
-                int relTypeId = relType == WILDCARD_REL_TYPE ? ANY_RELATIONSHIP_TYPE : read.relationshipTypeGetForName( relType.name() );
+                int labelId = read.labelGetForName( label.name() );
 
-                // left side
-                {
-                    String userDescription = format( "MATCH (%s)-[%s]->() RETURN count(*)", colon( label.name() ), colon( relType.name() ) );
-                    long amount = read.countsForRelationship( labelId, relTypeId, ANY_LABEL );
+                // wildcard on right
+                leftSide( read, visitor, label, labelId, relType, relTypeId );
 
-                    visitor.visitRelCount( labelId, relTypeId, ANY_LABEL, userDescription, amount );
-                }
-
-                // right side
-                {
-                    String userDescription = format( "MATCH ()-[%s]->(%s) RETURN count(*)", colon( relType.name() ), colon( label.name() ) );
-                    long amount = read.countsForRelationship( ANY_LABEL, relTypeId, labelId );
-
-                    visitor.visitRelCount( ANY_LABEL, relTypeId, labelId, userDescription, amount );
-                }
+                // wildcard on left
+                rightSide( read, visitor, label, labelId, relType, relTypeId );
             }
         }
+    }
+
+    private void noSide( ReadOperations read, DbStructureVisitor visitor, RelationshipType relType, int relTypeId )
+    {
+        String userDescription = format("MATCH ()-[%s]->() RETURN count(*)", colon( relType.name() ));
+        long amount = read.countsForRelationship( ANY_LABEL, relTypeId, ANY_LABEL );
+
+        visitor.visitRelCount( ANY_LABEL, relTypeId, ANY_LABEL, userDescription, amount );
+    }
+
+    private void leftSide( ReadOperations read, DbStructureVisitor visitor, Label label, int labelId, RelationshipType relType, int relTypeId )
+    {
+        String userDescription = format( "MATCH (%s)-[%s]->() RETURN count(*)", colon( label.name() ), colon( relType.name() ) );
+        long amount = read.countsForRelationship( labelId, relTypeId, ANY_LABEL );
+
+        visitor.visitRelCount( labelId, relTypeId, ANY_LABEL, userDescription, amount );
+    }
+
+    private void rightSide( ReadOperations read, DbStructureVisitor visitor, Label label, int labelId, RelationshipType relType, int relTypeId )
+    {
+        String userDescription = format( "MATCH ()-[%s]->(%s) RETURN count(*)", colon( relType.name() ), colon( label.name() ) );
+        long amount = read.countsForRelationship( ANY_LABEL, relTypeId, labelId );
+
+        visitor.visitRelCount( ANY_LABEL, relTypeId, labelId, userDescription, amount );
     }
 
     private String colon( String name )

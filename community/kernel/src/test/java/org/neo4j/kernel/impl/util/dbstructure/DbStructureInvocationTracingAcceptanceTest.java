@@ -43,64 +43,125 @@ import javax.tools.ToolProvider;
 
 import org.junit.Test;
 
+import org.neo4j.function.Function;
 import org.neo4j.helpers.collection.Visitable;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+
+import static org.neo4j.function.Functions.constant;
 
 public class DbStructureInvocationTracingAcceptanceTest
 {
+    private final String packageName = "org.neo4j.kernel.impl.util.data";
+    private final String className = "XXYYZZData";
+    private final String classNameWithPackage = packageName + "." + className;
+
     @Test
-    public void outputCompilesWithoutErrors()
+    public void outputCompilesWithoutErrors() throws IOException
     {
         // GIVEN
-        String className = "org.neo4j.kernel.impl.util.data.XXYYZZData";
-        InvocationTracer<DbStructureVisitor> tracer = new InvocationTracer<>( className, DbStructureVisitor.class );
+        StringBuilder output = new StringBuilder();
+        InvocationTracer<DbStructureVisitor> tracer =
+            new InvocationTracer<>( "Test", packageName, className, DbStructureVisitor.class, DbStructureArgumentFormatter.INSTANCE, output );
         DbStructureVisitor visitor = tracer.newProxy();
 
         // WHEN
-        exerciseVisitor( visitor );
+        exerciseVisitor( constant( visitor ) );
+        tracer.close();
 
         // THEN
-        assertCompiles( className, tracer.toString() );
+        assertCompiles( classNameWithPackage, output.toString() );
     }
 
     @Test
-    public void compiledOutputProducesSameOutputIfCompiledAgain()
+    public void compiledOutputCreatesInputTrace() throws IOException
     {
         // GIVEN
-        String className = "org.neo4j.kernel.impl.util.data.XXYYZZData";
-        InvocationTracer<DbStructureVisitor> tracer1 = new InvocationTracer<>( className, DbStructureVisitor.class );
-        DbStructureVisitor visitor1 = tracer1.newProxy();
-        exerciseVisitor( visitor1 );
-        String source1 = tracer1.toString();
-        Visitable<DbStructureVisitor> visitable = compileVisitable( className, source1 );
+        StringBuilder output = new StringBuilder();
+        InvocationTracer<DbStructureVisitor> tracer =
+            new InvocationTracer<>( "Test", packageName, className, DbStructureVisitor.class, DbStructureArgumentFormatter.INSTANCE, output );
+        exerciseVisitor( constant ( tracer.newProxy() ) );
+        tracer.close();
+        final Visitable<DbStructureVisitor> visitable = compileVisitable( classNameWithPackage, output.toString() );
+        final DbStructureVisitor visitor = mock( DbStructureVisitor.class );
 
         // WHEN
-        InvocationTracer<DbStructureVisitor> tracer2 = new InvocationTracer<>( className, DbStructureVisitor.class );
+        visitable.accept( visitor );
+
+        // THEN
+        exerciseVisitor( new Function<Object, DbStructureVisitor>()
+        {
+            @Override
+            public DbStructureVisitor apply( Object o ) throws RuntimeException
+            {
+                return verify( visitor );
+            }
+        } );
+        verifyNoMoreInteractions( visitor );
+    }
+
+    @Test
+    public void compiledOutputProducesSameCompiledOutputIfCompiledAgain() throws IOException
+    {
+        // GIVEN
+        StringBuilder output1 = new StringBuilder();
+        InvocationTracer<DbStructureVisitor> tracer1 =
+                new InvocationTracer<>( "Test", packageName, className, DbStructureVisitor.class, DbStructureArgumentFormatter.INSTANCE, output1 );
+        DbStructureVisitor visitor1 = tracer1.newProxy();
+        exerciseVisitor( constant( visitor1 ) );
+        tracer1.close();
+        String source1 = output1.toString();
+        Visitable<DbStructureVisitor> visitable = compileVisitable( classNameWithPackage, source1 );
+
+        // WHEN
+        StringBuilder output2 = new StringBuilder();
+        InvocationTracer<DbStructureVisitor> tracer2 =
+            new InvocationTracer<>( "Test", packageName, className, DbStructureVisitor.class, DbStructureArgumentFormatter.INSTANCE, output2 );
         DbStructureVisitor visitor2 = tracer2.newProxy();
         visitable.accept( visitor2 );
-        String source2 = tracer2.toString();
+        tracer2.close();
+        String source2 = output2.toString();
 
         // THEN
         assertEquals( source1, source2 );
     }
 
-    private void exerciseVisitor( DbStructureVisitor visitor )
+    private void exerciseVisitor( Function<Object, DbStructureVisitor> visitor )
     {
-        visitor.visitLabel( 0, "Person" );
-        visitor.visitLabel( 1, "Party" );
-        visitor.visitPropertyKey( 0, "name" );
-        visitor.visitPropertyKey( 1, "age" );
-        visitor.visitRelationshipType( 0, "ACCEPTS" );
-        visitor.visitRelationshipType( 1, "REJECTS" );
-        visitor.visitIndex( new IndexDescriptor( 0, 1 ), ":Person(age)", 0.5d );
-        visitor.visitUniqueIndex( new IndexDescriptor( 0, 0 ), ":Person(name)", 0.5d );
-        visitor.visitUniqueConstraint( new UniquenessConstraint( 1, 0 ), ":Party(name)" );
-        visitor.visitNodeCount( 0, "Person", 50 );
-        visitor.visitNodeCount( 0, "Party", 5 );
-        visitor.visitRelCount( 0, 1, -1, "MATCH (:Person)-[:REJECTS]->() RETURN count(*)", 5 );
+        visitor.apply( null ).visitLabel( 0, "Person" );
+        visitor.apply( null ).visitLabel( 1, "Party" );
+        visitor.apply( null ).visitPropertyKey( 0, "name" );
+        visitor.apply( null ).visitPropertyKey( 1, "age" );
+        visitor.apply( null ).visitRelationshipType( 0, "ACCEPTS" );
+        visitor.apply( null ).visitRelationshipType( 1, "REJECTS" );
+        visitor.apply( null ).visitIndex( new IndexDescriptor( 0, 1 ), ":Person(age)", 0.5d );
+        visitor.apply( null ).visitUniqueIndex( new IndexDescriptor( 0, 0 ), ":Person(name)", 0.5d );
+        visitor.apply( null ).visitUniqueConstraint( new UniquenessConstraint( 1, 0 ), ":Party(name)" );
+        visitor.apply( null ).visitNodeCount( 0, "Person", 50 );
+        visitor.apply( null ).visitNodeCount( 0, "Party", 5 );
+        visitor.apply( null ).visitRelCount( 0, 1, -1, "MATCH (:Person)-[:REJECTS]->() RETURN count(*)", 5 );
+    }
+
+    private void assertCompiles( final String className, String source )
+    {
+        compile( className, source,
+                new CompilationListener<Boolean>()
+                {
+                    @Override
+                    public Boolean compiled( Boolean success,
+                                             JavaFileManager manager,
+                                             List<Diagnostic<? extends JavaFileObject>> diagnostics )
+                    {
+                        assertSuccessfullyCompiled( success, diagnostics, className );
+                        return true;
+                    }
+                }
+        );
     }
 
     private Visitable<DbStructureVisitor> compileVisitable( final String className, String inputSource )
@@ -110,8 +171,7 @@ public class DbStructureInvocationTracingAcceptanceTest
                 {
                     @Override
                     public Visitable<DbStructureVisitor> compiled( Boolean success, JavaFileManager manager,
-                                                                   List<Diagnostic<? extends JavaFileObject>>
-                                                                           diagnostics )
+                                                                   List<Diagnostic<? extends JavaFileObject>> diagnostics )
                     {
                         assertSuccessfullyCompiled( success, diagnostics, className );
                         Object instance;
@@ -131,23 +191,8 @@ public class DbStructureInvocationTracingAcceptanceTest
         );
     }
 
-    private void assertCompiles( final String className, String source )
-    {
-        compile( className, source,
-                new CompilationListener<Boolean>()
-                {
-                    @Override
-                    public Boolean compiled( Boolean success, JavaFileManager manager, List<Diagnostic<? extends
-                            JavaFileObject>> diagnostics )
-                    {
-                        assertSuccessfullyCompiled( success, diagnostics, className );
-                        return true;
-                    }
-                }
-        );
-    }
-
-    private void assertSuccessfullyCompiled( Boolean success, List<Diagnostic<? extends JavaFileObject>> diagnostics,
+    private void assertSuccessfullyCompiled( Boolean success,
+                                             List<Diagnostic<? extends JavaFileObject>> diagnostics,
                                              String className )
     {
         if ( success == null || !success )

@@ -19,6 +19,7 @@
  */
 package org.neo4j.helpers;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 /**
@@ -127,6 +128,66 @@ public final class Strings
         else
         {
             return String.valueOf( o );
+        }
+    }
+
+    public static String escape( String arg )
+    {
+        StringBuilder builder = new StringBuilder( arg.length() );
+        try
+        {
+            escape( builder, arg );
+        }
+        catch ( IOException e )
+        {
+            throw new ThisShouldNotHappenError( "Stefan", "IOException from using StringBuilder", e );
+        }
+        return builder.toString();
+    }
+
+    public static void escape( Appendable output, String arg ) throws IOException
+    {
+        int len = arg.length();
+        for ( int i = 0; i < len; i++ )
+        {
+            char ch = arg.charAt( i );
+            switch (ch) {
+                case '"':
+                    output.append( "\\\"" );
+                    break;
+
+                case '\'':
+                    output.append( "\\\'" );
+                    break;
+
+                case '\\':
+                    output.append( "\\\\" );
+                    break;
+
+                case '\n':
+                    output.append( "\\n" );
+                    break;
+
+                case '\t':
+                    output.append( "\\t" );
+                    break;
+
+                case '\r':
+                    output.append( "\\r" );
+                    break;
+
+                case '\b':
+                    output.append( "\\b" );
+                    break;
+
+                case '\f':
+                    output.append( "\\f" );
+                    break;
+
+                default:
+                    output.append( ch );
+                    break;
+            }
         }
     }
 }

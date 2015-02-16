@@ -19,41 +19,72 @@
  */
 package org.neo4j.kernel.impl.util.dbstructure;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Visitable;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.index.IndexDescriptor;
 
-import static java.lang.String.format;
-
-public class InvocationTracer<C> implements InvocationHandler
+public class InvocationTracer<C> implements InvocationHandler, AutoCloseable
 {
     private static final String LINE_SEPARATOR = System.getProperty( "line.separator" );
+
+    private final String generatorInfo;
 
     private final String generatedClassPackage;
     private final String generatedClassName;
 
-    private final StringBuilder builder;
     private final Class<C> interfaceClass;
+    private final ArgumentFormatter argumentFormatter;
+    private final Appendable output;
 
-    public InvocationTracer( String generatedClassNameWithPackage, Class<C> interfaceClass )
+    private boolean open = true;
+
+    public InvocationTracer( String generatorInfo,
+                             String generatedClassPackage,
+                             String generatedClassName,
+                             Class<C> interfaceClass,
+                             ArgumentFormatter argumentFormatter )
+            throws IOException
     {
-        if ( generatedClassNameWithPackage.contains( "%" ) )
+        this(
+                generatorInfo,
+                generatedClassPackage,
+                generatedClassName,
+                interfaceClass,
+                argumentFormatter,
+                new StringBuilder()
+        );
+    }
+
+    public InvocationTracer( String generatorInfo,
+                             String generatedClassPackage,
+                             String generatedClassName,
+                             Class<C> interfaceClass,
+                             ArgumentFormatter argumentFormatter,
+                             Appendable output )
+            throws IOException
+    {
+        this.generatorInfo = generatorInfo;
+
+        if ( generatedClassName.contains( "." ) || generatedClassName.contains( "%" ) )
         {
-            throw new IllegalArgumentException( "Format character in generated class name: " + generatedClassNameWithPackage );
+            throw new IllegalArgumentException( "Invalid class name: " + generatedClassName );
         }
 
-        Pair<String, String> parsedGenerated = parseQualifiedClassName( generatedClassNameWithPackage );
-        this.generatedClassPackage = parsedGenerated.first();
-        this.generatedClassName = parsedGenerated.other();
+        if ( generatedClassPackage.contains( "%" ) )
+        {
+            throw new IllegalArgumentException( "Invalid class package: " + generatedClassPackage );
+        }
 
+        this.generatedClassPackage = generatedClassPackage;
+        this.generatedClassName = generatedClassName;
         this.interfaceClass = interfaceClass;
+        this.argumentFormatter = argumentFormatter;
+        this.output = output;
 
-        this.builder = new StringBuilder();
+        formatPreamble( output );
     }
 
     public C newProxy()
@@ -65,217 +96,140 @@ public class InvocationTracer<C> implements InvocationHandler
     {
         ClassLoader classLoader = proxyClass.getClassLoader();
         return proxyClass.cast(
-            Proxy.newProxyInstance( classLoader, new Class[] { proxyClass }, this )
+            Proxy.newProxyInstance( classLoader, new Class[]{proxyClass}, this )
         );
     }
 
     @Override
-    public String toString()
+    public void close() throws IOException
     {
-        StringBuilder result = new StringBuilder();
-        printPreamble( result );
-        printTrace( result );
-        printAppendix( result );
-        return result.toString();
+        if ( open )
+        {
+            formatAppendix( output );
+            open = false;
+        }
+        else
+        {
+            throw new IllegalStateException( "Already closed" );
+        }
     }
 
-    public String getGeneratedPackageName()
-    {
-        return generatedClassPackage;
-    }
-
-    public String getGeneratedClassName()
-    {
-        return generatedClassName;
-    }
-
-    private void printPreamble( StringBuilder builder )
+    private void formatPreamble( Appendable builder ) throws IOException
     {
         String interfaceSimpleName = interfaceClass.getSimpleName();
-        String interfaceClassName = interfaceSimpleName.length() == 0 ? interfaceClass.getCanonicalName() : interfaceSimpleName;
-        println( builder, "package %s;", generatedClassPackage );
-        println( builder );
-        println( builder, "import org.neo4j.kernel.api.constraints.UniquenessConstraint;");
-        println( builder, "import org.neo4j.kernel.api.index.IndexDescriptor;");
-        println( builder, "import org.neo4j.helpers.collection.Visitable;");
-        println( builder );
-        println( builder, "//" );
-        println( builder, "// GENERATED FILE. DO NOT EDIT. " );
-        println( builder, "//" );
-        println( builder, "// This has been generated by %s", getClass().getCanonicalName() );
-        println( builder, "//" );
-        println( builder );
-        println( builder, "public enum %s implements %s<%s>", generatedClassName, Visitable.class.getSimpleName(), interfaceClassName );
-        println( builder, "{" );
-        println( builder, "    INSTANCE;" );
-        println( builder );
-        println( builder, "    public void accept( %s visitor )", interfaceClassName );
-        println( builder, "    {" );
-    }
-
-    private void printTrace( StringBuilder result )
-    {
-        result.append( builder );
+        String interfaceClassName =
+            interfaceSimpleName.length() == 0 ? interfaceClass.getCanonicalName() : interfaceSimpleName;
+        if ( generatedClassPackage.length() > 0 )
+        {
+            formatln( builder, "package %s;", generatedClassPackage );
+            formatln( builder );
+        }
+        formatln( builder, "import %s;", Visitable.class.getCanonicalName() );
+        formatln( builder, "import %s;", interfaceClass.getCanonicalName() );
+        formatln( builder );
+        for ( String importExpr : argumentFormatter.imports() )
+        {
+            formatln( builder, "import %s;", importExpr );
+        }
+        formatln( builder );
+        formatln( builder, "//" );
+        formatln( builder, "// GENERATED FILE. DO NOT EDIT. " );
+        formatln( builder, "//" );
+        formatln( builder, "// This has been generated by:" );
+        formatln( builder, "//" );
+        if ( generatorInfo.length() > 0 )
+        {
+            formatln( builder, "//   %s", generatorInfo );
+            formatln( builder, "//" );
+            formatln( builder, "// (using %s)", getClass().getCanonicalName() );
+            formatln( builder, "//" );
+        }
+        else
+        {
+            formatln( builder, "//   %s", getClass().getCanonicalName() );
+            formatln( builder, "//" );
+        }
+        formatln( builder );
+        formatln( builder, "public enum %s", generatedClassName );
+        formatln( builder, "implements %s<%s>", Visitable.class.getSimpleName(), interfaceClassName );
+        formatln( builder, "{" );
+        formatln( builder, "    INSTANCE;" );
+        formatln( builder );
+        formatln( builder, "    public void accept( %s visitor )", interfaceClassName );
+        formatln( builder, "    {" );
     }
 
     @Override
     public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable
     {
-        if ( method.getReturnType().equals( Void.TYPE ) )
+        if ( open )
         {
-            // println invocation start
-            print( builder, "        visitor.%s(", method.getName() );
-
-            // println arguments
-            for ( int i = 0; i < args.length; i++ )
+            if ( method.getReturnType().equals( Void.TYPE ) )
             {
-                Object arg = args[i];
+                // formatln invocation start
+                format( output, "        visitor.%s(", method.getName() );
 
-                if ( i > 0 )
+                // formatln arguments
+                for ( int i = 0; i < args.length; i++ )
                 {
-                    print( builder, ", " );
+                    Object arg = args[i];
+
+                    if ( i > 0 )
+                    {
+                        format( output, ", " );
+                    }
+                    else
+                    {
+                        format( output, " " );
+                    }
+
+                    argumentFormatter.formatArgument( output, arg );
+                }
+
+                // formatln invocation end
+                if ( args.length == 0 )
+                {
+                    formatln( output, ");" );
                 }
                 else
                 {
-                    print( builder, " " );
+                    formatln( output, " );" );
                 }
 
-                printArgument( arg );
-            }
-
-            // println invocation end
-            if ( args.length == 0 )
-            {
-                println( builder, ");" );
+                return null;
             }
             else
             {
-                println( builder, " );" );
+                throw new IllegalArgumentException( "InvocationTraceGenerator only works with void methods" );
             }
-
-            return null;
         }
         else
         {
-            throw new IllegalArgumentException( "InvocationTraceGenerator only works with void methods" );
+            throw new IllegalStateException( "Tracer already closed" );
         }
     }
 
-    private void printArgument( Object arg )
+    private static void formatAppendix( Appendable builder ) throws IOException
     {
-        if ( arg instanceof String )
-        {
-            builder.append( '"' );
-            escape( builder, arg.toString() );
-            builder.append( '"' );
-        }
-        else if ( arg instanceof Long )
-        {
-            builder.append( arg.toString() );
-            builder.append( 'l' );
-        }
-        else if ( arg instanceof Integer )
-        {
-            builder.append( arg.toString() );
-        }
-        else if ( arg instanceof Double )
-        {
-            builder.append( arg.toString() );
-            builder.append('d' );
-        }
-        else if ( arg instanceof IndexDescriptor )
-        {
-            IndexDescriptor descriptor = (IndexDescriptor) arg;
-            builder.append( format( "new IndexDescriptor( %s, %s )", descriptor.getLabelId(), descriptor
-                    .getPropertyKeyId() ) );
-        }
-        else if ( arg instanceof UniquenessConstraint )
-        {
-            UniquenessConstraint constraint = (UniquenessConstraint) arg;
-            builder.append( format( "new UniquenessConstraint( %s, %s )", constraint.label(), constraint.propertyKeyId() ) );
-        }
-        else
-        {
-            throw new IllegalArgumentException( format(
-                    "Can't handle argument of type: %s with value: %s", arg.getClass(), arg
-            ) );
-        }
+        formatln( builder, "   }" );
+        formatln( builder, "}" );
+        formatln( builder );
+        formatln( builder, "/* END OF GENERATED CONTENT */" );
     }
 
-    private void escape( StringBuilder builder, String arg )
+    private static void formatln( Appendable output, String format, Object... args ) throws IOException
     {
-        int len = arg.length();
-        for ( int i = 0; i < len; i++ )
-        {
-            char ch = arg.charAt( i );
-            switch (ch) {
-                case '"':
-                    builder.append( "\\\"");
-                    break;
-
-                case '\'':
-                    builder.append( "\\\'");
-                    break;
-
-                case '\\':
-                    builder.append( "\\\\");
-                    break;
-
-                case '\n':
-                    builder.append( "\\n");
-
-                case '\t':
-                    builder.append( "\\t");
-
-                case '\r':
-                    builder.append( "\\r");
-
-                case '\b':
-                    builder.append( "\\b");
-
-                case '\f':
-                    builder.append( "\\f");
-
-                default:
-                    builder.append( ch );
-                    break;
-            }
-        }
+        format( output, format, args );
+        formatln( output );
     }
 
-    private static void printAppendix( StringBuilder builder )
+    private static void format( Appendable output, String format, Object... args ) throws IOException
     {
-        println( builder, "   }" );
-        println( builder, "}" );
-        println( builder );
-        println( builder, "/* END OF GENERATED CONTENT */" );
+        output.append( String.format( format, args ) );
     }
 
-    private static void println( StringBuilder builder, String format, Object... args )
+    private static void formatln( Appendable output ) throws IOException
     {
-        print( builder, format, args );
-        println( builder );
-    }
-
-    private static void print( StringBuilder builder, String format, Object... args )
-    {
-        builder.append( format( format, args ) );
-    }
-
-    private static void println( StringBuilder builder )
-    {
-        builder.append( LINE_SEPARATOR );
-    }
-
-    private static Pair<String, String> parseQualifiedClassName( String className )
-    {
-        int index = className.lastIndexOf( "." );
-
-        if ( index < 0 )
-        {
-            throw new IllegalArgumentException( "Expected fully qualified class name but got: " + className );
-        }
-
-        return Pair.of( className.substring( 0, index ), className.substring( index + 1 ) );
+        output.append( LINE_SEPARATOR );
     }
 }
