@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.helpers.TxCounts
 import org.neo4j.graphdb.Node
 import java.io.PrintWriter
 import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.StringHelper.RichString
 
 class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
   with TxCountsTrackingTestSupport with QueryStatisticsTestSupport
@@ -41,6 +42,8 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
     createTempFileURL("file", ".csv") { writer: PrintWriter =>
       1.to(numberOfLines).foreach { n: Int => writer.println(n.toString) }
     }
+
+  private def createFile(f: PrintWriter => Unit) = createTempFileURL("cypher", ".csv")(f).cypherEscape
 
   test("should reject periodic commit when not followed by LOAD CSV") {
     evaluating {
@@ -159,5 +162,25 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
         execute(s"USING PERIODIC COMMIT LOAD CSV FROM '$url' AS line CREATE ()")
       }
     } should produce[PeriodicCommitInOpenTransactionException]
+  }
+
+  test("should tell line number information when failing using periodic commit and load csv") {
+    // given
+    val url = createFile(writer => {
+      writer.println("1")
+      writer.println("2")
+      writer.println("0")
+      writer.println("3")
+    })
+
+    val queryText =
+      s"USING PERIODIC COMMIT 1 LOAD CSV FROM '${url}' AS line " +
+        s"CREATE ({name: 1/toInt(line[0])})"
+
+    // when executing 5 updates
+    val e = intercept[CypherException](execute(queryText))
+
+    // then
+    e.getMessage should include("on line 3. Possibly the last row committed during import is line 2. Note that this information might not be accurate.")
   }
 }
