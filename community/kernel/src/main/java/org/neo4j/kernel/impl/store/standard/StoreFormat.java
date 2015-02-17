@@ -74,11 +74,13 @@ public interface StoreFormat<RECORD, CURSOR extends Store.RecordCursor>
         /** Get the id from a record. */
         long id( RECORD record );
 
+        RECORD newRecord( long id );
+
         /** Serialize a full record at the specified offset. */
         void serialize( PageCursor cursor, int offset, RECORD record );
 
         /** Deserialize a full record at the specified offset. */
-        RECORD deserialize( PageCursor cursor, int offset, long id );
+        void deserialize( PageCursor cursor, int offset, long id, RECORD record );
 
         /** Determine if a record at the specified offset is in use. */
         boolean inUse( PageCursor cursor, int offset );

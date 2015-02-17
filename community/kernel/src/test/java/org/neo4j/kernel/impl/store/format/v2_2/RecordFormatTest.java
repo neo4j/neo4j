@@ -24,17 +24,18 @@ import java.io.IOException;
 
 import org.junit.Before;
 import org.junit.Rule;
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
+
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.StubPageCursor;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
+import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.kernel.impl.store.format.Store;
 import org.neo4j.kernel.impl.store.standard.StoreFormat;
 import org.neo4j.kernel.impl.store.standard.StoreToolkit;
 import org.neo4j.test.EphemeralFileSystemRule;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public abstract class RecordFormatTest<FORMAT extends StoreFormat<RECORD, CURSOR>,
                                        RECORD,
@@ -73,7 +74,9 @@ public abstract class RecordFormatTest<FORMAT extends StoreFormat<RECORD, CURSOR
     public void assertSerializes( RECORD record )
     {
         recordFormat.serialize( pageCursor, 0, record );
-        assertEquals( record.toString(), recordFormat.deserialize( pageCursor, 0, recordFormat.id( record ) ).toString() );
+        RECORD deserialized = recordFormat.newRecord( 0 );
+        recordFormat.deserialize( pageCursor, 0, recordFormat.id( record ), deserialized );
+        assertEquals( record.toString(), deserialized.toString() );
     }
 
     public void writeToPagedFile( RECORD record ) throws IOException

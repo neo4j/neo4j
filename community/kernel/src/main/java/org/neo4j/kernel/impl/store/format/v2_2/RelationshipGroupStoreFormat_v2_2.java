@@ -71,13 +71,19 @@ public class RelationshipGroupStoreFormat_v2_2 extends FixedSizeRecordStoreForma
         @Override
         public String recordName()
         {
-            return "NodeRecord";
+            return "RelationshipGroupRecord";
         }
 
         @Override
-        public long id( RelationshipGroupRecord nodeRecord )
+        public long id( RelationshipGroupRecord record )
         {
-            return nodeRecord.getId();
+            return record.getId();
+        }
+
+        @Override
+        public RelationshipGroupRecord newRecord( long id )
+        {
+            return new RelationshipGroupRecord( id, -1 );
         }
 
         @Override
@@ -113,7 +119,7 @@ public class RelationshipGroupStoreFormat_v2_2 extends FixedSizeRecordStoreForma
         }
 
         @Override
-        public RelationshipGroupRecord deserialize( PageCursor cursor, int offset, long id )
+        public void deserialize( PageCursor cursor, int offset, long id, RelationshipGroupRecord record )
         {
             // [    ,   x] in use
             // [    ,xxx ] high next id bits
@@ -130,7 +136,8 @@ public class RelationshipGroupStoreFormat_v2_2 extends FixedSizeRecordStoreForma
             long ownerLowBits    = cursor.getUnsignedInt(offset + OWNER_LOW_BITS );
             byte ownerHighBits   = cursor.getByte(offset + OWNER_HIGH_BITS );
 
-            RelationshipGroupRecord record = new RelationshipGroupRecord( id, type );
+            record.setId( id );
+            record.setType( type );
 
             record.setInUse( (inUseByte&0x1) > 0 );
             record.setNext(      longFromIntAndMod( nextLowBits,     (inUseByte & 0xE) << 31 ) );
@@ -138,8 +145,6 @@ public class RelationshipGroupStoreFormat_v2_2 extends FixedSizeRecordStoreForma
             record.setFirstIn(   longFromIntAndMod( nextInLowBits,   (highByte & 0xE) << 31 ) );
             record.setFirstLoop( longFromIntAndMod( nextLoopLowBits, (highByte & 0x70) << 28 ) );
             record.setOwningNode( ownerLowBits | (((long) ownerHighBits) << 32) );
-
-            return record;
         }
 
         @Override

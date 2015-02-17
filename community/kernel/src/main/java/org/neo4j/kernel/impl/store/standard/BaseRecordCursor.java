@@ -19,19 +19,19 @@
  */
 package org.neo4j.kernel.impl.store.standard;
 
-import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_TRANSIENT;
-import static org.neo4j.kernel.impl.store.format.Store.SF_REVERSE_CURSOR;
-import static org.neo4j.kernel.impl.store.format.Store.SF_SCAN;
-import static org.neo4j.kernel.impl.store.standard.StoreFormat.RecordFormat;
-
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.format.Store;
+import org.neo4j.kernel.impl.store.standard.StoreFormat.RecordFormat;
+
+import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_TRANSIENT;
+import static org.neo4j.kernel.impl.store.format.Store.SF_REVERSE_CURSOR;
+import static org.neo4j.kernel.impl.store.format.Store.SF_SCAN;
 
 /**
  * A complete cursor implementation to be used on it's own or as a base class for building custom cursors.
@@ -61,6 +61,7 @@ public class BaseRecordCursor<RECORD, FORMAT extends RecordFormat<RECORD>> imple
     protected PageCursor pageCursor;
     protected long currentRecordId = -1;
     protected int  currentRecordOffset = -1;
+    protected RECORD record;
 
     public BaseRecordCursor( PagedFile file, StoreToolkit toolkit, FORMAT format, int flags )
     {
@@ -78,12 +79,22 @@ public class BaseRecordCursor<RECORD, FORMAT extends RecordFormat<RECORD>> imple
             this.currentRecordId = toolkit.highestKnownId() + 1;
             this.stepSize = -1;
         }
+        this.record = format.newRecord( -1 );
     }
 
     @Override
-    public RECORD record()
+    public RECORD reusedRecord()
     {
-        return format.deserialize( pageCursor, currentRecordOffset, currentRecordId );
+        format.deserialize( pageCursor, currentRecordOffset, currentRecordId, record );
+        return record;
+    }
+
+    @Override
+    public RECORD clonedRecord()
+    {
+        RECORD result = format.newRecord( currentRecordId );
+        format.deserialize( pageCursor, currentRecordOffset, currentRecordId, result );
+        return result;
     }
 
     @Override

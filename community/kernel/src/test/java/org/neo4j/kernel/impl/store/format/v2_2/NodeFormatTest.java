@@ -62,6 +62,6 @@ public class NodeFormatTest extends RecordFormatTest<NodeStoreFormat_v2_2, NodeR
         assertThat(cursor.recordId(),          equalTo(12l));
         assertThat(cursor.firstRelationship(), equalTo( 1l ));
         assertThat(cursor.inUse(),             equalTo(true));
-        assertThat(cursor.record().toString(), equalTo( record.toString() ) );
+        assertThat(cursor.reusedRecord().toString(), equalTo( record.toString() ) );
     }
 }

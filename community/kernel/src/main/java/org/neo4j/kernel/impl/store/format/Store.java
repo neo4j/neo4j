@@ -77,8 +77,13 @@ public interface Store<RECORD, CURSOR extends Store.RecordCursor> extends Lifecy
     {
         // TODO: Note that we need some way to force the page-cache retry operation upstream here
 
-        /** Read a full record from the current position. */
-        RECORD record();
+        /** Read a full record from the current position. The returned instance is potentially the same
+         *  as the one returned from other calls to this method. */
+        RECORD reusedRecord();
+
+        /** Read a full record from the current position. The returned instance is a new instance,
+         *  unlike {@link #reusedRecord()}. */
+        RECORD clonedRecord();
 
         /** Is the record at the current position in use? */
         boolean inUse();

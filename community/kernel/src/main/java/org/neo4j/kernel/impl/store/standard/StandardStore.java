@@ -96,10 +96,10 @@ public class StandardStore<RECORD, CURSOR extends Store.RecordCursor> extends Li
         {
             if ( cursor.next() )
             {
-                RECORD record;
+                RECORD record = recordFormat.newRecord( id );
                 do
                 {
-                    record = recordFormat.deserialize( cursor, offset, id );
+                    recordFormat.deserialize( cursor, offset, id, record );
                 } while ( cursor.shouldRetry() );
 
                 return record;

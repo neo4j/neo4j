@@ -37,15 +37,22 @@ public class TestRecordFormat implements StoreFormat.RecordFormat<TestRecord>
     }
 
     @Override
+    public TestRecord newRecord( long id )
+    {
+        return new TestRecord( id, 0 );
+    }
+
+    @Override
     public void serialize( PageCursor cursor, int offset, TestRecord myRecord )
     {
         cursor.putLong(offset, myRecord.value);
     }
 
     @Override
-    public TestRecord deserialize( PageCursor cursor, int offset, long id )
+    public void deserialize( PageCursor cursor, int offset, long id, TestRecord record )
     {
-        return new TestRecord( id, cursor.getLong(offset) );
+        record.id = id;
+        record.value = cursor.getLong( offset );
     }
 
     @Override
