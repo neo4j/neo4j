@@ -74,7 +74,23 @@ class ConstraintsTest extends DocumentingTestBase {
       title = "Create a node that breaks a constraint",
       text = "Create a `Book` node with an `isbn` that is already used in the database.",
       queryText = "CREATE (book:Book {isbn: '1449356265', title: 'Graph Databases'})",
-      optionalResultExplanation = ""
+      optionalResultExplanation = "In this case the node isn't created in the graph."
+    )
+  }
+
+  @Test def fail_to_create_constraint() {
+    generateConsole = false
+    engine.execute("CREATE (book:Book {isbn: '1449356265', title: 'Graph Databases'})")
+    engine.execute("CREATE (book:Book {isbn: '1449356265', title: 'Graph Databases 2'})")
+
+    testFailingQuery[CypherExecutionException](
+      title = "Failure to create a constraint due to conflicting nodes",
+      text = "Create a constraint on the property `isbn` on nodes with the `Book` label when there are two nodes with" +
+        " the same `isbn`.",
+      queryText = "CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE",
+      optionalResultExplanation = "In this case the constraint can't be created because it is violated by existing " +
+        "data. We may choose to use <<query-schema-index>> instead or remove the offending nodes and then re-apply the " +
+        "constraint."
     )
   }
   

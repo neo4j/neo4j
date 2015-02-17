@@ -23,3 +23,5 @@ include::create-a-node-that-complies-with-constraints.asciidoc[]
 
 include::create-a-node-that-breaks-a-constraint.asciidoc[]
 
+include::failure-to-create-a-constraint-due-to-conflicting-nodes.asciidoc[]
+
