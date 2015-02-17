@@ -67,7 +67,7 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
     val queryText =
       "USING PERIODIC COMMIT 2 " +
       s"LOAD CSV FROM '$url' AS line " +
-      "CREATE ()";
+      "CREATE ()"
 
     // when
     val (result, txCounts) = executeAndTrackTxCounts(queryText)
@@ -85,7 +85,7 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
     val queryText =
       "USING PERIODIC COMMIT 3 " +
       s"LOAD CSV FROM '$url' AS line " +
-      "CREATE ()";
+      "CREATE ()"
 
     // when
     val (result, txCounts) = executeAndTrackTxCounts(queryText)
@@ -114,7 +114,7 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
   test("should not mistakenly use closed statements") {
     // given
     val url = createTempCSVFile(20)
-    val queryText = s"USING PERIODIC COMMIT 10 LOAD CSV FROM '$url' AS line CREATE ();"
+    val queryText = s"USING PERIODIC COMMIT 10 LOAD CSV FROM '$url' AS line MERGE (:Label);"
 
     // when
     val (_, txCounts) = executeAndTrackTxCounts(queryText)
@@ -174,7 +174,7 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
     })
 
     val queryText =
-      s"USING PERIODIC COMMIT 1 LOAD CSV FROM '${url}' AS line " +
+      s"USING PERIODIC COMMIT 1 LOAD CSV FROM '$url' AS line " +
         s"CREATE ({name: 1/toInt(line[0])})"
 
     // when executing 5 updates
