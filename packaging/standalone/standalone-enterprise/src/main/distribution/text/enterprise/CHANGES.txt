@@ -1,5 +1,41 @@
 For Release Notes, see http://neo4j.com/release-notes/neo4j-${project.version}/
 
+2.2.0-M04
+---------
+Kernel:
+o Default logical log rotation threshold is now 250Mb, minimum 1Mb
+o Import tool optimizations and a fixed Windows-specific memory issue around reading large files
+o Treats newlines in indexes platform independent. Automatic upgrade from previous minor version available
+
+Cypher:
+o Fixes #3910 - Semantic errors not propagated correctly to the user
+o Support ExpandInto mode for variable length paths
+o Faster performance when counting number of relationships
+o Support ExpandInto mode for projection of relationship end points
+o Estimated rows in plan descriptions are rounded to three decimals
+o Fixes DbHit counting for pattern expressions
+o Faster performance when starting a pattern expression from a relationship
+o Improved compile times by faster AST rewriting
+o Fixes problem where the rule planner was always used for pattern expressions
+o Adds the KEYS() function to Cypher
+o Better performance by allowing index lookups on the RHS of Apply
+o Fixes bug when using named paths and undirected relationships
+
+Server:
+o Authentication now applies to all REST endpoints, if enabled
+o Returned paths ends with '/' in response to "GET /". This avoids an unnecessary redirect,
+  for drivers that (properly) follow hyperlinks.
+o A couple of bugs regarding handling of labels in BatchInserter fixed.
+
+Browser:
+o Username & password are now used for all interactions.
+o Export graph and query plan as PNG images.
+o Export query plan as JSON.
+o Loop relationship rendering.
+
+Consistency checker:
+o Fixes an issue where two different values in a constraint index would be wrongly reported as duplicates
+
 2.2.0-M03
 ---------
 Move OS X *.plist files to system/resources
