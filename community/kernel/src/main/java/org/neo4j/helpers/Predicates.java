@@ -252,4 +252,16 @@ public class Predicates
             }
         };
     }
+
+    public static <T> Predicate<T> instanceOf( final Class clazz)
+    {
+        return new Predicate<T>()
+        {
+            @Override
+            public boolean accept( T item )
+            {
+                return item != null && clazz.isInstance( item );
+            }
+        };
+    }
 }

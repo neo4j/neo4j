@@ -84,6 +84,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private final SwitchToMaster switchToMaster;
     private final Election election;
     private final ClusterMemberAvailability clusterMemberAvailability;
+    private final InstanceId instanceId;
     private final DependencyResolver dependencyResolver;
 
     private final StringLogger msgLog;
@@ -102,12 +103,13 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                                          Election election,
                                          ClusterMemberAvailability clusterMemberAvailability,
                                          DependencyResolver dependencyResolver,
-                                         Logging logging )
+                                         InstanceId instanceId, Logging logging )
     {
         this.switchToSlave = switchToSlave;
         this.switchToMaster = switchToMaster;
         this.election = election;
         this.clusterMemberAvailability = clusterMemberAvailability;
+        this.instanceId = instanceId;
         this.msgLog = logging.getMessagesLog( getClass() );
         this.consoleLog = logging.getConsoleLog( getClass() );
         this.haCommunicationLife = new LifeSupport();
@@ -268,9 +270,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 catch ( Throwable e )
                 {
                     msgLog.logMessage( "Failed to switch to master", e );
-
                     // Since this master switch failed, elect someone else
-                    election.demote( getServerId( me ) );
+                    election.demote( instanceId );
                 }
             }
         }, cancellationHandle );
@@ -288,7 +289,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
          * to complete, all in a single thread executor. However, this is a check worth doing because if this
          * condition slips through via some other code path it can cause trouble.
          */
-        if ( getServerId( masterUri ).equals( getServerId( me ) ) )
+        if ( getServerId( masterUri ).equals( instanceId ) )
         {
             msgLog.error( "I (" + me + ") tried to switch to slave for myself as master (" + masterUri + ")"  );
             return;
@@ -371,7 +372,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
     private void switchToPending()
     {
-        msgLog.logMessage( "I am " + getServerId( me ) + ", moving to pending" );
+        msgLog.logMessage( "I am " + instanceId + ", moving to pending" );
 
         startModeSwitching( new Runnable()
         {

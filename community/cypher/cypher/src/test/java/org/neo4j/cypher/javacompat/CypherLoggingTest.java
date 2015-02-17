@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.javacompat;
 
+import java.io.IOException;
+
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.IOException;
-
-import org.neo4j.cypher.internal.spi.v2_2.DefaultLogger;
 import org.neo4j.kernel.logging.BufferingLogger;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -78,7 +77,6 @@ public class CypherLoggingTest
     @Before
     public void setup() throws IOException
     {
-        engine = new ExecutionEngine( new TestGraphDatabaseFactory().newImpermanentDatabase(),
-                new DefaultLogger( logger ) );
+        engine = new ExecutionEngine( new TestGraphDatabaseFactory().newImpermanentDatabase(), logger );
     }
 }

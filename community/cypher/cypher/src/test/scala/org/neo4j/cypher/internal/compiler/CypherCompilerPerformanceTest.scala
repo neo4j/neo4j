@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.CypherCompiler.{CLOCK, DEFAULT_QUERY_PLAN_TTL, STATISTICS_DIVERGENCE_THRESHOLD}
 import org.neo4j.cypher.internal.compiler.v2_2.CypherCompilerFactory
-import org.neo4j.cypher.internal.compiler.v2_2.spi.DevNullLogger
+import org.neo4j.kernel.impl.util.StringLogger
 
 class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
 
@@ -173,8 +173,7 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
       queryPlanTTL = DEFAULT_QUERY_PLAN_TTL,
       clock = CLOCK,
       kernelMonitors = kernelMonitors,
-      logger = DevNullLogger.instance
+      logger = StringLogger.DEV_NULL
     )
   }
-
 }

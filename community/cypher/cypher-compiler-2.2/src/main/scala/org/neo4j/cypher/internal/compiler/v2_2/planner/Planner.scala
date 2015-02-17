@@ -30,9 +30,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGrap
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.{RewriterCondition, ApplyRewriter, RewriterStepSequencer}
+import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.{ApplyRewriter, RewriterCondition, RewriterStepSequencer}
 import org.neo4j.helpers.Clock
-import org.parboiled.common.Preconditions
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class Planner(monitors: Monitors,
@@ -70,8 +69,7 @@ case class Planner(monitors: Monitors,
     tokenResolver.resolve(ast)(semanticTable, planContext)
     val unionQuery = ast.asUnionQuery
 
-    //If we cannot handle the query, throw CantHandleQueryException and let the compiler delegate
-    // this query to another planner.
+    // If we cannot handle the query, throw CantHandleQueryException and let the compiler delegate this query to another planner.
     if (!acceptQuery(unionQuery)) throw new CantHandleQueryException(s"The conservative check failed this query: $unionQuery")
 
     val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
@@ -88,10 +86,8 @@ object Planner {
 
   def rewriteStatement(statement: Statement, scopeTree: Scope, semanticTable: SemanticTable, preConditions: Set[RewriterCondition]): (Statement, SemanticTable) = {
     val namespacer = Namespacer(statement, semanticTable, scopeTree)
-
     val newStatement = rewriteStatement(namespacer, statement, preConditions)
     val newSemanticTable = namespacer.tableRewriter(semanticTable)
-
     (newStatement, newSemanticTable)
   }
 

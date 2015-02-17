@@ -20,17 +20,16 @@
 package org.neo4j.cypher.internal
 
 import java.util.{Map => JavaMap}
-import org.neo4j.cypher.internal.compiler.v2_2.spi.{DevNullLogger, Logger}
+
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
-import org.neo4j.cypher.{ExecutionEngine, ExtendedExecutionResult, SyntaxException}
+import org.neo4j.cypher.{ExecutionEngine, SyntaxException}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
-import org.neo4j.cypher.internal.compatibility.{ExecutionResultWrapperFor2_2}
-import org.neo4j.cypher.internal.compiler.v2_2.PlannerName
+import org.neo4j.kernel.impl.util.StringLogger
 
 import scala.collection.JavaConverters._
 
-class DocsExecutionEngine(graph: GraphDatabaseService, logger: Logger = DevNullLogger.instance)
+class DocsExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL)
   (implicit monitor: QueryExecutionMonitor, session: QuerySession)
   extends ExecutionEngine(graph, logger) {
 

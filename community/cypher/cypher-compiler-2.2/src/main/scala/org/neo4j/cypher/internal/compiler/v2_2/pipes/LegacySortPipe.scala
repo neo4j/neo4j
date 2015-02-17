@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.SortItem
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects._
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.LegacyExpression
 
@@ -46,6 +47,9 @@ case class LegacySortPipe(source: Pipe, sortDescription: List[SortItem])
     copy(source = source)
   }
 
+  // no local effects
+  override val localEffects = Effects.NONE
+  // the global effects are the one produced by the expression of the SortItems
   override def effects = sortDescription.effects
 }
 

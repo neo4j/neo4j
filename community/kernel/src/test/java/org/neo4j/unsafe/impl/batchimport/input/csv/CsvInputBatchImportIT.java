@@ -97,7 +97,7 @@ public class CsvInputBatchImportIT
         try
         {
             importer.doImport( csv( nodeDataAsFile( nodeData ), relationshipDataAsFile( relationshipData ),
-                    IdType.STRING, COMMAS ) );
+                    IdType.STRING, lowBufferSize( COMMAS ) ) );
             // THEN
             verifyImportedData( nodeData, relationshipData );
             success = true;
@@ -109,6 +109,19 @@ public class CsvInputBatchImportIT
                 System.err.println( "Seed " + seed );
             }
         }
+    }
+
+    private org.neo4j.unsafe.impl.batchimport.input.csv.Configuration lowBufferSize(
+            org.neo4j.unsafe.impl.batchimport.input.csv.Configuration actual )
+    {
+        return new org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.OverrideFromConfig( actual )
+        {
+            @Override
+            public int bufferSize()
+            {
+                return 10_000;
+            }
+        };
     }
 
     // ======================================================

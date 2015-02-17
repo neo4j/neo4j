@@ -32,17 +32,52 @@ class RewriterStepSequencerTest extends CypherFunSuite {
     RewriterStepSequencer.newValidating("test")(ApplyRewriter("1", dummyRewriter1), ApplyRewriter("2", dummyRewriter2)) should equal(RewriterContract(Seq(dummyRewriter1, dummyRewriter2), Set()))
   }
 
-  test("if conditions are used, post conditions are collected") {
+  test("Should enable conditions between rewriters and collect the post conditions at the end") {
     val dummyCond1 = RewriterCondition("a", (x: Any) => Seq("1"))
     val dummyCond2 = RewriterCondition("b", (x: Any) => Seq("2"))
     val dummyRewriter1 = Rewriter.noop
     val dummyRewriter2 = Rewriter.lift { case x: AnyRef => x }
 
-    RewriterStepSequencer.newValidating("test")(
+    val sequencer = RewriterStepSequencer.newValidating("test")(
       ApplyRewriter("1", dummyRewriter1),
       EnableRewriterCondition(dummyCond1),
       ApplyRewriter("2", dummyRewriter2),
       EnableRewriterCondition(dummyCond2)
-    ).postConditions should equal(Set(dummyCond1, dummyCond2))
+    )
+
+    sequencer.childRewriters should equal(Seq(
+      dummyRewriter1,
+      RunConditionRewriter("test", Some("1"), Set(dummyCond1)),
+      dummyRewriter2,
+      RunConditionRewriter("test", Some("2"), Set(dummyCond1, dummyCond2))
+    ))
+    sequencer.postConditions should equal(Set(dummyCond1, dummyCond2))
+  }
+
+  test("Should enable/disable conditions between rewriters and collect the post conditions at the end") {
+    val dummyCond1 = RewriterCondition("a", (x: Any) => Seq("1"))
+    val dummyCond2 = RewriterCondition("b", (x: Any) => Seq("2"))
+    val dummyRewriter1 = Rewriter.noop
+    val dummyRewriter2 = Rewriter.lift { case x: AnyRef => x}
+    val dummyRewriter3 = Rewriter.noop
+
+    val sequencer = RewriterStepSequencer.newValidating("test")(
+      ApplyRewriter("1", dummyRewriter1),
+      EnableRewriterCondition(dummyCond1),
+      ApplyRewriter("2", dummyRewriter2),
+      EnableRewriterCondition(dummyCond2),
+      ApplyRewriter("3", dummyRewriter3),
+      DisableRewriterCondition(dummyCond2)
+    )
+
+    sequencer.childRewriters should equal(Seq(
+      dummyRewriter1,
+      RunConditionRewriter("test", Some("1"), Set(dummyCond1)),
+      dummyRewriter2,
+      RunConditionRewriter("test", Some("2"), Set(dummyCond1, dummyCond2)),
+      dummyRewriter3,
+      RunConditionRewriter("test", Some("3"), Set(dummyCond1))
+    ))
+    sequencer.postConditions should equal(Set(dummyCond1))
   }
 }

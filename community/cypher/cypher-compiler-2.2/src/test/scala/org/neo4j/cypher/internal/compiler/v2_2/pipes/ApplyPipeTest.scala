@@ -21,26 +21,15 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.{CTNumber, SymbolTable}
 
-class ApplyPipeTest extends CypherFunSuite {
-
-  def newMonitor = mock[PipeMonitor]
+class ApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
   test("should work by applying the identity operator on the rhs") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
     val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
-
-    val rhs = new Pipe {
-      protected def internalCreateResults(state: QueryState) = Iterator(state.initialContext.get)
-
-      def exists(pred: (Pipe) => Boolean) = ???
-      def planDescription = ???
-      def symbols: SymbolTable = ???
-      def monitor: PipeMonitor = newMonitor
-      def dup(sources: List[Pipe]): Pipe = ???
-      def sources: Seq[Pipe] = ???
-    }
+    val rhs = pipeWithResults { (state) => Iterator(state.initialContext.get) }
 
     val result = ApplyPipe(lhs, rhs)()(newMonitor).createResults(QueryStateHelper.empty).toList
 
@@ -51,18 +40,7 @@ class ApplyPipeTest extends CypherFunSuite {
     val lhsData = List(Map("a" -> 1, "b" -> 3), Map("a" -> 2, "b" -> 4))
     val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber, "b" -> CTNumber)
     val rhsData = "c" -> 36
-
-    val rhs = new Pipe {
-      protected def internalCreateResults(state: QueryState) =
-        Iterator(ExecutionContext.empty += rhsData)
-
-      def exists(pred: (Pipe) => Boolean) = ???
-      def planDescription = ???
-      def symbols: SymbolTable = ???
-      def monitor: PipeMonitor = newMonitor
-      def dup(sources: List[Pipe]): Pipe = ???
-      def sources: Seq[Pipe] = ???
-    }
+    val rhs = pipeWithResults { (state) => Iterator(ExecutionContext.empty += rhsData) }
 
     val result = ApplyPipe(lhs, rhs)()(newMonitor).createResults(QueryStateHelper.empty).toList
 
@@ -72,18 +50,7 @@ class ApplyPipeTest extends CypherFunSuite {
   test("should work even if inner pipe overwrites values") {
     val lhsData = List(Map("a" -> 1, "b" -> 3), Map("a" -> 2, "b" -> 4))
     val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber, "b" -> CTNumber)
-
-    val rhs = new Pipe {
-      protected def internalCreateResults(state: QueryState) =
-        Iterator(state.initialContext.get += "b" -> null)
-
-      def exists(pred: (Pipe) => Boolean) = ???
-      def planDescription = ???
-      def symbols: SymbolTable = ???
-      def monitor: PipeMonitor = newMonitor
-      def dup(sources: List[Pipe]): Pipe = ???
-      def sources: Seq[Pipe] = ???
-    }
+    val rhs = pipeWithResults { (state) => Iterator(state.initialContext.get += "b" -> null) }
 
     val result = ApplyPipe(lhs, rhs)()(newMonitor).createResults(QueryStateHelper.empty).toList
 

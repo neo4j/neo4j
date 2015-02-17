@@ -22,9 +22,6 @@ package org.neo4j.csv.reader;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
-import java.nio.CharBuffer;
-
-import static java.lang.Math.max;
 
 import static org.neo4j.csv.reader.Mark.END_OF_LINE_CHARACTER;
 
@@ -34,7 +31,7 @@ import static org.neo4j.csv.reader.Mark.END_OF_LINE_CHARACTER;
 public class BufferedCharSeeker implements CharSeeker, SourceMonitor
 {
     private static final int KB = 1024, MB = KB * KB;
-    public static final int DEFAULT_BUFFER_SIZE = 16 * MB;
+    public static final int DEFAULT_BUFFER_SIZE = 8 * MB;
     public static final char DEFAULT_QUOTE_CHAR = '"';
 
     private static final char EOL_CHAR = '\n';
@@ -43,11 +40,11 @@ public class BufferedCharSeeker implements CharSeeker, SourceMonitor
     private static final char BACK_SLASH = '\\';
 
     private final CharReadable reader;
-    private final char[] buffer;
+    private char[] buffer;
 
     // Wraps the char[] buffer and is only used during reading more data, using f.ex. compact()
     // so that we don't have to duplicate that functionality.
-    private final CharBuffer charBuffer;
+    private SectionedCharBuffer charBuffer;
 
     // index into the buffer character array to read the next time nextChar() is called
     private int bufferPos;
@@ -63,6 +60,8 @@ public class BufferedCharSeeker implements CharSeeker, SourceMonitor
     private boolean eof;
     // char to recognize as quote start/end
     private final char quoteChar;
+    // this absolute position + bufferPos is the current position in the source we're reading
+    private long absoluteBufferStartPosition;
 
     public BufferedCharSeeker( CharReadable reader )
     {
@@ -77,9 +76,9 @@ public class BufferedCharSeeker implements CharSeeker, SourceMonitor
     public BufferedCharSeeker( CharReadable reader, int bufferSize, char quoteChar )
     {
         this.reader = reader;
-        this.buffer = new char[bufferSize];
-        this.charBuffer = CharBuffer.wrap( buffer );
-        this.bufferPos = bufferSize;
+        this.charBuffer = new SectionedCharBuffer( bufferSize );
+        this.buffer = charBuffer.array();
+        this.bufferPos = this.bufferEnd = charBuffer.pivot();
         this.quoteChar = quoteChar;
         this.lineStartPos = this.bufferPos;
         reader.addSourceMonitor( this );
@@ -195,8 +194,7 @@ public class BufferedCharSeeker implements CharSeeker, SourceMonitor
 
     private int peekChar() throws IOException
     {
-        fillBufferIfWeHaveExhaustedIt();
-        return buffer[bufferPos];
+        return fillBufferIfWeHaveExhaustedIt() ? buffer[bufferPos] : EOF_CHAR;
     }
 
     private boolean eof( Mark mark )
@@ -226,42 +224,51 @@ public class BufferedCharSeeker implements CharSeeker, SourceMonitor
 
     private int nextChar( int skippedChars ) throws IOException
     {
-        fillBufferIfWeHaveExhaustedIt();
-        int ch = buffer[bufferPos++];
-        if ( skippedChars > 0 )
+        int ch;
+        if ( fillBufferIfWeHaveExhaustedIt() )
         {
-            repositionChar( bufferPos - 1, skippedChars );
+            ch = buffer[bufferPos];
         }
-        if ( ch == EOF_CHAR )
+        else
         {
+            ch = EOF_CHAR;
             eof = true;
         }
+
+        if ( skippedChars > 0 )
+        {
+            repositionChar( bufferPos, skippedChars );
+        }
+        bufferPos++;
         return ch;
     }
 
-    private void fillBufferIfWeHaveExhaustedIt() throws IOException
+    /**
+     * @return {@code true} if something was read, otherwise {@code false} which means that we reached EOF.
+     */
+    private boolean fillBufferIfWeHaveExhaustedIt() throws IOException
     {
         if ( bufferPos >= bufferEnd )
         {
-            if ( seekStartPos == 0 && bufferEnd == charBuffer.capacity() )
+            if ( bufferPos - seekStartPos >= charBuffer.pivot() )
             {
-                throw new IllegalStateException( "Tried to read in a value larger than buffer size " + buffer.length );
+                throw new IllegalStateException( "Tried to read in a value larger than effective buffer size " +
+                        charBuffer.pivot() );
             }
-            charBuffer.position( seekStartPos );
-            charBuffer.limit( bufferPos );
-            charBuffer.compact();
-            charBuffer.limit( charBuffer.capacity() );
-            int remaining = charBuffer.remaining();
-            int read = reader.read( buffer, charBuffer.position(), remaining );
-            if ( read <= 0 )
-            {
-                buffer[charBuffer.position() + max( read, 0 )] = EOF_CHAR;
-            }
-            bufferPos = charBuffer.position();
-            lineStartPos -= seekStartPos;
-            seekStartPos = 0;
-            bufferEnd = bufferPos + max( read, 0 );
+
+            absoluteBufferStartPosition += charBuffer.available();
+
+            // Fill the buffer with new characters
+            charBuffer = reader.read( charBuffer, seekStartPos );
+            buffer = charBuffer.array();
+            bufferPos = charBuffer.pivot();
+            bufferEnd = charBuffer.front();
+            int shift = seekStartPos-charBuffer.back();
+            seekStartPos = charBuffer.back();
+            lineStartPos -= shift;
+            return charBuffer.hasAvailable();
         }
+        return true;
     }
 
     @Override
@@ -273,7 +280,7 @@ public class BufferedCharSeeker implements CharSeeker, SourceMonitor
     @Override
     public long position()
     {
-        return reader.position();
+        return absoluteBufferStartPosition + bufferPos;
     }
 
     @Override

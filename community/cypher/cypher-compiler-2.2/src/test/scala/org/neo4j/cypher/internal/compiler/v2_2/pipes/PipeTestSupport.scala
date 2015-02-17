@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.commons.CypherTestSupport
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 import org.scalatest.mock.MockitoSugar
 
@@ -28,15 +29,14 @@ trait PipeTestSupport extends CypherTestSupport with MockitoSugar {
 
   val newMonitor = mock[PipeMonitor]
 
-  def pipeWithResults(f: QueryState => Iterator[ExecutionContext]) = new Pipe {
+  def pipeWithResults(f: QueryState => Iterator[ExecutionContext]): Pipe = new Pipe {
     protected def internalCreateResults(state: QueryState) = f(state)
     def exists(pred: (Pipe) => Boolean) = ???
     def planDescription = ???
     def symbols: SymbolTable = ???
     def monitor: PipeMonitor = newMonitor
-
     def dup(sources: List[Pipe]): Pipe = ???
-
     def sources: Seq[Pipe] = ???
+    def localEffects: Effects = ???
   }
 }

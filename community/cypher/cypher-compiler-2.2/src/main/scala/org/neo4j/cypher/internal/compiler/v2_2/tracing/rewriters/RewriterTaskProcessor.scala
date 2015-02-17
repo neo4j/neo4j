@@ -25,17 +25,19 @@ trait RewriterTaskProcessor extends (RewriterTask => Rewriter) {
   def sequenceName: String
 
   def apply(task: RewriterTask): Rewriter = task match {
-    case RunConditions(name, conditions) =>
-      (input: AnyRef) =>
-        val result = conditions.toSeq.flatMap(cond => cond(input))
-        if (result.isEmpty) {
-          input
-        } else {
-          throw new RewritingConditionViolationException(name, result)
-        }
+    case RunConditions(name, conditions) => RunConditionRewriter(sequenceName, name, conditions)
+    case RunRewriter(_, rewriter) => rewriter
+  }
+}
 
-    case RunRewriter(_, rewriter) =>
-      rewriter
+case class RunConditionRewriter(sequenceName: String, name: Option[String], conditions: Set[RewriterCondition]) extends Rewriter {
+  def apply(input: AnyRef): AnyRef = {
+    val failures = conditions.toSeq.flatMap(condition => condition(input))
+    if (failures.isEmpty) {
+      input
+    } else {
+      throw new RewritingConditionViolationException(name, failures)
+    }
   }
 
   case class RewritingConditionViolationException(optName: Option[String], failures: Seq[RewriterConditionFailure])
@@ -45,11 +47,9 @@ trait RewriterTaskProcessor extends (RewriterTask => Rewriter) {
     val name = optName.map(name => s"step '$name'").getOrElse("start of rewriting")
     val builder = new StringBuilder
     builder ++= s"Error during '$sequenceName' rewriting after $name. The following conditions where violated: \n"
-    for (failure <- failures) {
-      val name = failure.name
-      for (problem <- failure.problems)
-        builder ++= s"Condition '$name' violated. $problem\n"
-
+    for (failure <- failures ;
+         problem <- failure.problems) {
+      builder ++= s"Condition '${failure.name}' violated. $problem\n"
     }
     builder.toString()
   }
@@ -60,12 +60,11 @@ case class DefaultRewriterTaskProcessor(sequenceName: String) extends RewriterTa
 case class TracingRewriterTaskProcessor(sequenceName: String, onlyWhenChanged: Boolean) extends RewriterTaskProcessor {
 
   override def apply(task: RewriterTask) = task match {
-    case RunRewriter(name, rewriter) =>
+    case RunRewriter(name, _) =>
       val innerRewriter = super.apply(task)
-      (in: AnyRef) =>
+      (in) =>
         val result = innerRewriter(in)
-        val always = !onlyWhenChanged
-        if (always || in != result) {
+        if (!onlyWhenChanged || in != result) {
 //          val resultDoc = pprintToDoc[AnyRef, Any](Result(result))(ResultHandler.docGen)
 //          val resultString = printCommandsToString(DocFormatters.defaultFormatter(resultDoc))
           val resultString = result.toString
