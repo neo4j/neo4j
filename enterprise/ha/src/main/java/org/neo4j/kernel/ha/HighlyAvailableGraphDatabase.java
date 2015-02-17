@@ -506,7 +506,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 monitors.newMonitor( MasterImpl.Monitor.class, MasterImpl.class ) );
 
         highAvailabilityModeSwitcher = new HighAvailabilityModeSwitcher( switchToSlaveInstance, switchToMasterInstance,
-                clusterClient, clusterMemberAvailability, getDependencyResolver(), logging );
+                clusterClient, clusterMemberAvailability, getDependencyResolver(), config.get( ClusterSettings.server_id ), logging );
 
         clusterClient.addBindingListener( highAvailabilityModeSwitcher );
         memberStateMachine.addHighAvailabilityMemberListener( highAvailabilityModeSwitcher );
