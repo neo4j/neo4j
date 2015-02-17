@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters
 
-final case class RewriterCondition(name: String, condition: Any => Seq[String])
-  extends (Any => Option[RewriterConditionFailure]) {
+import org.neo4j.cypher.internal.helpers.CollectionSupport
 
-  def apply(input: Any): Option[RewriterConditionFailure] = {
-    val problems = condition(input)
-    if (problems.isEmpty) None else Some(RewriterConditionFailure(name, problems))
-  }
+final case class RewriterCondition(name: String, condition: Any => Seq[String])
+  extends (Any => Option[RewriterConditionFailure]) with CollectionSupport {
+
+  def apply(input: Any): Option[RewriterConditionFailure] =
+    condition(input).asNonEmptyOption.map(RewriterConditionFailure(name, _))
 }
 
 case class RewriterConditionFailure(name: String, problems: Seq[String])
