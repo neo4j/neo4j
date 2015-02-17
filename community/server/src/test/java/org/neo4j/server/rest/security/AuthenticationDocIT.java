@@ -250,14 +250,6 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
         startServerWithConfiguredUser();
         long timeout = System.currentTimeMillis() + 30_000;
 
-        // Document
-        RESTDocsGenerator.ResponseEntity responseEntity = gen.get()
-                .noGraph()
-                .expectedStatus( 429 )
-                .withHeader( HttpHeaders.AUTHORIZATION, challengeResponse( "neo4j", "incorrect" ) )
-                .expectedHeader( "WWW-Authenticate", "None" )
-                .post( dataURL() );
-
         // When
         HTTP.Response response = null;
         while ( System.currentTimeMillis() < timeout )
