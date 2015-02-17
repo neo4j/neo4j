@@ -43,8 +43,8 @@ import scala.collection.{Iterator, mutable}
 final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
                                          var tx: Transaction,
                                          val isTopLevelTx: Boolean,
-                                         var statement: Statement)
-  extends TransactionBoundTokenContext(statement) with QueryContext {
+                                         initialStatement: Statement)
+  extends TransactionBoundTokenContext(initialStatement) with QueryContext {
 
   private var open = true
   private val txBridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
