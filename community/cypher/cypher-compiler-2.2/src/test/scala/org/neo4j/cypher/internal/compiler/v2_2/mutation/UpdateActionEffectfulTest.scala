@@ -28,11 +28,11 @@ import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.symbols
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 
-class EffectfulTest extends CypherFunSuite {
+class UpdateActionEffectfulTest extends CypherFunSuite {
 
   import org.neo4j.cypher.internal.compiler.v2_2.parser.ParserFixture.parser
 
-  test("Udpates symbol table correctly when computing effects of MergeNodeAction") {
+  test("Updates symbol table correctly when computing effects of MergeNodeAction") {
     val inner = PropertySetAction(Property(Identifier("a"), PropertyKey("x")), Literal(1))
     val given = MergeNodeAction("a", Map.empty, Seq.empty, Seq.empty, Seq(inner), Seq.empty, None)
 

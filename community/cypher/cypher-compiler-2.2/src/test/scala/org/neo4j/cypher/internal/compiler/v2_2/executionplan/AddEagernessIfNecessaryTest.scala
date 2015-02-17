@@ -171,7 +171,7 @@ class AddEagernessIfNecessaryTest extends CypherFunSuite {
       when(source.sources).thenReturn(Seq.empty)
 
       val pipe = mock[Pipe]
-      when(pipe.effects).thenReturn(to)
+      when(pipe.localEffects).thenReturn(to)
       when(pipe.sources).thenReturn(Seq(source))
       when(pipe.dup(any())).thenAnswer(new Answer[Pipe] {
         def answer(invocation: InvocationOnMock): Pipe = {

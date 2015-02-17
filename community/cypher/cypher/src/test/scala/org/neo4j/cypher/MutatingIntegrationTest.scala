@@ -478,30 +478,4 @@ return distinct center""")
 
     assertStats(result, nodesCreated = 1)
   }
-
-  test("should introduce eagerness correctly when using cartesian product and optional match with multiple patterns") {
-    // given a database
-    execute( """CREATE (TheMatrix:Movie {title:'The Matrix'})
-               |CREATE (JoelS:Person {name:'Joel Silver', born:1952})
-               |CREATE (LanaW)-[:DIRECTED]->(TheMatrix),
-               |  (JoelS)-[:PRODUCED]->(TheMatrix)
-               |CREATE (JamesThompson:Person {name:'James Thompson'})
-               |CREATE (JamesThompson)-[:FOLLOWS]->(JessicaThompson)
-               |RETURN TheMatrix""".stripMargin)
-
-    // when
-    val result = execute( """PROFILE MATCH (a:Person),(m:Movie)
-               |OPTIONAL MATCH (a)-[r1]-(), (m)-[r2]-()
-               |DELETE a,r1,m,r2""".stripMargin)
-
-    val plan = result.executionPlanDescription().toString
-    result.close()
-
-    // then
-    // it should not blow up
-    // and
-    // we have only one EagerPipe in the execution plan
-    plan should include("Eager")
-    plan should not include "Eager("
-  }
 }
