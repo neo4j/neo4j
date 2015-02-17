@@ -19,19 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-import org.mockito.Mockito.verify
 import org.neo4j.cypher.GraphDatabaseTestSupport
+import org.neo4j.cypher.internal.NormalMode
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.ExecutionPlan
-import org.neo4j.cypher.internal.compiler.v2_2.spi.{DevNullLogger, Logger}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.helpers.{Clock, FrozenClock}
+import org.neo4j.helpers.{FrozenClock, Clock}
+import org.neo4j.kernel.impl.util.StringLogger.DEV_NULL
+import org.neo4j.kernel.impl.util.TestLogger.LogCall
+import org.neo4j.kernel.impl.util.{StringLogger, TestLogger}
 
 import scala.collection.Map
 
 class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
   def createCompiler(queryCacheSize: Int = 128, statsDivergenceThreshold: Double = 0.5, queryPlanTTL: Long = 1000,
-                     clock: Clock = Clock.SYSTEM_CLOCK, logger: Logger = DevNullLogger.instance) =
+                     clock: Clock = Clock.SYSTEM_CLOCK, logger: StringLogger = DEV_NULL) =
     CypherCompilerFactory.conservativeCompiler(
       graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors, logger)
 
@@ -115,7 +117,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   test("should log on cache remove") {
     // given
     val counter = new CacheCounter()
-    val logger = mock[Logger]
+    val logger: TestLogger = new TestLogger()
     val clock: Clock = new FrozenClock(1000)
     val compiler = createCompiler(queryPlanTTL = 0, clock = clock, logger = logger)
     compiler.monitors.addMonitorListener(counter)
@@ -130,6 +132,6 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     graph.inTx { compiler.planQuery(query, planContext) }
 
     // then
-    verify(logger).info(s"Discarded stale query from the query cache: $query")
+    logger.assertExactly(LogCall.info(s"Discarded stale query from the query cache: $query"))
   }
 }

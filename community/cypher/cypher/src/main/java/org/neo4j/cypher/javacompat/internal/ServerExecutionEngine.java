@@ -22,7 +22,6 @@ package org.neo4j.cypher.javacompat.internal;
 import java.util.Map;
 
 import org.neo4j.cypher.CypherException;
-import org.neo4j.cypher.internal.compiler.v2_2.spi.Logger;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -30,6 +29,7 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.QuerySession;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * This is a variant of {@link ExecutionEngine} that provides additional
@@ -41,13 +41,13 @@ public class ServerExecutionEngine extends ExecutionEngine implements QueryExecu
 {
     private org.neo4j.cypher.internal.ServerExecutionEngine serverExecutionEngine;
 
-    public ServerExecutionEngine( GraphDatabaseService database, Logger logger )
+    public ServerExecutionEngine( GraphDatabaseService database, StringLogger logger )
     {
         super( database, logger );
     }
 
     protected
-    org.neo4j.cypher.ExecutionEngine createInnerEngine( GraphDatabaseService database, Logger logger )
+    org.neo4j.cypher.ExecutionEngine createInnerEngine( GraphDatabaseService database, StringLogger logger )
     {
         return serverExecutionEngine = new org.neo4j.cypher.internal.ServerExecutionEngine( database, logger );
     }

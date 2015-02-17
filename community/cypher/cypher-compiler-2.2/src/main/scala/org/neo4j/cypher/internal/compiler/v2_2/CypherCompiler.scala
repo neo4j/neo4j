@@ -26,9 +26,10 @@ import org.neo4j.cypher.internal.compiler.v2_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_2.parser.{CypherParser, ParserMonitor}
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
-import org.neo4j.cypher.internal.compiler.v2_2.spi.{Logger, PlanContext}
+import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
+import org.neo4j.kernel.impl.util.StringLogger
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
 trait SemanticCheckMonitor {
@@ -60,7 +61,7 @@ object CypherCompilerFactory {
   val monitorTag = "cypher2.2"
   def conservativeCompiler(graph: GraphDatabaseService, queryCacheSize: Int, statsDivergenceThreshold: Double,
                         queryPlanTTL: Long, clock: Clock, kernelMonitors: KernelMonitors,
-                        logger: Logger, acceptor: (UnionQuery => Boolean) = conservativeQueryAcceptor): CypherCompiler = {
+                        logger: StringLogger, acceptor: (UnionQuery => Boolean) = conservativeQueryAcceptor): CypherCompiler = {
     val monitors = new Monitors(kernelMonitors)
     val parser = new CypherParser(monitors.newMonitor[ParserMonitor[Statement]](monitorTag))
     val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
@@ -81,10 +82,10 @@ object CypherCompilerFactory {
 
   def costBasedCompiler(graph: GraphDatabaseService, queryCacheSize: Int, statsDivergenceThreshold: Double,
                     queryPlanTTL: Long, clock: Clock, kernelMonitors: KernelMonitors,
-                    logger: Logger): CypherCompiler = conservativeCompiler(graph, queryCacheSize,
+                    logger: StringLogger): CypherCompiler = conservativeCompiler(graph, queryCacheSize,
     statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors, logger, _ => true)
 
-  private def logStalePlanRemovalMonitor(logger: Logger) = new AstCacheMonitor {
+  private def logStalePlanRemovalMonitor(logger: StringLogger) = new AstCacheMonitor {
     override def cacheDiscard(key: PreparedQuery) {
       logger.info(s"Discarded stale query from the query cache: ${key.queryText}")
     }
