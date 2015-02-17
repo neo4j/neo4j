@@ -236,8 +236,15 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
                 RawPayload.quotedJson( "{'statements':[{'statement':'MATCH (n) RETURN n'}]}" ) ).status() );
     }
 
+    /**
+     * Too many failed auth attempts
+     *
+     * Auth failures are rate-limited in order to counter attempted brute force attacks.
+     * If multiple failures occur within a five second period, an http://tools.ietf.org/html/rfc6585#page-3[HTTP 429] status code is returned.
+     */
     @Test
-    public void shouldReplyNicelyToTooManyFailedAuthAttempts() throws Exception
+    @Documented
+    public void too_many_failed_auth_attempts() throws Exception
     {
         // Given
         startServerWithConfiguredUser();
