@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders.{IfElseIterator, QueryStateSettingIterator}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{InternalPlanDescription, PlanDescriptionImpl, TwoChildren}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
@@ -56,12 +55,10 @@ case class OptionalMatchPipe(source: Pipe,
 
   override def localEffects = matchPipe.localEffects
 
-  def doMatch(state: QueryState)(ctx: ExecutionContext) = matchPipe.createResults(state)
+  private def doMatch(state: QueryState)(ctx: ExecutionContext) = matchPipe.createResults(state)
 
   def dup(sources: List[Pipe]): Pipe = {
-    val (l :: r :: Nil) = sources
-    copy(source = l, matchPipe = r)
+    val (source ::  Nil) = sources
+    copy(source = source)
   }
-
-  override val sources: Seq[Pipe] = Seq(source, matchPipe)
 }

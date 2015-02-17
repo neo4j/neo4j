@@ -19,12 +19,14 @@
  */
 package org.neo4j.cypher
 
-import collection.JavaConverters._
-import org.scalatest.Assertions
-import org.neo4j.graphdb._
 import java.util.HashMap
-import org.neo4j.tooling.GlobalGraphOperations
+
+import org.neo4j.graphdb._
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.tooling.GlobalGraphOperations
+import org.scalatest.Assertions
+
+import scala.collection.JavaConverters._
 
 class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions with QueryStatisticsTestSupport {
 
@@ -450,7 +452,6 @@ return distinct center""")
     }
   }
 
-
   test("complete_graph") {
     val result =
       execute("""CREATE (center { count:0 })
@@ -476,5 +477,31 @@ return distinct center""")
     val result = execute("foreach(x in [null]| create ())")
 
     assertStats(result, nodesCreated = 1)
+  }
+
+  test("should introduce eagerness correctly when using cartesian product and optional match with multiple patterns") {
+    // given a database
+    execute( """CREATE (TheMatrix:Movie {title:'The Matrix'})
+               |CREATE (JoelS:Person {name:'Joel Silver', born:1952})
+               |CREATE (LanaW)-[:DIRECTED]->(TheMatrix),
+               |  (JoelS)-[:PRODUCED]->(TheMatrix)
+               |CREATE (JamesThompson:Person {name:'James Thompson'})
+               |CREATE (JamesThompson)-[:FOLLOWS]->(JessicaThompson)
+               |RETURN TheMatrix""".stripMargin)
+
+    // when
+    val result = execute( """PROFILE MATCH (a:Person),(m:Movie)
+               |OPTIONAL MATCH (a)-[r1]-(), (m)-[r2]-()
+               |DELETE a,r1,m,r2""".stripMargin)
+
+    val plan = result.executionPlanDescription().toString
+    result.close()
+
+    // then
+    // it should not blow up
+    // and
+    // we have only one EagerPipe in the execution plan
+    plan should include("Eager")
+    plan should not include "Eager("
   }
 }

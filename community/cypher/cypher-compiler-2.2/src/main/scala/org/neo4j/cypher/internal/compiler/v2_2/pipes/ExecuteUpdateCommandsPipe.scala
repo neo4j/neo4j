@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Identifier
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects._
 import org.neo4j.cypher.internal.compiler.v2_2.mutation._
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.graphdb.NotInTransactionException
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects._
 
 import scala.collection.mutable
 
@@ -69,10 +69,7 @@ case class ExecuteUpdateCommandsPipe(source: Pipe, commands: Seq[UpdateAction])(
 
   def sourceSymbols: SymbolTable = source.symbols
 
-  override def localEffects = source match {
-    case pipe: ExecuteUpdateCommandsPipe => pipe.source.localEffects
-    case _ => commands.effects(source.symbols)
-  }
+  override def localEffects = commands.effects(sourceSymbols)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
@@ -96,7 +93,7 @@ trait NoLushEntityCreation {
     case CreateUniqueAction(links@_*) =>
       links.flatMap(l => Seq(l.start, l.end, l.rel))
     case MergePatternAction(_, _, _, Some(updates), _) =>
-      updates.flatMap(extractEntities(_))
+      updates.flatMap(extractEntities)
     case _ =>
       Seq()
   }

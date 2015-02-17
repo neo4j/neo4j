@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
@@ -36,6 +37,8 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
   with RonjaPipe {
   val symbols: SymbolTable =
     source.symbols.add(start, CTNode).add(end, CTNode)
+
+  override val localEffects = if (!startInScope || !endInScope) Effects.READS_NODES else Effects.NONE
 
   type Projector = (ExecutionContext) => Iterator[ExecutionContext]
 

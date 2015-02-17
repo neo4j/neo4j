@@ -24,7 +24,6 @@ import java.util.concurrent._
 import org.junit.Assert._
 import org.mockito.Mockito._
 import org.neo4j.cypher.GraphDatabaseTestSupport
-import org.neo4j.cypher.internal.NormalMode
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Identifier, Literal}
@@ -235,18 +234,13 @@ class ExplodingPipeBuilder extends PlanBuilder with MockitoSugar {
 
   class ExplodingPipe extends Pipe {
     def internalCreateResults(state: QueryState) = throw new ExplodingException
-
     def symbols: SymbolTable = new SymbolTable()
-
     def planDescription: InternalPlanDescription = null
-
     def exists(pred: Pipe => Boolean) = ???
-
     val monitor = mock[PipeMonitor]
-
     def dup(sources: List[Pipe]): Pipe = ???
-
     def sources: scala.Seq[Pipe] = ???
+    def localEffects: Effects = ???
   }
 }
 
