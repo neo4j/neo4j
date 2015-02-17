@@ -32,26 +32,30 @@ object renderDetails extends (InternalPlanDescription => String) {
     val names = renderAsTree.createUniqueNames(plan)
 
 
-    val headers = Seq("Operator", "EstimatedRows", "Rows", "DbHits", "Identifiers", "Other")
+    val headers = Seq("Operator", "EstimatedOperatorCardinality", "EstimatedProducedRows", "Rows", "DbHits", "Identifiers", "Other")
     val rows: Seq[Seq[(String, Option[String])]] = plans.map {
       p =>
         val name = Some(names(p))
         val rows = p.arguments.collectFirst { case Rows(count) => count.toString}
-        val estimatedRows = p.arguments.collectFirst { case EstimatedRows(count) => "%.3f".format(count) }
+        val estimatedOperatorCardinality = p.arguments.collectFirst { case EstimatedOperatorCardinality(count) => "%.3f".format(count) }
+        val estimatedProducedRows = p.arguments.collectFirst { case EstimatedProducedRows(count) => "%.3f".format(count) }
         val dbHits = p.arguments.collectFirst { case DbHits(count) => count.toString}
         val ids = Some(p.orderedIdentifiers.filter(_.isNamed).mkString(", "))
         val other = Some(p.arguments.collect {
           case x
             if !x.isInstanceOf[Rows] &&
               !x.isInstanceOf[DbHits] &&
-              !x.isInstanceOf[EstimatedRows] &&
+              !x.isInstanceOf[EstimatedOperatorCardinality] &&
+              !x.isInstanceOf[EstimatedProducedRows] &&
               !x.isInstanceOf[Planner] &&
               !x.isInstanceOf[Version] => PlanDescriptionArgumentSerializer.serialize(x)
         }.mkString("; ")
           .replaceAll(UNNAMED_PATTERN, ""))
 
-        Seq("Operator" -> name, "EstimatedRows" -> estimatedRows, "Rows" -> rows,
-          "DbHits" -> dbHits, "Identifiers" -> ids, "Other" -> other)
+        Seq("Operator" -> name,
+          "EstimatedOperatorCardinality" -> estimatedOperatorCardinality,
+          "EstimatedProducedRows" -> estimatedProducedRows,
+          "Rows" -> rows, "DbHits" -> dbHits, "Identifiers" -> ids, "Other" -> other)
     }
 
     //Remove headers where no values are available

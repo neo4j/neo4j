@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.graphdb.{Direction, Node}
 
 case class OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String, toName: String, dir: Direction, types: LazyTypes, predicate: Predicate)
-                                (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+                                (val estimation: Estimation = Estimation.empty)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
@@ -74,10 +74,10 @@ case class OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
+    copy(source = head)(estimation)
   }
 
   override def localEffects = predicate.effects
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  def withEstimation(estimation: Estimation): Pipe with RonjaPipe = copy()(estimation = estimation)
 }

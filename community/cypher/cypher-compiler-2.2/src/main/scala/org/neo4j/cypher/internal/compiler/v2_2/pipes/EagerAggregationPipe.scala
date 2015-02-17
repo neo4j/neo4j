@@ -33,7 +33,7 @@ import scala.collection.mutable.{Map => MutableMap}
 // to emit aggregated results.
 // Cypher is lazy until it can't - this pipe will eagerly load the full match
 case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggregations: Map[String, AggregationExpression])
-                               (val estimatedCardinality: Option[Double] = None)
+                               (val estimation: Estimation = Estimation.empty)
                                (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
   val symbols: SymbolTable = createSymbols()
@@ -100,10 +100,10 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
-    copy(source = source)(estimatedCardinality)
+    copy(source = source)(estimation)
   }
 
   override def localEffects = aggregations.effects
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  def withEstimation(estimation: Estimation): Pipe with RonjaPipe = copy()(estimation = estimation)
 }

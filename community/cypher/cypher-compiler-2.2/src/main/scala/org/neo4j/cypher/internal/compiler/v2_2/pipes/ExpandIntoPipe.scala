@@ -27,13 +27,8 @@ import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.helpers.collection.PrefetchingIterator
 import scala.collection.JavaConverters._
 
-case class ExpandIntoPipe(source: Pipe,
-                          fromName: String,
-                          relName: String,
-                          toName: String,
-                          dir: Direction,
-                          types: LazyTypes)(val estimatedCardinality: Option[Double] = None)
-                         (implicit pipeMonitor: PipeMonitor)
+case class ExpandIntoPipe(source: Pipe, fromName: String, relName: String, toName: String, dir: Direction, types: LazyTypes)
+                         (val estimation: Estimation = Estimation.empty)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
   self =>
@@ -90,8 +85,8 @@ case class ExpandIntoPipe(source: Pipe,
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
-    copy(source = source)(estimatedCardinality)
+    copy(source = source)(estimation)
   }
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  def withEstimation(estimation: Estimation): Pipe with RonjaPipe = copy()(estimation = estimation)
 }

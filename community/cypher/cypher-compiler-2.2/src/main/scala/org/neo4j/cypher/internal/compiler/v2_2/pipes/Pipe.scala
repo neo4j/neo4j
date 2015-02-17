@@ -42,7 +42,7 @@ trait PipeMonitor {
  * the execute the query.
  */
 trait Pipe extends Effectful {
-  self: Pipe =>
+  self =>
 
   def monitor: PipeMonitor
 
@@ -86,6 +86,7 @@ trait Pipe extends Effectful {
 }
 
 case class SingleRowPipe()(implicit val monitor: PipeMonitor) extends Pipe with RonjaPipe {
+  self =>
 
   def symbols: SymbolTable = new SymbolTable()
 
@@ -98,14 +99,15 @@ case class SingleRowPipe()(implicit val monitor: PipeMonitor) extends Pipe with 
 
   override def localEffects = Effects.NONE
 
-  def dup(sources: List[Pipe]): Pipe = this
+  def dup(sources: List[Pipe]): this.type = self
 
   def sources: Seq[Pipe] = Seq.empty
 
-  def estimatedCardinality: Option[Double] = Some(1.0)
+  val estimation: Estimation = Estimation(Some(1.0), Some(1.0))
 
-  def withEstimatedCardinality(estimated: Double): Pipe with RonjaPipe = {
-    assert(estimated == 1.0)
+  def withEstimation(estimation: Estimation): Pipe with RonjaPipe = {
+    assert(estimation.operatorCardinality.isDefined && estimation.operatorCardinality.get == 1.0)
+    assert(estimation.producedRows.isDefined && estimation.producedRows.get == 1.0)
     this
   }
 }

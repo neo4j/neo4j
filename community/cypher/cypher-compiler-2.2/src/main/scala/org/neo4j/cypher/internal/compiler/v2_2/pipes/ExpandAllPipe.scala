@@ -25,13 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.cypher.internal.compiler.v2_2.{ExecutionContext, InternalException}
 import org.neo4j.graphdb.{Direction, Node, Relationship}
 
-case class ExpandAllPipe(source: Pipe,
-                         fromName: String,
-                         relName: String,
-                         toName: String,
-                         dir: Direction,
-                         types: LazyTypes)(val estimatedCardinality: Option[Double] = None)
-                        (implicit pipeMonitor: PipeMonitor)
+case class ExpandAllPipe(source: Pipe, fromName: String, relName: String, toName: String, dir: Direction, types: LazyTypes)
+                        (val estimation: Estimation = Estimation.empty)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
@@ -67,8 +62,8 @@ case class ExpandAllPipe(source: Pipe,
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
-    copy(source = source)(estimatedCardinality)
+    copy(source = source)(estimation)
   }
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  def withEstimation(estimation: Estimation): Pipe with RonjaPipe = copy()(estimation = estimation)
 }

@@ -25,15 +25,14 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.{QueryGraphCardinalityInput, QueryGraphCardinalityModel}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 
-class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel)
-  extends Metrics.CardinalityModel {
-  def apply(plan: LogicalPlan, input: QueryGraphCardinalityInput): Cardinality =
-    computeCardinality(plan.solved, input)
+class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel) extends Metrics.CardinalityModel {
+
+  def apply(plan: LogicalPlan, input: QueryGraphCardinalityInput): Cardinality = computeCardinality(plan.solved, input)
 
   private def computeCardinality(query: PlannerQuery, input0: QueryGraphCardinalityInput): Cardinality = {
     val output = query.fold(input0) {
       case (input, PlannerQuery(graph, horizon, _)) =>
-        val QueryGraphCardinalityInput(newLabels, graphCardinality) = calculateCardinalityForQueryGraph(graph, input)
+        val (newLabels, graphCardinality) = calculateCardinalityForQueryGraph(graph, input)
         val horizonCardinality = calculateCardinalityForQueryHorizon(graphCardinality, horizon)
         QueryGraphCardinalityInput(newLabels, horizonCardinality)
     }
@@ -61,9 +60,9 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
       in
   }
 
-  private def calculateCardinalityForQueryGraph(graph: QueryGraph, input: QueryGraphCardinalityInput): QueryGraphCardinalityInput = {
+  private def calculateCardinalityForQueryGraph(graph: QueryGraph, input: QueryGraphCardinalityInput) = {
     val newLabels = input.labelInfo.fuse(graph.patternNodeLabels)(_ ++ _)
     val newCardinality = queryGraphCardinalityModel(graph, input)
-    QueryGraphCardinalityInput(newLabels, newCardinality)
+    (newLabels, newCardinality)
   }
 }

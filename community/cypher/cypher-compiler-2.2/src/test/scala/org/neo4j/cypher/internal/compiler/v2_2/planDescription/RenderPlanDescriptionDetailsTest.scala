@@ -53,11 +53,11 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
     val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n"))
 
     renderDetails(plan) should equal(
-      """+----------+---------------+------+--------+-------------+-------+
-        || Operator | EstimatedRows | Rows | DbHits | Identifiers | Other |
-        |+----------+---------------+------+--------+-------------+-------+
-        ||     NAME |         1.000 |   42 |     33 |           n |       |
-        |+----------+---------------+------+--------+-------------+-------+
+      """+----------+------------------------------+-----------------------+------+--------+-------------+-------+
+        || Operator | EstimatedOperatorCardinality | EstimatedProducedRows | Rows | DbHits | Identifiers | Other |
+        |+----------+------------------------------+-----------------------+------+--------+-------------+-------+
+        ||     NAME |                        1.000 |                 1.000 |   42 |     33 |           n |       |
+        |+----------+------------------------------+-----------------------+------+--------+-------------+-------+
         |""".stripMargin)
   }
 
@@ -69,11 +69,11 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
     val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("a", "b", "c"))
 
     renderDetails(plan) should equal(
-      """+----------+---------------+------+--------+-------------+-------+
-        || Operator | EstimatedRows | Rows | DbHits | Identifiers | Other |
-        |+----------+---------------+------+--------+-------------+-------+
-        ||     NAME |         1.000 |   42 |     33 |     a, b, c |       |
-        |+----------+---------------+------+--------+-------------+-------+
+      """+----------+------------------------------+-----------------------+------+--------+-------------+-------+
+        || Operator | EstimatedOperatorCardinality | EstimatedProducedRows | Rows | DbHits | Identifiers | Other |
+        |+----------+------------------------------+-----------------------+------+--------+-------------+-------+
+        ||     NAME |                        1.000 |                 1.000 |   42 |     33 |     a, b, c |       |
+        |+----------+------------------------------+-----------------------+------+--------+-------------+-------+
         |""".stripMargin)
   }
 
@@ -85,11 +85,11 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
     val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("a", "b", "c", "d", "e", "f"))
 
     renderDetails(plan) should equal(
-      """+----------+---------------+------+--------+------------------+-------+
-        || Operator | EstimatedRows | Rows | DbHits |      Identifiers | Other |
-        |+----------+---------------+------+--------+------------------+-------+
-        ||     NAME |         1.000 |   42 |     33 | a, b, c, d, e, f |       |
-        |+----------+---------------+------+--------+------------------+-------+
+      """+----------+------------------------------+-----------------------+------+--------+------------------+-------+
+        || Operator | EstimatedOperatorCardinality | EstimatedProducedRows | Rows | DbHits |      Identifiers | Other |
+        |+----------+------------------------------+-----------------------+------+--------+------------------+-------+
+        ||     NAME |                        1.000 |                 1.000 |   42 |     33 | a, b, c, d, e, f |       |
+        |+----------+------------------------------+-----------------------+------+--------+------------------+-------+
         |""".stripMargin)
   }
 
@@ -99,11 +99,11 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
     val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n"))
 
     renderDetails(plan) should equal(
-      """+----------+---------------+-------------+-------+
-        || Operator | EstimatedRows | Identifiers | Other |
-        |+----------+---------------+-------------+-------+
-        ||     NAME |         1.000 |           n |       |
-        |+----------+---------------+-------------+-------+
+      """+----------+------------------------------+-----------------------+-------------+-------+
+        || Operator | EstimatedOperatorCardinality | EstimatedProducedRows | Identifiers | Other |
+        |+----------+------------------------------+-----------------------+-------------+-------+
+        ||     NAME |                        1.000 |                 1.000 |           n |       |
+        |+----------+------------------------------+-----------------------+-------------+-------+
         |""".stripMargin)
   }
 
@@ -115,12 +115,12 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
     val plan2 = PlanDescriptionImpl(pipe, "NAME", SingleChild(plan1), args2, Set("b"))
 
     renderDetails(plan2) should equal(
-      """+----------+---------------+------+--------+-------------+--------------+
-        || Operator | EstimatedRows | Rows | DbHits | Identifiers |        Other |
-        |+----------+---------------+------+--------+-------------+--------------+
-        ||  NAME(0) |         1.000 |    2 |    633 |           b | :Label(Prop) |
-        ||  NAME(1) |         1.000 |   42 |     33 |           a |              |
-        |+----------+---------------+------+--------+-------------+--------------+
+      """+----------+------------------------------+-----------------------+------+--------+-------------+--------------+
+        || Operator | EstimatedOperatorCardinality | EstimatedProducedRows | Rows | DbHits | Identifiers |        Other |
+        |+----------+------------------------------+-----------------------+------+--------+-------------+--------------+
+        ||  NAME(0) |                        1.000 |                 1.000 |    2 |    633 |           b | :Label(Prop) |
+        ||  NAME(1) |                        1.000 |                 1.000 |   42 |     33 |           a |              |
+        |+----------+------------------------------+-----------------------+------+--------+-------------+--------------+
         |""".stripMargin)
   }
 
@@ -129,26 +129,26 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
     val arguments = Seq(
       Rows(42),
       DbHits(33))
-    val expandPipe = ExpandAllPipe(pipe, "from", "rel", "to", Direction.INCOMING, LazyTypes.empty)(Some(1L))(mock[PipeMonitor])
+    val expandPipe = ExpandAllPipe(pipe, "from", "rel", "to", Direction.INCOMING, LazyTypes.empty)(Estimation(Some(1.5), Some(1.6)))(mock[PipeMonitor])
 
     renderDetails(expandPipe.planDescription) should equal(
-      """+-------------+---------------+-------------+---------------------+
-        ||    Operator | EstimatedRows | Identifiers |               Other |
-        |+-------------+---------------+-------------+---------------------+
-        || Expand(All) |         1.000 |     rel, to | (from)<-[rel:]-(to) |
-        |+-------------+---------------+-------------+---------------------+
+      """+-------------+------------------------------+-----------------------+-------------+---------------------+
+        ||    Operator | EstimatedOperatorCardinality | EstimatedProducedRows | Identifiers |               Other |
+        |+-------------+------------------------------+-----------------------+-------------+---------------------+
+        || Expand(All) |                        1.500 |                 1.600 |     rel, to | (from)<-[rel:]-(to) |
+        |+-------------+------------------------------+-----------------------+-------------+---------------------+
         |""".stripMargin)
   }
 
   test("Label scan should be just as pretty as you would expect") {
-    val pipe = NodeByLabelScanPipe("n", LazyLabel("Foo"))(Some(1L))(mock[PipeMonitor])
+    val pipe = NodeByLabelScanPipe("n", LazyLabel("Foo"))(Estimation(Some(1.5), Some(1.6)))(mock[PipeMonitor])
 
     renderDetails( pipe.planDescription ) should equal(
-      """+-----------------+---------------+-------------+-------+
-        ||        Operator | EstimatedRows | Identifiers | Other |
-        |+-----------------+---------------+-------------+-------+
-        || NodeByLabelScan |         1.000 |           n |  :Foo |
-        |+-----------------+---------------+-------------+-------+
+      """+-----------------+------------------------------+-----------------------+-------------+-------+
+        ||        Operator | EstimatedOperatorCardinality | EstimatedProducedRows | Identifiers | Other |
+        |+-----------------+------------------------------+-----------------------+-------------+-------+
+        || NodeByLabelScan |                        1.500 |                 1.600 |           n |  :Foo |
+        |+-----------------+------------------------------+-----------------------+-------------+-------+
         |""".stripMargin )
   }
 
@@ -156,14 +156,14 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
     val arguments = Seq(
       Rows(42),
       DbHits(33))
-    val expandPipe = VarLengthExpandPipe(pipe, "from", "rel", "to", Direction.INCOMING, Direction.OUTGOING, LazyTypes.empty, 0, None, nodeInScope = false)(Some(1L))(mock[PipeMonitor])
+    val expandPipe = VarLengthExpandPipe(pipe, "from", "rel", "to", Direction.INCOMING, Direction.OUTGOING, LazyTypes.empty, 0, None, nodeInScope = false)(Estimation(Some(1.5), Some(1.6)))(mock[PipeMonitor])
 
     renderDetails(expandPipe.planDescription) should equal(
-      """+----------------------+---------------+-------------+----------------------+
-        ||             Operator | EstimatedRows | Identifiers |                Other |
-        |+----------------------+---------------+-------------+----------------------+
-        || VarLengthExpand(All) |         1.000 |     rel, to | (from)-[rel:*]->(to) |
-        |+----------------------+---------------+-------------+----------------------+
+      """+----------------------+------------------------------+-----------------------+-------------+----------------------+
+        ||             Operator | EstimatedOperatorCardinality | EstimatedProducedRows | Identifiers |                Other |
+        |+----------------------+------------------------------+-----------------------+-------------+----------------------+
+        || VarLengthExpand(All) |                        1.500 |                 1.600 |     rel, to | (from)-[rel:*]->(to) |
+        |+----------------------+------------------------------+-----------------------+-------------+----------------------+
         |""".stripMargin)
   }
 
@@ -176,11 +176,11 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
 
     val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  UNNAMED2", "  UNNAMED24"))
     renderDetails(plan) should equal(
-      """+----------+---------------+------+--------+-------------+------------------+
-        || Operator | EstimatedRows | Rows | DbHits | Identifiers |            Other |
-        |+----------+---------------+------+--------+-------------+------------------+
-        ||     NAME |         1.000 |   42 |     33 |           n | ()-[R:WHOOP]->() |
-        |+----------+---------------+------+--------+-------------+------------------+
+      """+----------+------------------------------+-----------------------+------+--------+-------------+------------------+
+        || Operator | EstimatedOperatorCardinality | EstimatedProducedRows | Rows | DbHits | Identifiers |            Other |
+        |+----------+------------------------------+-----------------------+------+--------+-------------+------------------+
+        ||     NAME |                        1.000 |                 1.000 |   42 |     33 |           n | ()-[R:WHOOP]->() |
+        |+----------+------------------------------+-----------------------+------+--------+-------------+------------------+
         |""".stripMargin)
   }
 
@@ -193,11 +193,11 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
 
     val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  UNNAMED2", "  UNNAMED24"))
     renderDetails(plan) should equal(
-      """+----------+---------------+------+--------+-------------+-------------------------------------------------+
-        || Operator | EstimatedRows | Rows | DbHits | Identifiers |                                           Other |
-        |+----------+---------------+------+--------+-------------+-------------------------------------------------+
-        ||     NAME |         1.000 |   42 |     33 |           n | (source)-[through:SOME|:OTHER|:THING]->(target) |
-        |+----------+---------------+------+--------+-------------+-------------------------------------------------+
+      """+----------+------------------------------+-----------------------+------+--------+-------------+-------------------------------------------------+
+        || Operator | EstimatedOperatorCardinality | EstimatedProducedRows | Rows | DbHits | Identifiers |                                           Other |
+        |+----------+------------------------------+-----------------------+------+--------+-------------+-------------------------------------------------+
+        ||     NAME |                        1.000 |                 1.000 |   42 |     33 |           n | (source)-[through:SOME|:OTHER|:THING]->(target) |
+        |+----------+------------------------------+-----------------------+------+--------+-------------+-------------------------------------------------+
         |""".stripMargin)
   }
 
@@ -209,11 +209,11 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
 
     val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  UNNAMED2", "  UNNAMED24"))
     renderDetails(plan) should equal(
-      """+----------+---------------+------+--------+-------------+-----------------------------+
-        || Operator | EstimatedRows | Rows | DbHits | Identifiers |                       Other |
-        |+----------+---------------+------+--------+-------------+-----------------------------+
-        ||     NAME |         1.000 |   42 |     33 |           n | NOT(anon[123] == anon[321]) |
-        |+----------+---------------+------+--------+-------------+-----------------------------+
+      """+----------+------------------------------+-----------------------+------+--------+-------------+-----------------------------+
+        || Operator | EstimatedOperatorCardinality | EstimatedProducedRows | Rows | DbHits | Identifiers |                       Other |
+        |+----------+------------------------------+-----------------------+------+--------+-------------+-----------------------------+
+        ||     NAME |                        1.000 |                 1.000 |   42 |     33 |           n | NOT(anon[123] == anon[321]) |
+        |+----------+------------------------------+-----------------------+------+--------+-------------+-----------------------------+
         |""".stripMargin)
   }
 
@@ -226,11 +226,11 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
 
     val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  UNNAMED2", "  UNNAMED24"))
     renderDetails(plan) should equal(
-      """+----------+---------------+------+--------+-------------+--------------------+
-        || Operator | EstimatedRows | Rows | DbHits | Identifiers |              Other |
-        |+----------+---------------+------+--------+-------------+--------------------+
-        ||     NAME |         1.000 |   42 |     33 |           n | hasLabel(x:Artist) |
-        |+----------+---------------+------+--------+-------------+--------------------+
+      """+----------+------------------------------+-----------------------+------+--------+-------------+--------------------+
+        || Operator | EstimatedOperatorCardinality | EstimatedProducedRows | Rows | DbHits | Identifiers |              Other |
+        |+----------+------------------------------+-----------------------+------+--------+-------------+--------------------+
+        ||     NAME |                        1.000 |                 1.000 |   42 |     33 |           n | hasLabel(x:Artist) |
+        |+----------+------------------------------+-----------------------+------+--------+-------------+--------------------+
         |""".stripMargin)
   }
 
@@ -243,11 +243,11 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
 
     val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  UNNAMED2", "  UNNAMED24"))
     renderDetails(plan) should equal(
-      """+----------+---------------+------+--------+-------------+-----------+
-        || Operator | EstimatedRows | Rows | DbHits | Identifiers |     Other |
-        |+----------+---------------+------+--------+-------------+-----------+
-        ||     NAME |         1.000 |   42 |     33 |           n | length(n) |
-        |+----------+---------------+------+--------+-------------+-----------+
+      """+----------+------------------------------+-----------------------+------+--------+-------------+-----------+
+        || Operator | EstimatedOperatorCardinality | EstimatedProducedRows | Rows | DbHits | Identifiers |     Other |
+        |+----------+------------------------------+-----------------------+------+--------+-------------+-----------+
+        ||     NAME |                        1.000 |                 1.000 |   42 |     33 |           n | length(n) |
+        |+----------+------------------------------+-----------------------+------+--------+-------------+-----------+
         |""".stripMargin)
   }
 
@@ -260,11 +260,11 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
 
     val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  UNNAMED2", "  UNNAMED24"))
     renderDetails(plan) should equal(
-      """+----------+---------------+------+--------+-------------+-------+
-        || Operator | EstimatedRows | Rows | DbHits | Identifiers | Other |
-        |+----------+---------------+------+--------+-------------+-------+
-        ||     NAME |         1.000 |   42 |     33 |           n |    id |
-        |+----------+---------------+------+--------+-------------+-------+
+      """+----------+------------------------------+-----------------------+------+--------+-------------+-------+
+        || Operator | EstimatedOperatorCardinality | EstimatedProducedRows | Rows | DbHits | Identifiers | Other |
+        |+----------+------------------------------+-----------------------+------+--------+-------------+-------+
+        ||     NAME |                        1.000 |                 1.000 |   42 |     33 |           n |    id |
+        |+----------+------------------------------+-----------------------+------+--------+-------------+-------+
         |""".stripMargin)
   }
 
@@ -278,11 +278,11 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
 
     val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  UNNAMED2", "  UNNAMED24"))
     renderDetails(plan) should equal(
-      """+----------+---------------+------+--------+-------------+-------+
-        || Operator | EstimatedRows | Rows | DbHits | Identifiers | Other |
-        |+----------+---------------+------+--------+-------------+-------+
-        ||     NAME |         1.000 |   42 |     33 |           n |    id |
-        |+----------+---------------+------+--------+-------------+-------+
+      """+----------+------------------------------+-----------------------+------+--------+-------------+-------+
+        || Operator | EstimatedOperatorCardinality | EstimatedProducedRows | Rows | DbHits | Identifiers | Other |
+        |+----------+------------------------------+-----------------------+------+--------+-------------+-------+
+        ||     NAME |                        1.000 |                 1.000 |   42 |     33 |           n |    id |
+        |+----------+------------------------------+-----------------------+------+--------+-------------+-------+
         |""".stripMargin)
   }
 }

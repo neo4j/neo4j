@@ -19,10 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cardinality
+
 // Marks a pipe being used by Ronja
 trait RonjaPipe {
   self: Pipe =>
 
-  def estimatedCardinality: Option[Double]
-  def withEstimatedCardinality(estimated: Double): Pipe with RonjaPipe
+  def estimation: Estimation
+  def withEstimation(estimation: Estimation): Pipe with RonjaPipe
+}
+
+case class Estimation(operatorCardinality: Option[Double], producedRows: Option[Double])
+
+object Estimation {
+  val empty = Estimation(None, None)
+
+  def apply(operatorCardinality: Cardinality, producedRows: Cardinality): Estimation =
+    new Estimation(Some(operatorCardinality.amount), Some(producedRows.amount))
 }

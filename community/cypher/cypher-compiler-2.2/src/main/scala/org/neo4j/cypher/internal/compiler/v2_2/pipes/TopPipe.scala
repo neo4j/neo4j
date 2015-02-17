@@ -34,7 +34,7 @@ import scala.math._
  * returning the matching top results, we only keep the top results in heap, which allows us to release memory earlier
  */
 case class TopPipe(source: Pipe, sortDescription: List[SortItem], countExpression: Expression)
-                  (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+                  (val estimation: Estimation = Estimation.empty)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with Comparer with RonjaPipe {
 
   val sortItems = sortDescription.toArray
@@ -122,8 +122,8 @@ case class TopPipe(source: Pipe, sortDescription: List[SortItem], countExpressio
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources
-    copy(source = head)(estimatedCardinality)
+    copy(source = head)(estimation)
   }
 
-  def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
+  def withEstimation(estimation: Estimation): Pipe with RonjaPipe = copy()(estimation = estimation)
 }
