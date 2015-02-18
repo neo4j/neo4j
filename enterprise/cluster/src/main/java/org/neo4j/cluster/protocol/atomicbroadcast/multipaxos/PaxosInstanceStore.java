@@ -29,11 +29,42 @@ import java.util.Queue;
  */
 public class PaxosInstanceStore
 {
-    private static final int MAX_STORED = 100;
+    /*
+     * This represents the number of delivered paxos instances to keep in memory - it is essentially the length
+     * of the delivered queue and therefore the size of the instances map.
+     * The use of this is to server Learn requests. While learning is the final phase of the Paxos algo, it is also
+     * executed when an instance needs to catch up with events that happened in the cluster but it missed because it
+     * was temporarily disconnected.
+     * MAX_STORED therefore represents the maximum number of paxos instances a lagging member may be lagging behind
+     * and be able to recover from. This number must be large enough to account for a few minutes of downtime (like
+     * an extra long GC pause) during which intense broadcasting happens.
+     * Assuming 2 paxos instances per second gives us 120 instances per minute or 1200 instances for 10 minutes of
+     * downtime. We about 5x that here since instances are relatively small in size and we can spare the memory.
+     */
+    // TODO (quite challenging and interesting) Prune this queue aggressively.
+    /*
+     * This queue, as it stands now, will always remain at full capacity. However, if we could figure out that
+     * all cluster members have learned a particular paxos instance then we can remove it since no one will ever
+     * request it. That way the MAX_STORED value should be reached only when an instance is know to be in the failed
+     * state.
+     */
+
+    private static final int MAX_STORED = 5000;
 
     private int queued = 0;
     private Queue<InstanceId> delivered = new LinkedList<InstanceId>();
     private Map<InstanceId, PaxosInstance> instances = new HashMap<InstanceId, PaxosInstance>();
+    private final int maxInstancesToStore;
+
+    public PaxosInstanceStore()
+    {
+        this( MAX_STORED );
+    }
+
+    public PaxosInstanceStore( int maxInstancesToStore )
+    {
+        this.maxInstancesToStore = maxInstancesToStore;
+    }
 
     public PaxosInstance getPaxosInstance( InstanceId instanceId )
     {
@@ -56,7 +87,7 @@ public class PaxosInstanceStore
         queued++;
         delivered.offer( instanceId );
 
-        if ( queued > MAX_STORED )
+        if ( queued > maxInstancesToStore )
         {
             InstanceId removeInstanceId = delivered.poll();
             instances.remove( removeInstanceId );
