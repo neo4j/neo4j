@@ -38,9 +38,11 @@ angular.module('neo4jApp')
       rv or []
 
     error = (msg, exception = "Error", data) ->
-      message: msg
-      exception: exception
-      data: data
+      errors: [
+        message: msg
+        code: exception
+        data: data
+      ]
 
     FrameProvider.interpreters.push
       type: 'clear'
@@ -205,16 +207,16 @@ angular.module('neo4jApp')
           try
             [verb, url, data] = [result[1], result[2], result[3]]
           catch e
-            q.reject(error("Unparseable http request"))
+            q.reject(error("Unparseable http request", 'Request error'))
             return q.promise
 
           verb = verb?.toLowerCase()
           if not verb
-            q.reject(error("Invalid verb, expected 'GET, PUT, POST, HEAD or DELETE'"))
+            q.reject(error("Invalid verb, expected 'GET, PUT, POST, HEAD or DELETE'", 'Request error'))
             return q.promise
 
           if not url?.length > 0
-            q.reject(error("Missing path"))
+            q.reject(error("Missing path", 'Request error'))
             return q.promise
 
           if (verb is 'post' or verb is 'put')
@@ -223,7 +225,7 @@ angular.module('neo4jApp')
               try
                 JSON.parse(data.replace(/\n/g, ""))
               catch e
-                q.reject(error("Payload does not seem to be valid data."))
+                q.reject(error("Payload does not seem to be valid data.", 'Request payload error'))
                 return q.promise
 
           Server[verb]?(url, data)
@@ -232,7 +234,7 @@ angular.module('neo4jApp')
               q.resolve(r.data)
             ,
             (r) ->
-              q.reject(error("Error: #{r.status} - #{r.statusText}"))
+              q.reject(error("Error: #{r.status} - #{r.statusText}", 'Request error'))
           )
 
           q.promise
@@ -273,10 +275,10 @@ angular.module('neo4jApp')
           AuthService.hasValidAuthorization()
           .then(
             (r) ->
-              q.resolve(ConnectionStatusService.getConnectionStatusSummary())
+              q.resolve r
             ,
             (r) ->
-              q.reject(ConnectionStatusService.getConnectionStatusSummary())
+              q.reject r
             )
           q.promise
       ]
@@ -356,6 +358,7 @@ angular.module('neo4jApp')
             )
 
           q.promise.transaction = current_transaction
+          q.promise.reject = q.reject
           q.promise
       ]
 

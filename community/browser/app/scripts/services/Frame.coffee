@@ -62,16 +62,31 @@ angular.module('neo4jApp.services')
             @hasErrors = no
             @isLoading = yes
             @isTerminating = no
+            @closeAttempts = 0
             @response  = null
             @templateUrl = intr.templateUrl
             timer = Timer.start()
             @startTime = timer.started()
             intrPromise = intrFn(query, $q.defer())
             @terminate = =>
+              @resetError()
+              q = $q.defer()
+              if not intrPromise or not intrPromise.transaction
+                q.resolve({})
+                return q.promise
+              else
+                intrPromise.reject 'cancel main request'
               @isTerminating = yes
-              intrPromise?.transaction?.rollback()?.then( =>
-                @isTerminating = no
+              intrPromise.transaction.rollback().then(
+                (r) =>
+                  @isTerminating = no
+                  q.resolve r
+                ,
+                (r) =>
+                  @isTerminating = no
+                  q.reject r
               )
+              return q.promise
 
             $q.when(intrPromise).then(
               (result) =>
@@ -81,15 +96,8 @@ angular.module('neo4jApp.services')
               ,
               (result = {}) =>
                 @isLoading = no
-                @hasErrors = yes
                 @response = null
-                result = result[0] if Array.isArray result
-                result = result.data?.errors[0] || result.errors?[0] || result
-                @errorText = result.message or "Unknown error"
-                @detailedErrorText = " " # ABKTODO consider a friendly message here
-                if result.code?
-                  @errorText = result.code
-                  @detailedErrorText = result.message
+                @setError result
                 @runTime = timer.stop().time()
 
             )
@@ -99,6 +107,35 @@ angular.module('neo4jApp.services')
             @exportable     = @type in ['cypher', 'http']
             @fullscreenable = if intr.fullscreenable is yes or typeof intr.fullscreenable is 'undefined' or intr.fullscreenable is null then yes else @fullscreenable
 
+          setErrorMessages: (result = {}) =>
+            #The "result" from a Cypher syntax error will have the correct format
+            #which is {errors:[{code:string, message:string}]}.
+            #We have to convert the other types.
+
+            #This happens when the connection to the server is lost.
+            result = {errors:[{code: 'Error', message: result}]} if typeof result is "string"
+
+            #This happens for auth errors. We need to grab the Neo4j error code and message.
+            result = result.data if result.status in [401, 429, 422, 404] and result.data.errors
+
+            #This happens for HTTP status error codes
+            result = {errors:[{code: "HTTP Status: #{result.status}", message: "HTTP Status: #{result.status} - #{result.statusText}"}]} if result.status
+
+            errors = result.errors[0]
+            @errorText = errors.code
+            @detailedErrorText = errors.message
+
+          resetError: =>
+            @errorText = @detailedErrorText = ''
+            @hasErrors = no
+          addErrorText: (error) =>
+            @detailedErrorText += error
+            @hasErrors = yes
+          setError: (response) =>
+            @setErrorMessages response
+            @hasErrors = yes
+          getDetailedErrorText: =>
+            @detailedErrorText
 
         class Frames extends Collection
           create: (data = {})  ->
@@ -113,12 +150,20 @@ angular.module('neo4jApp.services')
             if frame
               # Make sure we don't create more frames than allowed
               @add(frame.exec())
-              @close(@first()) until @length <= Settings.maxFrames
+              @close(@first()) if @length > Settings.maxFrames
             frame or rv
 
           close: (frame) ->
-            @remove(frame)
-            frame.terminate()
+            pr = frame.terminate()
+            pr.then(
+              =>
+                @remove frame
+              ,
+              (r) =>
+                return @remove frame unless frame.closeAttempts < 1
+                frame.setError r
+                frame.closeAttempts++
+            )
 
           createOne: (data = {}) ->
             last = @last()

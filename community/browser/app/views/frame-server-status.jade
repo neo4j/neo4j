@@ -18,12 +18,12 @@ div(ng-controller="AuthCtrl")
                     span.center-tbl-left-col.inline
                       | You are connected as user:&nbsp;
                     code
-                      | {{frame.response.user}}
+                      | {{connection_summary.user}}
               .details.col-sm-9(ng-show="!connection_summary.is_connected")
                 p You are not connected to the server.
               .details.col-sm-9(ng-show="!connection_summary.authorization_required")
                 p You have a working connection with the Neo4j database and server auth is disabled.
       .status-bar(ng-class='{error: frame.hasErrors, loading: frame.isLoading}')
-        .status(ng-show="errorText")
-          .fa.fa-exclamation-triangle.icon-warning-sign
-          {{errorText}}
+        .status(ng-show="frame.detailedErrorText")
+          .fa.fa-exclamation-triangle.icon-warning-sign &nbsp;
+          {{frame.detailedErrorText}}

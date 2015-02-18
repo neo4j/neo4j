@@ -90,7 +90,7 @@ angular.module('neo4jApp.services')
               (rr) ->
                 if rr.status is 401
                   clearConnectionAuthData()
-                q.reject rr
+                q.reject ''
             )
         )
         q.promise
@@ -105,15 +105,21 @@ angular.module('neo4jApp.services')
         @hasValidAuthorization()
 
       setNewPassword: (old_passwd, new_passwd) ->
+        q = $q.defer()
         that = @
         setConnectionAuthData ConnectionStatusService.connectedAsUser(), old_passwd
-        promise = Server.post("#{Settings.endpoint.authUser}/#{ConnectionStatusService.connectedAsUser()}/password"
+        Server.post("#{Settings.endpoint.authUser}/#{ConnectionStatusService.connectedAsUser()}/password"
           , {password: new_passwd})
         .then(
           (r) ->
             setConnectionAuthData ConnectionStatusService.connectedAsUser(), new_passwd
+            q.resolve r
+          ,
+          (r) ->
+            that.forget() if r.status is 401
+            q.reject r
         )
-        promise
+        q.promise
 
       getCurrentUser: ->
         ConnectionStatusService.connectedAsUser()

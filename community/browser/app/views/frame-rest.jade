@@ -2,12 +2,14 @@ div(fullscreen)
   .outer
     include partials/frame-common-actions
     .inner
-      .view-result(ng-show='frame.response')
-        pre(output-raw = "frame.response")
+      .view-result
+        pre(output-raw = "frame.response", ng-hide="frame.hasErrors")
+        .view-result-error.result(ng-show='frame.hasErrors')
+          pre(ng-bind="frame.detailedErrorText")
       .status-bar(ng-class='{error: frame.hasErrors, loading: frame.isLoading}')
         .status(ng-hide='frame.isLoading')
           span(ng-show='frame.hasErrors')
-            .fa.fa-exclamation-triangle.icon-warning-sign
+            .fa.fa-exclamation-triangle.icon-warning-sign &nbsp;
             {{frame.errorText}}
           div(ng-hide='frame.hasErrors')
             div(ng-show='frame.response')

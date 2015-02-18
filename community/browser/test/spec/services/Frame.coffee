@@ -29,6 +29,8 @@ describe 'Service: Frame', () ->
   # instantiate service
   Frame = {}
   Settings = {}
+  $rootScope = null
+
   beforeEach ->
     module (FrameProvider) ->
       FrameProvider.interpreters.push
@@ -49,9 +51,10 @@ describe 'Service: Frame', () ->
 
       return
 
-    inject (_Frame_, _Settings_) ->
+    inject (_Frame_, _Settings_, _$rootScope_) ->
       Frame = _Frame_
       Settings = _Settings_
+      $rootScope = _$rootScope_
 
   describe "interpreterFor", ->
     it 'should not return anything when no match', ->
@@ -86,9 +89,11 @@ describe 'Service: Frame', () ->
       for i in [0..Settings.maxFrames]
         Frame.create(input: 'help')
 
+      $rootScope.$apply()
       firstFrame = Frame.first()
 
       Frame.create(input: 'help')
 
+      $rootScope.$apply()
       expect(Frame.length).toBe Settings.maxFrames
       expect(Frame.get(firstFrame)).toBeFalsy()
