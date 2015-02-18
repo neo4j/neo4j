@@ -150,7 +150,7 @@ angular.module('neo4jApp.services')
             if frame
               # Make sure we don't create more frames than allowed
               @add(frame.exec())
-              @close(@first()) until @length <= Settings.maxFrames
+              @close(@first()) if @length > Settings.maxFrames
             frame or rv
 
           close: (frame) ->
