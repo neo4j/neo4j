@@ -91,6 +91,16 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         else
           None
 
+      def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] = {
+        if (config.uniqueIndexes((labelName, propertyKey)))
+          Some(new UniquenessConstraint(
+            semanticTable.resolvedLabelIds(labelName).id,
+            semanticTable.resolvedPropertyKeyNames(propertyKey).id
+          ))
+        else
+          None
+      }
+
       def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] =
         if (config.indexes((labelName, propertyKey)))
           Some(new IndexDescriptor(
@@ -110,7 +120,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         semanticTable.resolvedRelTypeNames.get(relType).map(_.id)
 
       def checkNodeIndex(idxName: String): Unit = ???
-      def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] = ???
       def checkRelIndex(idxName: String): Unit = ???
       def getOrCreateFromSchemaState[T](key: Any, f: => T): T = ???
       def getRelTypeName(id: Int): String = ???

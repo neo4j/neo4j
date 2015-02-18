@@ -46,7 +46,7 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 
-public class DbStructureGuideTest
+public class GraphDbStructureGuideTest
 {
     @Test
     public void visitsLabelIds() throws Exception
@@ -318,7 +318,7 @@ public class DbStructureGuideTest
             throw new IllegalStateException( "Dangling transaction before running visitable" );
         }
 
-        DbStructureGuide analyzer = new DbStructureGuide( graph );
+        GraphDbStructureGuide analyzer = new GraphDbStructureGuide( graph );
         analyzer.accept( visitor );
     }
 

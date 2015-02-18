@@ -99,7 +99,7 @@ public class DbStructureTool
         );
 
         DbStructureVisitor visitor = tracer.newProxy();
-        DbStructureGuide guide = new DbStructureGuide( graph );
+        GraphDbStructureGuide guide = new GraphDbStructureGuide( graph );
         guide.accept( visitor );
         tracer.close();
     }

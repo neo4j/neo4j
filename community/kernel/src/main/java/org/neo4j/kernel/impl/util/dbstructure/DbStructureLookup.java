@@ -17,19 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2
+package org.neo4j.kernel.impl.util.dbstructure;
 
-sealed trait NameId {
-  def id: Int
-}
+import org.neo4j.helpers.Pair;
 
-final case class LabelId(id: Int) extends NameId
-final case class RelTypeId(id: Int) extends NameId
-final case class PropertyKeyId(id: Int) extends NameId
+import java.util.Iterator;
 
-object NameId {
-  val WILDCARD: Int = -1
+public interface DbStructureLookup
+{
+    Iterator<Pair<Integer, String>> labels();
+    Iterator<Pair<Integer, String>> properties();
+    Iterator<Pair<Integer, String>> relationshipTypes();
 
-  implicit def toKernelEncode(nameId: NameId): Int = nameId.id
-  implicit def toKernelEncode(nameId: Option[NameId]): Int = nameId.map(toKernelEncode).getOrElse(WILDCARD)
+    Iterator<Pair<String, String>> knownIndices();
+    Iterator<Pair<String, String>> knownUniqueIndices();
+    Iterator<Pair<String, String>> knownUniqueConstraints();
+
+    long nodesWithLabelCardinality( int labelId );
+    long cardinalityByLabelsAndRelationshipType( int fromLabelId, int relTypeId, int toLabelId );
+    double indexSelectivity( int labelId, int propertyKeyId );
 }

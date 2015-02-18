@@ -45,17 +45,8 @@ import static java.lang.String.format;
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 
-public class DbStructureGuide implements Visitable<DbStructureVisitor>
+public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
 {
-    private static Label WILDCARD_LABEL = new Label()
-    {
-        @Override
-        public String name()
-        {
-            return "";
-        }
-    };
-
     private static RelationshipType WILDCARD_REL_TYPE = new RelationshipType()
     {
         @Override
@@ -69,7 +60,7 @@ public class DbStructureGuide implements Visitable<DbStructureVisitor>
     private final ThreadToStatementContextBridge bridge;
     private final GlobalGraphOperations glops;
 
-    public DbStructureGuide( GraphDatabaseService graph )
+    public GraphDbStructureGuide( GraphDatabaseService graph )
     {
         this.db = (GraphDatabaseAPI) graph;
         DependencyResolver dependencyResolver = db.getDependencyResolver();

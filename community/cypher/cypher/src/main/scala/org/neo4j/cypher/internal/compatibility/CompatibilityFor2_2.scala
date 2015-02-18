@@ -155,7 +155,7 @@ trait CompatibilityFor2_2 {
     def isPeriodicCommit = inner.isPeriodicCommit
 
     def isStale(lastTxId: () => Long, statement: Statement) =
-      inner.isStale(lastTxId, new TransactionBoundGraphStatistics(statement))
+      inner.isStale(lastTxId, TransactionBoundGraphStatistics(statement))
   }
 }
 
