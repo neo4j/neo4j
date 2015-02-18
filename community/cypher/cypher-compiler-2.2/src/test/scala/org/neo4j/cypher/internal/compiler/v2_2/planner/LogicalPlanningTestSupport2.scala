@@ -32,8 +32,10 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.Query
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter.unnestApply
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{GraphStatistics, PlanContext}
+import org.neo4j.helpers.collection.Visitable
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
 
 import scala.language.implicitConversions
 
@@ -143,7 +145,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
           tokenResolver.resolve(ast)(newTable, planContext)
           val unionQuery = ast.asUnionQuery
           val metrics = metricsFactory.newMetrics(planContext.statistics, newTable)
-          val context = LogicalPlanningContext(planContext, metrics, newTable, queryGraphSolver, QueryGraphCardinalityInput(Map.empty, Cardinality(1)))
+          val context = LogicalPlanningContext(planContext, metrics, newTable, queryGraphSolver, QueryGraphCardinalityInput.empty)
           val plannerQuery = unionQuery.queries.head
           val resultPlan = strategy.internalPlan(plannerQuery)(context)
           SemanticPlan(resultPlan.endoRewrite(unnestApply), newTable)
@@ -160,10 +162,13 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
           tokenResolver.resolve(ast)(newTable, planContext)
           val unionQuery = ast.asUnionQuery
           val metrics = metricsFactory.newMetrics(planContext.statistics, newTable)
-          val context = LogicalPlanningContext(planContext, metrics, newTable, queryGraphSolver, QueryGraphCardinalityInput(Map.empty, Cardinality(1)))
+          val context = LogicalPlanningContext(planContext, metrics, newTable, queryGraphSolver, QueryGraphCardinalityInput.empty)
           (strategy.plan(unionQuery)(context), newTable)
       }
     }
+
+    def estimate(qg: QueryGraph, input: QueryGraphCardinalityInput = QueryGraphCardinalityInput.empty) =
+      metricsFactory.newMetrics(config.graphStatistics, semanticTable).queryGraphCardinalityModel(qg, input)
 
     def withLogicalPlanningContext[T](f: (C, LogicalPlanningContext) => T): T = {
       val metrics = metricsFactory.newMetrics(config.graphStatistics, semanticTable)
@@ -186,6 +191,9 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     plans.foldLeft(ctx.strategy.emptyPlanTable)(_ + _)
 
   class given extends StubbedLogicalPlanningConfiguration(realConfig)
+
+  class fromDbStructure(dbStructure: Visitable[DbStructureVisitor])
+    extends DelegatingLogicalPlanningConfiguration(DbStructureLogicalPlanningConfiguration(dbStructure))
 
   implicit def idName(name: String): IdName = IdName(name)
 

@@ -39,6 +39,18 @@ trait LogicalPlanningConfiguration {
   protected def mapCardinality(pf: PartialFunction[LogicalPlan, Double]): PartialFunction[LogicalPlan, Cardinality] = pf.andThen(Cardinality.apply)
 }
 
+class DelegatingLogicalPlanningConfiguration(val parent: LogicalPlanningConfiguration) extends LogicalPlanningConfiguration {
+  override def computeSemanticTable = parent.computeSemanticTable
+  override def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, semanticTable: SemanticTable): CardinalityModel = parent.cardinalityModel(queryGraphCardinalityModel, semanticTable)
+  override def costModel(cardinality: CardinalityModel) = parent.costModel(cardinality)
+  override def graphStatistics = parent.graphStatistics
+  override def indexes = parent.indexes
+  override def uniqueIndexes = parent.uniqueIndexes
+  override def labelCardinality = parent.labelCardinality
+  override def knownLabels = parent.knownLabels
+  override def qg = parent.qg
+}
+
 trait LogicalPlanningConfigurationAdHocSemanticTable {
   self: LogicalPlanningConfiguration =>
 
