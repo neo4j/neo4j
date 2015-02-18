@@ -35,7 +35,6 @@ import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalContext;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.UniquenessFactory;
-import org.neo4j.kernel.Uniqueness;
 
 /**
  * A {@link TraversalBranch} that abstracts the fact that it is actually
