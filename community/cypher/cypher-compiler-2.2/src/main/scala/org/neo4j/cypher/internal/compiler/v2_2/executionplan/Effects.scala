@@ -61,7 +61,7 @@ object Effects {
   }
 
   implicit class EffectfulReturnItems(iter: Traversable[ReturnItem]) {
-    def effects: Effects = iter.map(_.expression. effects).reduced
+    def effects: Effects = iter.map(_.expression.effects).reduced
   }
 
   implicit class EffectfulUpdateAction(commands: Traversable[UpdateAction]) {
