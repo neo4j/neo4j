@@ -178,11 +178,10 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     }
   }
 
-  // FIX: 2014-09-15 Fix selectivity of unique indices by tracking number of indexed entities in statistics model
   test("should use indexes for large collections if it is a unique index") {
     (new given {
       uniqueIndexOn("Awesome", "prop")
-    } planFor "MATCH (n:Awesome) WHERE n.prop IN [1,2,3,4,5,6,7,8,9,10] RETURN n").plan should beLike {
+    } planFor "MATCH (n:Awesome) WHERE n.prop IN [1,2,3,4,5] RETURN n").plan should beLike {
       case _: NodeIndexUniqueSeek => ()
     }
   }

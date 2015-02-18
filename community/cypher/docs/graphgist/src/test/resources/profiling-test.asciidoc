@@ -6,6 +6,13 @@
 CREATE (adam:Person {name: 'Adam'})
 CREATE (pernilla:Person {name: 'Pernilla'})
 CREATE (david:Person {name: 'David'})
+CREATE (emil:Person {name: 'Emil'})
+CREATE (Johan:Person {name: 'Johan'})
+CREATE (anders:Person {name: 'Anders1'})
+CREATE (philip:Person {name: 'Philp'})
+CREATE (andres:Person {name: 'Andres'})
+CREATE (peter:Person {name: 'Peter'})
+CREATE (tobias:Person {name: 'Tobias'})
 CREATE (adam)-[:FRIEND]->(pernilla)
 CREATE (pernilla)-[:FRIEND]->(david)
 ----

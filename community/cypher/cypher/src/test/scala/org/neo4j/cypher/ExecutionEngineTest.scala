@@ -280,8 +280,7 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   }
 
   test("parameterTypeErrorShouldBeNicelyExplained") {
-    createNodes("A")
-
+    for (i <- 1 to 10) createNode()
     val query = "match (pA) where id(pA) = {a} return pA"
 
     intercept[CypherTypeException] {

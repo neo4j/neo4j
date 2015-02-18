@@ -25,7 +25,12 @@ import org.junit.Test
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.hamcrest.CoreMatchers._
 
+import scala.collection.immutable.IndexedSeq
+
 class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSupport with GraphIcing {
+
+  //need a couple of 'Person' to make index operations more efficient than label scans
+  override val setupQueries = (1 to 20 map (_ => """CREATE (:Person)""")).toList
 
   override def graphDescription = List(
     "andres:Person KNOWS mark:Person"
