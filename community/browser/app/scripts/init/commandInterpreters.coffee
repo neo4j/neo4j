@@ -358,6 +358,7 @@ angular.module('neo4jApp')
             )
 
           q.promise.transaction = current_transaction
+          q.promise.reject = q.reject
           q.promise
       ]
 

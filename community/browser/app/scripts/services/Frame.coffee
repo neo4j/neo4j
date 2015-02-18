@@ -74,6 +74,8 @@ angular.module('neo4jApp.services')
               if not intrPromise or not intrPromise.transaction
                 q.resolve({})
                 return q.promise
+              else
+                intrPromise.reject 'cancel main request'
               @isTerminating = yes
               intrPromise.transaction.rollback().then(
                 (r) =>
