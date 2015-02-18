@@ -84,7 +84,7 @@ public class AuthorizationFilter implements Filter
 
         final String path = request.getContextPath() + ( request.getPathInfo() == null ? "" : request.getPathInfo() );
 
-        if ( whitelisted( path ) )
+        if ( request.getMethod().equals( "OPTIONS" ) || whitelisted( path ) )
         {
             filterChain.doFilter( servletRequest, servletResponse );
             return;
