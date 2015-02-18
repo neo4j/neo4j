@@ -28,8 +28,6 @@ import java.util.List;
  */
 public class PaxosInstance
 {
-
-
     enum State
     {
         empty,
@@ -37,7 +35,7 @@ public class PaxosInstance
         p1_ready,
         p2_pending,
         closed,
-        delivered;
+        delivered
     }
     PaxosInstanceStore store;
 
@@ -45,9 +43,9 @@ public class PaxosInstance
     State state = State.empty;
     long ballot = 0;
     List<URI> acceptors;
-    List<ProposerMessage.PromiseState> promises = new ArrayList<ProposerMessage.PromiseState>();
-    List<ProposerMessage.AcceptedState> accepts = new ArrayList<ProposerMessage.AcceptedState>();
-    List<ProposerMessage.RejectAcceptState> rejectedAccepts = new ArrayList<ProposerMessage.RejectAcceptState>();
+    List<ProposerMessage.PromiseState> promises = new ArrayList<>();
+    List<ProposerMessage.AcceptedState> accepts = new ArrayList<>();
+    List<ProposerMessage.RejectAcceptState> rejectedAccepts = new ArrayList<>();
     Object value_1;
     long phase1Ballot = 0;
     Object value_2;
