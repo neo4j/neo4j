@@ -62,6 +62,7 @@ angular.module('neo4jApp.services')
             @hasErrors = no
             @isLoading = yes
             @isTerminating = no
+            @closeAttempts = 0
             @response  = null
             @templateUrl = intr.templateUrl
             timer = Timer.start()
@@ -69,10 +70,21 @@ angular.module('neo4jApp.services')
             intrPromise = intrFn(query, $q.defer())
             @terminate = =>
               @resetError()
+              q = $q.defer()
+              if not intrPromise or not intrPromise.transaction
+                q.resolve({})
+                return q.promise
               @isTerminating = yes
-              intrPromise?.transaction?.rollback()?.then( =>
-                @isTerminating = no
+              intrPromise.transaction.rollback().then(
+                (r) =>
+                  @isTerminating = no
+                  q.resolve r
+                ,
+                (r) =>
+                  @isTerminating = no
+                  q.reject r
               )
+              return q.promise
 
             $q.when(intrPromise).then(
               (result) =>
@@ -140,8 +152,16 @@ angular.module('neo4jApp.services')
             frame or rv
 
           close: (frame) ->
-            @remove(frame)
-            frame.terminate()
+            pr = frame.terminate()
+            pr.then(
+              =>
+                @remove frame
+              ,
+              (r) =>
+                return @remove frame unless frame.closeAttempts < 1
+                frame.setError r
+                frame.closeAttempts++
+            )
 
           createOne: (data = {}) ->
             last = @last()
