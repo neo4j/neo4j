@@ -503,7 +503,11 @@ public interface ConsistencyReport
         @Documented
         void nameBlockNotInUse( DynamicRecord record );
 
-        /** The name is empty. */
+        /**
+         * The token name is empty. Empty token names are discouraged and also prevented in version 2.0.x and above,
+         * but they can be accessed just like any other tokens. It's possible that this token have been created
+         * in an earlier version where there were no checks for name being empty.
+         */
         @Documented
         @Warning
         void emptyName( DynamicRecord name );
