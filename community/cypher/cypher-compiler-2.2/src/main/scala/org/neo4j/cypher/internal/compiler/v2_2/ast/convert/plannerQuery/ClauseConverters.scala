@@ -133,7 +133,7 @@ object ClauseConverters {
           qg => qg.
             addSelections(selections).
             addPatternNodes(patternContent.nodeIds: _*).
-            addPatternRels(patternContent.rels).
+            addPatternRelationships(patternContent.rels).
             addHints(clause.hints).
             addShortestPaths(patternContent.shortestPaths: _*)
         }

@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{Selections, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, Selections}
 import org.neo4j.graphdb.Direction
 
 class QueryGraphCombinationsTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -106,6 +106,20 @@ class QueryGraphCombinationsTest extends CypherFunSuite with AstConstructionTest
       patternRelationships = Set(R5, R6, R7)
     ))
 
+  val singleRelWithArgs = (
+    "WITH x MATCH a-[r1]->b",
+    QueryGraph(
+      patternNodes = Set(A, B),
+      patternRelationships = Set(R1),
+      argumentIds = Set(X)))
+
+  val singleRelWithArgs2 = (
+    "WITH a, b MATCH a-[r1]->b",
+    QueryGraph(
+      patternNodes = Set(A, B),
+      patternRelationships = Set(R1),
+      argumentIds = Set(A, B)))
+
   val tests = Seq(
     // pattern,  size          expectedResult
     (singleNode,       0, Set(
@@ -156,6 +170,13 @@ class QueryGraphCombinationsTest extends CypherFunSuite with AstConstructionTest
       QueryGraph(patternNodes = Set(C)),
       QueryGraph(patternNodes = Set(X)))),
 
+    (singleRelWithArgs, 0, Set(
+      QueryGraph(patternNodes = Set(A), argumentIds = Set(X)),
+      QueryGraph(patternNodes = Set(B), argumentIds = Set(X)))),
+
+    (singleRelWithArgs2, 0, Set(
+      QueryGraph(patternNodes = Set(A, B), argumentIds = Set(A, B)))),
+
     (singleRel,        1, Set(
       QueryGraph(
         patternNodes = Set(A, B),
@@ -202,6 +223,18 @@ class QueryGraphCombinationsTest extends CypherFunSuite with AstConstructionTest
       QueryGraph(
         patternNodes = Set(C, X),
         patternRelationships = Set(R7)))),
+
+    (singleRelWithArgs,      1, Set(
+      QueryGraph(
+        patternNodes = Set(A, B),
+        patternRelationships = Set(R1),
+        argumentIds = Set(X)))),
+
+    (singleRelWithArgs2,      1, Set(
+      QueryGraph(
+        patternNodes = Set(A, B),
+        patternRelationships = Set(R1),
+        argumentIds = Set(A, B)))),
 
     (twoRels,          2, Set(
       QueryGraph(

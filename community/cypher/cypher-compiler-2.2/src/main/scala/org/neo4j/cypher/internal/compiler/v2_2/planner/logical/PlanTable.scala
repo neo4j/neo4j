@@ -40,6 +40,7 @@ trait PlanTable extends ((QueryGraph) => LogicalPlan) {
   def isEmpty: Boolean = m.isEmpty
   def plans: Seq[LogicalPlan] = m.values.toSeq
   def get(queryGraph: QueryGraph): Option[LogicalPlan] = m.get(queryGraph)
+  def getOrElse(queryGraph: QueryGraph, default: => LogicalPlan): LogicalPlan = m.getOrElse(queryGraph, default)
   def apply(queryGraph: QueryGraph): LogicalPlan = m(queryGraph)
   override def toString() = m.toString()
 

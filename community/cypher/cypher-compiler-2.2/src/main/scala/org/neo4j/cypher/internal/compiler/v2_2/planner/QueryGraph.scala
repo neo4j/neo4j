@@ -40,14 +40,14 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   def addPatternNodes(nodes: IdName*): QueryGraph = copy(patternNodes = patternNodes ++ nodes)
 
-  def addPatternRel(rel: PatternRelationship): QueryGraph =
+  def addPatternRelationship(rel: PatternRelationship): QueryGraph =
     copy(
       patternNodes = patternNodes + rel.nodes._1 + rel.nodes._2,
       patternRelationships = patternRelationships + rel
     )
 
-  def addPatternRels(rels: Seq[PatternRelationship]) =
-    rels.foldLeft[QueryGraph](this)((qg, rel) => qg.addPatternRel(rel))
+  def addPatternRelationships(rels: Seq[PatternRelationship]) =
+    rels.foldLeft[QueryGraph](this)((qg, rel) => qg.addPatternRelationship(rel))
 
   def addShortestPath(shortestPath: ShortestPathPattern): QueryGraph = {
     val rel = shortestPath.rel
