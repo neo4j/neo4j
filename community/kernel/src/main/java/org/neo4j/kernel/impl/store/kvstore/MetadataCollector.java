@@ -94,12 +94,12 @@ abstract class MetadataCollector<META> extends Metadata<META>
         return catalogue;
     }
 
-    int headerRecords()
+    int headerEntries()
     {
         return header;
     }
 
-    int totalRecords()
+    int totalEntries()
     {
         return header + data;
     }

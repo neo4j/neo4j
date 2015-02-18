@@ -55,7 +55,7 @@ public class KeyValueStoreFile<META> implements Closeable
         BigEndianByteArrayBuffer searchKey = buffer( keySize ), key = buffer( keySize ), value = buffer( valueSize );
         search.searchKey( searchKey );
         int page = findPage( searchKey, pageCatalogue );
-        if ( page < 0 )
+        if ( page < 0 || (page >= pageCatalogue.length / (keySize * 2)) )
         {
             return false;
         }
@@ -66,7 +66,7 @@ public class KeyValueStoreFile<META> implements Closeable
                 return false;
             }
             // finds and reads the first key/value pair
-            int offset = findOffset( cursor, searchKey, key, value );
+            int offset = findByteOffset( cursor, searchKey, key, value );
             try
             {
                 return Arrays.equals( searchKey.buffer, key.buffer );
@@ -80,11 +80,11 @@ public class KeyValueStoreFile<META> implements Closeable
 
     public DataProvider dataProvider() throws IOException
     {
-        int pageId = headerRecords * (keySize + valueSize) / file.pageSize();
+        int pageId = headerEntries * (keySize + valueSize) / file.pageSize();
         final PageCursor cursor = file.io( pageId, PF_NO_GROW | PF_SHARED_LOCK );
         return new DataProvider()
         {
-            int offset = headerRecords * (keySize + valueSize);
+            int offset = headerEntries * (keySize + valueSize);
             boolean done = !cursor.next();
 
             @Override
@@ -122,14 +122,14 @@ public class KeyValueStoreFile<META> implements Closeable
 
     public void scan( KeyValueVisitor visitor ) throws IOException
     {
-        scanAll( file, headerRecords * (keySize + valueSize), visitor,
+        scanAll( file, headerEntries * (keySize + valueSize), visitor,
                  new BigEndianByteArrayBuffer( new byte[keySize] ),
                  new BigEndianByteArrayBuffer( new byte[valueSize] ) );
     }
 
-    public int recordCount()
+    public int entryCount()
     {
-        return totalRecords - headerRecords;
+        return totalEntries - headerEntries;
     }
 
     @Override
@@ -142,9 +142,9 @@ public class KeyValueStoreFile<META> implements Closeable
     private final int keySize;
     private final int valueSize;
     private final META metadata;
-    private final int headerRecords;
-    /** Includes header records (and data records), but not the trailer record. */
-    private final int totalRecords;
+    private final int headerEntries;
+    /** Includes header entries (and data entries), but not the trailer entry. */
+    private final int totalEntries;
     /**
      * The page catalogue is used to find the appropriate (first) page without having to do I/O.
      * <p/>
@@ -157,8 +157,8 @@ public class KeyValueStoreFile<META> implements Closeable
         this.file = file;
         this.keySize = keySize;
         this.valueSize = valueSize;
-        this.headerRecords = metadata.headerRecords();
-        this.totalRecords = metadata.totalRecords();
+        this.headerEntries = metadata.headerEntries();
+        this.totalEntries = metadata.totalEntries();
         this.metadata = metadata.metadata();
         this.pageCatalogue = metadata.pageCatalogue();
     }
@@ -277,36 +277,49 @@ public class KeyValueStoreFile<META> implements Closeable
      * @param searchKey the key to search for.
      * @param key       a buffer to write the key into.
      * @param value     a buffer to write the value into.
-     * @return the offset (in the given page) of the first entry with a key that is greater than or equal to the given
-     * key.
+     * @return the offset (in bytes within the given page) of the first entry with a key that is greater than or equal
+     * to the given key.
      */
-    private int findOffset( PageCursor cursor, BigEndianByteArrayBuffer searchKey,
-                            BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value ) throws IOException
+    private int findByteOffset( PageCursor cursor, BigEndianByteArrayBuffer searchKey,
+                                BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value ) throws IOException
     {
-        int recordSize = searchKey.size() + value.size(), last = maxPage( file.pageSize(), recordSize, totalRecords );
-        int record = recordOffset( cursor, searchKey, key, value,
-                        /* min: */ (cursor.getCurrentPageId() == 0) ? headerRecords : 0/*skip header in first page*/,
-                        /* max: */ (cursor.getCurrentPageId() == last)/*exclude trailer in last page*/
-                                   ? (totalRecords % (file.pageSize() / recordSize)) - 1
-                                   : file.pageSize() / recordSize );
-        return record * recordSize;
+        int entrySize = searchKey.size() + value.size(), last = maxPage( file.pageSize(), entrySize, totalEntries );
+        int firstEntry = (cursor.getCurrentPageId() == 0) ? headerEntries : 0; // skip header in first page
+        int entryCount = totalEntries % (file.pageSize() / entrySize);
+        // If the last page is full, 'entryCount' will be 0 at this point.
+        if ( cursor.getCurrentPageId() != last || entryCount == 0 )
+        { // The current page is a full page (either because it has pages after it, or the last page is actually full).
+            entryCount = file.pageSize() / entrySize;
+        }
+        int entryOffset = findEntryOffset( cursor, searchKey, key, value, firstEntry, /*lastEntry=*/entryCount - 1 );
+        return entryOffset * entrySize;
     }
 
-    static int maxPage( int pageSize, int recordSize, int totalRecords )
+    static int maxPage( int pageSize, int entrySize, int totalEntries )
     {
-        int maxPage = totalRecords / (pageSize / recordSize);
-        return maxPage * (pageSize / recordSize) == totalRecords ? maxPage - 1 : maxPage;
+        int maxPage = totalEntries / (pageSize / entrySize);
+        return maxPage * (pageSize / entrySize) == totalEntries ? maxPage - 1 : maxPage;
     }
 
-    static int recordOffset( PageCursor cursor, BigEndianByteArrayBuffer searchKey,
-                             BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value, int min, int max )
+    /**
+     * @param cursor    the cursor for the page to search for the key in.
+     * @param searchKey the key to search for.
+     * @param key       a buffer to write the key into.
+     * @param value     a buffer to write the value into.
+     * @param min       the offset (in number of entries within the page) of the first entry in the page.
+     * @param max       the offset (in number of entries within the page) of the last entry in the page.
+     * @return the offset (in number of entries within the page) of the first entry with a key that is greater than or
+     * equal to the given key.
+     */
+    static int findEntryOffset( PageCursor cursor, BigEndianByteArrayBuffer searchKey,
+                                BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value, int min, int max )
             throws IOException
     {
-        int recordSize = key.size() + value.size();
+        int entrySize = key.size() + value.size();
         for ( int mid; min <= max; )
         {
             mid = min + (max - min) / 2;
-            readKeyValuePair( cursor, mid * recordSize, key, value );
+            readKeyValuePair( cursor, mid * entrySize, key, value );
             if ( min == max )
             {
                 break; // break here instead of in the loop condition to ensure the right key is read

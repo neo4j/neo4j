@@ -78,7 +78,7 @@ public class CountsComputerTest
                                                            new File( dir, COUNTS_STORE_BASE ) ) );
             // a transaction for creating the label and a transaction for the node
             assertEquals( BASE_TX_ID, store.txId() );
-            assertEquals( 0, store.totalRecordsStored() );
+            assertEquals( 0, store.totalEntriesStored() );
         }
     }
 
@@ -108,7 +108,7 @@ public class CountsComputerTest
             CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
                                                            new File( dir, COUNTS_STORE_BASE ) ) );
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1, store.txId() );
-            assertEquals( 4, store.totalRecordsStored() );
+            assertEquals( 4, store.totalEntriesStored() );
             assertEquals( 4, get( store, nodeKey( -1 ) ) );
             assertEquals( 1, get( store, nodeKey( 0 ) ) );
             assertEquals( 1, get( store, nodeKey( 1 ) ) );
@@ -144,7 +144,7 @@ public class CountsComputerTest
             CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
                                                            new File( dir, COUNTS_STORE_BASE ) ) );
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1, store.txId() );
-            assertEquals( 3, store.totalRecordsStored() );
+            assertEquals( 3, store.totalEntriesStored() );
             assertEquals( 3, get( store, nodeKey( -1 ) ) );
             assertEquals( 1, get( store, nodeKey( 0 ) ) );
             assertEquals( 1, get( store, nodeKey( 1 ) ) );
@@ -181,7 +181,7 @@ public class CountsComputerTest
                                                            new File( dir, COUNTS_STORE_BASE ) ) );
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1, store.txId() );
 //            assertEquals( 11, store.totalRecordsStored() ); // we do not support yet (label,type,label) counts
-            assertEquals( 9, store.totalRecordsStored() );
+            assertEquals( 9, store.totalEntriesStored() );
             assertEquals( 2, get( store, nodeKey( -1 ) ) );
             assertEquals( 1, get( store, nodeKey( 0 ) ) );
             assertEquals( 1, get( store, nodeKey( 1 ) ) );
@@ -222,7 +222,7 @@ public class CountsComputerTest
                                                            new File( dir, COUNTS_STORE_BASE ) ) );
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1 + 1, store.txId() );
 //            assertEquals( 15, store.totalRecordsStored() ); // we do not support yet (label,type,label) counts
-            assertEquals( 13, store.totalRecordsStored() );
+            assertEquals( 13, store.totalEntriesStored() );
             assertEquals( 4, get( store, nodeKey( -1 ) ) );
             assertEquals( 1, get( store, nodeKey( 0 ) ) );
             assertEquals( 1, get( store, nodeKey( 1 ) ) );
@@ -269,7 +269,7 @@ public class CountsComputerTest
             CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
                                                            new File( dir, COUNTS_STORE_BASE ) ) );
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1, store.txId() );
-            assertEquals( 22, store.totalRecordsStored() );
+            assertEquals( 22, store.totalEntriesStored() );
 //            assertEquals( 30, store.totalRecordsStored() ); // we do not support yet (label,type,label) counts
             assertEquals( 3, get( store, nodeKey( -1 ) ) );
             assertEquals( 1, get( store, nodeKey( 0 ) ) );

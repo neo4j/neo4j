@@ -62,7 +62,7 @@ public class CountsStoreApplier extends NeoCommandHandler.Adapter
         countsUpdater.close();
     }
 
-    private static <KEY> IntCounter counter( Map<KEY,IntCounter> map, KEY key )
+    private static <KEY> IntCounter counter( Map<KEY, IntCounter> map, KEY key )
     {
         IntCounter counter = map.get( key );
         if ( counter == null )
@@ -135,9 +135,9 @@ public class CountsStoreApplier extends NeoCommandHandler.Adapter
         return false;
     }
 
-    private IntCounter label( Number label )
+    private IntCounter label( long label )
     {
-        return counter( labelDelta, label.intValue() );
+        return counter( labelDelta, (int) label );
     }
 
     @Override
@@ -175,7 +175,7 @@ public class CountsStoreApplier extends NeoCommandHandler.Adapter
     {
         // nodes
         countsUpdater.incrementNodeCount( ANY_LABEL, nodesDelta );
-        for ( Map.Entry<Integer,IntCounter> label : labelDelta.entrySet() )
+        for ( Map.Entry<Integer, IntCounter> label : labelDelta.entrySet() )
         {
             countsUpdater.incrementNodeCount( label.getKey(), label.getValue().value() );
         }

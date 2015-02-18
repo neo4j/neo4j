@@ -21,12 +21,16 @@ package org.neo4j.kernel.impl.store.counts;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.impl.api.CountsVisitor;
+import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCache;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.kvstore.MetadataVisitor;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
 import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
@@ -34,87 +38,177 @@ import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
-import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSampleKey;
-import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexStatisticsKey;
-import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
-import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class DumpCountsStore implements CountsVisitor, MetadataVisitor<Metadata>, UnknownKey.Visitor
 {
-    public static void main( String[] args ) throws IOException
+    public static void main( String... args ) throws IOException
     {
         if ( args.length != 1 )
         {
-            System.out.println( "one argument describing the path to the store" );
+            System.err.println( "Expecting exactly one argument describing the path to the store" );
             System.exit( 1 );
         }
+        dumpCountsStore( new DefaultFileSystemAbstraction(), new File( args[0] ), System.out );
+    }
 
-        final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        File path = new File( args[0] );
-
+    public static void dumpCountsStore( FileSystemAbstraction fs, File path, PrintStream out ) throws IOException
+    {
         try ( StandalonePageCache pages = createPageCache( fs, "counts-store-dump" ); Lifespan life = new Lifespan() )
         {
             if ( fs.isDirectory( path ) )
             {
-                life.add( new StoreFactory( fs, path, pages, DEV_NULL, new Monitors() ).newCountsStore() )
-                    .accept( new DumpCountsStore() );
+                StoreFactory factory = new StoreFactory( fs, path, pages, DEV_NULL, new Monitors() );
+                life.add( factory.newCountsStore() ).accept( new DumpCountsStore( out, factory ) );
             }
             else
             {
                 CountsTracker tracker = new CountsTracker( DEV_NULL, fs, pages, path );
                 if ( fs.fileExists( path ) )
                 {
-                    tracker.visitFile( path, new DumpCountsStore() );
+                    tracker.visitFile( path, new DumpCountsStore( out ) );
                 }
                 else
                 {
-                    life.add( tracker ).accept( new DumpCountsStore() );
+                    life.add( tracker ).accept( new DumpCountsStore( out ) );
                 }
             }
         }
     }
 
+    private static final Token[] NO_TOKENS = new Token[0];
+
+    DumpCountsStore( PrintStream out )
+    {
+        this( out, NO_TOKENS, NO_TOKENS, NO_TOKENS );
+    }
+
+    DumpCountsStore( PrintStream out, StoreFactory factory )
+    {
+        this( out,
+              allTokensFrom( factory.newLabelTokenStore() ),
+              allTokensFrom( factory.newRelationshipTypeTokenStore() ),
+              allTokensFrom( factory.newPropertyKeyTokenStore() ) );
+    }
+
+    private final PrintStream out;
+    private final Token[] labels;
+    private final Token[] relationshipTypes;
+    private final Token[] propertyKeys;
+
+    private DumpCountsStore( PrintStream out, Token[] labels, Token[] relationshipTypes, Token[] propertyKeys )
+    {
+        this.out = out;
+        this.labels = labels;
+        this.relationshipTypes = relationshipTypes;
+        this.propertyKeys = propertyKeys;
+    }
+
     @Override
     public void visitMetadata( File path, Metadata metadata, int entryCount )
     {
-        System.out.println( "Counts Store:\t" + path );
-        System.out.println( "\ttxId:\t" + metadata.txId );
-        System.out.println( "\tminor version:\t" + metadata.minorVersion );
-        System.out.println( "\tentries:\t" + entryCount );
-        System.out.println( "Entries:" );
+        out.printf( "Counts Store:\t%s%n", path );
+        out.printf( "\ttxId:\t%d%n", metadata.txId );
+        out.printf( "\tminor version:\t%d%n", metadata.minorVersion );
+        out.printf( "\tentries:\t%d%n", entryCount );
+        out.println( "Entries:" );
     }
 
     @Override
     public void visitNodeCount( int labelId, long count )
     {
-        System.out.println( "\t" + nodeKey( labelId ) + ":\t" + count );
+        out.printf( "\tNode[(%s)]:\t%d%n", label( labelId ), count );
     }
 
     @Override
     public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
     {
-        System.out.println( "\t" + relationshipKey( startLabelId, typeId, endLabelId ) + ":\t" + count );
+        out.printf( "\tRelationship[(%s)-%s->(%s)]:\t%d%n",
+                    label( startLabelId ), relationshipType( typeId ), label( endLabelId ),
+                    count );
     }
 
     @Override
     public void visitIndexStatistics( int labelId, int propertyKeyId, long updates, long size )
     {
-        System.out.println( "\t" + indexStatisticsKey( labelId, propertyKeyId ) +
-                            ":\tupdates=" + updates + ", size=" + size );
+        out.printf( "\tIndexStatistics[(%s {%s})]:\tupdates=%d, size=%d%n",
+                    label( labelId ), propertyKey( propertyKeyId ),
+                    updates, size );
     }
 
     @Override
     public void visitIndexSample( int labelId, int propertyKeyId, long unique, long size )
     {
-        System.out.println( "\t" + indexSampleKey( labelId, propertyKeyId ) +
-                            ":\tunique=" + unique + ", size=" + size );
+        out.printf( "\tIndexSample[(%s {%s})]:\tunique=%d, size=%d%n",
+                    label( labelId ), propertyKey( propertyKeyId ),
+                    unique, size );
     }
 
     @Override
     public boolean visitUnknownKey( ReadableBuffer key, ReadableBuffer value )
     {
-        System.out.println( "\t" + key + ":\t" + value );
+        out.printf( "\t%s:\t%s%n", key, value );
         return true;
+    }
+
+    private String label( int id )
+    {
+        if ( id == ReadOperations.ANY_LABEL )
+        {
+            return "";
+        }
+        return token( new StringBuilder(), labels, ":", "label", id ).toString();
+    }
+
+    private String propertyKey( int id )
+    {
+        return token( new StringBuilder(), propertyKeys, "", "key", id ).toString();
+    }
+
+    private String relationshipType( int id )
+    {
+        if ( id == ReadOperations.ANY_RELATIONSHIP_TYPE )
+        {
+            return "";
+        }
+        return token( new StringBuilder().append( '[' ), relationshipTypes, ":", "type", id ).append( ']' ).toString();
+    }
+
+    private static StringBuilder token( StringBuilder result, Token[] tokens, String pre, String handle, int id )
+    {
+        Token token = null;
+        // search backwards for the token
+        for ( int i = (id < tokens.length) ? id : tokens.length - 1; i >= 0; i-- )
+        {
+            token = tokens[i];
+            if ( token.id() == id )
+            {
+                break; // found
+            }
+            if ( token.id() < id )
+            {
+                token = null; // not found
+                break;
+            }
+        }
+        if ( token != null )
+        {
+            String name = token.name();
+            result.append( pre ).append( name )
+                  .append( " [" ).append( handle ).append( "Id=" ).append( token.id() ).append( ']' );
+        }
+        else
+        {
+            result.append( handle ).append( "Id=" ).append( id );
+        }
+        return result;
+    }
+
+    private static Token[] allTokensFrom( TokenStore<?> store )
+    {
+        try ( TokenStore<?> tokens = store )
+        {
+            return tokens.getTokens( Integer.MAX_VALUE );
+        }
     }
 }

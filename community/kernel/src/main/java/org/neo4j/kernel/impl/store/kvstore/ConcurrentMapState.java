@@ -165,9 +165,16 @@ class ConcurrentMapState<Key, Meta> extends KeyValueStoreState<Key, Meta>
             return valueReader.parseValue( new BigEndianByteArrayBuffer( value ) );
         }
         ValueFetcher<Key, Value> lookup = new ValueFetcher<>( keys, key, valueReader );
-        if ( store.scan( lookup, lookup ) )
+        try
         {
-            return lookup.value;
+            if ( store.scan( lookup, lookup ) )
+            {
+                return lookup.value;
+            }
+        }
+        catch ( RuntimeException e )
+        {
+            throw new IOException( "Lookup failure for key=" + key, e );
         }
         return valueReader.defaultValue();
     }
@@ -210,9 +217,9 @@ class ConcurrentMapState<Key, Meta> extends KeyValueStoreState<Key, Meta>
         }
     }
 
-    public int totalRecordsStored()
+    public int totalEntriesStored()
     {
-        return store.recordCount();
+        return store.entryCount();
     }
 
     private static class Entry implements Comparable<Entry>
