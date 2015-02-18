@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
-abstract class Metadata<META>
+abstract class Metadata
 {
     abstract int headerEntries();
 
     abstract int totalEntries();
 
-    abstract META metadata();
-
     abstract byte[] pageCatalogue();
+
+    public abstract Headers headers();
 }

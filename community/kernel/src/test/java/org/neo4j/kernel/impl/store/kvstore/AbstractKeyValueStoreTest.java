@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Rule;
@@ -43,6 +42,26 @@ import static org.neo4j.kernel.impl.store.kvstore.Resources.TestPath.FILE_IN_EXI
 public class AbstractKeyValueStoreTest
 {
     public final @Rule Resources the = new Resources( FILE_IN_EXISTING_DIRECTORY );
+    private static final HeaderField<Long> TX_ID = new HeaderField<Long>()
+    {
+        @Override
+        public Long read( ReadableBuffer header )
+        {
+            return header.getLong( header.size() - 8 );
+        }
+
+        @Override
+        public void write( Long value, WritableBuffer header )
+        {
+            header.putLong( header.size() - 8, value );
+        }
+
+        @Override
+        public String toString()
+        {
+            return "txId";
+        }
+    };
 
     @Test
     public void shouldStartAndStopStore() throws Exception
@@ -63,7 +82,7 @@ public class AbstractKeyValueStoreTest
         Store store = the.managed( new Store() );
 
         // when
-        store.rotate( Collections.<String, byte[]>emptyMap() );
+        store.rotate( Collections.<String, Object>emptyMap() );
     }
 
     @Test
@@ -82,7 +101,7 @@ public class AbstractKeyValueStoreTest
         assertEquals( "too old", store.get( "age" ) );
 
         // when
-        store.rotate( Collections.<String, byte[]>emptyMap() );
+        store.rotate( Collections.<String, Object>emptyMap() );
 
         // then
         assertEquals( "hello world", store.get( "message" ) );
@@ -97,26 +116,27 @@ public class AbstractKeyValueStoreTest
         {
             Impl()
             {
-                super( "txId" );
+                super( TX_ID );
             }
 
+            @SuppressWarnings("unchecked")
             @Override
-            void initialMetadata( String key, BigEndianByteArrayBuffer buffer )
+            <Value> Value initialHeader( HeaderField<Value> field )
             {
-                if ( "txId".equals( key ) )
+                if ( field == TX_ID )
                 {
-                    buffer.putLong( buffer.size() - 8, 1 );
+                    return (Value) (Object) 1l;
                 }
                 else
                 {
-                    super.initialMetadata( key, buffer );
+                    return super.initialHeader( field );
                 }
             }
 
             @Override
-            protected int compareMetadata( Map<String, byte[]> lhs, Map<String, byte[]> rhs )
+            protected int compareHeaders( Headers lhs, Headers rhs )
             {
-                return Long.compare( lastLong( lhs.get( "txId" ) ), lastLong( rhs.get( "txId" ) ) );
+                return Long.compare( lhs.get( TX_ID ), rhs.get( TX_ID ) );
             }
         }
         try ( Lifespan life = new Lifespan() )
@@ -124,9 +144,9 @@ public class AbstractKeyValueStoreTest
             Store store = life.add( new Impl() );
 
             // when
-            for ( int txId = 2; txId <= 10; txId++ )
+            for ( long txId = 2; txId <= 10; txId++ )
             {
-                store.rotate( Collections.singletonMap( "txId", txId( txId ) ) );
+                store.rotate( Collections.singletonMap( "txId", (Object) txId ) );
             }
         }
 
@@ -134,7 +154,7 @@ public class AbstractKeyValueStoreTest
         try ( Lifespan life = new Lifespan() )
         {
             Store store = life.add( new Impl() );
-            assertEquals( 10, lastLong( store.metadata().get( "txId" ) ) );
+            assertEquals( 10l, store.headers().get( TX_ID ).longValue() );
         }
     }
 
@@ -142,42 +162,43 @@ public class AbstractKeyValueStoreTest
     public void shouldNotPickCorruptStoreFile() throws Exception
     {
         // given
-        Store store = new Store( "txId" )
+        Store store = new Store( TX_ID )
         {
+            @SuppressWarnings("unchecked")
             @Override
-            void initialMetadata( String key, BigEndianByteArrayBuffer buffer )
+            <Value> Value initialHeader( HeaderField<Value> field )
             {
-                switch ( key )
+                if ( field == TX_ID )
                 {
-                case "txId":
-                    buffer.putLong( buffer.size() - 8, 1 );
-                    break;
-                default:
-                    super.initialMetadata( key, buffer );
+                    return (Value) (Object) 1l;
+                }
+                else
+                {
+                    return super.initialHeader( field );
                 }
             }
 
             @Override
-            protected int compareMetadata( Map<String, byte[]> lhs, Map<String, byte[]> rhs )
+            protected int compareHeaders( Headers lhs, Headers rhs )
             {
-                return Long.compare( lastLong( lhs.get( "txId" ) ), lastLong( rhs.get( "txId" ) ) );
+                return Long.compare( lhs.get( TX_ID ), rhs.get( TX_ID ) );
             }
         };
         Field state = AbstractKeyValueStore.class.getDeclaredField( "state" );
         state.setAccessible( true );
         @SuppressWarnings("unchecked")
-        RotationStrategy<Map<String, byte[]>> rotation = ((KeyValueStoreState.Stopped) state.get( store )).rotation;
+        RotationStrategy rotation = ((KeyValueStoreState.Stopped) state.get( store )).rotation;
 
         // when
         File[] files = new File[10];
         {
-            Pair<File, KeyValueStoreFile<Map<String, byte[]>>> file = rotation.create();
+            Pair<File, KeyValueStoreFile> file = rotation.create();
             files[0] = file.first();
             for ( int txId = 2, i = 1; i < files.length; txId <<= 1, i++ )
             {
-                KeyValueStoreFile<Map<String, byte[]>> old = file.other();
+                KeyValueStoreFile old = file.other();
                 final int data = txId;
-                file = rotation.next( file.first(), Collections.singletonMap( "txId", txId( txId ) ), data(
+                file = rotation.next( file.first(), Headers.headersBuilder().put( TX_ID, (long) txId ).headers(), data(
                         new Entry()
                         {
                             @Override
@@ -227,7 +248,7 @@ public class AbstractKeyValueStoreTest
         {
             life.add( store );
 
-            assertEquals( 64, lastLong( store.metadata().get( "txId" ) ) );
+            assertEquals( 64l, store.headers().get( TX_ID ).longValue() );
         }
     }
 
@@ -260,64 +281,63 @@ public class AbstractKeyValueStoreTest
         void write( WritableBuffer key, WritableBuffer value );
     }
 
-    static byte[] txId( long txId )
-    {
-        return new BigEndianByteArrayBuffer( 16 ).putLong( 8, txId ).buffer;
-    }
-
-    static long lastLong( byte[] txIds )
-    {
-        BigEndianByteArrayBuffer lhsTxId = new BigEndianByteArrayBuffer( txIds );
-        return lhsTxId.getLong( lhsTxId.size() - 8 );
-    }
-
     @Rotation(Rotation.Strategy.INCREMENTING)
-    class Store extends AbstractKeyValueStore<String, Map<String, byte[]>, Map<String, byte[]>>
+    class Store extends AbstractKeyValueStore<String, Map<String, Object>>
     {
-        private final HeaderField<Map<String, byte[]>, byte[]>[] headerFields;
+        private final HeaderField<?>[] headerFields;
 
-        Store( String... metadataKeys )
-        {
-            this( StubCollector.headerFields( metadataKeys ) );
-        }
-
-        private Store( HeaderField<Map<String, byte[]>, byte[]>[] headerFields )
+        private Store( HeaderField<?>... headerFields )
         {
             super( the.fileSystem(), the.pageCache(), the.testPath(), 16, 16, headerFields );
             this.headerFields = headerFields;
         }
 
         @Override
-        protected Map<String, byte[]> initialMetadata()
+        protected Headers initialHeaders()
         {
-            Map<String, byte[]> metadata = new HashMap<>();
-            for ( HeaderField<Map<String, byte[]>, byte[]> field : headerFields )
+            Headers.Builder builder = Headers.headersBuilder();
+            for ( HeaderField<?> field : headerFields )
             {
-                String key = field.toString();
-                byte[] value = new byte[16];
-                metadata.put( key, value );
-                initialMetadata( key, new BigEndianByteArrayBuffer( value ) );
+                putHeader( builder, field );
             }
-            return metadata;
+            return builder.headers();
         }
 
-        void initialMetadata( String key, BigEndianByteArrayBuffer buffer )
+        private <Value> void putHeader( Headers.Builder builder, HeaderField<Value> field )
         {
-            buffer.fill( (byte) 0xFF );
+            builder.put( field, initialHeader( field ) );
+        }
+
+        <Value> Value initialHeader( HeaderField<Value> field )
+        {
+            return null;
         }
 
         @Override
-        protected int compareMetadata( Map<String, byte[]> lhs, Map<String, byte[]> rhs )
+        protected int compareHeaders( Headers lhs, Headers rhs )
         {
             return 0;
         }
 
         @Override
-        protected Map<String, byte[]> updateMetadata( Map<String, byte[]> metadata, Map<String, byte[]> changes )
+        protected Headers updateHeaders( Headers headers, Map<String, Object> changes )
         {
-            Map<String, byte[]> result = new HashMap<>( metadata );
-            result.putAll( changes );
-            return result;
+            Headers.Builder builder = Headers.headersBuilder();
+            for ( HeaderField<?> field : headers.fields() )
+            {
+                Object change = changes.get( field.toString() );
+                if ( change != null )
+                {
+                    putField( builder, field, change );
+                }
+            }
+            return builder.headers();
+        }
+
+        @SuppressWarnings("unchecked")
+        private <Value> void putField( Headers.Builder builder, HeaderField<Value> field, Object change )
+        {
+            builder.put( field, (Value) change );
         }
 
         @Override
@@ -351,13 +371,7 @@ public class AbstractKeyValueStoreTest
         }
 
         @Override
-        protected Map<String, byte[]> buildMetadata( ReadableBuffer formatSpecifier, CollectedMetadata metadata )
-        {
-            return StubCollector.metadata( headerFields, metadata );
-        }
-
-        @Override
-        protected String extractFileTrailer( Map<String, byte[]> metadata )
+        protected String fileTrailer()
         {
             return "And that's all folks.";
         }

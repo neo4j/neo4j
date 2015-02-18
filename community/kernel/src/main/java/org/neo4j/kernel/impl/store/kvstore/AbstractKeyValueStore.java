@@ -36,25 +36,25 @@ import static org.neo4j.kernel.impl.locking.LockWrapper.writeLock;
  * The base for building a key value store based on rotating immutable
  * {@linkplain KeyValueStoreFile key/value store files}
  *
- * @param <Key>      a base type for the keys stored in this store.
- * @param <MetaData> a type for containing the metadata of the store.
- * @param <MetaDiff> a type that signifies changes in metadata on rotation.
+ * @param <Key>           a base type for the keys stored in this store.
+ * @param <HeaderChanges> a type that signifies changes in headers on rotation.
  */
 @Rotation(/*default strategy:*/Rotation.Strategy.LEFT_RIGHT/*(subclasses can override)*/)
 @State(/*default strategy:*/State.Strategy.CONCURRENT_HASH_MAP/*(subclasses can override)*/)
-public abstract class AbstractKeyValueStore<Key, MetaData, MetaDiff> extends LifecycleAdapter
+public abstract class AbstractKeyValueStore<Key, HeaderChanges> extends LifecycleAdapter
 {
     private final ReadWriteLock updateLock = new ReentrantReadWriteLock( /*fair=*/true );
-    private volatile KeyValueStoreState<Key, MetaData> state;
+    private final Format format;
+    private volatile KeyValueStoreState<Key> state;
     final int keySize, valueSize;
 
     public AbstractKeyValueStore( FileSystemAbstraction fs, PageCache pages, File base, int keySize, int valueSize,
-                                  HeaderField<MetaData, ?>... headerFields )
+                                  HeaderField<?>... headerFields )
     {
         this.keySize = keySize;
         this.valueSize = valueSize;
         Rotation rotation = getClass().getAnnotation( Rotation.class );
-        Format format = new Format( headerFields );
+        this.format = new Format( headerFields );
         this.state = getClass().getAnnotation( State.class ).value().initialState(
                 rotation.value().create( fs, pages, format, base, rotation.parameters() ), format );
     }
@@ -73,12 +73,10 @@ public abstract class AbstractKeyValueStore<Key, MetaData, MetaDiff> extends Lif
     /** Introspective feature, not thread safe. */
     protected final void visitAll( Visitor visitor ) throws IOException
     {
-        KeyValueStoreState<Key, MetaData> state = this.state;
-        if ( visitor instanceof MetadataVisitor<?> )
+        KeyValueStoreState<Key> state = this.state;
+        if ( visitor instanceof MetadataVisitor )
         {
-            @SuppressWarnings("unchecked")
-            MetadataVisitor<MetaData> metadataVisitor = (MetadataVisitor<MetaData>) visitor;
-            metadataVisitor.visitMetadata( state.file(), metadata(), state.totalEntriesStored() );
+            ((MetadataVisitor) visitor).visitMetadata( state.file(), headers(), state.totalEntriesStored() );
         }
         try ( DataProvider provider = state.dataProvider() )
         {
@@ -88,13 +86,11 @@ public abstract class AbstractKeyValueStore<Key, MetaData, MetaDiff> extends Lif
 
     protected final void visitFile( File path, Visitor visitor ) throws IOException
     {
-        try ( KeyValueStoreFile<MetaData> file = state.openStoreFile( path ) )
+        try ( KeyValueStoreFile file = state.openStoreFile( path ) )
         {
-            if ( visitor instanceof MetadataVisitor<?> )
+            if ( visitor instanceof MetadataVisitor )
             {
-                @SuppressWarnings("unchecked")
-                MetadataVisitor<MetaData> metadataVisitor = (MetadataVisitor<MetaData>) visitor;
-                metadataVisitor.visitMetadata( path, file.metadata(), file.entryCount() );
+                ((MetadataVisitor) visitor).visitMetadata( path, file.headers(), file.entryCount() );
             }
             try ( DataProvider provider = file.dataProvider() )
             {
@@ -109,29 +105,27 @@ public abstract class AbstractKeyValueStore<Key, MetaData, MetaDiff> extends Lif
 
     protected abstract void writeFormatSpecifier( WritableBuffer formatSpecifier );
 
-    protected abstract MetaData initialMetadata();
+    protected abstract Headers initialHeaders();
 
-    protected abstract int compareMetadata( MetaData lhs, MetaData rhs );
+    protected abstract int compareHeaders( Headers lhs, Headers rhs );
 
-    protected boolean hasMetadataChanges( MetaData metadata, MetaDiff diff )
+    protected boolean hasHeaderChanges( Headers headers, HeaderChanges diff )
     {
         return true;
     }
 
-    protected abstract MetaData buildMetadata( ReadableBuffer formatSpecifier, CollectedMetadata metadata );
+    protected abstract Headers updateHeaders( Headers headers, HeaderChanges changes );
 
-    protected abstract MetaData updateMetadata( MetaData metadata, MetaDiff changes );
-
-    protected abstract String extractFileTrailer( MetaData metadata );
+    protected abstract String fileTrailer();
 
     protected boolean include( Key key, ReadableBuffer value )
     {
         return true;
     }
 
-    protected final MetaData metadata()
+    protected final Headers headers()
     {
-        return state.metadata();
+        return state.headers();
     }
 
     public int totalEntriesStored()
@@ -175,24 +169,24 @@ public abstract class AbstractKeyValueStore<Key, MetaData, MetaDiff> extends Lif
         // override to implement logging
     }
 
-    protected void rotationFailed( File source, File target, MetaData metaData, Exception e )
+    protected void rotationFailed( File source, File target, Headers headers, Exception e )
     {
         // override to implement logging
     }
 
-    protected void rotationSucceeded( File source, File target, MetaData metaData )
+    protected void rotationSucceeded( File source, File target, Headers headers )
     {
         // override to implement logging
     }
 
-    protected void beforeRotation( File source, File target, MetaData metaData )
+    protected void beforeRotation( File source, File target, Headers headers )
     {
         // override to implement logging
     }
 
     protected abstract class Updater implements AutoCloseable
     {
-        private final KeyValueStoreState<Key, MetaData> state;
+        private final KeyValueStoreState<Key> state;
         private Thread thread = Thread.currentThread();
 
         public Updater()
@@ -218,19 +212,19 @@ public abstract class AbstractKeyValueStore<Key, MetaData, MetaDiff> extends Lif
         }
     }
 
-    protected final void rotate( MetaDiff metadataChanges ) throws IOException
+    protected final void rotate( HeaderChanges headerChanges ) throws IOException
     {
         try ( LockWrapper ignored = writeLock( updateLock ) )
         {
-            KeyValueStoreState<Key, MetaData> current = state;
+            KeyValueStoreState<Key> current = state;
             if ( !current.hasChanges() )
             {
-                if ( !hasMetadataChanges( current.metadata(), metadataChanges ) )
+                if ( !hasHeaderChanges( current.headers(), headerChanges ) )
                 {
                     return;
                 }
             }
-            state = state.rotate( updateMetadata( current.metadata(), metadataChanges ) );
+            state = state.rotate( updateHeaders( current.headers(), headerChanges ) );
         }
     }
 
@@ -300,9 +294,14 @@ public abstract class AbstractKeyValueStore<Key, MetaData, MetaDiff> extends Lif
         protected abstract boolean visitKeyValuePair( Key key, ReadableBuffer value );
     }
 
-    private final class Format extends ProgressiveFormat<MetaData> implements KeyFormat<Key>
+    protected HeaderField<?>[] headerFieldsForFormat( ReadableBuffer formatSpecifier )
     {
-        Format( HeaderField<MetaData, ?>... headerFields )
+        return format.defaultHeaderFieldsForFormat( formatSpecifier );
+    }
+
+    private final class Format extends ProgressiveFormat implements KeyFormat<Key>
+    {
+        Format( HeaderField<?>... headerFields )
         {
             super( 512, headerFields );
         }
@@ -314,15 +313,20 @@ public abstract class AbstractKeyValueStore<Key, MetaData, MetaDiff> extends Lif
         }
 
         @Override
-        protected String extractFileTrailer( MetaData metadata )
+        protected String fileTrailer()
         {
-            return AbstractKeyValueStore.this.extractFileTrailer( metadata );
+            return AbstractKeyValueStore.this.fileTrailer();
         }
 
         @Override
-        protected MetaData buildMetadata( ReadableBuffer formatSpecifier, CollectedMetadata metadata )
+        protected HeaderField<?>[] headerFieldsForFormat( ReadableBuffer formatSpecifier )
         {
-            return AbstractKeyValueStore.this.buildMetadata( formatSpecifier, metadata );
+            return AbstractKeyValueStore.this.headerFieldsForFormat( formatSpecifier );
+        }
+
+        HeaderField<?>[] defaultHeaderFieldsForFormat( ReadableBuffer formatSpecifier )
+        {
+            return super.headerFieldsForFormat( formatSpecifier );
         }
 
         @Override
@@ -332,15 +336,15 @@ public abstract class AbstractKeyValueStore<Key, MetaData, MetaDiff> extends Lif
         }
 
         @Override
-        public int compareMetadata( MetaData lhs, MetaData rhs )
+        public int compareHeaders( Headers lhs, Headers rhs )
         {
-            return AbstractKeyValueStore.this.compareMetadata( lhs, rhs );
+            return AbstractKeyValueStore.this.compareHeaders( lhs, rhs );
         }
 
         @Override
-        public MetaData initialMetadata()
+        public Headers initialHeaders()
         {
-            return AbstractKeyValueStore.this.initialMetadata();
+            return AbstractKeyValueStore.this.initialHeaders();
         }
 
         @Override
@@ -395,21 +399,21 @@ public abstract class AbstractKeyValueStore<Key, MetaData, MetaDiff> extends Lif
         }
 
         @Override
-        public void beforeRotation( File source, File target, MetaData metaData )
+        public void beforeRotation( File source, File target, Headers headers )
         {
-            AbstractKeyValueStore.this.beforeRotation( source, target, metaData );
+            AbstractKeyValueStore.this.beforeRotation( source, target, headers );
         }
 
         @Override
-        public void rotationSucceeded( File source, File target, MetaData metaData )
+        public void rotationSucceeded( File source, File target, Headers headers )
         {
-            AbstractKeyValueStore.this.rotationSucceeded( source, target, metaData );
+            AbstractKeyValueStore.this.rotationSucceeded( source, target, headers );
         }
 
         @Override
-        public void rotationFailed( File source, File target, MetaData metaData, Exception e )
+        public void rotationFailed( File source, File target, Headers headers, Exception e )
         {
-            AbstractKeyValueStore.this.rotationFailed( source, target, metaData, e );
+            AbstractKeyValueStore.this.rotationFailed( source, target, headers, e );
         }
     }
 }

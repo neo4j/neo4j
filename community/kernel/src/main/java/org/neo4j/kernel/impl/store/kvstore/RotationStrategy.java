@@ -29,13 +29,13 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 
-abstract class RotationStrategy<Meta>
+abstract class RotationStrategy
 {
     protected final FileSystemAbstraction fs;
     protected final PageCache pages;
-    private final ProgressiveFormat<Meta> format;
+    private final ProgressiveFormat format;
 
-    RotationStrategy( FileSystemAbstraction fs, PageCache pages, ProgressiveFormat<Meta> format )
+    RotationStrategy( FileSystemAbstraction fs, PageCache pages, ProgressiveFormat format )
     {
         this.fs = fs;
         this.pages = pages;
@@ -48,13 +48,13 @@ abstract class RotationStrategy<Meta>
 
     protected abstract File nextFile( File previous );
 
-    public final Pair<File, KeyValueStoreFile<Meta>> open() throws IOException
+    public final Pair<File, KeyValueStoreFile> open() throws IOException
     {
-        KeyValueStoreFile<Meta> result = null;
+        KeyValueStoreFile result = null;
         File path = null;
         for ( File candidatePath : candidateFiles() )
         {
-            KeyValueStoreFile<Meta> file;
+            KeyValueStoreFile file;
             if ( fs.fileExists( candidatePath ) )
             {
                 try
@@ -66,7 +66,7 @@ abstract class RotationStrategy<Meta>
                     format.failedToOpenStoreFile( candidatePath, e );
                     continue;
                 }
-                if ( result == null || format.compareMetadata( result.metadata(), file.metadata() ) < 0 )
+                if ( result == null || format.compareHeaders( result.headers(), file.headers() ) < 0 )
                 {
                     if ( result != null )
                     {
@@ -84,44 +84,44 @@ abstract class RotationStrategy<Meta>
         return result == null ? null : Pair.of( path, result );
     }
 
-    public final Pair<File, KeyValueStoreFile<Meta>> create()
+    public final Pair<File, KeyValueStoreFile> create()
             throws IOException
     {
         File path = initialFile();
-        format.createEmptyStore( fs, path, format.keySize(), format.valueSize(), format.initialMetadata() );
+        format.createEmptyStore( fs, path, format.keySize(), format.valueSize(), format.initialHeaders() );
         return Pair.of( path, format.openStore( fs, pages, path ) );
     }
 
-    public final Pair<File, KeyValueStoreFile<Meta>> next( File file, Meta meta, DataProvider data )
+    public final Pair<File, KeyValueStoreFile> next( File file, Headers headers, DataProvider data )
             throws IOException
     {
         File path = nextFile( file );
-        format.beforeRotation( file, path, meta );
-        KeyValueStoreFile<Meta> store;
+        format.beforeRotation( file, path, headers );
+        KeyValueStoreFile store;
         try
         {
-            store = format.createStore( fs, pages, path, format.keySize(), format.valueSize(), meta, data );
+            store = format.createStore( fs, pages, path, format.keySize(), format.valueSize(), headers, data );
         }
         catch ( Exception e )
         {
-            format.rotationFailed( file, path, meta, e );
+            format.rotationFailed( file, path, headers, e );
             throw e;
         }
-        format.rotationSucceeded( file, path, meta );
+        format.rotationSucceeded( file, path, headers );
         return Pair.of( path, store );
     }
 
-    final KeyValueStoreFile<Meta> openStoreFile( File path ) throws IOException
+    final KeyValueStoreFile openStoreFile( File path ) throws IOException
     {
         return format.openStore( fs, pages, path );
     }
 
-    static class LeftRight<Meta> extends RotationStrategy<Meta>
+    static class LeftRight extends RotationStrategy
     {
         private final File left;
         private final File right;
 
-        LeftRight( FileSystemAbstraction fs, PageCache pages, ProgressiveFormat<Meta> format, File left, File right )
+        LeftRight( FileSystemAbstraction fs, PageCache pages, ProgressiveFormat format, File left, File right )
         {
             super( fs, pages, format );
             this.left = left;
@@ -158,12 +158,12 @@ abstract class RotationStrategy<Meta>
         }
     }
 
-    static class Incrementing<Meta> extends RotationStrategy<Meta> implements FilenameFilter
+    static class Incrementing extends RotationStrategy implements FilenameFilter
     {
         private static final Pattern SUFFIX = Pattern.compile( "\\.[0-9]+" );
         private final File base;
 
-        public Incrementing( FileSystemAbstraction fs, PageCache pages, ProgressiveFormat<Meta> format, File base )
+        public Incrementing( FileSystemAbstraction fs, PageCache pages, ProgressiveFormat format, File base )
         {
             super( fs, pages, format );
             this.base = base;

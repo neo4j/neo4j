@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCache;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.TokenStore;
+import org.neo4j.kernel.impl.store.kvstore.Headers;
 import org.neo4j.kernel.impl.store.kvstore.MetadataVisitor;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
 import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
@@ -40,7 +41,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
-public class DumpCountsStore implements CountsVisitor, MetadataVisitor<Metadata>, UnknownKey.Visitor
+public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownKey.Visitor
 {
     public static void main( String... args ) throws IOException
     {
@@ -105,11 +106,12 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor<Metadata>
     }
 
     @Override
-    public void visitMetadata( File path, Metadata metadata, int entryCount )
+    public void visitMetadata( File path, Headers headers, int entryCount )
     {
+        FileVersion versionData = headers.get( FileVersion.FILE_VERSION );
         out.printf( "Counts Store:\t%s%n", path );
-        out.printf( "\ttxId:\t%d%n", metadata.txId );
-        out.printf( "\tminor version:\t%d%n", metadata.minorVersion );
+        out.printf( "\ttxId:\t%d%n", versionData.txId );
+        out.printf( "\tminor version:\t%d%n", versionData.minorVersion );
         out.printf( "\tentries:\t%d%n", entryCount );
         out.println( "Entries:" );
     }

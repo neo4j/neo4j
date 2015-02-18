@@ -22,16 +22,16 @@ package org.neo4j.kernel.impl.store.kvstore;
 
 import java.io.File;
 
-abstract class ProgressiveFormat<Meta> extends KeyValueStoreFileFormat<Meta>
+abstract class ProgressiveFormat extends KeyValueStoreFileFormat
 {
-    ProgressiveFormat( int maxSize, HeaderField<Meta, ?>... headerFields )
+    ProgressiveFormat( int maxSize, HeaderField<?>... headerFields )
     {
         super( maxSize, headerFields );
     }
 
-    public abstract int compareMetadata( Meta lhs, Meta rhs );
+    public abstract int compareHeaders( Headers lhs, Headers rhs );
 
-    public abstract Meta initialMetadata();
+    public abstract Headers initialHeaders();
 
     public abstract int keySize();
 
@@ -39,9 +39,9 @@ abstract class ProgressiveFormat<Meta> extends KeyValueStoreFileFormat<Meta>
 
     public abstract void failedToOpenStoreFile( File path, Exception error );
 
-    public abstract void beforeRotation( File source, File target, Meta meta );
+    public abstract void beforeRotation( File source, File target, Headers headers );
 
-    public abstract void rotationSucceeded( File source, File target, Meta meta );
+    public abstract void rotationSucceeded( File source, File target, Headers headers );
 
-    public abstract void rotationFailed( File source, File target, Meta meta, Exception e );
+    public abstract void rotationFailed( File source, File target, Headers headers, Exception e );
 }

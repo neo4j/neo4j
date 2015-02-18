@@ -17,27 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.store.counts;
 
 import org.neo4j.kernel.impl.store.kvstore.HeaderField;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
 import org.neo4j.kernel.impl.store.kvstore.WritableBuffer;
 
-final class Metadata
+final class FileVersion
 {
-    static final HeaderField<Metadata, TxId> TX_ID = new HeaderField<Metadata, TxId>()
+    final long txId;
+    final long minorVersion;
+    static final HeaderField<FileVersion> FILE_VERSION = new HeaderField<FileVersion>()
     {
         @Override
-        public TxId read( ReadableBuffer header )
+        public FileVersion read( ReadableBuffer header )
         {
-            return new TxId( header.getLong( 0 ), header.getLong( 8 ) );
+            return new FileVersion( header.getLong( 0 ), header.getLong( 8 ) );
         }
 
         @Override
-        public void write( Metadata headers, WritableBuffer header )
+        public void write( FileVersion the, WritableBuffer header )
         {
-            header.putLong( 0, headers.txId );
-            header.putLong( 8, headers.minorVersion );
+            header.putLong( 0, the.txId );
+            header.putLong( 8, the.minorVersion );
         }
 
         @Override
@@ -46,42 +49,26 @@ final class Metadata
             return "<Transaction ID>";
         }
     };
-    @SuppressWarnings("unchecked")
-    static final HeaderField<Metadata, ?>[] KEYS = new HeaderField[]{TX_ID};
-    final long txId;
-    final long minorVersion;
 
-    Metadata( long txId, long minorVersion )
+    FileVersion( long txId, long minorVersion )
     {
+
         this.txId = txId;
         this.minorVersion = minorVersion;
     }
 
-    Metadata update( Diff changes )
+    FileVersion update( Change changes )
     {
-        return new Metadata( changes.txId, this.txId == changes.txId ? minorVersion + 1 : 1 );
+        return new FileVersion( changes.txId, this.txId == changes.txId ? minorVersion + 1 : 1 );
     }
 
-    static class Diff
+    static class Change
     {
         final long txId;
 
-        Diff( long txId )
+        Change( long txId )
         {
             this.txId = txId;
-        }
-    }
-
-    static final class TxId
-    {
-        final long txId;
-        final long minorVersion;
-
-        TxId( long txId, long minorVersion )
-        {
-
-            this.txId = txId;
-            this.minorVersion = minorVersion;
         }
     }
 }

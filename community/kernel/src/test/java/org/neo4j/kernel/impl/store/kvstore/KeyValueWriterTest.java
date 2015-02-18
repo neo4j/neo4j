@@ -37,7 +37,7 @@ public class KeyValueWriterTest
     @SuppressWarnings("unchecked")
     private StubCollector collector = new StubCollector( ENTRIES_PER_PAGE );
     private final StubWriter stub = new StubWriter();
-    private KeyValueWriter<?> writer = new KeyValueWriter<>( collector, stub );
+    private KeyValueWriter writer = new KeyValueWriter( collector, stub );
     private final BigEndianByteArrayBuffer key = new BigEndianByteArrayBuffer( new byte[8] );
     private final BigEndianByteArrayBuffer value = new BigEndianByteArrayBuffer( new byte[8] );
 
@@ -236,7 +236,7 @@ public class KeyValueWriterTest
     private void resetWriter( String... header )
     {
         collector = new StubCollector( ENTRIES_PER_PAGE, header );
-        writer = new KeyValueWriter<>( collector, stub );
+        writer = new KeyValueWriter( collector, stub );
     }
 
     private static class StubWriter extends KeyValueWriter.Writer
@@ -252,7 +252,7 @@ public class KeyValueWriterTest
         }
 
         @Override
-        <META> KeyValueStoreFile<META> open( Metadata<META> metadata, int keySize, int valueSize )
+        KeyValueStoreFile open( Metadata metadata, int keySize, int valueSize )
         {
             return null;
         }

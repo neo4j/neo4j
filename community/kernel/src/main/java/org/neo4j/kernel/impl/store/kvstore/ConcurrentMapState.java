@@ -29,33 +29,33 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.neo4j.helpers.Pair;
 
-class ConcurrentMapState<Key, Meta> extends KeyValueStoreState<Key, Meta>
+class ConcurrentMapState<Key> extends KeyValueStoreState<Key>
 {
-    static class PreState<Key, Meta> extends KeyValueStoreState.Stopped<Key, Meta>
+    static class PreState<Key> extends KeyValueStoreState.Stopped<Key>
     {
         private final KeyFormat<Key> keys;
 
-        PreState( RotationStrategy<Meta> rotation, KeyFormat<Key> keys )
+        PreState( RotationStrategy rotation, KeyFormat<Key> keys )
         {
             super( rotation );
             this.keys = keys;
         }
 
         @Override
-        KeyValueStoreState<Key, Meta> create( File path, KeyValueStoreFile<Meta> store )
+        KeyValueStoreState<Key> create( File path, KeyValueStoreFile store )
         {
             return new ConcurrentMapState<>( rotation, keys, store, path );
         }
     }
 
-    private final RotationStrategy<Meta> rotation;
+    private final RotationStrategy rotation;
     private final KeyFormat<Key> keys;
-    private final KeyValueStoreFile<Meta> store;
+    private final KeyValueStoreFile store;
     private final ConcurrentMap<Key, byte[]> changes = new ConcurrentHashMap<>();
     private final File file;
 
-    private ConcurrentMapState( RotationStrategy<Meta> rotation, KeyFormat<Key> keys,
-                                KeyValueStoreFile<Meta> store, File file )
+    private ConcurrentMapState( RotationStrategy rotation, KeyFormat<Key> keys,
+                                KeyValueStoreFile store, File file )
     {
         this.rotation = rotation;
         this.keys = keys;
@@ -76,7 +76,7 @@ class ConcurrentMapState<Key, Meta> extends KeyValueStoreState<Key, Meta>
     }
 
     @Override
-    KeyValueStoreFile<Meta> openStoreFile( File path ) throws IOException
+    KeyValueStoreFile openStoreFile( File path ) throws IOException
     {
         return rotation.openStoreFile( path );
     }
@@ -128,11 +128,11 @@ class ConcurrentMapState<Key, Meta> extends KeyValueStoreState<Key, Meta>
     }
 
     @Override
-    public KeyValueStoreState<Key, Meta> rotate( Meta metadata ) throws IOException
+    public KeyValueStoreState<Key> rotate( Headers headers ) throws IOException
     {
         try
         {
-            Pair<File, KeyValueStoreFile<Meta>> next = rotation.next( file, metadata, keys.filter( dataProvider() ) );
+            Pair<File, KeyValueStoreFile> next = rotation.next( file, headers, keys.filter( dataProvider() ) );
             return new ConcurrentMapState<>( rotation, keys, next.other(), next.first() );
         }
         finally
@@ -141,12 +141,12 @@ class ConcurrentMapState<Key, Meta> extends KeyValueStoreState<Key, Meta>
         }
     }
 
-    public Meta metadata()
+    public Headers headers()
     {
-        return store.metadata();
+        return store.headers();
     }
 
-    public KeyValueStoreState<Key, Meta> close() throws IOException
+    public KeyValueStoreState<Key> close() throws IOException
     {
         store.close();
         return null;

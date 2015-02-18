@@ -32,7 +32,8 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
 import org.neo4j.kernel.impl.store.kvstore.AbstractKeyValueStore;
-import org.neo4j.kernel.impl.store.kvstore.CollectedMetadata;
+import org.neo4j.kernel.impl.store.kvstore.HeaderField;
+import org.neo4j.kernel.impl.store.kvstore.Headers;
 import org.neo4j.kernel.impl.store.kvstore.MetadataVisitor;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
 import org.neo4j.kernel.impl.store.kvstore.Rotation;
@@ -54,7 +55,8 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relations
  * file in a {@linkplain Rotation.Strategy#LEFT_RIGHT left/right pattern}.
  *
  * This class defines {@linkplain CountsTracker.KeyFormat the key serialisation format},
- * {@linkplain CountsTracker.ValueFormat the value serialisation format}, and {@linkplain Metadata the metadata format}.
+ * {@linkplain CountsTracker.ValueFormat the value serialisation format}, and
+ * {@linkplain #HEADER_FIELDS the header fields}.
  *
  * The {@linkplain AbstractKeyValueStore parent class} defines the life cycle of the store.
  *
@@ -62,43 +64,45 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relations
  * {@code kvstore}-package, see {@link org.neo4j.kernel.impl.store.kvstore.KeyValueStoreFile} for a good entry point.
  */
 @Rotation(value = Rotation.Strategy.LEFT_RIGHT, parameters = {CountsTracker.LEFT, CountsTracker.RIGHT})
-public class CountsTracker extends AbstractKeyValueStore<CountsKey, Metadata, Metadata.Diff>
+public class CountsTracker extends AbstractKeyValueStore<CountsKey, FileVersion.Change>
         implements CountsVisitor.Visitable, CountsAccessor
 {
     /** The format specifier for the current version of the store file format. */
     private static final byte[] FORMAT = {'N', 'e', 'o', 'C', 'o', 'u', 'n', 't',
                                           'S', 't', 'o', 'r', 'e', /**/0, 0, 'V'};
+    @SuppressWarnings("unchecked")
+    private static final HeaderField<?>[] HEADER_FIELDS = new HeaderField[]{FileVersion.FILE_VERSION};
     public static final String LEFT = ".a", RIGHT = ".b";
     public static final String TYPE_DESCRIPTOR = "CountsStore";
     private final StringLogger logger;
 
     public CountsTracker( StringLogger logger, FileSystemAbstraction fs, PageCache pages, File baseFile )
     {
-        super( fs, pages, baseFile, 16, 16, Metadata.KEYS );
+        super( fs, pages, baseFile, 16, 16, HEADER_FIELDS );
         this.logger = logger;
     }
 
     public void rotate( long txId ) throws IOException
     {
         logger.debug( "Start writing new counts store with txId=" + txId );
-        rotate( new Metadata.Diff( txId ) );
+        rotate( new FileVersion.Change( txId ) );
         logger.debug( "Completed writing of counts store with txId=" + txId );
     }
 
     public boolean acceptTx( long txId )
     {
-        Metadata metadata = metadata();
-        return metadata != null && metadata.txId < txId;
+        Headers headers = headers();
+        return headers != null && headers.get( FileVersion.FILE_VERSION ).txId < txId;
     }
 
     public long txId()
     {
-        return metadata().txId;
+        return headers().get( FileVersion.FILE_VERSION ).txId;
     }
 
     public long minorVersion()
     {
-        return metadata().minorVersion;
+        return headers().get( FileVersion.FILE_VERSION ).minorVersion;
     }
 
     public Register.DoubleLongRegister get( CountsKey key, Register.DoubleLongRegister target )
@@ -181,18 +185,18 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey, Metadata, Me
     }
 
     @Override
-    protected Metadata initialMetadata()
+    protected Headers initialHeaders()
     {
-        return new Metadata( -1, 1 );
+        return Headers.headersBuilder().put( FileVersion.FILE_VERSION, new FileVersion( -1, 1 ) ).headers();
     }
 
     @Override
-    protected int compareMetadata( Metadata lhs, Metadata rhs )
+    protected int compareHeaders( Headers lhs, Headers rhs )
     {
-        return compare( lhs, rhs );
+        return compare( lhs.get( FileVersion.FILE_VERSION ), rhs.get( FileVersion.FILE_VERSION ) );
     }
 
-    static int compare( Metadata lhs, Metadata rhs )
+    static int compare( FileVersion lhs, FileVersion rhs )
     {
         int cmp = Long.compare( lhs.txId, rhs.txId );
         if ( cmp == 0 )
@@ -203,9 +207,11 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey, Metadata, Me
     }
 
     @Override
-    protected Metadata updateMetadata( Metadata metadata, Metadata.Diff changes )
+    protected Headers updateHeaders( Headers headers, FileVersion.Change changes )
     {
-        return metadata.update( changes );
+        return Headers.headersBuilder()
+                      .put( FileVersion.FILE_VERSION, headers.get( FileVersion.FILE_VERSION ).update( changes ) )
+                      .headers();
     }
 
     @Override
@@ -237,14 +243,7 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey, Metadata, Me
     }
 
     @Override
-    protected Metadata buildMetadata( ReadableBuffer formatSpecifier, CollectedMetadata metadata )
-    {
-        Metadata.TxId txId = metadata.getMetadata( Metadata.TX_ID );
-        return new Metadata( txId.txId, txId.minorVersion );
-    }
-
-    @Override
-    protected String extractFileTrailer( Metadata metadata )
+    protected String fileTrailer()
     {
         return StoreFactory.buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR );
     }
@@ -261,24 +260,24 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey, Metadata, Me
         logger.logMessage( "Failed to open counts store file: " + path, error );
     }
 
-    protected void beforeRotation( File source, File target, Metadata metadata )
+    protected void beforeRotation( File source, File target, Headers headers )
     {
         logger.logMessage( String.format( "About to rotate counts store at transaction %d to [%s], from [%s].",
-                                          metadata.txId, target, source ) );
+                                          headers.get( FileVersion.FILE_VERSION ).txId, target, source ) );
     }
 
     @Override
-    protected void rotationSucceeded( File source, File target, Metadata metadata )
+    protected void rotationSucceeded( File source, File target, Headers headers )
     {
         logger.logMessage( String.format( "Successfully rotated counts store at transaction %d to [%s], from [%s].",
-                                          metadata.txId, target, source ) );
+                                          headers.get( FileVersion.FILE_VERSION ).txId, target, source ) );
     }
 
     @Override
-    protected void rotationFailed( File source, File target, Metadata metadata, Exception e )
+    protected void rotationFailed( File source, File target, Headers headers, Exception e )
     {
         logger.logMessage( String.format( "Failed to rotate counts store at transaction %d to [%s], from [%s].",
-                                          metadata.txId, target, source ), e );
+                                          headers.get( FileVersion.FILE_VERSION ).txId, target, source ), e );
     }
 
     @Override
@@ -288,12 +287,12 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey, Metadata, Me
     }
 
     @Override
-    protected boolean hasMetadataChanges( Metadata metadata, Metadata.Diff diff )
+    protected boolean hasHeaderChanges( Headers headers, FileVersion.Change change )
     {
-        return metadata != null && metadata.txId != diff.txId;
+        return headers != null && headers.get( FileVersion.FILE_VERSION ).txId != change.txId;
     }
 
-    private class DelegatingVisitor extends Visitor implements MetadataVisitor<Metadata>
+    private class DelegatingVisitor extends Visitor implements MetadataVisitor
     {
         private final CountsVisitor visitor;
 
@@ -311,11 +310,11 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey, Metadata, Me
 
         @SuppressWarnings("unchecked")
         @Override
-        public void visitMetadata( File path, Metadata metadata, int entryCount )
+        public void visitMetadata( File path, Headers headers, int entryCount )
         {
-            if ( visitor instanceof MetadataVisitor<?> )
+            if ( visitor instanceof MetadataVisitor )
             {
-                ((MetadataVisitor<Metadata>) visitor).visitMetadata( path, metadata, entryCount );
+                ((MetadataVisitor) visitor).visitMetadata( path, headers, entryCount );
             }
         }
 
@@ -427,7 +426,7 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey, Metadata, Me
         }
     }
 
-    private class ValueFormat extends AbstractKeyValueStore<CountsKey, ?, ?>.Updater implements CountsAccessor.Updater
+    private class ValueFormat extends AbstractKeyValueStore<CountsKey, ?>.Updater implements CountsAccessor.Updater
     {
         /**
          * Value format:

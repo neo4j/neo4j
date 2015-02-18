@@ -24,9 +24,9 @@ import java.io.IOException;
 
 import org.neo4j.helpers.Pair;
 
-abstract class KeyValueStoreState<Key, Meta>
+abstract class KeyValueStoreState<Key>
 {
-    public abstract Meta metadata();
+    public abstract Headers headers();
 
     public abstract boolean hasChanges();
 
@@ -42,19 +42,19 @@ abstract class KeyValueStoreState<Key, Meta>
 
     // State transitions
 
-    public KeyValueStoreState<Key, Meta> init() throws IOException
+    public KeyValueStoreState<Key> init() throws IOException
     {
         throw new IllegalStateException( "The store has already been initialised" );
     }
 
-    public KeyValueStoreState<Key, Meta> start() throws IOException
+    public KeyValueStoreState<Key> start() throws IOException
     {
         return this;
     }
 
-    public abstract KeyValueStoreState<Key, Meta> rotate( Meta metadata ) throws IOException;
+    public abstract KeyValueStoreState<Key> rotate( Headers headers ) throws IOException;
 
-    public final KeyValueStoreState<Key, Meta> shutdown() throws IOException
+    public final KeyValueStoreState<Key> shutdown() throws IOException
     {
         if ( hasChanges() )
         {
@@ -63,7 +63,7 @@ abstract class KeyValueStoreState<Key, Meta>
         return close();
     }
 
-    abstract KeyValueStoreState<Key, Meta> close() throws IOException;
+    abstract KeyValueStoreState<Key> close() throws IOException;
 
     @Override
     public String toString()
@@ -73,23 +73,23 @@ abstract class KeyValueStoreState<Key, Meta>
 
     public abstract File file();
 
-    abstract KeyValueStoreFile<Meta> openStoreFile( File path ) throws IOException;
+    abstract KeyValueStoreFile openStoreFile( File path ) throws IOException;
 
     // Initial state
 
-    static abstract class Stopped<Key, Meta> extends PreState<Key, Meta>
+    static abstract class Stopped<Key> extends PreState<Key>
     {
-        final RotationStrategy<Meta> rotation;
+        final RotationStrategy rotation;
 
-        Stopped( RotationStrategy<Meta> rotation )
+        Stopped( RotationStrategy rotation )
         {
             this.rotation = rotation;
         }
 
         @Override
-        public final KeyValueStoreState<Key, Meta> init() throws IOException
+        public final KeyValueStoreState<Key> init() throws IOException
         {
-            Pair<File, KeyValueStoreFile<Meta>> opened = rotation.open();
+            Pair<File, KeyValueStoreFile> opened = rotation.open();
             if ( opened == null )
             {
                 return new Initialized();
@@ -97,7 +97,7 @@ abstract class KeyValueStoreState<Key, Meta>
             return create( opened.first(), opened.other() );
         }
 
-        abstract KeyValueStoreState<Key, Meta> create( File path, KeyValueStoreFile<Meta> file );
+        abstract KeyValueStoreState<Key> create( File path, KeyValueStoreFile file );
 
         @Override
         final IllegalStateException invalidState()
@@ -106,34 +106,34 @@ abstract class KeyValueStoreState<Key, Meta>
         }
 
         @Override
-        final KeyValueStoreState<Key, Meta> close() throws IOException
+        final KeyValueStoreState<Key> close() throws IOException
         {
             return this;
         }
 
         @Override
-        KeyValueStoreFile<Meta> openStoreFile( File path ) throws IOException
+        KeyValueStoreFile openStoreFile( File path ) throws IOException
         {
             return rotation.openStoreFile( path );
         }
 
-        private class Initialized extends PreState<Key, Meta>
+        private class Initialized extends PreState<Key>
         {
             @Override
-            public KeyValueStoreState<Key, Meta> start() throws IOException
+            public KeyValueStoreState<Key> start() throws IOException
             {
-                Pair<File, KeyValueStoreFile<Meta>> opened = rotation.create();
+                Pair<File, KeyValueStoreFile> opened = rotation.create();
                 return create( opened.first(), opened.other() );
             }
 
             @Override
-            public Meta metadata()
+            public Headers headers()
             {
                 return null;
             }
 
             @Override
-            KeyValueStoreState<Key, Meta> close() throws IOException
+            KeyValueStoreState<Key> close() throws IOException
             {
                 return Stopped.this;
             }
@@ -145,14 +145,14 @@ abstract class KeyValueStoreState<Key, Meta>
             }
 
             @Override
-            KeyValueStoreFile<Meta> openStoreFile( File path ) throws IOException
+            KeyValueStoreFile openStoreFile( File path ) throws IOException
             {
                 return Stopped.this.openStoreFile( path );
             }
         }
     }
 
-    private static abstract class PreState<Key, Meta> extends KeyValueStoreState<Key, Meta>
+    private static abstract class PreState<Key> extends KeyValueStoreState<Key>
     {
         @Override
         public File file()
@@ -161,7 +161,7 @@ abstract class KeyValueStoreState<Key, Meta>
         }
 
         @Override
-        public Meta metadata()
+        public Headers headers()
         {
             throw invalidState();
         }
@@ -197,19 +197,19 @@ abstract class KeyValueStoreState<Key, Meta>
         }
 
         @Override
-        public KeyValueStoreState<Key, Meta> init() throws IOException
+        public KeyValueStoreState<Key> init() throws IOException
         {
             throw invalidState();
         }
 
         @Override
-        public KeyValueStoreState<Key, Meta> start() throws IOException
+        public KeyValueStoreState<Key> start() throws IOException
         {
             throw invalidState();
         }
 
         @Override
-        public final KeyValueStoreState<Key, Meta> rotate( Meta metadata ) throws IOException
+        public final KeyValueStoreState<Key> rotate( Headers headers ) throws IOException
         {
             throw invalidState();
         }

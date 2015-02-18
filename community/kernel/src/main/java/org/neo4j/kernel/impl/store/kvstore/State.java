@@ -38,14 +38,12 @@ public @interface State
         CONCURRENT_HASH_MAP
         {
             @Override
-            <Key, Meta> KeyValueStoreState<Key, Meta> initialState(
-                    RotationStrategy<Meta> rotation, KeyFormat<Key> keys )
+            <Key> KeyValueStoreState<Key> initialState( RotationStrategy rotation, KeyFormat<Key> keys )
             {
                 return new ConcurrentMapState.PreState<>( rotation, keys );
             }
         };
 
-        abstract <Key, Meta> KeyValueStoreState<Key, Meta> initialState(
-                RotationStrategy<Meta> rotation, KeyFormat<Key> keys );
+        abstract <Key> KeyValueStoreState<Key> initialState( RotationStrategy rotation, KeyFormat<Key> keys );
     }
 }

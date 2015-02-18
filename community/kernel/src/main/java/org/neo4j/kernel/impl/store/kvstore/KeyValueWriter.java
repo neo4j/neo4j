@@ -31,21 +31,21 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
-class KeyValueWriter<META> implements Closeable
+class KeyValueWriter implements Closeable
 {
-    private final MetadataCollector<META> metadata;
+    private final MetadataCollector metadata;
     private final Writer writer;
     private int keySize, valueSize;
     private State state = State.expecting_format_specifier;
 
-    public static <META> KeyValueWriter<META> create(
-            MetadataCollector<META> metadata, FileSystemAbstraction fs, PageCache pages, File path, int pageSize )
+    public static KeyValueWriter create(
+            MetadataCollector metadata, FileSystemAbstraction fs, PageCache pages, File path, int pageSize )
             throws IOException
     {
-        return new KeyValueWriter<>( metadata, Writer.create( fs, pages, path, pageSize ) );
+        return new KeyValueWriter( metadata, Writer.create( fs, pages, path, pageSize ) );
     }
 
-    KeyValueWriter( MetadataCollector<META> metadata, Writer writer )
+    KeyValueWriter( MetadataCollector metadata, Writer writer )
     {
         this.metadata = metadata;
         this.writer = writer;
@@ -98,10 +98,13 @@ class KeyValueWriter<META> implements Closeable
     public void writeTrailer( String trailer ) throws IOException
     {
         state.trailer( this );
-        writer.writeTrailer( trailer );
+        if ( trailer != null )
+        {
+            writer.writeTrailer( trailer );
+        }
     }
 
-    public KeyValueStoreFile<META> openStoreFile() throws IOException
+    public KeyValueStoreFile openStoreFile() throws IOException
     {
         state.open( this );
         return writer.open( metadata, keySize, valueSize );
@@ -118,7 +121,7 @@ class KeyValueWriter<META> implements Closeable
         expecting_format_specifier
         {
             @Override
-            boolean header( KeyValueWriter<?> writer, boolean zeroValue )
+            boolean header( KeyValueWriter writer, boolean zeroValue )
             {
                 if ( zeroValue )
                 {
@@ -135,7 +138,7 @@ class KeyValueWriter<META> implements Closeable
         expecting_header
         {
             @Override
-            boolean header( KeyValueWriter<?> writer, boolean zeroValue )
+            boolean header( KeyValueWriter writer, boolean zeroValue )
             {
                 writer.state = zeroValue ? expecting_data : writing_header;
                 return true;
@@ -144,7 +147,7 @@ class KeyValueWriter<META> implements Closeable
         writing_header
         {
             @Override
-            boolean header( KeyValueWriter<?> writer, boolean zeroValue )
+            boolean header( KeyValueWriter writer, boolean zeroValue )
             {
                 if ( zeroValue )
                 {
@@ -154,7 +157,7 @@ class KeyValueWriter<META> implements Closeable
             }
 
             @Override
-            void data( KeyValueWriter<?> writer )
+            void data( KeyValueWriter writer )
             {
                 writer.state = writing_data;
             }
@@ -162,7 +165,7 @@ class KeyValueWriter<META> implements Closeable
         expecting_data
         {
             @Override
-            boolean header( KeyValueWriter<?> writer, boolean zeroValue )
+            boolean header( KeyValueWriter writer, boolean zeroValue )
             {
                 if ( zeroValue )
                 {
@@ -177,7 +180,7 @@ class KeyValueWriter<META> implements Closeable
             }
 
             @Override
-            void data( KeyValueWriter<?> writer )
+            void data( KeyValueWriter writer )
             {
                 writer.state = writing_data;
             }
@@ -185,7 +188,7 @@ class KeyValueWriter<META> implements Closeable
         writing_data
         {
             @Override
-            boolean header( KeyValueWriter<?> writer, boolean zeroValue )
+            boolean header( KeyValueWriter writer, boolean zeroValue )
             {
                 if ( zeroValue )
                 {
@@ -200,7 +203,7 @@ class KeyValueWriter<META> implements Closeable
             }
 
             @Override
-            void data( KeyValueWriter<?> writer )
+            void data( KeyValueWriter writer )
             {
                 // keep the same state
             }
@@ -208,7 +211,7 @@ class KeyValueWriter<META> implements Closeable
         writing_trailer
         {
             @Override
-            void trailer( KeyValueWriter<?> writer )
+            void trailer( KeyValueWriter writer )
             {
                 writer.state = done;
             }
@@ -216,7 +219,7 @@ class KeyValueWriter<META> implements Closeable
         done
         {
             @Override
-            void open( KeyValueWriter<?> writer )
+            void open( KeyValueWriter writer )
             {
                 // ok
             }
@@ -224,27 +227,27 @@ class KeyValueWriter<META> implements Closeable
         in_error;
         // </pre>
 
-        boolean header( KeyValueWriter<?> writer, boolean zeroValue )
+        boolean header( KeyValueWriter writer, boolean zeroValue )
         {
             throw illegalState( writer, "write header" );
         }
 
-        void data( KeyValueWriter<?> writer )
+        void data( KeyValueWriter writer )
         {
             throw illegalState( writer, "write data" );
         }
 
-        void trailer( KeyValueWriter<?> writer )
+        void trailer( KeyValueWriter writer )
         {
             throw illegalState( writer, "write trailer" );
         }
 
-        void open( KeyValueWriter<?> writer )
+        void open( KeyValueWriter writer )
         {
             throw illegalState( writer, "open store file" );
         }
 
-        private IllegalStateException illegalState( KeyValueWriter<?> writer, String what )
+        private IllegalStateException illegalState( KeyValueWriter writer, String what )
         {
             writer.state = in_error;
             return new IllegalStateException( "Cannot " + what + " when " + name().replace( '_', ' ' ) + "." );
@@ -258,8 +261,7 @@ class KeyValueWriter<META> implements Closeable
 
         abstract void write( byte[] data ) throws IOException;
 
-        abstract <META> KeyValueStoreFile<META> open( Metadata<META> metadata, int keySize, int valueSize )
-                throws IOException;
+        abstract KeyValueStoreFile open( Metadata metadata, int keySize, int valueSize ) throws IOException;
 
         abstract void close() throws IOException;
 
@@ -301,7 +303,7 @@ class KeyValueWriter<META> implements Closeable
         }
 
         @Override
-        <META> KeyValueStoreFile<META> open( Metadata<META> metadata, int keySize, int valueSize ) throws IOException
+        KeyValueStoreFile open( Metadata metadata, int keySize, int valueSize ) throws IOException
         {
             return null;
         }
@@ -329,9 +331,9 @@ class KeyValueWriter<META> implements Closeable
         }
 
         @Override
-        <META> KeyValueStoreFile<META> open( Metadata<META> metadata, int keySize, int valueSize ) throws IOException
+        KeyValueStoreFile open( Metadata metadata, int keySize, int valueSize ) throws IOException
         {
-            return new KeyValueStoreFile<>( pages.map( path, pageSize ), keySize, valueSize, metadata );
+            return new KeyValueStoreFile( pages.map( path, pageSize ), keySize, valueSize, metadata );
         }
     }
 
@@ -374,9 +376,9 @@ class KeyValueWriter<META> implements Closeable
         }
 
         @Override
-        <META> KeyValueStoreFile<META> open( Metadata<META> metadata, int keySize, int valueSize )
+        KeyValueStoreFile open( Metadata metadata, int keySize, int valueSize ) throws IOException
         {
-            KeyValueStoreFile<META> result = new KeyValueStoreFile<>( file, keySize, valueSize, metadata );
+            KeyValueStoreFile result = new KeyValueStoreFile( file, keySize, valueSize, metadata );
             opened = true;
             return result;
         }

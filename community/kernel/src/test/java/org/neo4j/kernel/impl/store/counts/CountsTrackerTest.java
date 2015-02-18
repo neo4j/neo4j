@@ -223,17 +223,17 @@ public class CountsTrackerTest
     }
 
     @Test
-    public void shouldOrderStoreByTxIdInMetadataThenMinorVersion() throws Exception
+    public void shouldOrderStoreByTxIdInHeaderThenMinorVersion() throws Exception
     {
         // given
-        Metadata meta = new Metadata( 16, 5 );
+        FileVersion version = new FileVersion( 16, 5 );
 
         // then
-        assertTrue( CountsTracker.compare( meta, new Metadata( 5, 5 ) ) > 0 );
-        assertTrue( CountsTracker.compare( meta, new Metadata( 16, 5 ) ) == 0 );
-        assertTrue( CountsTracker.compare( meta, new Metadata( 30, 1 ) ) < 0 );
-        assertTrue( CountsTracker.compare( meta, new Metadata( 16, 1 ) ) > 0 );
-        assertTrue( CountsTracker.compare( meta, new Metadata( 16, 7 ) ) < 0 );
+        assertTrue( CountsTracker.compare( version, new FileVersion( 5, 5 ) ) > 0 );
+        assertTrue( CountsTracker.compare( version, new FileVersion( 16, 5 ) ) == 0 );
+        assertTrue( CountsTracker.compare( version, new FileVersion( 30, 1 ) ) < 0 );
+        assertTrue( CountsTracker.compare( version, new FileVersion( 16, 1 ) ) > 0 );
+        assertTrue( CountsTracker.compare( version, new FileVersion( 16, 7 ) ) < 0 );
     }
 
     @Test
