@@ -42,6 +42,8 @@ trait MapToPublicExceptions[T <: Throwable] {
 
   def indexHintException(identifier: String, label: String, property: String, message: String): T
 
+  def labelScanHintException(identifier: String, label: String, message: String): T
+
   def unknownLabelException(s: String): T
 
   def profilerStatisticsNotReadyException(): T

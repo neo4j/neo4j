@@ -88,6 +88,10 @@ class IndexHintException(identifier: String, label: String, property: String, me
   def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.indexHintException(identifier, label, property, message)
 }
 
+class LabelScanHintException(identifier: String, label: String, message: String) extends CypherException {
+  def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.labelScanHintException(identifier, label, message)
+}
+
 class InvalidSemanticsException(message: String) extends CypherException {
   def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.invalidSemanticException(message)
 }

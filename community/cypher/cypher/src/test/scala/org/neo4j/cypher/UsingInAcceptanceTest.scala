@@ -27,7 +27,7 @@ class UsingInAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestS
 
     // WHEN & THEN
     intercept[SyntaxException](
-      execute("start n=node(*) using index n:Person(name) where n:Person and n.name IN ['kabam'] return n"))
+      executeWithNewPlanner("start n=node(*) using index n:Person(name) where n:Person and n.name IN ['kabam'] return n"))
   }
 
   test("fail if using an identifier with label not used in match") {
