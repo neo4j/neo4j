@@ -34,24 +34,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter.un
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{GraphStatistics, PlanContext}
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.index.IndexDescriptor
-import org.scalatest.matchers._
 
-trait BeLikeMatcher {
-  class BeLike(pf: PartialFunction[Object, Unit]) extends Matcher[Object] {
-
-    def apply(left: Object) = {
-      MatchResult(
-        pf.isDefinedAt(left),
-        s"""$left did not match the partial function""",
-        s"""$left matched the partial function"""
-      )
-    }
-  }
-
-  def beLike(pf: PartialFunction[Object, Unit]) = new BeLike(pf)
-}
-
-object BeLikeMatcher extends BeLikeMatcher
+import scala.language.implicitConversions
 
 case class SemanticPlan(plan: LogicalPlan, semanticTable: SemanticTable)
 
@@ -77,117 +61,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
   val realConfig = new RealLogicalPlanningConfiguration
 
-  trait LogicalPlanningConfiguration {
-    def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, semanticTable: SemanticTable): Metrics.CardinalityModel
-    def costModel(cardinality: CardinalityModel): PartialFunction[LogicalPlan, Cost]
-    def graphStatistics: GraphStatistics
-    def indexes: Set[(String, String)]
-    def uniqueIndexes: Set[(String, String)]
-    def labelCardinality: Map[String, Cardinality]
-    def knownLabels: Set[String]
-    def qg: QueryGraph
-
-    class given extends StubbedLogicalPlanningConfiguration(this)
-
-    def planFor(queryString: String): SemanticPlan =
-      LogicalPlanningEnvironment(this).planFor(queryString)
-
-    def getLogicalPlanFor(query: String): (LogicalPlan, SemanticTable) =
-      LogicalPlanningEnvironment(this).getLogicalPlanFor(query)
-
-    def withLogicalPlanningContext[T](f: LogicalPlanningContext => T): T = {
-      LogicalPlanningEnvironment(this).withLogicalPlanningContext(f)
-    }
-
-    protected def mapCardinality(pf: PartialFunction[LogicalPlan, Double]): PartialFunction[LogicalPlan, Cardinality] = pf.andThen(Cardinality.apply)
-  }
-
-  case class RealLogicalPlanningConfiguration() extends LogicalPlanningConfiguration {
-    def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, semanticTable: SemanticTable) = {
-      val model = new StatisticsBackedCardinalityModel(queryGraphCardinalityModel)
-      ({
-        case (plan: LogicalPlan, card: QueryGraphCardinalityInput) => model(plan, card)
-      })
-    }
-    def costModel(cardinality: CardinalityModel): PartialFunction[LogicalPlan, Cost] = {
-      val model = new CardinalityCostModel(cardinality)
-      ({
-        case (plan: LogicalPlan) => model(plan, QueryGraphCardinalityInput.empty)
-      })
-    }
-    def graphStatistics: GraphStatistics =
-      HardcodedGraphStatistics
-    def indexes = Set.empty
-    def uniqueIndexes = Set.empty
-    def labelCardinality = Map.empty
-    def knownLabels = Set.empty
-    def qg: QueryGraph = ???
-  }
-
-  class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration) extends LogicalPlanningConfiguration {
-    var knownLabels: Set[String] = Set.empty
-    var cardinality: PartialFunction[LogicalPlan, Cardinality] = PartialFunction.empty
-    var cost: PartialFunction[LogicalPlan, Cost] = PartialFunction.empty
-    var selectivity: PartialFunction[Expression, Selectivity] = PartialFunction.empty
-    var labelCardinality: Map[String, Cardinality] = Map.empty
-    var statistics = null
-    var qg: QueryGraph = null
-
-    var indexes: Set[(String, String)] = Set.empty
-    var uniqueIndexes: Set[(String, String)] = Set.empty
-    def indexOn(label: String, property: String) {
-      indexes = indexes + (label -> property)
-    }
-    def uniqueIndexOn(label: String, property: String) {
-      uniqueIndexes = uniqueIndexes + (label -> property)
-    }
-
-    def costModel(cardinality: Metrics.CardinalityModel) =
-      cost.orElse(parent.costModel(cardinality))
-
-    def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, semanticTable: SemanticTable): Metrics.CardinalityModel = {
-      val labelIdCardinality: Map[LabelId, Cardinality] = labelCardinality.map {
-        case (name: String, cardinality: Cardinality) =>
-          semanticTable.resolvedLabelIds(name) -> cardinality
-      }
-      val labelScanCardinality: PartialFunction[LogicalPlan, Cardinality] = {
-        case NodeByLabelScan(_, label, _) if label.id(semanticTable).isDefined &&
-          labelIdCardinality.contains(label.id(semanticTable).get) =>
-          labelIdCardinality(label.id(semanticTable).get)
-      }
-
-      val r: PartialFunction[LogicalPlan, Cardinality] =
-        labelScanCardinality
-        .orElse(cardinality)
-//        .orElse(PartialFunction(parent.cardinalityModel(queryGraphCardinalityModel, semanticTable)))
-
-      (p: LogicalPlan, c: QueryGraphCardinalityInput) =>
-        if(r.isDefinedAt(p)) r.apply(p) else parent.cardinalityModel(queryGraphCardinalityModel, semanticTable)(p, c)
-    }
-
-    def graphStatistics: GraphStatistics =
-      Option(statistics).getOrElse(parent.graphStatistics)
-  }
-
-  case class LogicalPlanningEnvironment(config: LogicalPlanningConfiguration) {
-    lazy val semanticTable: SemanticTable = {
-      val table = SemanticTable()
-      def addLabelIfUnknown(labelName: String) =
-        if (!table.resolvedLabelIds.contains(labelName))
-          table.resolvedLabelIds.put(labelName, LabelId(table.resolvedLabelIds.size))
-
-      config.indexes.foreach { case (label, property) =>
-        addLabelIfUnknown(label)
-        table.resolvedPropertyKeyNames.put(property, PropertyKeyId(table.resolvedPropertyKeyNames.size))
-      }
-      config.uniqueIndexes.foreach { case (label, property) =>
-        addLabelIfUnknown(label)
-        table.resolvedPropertyKeyNames.put(property, PropertyKeyId(table.resolvedPropertyKeyNames.size))
-      }
-      config.labelCardinality.keys.foreach(addLabelIfUnknown)
-      config.knownLabels.foreach(addLabelIfUnknown)
-      table
-    }
+  implicit class LogicalPlanningEnvironment[C <: LogicalPlanningConfiguration](config: C) {
+    lazy val semanticTable = config.computeSemanticTable
 
     def metricsFactory = new MetricsFactory {
       def newCostModel(cardinality: Metrics.CardinalityModel) =
@@ -227,8 +102,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
       def getOptPropertyKeyId(propertyKeyName: String) =
         semanticTable.resolvedPropertyKeyNames.get(propertyKeyName).map(_.id)
+
       def getOptLabelId(labelName: String): Option[Int] =
         semanticTable.resolvedLabelIds.get(labelName).map(_.id)
+
       def getOptRelTypeId(relType: String): Option[Int] =
         semanticTable.resolvedRelTypeNames.get(relType).map(_.id)
 
@@ -279,7 +156,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       }
     }
 
-    def withLogicalPlanningContext[T](f: LogicalPlanningContext => T): T = {
+    def withLogicalPlanningContext[T](f: (C, LogicalPlanningContext) => T): T = {
       val metrics = metricsFactory.newMetrics(config.graphStatistics, semanticTable)
       val ctx = LogicalPlanningContext(
         planContext = planContext,
@@ -288,7 +165,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         strategy = queryGraphSolver,
         cardinalityInput = QueryGraphCardinalityInput(Map.empty, Cardinality(1))
       )
-      f(ctx)
+      f(config, ctx)
     }
   }
 
@@ -302,8 +179,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   class given extends StubbedLogicalPlanningConfiguration(realConfig)
 
   implicit def idName(name: String): IdName = IdName(name)
+
   implicit def lazyLabel(label: String)(implicit plan: SemanticPlan): LazyLabel =
     LazyLabel(LabelName(label)(_))(plan.semanticTable)
+
   implicit def propertyKeyId(label: String)(implicit plan: SemanticPlan): PropertyKeyId =
     plan.semanticTable.resolvedPropertyKeyNames(label)
 }

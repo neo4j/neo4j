@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 
 class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel)
   extends Metrics.CardinalityModel {
+
   def apply(plan: LogicalPlan, input: QueryGraphCardinalityInput): Cardinality =
     computeCardinality(plan.solved, input)
 

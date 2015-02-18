@@ -40,28 +40,26 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
   test("does not plan index seek when no index exist") {
     new given {
       qg = queryGraph(inCollectionValue, hasLabels)
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexSeekLeafPlanner(cfg.qg)(ctx)
 
-      withLogicalPlanningContext { (ctx: LogicalPlanningContext) =>
-        // when
-        val resultPlans = indexSeekLeafPlanner(qg)(ctx)
-
-        // then
-        resultPlans shouldBe empty
-      }
+      // then
+      resultPlans shouldBe empty
     }
   }
+
   test("does not plan index seek when no unique index exist") {
     new given {
       qg = queryGraph(inCollectionValue, hasLabels)
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = uniqueIndexSeekLeafPlanner(cfg.qg)(ctx)
 
-      withLogicalPlanningContext { (ctx) =>
-        // when
-        val resultPlans = uniqueIndexSeekLeafPlanner(qg)(ctx)
-
-        // then
-        resultPlans shouldBe empty
-      }
+      // then
+      resultPlans shouldBe empty
     }
+
   }
 
   test("index scan when there is an index on the property") {
@@ -69,35 +67,33 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       qg = queryGraph(inCollectionValue, hasLabels)
 
       indexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexSeekLeafPlanner(cfg.qg)(ctx)
 
-      withLogicalPlanningContext { (ctx) =>
-        // when
-        val resultPlans = indexSeekLeafPlanner(qg)(ctx)
-
-        // then
-        resultPlans should beLike {
-          case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(`lit42`))), _)) =>  ()
-        }
+      // then
+      resultPlans should beLike {
+        case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(`lit42`))), _)) =>  ()
       }
     }
+
   }
 
   test("plans index seeks when identifier exists as an argument") {
-    new given { // GIVEN 42 as x MATCH a WHERE a.prop IN [x]
-       val x = ident("x")
-      qg = queryGraph(In(property, Collection(Seq(x))_)_, hasLabels).
-        addArgumentIds(Seq(IdName("x")))
+    new given {
+      // GIVEN 42 as x MATCH a WHERE a.prop IN [x]
+      val x = ident("x")
+      qg = queryGraph(In(property, Collection(Seq(x)) _) _, hasLabels).addArgumentIds(Seq(IdName("x")))
 
       indexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val x = cfg.x
+      val resultPlans = indexSeekLeafPlanner(cfg.qg)(ctx)
 
-      withLogicalPlanningContext { (ctx) =>
-        // when
-        val resultPlans = indexSeekLeafPlanner(qg)(ctx)
-
-        // then
-        resultPlans should beLike {
-          case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(`x`))), _)) => ()
-        }
+      // then
+      resultPlans should beLike {
+        case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(`x`))), _)) => ()
       }
     }
   }
@@ -108,15 +104,14 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       qg = queryGraph(In(property, Collection(Seq(x))_)_, hasLabels)
 
       indexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexSeekLeafPlanner(cfg.qg)(ctx)
 
-      withLogicalPlanningContext { (ctx) =>
-        // when
-        val resultPlans = indexSeekLeafPlanner(qg)(ctx)
-
-        // then
-        resultPlans shouldBe empty
-      }
+      // then
+      resultPlans shouldBe empty
     }
+
   }
 
   test("unique index scan when there is an unique index on the property") {
@@ -124,15 +119,13 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       qg = queryGraph(inCollectionValue, hasLabels)
 
       uniqueIndexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = uniqueIndexSeekLeafPlanner(cfg.qg)(ctx)
 
-      withLogicalPlanningContext { (ctx) =>
-        // when
-        val resultPlans = uniqueIndexSeekLeafPlanner(qg)(ctx)
-
-        // then
-        resultPlans should beLike {
-          case Seq(NodeIndexUniqueSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(`lit42`))), _)) => ()
-        }
+      // then
+      resultPlans should beLike {
+        case Seq(NodeIndexUniqueSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(`lit42`))), _)) => ()
       }
     }
   }
@@ -144,19 +137,17 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       qg = queryGraph(inCollectionValue, hasLabels).addHints(Some(hint))
 
       indexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = indexSeekLeafPlanner(cfg.qg)(ctx)
 
-      withLogicalPlanningContext { (ctx) =>
-        // when
-        val resultPlans = indexSeekLeafPlanner(qg)(ctx)
+      // then
+      resultPlans should beLike {
+        case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(`lit42`))), _)) => ()
+      }
 
-        // then
-        resultPlans should beLike {
-          case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(`lit42`))), _)) => ()
-        }
-
-        resultPlans.map(_.solved.graph) should beLike {
-          case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Set(hint) => ()
-        }
+      resultPlans.map(_.solved.graph) should beLike {
+        case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Set(hint) => ()
       }
     }
   }
@@ -168,21 +159,20 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       qg = queryGraph(inCollectionValue, hasLabels).addHints(Some(hint))
 
       uniqueIndexOn("Awesome", "prop")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      val resultPlans = uniqueIndexSeekLeafPlanner(cfg.qg)(ctx)
 
-      withLogicalPlanningContext { (ctx) =>
-        // when
-        val resultPlans = uniqueIndexSeekLeafPlanner(qg)(ctx)
+      // then
+      resultPlans should beLike {
+        case Seq(NodeIndexUniqueSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(`lit42`))), _)) => ()
+      }
 
-        // then
-        resultPlans should beLike {
-          case Seq(NodeIndexUniqueSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(`lit42`))), _)) => ()
-        }
-
-        resultPlans.map(_.solved.graph) should beLike {
-          case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Set(hint) => ()
-        }
+      resultPlans.map(_.solved.graph) should beLike {
+        case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Set(hint) => ()
       }
     }
+
   }
 
   private def queryGraph(predicates: Expression*) =
