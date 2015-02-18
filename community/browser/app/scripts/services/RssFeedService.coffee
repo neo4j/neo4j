@@ -26,7 +26,7 @@ class RssFeedService
     RssFeedService::get = () ->
       format = "json"
       username = "neo4jmotd"
-      apiUrl = "http://assets.neo4j.org/v2/#{format}/#{username}?callback=JSON_CALLBACK&count=10?plain=true"
+      apiUrl = "#{document.location.protocol || 'http:'}//assets.neo4j.org/v2/#{format}/#{username}?callback=JSON_CALLBACK&count=10?plain=true"
 
       $http.jsonp(apiUrl)
       .error (results) ->
