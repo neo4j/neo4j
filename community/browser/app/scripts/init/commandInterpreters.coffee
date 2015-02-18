@@ -275,10 +275,10 @@ angular.module('neo4jApp')
           AuthService.hasValidAuthorization()
           .then(
             (r) ->
-              q.resolve(ConnectionStatusService.getConnectionStatusSummary())
+              q.resolve r
             ,
             (r) ->
-              q.reject(ConnectionStatusService.getConnectionStatusSummary())
+              q.reject r
             )
           q.promise
       ]

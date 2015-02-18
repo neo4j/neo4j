@@ -18,7 +18,7 @@ div(ng-controller="CypherResultCtrl", fullscreen)
     .right-inner-frame.no-indicator(ng-class='{"no-left-menu": frame.type != "cypher" || availableModes.length < 1}')
       .inner
         .view-result(ng-class='{error: frame.hasErrors}')
-          .view-result-graph(ng-show='isActive("graph")', ng-controller="InspectorCtrl")
+          .view-result-graph(ng-show='isActive("graph" )&& !frame.isTerminating', ng-controller="InspectorCtrl")
             article.help.no-data(ng-show='!isAvailable("graph")')
               p No graph view available. You have to return complete nodes or relationships to view the graph.
             .graph-holder.result(ng-show='isAvailable("graph")')
@@ -39,7 +39,7 @@ div(ng-controller="CypherResultCtrl", fullscreen)
                   .status
                     include partials/inspector
 
-          .view-result-table.result(ng-show='isActive("table")')
+          .view-result-table.result(ng-show='isActive("table") && !frame.isTerminating')
             .table-holder
               neo-table(table-data='frame.response.table', ng-show='frame.response.table.size')
               article.help.no-data.has-status-bar(ng-show='!frame.response.table.size')
@@ -52,7 +52,7 @@ div(ng-controller="CypherResultCtrl", fullscreen)
               .status
                 include partials/result-status
 
-          .view-result-plan.result(ng-show='isActive("plan")')
+          .view-result-plan.result(ng-show='isActive("plan") && !frame.isTerminating')
             .plan-holder
               article.help.no-data.has-status-bar(ng-show='!isAvailable("plan")')
                 p No plan found. Prepend your query with EXPLAIN or PROFILE to analyze the execution plan.
@@ -67,12 +67,19 @@ div(ng-controller="CypherResultCtrl", fullscreen)
             pre(ng-bind="frame.detailedErrorText")
             .status-bar.error
               .status
-                .fa.fa-exclamation-triangle
+                .fa.fa-exclamation-triangle.icon-warning-sign &nbsp;
                 {{frame.errorText}}
 
-          .view-result-loading(ng-show='frame.isLoading')
+          .view-result-loading(ng-show='frame.isLoading && !frame.isTerminating')
             .spinner
               span.fa.fa-spinner.fa-spin.fa-2x
             .status-bar
               .status
                 span Running...
+
+          .view-result-loading(ng-show='frame.isTerminating')
+            .spinner
+              span.fa.fa-spinner.fa-spin.fa-2x
+            .status-bar
+              .status
+                span Terminating...

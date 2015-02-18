@@ -88,13 +88,16 @@ angular.module('neo4jApp.services')
             if not result
               q.reject()
             else if result.errors && result.errors.length > 0
-              q.reject(result.errors)
+              q.reject(result)
             else
               results = []
               for r in result.results
                 results.push( new CypherResult(r) )
               q.resolve( results[0] ) # TODO: handle multiple...
-        ).error(q.reject)
+        ).error(
+          (r) ->
+            q.reject r
+        )
         q.promise
 
       class CypherTransaction
@@ -149,7 +152,7 @@ angular.module('neo4jApp.services')
                 @delegate?.transactionFinished.call(@delegate, @id)
                 @_reset()
                 q.resolve(r)
-              (r) =>
+            ).error((r) =>
                 UDC.increment('cypher_fails')
                 q.reject(r)
             )
@@ -161,12 +164,24 @@ angular.module('neo4jApp.services')
             ))
 
         rollback: ->
-          return unless @id
-          Server.transaction(
+          q = $q.defer()
+          if not @id
+            q.resolve({})
+            return q.promise
+          server_promise = Server.transaction(
             method: 'DELETE'
             path: '/' + @id
             statements: []
-          ).success(=> @_reset())
+          )
+          server_promise.then(
+            (r) =>
+              @_reset()
+              q.resolve r
+            ,
+            (r) ->
+              q.reject r
+          )
+          q.promise
 
       class CypherService
         constructor: () ->

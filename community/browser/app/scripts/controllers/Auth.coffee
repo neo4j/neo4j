@@ -30,35 +30,35 @@ angular.module('neo4jApp.controllers')
     ($scope, AuthService, ConnectionStatusService, Frame, Settings) ->
       $scope.username = 'neo4j'
       $scope.password = ''
-      $scope.error_text = ''
       $scope.current_password = ''
       $scope.connection_summary = ConnectionStatusService.getConnectionStatusSummary()
       $scope.static_user = $scope.connection_summary.user
       $scope.static_is_authenticated = $scope.connection_summary.is_connected
 
       $scope.authenticate = ->
-        $scope.error_text = ''
+        $scope.frame.resetError()
         if not $scope.password.length
-          $scope.error_text += 'You have to enter a password. '
+          $scope.frame.addErrorText 'You have to enter a password. '
         if not $scope.username.length
-          $scope.error_text += 'You have to enter a username. '
-        return if $scope.error_text.length
+          $scope.frame.addErrorText 'You have to enter a username. '
+        return if $scope.frame.getDetailedErrorText().length
+
 
         AuthService.authenticate($scope.username, $scope.password).then(
           (r) ->
-              $scope.error_text = ''
-              $scope.connection_summary = ConnectionStatusService.getConnectionStatusSummary()
-              $scope.static_user = $scope.connection_summary.user
-              $scope.static_is_authenticated = $scope.connection_summary.is_connected
+            $scope.frame.resetError()
+            $scope.connection_summary = ConnectionStatusService.getConnectionStatusSummary()
+            $scope.static_user = $scope.connection_summary.user
+            $scope.static_is_authenticated = $scope.connection_summary.is_connected
 
-              Frame.create({input:"#{Settings.cmdchar}play welcome"})
-              $scope.focusEditor()
+            Frame.create({input:"#{Settings.cmdchar}play welcome"})
+            $scope.focusEditor()
           ,
           (r) ->
             if r.status is 403 and r.data.password_change?.length
               $scope.current_password = $scope.password
               return $scope.password_change_required = true
-            $scope.error_text = r.data.errors[0].message or "Server response code: #{r.status}"
+            $scope.frame.setError r
         )
 
       $scope.defaultPasswordChanged = ->

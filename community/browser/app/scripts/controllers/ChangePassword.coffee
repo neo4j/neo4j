@@ -32,7 +32,7 @@ angular.module('neo4jApp.controllers')
       $scope.new_password2 = ''
       $scope.current_password = ''
       $scope.password_changed = false
-      $scope.$parent.error_text = ''
+      $scope.$parent.frame.resetError()
       $scope.static_user = ConnectionStatusService.connectedAsUser()
       $scope.static_is_authenticated = ConnectionStatusService.isConnected()
 
@@ -41,17 +41,17 @@ angular.module('neo4jApp.controllers')
 
       $scope.setNewPassword = ->
         is_authenticated = ConnectionStatusService.isConnected()
-        $scope.$parent.error_text = ''
+        $scope.$parent.frame.resetError()
         $scope.current_password = $scope.$parent.current_password if $scope.$parent.password_change_required
         $scope.static_user = ConnectionStatusService.connectedAsUser()
 
         if not $scope.current_password.length
-          $scope.$parent.error_text += 'You have to enter your current password. '
+          $scope.$parent.frame.addErrorText 'You have to enter your current password. '
         if not $scope.new_password.length
-          $scope.$parent.error_text += 'You have to enter a new password. '
+          $scope.$parent.frame.addErrorText 'You have to enter a new password. '
         if $scope.new_password != $scope.new_password2
-          $scope.$parent.error_text += 'The new passwords mismatch, try again. '
-        return if $scope.$parent.error_text.length
+          $scope.$parent.frame.addErrorText 'The new passwords mismatch, try again. '
+        return if $scope.$parent.frame.getDetailedErrorText().length
 
         AuthService.setNewPassword($scope.current_password, $scope.new_password).then(
           ->
@@ -62,10 +62,10 @@ angular.module('neo4jApp.controllers')
               Frame.create({input:"#{Settings.cmdchar}play welcome"})
 
             $scope.password_changed = true
-            $scope.$parent.error_text = ''
+            $scope.$parent.frame.resetError()
             $scope.focusEditor()
           ,
           (r) ->
-            $scope.$parent.error_text = r.data.errors[0].message or "Server response code: #{r.status}"
+            $scope.$parent.frame.setError r
         )
   ]
