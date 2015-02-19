@@ -110,7 +110,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     relate(nodeC, nodeD)
 
     evaluating {
-      execute("MATCH p = shortestPath((src:A)-[*2..3]->(dst:D)) RETURN nodes(p) AS nodes").toList
+      executeWithNewPlanner("MATCH p = shortestPath((src:A)-[*2..3]->(dst:D)) RETURN nodes(p) AS nodes").toList
     } should produce[SyntaxException]
   }
 

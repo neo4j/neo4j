@@ -28,6 +28,8 @@ import org.neo4j.cypher.NewPlannerMonitor.{NewQuerySeen, UnableToHandleQuery, Ne
 import java.io.{PrintWriter, StringWriter}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.CantHandleQueryException
 
+import scala.util.Try
+
 object NewPlannerMonitor {
 
   sealed trait NewPlannerMonitorCall {
@@ -107,8 +109,11 @@ trait NewPlannerTestSupport extends CypherTestSupport {
 
   def monitoringNewPlanner[T](action: => T)(test: List[NewPlannerMonitorCall] => Unit): T = {
     newPlannerMonitor.clear()
-    val result = action
+    //if action fails we must wait to throw until after test has run
+    val result = Try(action)
     test(newPlannerMonitor.trace)
-    result
+
+    //now it is safe to throw
+    result.get
   }
 }

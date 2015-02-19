@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.graphdb.NotFoundException
 
 class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
@@ -29,7 +28,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
     // WHEN & THEN
     intercept[SyntaxException](
-      execute("start n=node(*) using index n:Person(name) where n:Person and n.name = 'kabam' return n"))
+      executeWithNewPlanner("start n=node(*) using index n:Person(name) where n:Person and n.name = 'kabam' return n"))
   }
 
   test("fail if using an identifier with label not used in match") {
@@ -64,7 +63,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     graph.createIndex("Food", "name")
 
     // WHEN
-    intercept[NotFoundException](
+    intercept[SyntaxException](
       executeWithNewPlanner("match (n:Person)-->(m:Food) using index n:Person(name) using index m:Food(name) where n.name = m.name return n"))
   }
 
@@ -170,7 +169,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
     // WHEN THEN
     val e = intercept[SyntaxException] {
-      execute(
+      executeWithNewPlanner(
         "MATCH (n:Entity:Person) " +
           "USING INDEX n:Person(first_name) " +
           "USING INDEX n:Entity(source) " +
@@ -184,7 +183,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
   test("does not accept multiple scan hints for the same identifier") {
     val e = intercept[SyntaxException] {
-      execute(
+      executeWithNewPlanner(
         "MATCH (n:Entity:Person) " +
           "USING SCAN n:Person " +
           "USING SCAN n:Entity " +
@@ -198,7 +197,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
   test("does not accept multiple mixed hints for the same identifier") {
     val e = intercept[SyntaxException] {
-      execute(
+      executeWithNewPlanner(
         "MATCH (n:Entity:Person) " +
           "USING SCAN n:Person " +
           "USING INDEX n:Entity(first_name) " +

@@ -72,7 +72,7 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
     where.semanticCheck chain
     checkHints
 
-  def uniqueHints: SemanticCheck = {
+  private def uniqueHints: SemanticCheck = {
     val errors = hints.groupBy(_.identifier).collect {
       case pair@(ident, identHints) if identHints.size > 1 =>
         SemanticError("Multiple hints for same identifier are not supported", ident.position, identHints.map(_.position): _*)
@@ -81,7 +81,7 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
     (state: SemanticState) => SemanticCheckResult(state, errors)
   }
 
-  def checkHints: SemanticCheck = {
+  private def checkHints: SemanticCheck = {
     val error: Option[SemanticCheck] = hints.collectFirst {
       case hint@UsingIndexHint(Identifier(identifier), LabelName(labelName), Identifier(property))
         if !containsLabelPredicate(identifier, labelName)
@@ -102,12 +102,12 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
     error.getOrElse(SemanticCheckResult.success)
   }
 
-  def containsPropertyPredicate(identifier: String, property: String): Boolean = {
+  private def containsPropertyPredicate(identifier: String, property: String): Boolean = {
     val properties: Seq[String] = (where match {
       case Some(where) => where.treeFold(Seq.empty[String]) {
-        case Equals(Property(Identifier(id), PropertyKeyName(name)), _) if id == identifier =>
+        case Equals(Property(Identifier(id), PropertyKeyName(name)), other) if id == identifier && applicable(other) =>
           (acc, _) => acc :+ name
-        case Equals(_, Property(Identifier(id), PropertyKeyName(name))) if id == identifier =>
+        case Equals(other, Property(Identifier(id), PropertyKeyName(name))) if id == identifier && applicable(other) =>
           (acc, _) => acc :+ name
         case In(Property(Identifier(id), PropertyKeyName(name)),_) if id == identifier =>
           (acc, _) => acc :+ name
@@ -126,7 +126,21 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
     properties.contains(property)
   }
 
-  def containsLabelPredicate(identifier: String, label: String): Boolean = {
+  /*
+   * Checks validity of the other side, X, of expressions such as
+   *  USING INDEX ON n:Label(prop) WHERE n.prop = X (or X = n.prop)
+   *
+   * Returns true if X is a valid expression in this context, otherwise false.
+   */
+  private def applicable(other: Expression) = {
+    other match {
+      case _: Property => false
+      case f: FunctionInvocation => f.function != Some(functions.Id)
+      case _ => true
+    }
+  }
+
+  private def containsLabelPredicate(identifier: String, label: String): Boolean = {
     var labels = pattern.fold(Seq.empty[String]) {
       case NodePattern(Some(Identifier(id)), labels, _, _) if identifier == id =>
         list => list ++ labels.map(_.name)
