@@ -192,6 +192,7 @@ public class DbStructureGuide implements Visitable<DbStructureVisitor>
 
     private void showNodeCounts( ReadOperations read, DbStructureVisitor visitor )
     {
+        visitor.visitAllNodesCount( read.countsForNode( ANY_LABEL ) );
         for ( Label label : glops.getAllLabels() )
         {
             int labelId = read.labelGetForName( label.name() );

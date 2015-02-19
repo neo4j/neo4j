@@ -32,6 +32,7 @@ public interface DbStructureVisitor
     void visitUniqueIndex( IndexDescriptor descriptor, String userDescription, double uniqueValuesPercentage );
     void visitUniqueConstraint( UniquenessConstraint constraint, String userDescription );
 
+    void visitAllNodesCount( long nodeCount );
     void visitNodeCount( int labelId, String labelName, long nodeCount );
     void visitRelCount( int startLabelId, int relTypeId, int endLabelId, String relCountQuery, long relCount );
 }

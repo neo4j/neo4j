@@ -142,7 +142,7 @@ public class DbStructureGuideTest
     }
 
     @Test
-    public void visitsLabelNodeCounts() throws Exception
+    public void visitsNodeCounts() throws Exception
     {
         // GIVEN
         DbStructureVisitor visitor = mock( DbStructureVisitor.class );
@@ -154,7 +154,8 @@ public class DbStructureGuideTest
         accept( visitor );
 
         // THEN
-        verify( visitor ).visitNodeCount( personLabelId, "Person", 40 );
+        verify( visitor ).visitAllNodesCount( 90 );
+        verify( visitor).visitNodeCount( personLabelId, "Person", 40 );
         verify( visitor ).visitNodeCount( partyLabelId, "Party", 20 );
         verify( visitor ).visitNodeCount( animalLabelId, "Animal", 30 );
     }
