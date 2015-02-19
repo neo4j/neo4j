@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.util.concurrent.Future;
-
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.storecopy.TransactionObligationFulfiller;
 import org.neo4j.graphdb.DependencyResolver;
@@ -56,7 +54,6 @@ public class UpdatePullingTransactionObligationFulfiller extends LifecycleAdapte
     /**
      * Triggers pulling of updates up until at least {@code toTxId} if no pulling is currently happening
      * and returns immediately.
-     * @return {@link Future} which will block on {@link Future#get()} until {@code toTxId} has been applied.
      */
     @Override
     public void fulfill( final long toTxId ) throws InterruptedException

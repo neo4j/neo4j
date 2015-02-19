@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
-import static java.util.Collections.reverseOrder;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -30,6 +28,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+
+import static java.util.Collections.reverseOrder;
 
 /**
  * Factory for common {@link SlavePriority} implementations.
@@ -62,7 +62,7 @@ public abstract class SlavePriorities
     /**
      * @return {@link SlavePriority} which returns the slaves in a round robin
      * fashion, more precisely the start index in the array increments with
-     * each {@link SlavePriority#prioritize(Iterable<Slave>) prioritization}, ordered
+     * each {@link SlavePriority#prioritize(Iterable) prioritization}, ordered
      * by server id in ascending.
      */
     public static SlavePriority roundRobin()

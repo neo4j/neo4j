@@ -50,8 +50,8 @@ import static java.lang.System.currentTimeMillis;
  *
  * Updates are pulled and applied using a single and dedicated thread, created in here. No other threads are allowed to
  * pull and apply transactions on a slave. Calling one of the {@link Master#pullUpdates(RequestContext) pullUpdates}
- * {@link TransactionObligationFulfiller#fulfill(long) will {@link UpdatePuller#poke() poke} that single thread, so that
- * it gets going, if not already doing so, with its usual task of pulling updates and the caller which poked
+ * {@link TransactionObligationFulfiller#fulfill(long)} will {@link UpdatePuller#poke() poke} that single thread, so
+ * that it gets going, if not already doing so, with its usual task of pulling updates and the caller which poked
  * the update thread will constantly poll to see if the transactions it is obliged to await have been applied.
  *
  * Here comes a diagram of how the classes making up this functionality hangs together:
@@ -228,7 +228,7 @@ public class UpdatePuller implements Runnable, Lifecycle
      * Gets the update puller going, if it's not already going, and waits for the supplied condition to be
      * fulfilled as part of the update pulling happening.
      *
-     * @param condition {@link Condition} to wait for.
+     * @param condition {@link UpdatePuller.Condition} to wait for.
      * @param strictlyAssertActive if {@code true} then observing an inactive update puller, whether
      * {@link #shutdown() halted} or {@link #pause() paused}, will throw an {@link IllegalStateException},
      * otherwise if {@code false} just stop waiting and return {@code false}.

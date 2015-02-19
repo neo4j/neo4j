@@ -31,12 +31,12 @@ import org.neo4j.kernel.impl.util.LazySingleReference;
  * InvocationHandler for dynamic proxies that delegate calls to a given backing implementation. This is mostly
  * used to present a single object to others, while being able to switch implementation at runtime.
  * 
- * There are concepts of {@link #snapshot(Object)} and {@link #cement(Object)} in here, which serves different purposes:
+ * There are concepts of {@link #snapshot(Object)} and {@link #cement()} in here, which serves different purposes:
  * <ol>
  * <li>{@link #snapshot(Object)}: acquire the actual delegate at this particular point in time, pulling it out
  * from the proxy and using it directly. This is used for acquiring a snapshot and keep using that particular
  * instance, even if a new delegate is assigned for this handler.</li>
- * <li>{@link #cement(Object)}: acquire a proxy that will have its delegate assigned the next call to
+ * <li>{@link #cement()}: acquire a proxy that will have its delegate assigned the next call to
  * {@link #setDelegate(Object)}. This is useful if one {@link DelegateInvocationHandler} depends on
  * another which will have its delegate set later than this one.</li>
  * </ol>
@@ -65,9 +65,10 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
 
     /**
      * Updates the delegate for this handler, also {@link #harden() hardens} instances
-     * {@link #cement(Object) cemented} from the last call to {@link #setDelegate(Object)}.
-     * This call will also dereference the {@link Concrete}, such that future calls to {@link #harden()}
-     * cannot affect any reference received from {@link #cement()} prior to this call.
+     * {@link #cement() cemented} from the last call to {@link #setDelegate(Object)}.
+     * This call will also dereference the {@link DelegateInvocationHandler.Concrete},
+     * such that future calls to {@link #harden()} cannot affect any reference received
+     * from {@link #cement()} prior to this call.
      * @param delegate the new delegate to set.
      */
     public void setDelegate( T delegate )
@@ -78,12 +79,11 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
     }
 
     /**
-     * Updates {@link #cement(Object) cemented} delegates with the current delegate, making it concrete.
-     * Callers of {@link #cement(Object)} in between this call and the previous call to {@link #setDelegate(Object)}
+     * Updates {@link #cement() cemented} delegates with the current delegate, making it concrete.
+     * Callers of {@link #cement()} in between this call and the previous call to {@link #setDelegate(Object)}
      * will see the current delegate.
      */
     @SuppressWarnings( "unchecked" )
-
     public void harden()
     {
         ((Concrete<T>)Proxy.getInvocationHandler( concrete.instance() )).set( delegate );

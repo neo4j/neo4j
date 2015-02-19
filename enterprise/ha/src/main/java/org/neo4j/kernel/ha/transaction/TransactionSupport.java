@@ -20,7 +20,7 @@
 package org.neo4j.kernel.ha.transaction;
 
 /**
- * @Deprecated because it imposes a mental overhead while saving just two classes from being
+ * @deprecated because it imposes a mental overhead while saving just two classes from being
  * injected in SlaveLockManager. Bad ROI. Fix this.
  */
 @Deprecated
