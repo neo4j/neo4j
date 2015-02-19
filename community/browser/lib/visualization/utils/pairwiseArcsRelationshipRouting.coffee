@@ -57,7 +57,7 @@ class neo.utils.pairwiseArcsRelationshipRouting
       if not nodePair.isLoop()
         dx = nodePair.nodeA.x - nodePair.nodeB.x
         dy = nodePair.nodeA.y - nodePair.nodeB.y
-        angle = Math.atan2(dy, dx) / Math.PI * 180
+        angle = ((Math.atan2(dy, dx) / Math.PI * 180) + 360) % 360
         centreDistance = Math.sqrt(square(dx) + square(dy))
         for relationship in nodePair.relationships
           relationship.naturalAngle = if relationship.target is nodePair.nodeA
