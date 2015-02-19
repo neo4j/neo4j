@@ -40,15 +40,15 @@ import org.neo4j.kernel.api.index.util.FolderLayout;
 import org.neo4j.kernel.configuration.Config;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
-import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.tracking;
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.reserving;
+import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.tracking;
+import static org.neo4j.kernel.api.impl.index.SearcherManagerFactories.standard;
 
 public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 {
     private final DirectoryFactory directoryFactory;
     private final LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
     private final IndexWriterStatus writerStatus = new IndexWriterStatus();
-    private final File rootDirectory;
     private final FailureStorage failureStorage;
     private final FolderLayout folderLayout;
     private Map<Long, String> failures = new HashMap<>();
@@ -57,7 +57,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     {
         super( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, 1 );
         this.directoryFactory = directoryFactory;
-        this.rootDirectory = getRootDirectory( config.get( store_dir ), LuceneSchemaIndexProviderFactory.KEY );
+        File rootDirectory = getRootDirectory( config.get( store_dir ), LuceneSchemaIndexProviderFactory.KEY );
         this.folderLayout = new FolderLayout( rootDirectory );
         this.failureStorage = new FailureStorage( folderLayout );
     }
@@ -68,7 +68,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
         if ( config.isUnique() )
         {
             return new DeferredConstraintVerificationUniqueLuceneIndexPopulator(
-                    documentStructure, tracking(), writerStatus, directoryFactory,
+                    documentStructure, tracking(), standard(), writerStatus, directoryFactory,
                     folderLayout.getFolder( indexId ), failureStorage, indexId, descriptor );
         }
         else
