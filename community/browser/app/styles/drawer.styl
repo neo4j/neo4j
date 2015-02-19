@@ -266,8 +266,8 @@ indent-hover = 22px
       .icon-inactive, .fa-spinner
         left indent
 
-  .badge, .label
-    user-select: none
+  .token
+    display: inline-block
     color: drawer-color-bg
     background-color: #9195A0
     text-shadow: none
@@ -275,15 +275,15 @@ indent-hover = 22px
     margin-bottom: 6px
     &:hover
       background-color: #fff
-  .label.property
-    background-color: transparent
-    color:#9195A0
-    border: 1px solid #595D66
-    max-width: 160px
-    overflow: hidden
-    &:hover
-      border-color: #FFF
-      color: #FFF
+    &.token-property-key
+      background-color: transparent
+      color:#9195A0
+      border: 1px solid #595D66
+      max-width: 160px
+      overflow: hidden
+      &:hover
+        border-color: #FFF
+        color: #FFF
 
   hr
     border-top: 1px dashed lighten(drawer-color-border, 10%)

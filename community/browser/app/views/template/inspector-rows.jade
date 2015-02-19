@@ -1,9 +1,9 @@
 script(id="inspector/graphItem.html", type="text/ng-template")
   ul.list-inline
     li(ng-if="item.isNode", ng-repeat="label in item.labels")
-      .label.label-node.class-name(ng-style='styleForLabel(label)', ng-bind="label")
+      .token.token-label(ng-style='styleForLabel(label)', ng-bind="label")
     li(ng-if="!item.isNode")
-      .label.label-node.class-name(ng-style='styleForItem(item)', ng-bind="item.type")
+      .token.token-relationship-type(ng-style='styleForItem(item)', ng-bind="item.type")
     li.empty(ng-if='item.propertyList.length == 0') No properties
     li.pair(ng-repeat='property in item.propertyList')
       .key(ng-bind-template="{{property.key}}: ")
@@ -12,7 +12,7 @@ script(id="inspector/graphItem.html", type="text/ng-template")
 script(id="inspector/label.html", type="text/ng-template")
   ul.list-inline
     li.inspector-icon
-      .label.label-node.class-name(ng-style='{"background-color": item.style.props.color, "color": item.style.props["text-color-internal"]}') {{item.label || '*'}}
+      .token.token-label(ng-style='{"background-color": item.style.props.color, "color": item.style.props["text-color-internal"]}') {{item.label || '*'}}
     li.colors
       ul.list-inline
         li Color:
@@ -42,7 +42,7 @@ script(id="inspector/label.html", type="text/ng-template")
 script(id="inspector/relationshipType.html", type="text/ng-template")
   ul.list-inline
     li.inspector-icon
-      .label.label-relationship.class-name(ng-style='{"background-color": item.style.props.color, "color": item.style.props["text-color-internal"]}') {{item.type  || '*'}}
+      .token.token-relationship-type(ng-style='{"background-color": item.style.props.color, "color": item.style.props["text-color-internal"]}') {{item.type  || '*'}}
     li.colors
       ul.list-inline
         li Color:

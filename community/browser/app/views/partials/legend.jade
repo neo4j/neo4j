@@ -5,7 +5,7 @@
     ul.list-unstyled.list-labels
       li(ng-repeat='(label, node) in labels', ng-class="{active: currentItem == node}")
         .contents(ng-click="onItemClick(node, 'label')")
-          .label.label-node.class-name(ng-style='{"background-color": node.style.props.color, "color": node.style.props["text-color-internal"]}') {{label || '*'}}
+          .token.token-label(ng-style='{"background-color": node.style.props.color, "color": node.style.props["text-color-internal"]}') {{label || '*'}}
             span.count ({{node.count}})
   .legend-row(ng-if='types[""].count', ng-class="{contracted: typesContracted}")
     .row-toggle(overflow-with-toggle='', ng-click="typesContracted = !typesContracted")
@@ -13,5 +13,5 @@
     ul.list-unstyled.list-relationships
       li(ng-repeat='(type, rel) in types', ng-class="{active: currentItem == node}")
         .contents(ng-click="onItemClick(rel, 'relationshipType')")
-          .label.label-relationship.class-name(ng-style='{"background-color": rel.style.props.color, "color": rel.style.props["text-color-internal"]}') {{type || '*'}}
+          .token.token-relationship-type(ng-style='{"background-color": rel.style.props.color, "color": rel.style.props["text-color-internal"]}') {{type || '*'}}
             span.count ({{rel.count}})
