@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
+import java.io.OutputStream;
+
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
@@ -64,4 +66,10 @@ public interface Input
      * {@link InputRelationship input relationships} must specify specific ids or none.
      */
     boolean specificRelationshipIds();
+
+    /**
+     * @return a {@link Collector} capable of writing {@link InputRelationship bad relationships} to
+     * an output stream for later handling.
+     */
+    Collector<InputRelationship> badRelationshipsCollector( OutputStream out );
 }

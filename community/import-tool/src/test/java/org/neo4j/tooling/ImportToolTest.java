@@ -25,7 +25,9 @@ import org.junit.Test;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
@@ -39,6 +41,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.test.Mute;
@@ -345,6 +348,77 @@ public class ImportToolTest
         }
     }
 
+    @Test
+    public void shouldLogRelationshipsReferingToMissingNode() throws Exception
+    {
+        // GIVEN
+        List<String> nodeIds = asList( "a", "b", "c" );
+        Configuration config = Configuration.COMMAS;
+        File nodeData = nodeData( true, config, nodeIds, alwaysTrue() );
+        List<Triplet<String,String,String>> relationships = Arrays.asList(
+                // header                                   line 1 of file1
+                Triplet.of( "a", "b", "TYPE" ), //          line 2 of file1
+                Triplet.of( "c", "bogus", "TYPE" ), //      line 3 of file1
+                Triplet.of( "b", "c", "KNOWS" ), //         line 1 of file2
+                Triplet.of( "c", "a", "KNOWS" ), //         line 2 of file2
+                Triplet.of( "missing", "a", "KNOWS" ) ); // line 3 of file2
+        File relationshipData1 = relationshipData( true, config, relationships.iterator(), lines( 0, 2 ), true );
+        File relationshipData2 = relationshipData( false, config, relationships.iterator(), lines( 2, 5 ), true );
+        File bad = directory.file( "bad.log" );
+
+        // WHEN importing data where some relationships refer to missing nodes
+        ImportTool.main( arguments(
+                "--into",          directory.absolutePath(),
+                "--nodes",         nodeData.getAbsolutePath(),
+                "--bad",           bad.getAbsolutePath(),
+                "--bad-tolerance", "2",
+                "--relationships", relationshipData1.getAbsolutePath() + MULTI_FILE_DELIMITER +
+                                   relationshipData2.getAbsolutePath() ) );
+
+        // THEN
+        String badContents = FileUtils.readTextFile( bad, Charset.defaultCharset() );
+        assertTrue( "Didn't contain first bad relationship",
+                badContents.contains( relationshipData1.getAbsolutePath() + ":3" ) );
+        assertTrue( "Didn't contain second bad relationship",
+                badContents.contains( relationshipData2.getAbsolutePath() + ":3" ) );
+    }
+
+    @Test
+    public void shouldFailIfTooManyBadRelationships() throws Exception
+    {
+        // GIVEN
+        List<String> nodeIds = asList( "a", "b", "c" );
+        Configuration config = Configuration.COMMAS;
+        File nodeData = nodeData( true, config, nodeIds, alwaysTrue() );
+        List<Triplet<String,String,String>> relationships = Arrays.asList(
+                // header                                   line 1 of file1
+                Triplet.of( "a", "b", "TYPE" ), //          line 2 of file1
+                Triplet.of( "c", "bogus", "TYPE" ), //      line 3 of file1
+                Triplet.of( "b", "c", "KNOWS" ), //         line 1 of file2
+                Triplet.of( "c", "a", "KNOWS" ), //         line 2 of file2
+                Triplet.of( "missing", "a", "KNOWS" ) ); // line 3 of file2
+        File relationshipData1 = relationshipData( true, config, relationships.iterator(), lines( 0, 2 ), true );
+        File relationshipData2 = relationshipData( false, config, relationships.iterator(), lines( 2, 5 ), true );
+        File bad = directory.file( "bad.log" );
+
+        // WHEN importing data where some relationships refer to missing nodes
+        try
+        {
+            ImportTool.main( arguments(
+                    "--into",          directory.absolutePath(),
+                    "--nodes",         nodeData.getAbsolutePath(),
+                    "--bad",           bad.getAbsolutePath(),
+                    "--bad-tolerance", "1",
+                    "--relationships", relationshipData1.getAbsolutePath() + MULTI_FILE_DELIMITER +
+                                       relationshipData2.getAbsolutePath() ) );
+        }
+        catch ( Exception e )
+        {
+            // THEN
+            assertThat( e.getMessage(), containsString( relationshipData2.getAbsolutePath() + ":3" ) );
+        }
+    }
+
     protected void assertNodeHasLabels( Node node, String[] names )
     {
         for ( String name : names )
@@ -557,13 +631,13 @@ public class ImportToolTest
         char delimiter = config.delimiter();
         for ( int i = 0; i < RELATIONSHIP_COUNT; i++ )
         {
+            if ( !data.hasNext() )
+            {
+                break;
+            }
+            Triplet<String,String,String> entry = data.next();
             if ( linePredicate.accept( i ) )
             {
-                if ( !data.hasNext() )
-                {
-                    break;
-                }
-                Triplet<String,String,String> entry = data.next();
                 writer.println( entry.first() +
                         delimiter + entry.second() +
                         (specifyType ? (delimiter + entry.third()) : "") +

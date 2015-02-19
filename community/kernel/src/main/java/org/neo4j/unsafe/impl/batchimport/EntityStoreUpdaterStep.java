@@ -89,6 +89,12 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
         for ( int i = 0; i < records.length; i++ )
         {
             RECORD record = records[i];
+            if ( record == null )
+            {   // Here we have a relationship that refers to missing nodes. It's within the tolerance levels
+                // of number of bad relationships. Just don't import this relationship.
+                continue;
+            }
+
             INPUT input = batch.input[i];
             if ( input.hasFirstPropertyId() )
             {

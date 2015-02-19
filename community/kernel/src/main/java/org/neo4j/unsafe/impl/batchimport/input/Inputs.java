@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport.input;
 
 import java.io.File;
+import java.io.OutputStream;
 
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
@@ -73,6 +74,12 @@ public class Inputs
             {
                 return specificRelationshipIds;
             }
+
+            @Override
+            public Collector<InputRelationship> badRelationshipsCollector( OutputStream out )
+            {
+                return Collectors.badRelationshipsCollector( out, 0 );
+            }
         };
     }
 
@@ -82,6 +89,7 @@ public class Inputs
         return new CsvInput(
                 nodeData( data( NO_NODE_DECORATOR, nodes ) ), defaultFormatNodeFileHeader(),
                 relationshipData( data( NO_RELATIONSHIP_DECORATOR, relationships ) ),
-                defaultFormatRelationshipFileHeader(), idType, configuration );
+                defaultFormatRelationshipFileHeader(), idType, configuration,
+                Collectors.badRelationships( 0 ) );
     }
 }

@@ -183,7 +183,7 @@ public abstract class InputEntity implements SourceTraceability
 
     protected void toStringFields( Collection<Pair<String, ?>> fields )
     {
-        fields.add( Pair.of( "source", sourceDescription + ":" ) );
+        fields.add( Pair.of( "source", sourceDescription + ":" + lineNumber ) );
         if ( hasFirstPropertyId() )
         {
             fields.add( Pair.of( "nextProp", firstPropertyId ) );

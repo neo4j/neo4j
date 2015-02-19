@@ -21,7 +21,6 @@ package org.neo4j.unsafe.impl.batchimport.input;
 
 import java.util.Collection;
 
-import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Pair;
 
 import static org.neo4j.unsafe.impl.batchimport.input.Group.GLOBAL;
@@ -99,16 +98,6 @@ public class InputRelationship extends InputEntity
     public Object endNode()
     {
         return endNode;
-    }
-
-    public boolean isLoop()
-    {
-        return startNode.equals( endNode );
-    }
-
-    public Direction startDirection()
-    {
-        return isLoop() ? Direction.BOTH : Direction.OUTGOING;
     }
 
     public String type()

@@ -46,6 +46,7 @@ import org.neo4j.kernel.logging.ClassicLoggingService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
+import org.neo4j.unsafe.impl.batchimport.input.Collectors;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
@@ -74,9 +75,10 @@ public class ImportTool
 {
     enum Options
     {
-        STORE_DIR( "into", "<store-dir>", "Database directory to import into. " + "Must not contain existing database." ),
-        NODE_DATA(
-                "nodes",
+        STORE_DIR( "into", null,
+                "<store-dir>",
+                "Database directory to import into. " + "Must not contain existing database." ),
+        NODE_DATA( "nodes", null,
                 "[:Label1:Label2] \"<file1>" + MULTI_FILE_DELIMITER + "<file2>" + MULTI_FILE_DELIMITER + "...\"",
                 "Node CSV header and data. Multiple files will be logically seen as one big file "
                         + "from the perspective of the importer. "
@@ -84,8 +86,7 @@ public class ImportTool
                         + "Multiple data sources like these can be specified in one import, "
                         + "where each data source has its own header. "
                         + "Note that file groups must be enclosed in quotation marks." ),
-        RELATIONSHIP_DATA(
-                "relationships",
+        RELATIONSHIP_DATA( "relationships", null,
                 "[:RELATIONSHIP_TYPE] \"<file1>" + MULTI_FILE_DELIMITER + "<file2>" +
                 MULTI_FILE_DELIMITER + "...\"",
                 "Relationship CSV header and data. Multiple files will be logically seen as one big file "
@@ -94,39 +95,58 @@ public class ImportTool
                         + "Multiple data sources like these can be specified in one import, "
                         + "where each data source has its own header. "
                         + "Note that file groups must be enclosed in quotation marks." ),
-        DELIMITER( "delimiter", "<delimiter-character>", "Delimiter character, or 'TAB', between values in CSV data. The default option is `" + COMMAS.delimiter() + "`." ),
-        ARRAY_DELIMITER( "array-delimiter", "<array-delimiter-character>",
+        DELIMITER( "delimiter", null,
+                "<delimiter-character>",
+                "Delimiter character, or 'TAB', between values in CSV data. The default option is `" + COMMAS.delimiter() + "`." ),
+        ARRAY_DELIMITER( "array-delimiter", null,
+                "<array-delimiter-character>",
                 "Delimiter character, or 'TAB', between array elements within a value in CSV data. The default option is `" + COMMAS.arrayDelimiter() + "`." ),
-        QUOTE( "quote", "<quotation-character>",
+        QUOTE( "quote", null,
+                "<quotation-character>",
                 "Character to treat as quotation character for values in CSV data. "
                         + "The default option is `" + COMMAS.quotationCharacter() + "`. "
                         + "Quotes inside quotes escaped like `\"\"\"Go away\"\", he said.\"` and "
                         + "`\"\\\"Go away\\\", he said.\"` are supported. "
                         + "If you have set \"`'`\" to be used as the quotation character, "
                         + "you could write the previous example like this instead: " + "`'\"Go away\", he said.'`" ),
-        ID_TYPE( "id-type", "<id-type>",
+        ID_TYPE( "id-type", IdType.STRING,
+                "<id-type>",
                 "One out of " + Arrays.toString( IdType.values() )
                         + " and specifies how ids in node/relationship "
                         + "input files are treated.\n"
                         + IdType.STRING + ": arbitrary strings for identifying nodes.\n"
                         + IdType.INTEGER + ": arbitrary integer values for identifying nodes.\n"
                         + IdType.ACTUAL + ": (advanced) actual node ids. The default option is `" + IdType.STRING  + "`." ),
-        PROCESSORS( "processors", "<max processor count>",
+        PROCESSORS( "processors", null,
+                "<max processor count>",
                 "(advanced) Max number of processors used by the importer. Defaults to the number of "
                         + "available processors reported by the JVM"
                         + availableProcessorsHint()
                         + ". There is a certain amount of minimum threads needed so for that reason there "
                         + "is no lower bound for this value. For optimal performance this value shouldn't be "
                         + "greater than the number of available processors." ),
-        STACKTRACE( "stacktrace", "", "Enable printing of error stack traces." );
+        STACKTRACE( "stacktrace", null,
+                "",
+                "Enable printing of error stack traces." ),
+        BAD( "bad", org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT.badFileName(),
+                "<file name>",
+                "Relationships that refer to nodes that cannot be found can, instead of making the import fail,"
+                        + " be logged to a file specified by this option" ),
+        BAD_TOLERANCE( "bad-tolerance", 1000,
+                "<max number of bad entries>",
+                "Number of bad entries before the import is considered failed. This tolerance threshold is "
+                        + "about relationships refering to missing nodes. Format errors in input data are "
+                        + "still treated as errors" );
 
         private final String key;
+        private final Object defaultValue;
         private final String usage;
         private final String description;
 
-        Options( String key, String usage, String description )
+        Options( String key, Object defaultValue, String usage, String description )
         {
             this.key = key;
+            this.defaultValue = defaultValue;
             this.usage = usage;
             this.description = description;
         }
@@ -144,17 +164,36 @@ public class ImportTool
         void printUsage( PrintStream out )
         {
             out.println( argument() + " " + usage );
-            for ( String line : Args.splitLongLine( description.replace( "`", "" ), 80 ) )
+            for ( String line : Args.splitLongLine( descriptionWithDefaultValue().replace( "`", "" ), 80 ) )
             {
                 out.println( "\t" + line );
             }
         }
 
+        String descriptionWithDefaultValue()
+        {
+            String result = description;
+            if ( defaultValue != null )
+            {
+                if ( !result.endsWith( "." ) )
+                {
+                    result += ". ";
+                }
+                result += "Default value: " + defaultValue;
+            }
+            return result;
+        }
+
         String manPageEntry()
         {
-            String filteredDescription = description.replace( availableProcessorsHint(), "" );
+            String filteredDescription = descriptionWithDefaultValue().replace( availableProcessorsHint(), "" );
             String usageString = (usage.length() > 0) ? " " + usage : "";
             return "*" + argument() + usageString + "*::\n" + filteredDescription + "\n\n";
+        }
+
+        Object defaultValue()
+        {
+            return defaultValue;
         }
 
         private static String availableProcessorsHint()
@@ -183,6 +222,8 @@ public class ImportTool
         boolean enableStacktrace;
         Number processors = null;
         Input input = null;
+        String badFileName;
+        int badTolerance;
         try
         {
             storeDir = args.interpretOption( Options.STORE_DIR.key(), Converters.<File>mandatory(),
@@ -191,11 +232,15 @@ public class ImportTool
             relationshipsFiles = INPUT_FILES_EXTRACTOR.apply( args, Options.RELATIONSHIP_DATA.key() );
             enableStacktrace = args.getBoolean( Options.STACKTRACE.key(), Boolean.FALSE, Boolean.TRUE );
             processors = args.getNumber( Options.PROCESSORS.key(), null );
-            IdType idType = args.interpretOption( Options.ID_TYPE.key(), withDefault( IdType.STRING ), TO_ID_TYPE );
+            IdType idType = args.interpretOption( Options.ID_TYPE.key(),
+                    withDefault( (IdType)Options.ID_TYPE.defaultValue() ), TO_ID_TYPE );
+            badTolerance = args.getNumber( Options.BAD_TOLERANCE.key,
+                    (Number) Options.BAD_TOLERANCE.defaultValue() ).intValue();
+            badFileName = args.get( Options.BAD.key );
             input = new CsvInput(
                     nodeData( nodesFiles ), defaultFormatNodeFileHeader(),
                     relationshipData( relationshipsFiles ), defaultFormatRelationshipFileHeader(),
-                    idType, csvConfiguration( args ) );
+                    idType, csvConfiguration( args ), Collectors.badRelationships( badTolerance ) );
         }
         catch ( IllegalArgumentException e )
         {
@@ -207,7 +252,7 @@ public class ImportTool
                 new Config( stringMap( store_dir.name(), storeDir.getAbsolutePath() ) ) ) );
         life.start();
         BatchImporter importer = new ParallelBatchImporter( storeDir.getPath(),
-                importConfiguration( processors ),
+                importConfiguration( processors, badFileName ),
                 logging,
                 ExecutionMonitors.defaultVisible() );
         boolean success = false;
@@ -243,7 +288,8 @@ public class ImportTool
         }
     }
 
-    private static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration( final Number processors )
+    private static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration( final Number processors,
+            final String badFileName  )
     {
         return new org.neo4j.unsafe.impl.batchimport.Configuration.Default()
         {
@@ -251,6 +297,12 @@ public class ImportTool
             public int maxNumberOfProcessors()
             {
                 return processors != null ? processors.intValue() : super.maxNumberOfProcessors();
+            }
+
+            @Override
+            public String badFileName()
+            {
+                return badFileName != null ? badFileName : super.badFileName();
             }
         };
     }

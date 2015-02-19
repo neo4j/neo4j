@@ -19,7 +19,10 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 
 import org.neo4j.function.Function;
 import org.neo4j.helpers.Exceptions;
@@ -41,6 +44,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLinkImpl;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
@@ -121,8 +125,14 @@ public class ParallelBatchImporter implements BatchImporter
         NodeRelationshipLink nodeRelationshipLink = null;
         NodeLabelsCache nodeLabelsCache = null;
         long startTime = currentTimeMillis();
+        File badRelationshipsFile = new File( config.badFileName() );
+        boolean hasBadRelationships = false;
         try ( BatchingNeoStore neoStore = new BatchingNeoStore( fileSystem, storeDir, config,
-                writeMonitor, logging, monitors, writerFactory, additionalInitialIds ) )
+                      writeMonitor, logging, monitors, writerFactory, additionalInitialIds );
+              OutputStream badRelationshipsOutput = new BufferedOutputStream(
+                      fileSystem.openAsOutputStream( badRelationshipsFile, false ) );
+              Collector<InputRelationship> badRelationships =
+                      input.badRelationshipsCollector( badRelationshipsOutput ) )
         {
             // Some temporary caches and indexes in the import
             IdMapper idMapper = input.idMapper();
@@ -135,8 +145,8 @@ public class ParallelBatchImporter implements BatchImporter
             final NodeStage nodeStage = new NodeStage( nodes, idMapper, idGenerator, neoStore );
 
             // Stage 2 -- calculate dense node threshold
-            final CalculateDenseNodesStage calculateDenseNodesStage =
-                    new CalculateDenseNodesStage( relationships, nodeRelationshipLink, idMapper );
+            final CalculateDenseNodesStage calculateDenseNodesStage = new CalculateDenseNodesStage( relationships,
+                    nodeRelationshipLink, idMapper, badRelationships );
 
             // Execute stages 1 and 2 in parallel or sequentially?
             if ( idMapper.needsPreparation() )
@@ -177,14 +187,16 @@ public class ParallelBatchImporter implements BatchImporter
 
             // Determine if we have enough available memory to be able to execute all remaining processors
             // in parallel.
-            if ( disableParallelizationSinceItCausesWrongCountsComputations() && enoughAvailableMemoryForRemainingProcessors( nodeRelationshipLink ) )
+            if ( disableParallelizationSinceItCausesWrongCountsComputations() &&
+                    enoughAvailableMemoryForRemainingProcessors( nodeRelationshipLink ) )
             {
                 // Stages 4, 5, 6 and 7
                 executeStages( new NodeStoreProcessorStage( "Node --> Relationship + Node counts", config,
                         neoStore.getNodeStore(), new StoreProcessor.Multiple<>(
                                 nodeFirstRelationshipProcessor, nodeCountsProcessor ) ) );
                 nodeRelationshipLink.clearRelationships();
-                executeStages( new RelationshipStoreProcessorStage( "Relationship --> Relationship + Relationship counts", config,
+                executeStages( new RelationshipStoreProcessorStage(
+                        "Relationship --> Relationship + Relationship counts", config,
                         neoStore.getRelationshipStore(), new StoreProcessor.Multiple<>(
                                 relationshipLinkerProcessor, relationshipCountsProcessor ) ) );
             }
@@ -215,6 +227,12 @@ public class ParallelBatchImporter implements BatchImporter
             long totalTimeMillis = currentTimeMillis() - startTime;
             executionMonitor.done( totalTimeMillis );
             logger.info( "Import completed, took " + Format.duration( totalTimeMillis ) );
+            hasBadRelationships = badRelationships.badEntries() > 0;
+            if ( hasBadRelationships )
+            {
+                logger.warn( "There were " + badRelationships.badEntries() + " bad relationships which were skipped " +
+                        "and logged into " + badRelationshipsFile.getAbsolutePath() );
+            }
         }
         catch ( Throwable t )
         {
@@ -231,6 +249,10 @@ public class ParallelBatchImporter implements BatchImporter
             if ( nodeLabelsCache != null )
             {
                 nodeLabelsCache.close();
+            }
+            if ( !hasBadRelationships )
+            {
+                fileSystem.deleteFile( badRelationshipsFile );
             }
         }
     }
@@ -278,14 +300,15 @@ public class ParallelBatchImporter implements BatchImporter
     public class CalculateDenseNodesStage extends Stage
     {
         public CalculateDenseNodesStage( InputIterable<InputRelationship> relationships,
-                NodeRelationshipLink nodeRelationshipLink, IdMapper idMapper )
+                NodeRelationshipLink nodeRelationshipLink, IdMapper idMapper,
+                Collector<InputRelationship> badRelationshipsCollector )
         {
             super( "Calculate dense nodes", config, false );
             add( new InputIteratorBatcherStep<>( control(), config.batchSize(), config.movingAverageSize(),
                     relationships.iterator(), InputRelationship.class ) );
 
             add( new RelationshipPreparationStep( control(), config, idMapper ) );
-            add( new CalculateDenseNodesStep( control(), config, nodeRelationshipLink ) );
+            add( new CalculateDenseNodesStep( control(), config, nodeRelationshipLink, badRelationshipsCollector ) );
         }
     }
 
