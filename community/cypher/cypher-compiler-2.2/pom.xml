@@ -22,6 +22,8 @@
 
   <properties>
     <version-package>cypher.internal.compiler.v2_2</version-package>
+    <scoverage.plugin.version>1.0.4</scoverage.plugin.version>
+    <scoverage.scalacPluginVersion>1.0.4</scoverage.scalacPluginVersion>
   </properties>
 
   <licenses>
@@ -46,14 +48,75 @@
 
   <build>
     <plugins>
+
       <plugin>
         <groupId>org.scalastyle</groupId>
         <artifactId>scalastyle-maven-plugin</artifactId>
       </plugin>
+
+      <!-- run with mvn scoverage:check -->
+
+      <plugin>
+        <groupId>org.scoverage</groupId>
+        <artifactId>scoverage-maven-plugin</artifactId>
+        <version>${scoverage.plugin.version}</version>
+        <configuration>
+          <!-- build server should fail based on generated report -->
+          <scalaVersion>${scala.version}</scalaVersion>
+          <minimumCoverage>68</minimumCoverage>
+          <failOnMinimumCoverage>false</failOnMinimumCoverage>
+          <highlighting>true</highlighting>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>check</goal>
+              <goal>post-compile</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
     </plugins>
   </build>
 
-  <dependencies>
+
+  <reporting>
+    <plugins>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-project-info-reports-plugin</artifactId>
+        <version>2.8</version>
+        <reportSets>
+          <reportSet>
+            <reports>
+              <report>index</report>
+            </reports>
+          </reportSet>
+        </reportSets>
+      </plugin>
+
+      <!-- run with
+
+           mvn scoverage:report
+
+           The output will appear in target/site/scoverage but all relative URLs are wrong
+
+           On OS X and assuming your checkout is below /Users, you can fix them locally using something like:
+
+           find . -type f  -exec sed -i backup 's/\/Users/Users/g' {} \;
+      -->
+      <plugin>
+        <groupId>org.scoverage</groupId>
+        <artifactId>scoverage-maven-plugin</artifactId>
+        <version>${scoverage.plugin.version}</version>
+      </plugin>
+
+    </plugins>
+  </reporting>
+
+<dependencies>
 
     <!-- shared versions are defined in the parent pom -->
 
