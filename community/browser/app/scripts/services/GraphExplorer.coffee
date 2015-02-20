@@ -66,5 +66,29 @@ angular.module('neo4jApp.services')
             graph.addInternalRelationships(result.relationships.map(CypherGraphModel.convertRelationship(graph)))
             q.resolve()
           q.promise
+
+        collapseNeighbours: (node, graph) ->
+          neighbours = graph.relationships().filter((r) -> r.source is node or r.target is node).map((r) ->
+            node: if node is r.source then r.target else r.source
+            relationship: r
+          )
+          neighbourRelationships = {}
+          for neighbour in neighbours
+            neighbourRelationships[neighbour.node.id] = []
+
+          for r in graph.relationships()
+            if neighbourRelationships.hasOwnProperty(r.source.id)
+              neighbourRelationships[r.source.id].push r
+            if neighbourRelationships.hasOwnProperty(r.target.id)
+              neighbourRelationships[r.target.id].push r
+
+          connects = (r, n1, n2) ->
+            (r.source is n1 and r.target is n2) or (r.source is n2 and r.target is n1)
+
+          for neighbour in neighbours
+            nonOrphans = neighbourRelationships[neighbour.node.id].filter((r) -> not connects(r, neighbour.node, node))
+            if nonOrphans.length is 0
+              graph.removeRelationship neighbour.relationship
+              graph.removeNode neighbour.node
       }
   ]

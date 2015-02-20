@@ -89,6 +89,14 @@ class neo.models.Graph
     @_relationships = []
     @addRelationships(relationships)
 
+  removeNode: (node) =>
+    delete @nodeMap[node.id]
+    @_nodes = @_nodes.filter((n) -> node.id isnt n.id)
+    
+  removeRelationship: (relationship) =>
+    delete @relationshipMap[relationship.id]
+    @_relationships = @_relationships.filter((r) -> relationship.id isnt r.id)
+    
   findNode: (id) => @nodeMap[id]
 
   findRelationship: (id) => @relationshipMap[id]

@@ -32,8 +32,7 @@ angular.module('neo4jApp.controllers')
     'CircularLayout'
     'GraphExplorer'
     'GraphStyle'
-    'CypherGraphModel'
-    ($attrs, $element, $parse, $window, $rootScope, $scope, $interval, CircularLayout, GraphExplorer, GraphStyle, CypherGraphModel) ->
+    ($attrs, $element, $parse, $window, $rootScope, $scope, $interval, CircularLayout, GraphExplorer, GraphStyle) ->
       graphView = null
       @getGraphView = -> return graphView
 
@@ -95,24 +94,28 @@ angular.module('neo4jApp.controllers')
           toggleSelection(d)
         )
         .on('nodeDblClicked', (d) ->
-          return if d.expanded
-          GraphExplorer.exploreNeighbours(d, graph, $scope.displayInternalRelationships)
-          .then(
-              # Success
-            () =>
-              linkDistance = 60
-              CircularLayout.layout(graph.nodes(), d, linkDistance)
-              d.expanded = yes
-              graphView.update()
-          ,
-              # Error
-            (msg) ->
-              # Too many neighbours
-              alert(msg)
-          )
-          # New in Angular 1.1.5
-          # https://github.com/angular/angular.js/issues/2371
-          $rootScope.$apply() unless $rootScope.$$phase
+          if d.expanded
+            GraphExplorer.collapseNeighbours(d, graph)
+            d.expanded = no
+            graphView.update()
+          else
+            GraphExplorer.exploreNeighbours(d, graph, $scope.displayInternalRelationships)
+            .then(
+                # Success
+              () =>
+                linkDistance = 60
+                CircularLayout.layout(graph.nodes(), d, linkDistance)
+                d.expanded = yes
+                graphView.update()
+            ,
+                # Error
+              (msg) ->
+                # Too many neighbours
+                alert(msg)
+            )
+            # New in Angular 1.1.5
+            # https://github.com/angular/angular.js/issues/2371
+            $rootScope.$apply() unless $rootScope.$$phase
         )
         .on('relationshipClicked', (d) ->
           toggleSelection(d)
