@@ -19,11 +19,11 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.FakeClock;
@@ -31,15 +31,15 @@ import org.neo4j.test.CleanupRule;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 
-import static java.lang.System.currentTimeMillis;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import static java.lang.System.currentTimeMillis;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class MultiExecutionMonitorTest
 {
@@ -110,7 +110,7 @@ public class MultiExecutionMonitorTest
 
     public final @Rule CleanupRule cleanup = new CleanupRule();
 
-    private static class TestableMonitor extends AbstractExecutionMonitor
+    private static class TestableMonitor extends ExecutionMonitor.Adpter
     {
         private int timesPolled;
 

@@ -74,7 +74,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
-import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -136,6 +135,7 @@ import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.Boolean.parseBoolean;
+
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -478,10 +478,8 @@ public class BatchInserterImpl implements BatchInserter
         {
             throw new UnderlyingStorageException( e );
         }
-        try ( CountsAccessor.Updater updater = counts.updater() )
-        {
-            CountsComputer.computeCounts( neoStore ).accept( new CountsAccessor.Initializer( updater ) );
-        }
+
+        CountsComputer.computeCounts( neoStore );
     }
 
     private class InitialNodeLabelCreationVisitor implements Visitor<NodeLabelUpdate, IOException>

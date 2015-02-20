@@ -35,7 +35,6 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -973,11 +972,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
             stringLogger.warn( "Missing counts store, rebuilding it." );
             try
             {
-                try ( CountsAccessor.Updater updater = counts.updater() )
-                {
-                    CountsComputer.computeCounts( nodeStore, relStore )
-                                  .accept( new CountsAccessor.Initializer( updater ) );
-                }
+                CountsComputer.computeCounts( this );
                 counts.rotate( getLastCommittedTransactionId() );
             }
             catch ( Throwable failure )

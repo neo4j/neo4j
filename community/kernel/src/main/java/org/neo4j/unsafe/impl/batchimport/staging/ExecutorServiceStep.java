@@ -20,7 +20,6 @@
 package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.function.primitive.PrimitiveLongPredicate;
@@ -32,8 +31,8 @@ import static java.lang.System.currentTimeMillis;
 import static org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor.DEFAULT_PARK_STRATEGY;
 
 /**
- * {@link Step} that uses {@link ExecutorService} as a queue and execution mechanism.
- * Supports an arbitrary number of threads to execute batches.
+ * {@link Step} that uses {@link TaskExecutor} as a queue and execution mechanism.
+ * Supports an arbitrary number of threads to execute batches in parallel.
  */
 public abstract class ExecutorServiceStep<T> extends AbstractStep<T>
 {

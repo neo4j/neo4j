@@ -22,7 +22,6 @@ package org.neo4j.unsafe.impl.batchimport;
 import java.io.IOException;
 
 import org.neo4j.function.Function;
-import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Format;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -45,13 +44,9 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
-import org.neo4j.unsafe.impl.batchimport.staging.DynamicProcessorAssigner;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
-import org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisor;
 import org.neo4j.unsafe.impl.batchimport.staging.InputIteratorBatcherStep;
-import org.neo4j.unsafe.impl.batchimport.staging.MultiExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
-import org.neo4j.unsafe.impl.batchimport.staging.StageExecution;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStore;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
@@ -62,6 +57,7 @@ import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Utils.idsOf;
 import static org.neo4j.unsafe.impl.batchimport.WriterFactories.parallel;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
+import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
 
 /**
  * {@link BatchImporter} which tries to exercise as much of the available resources to gain performance.
@@ -79,9 +75,9 @@ public class ParallelBatchImporter implements BatchImporter
     private final FileSystemAbstraction fileSystem;
     private final Configuration config;
     private final IoMonitor writeMonitor;
-    private final ExecutionSupervisor executionPoller;
     private final Logging logging;
     private final StringLogger logger;
+    private final ExecutionMonitor executionMonitor;
     private final Monitors monitors;
     private final WriterFactory writerFactory;
     private final AdditionalInitialIds additionalInitialIds;
@@ -99,11 +95,10 @@ public class ParallelBatchImporter implements BatchImporter
         this.fileSystem = fileSystem;
         this.config = config;
         this.logging = logging;
+        this.executionMonitor = executionMonitor;
         this.additionalInitialIds = additionalInitialIds;
         this.memoryCalculator = memoryCalculator;
         this.logger = logging.getMessagesLog( getClass() );
-        this.executionPoller = new ExecutionSupervisor( Clock.SYSTEM_CLOCK, new MultiExecutionMonitor(
-                executionMonitor, new DynamicProcessorAssigner( config, config.maxNumberOfProcessors() ) ) );
         this.monitors = new Monitors();
         this.writeMonitor = new IoMonitor();
         this.writerFactory = writerFactory.apply( config );
@@ -176,7 +171,7 @@ public class ParallelBatchImporter implements BatchImporter
             // Remaining relationship processors
             StoreProcessor<RelationshipRecord> relationshipLinkerProcessor =
                     new RelationshipLinkbackProcessor( nodeRelationshipLink );
-            StoreProcessor<RelationshipRecord> relationshipCountsProcessor = new RelationshipCountsProcessor(
+            RelationshipCountsProcessor relationshipCountsProcessor = new RelationshipCountsProcessor(
                     nodeLabelsCache, neoStore.getLabelRepository().getHighId(),
                     neoStore.getRelationshipTypeRepository().getHighId(), neoStore.getCountsStore() );
 
@@ -211,13 +206,14 @@ public class ParallelBatchImporter implements BatchImporter
                 executeStages( new NodeStoreProcessorStage( "Node --> Node counts", config,
                         neoStore.getNodeStore(), nodeCountsProcessor ) );
                 // Stage 7 -- count label-[type]->label
-                executeStages( new RelationshipStoreProcessorStage( "Relationship --> Relationship Count", config,
-                        neoStore.getRelationshipStore(), relationshipCountsProcessor ) );
+                executeStages( new RelationshipCountsStage( config, nodeLabelsCache, neoStore.getRelationshipStore(),
+                        neoStore.getLabelRepository().getHighId(),
+                        neoStore.getRelationshipTypeRepository().getHighId(), neoStore.getCountsStore() ) );
             }
 
             // We're done, do some final logging about it
             long totalTimeMillis = currentTimeMillis() - startTime;
-            executionPoller.done( totalTimeMillis );
+            executionMonitor.done( totalTimeMillis );
             logger.info( "Import completed, took " + Format.duration( totalTimeMillis ) );
         }
         catch ( Throwable t )
@@ -255,24 +251,9 @@ public class ParallelBatchImporter implements BatchImporter
         return available > used * 2; // to be on the safe side
     }
 
-    private synchronized void executeStages( Stage... stages )
+    private void executeStages( Stage... stages )
     {
-        try
-        {
-            StageExecution[] executions = new StageExecution[stages.length];
-            for ( int i = 0; i < stages.length; i++ )
-            {
-                executions[i] = stages[i].execute();
-            }
-            executionPoller.supervise( executions );
-        }
-        finally
-        {
-            for ( Stage stage : stages )
-            {
-                stage.close();
-            }
-        }
+        superviseDynamicExecution( executionMonitor, config, stages );
     }
 
     public class NodeStage extends Stage
@@ -281,7 +262,7 @@ public class ParallelBatchImporter implements BatchImporter
                           BatchingNeoStore neoStore )
         {
             super( "Nodes", config, idGenerator.dependsOnInput() );
-            add( new InputIteratorBatcherStep<>( control(), ">", config.batchSize(), config.movingAverageSize(),
+            add( new InputIteratorBatcherStep<>( control(), config.batchSize(), config.movingAverageSize(),
                     nodes.iterator(), InputNode.class ) );
 
             NodeStore nodeStore = neoStore.getNodeStore();
@@ -300,7 +281,7 @@ public class ParallelBatchImporter implements BatchImporter
                 NodeRelationshipLink nodeRelationshipLink, IdMapper idMapper )
         {
             super( "Calculate dense nodes", config, false );
-            add( new InputIteratorBatcherStep<>( control(), ">", config.batchSize(), config.movingAverageSize(),
+            add( new InputIteratorBatcherStep<>( control(), config.batchSize(), config.movingAverageSize(),
                     relationships.iterator(), InputRelationship.class ) );
 
             add( new RelationshipPreparationStep( control(), config, idMapper ) );
@@ -314,7 +295,7 @@ public class ParallelBatchImporter implements BatchImporter
                 BatchingNeoStore neoStore, NodeRelationshipLink nodeRelationshipLink, boolean specificIds )
         {
             super( "Relationships", config, false );
-            add( new InputIteratorBatcherStep<>( control(), ">", config.batchSize(), config.movingAverageSize(),
+            add( new InputIteratorBatcherStep<>( control(), config.batchSize(), config.movingAverageSize(),
                     relationships.iterator(), InputRelationship.class ) );
 
             RelationshipStore relationshipStore = neoStore.getRelationshipStore();

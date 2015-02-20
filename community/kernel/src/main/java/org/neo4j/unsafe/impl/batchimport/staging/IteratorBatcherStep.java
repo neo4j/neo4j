@@ -19,33 +19,43 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import java.util.Collection;
+import java.lang.reflect.Array;
+import java.util.Arrays;
 
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
-import org.neo4j.unsafe.impl.batchimport.IoThroughputStat;
-import org.neo4j.unsafe.impl.batchimport.stats.Key;
-import org.neo4j.unsafe.impl.batchimport.stats.Keys;
-import org.neo4j.unsafe.impl.batchimport.stats.Stat;
-import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 /**
- * Takes an Iterator and chops it up into batches downstream.
+ * Takes an Iterator and chops it up into array batches downstream.
  */
-public class IteratorBatcherStep<T> extends ProducerStep<T> implements StatsProvider
+public class IteratorBatcherStep<T> extends IoProducerStep<T[]>
 {
     private final InputIterator<T> data;
+    private final Class<T> itemClass;
 
-    public IteratorBatcherStep( StageControl control, String name, int batchSize, int movingAverageSize,
+    public IteratorBatcherStep( StageControl control, int batchSize, int movingAverageSize,
             InputIterator<T> data, Class<T> itemClass )
     {
-        super( control, name, batchSize, movingAverageSize, itemClass );
+        super( control, batchSize, movingAverageSize );
         this.data = data;
+        this.itemClass = itemClass;
     }
 
     @Override
-    protected T nextOrNull()
+    protected Object nextBatchOrNull( int batchSize )
     {
-        return data.hasNext() ? data.next() : null;
+        if ( !data.hasNext() )
+        {
+            return null;
+        }
+
+        @SuppressWarnings( "unchecked" )
+        T[] batch = (T[]) Array.newInstance( itemClass, batchSize );
+        int i = 0;
+        for ( ; i < batchSize && data.hasNext(); i++ )
+        {
+            batch[i] = data.next();
+        }
+        return i == batchSize ? batch : Arrays.copyOf( batch, i );
     }
 
     @Override
@@ -55,25 +65,8 @@ public class IteratorBatcherStep<T> extends ProducerStep<T> implements StatsProv
     }
 
     @Override
-    protected void addStatsProviders( Collection<StatsProvider> providers )
+    protected long position()
     {
-        super.addStatsProviders( providers );
-        providers.add( this );
-    }
-
-    @Override
-    public Stat stat( Key key )
-    {
-        if ( key == Keys.io_throughput )
-        {
-            return new IoThroughputStat( startTime, endTime, data.position() );
-        }
-        return null;
-    }
-
-    @Override
-    public Key[] keys()
-    {
-        return new Key[] { Keys.io_throughput };
+        return data.position();
     }
 }

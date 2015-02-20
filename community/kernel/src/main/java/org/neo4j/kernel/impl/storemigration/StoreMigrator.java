@@ -43,15 +43,16 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.CountsComputer;
+import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreVersionMismatchHandler;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
@@ -316,11 +317,11 @@ public class StoreMigrator implements StoreMigrationParticipant
             {
                 CountsTracker tracker = life.add( new CountsTracker( logging.getMessagesLog( CountsTracker.class ),
                                                                  fileSystem, pageCache, storeFileBase ) );
-                try ( CountsAccessor.Updater updater = tracker.updater() )
-                {
-                    CountsComputer.computeCounts( nodeStore, relationshipStore )
-                                  .accept( new CountsAccessor.Initializer( updater ) );
-                }
+                CountsComputer.computeCounts( nodeStore, relationshipStore, tracker,
+                        (int)storeFactory.getHighId( StoreFile.LABEL_TOKEN_STORE,
+                                LabelTokenStore.RECORD_SIZE ),
+                        (int)storeFactory.getHighId( StoreFile.RELATIONSHIP_TYPE_TOKEN_STORE,
+                                RelationshipTypeTokenStore.RECORD_SIZE ) );
                 tracker.rotate( lastTxId );
             }
         }

@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.unsafe.impl.batchimport.Configuration;
@@ -39,15 +40,23 @@ public class StageTest
         int batchSize = 10;
         long batches = 1000;
         final long items = batches*batchSize;
-        stage.add( new ProducerStep<Object>( stage.control(), "Producer", batchSize, 100, Object.class )
+        stage.add( new ProducerStep<Object>( stage.control(), "Producer", batchSize, 100 )
         {
-            private long i = 0;
             private final Object theObject = new Object();
+            private long i;
 
             @Override
-            protected Object nextOrNull()
+            protected Object nextBatchOrNull( int batchSize )
             {
-                return ++i > items ? null : theObject;
+                if ( i >= items )
+                {
+                    return null;
+                }
+
+                Object[] batch = new Object[batchSize];
+                Arrays.fill( batch, theObject );
+                i += batchSize;
+                return batch;
             }
         } );
 

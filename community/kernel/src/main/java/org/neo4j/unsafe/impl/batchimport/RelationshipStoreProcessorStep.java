@@ -35,7 +35,7 @@ public class RelationshipStoreProcessorStep extends StoreProcessorStep<Relations
     protected RelationshipStoreProcessorStep( StageControl control, String name, Configuration config,
             RelationshipStore relationshipStore, StoreProcessor<RelationshipRecord> processor )
     {
-        super( control, name, config.batchSize(), config.movingAverageSize(), relationshipStore, processor );
+        super( control, name, config.batchSize(), config.movingAverageSize(), relationshipStore, processor, true );
         this.relationshipStore = relationshipStore;
     }
 

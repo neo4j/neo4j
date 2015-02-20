@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -36,14 +36,18 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.api.CountsAccessor;
-import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.store.CountsComputer;
+import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
+import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -64,18 +68,15 @@ public class CountsComputerTest
     {
         @SuppressWarnings( "deprecation" )
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
-        final CountsRecordState countsState = CountsComputer.computeCounts( db );
         long lastCommittedTransactionId = getLastTxId( db );
         db.shutdown();
 
-        cleanupCountsForRebuilding();
-
-        rebuildCounts( countsState, lastCommittedTransactionId );
+        rebuildCounts( lastCommittedTransactionId );
 
         try ( Lifespan life = new Lifespan() )
         {
             CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
-                                                           new File( dir, COUNTS_STORE_BASE ) ) );
+                    new File( dir, COUNTS_STORE_BASE ) ) );
             // a transaction for creating the label and a transaction for the node
             assertEquals( BASE_TX_ID, store.txId() );
             assertEquals( 0, store.totalEntriesStored() );
@@ -95,18 +96,15 @@ public class CountsComputerTest
             db.createNode();
             tx.success();
         }
-        final CountsRecordState countsState = CountsComputer.computeCounts( db );
         long lastCommittedTransactionId = getLastTxId( db );
         db.shutdown();
 
-        cleanupCountsForRebuilding();
-
-        rebuildCounts( countsState, lastCommittedTransactionId );
+        rebuildCounts( lastCommittedTransactionId );
 
         try ( Lifespan life = new Lifespan() )
         {
             CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
-                                                           new File( dir, COUNTS_STORE_BASE ) ) );
+                    new File( dir, COUNTS_STORE_BASE ) ) );
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1, store.txId() );
             assertEquals( 4, store.totalEntriesStored() );
             assertEquals( 4, get( store, nodeKey( -1 ) ) );
@@ -131,18 +129,15 @@ public class CountsComputerTest
             node.delete();
             tx.success();
         }
-        final CountsRecordState countsState = CountsComputer.computeCounts( db );
         long lastCommittedTransactionId = getLastTxId( db );
         db.shutdown();
 
-        cleanupCountsForRebuilding();
-
-        rebuildCounts( countsState, lastCommittedTransactionId );
+        rebuildCounts( lastCommittedTransactionId );
 
         try ( Lifespan life = new Lifespan() )
         {
             CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
-                                                           new File( dir, COUNTS_STORE_BASE ) ) );
+                    new File( dir, COUNTS_STORE_BASE ) ) );
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1, store.txId() );
             assertEquals( 3, store.totalEntriesStored() );
             assertEquals( 3, get( store, nodeKey( -1 ) ) );
@@ -167,18 +162,15 @@ public class CountsComputerTest
             rel.delete();
             tx.success();
         }
-        final CountsRecordState countsState = CountsComputer.computeCounts( db );
         long lastCommittedTransactionId = getLastTxId( db );
         db.shutdown();
 
-        cleanupCountsForRebuilding();
-
-        rebuildCounts( countsState, lastCommittedTransactionId );
+        rebuildCounts( lastCommittedTransactionId );
 
         try ( Lifespan life = new Lifespan() )
         {
             CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
-                                                           new File( dir, COUNTS_STORE_BASE ) ) );
+                    new File( dir, COUNTS_STORE_BASE ) ) );
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1, store.txId() );
 //            assertEquals( 11, store.totalRecordsStored() ); // we do not support yet (label,type,label) counts
             assertEquals( 9, store.totalEntriesStored() );
@@ -208,18 +200,15 @@ public class CountsComputerTest
             node.createRelationshipTo( nodeC, DynamicRelationshipType.withName( "TYPE2" ) );
             tx.success();
         }
-        final CountsRecordState countsState = CountsComputer.computeCounts( db );
         long lastCommittedTransactionId = getLastTxId( db );
         db.shutdown();
 
-        cleanupCountsForRebuilding();
-
-        rebuildCounts( countsState, lastCommittedTransactionId );
+        rebuildCounts( lastCommittedTransactionId );
 
         try ( Lifespan life = new Lifespan() )
         {
             CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
-                                                           new File( dir, COUNTS_STORE_BASE ) ) );
+                    new File( dir, COUNTS_STORE_BASE ) ) );
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1 + 1, store.txId() );
 //            assertEquals( 15, store.totalRecordsStored() ); // we do not support yet (label,type,label) counts
             assertEquals( 13, store.totalEntriesStored() );
@@ -256,18 +245,15 @@ public class CountsComputerTest
             nodeD.createRelationshipTo( nodeC, DynamicRelationshipType.withName( "TYPE4" ) );
             tx.success();
         }
-        final CountsRecordState countsState = CountsComputer.computeCounts( db );
         long lastCommittedTransactionId = getLastTxId( db );
         db.shutdown();
 
-        cleanupCountsForRebuilding();
-
-        rebuildCounts( countsState, lastCommittedTransactionId );
+        rebuildCounts( lastCommittedTransactionId );
 
         try ( Lifespan life = new Lifespan() )
         {
             CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
-                                                           new File( dir, COUNTS_STORE_BASE ) ) );
+                    new File( dir, COUNTS_STORE_BASE ) ) );
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1, store.txId() );
             assertEquals( 22, store.totalEntriesStored() );
 //            assertEquals( 30, store.totalRecordsStored() ); // we do not support yet (label,type,label) counts
@@ -337,16 +323,20 @@ public class CountsComputerTest
         fs.deleteFile( betaStoreFile() );
     }
 
-    private void rebuildCounts( CountsRecordState countsState, long lastCommittedTransactionId ) throws IOException
+    private void rebuildCounts( long lastCommittedTransactionId ) throws IOException
     {
-        try ( Lifespan life = new Lifespan() )
+        cleanupCountsForRebuilding();
+
+        StoreFactory storeFactory = new StoreFactory( fs, dir, pageCache, StringLogger.DEV_NULL, new Monitors() );
+        try ( Lifespan life = new Lifespan();
+              NodeStore nodeStore = storeFactory.newNodeStore();
+              RelationshipStore relationshipStore = storeFactory.newRelationshipStore() )
         {
-            CountsTracker tracker = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
-                                                             new File( dir, COUNTS_STORE_BASE ) ) );
-            try ( CountsAccessor.Updater updater = tracker.updater() )
-            {
-                countsState.accept( new CountsAccessor.Initializer( updater ) );
-            }
+            CountsTracker tracker = life.add( tracker = storeFactory.newCountsStore() );
+            CountsComputer.computeCounts( nodeStore, relationshipStore, tracker,
+                    (int)storeFactory.getHighId( StoreFile.LABEL_TOKEN_STORE, LabelTokenStore.RECORD_SIZE ),
+                    (int)storeFactory.getHighId( StoreFile.RELATIONSHIP_TYPE_TOKEN_STORE,
+                            RelationshipTypeTokenStore.RECORD_SIZE ) );
             tracker.rotate( lastCommittedTransactionId );
         }
     }

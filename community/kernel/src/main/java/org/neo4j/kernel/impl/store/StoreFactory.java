@@ -35,6 +35,9 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
+import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
+import org.neo4j.kernel.impl.storemigration.StoreFile;
+import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -137,6 +140,11 @@ public class StoreFactory
     public File storeFileName( String toAppend )
     {
         return new File( neoStoreFileName.getPath() + toAppend );
+    }
+
+    public File storeFileName( StoreFile file, StoreFileType type )
+    {
+        return new File( neoStoreFileName.getParentFile(), file.fileName( type ) );
     }
 
     public NeoStore newNeoStore( boolean allowCreateEmpty )
@@ -619,6 +627,17 @@ public class StoreFactory
             idGenerator.nextId(); // reserve first for blockSize
             idGenerator.close();
         }
+    }
+
+    /**
+     * I.e. total number of used/unused records + 1
+     * @param storeFile {@link StoreFile} to get the name from.
+     * @param recordSize record size of that store.
+     * @return highId, i.e. an id one greater than the highest id in the store.
+     */
+    public long getHighId( StoreFile storeFile, int recordSize ) throws IOException
+    {
+        return IdGeneratorImpl.readHighId( fileSystemAbstraction, storeFileName( storeFile, StoreFileType.ID ) );
     }
 
     public abstract static class Configuration

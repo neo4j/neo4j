@@ -45,7 +45,7 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
     }
 
     public static final String TYPE_DESCRIPTOR = "RelationshipTypeStore";
-    private static final int RECORD_SIZE = 1/*inUse*/ + 4/*nameId*/;
+    public static final int RECORD_SIZE = 1/*inUse*/ + 4/*nameId*/;
 
     public RelationshipTypeTokenStore(
             File fileName,

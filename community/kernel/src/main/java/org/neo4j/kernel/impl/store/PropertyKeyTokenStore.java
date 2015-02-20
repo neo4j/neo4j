@@ -45,7 +45,7 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord>
     // Historical type descriptor, should be called PropertyKeyTokenStore
     public static final String TYPE_DESCRIPTOR = "PropertyIndexStore";
 
-    private static final int RECORD_SIZE = 1/*inUse*/ + 4/*prop count*/ + 4/*nameId*/;
+    public static final int RECORD_SIZE = 1/*inUse*/ + 4/*prop count*/ + 4/*nameId*/;
 
     public PropertyKeyTokenStore(
             File fileName,

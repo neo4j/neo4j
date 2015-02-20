@@ -39,15 +39,17 @@ public abstract class StoreProcessorStep<RECORD extends AbstractBaseRecord> exte
     private final RecordStore<RECORD> store;
     private final StoreProcessor<RECORD> processor;
     private final int recordSize;
+    private final boolean reversed;
     private long id;
     private long highestId;
 
     public StoreProcessorStep( StageControl control, String name, int batchSize, int movingAverageSize,
-            RecordStore<RECORD> store, StoreProcessor<RECORD> processor )
+            RecordStore<RECORD> store, StoreProcessor<RECORD> processor, boolean reversed )
     {
         super( control, name, batchSize, movingAverageSize );
         this.store = store;
         this.processor = processor;
+        this.reversed = reversed;
         this.recordSize = store.getRecordSize();
     }
 
@@ -55,8 +57,11 @@ public abstract class StoreProcessorStep<RECORD extends AbstractBaseRecord> exte
     protected void process()
     {
         highestId = store.getHighestPossibleIdInUse();
+        id = reversed ? highestId : 0;
+        long tooFar = reversed ? -1 : highestId+1;
+        int stride = reversed ? -1 : 1;
         RECORD heavilyReusedRecord = createReusableRecord();
-        for ( id = highestId; id >= 0; id-- )
+        for ( ; id != tooFar; id += stride )
         {
             RECORD record = loadRecord( id, heavilyReusedRecord );
             if ( record != null && processor.process( record ) )
@@ -80,7 +85,8 @@ public abstract class StoreProcessorStep<RECORD extends AbstractBaseRecord> exte
     {
         if ( key == Keys.io_throughput )
         {
-            return new IoThroughputStat( startTime, endTime, recordSize*(highestId-id) );
+            long position = reversed ? (highestId-id) : id;
+            return new IoThroughputStat( startTime, endTime, recordSize*position );
         }
         return null;
     }

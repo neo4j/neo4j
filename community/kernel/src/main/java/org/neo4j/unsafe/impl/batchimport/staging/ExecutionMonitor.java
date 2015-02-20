@@ -19,6 +19,10 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
+import java.util.concurrent.TimeUnit;
+
+import org.neo4j.helpers.Clock;
+
 /**
  * Gets notified now and then about {@link StageExecution}, where statistics can be read and displayed,
  * aggregated or in other ways make sense of the data of {@link StageExecution}.
@@ -49,4 +53,45 @@ public interface ExecutionMonitor
      * Called with currently executing {@link StageExecution} instances so that data from them can be gathered.
      */
     void check( StageExecution[] executions );
+
+    /**
+     * Base implementation with most methods defaulting to not doing anything.
+     */
+    public abstract class Adpter implements ExecutionMonitor
+    {
+        private final Clock clock;
+        private final long intervalMillis;
+
+        public Adpter( Clock clock, long time, TimeUnit unit )
+        {
+            this.clock = clock;
+            this.intervalMillis = unit.toMillis( time );
+        }
+
+        public Adpter( long time, TimeUnit unit )
+        {
+            this( Clock.SYSTEM_CLOCK, time, unit );
+        }
+
+        @Override
+        public long nextCheckTime()
+        {
+            return clock.currentTimeMillis() + intervalMillis;
+        }
+
+        @Override
+        public void start( StageExecution[] executions )
+        {   // Do nothing by default
+        }
+
+        @Override
+        public void end( StageExecution[] executions, long totalTimeMillis )
+        {   // Do nothing by default
+        }
+
+        @Override
+        public void done( long totalTimeMillis )
+        {   // Do nothing by default
+        }
+    }
 }

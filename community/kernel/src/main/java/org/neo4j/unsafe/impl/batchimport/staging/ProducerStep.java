@@ -19,32 +19,30 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import java.lang.reflect.Array;
-import java.util.Arrays;
-
 import static java.lang.System.currentTimeMillis;
 
 /**
- * {@link Step} that is the start of the line of steps in a {@link Stage}. It produces batches of data
- * and sends downstream.
+ * Step that generally sits first in a {@link Stage} and produces batches that will flow downstream
+ * to other {@link Step steps}.
  */
-public abstract class ProducerStep<T> extends AbstractStep<Void>
+public abstract class ProducerStep<BATCH> extends AbstractStep<Void>
 {
-    private final int batchSize;
-    private final Class<T> itemClass;
+    protected final int batchSize;
 
-    public ProducerStep( StageControl control, String name, int batchSize, int movingAverageSize, Class<T> itemClass )
+    public ProducerStep( StageControl control, String name, int batchSize, int movingAverageSize )
     {
         super( control, name, movingAverageSize );
         this.batchSize = batchSize;
-        this.itemClass = itemClass;
     }
 
-    protected abstract T nextOrNull();
-
+    /**
+     * Merely receives one call, like a start signal from the staging framework.
+     */
     @Override
-    public long receive( long ticket, Void nothing )
+    public long receive( long ticket, Void batch )
     {
+        // It's fone to not store a reference to this thread here because either it completes and exits
+        // normally, notices a panic and exits via an exception.
         new Thread( "PRODUCER" )
         {
             @Override
@@ -65,49 +63,26 @@ public abstract class ProducerStep<T> extends AbstractStep<Void>
         return 0;
     }
 
+    /**
+     * Forms batches out of some sort of data stream and sends these batches downstream.
+     */
     protected void process()
     {
-        T[] batch = newBatch();
-        int size = 0;
+        Object batch = null;
         long startTime = currentTimeMillis();
-        T next = null;
-        while ( (next = nextOrNull()) != null )
+        while ( (batch = nextBatchOrNull( batchSize )) != null )
         {
-            batch[size++] = next;
-            if ( size == batchSize )
-            {   // Full batch
-                totalProcessingTime.add( currentTimeMillis()-startTime );
-
-                // Increment both received and done batch count
-                sendDownstream( nextTicket(), constructBatch( batch ) );
-
-                batch = newBatch();
-                size = 0;
-                assertHealthy();
-                startTime = currentTimeMillis();
-            }
-        }
-
-        if ( size > 0 )
-        {   // Last batch
             totalProcessingTime.add( currentTimeMillis()-startTime );
-            sendDownstream( nextTicket(), constructBatch( Arrays.copyOf( batch, size ) ) );
+            sendDownstream( doneBatches.incrementAndGet(), batch );
+            assertHealthy();
+            startTime = currentTimeMillis();
         }
     }
 
-    protected Object constructBatch( T[] batch )
-    {
-        return batch;
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private T[] newBatch()
-    {
-        return (T[]) Array.newInstance( itemClass, batchSize );
-    }
-
-    private long nextTicket()
-    {
-        return doneBatches.incrementAndGet();
-    }
+    /**
+     * Generates next batch object with a target size of {@code batchSize} items from its data stream in it.
+     * @param batchSize number of items to grab from its data stream (whatever a subclass defines as a data stream).
+     * @return the batch object to send downstream, or null if the data stream came to an end.
+     */
+    protected abstract Object nextBatchOrNull( int batchSize );
 }

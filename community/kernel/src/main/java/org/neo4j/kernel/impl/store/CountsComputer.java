@@ -20,65 +20,68 @@
 package org.neo4j.kernel.impl.store;
 
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.api.CountsRecordState;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.unsafe.impl.batchimport.Configuration;
+import org.neo4j.unsafe.impl.batchimport.NodeCountsProcessor;
+import org.neo4j.unsafe.impl.batchimport.NodeStoreProcessorStage;
+import org.neo4j.unsafe.impl.batchimport.RelationshipCountsStage;
+import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
+import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
+
+import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
 
 public class CountsComputer
 {
-    public static CountsRecordState computeCounts( GraphDatabaseAPI api )
+    public static void computeCounts( GraphDatabaseAPI api )
     {
-        return computeCounts( api.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate() );
+        computeCounts( api.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate() );
     }
 
-    public static CountsRecordState computeCounts( NeoStore stores )
+    public static void computeCounts( NeoStore stores )
     {
-        return computeCounts( stores.getNodeStore(), stores.getRelationshipStore() );
+        computeCounts( stores.getNodeStore(), stores.getRelationshipStore(), stores.getCounts(),
+                (int)stores.getLabelTokenStore().getHighId(), (int)stores.getRelationshipTypeTokenStore().getHighId() );
     }
 
-    public static CountsRecordState computeCounts( NodeStore nodeStore, RelationshipStore relationshipStore )
+    public static void computeCounts( NodeStore nodeStore, RelationshipStore relationshipStore,
+            CountsTracker countsTracker, int highLabelId, int highRelationshipTypeId )
     {
-        final CountsRecordState result = new CountsRecordState();
-        new CountsComputer( nodeStore, relationshipStore ).update( result );
-        return result;
+        new CountsComputer( nodeStore, relationshipStore, countsTracker,
+                highLabelId, highRelationshipTypeId ).rebuildCounts();
     }
 
     private final NodeStore nodes;
     private final RelationshipStore relationships;
+    private final CountsTracker countsTracker;
+    private final int highLabelId;
+    private final int highRelationshipTypeId;
 
-    public CountsComputer( NodeStore nodes, RelationshipStore relationships )
+    public CountsComputer( NodeStore nodes, RelationshipStore relationships, CountsTracker countsTracker,
+            int highLabelId, int highRelationshipTypeId )
     {
         this.nodes = nodes;
         this.relationships = relationships;
+        this.countsTracker = countsTracker;
+        this.highLabelId = highLabelId;
+        this.highRelationshipTypeId = highRelationshipTypeId;
     }
 
-    public void update( CountsRecordState target )
+    public void rebuildCounts()
     {
-        // count nodes
-        for ( long id = 0, highId = nodes.getHighId(); id <= highId; id++ )
+        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO, highLabelId );
+        try
         {
-            NodeRecord record = nodes.forceGetRecord( id );
-            if ( record.inUse() )
-            {
-                target.addNode( labels( record ) );
-            }
+            // Count nodes
+            superviseDynamicExecution( new NodeStoreProcessorStage( "COUNT NODES", Configuration.DEFAULT, nodes,
+                    new NodeCountsProcessor( nodes, cache, highLabelId, countsTracker ) ) );
+            // Count relationships
+            superviseDynamicExecution( new RelationshipCountsStage( Configuration.DEFAULT, cache, relationships,
+                    highLabelId, highRelationshipTypeId, countsTracker ) );
         }
-        // count relationships
-        for ( long id = 0, highId = relationships.getHighId(); id <= highId; id++ )
+        finally
         {
-            RelationshipRecord record = relationships.forceGetRecord( id );
-            if ( record.inUse() )
-            {
-                long[] startLabels = labels( nodes.forceGetRecord( record.getFirstNode() ) );
-                long[] endLabels = labels( nodes.forceGetRecord( record.getSecondNode() ) );
-                target.addRelationship( startLabels, record.getType(), endLabels );
-            }
+            cache.close();
         }
-    }
-
-    private long[] labels( NodeRecord node )
-    {
-        return NodeLabelsField.get( node, nodes );
     }
 }

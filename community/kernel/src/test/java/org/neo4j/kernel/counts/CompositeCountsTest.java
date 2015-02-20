@@ -23,8 +23,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.List;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -33,19 +31,14 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.store.counts.keys.RelationshipKey;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.kernel.impl.store.CountsComputer.computeCounts;
 
 public class CompositeCountsTest
 {
@@ -69,7 +62,19 @@ public class CompositeCountsTest
         }
 
         // then
-        verifyAllCounts();
+        numberOfRelationshipsMatching( label( "Foo" ), withName( "ALPHA" ), null ).shouldBe( 1 );
+        numberOfRelationshipsMatching( label( "Foo" ), withName( "BETA" ), null ).shouldBe( 2 );
+        numberOfRelationshipsMatching( label( "Foo" ), withName( "GAMMA" ), null ).shouldBe( 1 );
+        numberOfRelationshipsMatching( null, withName( "ALPHA" ), label( "Foo" ) ).shouldBe( 0 );
+        numberOfRelationshipsMatching( null, withName( "BETA" ), label( "Foo" ) ).shouldBe( 1 );
+        numberOfRelationshipsMatching( null, withName( "GAMMA" ), label( "Foo" ) ).shouldBe( 1 );
+
+        numberOfRelationshipsMatching( label( "Bar" ), withName( "ALPHA" ), null ).shouldBe( 0 );
+        numberOfRelationshipsMatching( label( "Bar" ), withName( "BETA" ), null ).shouldBe( 1 );
+        numberOfRelationshipsMatching( label( "Bar" ), withName( "GAMMA" ), null ).shouldBe( 2 );
+        numberOfRelationshipsMatching( null, withName( "ALPHA" ), label( "Bar" ) ).shouldBe( 0 );
+        numberOfRelationshipsMatching( null, withName( "BETA" ), label( "Bar" ) ).shouldBe( 2 );
+        numberOfRelationshipsMatching( null, withName( "GAMMA" ), label( "Bar" ) ).shouldBe( 0 );
     }
 
     @Test
@@ -84,7 +89,6 @@ public class CompositeCountsTest
 
             tx.success();
         }
-        verifyAllCounts();
 
         // when
         try ( Transaction tx = db.beginTx() )
@@ -99,7 +103,6 @@ public class CompositeCountsTest
         numberOfRelationshipsMatching( null, withName( "KNOWS" ), label( "Foo" ) ).shouldBe( 0 );
         numberOfRelationshipsMatching( null, withName( "KNOWS" ), label( "Bar" ) ).shouldBe( 1 );
         numberOfRelationshipsMatching( label( "Bar" ), withName( "KNOWS" ), null ).shouldBe( 0 );
-        verifyAllCounts();
     }
 
     @Test
@@ -128,7 +131,6 @@ public class CompositeCountsTest
         numberOfRelationshipsMatching( null, withName( "KNOWS" ), label( "Foo" ) ).shouldBe( 0 );
         numberOfRelationshipsMatching( null, withName( "KNOWS" ), label( "Bar" ) ).shouldBe( 0 );
         numberOfRelationshipsMatching( label( "Bar" ), withName( "KNOWS" ), null ).shouldBe( 0 );
-        verifyAllCounts();
     }
 
     @Test
@@ -144,7 +146,6 @@ public class CompositeCountsTest
 
             tx.success();
         }
-        verifyAllCounts();
 
         // when
         try ( Transaction tx = db.beginTx() )
@@ -159,7 +160,6 @@ public class CompositeCountsTest
         numberOfRelationshipsMatching( null, withName( "KNOWS" ), label( "Foo" ) ).shouldBe( 0 );
         numberOfRelationshipsMatching( null, withName( "KNOWS" ), label( "Bar" ) ).shouldBe( 1 );
         numberOfRelationshipsMatching( label( "Bar" ), withName( "KNOWS" ), null ).shouldBe( 0 );
-        verifyAllCounts();
     }
 
     @Test
@@ -189,7 +189,6 @@ public class CompositeCountsTest
         numberOfRelationshipsMatching( null, withName( "KNOWS" ), label( "Foo" ) ).shouldBe( 0 );
         numberOfRelationshipsMatching( null, withName( "KNOWS" ), label( "Bar" ) ).shouldBe( 1 );
         numberOfRelationshipsMatching( label( "Bar" ), withName( "KNOWS" ), null ).shouldBe( 0 );
-        verifyAllCounts();
     }
 
     @Test
@@ -220,7 +219,6 @@ public class CompositeCountsTest
         numberOfRelationshipsMatching( null, withName( "KNOWS" ), label( "Foo" ) ).shouldBe( 1 );
         numberOfRelationshipsMatching( null, withName( "KNOWS" ), label( "Bar" ) ).shouldBe( 1 );
         numberOfRelationshipsMatching( label( "Bar" ), withName( "KNOWS" ), null ).shouldBe( 2 );
-        verifyAllCounts();
     }
 
     @Test
@@ -253,7 +251,6 @@ public class CompositeCountsTest
         numberOfRelationshipsMatching( null, withName( "KNOWS" ), label( "Foo" ) ).shouldBe( 0 );
         numberOfRelationshipsMatching( null, withName( "KNOWS" ), label( "Bar" ) ).shouldBe( 1 );
         numberOfRelationshipsMatching( label( "Bar" ), withName( "KNOWS" ), null ).shouldBe( 0 );
-        verifyAllCounts();
     }
 
     @Test
@@ -286,7 +283,6 @@ public class CompositeCountsTest
         numberOfRelationshipsMatching( null, withName( "KNOWS" ), label( "Foo" ) ).shouldBe( 0 );
         numberOfRelationshipsMatching( null, withName( "KNOWS" ), label( "Bar" ) ).shouldBe( 1 );
         numberOfRelationshipsMatching( label( "Bar" ), withName( "KNOWS" ), null ).shouldBe( 1 );
-        verifyAllCounts();
     }
 
     @Test
@@ -317,7 +313,6 @@ public class CompositeCountsTest
         numberOfRelationshipsMatching( null, withName( "KNOWS" ), label( "Foo" ) ).shouldBe( 1 );
         numberOfRelationshipsMatching( null, withName( "KNOWS" ), label( "Bar" ) ).shouldBe( 1 );
         numberOfRelationshipsMatching( label( "Bar" ), withName( "KNOWS" ), null ).shouldBe( 0 );
-        verifyAllCounts();
     }
 
     @Test
@@ -342,34 +337,10 @@ public class CompositeCountsTest
         }
 
         // then
-        verifyAllCounts();
-    }
-
-    private void verifyAllCounts()
-    {
-        NeoStore stores = db.resolveDependency( NeoStoreProvider.class ).evaluate();
-        List<CountsRecordState.Difference> differences = computeCounts( stores ).verify( stores.getCounts() );
-        if ( !differences.isEmpty() )
-        {
-            StringBuilder error = new StringBuilder();
-            for ( CountsRecordState.Difference difference : differences )
-            {
-                if ( difference.key() instanceof RelationshipKey )
-                {
-                    RelationshipKey key = (RelationshipKey) difference.key();
-                    if ( key.startLabelId() != ReadOperations.ANY_LABEL &&
-                         key.endLabelId() != ReadOperations.ANY_LABEL )
-                    {
-                        continue;
-                    }
-                }
-                error.append( "\n\t" ).append( difference );
-            }
-            if ( error.length() > 0 )
-            {
-                fail( error.toString() );
-            }
-        }
+        numberOfRelationshipsMatching( label( "Foo" ), withName( "KNOWS" ), null ).shouldBe( 0 );
+        numberOfRelationshipsMatching( label( "Bar" ), withName( "KNOWS" ), null ).shouldBe( 0 );
+        numberOfRelationshipsMatching( null, withName( "KNOWS" ), label( "Foo" ) ).shouldBe( 0 );
+        numberOfRelationshipsMatching( null, withName( "KNOWS" ), label( "Bar" ) ).shouldBe( 0 );
     }
 
     /**
