@@ -62,9 +62,7 @@ import org.neo4j.helpers.collection.ResourceClosingIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
-import org.neo4j.io.pagecache.monitoring.DefaultPageCacheMonitor;
 import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitorFactory;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
@@ -169,10 +167,10 @@ import org.neo4j.kernel.logging.DefaultLogging;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.RollingLogMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.String.format;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.helpers.Settings.STRING;
 import static org.neo4j.helpers.Settings.setting;
@@ -277,7 +275,7 @@ public abstract class InternalAbstractGraphDatabase
     protected JobScheduler jobScheduler;
     protected Monitors monitors;
     protected TransactionCounters transactionMonitor;
-    protected PageCacheMonitor pageCacheMonitor;
+    protected Tracers tracers;
     protected AvailabilityGuard availabilityGuard;
     protected long transactionStartTimeout;
     protected StoreUpgrader storeMigrationProcess;
@@ -344,31 +342,10 @@ public abstract class InternalAbstractGraphDatabase
         return new TransactionCounters();
     }
 
-    private PageCacheMonitor createPageCacheMonitor( Config config, StringLogger msgLog )
+    private Tracers createTracers( Config config, StringLogger msgLog )
     {
-        String desiredImplementationName = config.get( Configuration.pagecache_monitor );
-
-        // The setting is specified with 'null' as a default value.
-        if ( desiredImplementationName != null )
-        {
-            for ( PageCacheMonitorFactory factory : Service.load( PageCacheMonitorFactory.class ) )
-            {
-                try
-                {
-                    if ( factory.getImplementationName().equals( desiredImplementationName ) )
-                    {
-                        return factory.createPageCacheMonitor();
-                    }
-                }
-                catch ( Exception e )
-                {
-                    msgLog.warn( "Failed to instantiate desired PageCacheMonitor implementation '" +
-                                 desiredImplementationName + "'", e );
-                }
-            }
-        }
-
-        return new DefaultPageCacheMonitor();
+        String desiredImplementationName = config.get( Configuration.tracer );
+        return new Tracers( desiredImplementationName, msgLog );
     }
 
     protected void createDatabaseAvailability()
@@ -454,7 +431,7 @@ public abstract class InternalAbstractGraphDatabase
 
         config.setLogger( msgLog );
 
-        pageCacheMonitor = createPageCacheMonitor( config, msgLog );
+        tracers = createTracers( config, msgLog );
 
         this.storeLocker = life.add( new StoreLockerLifecycleAdapter(
                 new StoreLocker( fileSystem ), storeDir ) );
@@ -714,7 +691,7 @@ public abstract class InternalAbstractGraphDatabase
     {
         SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fileSystem );
         LifecycledPageCache lifecycledPageCache = new LifecycledPageCache(
-                swapperFactory, jobScheduler, config, pageCacheMonitor );
+                swapperFactory, jobScheduler, config, tracers.pageCacheTracer );
 
         if ( config.get( GraphDatabaseSettings.dump_configuration ) )
         {
@@ -899,7 +876,7 @@ public abstract class InternalAbstractGraphDatabase
                 storeMigrationProcess, transactionMonitor, kernelHealth,
                 monitors.newMonitor( PhysicalLogFile.Monitor.class ),
                 createHeaderInformationFactory(), startupStatistics, caches, nodeManager, guard, indexStore,
-                getCommitProcessFactory(), pageCache, monitors );
+                getCommitProcessFactory(), pageCache, monitors, tracers );
         dataSourceManager.register( neoDataSource );
     }
 
@@ -1332,8 +1309,8 @@ public abstract class InternalAbstractGraphDatabase
 
         public static final Setting<String> log_configuration_file = setting( "log.configuration", STRING,
                 "neo4j-logback.xml" );
-        public static final Setting<String> pagecache_monitor =
-                setting( "pagecache_monitor", Settings.STRING, (String) null ); // 'null' default.
+        public static final Setting<String> tracer =
+                setting( "dbms.tracer", Settings.STRING, (String) null ); // 'null' default.
     }
 
     private static class PropertyValueFilteringNodeIdIterator extends PrimitiveLongBaseIterator
@@ -1612,7 +1589,7 @@ public abstract class InternalAbstractGraphDatabase
             }
             else if ( PageCacheMonitor.class.isAssignableFrom( type ) )
             {
-                return type.cast( pageCacheMonitor );
+                return type.cast( tracers.pageCacheTracer );
             }
             else if ( Caches.class.isAssignableFrom( type ) )
             {

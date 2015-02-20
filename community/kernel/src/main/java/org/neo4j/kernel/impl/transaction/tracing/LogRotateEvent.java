@@ -17,15 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.monitoring;
+package org.neo4j.kernel.impl.transaction.tracing;
 
 /**
- * Some events are desirable to make AutoClosable, but monitoring is not
- * allowed to introduce new failure modes. Thus, this interface overrides
- * the AutoCloseable#close method to not throw any checked exceptions.
+ * Represents the event of a log rotation.
  */
-public interface AutoCloseablePageCacheMonitorEvent extends AutoCloseable
+public interface LogRotateEvent extends AutoCloseable
 {
+    LogRotateEvent NULL = new LogRotateEvent()
+    {
+        @Override
+        public void close()
+        {
+        }
+    };
+
+    /**
+     * Marks the end of the log rotation process.
+     */
     @Override
     public void close();
 }

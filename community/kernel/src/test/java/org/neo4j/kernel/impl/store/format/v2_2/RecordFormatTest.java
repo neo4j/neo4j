@@ -25,11 +25,11 @@ import java.io.IOException;
 import org.junit.Before;
 import org.junit.Rule;
 
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.StubPageCursor;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.kernel.impl.store.format.Store;
 import org.neo4j.kernel.impl.store.standard.StoreFormat;
 import org.neo4j.kernel.impl.store.standard.StoreToolkit;
@@ -62,7 +62,7 @@ public abstract class RecordFormatTest<FORMAT extends StoreFormat<RECORD, CURSOR
     {
         int pageSize = 1024;
         pageCursor = new StubPageCursor( 0l, pageSize );
-        pageCache = new MuninnPageCache( fsRule.get(), 1024, 1024, PageCacheMonitor.NULL );
+        pageCache = new MuninnPageCache( fsRule.get(), 1024, 1024, PageCacheTracer.NULL );
         pagedFile = pageCache.map( new File("store"), 1024 );
         storeToolkit = new StoreToolkit( format.recordSize( null ), pageSize, 0, null, null );
     }

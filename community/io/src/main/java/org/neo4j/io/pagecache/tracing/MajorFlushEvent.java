@@ -17,17 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.monitoring;
+package org.neo4j.io.pagecache.tracing;
 
 /**
- * An eviction run is started when the page cache has determined that it
- * needs to evict a batch of pages. The dedicated eviction thread is
- * mostly sleeping when it is not performing an eviction run.
+ * Begin a mass-flushing of pages.
  */
-public interface EvictionRunEvent extends AutoCloseablePageCacheMonitorEvent
+public interface MajorFlushEvent extends AutoCloseablePageCacheTracerEvent
 {
     /**
-     * An eviction is started as part of this eviction run.
+     * A MajorFlushEvent that only returns the FlushEventOpportunity.NULL.
      */
-    public EvictionEvent beginEviction();
+    MajorFlushEvent NULL = new MajorFlushEvent()
+    {
+        @Override
+        public FlushEventOpportunity flushEventOpportunity()
+        {
+            return FlushEventOpportunity.NULL;
+        }
+
+        @Override
+        public void close()
+        {
+        }
+    };
+
+    /**
+     * Mass-flushing obviously imply flushing opportunities.
+     */
+    public FlushEventOpportunity flushEventOpportunity();
 }

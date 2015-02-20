@@ -23,6 +23,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
 
@@ -46,11 +47,11 @@ public class MasterTransactionCommitProcess implements TransactionCommitProcess
     }
 
     @Override
-    public long commit( TransactionRepresentation representation, LockGroup locks ) throws TransactionFailureException
+    public long commit( TransactionRepresentation representation, LockGroup locks, CommitEvent commitEvent ) throws TransactionFailureException
     {
         validator.assertInjectionAllowed( representation.getLatestCommittedTxWhenStarted() );
 
-        long result = inner.commit( representation, locks );
+        long result = inner.commit( representation, locks, commitEvent );
 
         pusher.committed( result, representation.getAuthorId() );
 

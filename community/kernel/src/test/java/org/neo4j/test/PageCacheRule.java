@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
@@ -83,7 +83,7 @@ public class PageCacheRule extends ExternalResource
         }
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs );
         pageCache = new LifecycledPageCache(
-                swapperFactory, jobScheduler, config, PageCacheMonitor.NULL );
+                swapperFactory, jobScheduler, config, PageCacheTracer.NULL );
         pageCache.start();
 
         if ( automaticallyProduceInconsistentReads )

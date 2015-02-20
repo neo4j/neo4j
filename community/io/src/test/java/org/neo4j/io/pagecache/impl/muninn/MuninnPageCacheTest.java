@@ -39,8 +39,9 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCacheTest;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.RecordingPageCacheMonitor;
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
+import org.neo4j.io.pagecache.RecordingPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -52,8 +53,8 @@ import static org.junit.Assert.fail;
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
-import static org.neo4j.io.pagecache.RecordingPageCacheMonitor.Evict;
-import static org.neo4j.io.pagecache.RecordingPageCacheMonitor.Fault;
+import static org.neo4j.io.pagecache.RecordingPageCacheTracer.Evict;
+import static org.neo4j.io.pagecache.RecordingPageCacheTracer.Fault;
 
 public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
 {
@@ -65,9 +66,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             FileSystemAbstraction fs,
             int maxPages,
             int pageSize,
-            PageCacheMonitor monitor )
+            PageCacheTracer tracer )
     {
-        return new MuninnPageCache( fs, maxPages, pageSize, monitor );
+        return new MuninnPageCache( fs, maxPages, pageSize, tracer );
     }
 
     @Override
@@ -87,20 +88,20 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     public void mustEvictCleanPageWithoutFlushing() throws Exception
     {
         writeInitialDataTo( file );
-        RecordingPageCacheMonitor monitor = new RecordingPageCacheMonitor();
+        RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
 
-        MuninnPageCache pageCache = new MuninnPageCache( fs, 2, 8, monitor );
+        MuninnPageCache pageCache = new MuninnPageCache( fs, 2, 8, tracer );
         PagedFile pagedFile = pageCache.map( file, 8 );
 
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
         {
             assertTrue( cursor.next() );
         }
-        assertNotNull( monitor.observe( Fault.class ) );
+        assertNotNull( tracer.observe( Fault.class ) );
 
-        int clockArm = pageCache.evictPages( 1, 0, monitor.beginPageEvictions( 1 ) );
+        int clockArm = pageCache.evictPages( 1, 0, tracer.beginPageEvictions( 1 ) );
         assertThat( clockArm, is( 1 ) );
-        assertNotNull( monitor.observe( Evict.class ) );
+        assertNotNull( tracer.observe( Evict.class ) );
     }
 
     private void writeInitialDataTo( File file ) throws IOException
@@ -118,9 +119,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     public void mustFlushDirtyPagesOnEvictingFirstPage() throws Exception
     {
         writeInitialDataTo( file );
-        RecordingPageCacheMonitor monitor = new RecordingPageCacheMonitor();
+        RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
 
-        MuninnPageCache pageCache = new MuninnPageCache( fs, 2, 8, monitor );
+        MuninnPageCache pageCache = new MuninnPageCache( fs, 2, 8, tracer );
         PagedFile pagedFile = pageCache.map( file, 8 );
 
         try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
@@ -128,11 +129,11 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             assertTrue( cursor.next() );
             cursor.putLong( 0L );
         }
-        assertNotNull( monitor.observe( Fault.class ) );
+        assertNotNull( tracer.observe( Fault.class ) );
 
-        int clockArm = pageCache.evictPages( 1, 0, monitor.beginPageEvictions( 1 ) );
+        int clockArm = pageCache.evictPages( 1, 0, tracer.beginPageEvictions( 1 ) );
         assertThat( clockArm, is( 1 ) );
-        assertNotNull( monitor.observe( Evict.class ) );
+        assertNotNull( tracer.observe( Evict.class ) );
 
         ByteBuffer buf = ByteBuffer.allocate( 16 );
         StoreChannel channel = fs.open( file, "r" );
@@ -146,9 +147,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     public void mustFlushDirtyPagesOnEvictingLastPage() throws Exception
     {
         writeInitialDataTo( file );
-        RecordingPageCacheMonitor monitor = new RecordingPageCacheMonitor();
+        RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
 
-        MuninnPageCache pageCache = new MuninnPageCache( fs, 2, 8, monitor );
+        MuninnPageCache pageCache = new MuninnPageCache( fs, 2, 8, tracer );
         PagedFile pagedFile = pageCache.map( file, 8 );
 
         try ( PageCursor cursor = pagedFile.io( 1, PF_EXCLUSIVE_LOCK ) )
@@ -156,11 +157,11 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             assertTrue( cursor.next() );
             cursor.putLong( 0L );
         }
-        assertNotNull( monitor.observe( Fault.class ) );
+        assertNotNull( tracer.observe( Fault.class ) );
 
-        int clockArm = pageCache.evictPages( 1, 0, monitor.beginPageEvictions( 1 ) );
+        int clockArm = pageCache.evictPages( 1, 0, tracer.beginPageEvictions( 1 ) );
         assertThat( clockArm, is( 1 ) );
-        assertNotNull( monitor.observe( Evict.class ) );
+        assertNotNull( tracer.observe( Evict.class ) );
 
         ByteBuffer buf = ByteBuffer.allocate( 16 );
         StoreChannel channel = fs.open( file, "r" );
@@ -174,9 +175,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     public void mustFlushDirtyPagesOnEvictingAllPages() throws Exception
     {
         writeInitialDataTo( file );
-        RecordingPageCacheMonitor monitor = new RecordingPageCacheMonitor();
+        RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
 
-        MuninnPageCache pageCache = new MuninnPageCache( fs, 4, 8, monitor );
+        MuninnPageCache pageCache = new MuninnPageCache( fs, 4, 8, tracer );
         PagedFile pagedFile = pageCache.map( file, 8 );
 
         try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
@@ -187,13 +188,13 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             cursor.putLong( 0L );
             assertFalse( cursor.next() );
         }
-        assertNotNull( monitor.observe( Fault.class ) );
-        assertNotNull( monitor.observe( Fault.class ) );
+        assertNotNull( tracer.observe( Fault.class ) );
+        assertNotNull( tracer.observe( Fault.class ) );
 
-        int clockArm = pageCache.evictPages( 2, 0, monitor.beginPageEvictions( 2 ) );
+        int clockArm = pageCache.evictPages( 2, 0, tracer.beginPageEvictions( 2 ) );
         assertThat( clockArm, is( 2 ) );
-        assertNotNull( monitor.observe( Evict.class ) );
-        assertNotNull( monitor.observe( Evict.class ) );
+        assertNotNull( tracer.observe( Evict.class ) );
+        assertNotNull( tracer.observe( Evict.class ) );
 
         ByteBuffer buf = ByteBuffer.allocate( 16 );
         StoreChannel channel = fs.open( file, "r" );
@@ -208,7 +209,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         writeInitialDataTo( file );
 
-        final MuninnPageCache pageCache = new MuninnPageCache( fs, 2, 8, PageCacheMonitor.NULL );
+        final MuninnPageCache pageCache = new MuninnPageCache( fs, 2, 8, PageCacheTracer.NULL );
         final PagedFile pagedFile = pageCache.map( file, 8 );
 
         Future<?> task = executor.submit( new Runnable()
@@ -237,7 +238,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             cursor.putLong( value + 1 );
         }
 
-        int clockArm = pageCache.evictPages( 1, 0, PageCacheMonitor.NULL_EVICTION_RUN_EVENT );
+        int clockArm = pageCache.evictPages( 1, 0, EvictionRunEvent.NULL );
         assertThat( clockArm, is( 1 ) );
 
         ByteBuffer buf = ByteBuffer.allocate( 16 );
@@ -269,7 +270,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             }
         };
 
-        MuninnPageCache pageCache = new MuninnPageCache( fs, 2, 8, PageCacheMonitor.NULL );
+        MuninnPageCache pageCache = new MuninnPageCache( fs, 2, 8, PageCacheTracer.NULL );
         final PagedFile pagedFile = pageCache.map( file, 8 );
 
         Future<?> task = executor.submit( new Callable<Object>()
@@ -297,7 +298,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             // this is expected
         }
 
-        pageCache.evictPages( 1, 0, PageCacheMonitor.NULL_EVICTION_RUN_EVENT );
+        pageCache.evictPages( 1, 0, EvictionRunEvent.NULL );
 
         try
         {

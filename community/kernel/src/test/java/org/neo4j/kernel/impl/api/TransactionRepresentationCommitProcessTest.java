@@ -19,13 +19,15 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.io.IOException;
-
 import org.junit.Test;
+
+import java.io.IOException;
 
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
@@ -43,12 +45,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.Exceptions.contains;
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
 
 public class TransactionRepresentationCommitProcessTest
 {
+    private final CommitEvent commitEvent = CommitEvent.NULL;
+
     @Test
     public void shouldNotIncrementLastCommittedTxIdIfAppendFails() throws Exception
     {
@@ -58,7 +61,8 @@ public class TransactionRepresentationCommitProcessTest
         when( logicalTransactionStore.getAppender() ).thenReturn( appender );
         long txId = 11;
         IOException rootCause = new IOException( "Mock exception" );
-        doThrow( new IOException( rootCause ) ).when( appender ).append( any( TransactionRepresentation.class ) );
+        doThrow( new IOException( rootCause ) ).when( appender ).append( any( TransactionRepresentation.class ),
+                any( LogAppendEvent.class ) );
         KernelHealth kernelHealth = mock( KernelHealth.class );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         TransactionRepresentationStoreApplier storeApplier = mock( TransactionRepresentationStoreApplier.class );
@@ -68,7 +72,7 @@ public class TransactionRepresentationCommitProcessTest
         // WHEN
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess.commit( mockedTransaction(), locks );
+            commitProcess.commit( mockedTransaction(), locks, commitEvent );
             fail( "Should have failed, something is wrong with the mocking in this test" );
         }
         catch ( TransactionFailureException e )
@@ -87,7 +91,8 @@ public class TransactionRepresentationCommitProcessTest
         LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
         TransactionAppender appender = mock( TransactionAppender.class );
         long txId = 11;
-        when( appender.append( any( TransactionRepresentation.class ) ) ).thenReturn( txId );
+        when( appender.append(
+                any( TransactionRepresentation.class ), any( LogAppendEvent.class ) ) ).thenReturn( txId );
         when( logicalTransactionStore.getAppender() ).thenReturn( appender );
         IOException rootCause = new IOException( "Mock exception" );
         KernelHealth kernelHealth = mock( KernelHealth.class );
@@ -102,7 +107,7 @@ public class TransactionRepresentationCommitProcessTest
         // WHEN
         try ( LockGroup locks = new LockGroup() )
         {
-            commitProcess.commit( transaction, locks );
+            commitProcess.commit( transaction, locks, commitEvent );
         }
         catch ( TransactionFailureException e )
         {

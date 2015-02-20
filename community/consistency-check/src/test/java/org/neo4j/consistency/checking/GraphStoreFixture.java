@@ -19,14 +19,14 @@
  */
 package org.neo4j.consistency.checking;
 
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
+
 import java.io.File;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -57,6 +57,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -354,7 +355,8 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
                     TransactionIdStore.class );
             CountsTracker counts = database.getDependencyResolver().resolveDependency( NeoStore.class ).getCounts();
             commitProcess.commit( transaction.representation( idGenerator(), masterId(), myId(),
-                    transactionIdStore.getLastCommittedTransactionId(), counts ), locks );
+                    transactionIdStore.getLastCommittedTransactionId(), counts ), locks,
+                    CommitEvent.NULL );
         }
         finally
         {

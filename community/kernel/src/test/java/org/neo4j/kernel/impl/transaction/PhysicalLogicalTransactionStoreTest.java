@@ -37,6 +37,7 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.Recovery;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogFileRecoverer;
@@ -354,7 +355,7 @@ public class PhysicalLogicalTransactionStoreTest
                 new PhysicalTransactionRepresentation( singleCreateNodeCommand() );
         transaction.setHeader( additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted,
                 timeCommitted, -1 );
-        appender.append( transaction );
+        appender.append( transaction, LogAppendEvent.NULL );
     }
 
     private Collection<Command> singleCreateNodeCommand()

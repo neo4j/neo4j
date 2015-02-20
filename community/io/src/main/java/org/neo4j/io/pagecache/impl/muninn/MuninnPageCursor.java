@@ -26,8 +26,8 @@ import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.jsr166e.StampedLock;
-import org.neo4j.io.pagecache.monitoring.PageFaultEvent;
-import org.neo4j.io.pagecache.monitoring.PinEvent;
+import org.neo4j.io.pagecache.tracing.PageFaultEvent;
+import org.neo4j.io.pagecache.tracing.PinEvent;
 
 abstract class MuninnPageCursor implements PageCursor
 {

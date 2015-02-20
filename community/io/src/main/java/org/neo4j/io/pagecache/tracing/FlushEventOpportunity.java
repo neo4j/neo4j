@@ -17,40 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.monitoring;
-
-import java.io.IOException;
+package org.neo4j.io.pagecache.tracing;
 
 import org.neo4j.io.pagecache.PageSwapper;
 
 /**
- * The eviction of a page has begun.
+ * Represents the opportunity to flush a page.
+ *
+ * The flushing might not happen, though, because only dirty pages are flushed.
  */
-public interface EvictionEvent extends AutoCloseablePageCacheMonitorEvent
+public interface FlushEventOpportunity
 {
     /**
-     * The file page id the evicted page was bound to.
+     * A FlushEventOpportunity that only returns the FlushEvent.NULL.
      */
-    public void setFilePageId( long filePageId );
+    FlushEventOpportunity NULL = new FlushEventOpportunity()
+    {
+        @Override
+        public FlushEvent beginFlush( long filePageId, int cachePageId, PageSwapper swapper )
+        {
+            return FlushEvent.NULL;
+        }
+    };
 
     /**
-     * The swapper the evicted page was bound to.
+     * Begin flushing the given page.
      */
-    public void setSwapper( PageSwapper swapper );
-
-    /**
-     * Eviction implies an opportunity to flush.
-     */
-    public FlushEventOpportunity flushEventOpportunity();
-
-    /**
-     * Indicates that the eviction caused an exception to be thrown.
-     * This can happen if some kind of IO error occurs.
-     */
-    public void threwException( IOException exception );
-
-    /**
-     * The cache page id of the evicted page.
-     */
-    public void setCachePageId( int cachePageId );
+    public FlushEvent beginFlush( long filePageId, int cachePageId, PageSwapper swapper );
 }

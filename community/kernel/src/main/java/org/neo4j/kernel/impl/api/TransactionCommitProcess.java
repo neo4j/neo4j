@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 
 /*
@@ -33,5 +34,5 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
  */
 public interface TransactionCommitProcess
 {
-    long commit( TransactionRepresentation representation, LockGroup locks ) throws TransactionFailureException;
+    long commit( TransactionRepresentation representation, LockGroup locks, CommitEvent commitEvent ) throws TransactionFailureException;
 }

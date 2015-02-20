@@ -23,6 +23,8 @@ import java.io.IOException;
 
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
+import org.neo4j.kernel.impl.transaction.tracing.SerializeTransactionEvent;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterv1;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
@@ -109,26 +111,29 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
     protected abstract void emptyBufferIntoChannel() throws IOException;
 
     @Override
-    public long append( TransactionRepresentation transaction ) throws IOException
+    public long append( TransactionRepresentation transaction, LogAppendEvent logAppendEvent ) throws IOException
     {
         long transactionId = -1;
         boolean hasLegacyIndexChanges;
         int phase = 0;
         // We put log rotation check outside the private append method since it must happen before
         // we generate the next transaction id
-        logRotation.rotateLogIfNeeded();
+        logAppendEvent.setLogRotated( logRotation.rotateLogIfNeeded( logAppendEvent ) );
 
         try
         {
             // Synchronized with logFile to get absolute control over concurrent rotations happening
             synchronized ( logFile )
             {
-                transactionId = transactionIdStore.nextCommittingTransactionId();
-                hasLegacyIndexChanges = append0( transaction, transactionId );
-                phase = 1;
+                try ( SerializeTransactionEvent serialiseEvent = logAppendEvent.beginSerializeTransaction() )
+                {
+                    transactionId = transactionIdStore.nextCommittingTransactionId();
+                    hasLegacyIndexChanges = append0( transaction, transactionId );
+                    phase = 1;
+                }
             }
 
-            forceAfterAppend();
+            forceAfterAppend( logAppendEvent );
             coordinateMultipleThreadsApplyingLegacyIndexChanges( hasLegacyIndexChanges, transactionId );
             phase = 2;
             return transactionId;
@@ -174,8 +179,9 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
 
     /**
      * Called as part of append.
+     * @param logAppendEvent A trace event for the given log append operation.
      */
-    protected abstract void forceAfterAppend() throws IOException;
+    protected abstract void forceAfterAppend( LogAppendEvent logAppendEvent ) throws IOException;
 
     protected final void forceChannel() throws IOException
     {

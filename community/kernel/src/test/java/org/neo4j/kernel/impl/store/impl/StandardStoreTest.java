@@ -25,7 +25,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.kernel.impl.store.format.Store;
 import org.neo4j.kernel.impl.store.format.TestCursor;
@@ -54,7 +54,7 @@ public class StandardStoreTest
     {
         life = new LifeSupport();
         life.start();
-        pageCache = new MuninnPageCache( fsRule.get(), 1024, 1024, PageCacheMonitor.NULL );
+        pageCache = new MuninnPageCache( fsRule.get(), 1024, 1024, PageCacheTracer.NULL );
     }
 
     @Test

@@ -26,6 +26,9 @@ import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
+import org.neo4j.kernel.impl.transaction.tracing.StoreApplyEvent;
 
 public class TransactionRepresentationCommitProcess implements TransactionCommitProcess
 {
@@ -47,12 +50,14 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
     }
 
     @Override
-    public long commit( TransactionRepresentation transaction, LockGroup locks ) throws TransactionFailureException
+    public long commit( TransactionRepresentation transaction, LockGroup locks, CommitEvent commitEvent ) throws TransactionFailureException
     {
-        long transactionId = commitTransaction( transaction );
+        // serialise commands to the log
+        long transactionId = commitTransaction( transaction, commitEvent );
+        commitEvent.setTransactionId( transactionId );
 
         // apply changes to the store
-        try
+        try ( StoreApplyEvent storeApplyEvent = commitEvent.beginStoreApply() )
         {
             storeApplier.apply( transaction, locks, transactionId, mode );
         }
@@ -75,11 +80,11 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
         return new TransactionFailureException( status, cause, message );
     }
 
-    private long commitTransaction( TransactionRepresentation tx ) throws TransactionFailureException
+    private long commitTransaction( TransactionRepresentation tx, CommitEvent commitEvent ) throws TransactionFailureException
     {
-        try
+        try ( LogAppendEvent logAppendEvent = commitEvent.beginLogAppend() )
         {
-            return logicalTransactionStore.getAppender().append( tx );
+            return logicalTransactionStore.getAppender().append( tx, logAppendEvent );
         }
         catch ( Throwable e )
         {

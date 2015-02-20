@@ -32,6 +32,7 @@ import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogRotation;
@@ -152,7 +153,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         synchronized ( logFile )
         {
             // Check rotation explicitly, since the version of append that we're calling isn't doing that.
-            logRotation.rotateLogIfNeeded();
+            logRotation.rotateLogIfNeeded( LogAppendEvent.NULL );
 
             try
             {

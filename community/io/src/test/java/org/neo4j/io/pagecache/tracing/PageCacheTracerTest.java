@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.monitoring;
+package org.neo4j.io.pagecache.tracing;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -30,24 +30,24 @@ import org.neo4j.io.pagecache.PageSwapper;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
-public abstract class PageCacheMonitorTest
+public abstract class PageCacheTracerTest
 {
-    private PageCacheMonitor monitor;
+    private PageCacheTracer tracer;
     private PageSwapper swapper;
 
     @Before
     public void setUp()
     {
-        monitor = createMonitor();
+        tracer = createTracer();
         swapper = new DummyPageSwapper( "filename" );
     }
 
-    protected abstract PageCacheMonitor createMonitor();
+    protected abstract PageCacheTracer createTracer();
 
     @Test
     public void mustCountPinsAndUnpins()
     {
-        PinEvent pinEvent = monitor.beginPin( true, 0, swapper );
+        PinEvent pinEvent = tracer.beginPin( true, 0, swapper );
         pinEvent.done();
 
         // We don't particularly care whether the counts are incremented on begin or close
@@ -58,22 +58,22 @@ public abstract class PageCacheMonitorTest
     private void assertCounts( long pins, long unpins, long faults, long evictions, long evictionExceptions,
                                long flushes, long bytesRead, long bytesWritten, long filesMapped, long filesUnmapped )
     {
-        assertThat( "countPins", monitor.countPins(), is( pins ) );
-        assertThat( "countUnpins", monitor.countUnpins(), is( unpins ) );
-        assertThat( "countFaults", monitor.countFaults(), is( faults ) );
-        assertThat( "countEvictions", monitor.countEvictions(), is( evictions ) );
-        assertThat( "countEvictionExceptions", monitor.countEvictionExceptions(), is( evictionExceptions ) );
-        assertThat( "countFlushes", monitor.countFlushes(), is( flushes ) );
-        assertThat( "countBytesRead", monitor.countBytesRead(), is( bytesRead ) );
-        assertThat( "countBytesWritten", monitor.countBytesWritten(), is( bytesWritten ) );
-        assertThat( "countFilesMapped", monitor.countFilesMapped(), is( filesMapped ) );
-        assertThat( "countFilesUnmapped", monitor.countFilesUnmapped(), is( filesUnmapped ) );
+        assertThat( "countPins", tracer.countPins(), is( pins ) );
+        assertThat( "countUnpins", tracer.countUnpins(), is( unpins ) );
+        assertThat( "countFaults", tracer.countFaults(), is( faults ) );
+        assertThat( "countEvictions", tracer.countEvictions(), is( evictions ) );
+        assertThat( "countEvictionExceptions", tracer.countEvictionExceptions(), is( evictionExceptions ) );
+        assertThat( "countFlushes", tracer.countFlushes(), is( flushes ) );
+        assertThat( "countBytesRead", tracer.countBytesRead(), is( bytesRead ) );
+        assertThat( "countBytesWritten", tracer.countBytesWritten(), is( bytesWritten ) );
+        assertThat( "countFilesMapped", tracer.countFilesMapped(), is( filesMapped ) );
+        assertThat( "countFilesUnmapped", tracer.countFilesUnmapped(), is( filesUnmapped ) );
     }
 
     @Test
     public void mustCountPageFaults()
     {
-        PinEvent pinEvent = monitor.beginPin( true, 0, swapper );
+        PinEvent pinEvent = tracer.beginPin( true, 0, swapper );
         PageFaultEvent pageFaultEvent = pinEvent.beginPageFault();
         pageFaultEvent.addBytesRead( 42 );
         pageFaultEvent.done();
@@ -88,7 +88,7 @@ public abstract class PageCacheMonitorTest
     @Test
     public void mustCountEvictions()
     {
-        try ( EvictionRunEvent evictionRunEvent = monitor.beginPageEvictions( 2 ) )
+        try ( EvictionRunEvent evictionRunEvent = tracer.beginPageEvictions( 2 ) )
         {
             try ( EvictionEvent evictionEvent = evictionRunEvent.beginEviction() )
             {
@@ -122,11 +122,11 @@ public abstract class PageCacheMonitorTest
     @Test
     public void mustCountFileMappingAndUnmapping()
     {
-        monitor.mappedFile( new File( "a" ) );
+        tracer.mappedFile( new File( "a" ) );
 
         assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 1, 0 );
 
-        monitor.unmappedFile( new File( "a" ) );
+        tracer.unmappedFile( new File( "a" ) );
 
         assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 1, 1 );
     }
@@ -134,7 +134,7 @@ public abstract class PageCacheMonitorTest
     @Test
     public void mustCountFlushes()
     {
-        try ( MajorFlushEvent cacheFlush = monitor.beginCacheFlush() )
+        try ( MajorFlushEvent cacheFlush = tracer.beginCacheFlush() )
         {
             cacheFlush.flushEventOpportunity().beginFlush( 0, 0, swapper ).done();
             cacheFlush.flushEventOpportunity().beginFlush( 0, 0, swapper ).done();
@@ -143,7 +143,7 @@ public abstract class PageCacheMonitorTest
 
         assertCounts( 0, 0, 0, 0, 0, 3, 0, 0, 0, 0 );
 
-        try ( MajorFlushEvent fileFlush = monitor.beginFileFlush( swapper ) )
+        try ( MajorFlushEvent fileFlush = tracer.beginFileFlush( swapper ) )
         {
             fileFlush.flushEventOpportunity().beginFlush( 0, 0, swapper ).done();
             fileFlush.flushEventOpportunity().beginFlush( 0, 0, swapper ).done();

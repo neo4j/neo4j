@@ -22,7 +22,7 @@ package org.neo4j.management.impl;
 import javax.management.NotCompliantMBeanException;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.io.pagecache.monitoring.DefaultPageCacheMonitor;
+import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
@@ -44,12 +44,12 @@ public final class PageCacheBean extends ManagementBeanProvider
 
     private static class PageCacheImpl extends Neo4jMBean implements PageCache
     {
-        private final DefaultPageCacheMonitor pageCacheMonitor;
+        private final PageCacheMonitor pageCacheMonitor;
 
         PageCacheImpl( ManagementData management ) throws NotCompliantMBeanException
         {
             super( management );
-            this.pageCacheMonitor = management.resolveDependency( DefaultPageCacheMonitor.class );
+            this.pageCacheMonitor = management.resolveDependency( PageCacheMonitor.class );
         }
 
         @Override

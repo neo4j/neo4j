@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 
 /**
@@ -32,7 +33,7 @@ public class ReadOnlyTransactionCommitProcess
         implements TransactionCommitProcess
 {
     @Override
-    public long commit( TransactionRepresentation representation, LockGroup locks ) throws TransactionFailureException
+    public long commit( TransactionRepresentation representation, LockGroup locks, CommitEvent commitEvent ) throws TransactionFailureException
     {
         throw new ReadOnlyDbException();
     }

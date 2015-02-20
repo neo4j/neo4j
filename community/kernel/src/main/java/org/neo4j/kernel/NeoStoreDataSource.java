@@ -150,6 +150,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.monitoring.tracing.Tracers;
 
 import static org.neo4j.helpers.collection.Iterables.toList;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
@@ -290,6 +291,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
     public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
     private final Monitors monitors;
     private final Monitor monitor;
+    private final Tracers tracers;
 
     private final StringLogger msgLog;
     private final Logging logging;
@@ -369,7 +371,8 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
             Caches cacheProvider, NodeManager nodeManager, Guard guard,
             IndexConfigStore indexConfigStore, CommitProcessFactory commitProcessFactory,
             PageCache pageCache,
-            Monitors monitors )
+            Monitors monitors,
+            Tracers tracers )
     {
         this.config = config;
         this.tokenNameLookup = tokenNameLookup;
@@ -395,8 +398,8 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
         this.guard = guard;
         this.indexConfigStore = indexConfigStore;
         this.monitors = monitors;
-
         this.monitor = monitors.newMonitor( Monitor.class );
+        this.tracers = tracers;
 
         readOnly = config.get( Configuration.read_only );
         msgLog = stringLogger;
@@ -979,7 +982,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
                         statementOperations, updateableSchemaState, schemaWriteGuard, schemaIndexProviderMap,
                         transactionHeaderInformationFactory, persistenceCache, storeLayer, transactionCommitProcess,
                         indexConfigStore,
-                        legacyIndexProviderLookup, hooks, transactionMonitor, life ) );
+                        legacyIndexProviderLookup, hooks, transactionMonitor, life, tracers ) );
 
         final Kernel kernel = new Kernel( kernelTransactions, hooks, kernelHealth, transactionMonitor );
 

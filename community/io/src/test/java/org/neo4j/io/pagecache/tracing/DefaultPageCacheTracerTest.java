@@ -17,23 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.monitoring;
+package org.neo4j.io.pagecache.tracing;
 
-/**
- * The PageCacheMonitorFactory exist to allow binding the PageCacheMonitor on
- * start-up, while delaying the initialisation, and discriminating the desired
- * implementation by a configured name.
- */
-public interface PageCacheMonitorFactory
+public class DefaultPageCacheTracerTest extends PageCacheTracerTest
 {
-    /**
-     * Get the presumably unique name that a page cache monitor configuration
-     * would use to identify this particular implementation.
-     */
-    public String getImplementationName();
-
-    /**
-     * Create an implementation specific PageCacheMonitor instance.
-     */
-    public PageCacheMonitor createPageCacheMonitor();
+    @Override
+    protected DefaultPageCacheTracer createTracer()
+    {
+        DefaultPageCacheTracer.enablePinUnpinTracing();
+        return new DefaultPageCacheTracer();
+    }
 }

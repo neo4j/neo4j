@@ -43,9 +43,9 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.api.txstate.TxStateVisitor;
-import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
@@ -59,6 +59,9 @@ import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -152,6 +155,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private long lastTransactionIdWhenStarted;
     /** Implements reusing the same underlying {@link KernelStatement} for overlapping statements. */
     private KernelStatement currentStatement;
+    // Event tracing
+    private final TransactionTracer tracer;
+    private TransactionEvent transactionEvent;
 
 
     public KernelTransactionImplementation( StatementOperationParts operations,
@@ -170,7 +176,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             StoreReadLayer storeLayer,
                                             LegacyIndexTransactionState legacyIndexTransactionState,
                                             Pool<KernelTransactionImplementation> pool,
-                                            Clock clock )
+                                            Clock clock,
+                                            TransactionTracer tracer )
     {
         this.operations = operations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -192,6 +199,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.pool = pool;
         this.clock = clock;
         this.schemaStorage = new SchemaStorage( neoStore.getSchemaStore() );
+        this.tracer = tracer;
     }
 
     /** Reset this transaction to a vanilla state, turning it into a logically new transaction. */
@@ -207,6 +215,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.counts.initialize();
         this.startTimeMillis = clock.currentTimeMillis();
         this.lastTransactionIdWhenStarted = lastCommittedTx;
+        this.transactionEvent = tracer.beginTransaction();
+        assert transactionEvent != null: "transactionEvent was null!";
         return this;
     }
 
@@ -411,6 +421,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             closed = true;
             closing = false;
+            transactionEvent.setSuccess( success );
+            transactionEvent.setFailure( failure );
+            transactionEvent.setTransactionType( transactionType.name() );
+            transactionEvent.setReadOnly( txState == null || !txState.hasChanges() );
+            transactionEvent.close();
+            transactionEvent = null;
         }
     }
 
@@ -432,7 +448,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         boolean success = false;
 
-        try
+        try ( CommitEvent commitEvent = transactionEvent.beginCommitEvent() )
         {
             // Trigger transaction "before" hooks
             if ( (hooksState = hooks.beforeCommit( txState, this, storeLayer )) != null && hooksState.failed() )
@@ -475,7 +491,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                 locks.getLockSessionId() );
 
                         // Commit the transaction
-                        commitProcess.commit( transactionRepresentation, lockGroup );
+                        commitProcess.commit( transactionRepresentation, lockGroup, commitEvent );
                     }
 
                     if ( hasTxStateWithChanges() )

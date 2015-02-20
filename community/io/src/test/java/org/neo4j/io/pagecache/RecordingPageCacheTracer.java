@@ -27,15 +27,15 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import org.neo4j.io.pagecache.monitoring.EvictionEvent;
-import org.neo4j.io.pagecache.monitoring.EvictionRunEvent;
-import org.neo4j.io.pagecache.monitoring.FlushEventOpportunity;
-import org.neo4j.io.pagecache.monitoring.MajorFlushEvent;
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
-import org.neo4j.io.pagecache.monitoring.PageFaultEvent;
-import org.neo4j.io.pagecache.monitoring.PinEvent;
+import org.neo4j.io.pagecache.tracing.EvictionEvent;
+import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
+import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
+import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PageFaultEvent;
+import org.neo4j.io.pagecache.tracing.PinEvent;
 
-public class RecordingPageCacheMonitor implements PageCacheMonitor
+public class RecordingPageCacheTracer implements PageCacheTracer
 {
     private final BlockingQueue<Event> record = new LinkedBlockingQueue<>();
     private CountDownLatch trapLatch;
@@ -96,7 +96,7 @@ public class RecordingPageCacheMonitor implements PageCacheMonitor
                     @Override
                     public FlushEventOpportunity flushEventOpportunity()
                     {
-                        return PageCacheMonitor.NULL_FLUSH_EVENT_OPPORTUNITY;
+                        return FlushEventOpportunity.NULL;
                     }
 
                     @Override
@@ -177,13 +177,13 @@ public class RecordingPageCacheMonitor implements PageCacheMonitor
     @Override
     public MajorFlushEvent beginFileFlush( PageSwapper swapper )
     {
-        return PageCacheMonitor.NULL_MAJOR_FLUSH_EVENT;
+        return MajorFlushEvent.NULL;
     }
 
     @Override
     public MajorFlushEvent beginCacheFlush()
     {
-        return PageCacheMonitor.NULL_MAJOR_FLUSH_EVENT;
+        return MajorFlushEvent.NULL;
     }
 
     @Override

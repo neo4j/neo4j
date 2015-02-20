@@ -21,7 +21,7 @@ package org.neo4j.io.pagecache.stresstests;
 
 import org.junit.Test;
 
-import org.neo4j.io.pagecache.monitoring.DefaultPageCacheMonitor;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.stress.PageCacheStressTest;
 
 import static java.lang.Integer.parseInt;
@@ -39,7 +39,7 @@ public class PageCacheStressTesting
         // Pin/Unpin monitoring is disabled by default for performance reasons,
         // but we have tests that verify that pinned and unpinned are called
         // correctly.
-        DefaultPageCacheMonitor.enablePinUnpinMonitoring();
+        DefaultPageCacheTracer.enablePinUnpinTracing();
     }
 
     @Test
@@ -54,7 +54,7 @@ public class PageCacheStressTesting
 
         String workingDirectory = fromEnvironmentOrDefault( "PAGE_CACHE_STRESS_WORKING_DIRECTORY", getProperty( "java.io.tmpdir" ) );
 
-        DefaultPageCacheMonitor monitor = new DefaultPageCacheMonitor();
+        DefaultPageCacheTracer monitor = new DefaultPageCacheTracer();
 
         PageCacheStressTest runner = new PageCacheStressTest.Builder()
                 .with( timePeriod( durationInMinutes, MINUTES ) )

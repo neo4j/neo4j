@@ -17,36 +17,48 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.monitoring;
+package org.neo4j.io.pagecache.tracing;
+
+import java.io.IOException;
 
 /**
- * Begin a page fault as part of a pin event.
+ * Begin flushing modifications from an in-memory page to the backing file.
  */
-public interface PageFaultEvent
+public interface FlushEvent
 {
     /**
-     * Add up a number of bytes that has been read from the backing file into the free page being bound.
+     * A FlushEvent implementation that does nothing.
      */
-    public void addBytesRead( int bytes );
+    FlushEvent NULL = new FlushEvent()
+    {
+        @Override
+        public void addBytesWritten( int bytes )
+        {
+        }
+
+        @Override
+        public void done()
+        {
+        }
+
+        @Override
+        public void done( IOException exception )
+        {
+        }
+    };
 
     /**
-     * The id of the cache page that is being faulted into.
+     * Add up a number of bytes that has been written to the file.
      */
-    public void setCachePageId( int cachePageId );
+    public void addBytesWritten( int bytes );
 
     /**
-     * Set to 'true' if the page faulting thread ended up parking, while it waited for the eviction thread
-     * to free up a page that could be faulted into.
-     */
-    public void setParked( boolean parked );
-
-    /**
-     * The page fault completed successfully.
+     * The page flush has completed successfully.
      */
     public void done();
 
     /**
-     * The page fault did not complete successfully, but instead caused the given Throwable to be thrown.
+     * The page flush did not complete successfully, but threw the given exception.
      */
-    public void done( Throwable throwable );
+    public void done( IOException exception );
 }

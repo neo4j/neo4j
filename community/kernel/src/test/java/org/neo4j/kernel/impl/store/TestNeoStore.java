@@ -101,6 +101,7 @@ import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
@@ -113,7 +114,6 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
 
@@ -226,7 +226,7 @@ public class TestNeoStore
                 mock( PhysicalLogFile.Monitor.class ),
                 TransactionHeaderInformationFactory.DEFAULT, new StartupStatisticsProvider(), caches, nodeManager,
                 null, null, InternalAbstractGraphDatabase.defaultCommitProcessFactory, pageCache,
-                mock( Monitors.class ) );
+                mock( Monitors.class ), new Tracers( "null", StringLogger.DEV_NULL ) );
         ds.init();
         ds.start();
 

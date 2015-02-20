@@ -23,7 +23,7 @@ import java.io.File;
 import java.nio.file.Files;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.RunnablePageCache;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
@@ -34,7 +34,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.io.pagecache.monitoring.PageCacheMonitor.NULL;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.io.pagecache.stress.StressTestRecord.SizeOfCounter;
 
 /**
@@ -63,7 +63,7 @@ public class PageCacheStressTest
     private final int numberOfCachePages;
     private final int cachePageSize;
 
-    private final PageCacheMonitor monitor;
+    private final PageCacheTracer tracer;
     private final Condition condition;
 
     private final String workingDirectory;
@@ -77,7 +77,7 @@ public class PageCacheStressTest
         this.numberOfCachePages = builder.numberOfCachePages;
         this.cachePageSize = builder.cachePageSize;
 
-        this.monitor = builder.monitor;
+        this.tracer = builder.tracer;
         this.condition = builder.condition;
 
         this.workingDirectory = builder.workingDirectory;
@@ -87,10 +87,10 @@ public class PageCacheStressTest
     {
         RunnablePageCache pageCacheUnderTest = new MuninnPageCache(
                 new DefaultFileSystemAbstraction(),
-                numberOfCachePages, cachePageSize, monitor );
+                numberOfCachePages, cachePageSize, tracer );
         RunnablePageCache pageCacheKeepingCount = new MuninnPageCache(
                 new DefaultFileSystemAbstraction(),
-                numberOfCachePages, cachePageSize, monitor );
+                numberOfCachePages, cachePageSize, tracer );
 
         Thread thread1 = new Thread( pageCacheUnderTest );
         Thread thread2 = new Thread( pageCacheKeepingCount );
@@ -152,7 +152,7 @@ public class PageCacheStressTest
         int numberOfCachePages = 1000;
         int cachePageSize;
 
-        PageCacheMonitor monitor = NULL;
+        PageCacheTracer tracer = NULL;
         Condition condition;
 
         String workingDirectory = getProperty( "java.io.tmpdir" );
@@ -171,9 +171,9 @@ public class PageCacheStressTest
             return new PageCacheStressTest( this );
         }
 
-        public Builder with( PageCacheMonitor monitor )
+        public Builder with( PageCacheTracer tracer )
         {
-            this.monitor = monitor;
+            this.tracer = tracer;
             return this;
         }
 

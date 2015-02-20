@@ -23,8 +23,8 @@ import java.io.IOException;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectVisitor;
 import org.neo4j.io.pagecache.PageSwapper;
-import org.neo4j.io.pagecache.monitoring.FlushEventOpportunity;
-import org.neo4j.io.pagecache.monitoring.MajorFlushEvent;
+import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
+import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 
 final class PageFlusher implements PrimitiveLongObjectVisitor<MuninnPage, IOException>
 {

@@ -36,6 +36,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.log.BatchingPhysicalTransactionAppender;
@@ -84,6 +85,7 @@ import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
 public class PhysicalTransactionAppenderTest
 {
     private final InMemoryVersionableLogChannel channel = new InMemoryVersionableLogChannel();
+    private final LogAppendEvent logAppendEvent = LogAppendEvent.NULL;
 
     @Test
     public void shouldAppendTransactions() throws Exception
@@ -107,7 +109,7 @@ public class PhysicalTransactionAppenderTest
         transaction.setHeader( additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted,
                 timeCommitted, -1 );
 
-        appender.append( transaction );
+        appender.append( transaction, logAppendEvent );
 
         // THEN
         final LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new LogEntryReaderFactory().versionable();
@@ -236,7 +238,7 @@ public class PhysicalTransactionAppenderTest
         when( transaction.additionalHeader() ).thenReturn( new byte[0] );
         try
         {
-            appender.append( transaction );
+            appender.append( transaction, logAppendEvent );
             fail( "Expected append to fail. Something is wrong with the test itself" );
         }
         catch ( IOException e )
@@ -333,7 +335,7 @@ public class PhysicalTransactionAppenderTest
         when( transaction.additionalHeader() ).thenReturn( new byte[0] );
         try
         {
-            appender.append( transaction );
+            appender.append( transaction, logAppendEvent );
             fail( "Expected append to fail. Something is wrong with the test itself" );
         }
         catch ( IOException e )
@@ -395,7 +397,7 @@ public class PhysicalTransactionAppenderTest
                 @Override
                 public Long call() throws IOException
                 {
-                    return appender.append( transaction );
+                    return appender.append( transaction, logAppendEvent );
                 }
             } );
         }
