@@ -20,7 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping;
 
 import org.neo4j.function.primitive.PrimitiveIntPredicate;
-import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
@@ -60,7 +60,7 @@ public interface IdMapper
      * TODO Providing the node data here is a bit leaky. Preferably there should be an abstraction encapsulating
      * data and id mapping, so that this can be removed.
      */
-    void prepare( ResourceIterable<Object> allIds );
+    void prepare( InputIterable<Object> allIds );
 
     /**
      * Returns an actual node id representing {@code inputId}. For this call to work {@link #prepare()} must have

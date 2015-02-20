@@ -36,14 +36,24 @@ public class MultiReadable extends CharReadable.Adapter implements Closeable
     private Reader current;
     private boolean requiresNewLine;
     private long position;
+    private String currentSourceDescription = Readables.EMPTY.sourceDescription();
 
     public MultiReadable( RawIterator<Reader,IOException> actual ) throws IOException
     {
         this.actual = actual;
+        goToNextSource();
+    }
+
+    private boolean goToNextSource() throws IOException
+    {
         if ( actual.hasNext() )
         {
+            closeCurrent();
             current = actual.next();
+            currentSourceDescription = current.toString();
+            return true;
         }
+        return false;
     }
 
     @Override
@@ -72,20 +82,7 @@ public class MultiReadable extends CharReadable.Adapter implements Closeable
                 return buffer;
             }
 
-            // Check if we've read anything at all before moving over to the new one.
-            // We do that so that we can get a "clean" move to the new source, so that
-            // information about progress and current source can be correctly provided by
-            // the caller of this method.
-            if ( actual.hasNext() )
-            {
-                closeCurrent();
-                current = actual.next();
-                for ( SourceMonitor monitor : monitors )
-                {
-                    monitor.notify( toString() );
-                }
-            }
-            else
+            if ( !goToNextSource() )
             {
                 break;
             }
@@ -114,8 +111,8 @@ public class MultiReadable extends CharReadable.Adapter implements Closeable
     }
 
     @Override
-    public String toString()
+    public String sourceDescription()
     {
-        return current != null ? current.toString() : "EMPTY";
+        return currentSourceDescription;
     }
 }

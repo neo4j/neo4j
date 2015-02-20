@@ -135,7 +135,7 @@ public class CsvInputBatchImportIT
         {
             Object[] properties = new Object[] { "name", "Node " + i };
             String id = UUID.randomUUID().toString();
-            nodes.add( new InputNode( id, properties, null,
+            nodes.add( new InputNode( "source", i, i, id, properties, null,
                     randomLabels( random ), null ) );
         }
         return nodes;
@@ -229,7 +229,9 @@ public class CsvInputBatchImportIT
         List<InputRelationship> relationships = new ArrayList<>();
         for ( int i = 0; i < 1000; i++ )
         {
-            relationships.add( new InputRelationship( NO_PROPERTIES, null,
+            relationships.add( new InputRelationship(
+                    "source", i, i,
+                    NO_PROPERTIES, null,
                     nodeData.get( random.nextInt( nodeData.size() ) ).id(),
                     nodeData.get( random.nextInt( nodeData.size() ) ).id(),
                     "TYPE_" + random.nextInt( 3 ), null ) );

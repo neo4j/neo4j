@@ -22,15 +22,14 @@ package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.function.primitive.PrimitiveIntPredicate;
-import org.neo4j.graphdb.ResourceIterable;
-import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.unsafe.impl.batchimport.InputIterable;
+import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
 import org.neo4j.unsafe.impl.batchimport.cache.IntArray;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
@@ -177,7 +176,7 @@ public class EncodingIdMapper implements IdMapper
     }
 
     @Override
-    public void prepare( ResourceIterable<Object> ids )
+    public void prepare( InputIterable<Object> ids )
     {
         endPreviousGroup();
         synchronized ( this )
@@ -188,7 +187,7 @@ public class EncodingIdMapper implements IdMapper
         }
         if ( detectAndMarkCollisions() > 0 )
         {
-            try ( ResourceIterator<Object> idIterator = ids.iterator() )
+            try ( InputIterator<Object> idIterator = ids.iterator() )
             {
                 buildCollisionInfo( idIterator );
             }
@@ -287,7 +286,7 @@ public class EncodingIdMapper implements IdMapper
         }
     }
 
-    private void buildCollisionInfo( Iterator<Object> ids )
+    private void buildCollisionInfo( InputIterator<Object> ids )
     {
         // This is currently the only way of discovering duplicate input ids, checked per group.
         // groupId --> inputId --> CollisionPoint(dataIndex,sourceLocation)
@@ -314,9 +313,9 @@ public class EncodingIdMapper implements IdMapper
                     throw new IllegalStateException( "Id '" + id + "' is defined more than once in " +
                             group.name() + ", at least at " +
                             existing.sourceLocation + " and " +
-                            ids.toString() );
+                            sourceLocation( ids ) );
                 }
-                collisionsForGroup.put( id, new CollisionPoint( i, ids.toString() ) );
+                collisionsForGroup.put( id, new CollisionPoint( i, sourceLocation( ids ) ) );
 
                 // Store this collision input id for matching later in get()
                 long val = encoder.encode( id );
@@ -326,6 +325,11 @@ public class EncodingIdMapper implements IdMapper
                 collisionCache.set( collisionIndex, i );
             }
         }
+    }
+
+    private String sourceLocation( InputIterator<?> iterator )
+    {
+        return iterator.sourceDescription() + ":" + iterator.lineNumber();
     }
 
     private IdGroup groupOf( long dataIndex )

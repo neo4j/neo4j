@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 
+import org.neo4j.csv.reader.SourceTraceability;
 import org.neo4j.helpers.Pair;
 
 import static java.lang.String.format;
@@ -30,17 +31,25 @@ import static java.lang.String.format;
 /**
  * Represents an entity from an input source, for example a .csv file.
  */
-public abstract class InputEntity
+public abstract class InputEntity implements SourceTraceability
 {
     public static final Object[] NO_PROPERTIES = new Object[0];
     public static final String[] NO_LABELS = new String[0];
 
     private Object[] properties;
     private final Long firstPropertyId;
+    private final String sourceDescription;
+    private final long lineNumber;
+    private final long position;
 
-    public InputEntity( Object[] properties, Long firstPropertyId )
+    public InputEntity( String sourceDescription, long sourceLineNumber, long sourcePosition,
+            Object[] properties, Long firstPropertyId )
     {
         assert properties.length % 2 == 0 : Arrays.toString( properties );
+
+        this.sourceDescription = sourceDescription;
+        this.lineNumber = sourceLineNumber;
+        this.position = sourcePosition;
 
         this.properties = properties;
         this.firstPropertyId = firstPropertyId;
@@ -136,6 +145,24 @@ public abstract class InputEntity
     }
 
     @Override
+    public String sourceDescription()
+    {
+        return sourceDescription;
+    }
+
+    @Override
+    public long lineNumber()
+    {
+        return lineNumber;
+    }
+
+    @Override
+    public long position()
+    {
+        return position;
+    }
+
+    @Override
     public String toString()
     {
         Collection<Pair<String,?>> fields = new ArrayList<>();
@@ -156,6 +183,7 @@ public abstract class InputEntity
 
     protected void toStringFields( Collection<Pair<String, ?>> fields )
     {
+        fields.add( Pair.of( "source", sourceDescription + ":" ) );
         if ( hasFirstPropertyId() )
         {
             fields.add( Pair.of( "nextProp", firstPropertyId ) );

@@ -29,6 +29,8 @@ public interface LegacyNodeStoreReader extends Closeable
 {
     long getMaxId();
 
+    int getRecordSize();
+
     Iterator<NodeRecord> iterator() throws IOException;
 
     @Override

@@ -21,11 +21,10 @@ package org.neo4j.csv.reader;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.Reader;
 
 /**
- * Seeks for specific characters in a stream of characters, e.g. a {@link Reader}. Uses a {@link Mark}
- * as keeper of position. Once a {@link #seek(Mark, int[])} has succeeded the characters specified by
+ * Seeks for specific characters in a stream of characters, e.g. a {@link CharReadable}. Uses a {@link Mark}
+ * as keeper of position. Once a {@link #seek(Mark, int)} has succeeded the characters specified by
  * the mark can be {@link #extract(Mark, Extractor) extracted} into a value of an arbitrary type.
  *
  * Typical usage is:
@@ -46,11 +45,11 @@ import java.io.Reader;
  * }
  * </pre>
  *
- * The {@link Reader} that gets passed in will be closed in {@link #close()}.
+ * Any {@link Closeable} resource that gets passed in will be closed in {@link #close()}.
  *
  * @author Mattias Persson
  */
-public interface CharSeeker extends Closeable
+public interface CharSeeker extends Closeable, SourceTraceability
 {
     /**
      * Seeks the next occurrence of any of the characters in {@code untilOneOfChars}, or if end-of-line,
@@ -83,12 +82,7 @@ public interface CharSeeker extends Closeable
      */
     boolean tryExtract( Mark mark, Extractor<?> extractor );
 
-    /**
-     * @return a low-level byte-like position of f.ex. total number of read bytes.
-     */
-    long position();
-
-    public static final CharSeeker EMPTY = new CharSeeker()
+    public static class Empty extends SourceTraceability.Adapter implements CharSeeker
     {
         @Override
         public boolean seek( Mark mark, int untilChar )
@@ -114,9 +108,11 @@ public interface CharSeeker extends Closeable
         }
 
         @Override
-        public long position()
+        public String sourceDescription()
         {
-            return 0;
+            return Readables.EMPTY.sourceDescription();
         }
-    };
+    }
+
+    public static final CharSeeker EMPTY = new Empty();
 }

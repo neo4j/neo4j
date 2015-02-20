@@ -25,20 +25,17 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
 import org.neo4j.function.Factory;
-import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.test.RepeatRule;
 import org.neo4j.test.RepeatRule.Repeat;
+import org.neo4j.unsafe.impl.batchimport.InputIterable;
+import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.GatheringMemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
@@ -46,8 +43,12 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
+import org.neo4j.unsafe.impl.batchimport.input.SimpleInputIterator;
+import org.neo4j.unsafe.impl.batchimport.input.SimpleInputIteratorWrapper;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -56,9 +57,8 @@ import static org.mockito.Mockito.when;
 
 import static java.lang.System.currentTimeMillis;
 
-import static org.neo4j.graphdb.Resource.EMPTY;
-import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
 import static org.neo4j.unsafe.impl.batchimport.input.Group.GLOBAL;
+import static org.neo4j.unsafe.impl.batchimport.input.SimpleInputIteratorWrapper.wrap;
 
 public class EncodingIdMapperTest
 {
@@ -67,26 +67,25 @@ public class EncodingIdMapperTest
     {
         // GIVEN
         IdMapper idMapper = IdMappers.strings( NumberArrayFactory.AUTO );
-        ResourceIterable<Object> ids = new ResourceIterable<Object>()
+        InputIterable<Object> ids = new InputIterable<Object>()
         {
             @Override
-            public ResourceIterator<Object> iterator()
+            public InputIterator<Object> iterator()
             {
-                return new PrefetchingResourceIterator<Object>()
+                return new InputIterator.Adapter<Object>()
                 {
                     private int i;
 
                     @Override
-                    protected Object fetchNextOrNull()
+                    public boolean hasNext()
                     {
-                        return i++ < 300_000
-                                ? "" + i
-                                : null;
+                        return i < 300_000;
                     }
 
                     @Override
-                    public void close()
-                    {   // Nothing to close
+                    public Object next()
+                    {
+                        return "" + (i++);
                     }
                 };
             }
@@ -155,7 +154,7 @@ public class EncodingIdMapperTest
                 size*2, processorsForSorting /*1-7*/ );
 
         // WHEN
-        ResourceIterable<Object> values = new ValueGenerator( size, type.data( random ) );
+        InputIterable<Object> values = new ValueGenerator( size, type.data( random ) );
         {
             int id = 0;
             for ( Object value : values )
@@ -187,8 +186,7 @@ public class EncodingIdMapperTest
     {
         // GIVEN
         IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), new Radix.String() );
-        ResourceIterable<Object> ids =
-                IteratorUtil.<Object>resourceIterable( Arrays.<Object>asList( "10", "9", "10" ) );
+        InputIterable<Object> ids = wrap( "source", Arrays.<Object>asList( "10", "9", "10" ) );
         Group group = new Group.Adapter( GLOBAL.id(), "global" );
         try ( ResourceIterator<Object> iterator = ids.iterator() )
         {
@@ -217,40 +215,7 @@ public class EncodingIdMapperTest
         // GIVEN
         IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), new Radix.String() );
         final List<Object> idList = Arrays.<Object>asList( "10", "9", "10" );
-        ResourceIterable<Object> ids = new ResourceIterable<Object>()
-        {
-            @Override
-            public ResourceIterator<Object> iterator()
-            {
-                return new PrefetchingResourceIterator<Object>()
-                {
-                    private final Iterator<Object> idIterator = idList.iterator();
-                    private int cursor;
-
-                    @Override
-                    public void close()
-                    {   // Do nothing
-                    }
-
-                    @Override
-                    protected Object fetchNextOrNull()
-                    {
-                        if ( idIterator.hasNext() )
-                        {
-                            cursor++;
-                            return idIterator.next();
-                        }
-                        return null;
-                    }
-
-                    @Override
-                    public String toString()
-                    {
-                        return "source:" + cursor;
-                    }
-                };
-            }
-        };
+        InputIterable<Object> ids = wrap( "source", idList );
         try ( ResourceIterator<Object> iterator = ids.iterator() )
         {
             for ( int i = 0; iterator.hasNext(); i++ )
@@ -268,9 +233,9 @@ public class EncodingIdMapperTest
         catch ( IllegalStateException e )
         {
             // THEN
-            assertTrue( e.getMessage().contains( "10" ) );
-            assertTrue( e.getMessage().contains( "source:1" ) );
-            assertTrue( e.getMessage().contains( "source:3" ) );
+            assertThat( e.getMessage(), containsString( "10" ) );
+            assertThat( e.getMessage(), containsString( "source:1" ) );
+            assertThat( e.getMessage(), containsString( "source:3" ) );
         }
     }
 
@@ -281,8 +246,7 @@ public class EncodingIdMapperTest
         Encoder encoder = mock( Encoder.class );
         when( encoder.encode( any() ) ).thenReturn( 12345L );
         IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, encoder, new Radix.String() );
-        ResourceIterable<Object> ids =
-                IteratorUtil.<Object>resourceIterable( Arrays.<Object>asList( "10", "9" ) );
+        InputIterable<Object> ids = wrap( "source", Arrays.<Object>asList( "10", "9" ) );
         try ( ResourceIterator<Object> iterator = ids.iterator() )
         {
             for ( int i = 0; iterator.hasNext(); i++ )
@@ -304,8 +268,7 @@ public class EncodingIdMapperTest
     {
         // GIVEN
         IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), new Radix.String() );
-        ResourceIterable<Object> ids =
-                IteratorUtil.<Object>resourceIterable( Arrays.<Object>asList( "10", "9", "10" ) );
+        InputIterable<Object> ids = wrap( "source", Arrays.<Object>asList( "10", "9", "10" ) );
         Groups groups = new Groups();
         Group firstGroup = groups.getOrCreate( "first" ), secondGroup = groups.getOrCreate( "second" );
         try ( ResourceIterator<Object> iterator = ids.iterator() )
@@ -330,8 +293,7 @@ public class EncodingIdMapperTest
     {
         // GIVEN
         IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), new Radix.String() );
-        ResourceIterable<Object> ids =
-                IteratorUtil.<Object>resourceIterable( Arrays.<Object>asList( "9", "10", "10" ) );
+        InputIterable<Object> ids = wrap( "source", Arrays.<Object>asList( "9", "10", "10" ) );
         Groups groups = new Groups();
         Group firstGroup = groups.getOrCreate( "first" ), secondGroup = groups.getOrCreate( "second" );
         try ( ResourceIterator<Object> iterator = ids.iterator() )
@@ -362,8 +324,7 @@ public class EncodingIdMapperTest
     {
         // GIVEN
         IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), new Radix.String() );
-        ResourceIterable<Object> ids =
-                IteratorUtil.<Object>resourceIterable( Arrays.<Object>asList( "8", "9", "10" ) );
+        InputIterable<Object> ids = wrap( "source", Arrays.<Object>asList( "8", "9", "10" ) );
         Groups groups = new Groups();
         Group firstGroup, secondGroup, thirdGroup;
         try ( ResourceIterator<Object> iterator = ids.iterator() )
@@ -410,7 +371,7 @@ public class EncodingIdMapperTest
         }
     }
 
-    private class ValueGenerator implements ResourceIterable<Object>
+    private class ValueGenerator implements InputIterable<Object>
     {
         private final int size;
         private final Factory<Object> generator;
@@ -424,13 +385,13 @@ public class EncodingIdMapperTest
         }
 
         @Override
-        public ResourceIterator<Object> iterator()
+        public InputIterator<Object> iterator()
         {
             if ( !values.isEmpty() )
             {
-                return resourceIterator( values.iterator(), EMPTY );
+                return new SimpleInputIteratorWrapper<>( getClass().getSimpleName(), values.iterator() );
             }
-            return resourceIterator( new PrefetchingIterator<Object>()
+            return new SimpleInputIterator<Object>( "" )
             {
                 private int cursor;
 
@@ -452,7 +413,7 @@ public class EncodingIdMapperTest
                     }
                     return null;
                 }
-            }, EMPTY );
+            };
         }
     }
 

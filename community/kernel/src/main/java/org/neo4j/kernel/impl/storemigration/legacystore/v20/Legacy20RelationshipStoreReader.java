@@ -57,6 +57,12 @@ public class Legacy20RelationshipStoreReader implements LegacyRelationshipStoreR
         return maxId;
     }
 
+    @Override
+    public int getRecordSize()
+    {
+        return RECORD_SIZE;
+    }
+
     /**
      * @param approximateStartId the scan will start at the beginning of the page this id is located in.
      */

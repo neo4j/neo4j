@@ -64,7 +64,7 @@ public class ExternalPropertiesDecorator implements Function<InputNode,InputNode
         CharSeeker dataStream = data.create( config ).stream();
         Header header = headerFactory.create( dataStream, config, idType );
         this.deserializer = new InputEntityDeserializer<>( header, dataStream, config.delimiter(),
-                new InputNodeDeserialization( header, new Groups(), idType.idsAreExternal() ),
+                new InputNodeDeserialization( dataStream, header, new Groups(), idType.idsAreExternal() ),
                 Functions.<InputNode>identity(), Validators.<InputNode>emptyValidator() );
     }
 

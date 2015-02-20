@@ -34,19 +34,20 @@ public class InputNode extends InputEntity
     private String[] labels;
     private final Long labelField;
 
-    public InputNode( Object id, Object[] properties, Long firstPropertyId,
-            String[] labels, Long labelField )
+    public InputNode( String sourceDescription, long lineNumber, long position,
+            Object id, Object[] properties, Long firstPropertyId, String[] labels, Long labelField )
     {
-        this( Group.GLOBAL, id, properties, firstPropertyId, labels, labelField );
+        this( sourceDescription, lineNumber, position,
+                Group.GLOBAL, id, properties, firstPropertyId, labels, labelField );
     }
 
     /**
      * @param labelField is a hack to bypass String[] labels, consumers should check that field first.
      */
-    public InputNode( Group group, Object id, Object[] properties, Long firstPropertyId,
-            String[] labels, Long labelField )
+    public InputNode( String sourceDescription, long lineNumber, long position,
+            Group group, Object id, Object[] properties, Long firstPropertyId, String[] labels, Long labelField )
     {
-        super( properties, firstPropertyId );
+        super( sourceDescription, lineNumber, position, properties, firstPropertyId );
         this.group = group;
         this.id = id;
         this.labels = labels;

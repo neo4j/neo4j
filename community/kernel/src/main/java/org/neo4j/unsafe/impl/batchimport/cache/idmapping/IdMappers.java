@@ -19,7 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping;
 
-import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper;
@@ -49,7 +49,7 @@ public class IdMappers
         }
 
         @Override
-        public void prepare( ResourceIterable<Object> nodeData )
+        public void prepare( InputIterable<Object> nodeData )
         {   // No need to prepare anything
         }
 

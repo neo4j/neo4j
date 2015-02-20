@@ -41,20 +41,22 @@ public class InputRelationship extends InputEntity
     private final Group startNodeGroup;
     private final Group endNodeGroup;
 
-    public InputRelationship(
+    public InputRelationship( String sourceDescription, long lineNumber, long position,
             Object[] properties, Long firstPropertyId, Object startNode, Object endNode,
             String type, Integer typeId )
     {
-        this( properties, firstPropertyId, GLOBAL, startNode, GLOBAL, endNode, type, typeId );
+        this( sourceDescription, lineNumber, position,
+                properties, firstPropertyId, GLOBAL, startNode, GLOBAL, endNode, type, typeId );
     }
 
     public InputRelationship(
+            String sourceDescription, long lineNumber, long position,
             Object[] properties, Long firstPropertyId,
             Group startNodeGroups, Object startNode,
             Group endNodeGroups, Object endNode,
             String type, Integer typeId )
     {
-        super( properties, firstPropertyId );
+        super( sourceDescription, lineNumber, position, properties, firstPropertyId );
         this.startNodeGroup = startNodeGroups;
         this.startNode = startNode;
         this.endNodeGroup = endNodeGroups;

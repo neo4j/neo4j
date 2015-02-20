@@ -39,7 +39,7 @@ abstract class InputGroupsDeserializer<ENTITY extends InputEntity>
     private final Header.Factory headerFactory;
     private final Configuration config;
     private final IdType idType;
-    private InputIterator<ENTITY> currentInput;
+    private InputIterator<ENTITY> currentInput = new InputIterator.Adapter<>();
     private long previousInputsCollectivePositions;
 
     InputGroupsDeserializer( Iterator<DataFactory<ENTITY>> dataFactory, Header.Factory headerFactory,
@@ -90,12 +90,18 @@ abstract class InputGroupsDeserializer<ENTITY extends InputEntity>
     @Override
     public long position()
     {
-        return previousInputsCollectivePositions + (currentInput != null ? currentInput.position() : 0);
+        return previousInputsCollectivePositions + currentInput.position();
     }
 
     @Override
-    public String toString()
+    public String sourceDescription()
     {
-        return currentInput.toString();
+        return currentInput.sourceDescription();
+    }
+
+    @Override
+    public long lineNumber()
+    {
+        return currentInput.lineNumber();
     }
 }

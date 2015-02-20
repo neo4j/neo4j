@@ -28,6 +28,8 @@ import java.util.Iterator;
 import java.util.Random;
 
 import org.neo4j.csv.reader.Extractors;
+import org.neo4j.csv.reader.SourceTraceability;
+import org.neo4j.function.Function;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
@@ -54,14 +56,15 @@ public class CsvDataGenerator<NODEFORMAT,RELFORMAT>
     private final Configuration config;
     private final long nodes;
     private final long relationships;
-    private final Deserialization<NODEFORMAT> nodeDeserialization;
-    private final Deserialization<RELFORMAT> relDeserialization;
+    private final Function<SourceTraceability,Deserialization<NODEFORMAT>> nodeDeserialization;
+    private final Function<SourceTraceability,Deserialization<RELFORMAT>> relDeserialization;
     private final int numberOfLabels;
     private final int numberOfRelationshipTypes;
 
     public CsvDataGenerator( Header nodeHeader, Header relationshipHeader, Configuration config,
-            long nodes, long relationships, Deserialization<NODEFORMAT> nodeDeserialization,
-            Deserialization<RELFORMAT> relDeserialization,
+            long nodes, long relationships,
+            Function<SourceTraceability,Deserialization<NODEFORMAT>> nodeDeserialization,
+            Function<SourceTraceability,Deserialization<RELFORMAT>> relDeserialization,
             int numberOfLabels, int numberOfRelationshipTypes )
     {
         this.nodeHeader = nodeHeader;
@@ -145,10 +148,11 @@ public class CsvDataGenerator<NODEFORMAT,RELFORMAT>
         Header relationshipHeader = bareboneRelationshipHeader( idType, extractors );
 
         ProgressListener progress = textual( System.out ).singlePart( "Generating", nodeCount + relationshipCount );
+        Function<SourceTraceability,Deserialization<String>> deserialization = StringDeserialization.factory( config );
         CsvDataGenerator<String,String> generator = new CsvDataGenerator<>(
                 nodeHeader, relationshipHeader,
                 config, nodeCount, relationshipCount,
-                new StringDeserialization( config ), new StringDeserialization( config ),
+                deserialization, deserialization,
                 labelCount, relationshipTypeCount );
         writeData( generator.serializeNodeHeader(), generator.nodeData(),
                 new File( "target", "nodes.csv" ), progress );

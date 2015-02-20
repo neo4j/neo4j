@@ -592,5 +592,11 @@ public class BufferedCharSeekerTest
         {
             return position;
         }
+
+        @Override
+        public String sourceDescription()
+        {
+            return getClass().getSimpleName();
+        }
     }
 }

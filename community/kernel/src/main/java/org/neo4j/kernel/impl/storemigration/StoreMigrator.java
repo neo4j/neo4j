@@ -36,7 +36,6 @@ import java.util.Random;
 import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
@@ -81,13 +80,17 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
+import org.neo4j.unsafe.impl.batchimport.InputIterable;
+import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.cache.AvailableMemoryCalculator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
+import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.Inputs;
+import org.neo4j.unsafe.impl.batchimport.input.SourceInputIterator;
 import org.neo4j.unsafe.impl.batchimport.staging.CoarseBoundedProgressExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStore;
@@ -115,8 +118,6 @@ import static org.neo4j.unsafe.impl.batchimport.WriterFactories.parallel;
  */
 public class StoreMigrator implements StoreMigrationParticipant
 {
-    private static final Object[] NO_PROPERTIES = new Object[0];
-
     // Developers: There is a benchmark, storemigrate-benchmark, that generates large stores and benchmarks
     // the upgrade process. Please utilize that when writing upgrade code to ensure the code is fast enough to
     // complete upgrades in a reasonable time period.
@@ -349,8 +350,8 @@ public class StoreMigrator implements StoreMigrationParticipant
                 new Configuration.OverrideFromConfig( config ), logging,
                 migrationBatchImporterMonitor( legacyStore, progressMonitor ),
                 parallel(), readAdditionalIds( storeDir, lastTxId, lastTxChecksum ), AvailableMemoryCalculator.RUNTIME );
-        Iterable<InputNode> nodes = legacyNodesAsInput( legacyStore );
-        Iterable<InputRelationship> relationships = legacyRelationshipsAsInput( legacyStore );
+        InputIterable<InputNode> nodes = legacyNodesAsInput( legacyStore );
+        InputIterable<InputRelationship> relationships = legacyRelationshipsAsInput( legacyStore );
         importer.doImport( Inputs.input( nodes, relationships, IdMappers.actual(), IdGenerators.fromInput(), true ) );
 
         // During migration the batch importer only writes node, relationship, relationship group and counts stores.
@@ -566,15 +567,15 @@ public class StoreMigrator implements StoreMigrationParticipant
         return result.toArray( new StoreFile[result.size()] );
     }
 
-    private Iterable<InputRelationship> legacyRelationshipsAsInput( LegacyStore legacyStore )
+    private InputIterable<InputRelationship> legacyRelationshipsAsInput( LegacyStore legacyStore )
     {
         final LegacyRelationshipStoreReader reader = legacyStore.getRelStoreReader();
-        return new Iterable<InputRelationship>()
+        return new InputIterable<InputRelationship>()
         {
             @Override
-            public Iterator<InputRelationship> iterator()
+            public InputIterator<InputRelationship> iterator()
             {
-                Iterator<RelationshipRecord> source;
+                final Iterator<RelationshipRecord> source;
                 try
                 {
                     source = reader.iterator( 0 );
@@ -584,31 +585,46 @@ public class StoreMigrator implements StoreMigrationParticipant
                     throw new RuntimeException( e );
                 }
 
-                return new IteratorWrapper<InputRelationship, RelationshipRecord>( source )
+                final StoreSourceTraceability traceability =
+                        new StoreSourceTraceability( "legacy relationships", reader.getRecordSize() );
+                return new SourceInputIterator<InputRelationship, RelationshipRecord>( traceability )
                 {
                     @Override
-                    protected InputRelationship underlyingObjectToObject( RelationshipRecord record )
+                    protected InputRelationship fetchNextOrNull()
                     {
-                        InputRelationship result = new InputRelationship( NO_PROPERTIES, record.getNextProp(),
+                        if ( !source.hasNext() )
+                        {
+                            return null;
+                        }
+
+                        RelationshipRecord record = source.next();
+                        InputRelationship result = new InputRelationship(
+                                "legacy store", record.getId(), record.getId()*RelationshipStore.RECORD_SIZE,
+                                InputEntity.NO_PROPERTIES, record.getNextProp(),
                                 record.getFirstNode(), record.getSecondNode(), null, record.getType() );
                         result.setSpecificId( record.getId() );
+                        traceability.atId( record.getId() );
                         return result;
+                    }
+
+                    @Override
+                    public void close()
+                    {
                     }
                 };
             }
         };
     }
 
-    private Iterable<InputNode> legacyNodesAsInput( LegacyStore legacyStore )
+    private InputIterable<InputNode> legacyNodesAsInput( LegacyStore legacyStore )
     {
         final LegacyNodeStoreReader reader = legacyStore.getNodeStoreReader();
-        final String[] NO_LABELS = new String[0];
-        return new Iterable<InputNode>()
+        return new InputIterable<InputNode>()
         {
             @Override
-            public Iterator<InputNode> iterator()
+            public InputIterator<InputNode> iterator()
             {
-                Iterator<NodeRecord> source;
+                final Iterator<NodeRecord> source;
                 try
                 {
                     source = reader.iterator();
@@ -618,13 +634,29 @@ public class StoreMigrator implements StoreMigrationParticipant
                     throw new RuntimeException( e );
                 }
 
-                return new IteratorWrapper<InputNode, NodeRecord>( source )
+                final StoreSourceTraceability traceability =
+                        new StoreSourceTraceability( "legacy nodes", reader.getRecordSize() );
+                return new SourceInputIterator<InputNode, NodeRecord>( traceability )
                 {
                     @Override
-                    protected InputNode underlyingObjectToObject( NodeRecord record )
+                    protected InputNode fetchNextOrNull()
                     {
-                        return new InputNode( record.getId(), NO_PROPERTIES, record.getNextProp(),
-                                              NO_LABELS, record.getLabelField() );
+                        if ( !source.hasNext() )
+                        {
+                            return null;
+                        }
+
+                        NodeRecord record = source.next();
+                        traceability.atId( record.getId() );
+                        return new InputNode(
+                                "legacy store", record.getId(), record.getId()*NodeStore.RECORD_SIZE,
+                                record.getId(), InputEntity.NO_PROPERTIES, record.getNextProp(),
+                                InputNode.NO_LABELS, record.getLabelField() );
+                    }
+
+                    @Override
+                    public void close()
+                    {
                     }
                 };
             }

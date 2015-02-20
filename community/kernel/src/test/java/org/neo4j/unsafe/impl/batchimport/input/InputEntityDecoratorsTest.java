@@ -46,7 +46,7 @@ public class InputEntityDecoratorsTest
                 InputEntityDecorators.defaultRelationshipType( defaultType );
 
         // WHEN
-        InputRelationship relationship = new InputRelationship( InputEntity.NO_PROPERTIES, null,
+        InputRelationship relationship = new InputRelationship( "source", 1, 0, InputEntity.NO_PROPERTIES, null,
                 "start", "end", null, null );
         relationship = decorator.apply( relationship );
 
@@ -64,7 +64,7 @@ public class InputEntityDecoratorsTest
 
         // WHEN
         String customType = "CUSTOM_TYPE";
-        InputRelationship relationship = new InputRelationship( InputEntity.NO_PROPERTIES, null,
+        InputRelationship relationship = new InputRelationship( "source", 1, 0, InputEntity.NO_PROPERTIES, null,
                 "start", "end", customType, null );
         relationship = decorator.apply( relationship );
 
@@ -82,7 +82,7 @@ public class InputEntityDecoratorsTest
 
         // WHEN
         Integer typeId = 5;
-        InputRelationship relationship = new InputRelationship( InputEntity.NO_PROPERTIES, null,
+        InputRelationship relationship = new InputRelationship( "source", 1, 0, InputEntity.NO_PROPERTIES, null,
                 "start", "end", null, typeId );
         relationship = decorator.apply( relationship );
 
@@ -99,7 +99,7 @@ public class InputEntityDecoratorsTest
         Function<InputNode,InputNode> decorator = InputEntityDecorators.additiveLabels( toAdd );
 
         // WHEN
-        InputNode node = new InputNode( "id", InputEntity.NO_PROPERTIES, null, null, null );
+        InputNode node = new InputNode( "source", 1, 0, "id", InputEntity.NO_PROPERTIES, null, null, null );
         node = decorator.apply( node );
 
         // THEN
@@ -115,7 +115,7 @@ public class InputEntityDecoratorsTest
 
         // WHEN
         String[] nodeLabels = new String[] {"SomeOther"};
-        InputNode node = new InputNode( "id", InputEntity.NO_PROPERTIES, null, nodeLabels, null );
+        InputNode node = new InputNode( "source", 1, 0, "id", InputEntity.NO_PROPERTIES, null, nodeLabels, null );
         node = decorator.apply( node );
 
         // THEN
@@ -131,7 +131,7 @@ public class InputEntityDecoratorsTest
 
         // WHEN
         long labelField = 123L;
-        InputNode node = new InputNode( "id", InputEntity.NO_PROPERTIES, null, null, labelField );
+        InputNode node = new InputNode( "source", 1, 0, "id", InputEntity.NO_PROPERTIES, null, null, labelField );
         node = decorator.apply( node );
 
         // THEN

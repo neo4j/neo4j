@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -53,7 +52,6 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -69,6 +67,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.Inputs;
+import org.neo4j.unsafe.impl.batchimport.input.SimpleInputIterator;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Writer;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoQueue;
@@ -338,15 +337,15 @@ public class ParallelBatchImporterTest
         }
     };
 
-    private Iterable<InputRelationship> relationships( final long count, final InputIdGenerator idGenerator )
+    private InputIterable<InputRelationship> relationships( final long count, final InputIdGenerator idGenerator )
     {
-        return new Iterable<InputRelationship>()
+        return new InputIterable<InputRelationship>()
         {
             @Override
-            public Iterator<InputRelationship> iterator()
+            public InputIterator<InputRelationship> iterator()
             {
                 random.reset();
-                return new PrefetchingIterator<InputRelationship>()
+                return new SimpleInputIterator<InputRelationship>( "test relationships" )
                 {
                     private int cursor;
 
@@ -368,6 +367,7 @@ public class ParallelBatchImporterTest
                                 Object startNode = idGenerator.randomExisting();
                                 Object endNode = idGenerator.randomExisting();
                                 return new InputRelationship(
+                                        sourceDescription, itemNumber, itemNumber,
                                         properties, null,
                                         startNode, endNode,
                                         idGenerator.randomType(), null );
@@ -384,14 +384,14 @@ public class ParallelBatchImporterTest
         };
     }
 
-    private static Iterable<InputNode> nodes( final long count, final InputIdGenerator inputIdGenerator )
+    private static InputIterable<InputNode> nodes( final long count, final InputIdGenerator inputIdGenerator )
     {
-        return new Iterable<InputNode>()
+        return new InputIterable<InputNode>()
         {
             @Override
-            public Iterator<InputNode> iterator()
+            public InputIterator<InputNode> iterator()
             {
-                return new PrefetchingIterator<InputNode>()
+                return new SimpleInputIterator<InputNode>( "test nodes" )
                 {
                     private int cursor;
 
@@ -410,7 +410,8 @@ public class ParallelBatchImporterTest
 
                             try
                             {
-                                return new InputNode( inputIdGenerator.nextNodeId(), properties, null, LABELS, null );
+                                return new InputNode( sourceDescription, itemNumber, itemNumber,
+                                        inputIdGenerator.nextNodeId(), properties, null, LABELS, null );
                             }
                             finally
                             {

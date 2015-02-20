@@ -94,7 +94,7 @@ public class MultiReadableTest
         assertEquals( 15, reader.position() );
         reader.read( buffer, buffer.front() );
         assertEquals( "Should not transition to a new reader in the middle of a read", 23, reader.position() );
-        assertEquals( "Reader1", reader.toString() );
+        assertEquals( "Reader1", reader.sourceDescription() );
 
         // we will transition to the new reader in the call below
         reader.read( buffer, buffer.front() );

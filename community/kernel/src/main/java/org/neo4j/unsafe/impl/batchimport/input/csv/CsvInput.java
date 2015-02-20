@@ -112,7 +112,7 @@ public class CsvInput implements Input
                             Function<InputNode,InputNode> decorator )
                     {
                         return new InputEntityDeserializer<>( dataHeader, dataStream, config.delimiter(),
-                                new InputNodeDeserialization( dataHeader, groups, idType.idsAreExternal() ),
+                                new InputNodeDeserialization( dataStream, dataHeader, groups, idType.idsAreExternal() ),
                                 decorator, Validators.<InputNode>emptyValidator() );
                     }
                 };
@@ -136,7 +136,7 @@ public class CsvInput implements Input
                               Header dataHeader, Function<InputRelationship,InputRelationship> decorator )
                     {
                         return new InputEntityDeserializer<>( dataHeader, dataStream, config.delimiter(),
-                                new InputRelationshipDeserialization( dataHeader, groups ),
+                                new InputRelationshipDeserialization( dataStream, dataHeader, groups ),
                                 decorator, new Validator<InputRelationship>()
                                 {
                                     @Override
