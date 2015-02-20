@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 'use strict'
 
 class neo.graphView
-  constructor: (element, measureSize, graph, @style) ->
+  constructor: (element, measureSize, @graph, @style) ->
     layout = neo.layout.force()
     @viz = neo.viz(element, measureSize, graph, layout, @style)
     @callbacks = {}

@@ -114,5 +114,12 @@ angular.module('neo4jApp.controllers')
       # Expose editor service to be able to play saved scripts
       $scope.editor = Editor
 
+      $scope.substituteToken = (query, token) ->
+        escapedToken = if token.match /^[A-Za-z][A-Za-z0-9_]*$/
+          token
+        else
+          "`#{token}`"
+        query.replace(/<token>/g, escapedToken)
+
       $scope.folderService = Folder
   ]

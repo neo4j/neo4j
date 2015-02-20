@@ -66,10 +66,28 @@ class neo.models.Graph
 
   addRelationships: (relationships) =>
     for relationship in relationships
-      if !@findRelationship(relationship.id)?
+      existingRelationship = @findRelationship(relationship.id)
+      if existingRelationship?
+        existingRelationship.internal = false
+      else
+        relationship.internal = false
         @relationshipMap[relationship.id] = relationship
         @_relationships.push(relationship)
     @
+
+  addInternalRelationships: (relationships) =>
+    for relationship in relationships
+      relationship.internal = true
+      if not @findRelationship(relationship.id)?
+        @relationshipMap[relationship.id] = relationship
+        @_relationships.push(relationship)
+    @
+
+  pruneInternalRelationships: =>
+    relationships = @_relationships.filter((relationship) -> not relationship.internal)
+    @relationshipMap = {}
+    @_relationships = []
+    @addRelationships(relationships)
 
   findNode: (id) => @nodeMap[id]
 
