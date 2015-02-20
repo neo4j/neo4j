@@ -130,9 +130,10 @@ table.json-object
     &
     .inspector-footer-row
       line-height: 21px
+      margin-top: inspector-footer-row-margin
     .status-bar-actions
       absolute: right 10px
-      top: 0
+      top: -1px
     p
       line-height: middlebar-height
   .popover.bottom
@@ -149,7 +150,7 @@ table.json-object
   &.error
     color: color-error
     > .status
-      line-height middlebar-height
+      line-height middlebar-height - inspector-footer-row-margin
   i[class*="fa-"]
     margin: 0
   .fa-ok

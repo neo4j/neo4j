@@ -95,7 +95,7 @@ angular.module('neo4jApp.controllers')
         message = "Displaying #{plural(graph.nodes(), 'node')}, #{plural(graph.relationships(), 'relationship')}"
         internalRelationships = graph.relationships().filter((r) -> r.internal)
         if internalRelationships.length > 0
-          message += " (including  #{plural(internalRelationships, 'auto-connected relationship')})"
+          message += " (completed with  #{plural(internalRelationships, 'additional relationship')})"
         message + '.'
 
     $scope.planStatistics = (frame) ->
