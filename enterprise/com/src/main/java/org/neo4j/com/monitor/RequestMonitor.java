@@ -19,11 +19,14 @@
  */
 package org.neo4j.com.monitor;
 
-import java.util.Map;
+import java.net.SocketAddress;
+
+import org.neo4j.com.RequestContext;
+import org.neo4j.com.RequestType;
 
 public interface RequestMonitor
 {
-    void beginRequest( Map<String, String> requestContext );
+    void beginRequest( SocketAddress remoteAddress, RequestType<?> requestType, RequestContext requestContext );
 
     void endRequest( Throwable t );
 }

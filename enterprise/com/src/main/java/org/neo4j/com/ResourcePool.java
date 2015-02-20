@@ -104,9 +104,9 @@ public abstract class ResourcePool<R>
 
     public static final int DEFAULT_CHECK_INTERVAL = 60 * 1000;
 
-    private final LinkedList<R> unused = new LinkedList<R>();
-    private final Map<Thread, R> current = new ConcurrentHashMap<Thread, R>();
-    private final Monitor monitor;
+    private final LinkedList<R> unused = new LinkedList<>();
+    private final Map<Thread,R> current = new ConcurrentHashMap<>();
+    private final Monitor<R> monitor;
     private final int minSize;
     private final CheckStrategy checkStrategy;
     // Guarded by nothing. Those are estimates, losing some values doesn't matter much
@@ -115,10 +115,11 @@ public abstract class ResourcePool<R>
 
     protected ResourcePool( int minSize )
     {
-        this( minSize, new CheckStrategy.TimeoutCheckStrategy( DEFAULT_CHECK_INTERVAL, SYSTEM_CLOCK ), new Monitor.Adapter() );
+        this( minSize, new CheckStrategy.TimeoutCheckStrategy( DEFAULT_CHECK_INTERVAL, SYSTEM_CLOCK ),
+                new Monitor.Adapter<R>() );
     }
 
-    protected ResourcePool( int minSize, CheckStrategy strategy, Monitor monitor )
+    protected ResourcePool( int minSize, CheckStrategy strategy, Monitor<R> monitor )
     {
         this.minSize = minSize;
         this.currentPeakSize = 0;
@@ -165,7 +166,7 @@ public abstract class ResourcePool<R>
                     }
                     if ( garbage == null )
                     {
-                        garbage = new LinkedList<R>();
+                        garbage = new LinkedList<>();
                     }
                     garbage.add( resource );
                 }
@@ -226,7 +227,7 @@ public abstract class ResourcePool<R>
 
     public final void close( boolean force )
     {
-        List<R> dead = new LinkedList<R>();
+        List<R> dead = new LinkedList<>();
         synchronized ( unused )
         {
             dead.addAll( unused );

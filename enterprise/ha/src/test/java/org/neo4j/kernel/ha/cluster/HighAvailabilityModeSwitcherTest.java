@@ -321,10 +321,10 @@ public class HighAvailabilityModeSwitcherTest
             {
                 ScheduledExecutorService executor = mock( ScheduledExecutorService.class );
 
-                doAnswer( new Answer()
+                doAnswer( new Answer<Future<?>>()
                 {
                     @Override
-                    public Object answer( InvocationOnMock invocation ) throws Throwable
+                    public Future<?> answer( InvocationOnMock invocation ) throws Throwable
                     {
                         ((Runnable) invocation.getArguments()[0]).run();
                         modeSwitchHappened.countDown();
