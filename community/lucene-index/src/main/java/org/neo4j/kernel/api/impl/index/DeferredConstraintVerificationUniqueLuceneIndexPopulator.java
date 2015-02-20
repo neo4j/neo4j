@@ -27,6 +27,7 @@ import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ReferenceManager;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
@@ -59,10 +60,12 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
     private final IndexDescriptor descriptor;
     private final UniqueIndexSampler sampler;
 
-    private SearcherManager searcherManager;
+    private final SearcherManagerFactory searcherManagerFactory;
+    private ReferenceManager<IndexSearcher> searcherManager;
 
     DeferredConstraintVerificationUniqueLuceneIndexPopulator( LuceneDocumentStructure documentStructure,
                                                               LuceneIndexWriterFactory indexWriterFactory,
+                                                              SearcherManagerFactory searcherManagerFactory,
                                                               IndexWriterStatus writerStatus,
                                                               DirectoryFactory dirFactory, File dirFile,
                                                               FailureStorage failureStorage, long indexId,
@@ -71,13 +74,27 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
         super( documentStructure, indexWriterFactory, writerStatus, dirFactory, dirFile, failureStorage, indexId );
         this.descriptor = descriptor;
         this.sampler = new UniqueIndexSampler();
+        this.searcherManagerFactory = searcherManagerFactory;
     }
 
     @Override
     public void create() throws IOException
     {
         super.create();
-        searcherManager = new SearcherManager( writer, true, new SearcherFactory() );
+        searcherManager = searcherManagerFactory.create( writer );
+    }
+
+    @Override
+    public void drop() throws IOException
+    {
+        try
+        {
+            searcherManager.close();
+        }
+        finally
+        {
+            super.drop();
+        }
     }
 
     @Override
@@ -220,6 +237,19 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
     public long sampleResult( DoubleLong.Out result )
     {
         return sampler.result( result );
+    }
+
+    @Override
+    public void close( boolean populationCompletedSuccessfully ) throws IOException
+    {
+        try
+        {
+            searcherManager.close();
+        }
+        finally
+        {
+            super.close( populationCompletedSuccessfully );
+        }
     }
 
     private static class DuplicateCheckingCollector extends Collector

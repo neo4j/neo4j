@@ -49,7 +49,6 @@ import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
-import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
 import static org.neo4j.kernel.impl.store.StoreVersionMismatchHandler.ALLOW_OLD_VERSION;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
@@ -58,7 +57,6 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     private final DirectoryFactory directoryFactory;
     private final LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
     private final IndexWriterStatus writerStatus = new IndexWriterStatus();
-    private final File rootDirectory;
     private final FailureStorage failureStorage;
     private final FolderLayout folderLayout;
     private final Map<Long, String> failures = new HashMap<>();
@@ -67,7 +65,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     {
         super( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, 1 );
         this.directoryFactory = directoryFactory;
-        this.rootDirectory = getRootDirectory( config.get( store_dir ), LuceneSchemaIndexProviderFactory.KEY );
+        File rootDirectory = getRootDirectory( config.get( store_dir ), LuceneSchemaIndexProviderFactory.KEY );
         this.folderLayout = new FolderLayout( rootDirectory );
         this.failureStorage = new FailureStorage( folderLayout );
     }
@@ -79,15 +77,16 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
         if ( config.isUnique() )
         {
             return new DeferredConstraintVerificationUniqueLuceneIndexPopulator(
-                    documentStructure, standard(), writerStatus,
-                    directoryFactory, folderLayout.getFolder( indexId ), failureStorage,
+                    documentStructure, IndexWriterFactories.standard(), SearcherManagerFactories.standard() ,
+                    writerStatus, directoryFactory, folderLayout.getFolder( indexId ), failureStorage,
                     indexId, descriptor );
         }
         else
         {
             return new NonUniqueLuceneIndexPopulator(
-                    NonUniqueLuceneIndexPopulator.DEFAULT_QUEUE_THRESHOLD, documentStructure, standard(), writerStatus,
-                    directoryFactory, folderLayout.getFolder( indexId ), failureStorage, indexId, samplingConfig );
+                    NonUniqueLuceneIndexPopulator.DEFAULT_QUEUE_THRESHOLD, documentStructure,
+                    IndexWriterFactories.standard(), writerStatus, directoryFactory, folderLayout.getFolder( indexId ),
+                    failureStorage, indexId, samplingConfig );
         }
     }
 
@@ -97,13 +96,13 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     {
         if ( config.isUnique() )
         {
-            return new UniqueLuceneIndexAccessor( documentStructure, standard(), writerStatus, directoryFactory,
-                    folderLayout.getFolder( indexId ) );
+            return new UniqueLuceneIndexAccessor( documentStructure, IndexWriterFactories.standard(), writerStatus,
+                    directoryFactory, folderLayout.getFolder( indexId ) );
         }
         else
         {
-            return new NonUniqueLuceneIndexAccessor( documentStructure, standard(), writerStatus, directoryFactory,
-                    folderLayout.getFolder( indexId ), samplingConfig.bufferSize() );
+            return new NonUniqueLuceneIndexAccessor( documentStructure, IndexWriterFactories.standard(),
+                    writerStatus, directoryFactory, folderLayout.getFolder( indexId ), samplingConfig.bufferSize() );
         }
     }
 
