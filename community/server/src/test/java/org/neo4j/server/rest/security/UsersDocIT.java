@@ -180,7 +180,7 @@ public class UsersDocIT extends ExclusiveServerTestBase
 
     private String challengeResponse( String username, String password )
     {
-        return "Basic realm=\"Neo4j\" " + base64( username + ":" + password );
+        return "Basic " + base64( username + ":" + password );
     }
 
     private String dataURL()

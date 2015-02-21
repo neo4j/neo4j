@@ -35,7 +35,7 @@ public class AuthorizationHeadersTest
         // Given
         String username = "jake";
         String password = "qwerty123456";
-        String header = "Basic realm=\"Neo4j\" " + base64( username + ":" + password );
+        String header = "Basic " + base64( username + ":" + password );
 
         // When
         String[] parsed = decode( header );
@@ -51,8 +51,8 @@ public class AuthorizationHeadersTest
         // When & then
         assertNull( decode( "" ) );
         assertNull( decode( "Basic" ) );
-        assertNull( decode( "Basic realm=\"Neo4j\" not valid value" ) );
-        assertNull( decode( "Basic realm=\"Neo4j\" " + base64( "" ) ) );
+        assertNull( decode( "Basic not valid value" ) );
+        assertNull( decode( "Basic " + base64( "" ) ) );
     }
 
     private String base64( String value )

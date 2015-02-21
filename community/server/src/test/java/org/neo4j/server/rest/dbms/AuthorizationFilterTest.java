@@ -179,7 +179,7 @@ public class AuthorizationFilterTest
         String credentials = Base64.encodeBase64String( "foo:bar".getBytes( Charsets.UTF_8 ) );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
-        when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC realm=neo4j " + credentials );
+        when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
         when( servletRequest.getRemoteAddr() ).thenReturn( "remote_ip_address" );
         when( authManager.authenticate( "foo", "bar" ) ).thenReturn( AuthenticationResult.NOT_AUTHORIZED );
 
@@ -201,7 +201,7 @@ public class AuthorizationFilterTest
         String credentials = Base64.encodeBase64String( "foo:bar".getBytes( Charsets.UTF_8 ) );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/user/foo" );
-        when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC realm=neo4j " + credentials );
+        when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
         when( authManager.authenticate( "foo", "bar" ) ).thenReturn( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
 
         // When
@@ -220,7 +220,7 @@ public class AuthorizationFilterTest
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
         when( servletRequest.getRequestURL() ).thenReturn( new StringBuffer( "http://bar.baz:7474/db/data/" ) );
         when( servletRequest.getRequestURI() ).thenReturn( "/db/data/" );
-        when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC realm=neo4j " + credentials );
+        when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
         when( authManager.authenticate( "foo", "bar" ) ).thenReturn( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
 
         // When
@@ -241,7 +241,7 @@ public class AuthorizationFilterTest
         String credentials = Base64.encodeBase64String( "foo:bar".getBytes( Charsets.UTF_8 ) );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
-        when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC realm=neo4j " + credentials );
+        when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
         when( authManager.authenticate( "foo", "bar" ) ).thenReturn( AuthenticationResult.TOO_MANY_ATTEMPTS );
 
         // When
@@ -261,7 +261,7 @@ public class AuthorizationFilterTest
         String credentials = Base64.encodeBase64String( "foo:bar".getBytes( Charsets.UTF_8 ) );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
-        when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC realm=neo4j " + credentials );
+        when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
         when( authManager.authenticate( "foo", "bar" ) ).thenReturn( AuthenticationResult.SUCCESS );
 
         // When

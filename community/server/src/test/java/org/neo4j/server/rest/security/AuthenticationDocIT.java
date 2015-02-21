@@ -91,7 +91,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
      * Authenticate to access the server
      *
      * Authenticate by sending a username and a password to Neo4j using HTTP Basic Auth.
-     * Requests should include an +Authorization+ header, with a value of +Basic realm="Neo4j" <payload>+,
+     * Requests should include an +Authorization+ header, with a value of +Basic <payload>+,
      * where "payload" is a base64 encoded string of "username:password".
      */
     @Test
@@ -326,7 +326,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
 
     private String challengeResponse( String username, String password )
     {
-        return "Basic realm=\"Neo4j\" " + base64( username + ":" + password );
+        return "Basic " + base64( username + ":" + password );
     }
 
     private String dataURL()
