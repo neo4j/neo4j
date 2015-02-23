@@ -21,8 +21,6 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import java.util.Arrays;
 
-import org.neo4j.csv.reader.CharSeeker;
-import org.neo4j.function.Function;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
@@ -32,65 +30,57 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 import static java.util.Arrays.copyOf;
 
 /**
- * {@link InputEntityDeserializer} that knows the semantics of an {@link InputNode} and how to extract that from
- * csv values using a {@link Header}.
+ * Builds {@link InputNode} from CSV data.
  */
-class InputNodeDeserializer extends InputEntityDeserializer<InputNode>
+public class InputNodeDeserialization extends InputEntityDeserialization<InputNode>
 {
+    private final Group group;
     private final boolean idsAreExternal;
-
-    // Additional data
     private Object id;
-    // holder of labels, Will grow with the node having most labels.
     private String[] labels = new String[10];
     private int labelsCursor;
-    private final Group group;
 
-    InputNodeDeserializer( Header header, CharSeeker data, int delimiter, Function<InputNode,InputNode> decorator,
-            boolean idsAreExternal, Groups groups )
+    public InputNodeDeserialization( Header header, Groups groups, boolean idsAreExternal )
     {
-        super( header, data, delimiter, decorator );
-        this.idsAreExternal = idsAreExternal;
-
         // ID header entry is optional
         Entry idEntry = header.entry( Type.ID );
         this.group = groups.getOrCreate( idEntry != null ? idEntry.groupName() : null );
+        this.idsAreExternal = idsAreExternal;
     }
 
     @Override
-    protected void handleValue( Header.Entry entry, Object value )
+    public void handle( Entry entry, Object value )
     {
         switch ( entry.type() )
         {
         case ID:
             if ( entry.name() != null && idsAreExternal )
             {
-                addProperty( entry, value );
+                addProperty( entry.name(), value );
             }
             id = value;
             break;
         case LABEL:
-            if ( value instanceof String )
-            {
-                ensureLabelsCapacity( labelsCursor+1 );
-                labels[labelsCursor++] = (String) value;
-            }
-            else if ( value instanceof String[] )
-            {
-                String[] labelsToAdd = (String[]) value;
-                ensureLabelsCapacity( labelsCursor+labelsToAdd.length );
-                for ( String label : (String[]) value )
-                {
-                    labels[labelsCursor++] = label;
-                }
-            }
-            else
-            {
-                throw new IllegalArgumentException( "Unexpected label value type " +
-                        value.getClass() + ": " + value );
-            }
+            addLabels( entry, value );
+            break;
+        default:
+            super.handle( entry, value );
             break;
         }
+    }
+
+    @Override
+    public InputNode materialize()
+    {
+        return new InputNode( group, id, properties(), null, labels(), null );
+    }
+
+    @Override
+    public void clear()
+    {
+        super.clear();
+        labelsCursor = 0;
+        id = null;
     }
 
     private void ensureLabelsCapacity( int length )
@@ -101,17 +91,26 @@ class InputNodeDeserializer extends InputEntityDeserializer<InputNode>
         }
     }
 
-    @Override
-    protected InputNode convertToInputEntity( Object[] properties )
+    private void addLabels( Entry entry, Object value )
     {
-        try
+        if ( value instanceof String )
         {
-            return new InputNode( group, id, properties, null, labels(), null );
+            ensureLabelsCapacity( labelsCursor+1 );
+            labels[labelsCursor++] = (String) value;
         }
-        finally
+        else if ( value instanceof String[] )
         {
-            id = null;
-            labelsCursor = 0;
+            String[] labelsToAdd = (String[]) value;
+            ensureLabelsCapacity( labelsCursor+labelsToAdd.length );
+            for ( String label : (String[]) value )
+            {
+                labels[labelsCursor++] = label;
+            }
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Unexpected label value type " +
+                    value.getClass() + ": " + value );
         }
     }
 

@@ -1,0 +1,98 @@
+/**
+ * Copyright (c) 2002-2015 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.tooling;
+
+import org.neo4j.unsafe.impl.batchimport.BatchImporter;
+import org.neo4j.unsafe.impl.batchimport.InputIterable;
+import org.neo4j.unsafe.impl.batchimport.InputIterator;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.unsafe.impl.batchimport.input.Groups;
+import org.neo4j.unsafe.impl.batchimport.input.Input;
+import org.neo4j.unsafe.impl.batchimport.input.InputNode;
+import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
+import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
+import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
+import org.neo4j.unsafe.impl.batchimport.input.csv.InputNodeDeserialization;
+import org.neo4j.unsafe.impl.batchimport.input.csv.InputRelationshipDeserialization;
+
+/**
+ * Uses {@link CsvDataGenerator} as an {@link Input} directly into a {@link BatchImporter}.
+ */
+public class CsvDataGeneratorInput extends CsvDataGenerator<InputNode,InputRelationship> implements Input
+{
+    private final IdType idType;
+
+    public CsvDataGeneratorInput( Header nodeHeader, Header relationshipHeader,
+            Configuration config, long nodes, long relationships, Groups groups, IdType idType,
+            int numberOfLabels, int numberOfRelationshipTypes )
+    {
+        super( nodeHeader, relationshipHeader, config, nodes, relationships,
+                new InputNodeDeserialization( nodeHeader, groups, idType.idsAreExternal() ),
+                new InputRelationshipDeserialization( relationshipHeader, groups ),
+                numberOfLabels, numberOfRelationshipTypes );
+        this.idType = idType;
+    }
+
+    @Override
+    public InputIterable<InputNode> nodes()
+    {
+        return new InputIterable<InputNode>()
+        {
+            @Override
+            public InputIterator<InputNode> iterator()
+            {
+                return nodeData();
+            }
+        };
+    }
+
+    @Override
+    public InputIterable<InputRelationship> relationships()
+    {
+        return new InputIterable<InputRelationship>()
+        {
+            @Override
+            public InputIterator<InputRelationship> iterator()
+            {
+                return relationshipData();
+            }
+        };
+    }
+
+    @Override
+    public IdMapper idMapper()
+    {
+        return idType.idMapper();
+    }
+
+    @Override
+    public IdGenerator idGenerator()
+    {
+        return idType.idGenerator();
+    }
+
+    @Override
+    public boolean specificRelationshipIds()
+    {
+        return false;
+    }
+}

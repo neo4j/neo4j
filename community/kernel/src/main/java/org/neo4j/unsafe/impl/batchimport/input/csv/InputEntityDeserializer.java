@@ -20,7 +20,6 @@
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractors;
@@ -28,39 +27,39 @@ import org.neo4j.csv.reader.Mark;
 import org.neo4j.function.Function;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
-import org.neo4j.unsafe.impl.batchimport.input.DataException;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.UnexpectedEndOfInputException;
 
 import static java.lang.String.format;
-import static java.util.Arrays.copyOf;
 
 /**
  * Converts a line of csv data into an {@link InputEntity} (either a node or relationship).
  * Does so by seeking values, using {@link CharSeeker}, interpreting the values using a {@link Header}.
  */
-abstract class InputEntityDeserializer<ENTITY extends InputEntity> extends PrefetchingIterator<ENTITY>
-        implements InputIterator<ENTITY>
+public class InputEntityDeserializer<ENTITY extends InputEntity>
+        extends PrefetchingIterator<ENTITY> implements InputIterator<ENTITY>
 {
-    protected final Header header;
+    private final Header header;
     private final CharSeeker data;
     private final Mark mark = new Mark();
     private final int delimiter;
     private final Function<ENTITY,ENTITY> decorator;
+    private final Deserialization<ENTITY> deserialization;
+    private final Validator<ENTITY> validator;
 
-    // Data
-    // holder of properties, alternating key/value. Will grow with the entity having most properties.
-    private Object[] properties = new Object[10*2];
-    private int propertiesCursor;
-
-    InputEntityDeserializer( Header header, CharSeeker data, int delimiter, Function<ENTITY,ENTITY> decorator )
+    InputEntityDeserializer( Header header, CharSeeker data, int delimiter,
+            Deserialization<ENTITY> deserialization, Function<ENTITY,ENTITY> decorator,
+            Validator<ENTITY> validator )
     {
         this.header = header;
         this.data = data;
         this.delimiter = delimiter;
+        this.deserialization = deserialization;
         this.decorator = decorator;
+        this.validator = validator;
     }
 
     @Override
@@ -88,25 +87,8 @@ abstract class InputEntityDeserializer<ENTITY extends InputEntity> extends Prefe
                 Header.Entry entry = entries[fieldIndex];
                 Object value = data.tryExtract( mark, entry.extractor() )
                         ? entry.extractor().value() : null;
-                boolean handled = true;
-                switch ( entry.type() )
-                {
-                case PROPERTY:
-                    addProperty( entry, value );
-                    break;
-                case IGNORE: // value ignored
-                    break;
-                default:
-                    handled = false;
-                    break;
-                }
 
-                // This is an abstract base class, so send on to sub classes if we didn't know
-                // how to handle a header entry of this type
-                if ( !handled )
-                {
-                    handleValue( entry, value );
-                }
+                deserialization.handle( entry, value );
 
                 if ( mark.isEndOfLine() )
                 {   // We're at the end of the line, break and return an entity with what we have.
@@ -115,7 +97,7 @@ abstract class InputEntityDeserializer<ENTITY extends InputEntity> extends Prefe
             }
 
             // When we have everything, create an input entity out of it
-            ENTITY entity = convertToInputEntity( properties() );
+            ENTITY entity = deserialization.materialize();
 
             // If there are more values on this line, ignore them
             // TODO perhaps log about them?
@@ -125,7 +107,7 @@ abstract class InputEntityDeserializer<ENTITY extends InputEntity> extends Prefe
             }
 
             entity = decorator.apply( entity );
-            validate( entity );
+            validator.validate( entity );
             return entity;
         }
         catch ( IOException e )
@@ -164,41 +146,7 @@ abstract class InputEntityDeserializer<ENTITY extends InputEntity> extends Prefe
         }
         finally
         {
-            propertiesCursor = 0;
-        }
-    }
-
-    /**
-     * Called after the entity has been fully populated.
-     * @throws DataException on validation error.
-     */
-    protected void validate( ENTITY entity )
-    {   // No default validation
-    }
-
-    protected void addProperty( Header.Entry entry, Object value )
-    {
-        if ( value != null )
-        {
-            ensurePropertiesArrayCapacity( propertiesCursor+2 );
-            properties[propertiesCursor++] = entry.name();
-            properties[propertiesCursor++] = value;
-        }
-        // else it's fine because no value was specified
-    }
-
-    private Object[] properties()
-    {
-        return propertiesCursor > 0
-                ? copyOf( properties, propertiesCursor )
-                : InputEntity.NO_PROPERTIES;
-    }
-
-    private void ensurePropertiesArrayCapacity( int length )
-    {
-        if ( length > properties.length )
-        {
-            properties = Arrays.copyOf( properties, length );
+            deserialization.clear();
         }
     }
 
@@ -214,10 +162,6 @@ abstract class InputEntityDeserializer<ENTITY extends InputEntity> extends Prefe
             throw new InputException( "Unable to close data iterator", e );
         }
     }
-
-    protected abstract ENTITY convertToInputEntity( Object[] properties );
-
-    protected abstract void handleValue( Header.Entry entry, Object value );
 
     @Override
     public long position()

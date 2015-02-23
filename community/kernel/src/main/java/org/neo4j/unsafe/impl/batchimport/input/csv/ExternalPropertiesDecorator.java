@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.function.Function;
 import org.neo4j.function.Functions;
+import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.UpdateBehaviour;
@@ -48,7 +49,7 @@ import org.neo4j.unsafe.impl.batchimport.input.UpdateBehaviour;
  */
 public class ExternalPropertiesDecorator implements Function<InputNode,InputNode>
 {
-    private final InputNodeDeserializer deserializer;
+    private final InputEntityDeserializer<InputNode> deserializer;
     private InputNode currentExternal;
     private final UpdateBehaviour updateBehaviour;
 
@@ -62,8 +63,9 @@ public class ExternalPropertiesDecorator implements Function<InputNode,InputNode
         this.updateBehaviour = updateBehaviour;
         CharSeeker dataStream = data.create( config ).stream();
         Header header = headerFactory.create( dataStream, config, idType );
-        this.deserializer = new InputNodeDeserializer( header, dataStream, config.delimiter(),
-                Functions.<InputNode>identity(), idType.idsAreExternal(), new Groups() );
+        this.deserializer = new InputEntityDeserializer<>( header, dataStream, config.delimiter(),
+                new InputNodeDeserialization( header, new Groups(), idType.idsAreExternal() ),
+                Functions.<InputNode>identity(), Validators.<InputNode>emptyValidator() );
     }
 
     @Override

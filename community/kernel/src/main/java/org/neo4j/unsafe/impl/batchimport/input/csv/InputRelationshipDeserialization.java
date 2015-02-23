@@ -19,36 +19,30 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
-import org.neo4j.csv.reader.CharSeeker;
-import org.neo4j.function.Function;
-import org.neo4j.unsafe.impl.batchimport.input.DataException;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 
 /**
- * {@link InputEntityDeserializer} that knows the semantics of an {@link InputRelationship} and how to extract that from
- * csv values using a {@link Header}.
+ * Builds {@link InputRelationship} from CSV data.
  */
-class InputRelationshipDeserializer extends InputEntityDeserializer<InputRelationship>
+public class InputRelationshipDeserialization extends InputEntityDeserialization<InputRelationship>
 {
-    // Additional data
+    private final Group startNodeGroup;
+    private final Group endNodeGroup;
     private String type;
     private Object startNode;
     private Object endNode;
-    private final Group startNodeGroup;
-    private final Group endNodeGroup;
 
-    InputRelationshipDeserializer( Header header, CharSeeker data, int delimiter,
-            Function<InputRelationship,InputRelationship> decorator, Groups groups )
+    public InputRelationshipDeserialization( Header header, Groups groups )
     {
-        super( header, data, delimiter, decorator );
         this.startNodeGroup = groups.getOrCreate( header.entry( Type.START_ID ).groupName() );
         this.endNodeGroup = groups.getOrCreate( header.entry( Type.END_ID ).groupName() );
     }
 
     @Override
-    protected void handleValue( Header.Entry entry, Object value )
+    public void handle( Entry entry, Object value )
     {
         switch ( entry.type() )
         {
@@ -61,22 +55,24 @@ class InputRelationshipDeserializer extends InputEntityDeserializer<InputRelatio
         case END_ID:
             endNode = value;
             break;
+        default:
+            super.handle( entry, value );
+            break;
         }
     }
 
     @Override
-    protected InputRelationship convertToInputEntity( Object[] properties )
+    public InputRelationship materialize()
     {
-        return new InputRelationship( properties, null,
+        return new InputRelationship( properties(), null,
                 startNodeGroup, startNode, endNodeGroup, endNode, type, null );
     }
 
     @Override
-    protected void validate( InputRelationship entity )
+    public void clear()
     {
-        if ( !entity.hasTypeId() && entity.type() == null )
-        {
-            throw new DataException( entity + " is missing " + Type.TYPE + " field" );
-        }
+        super.clear();
+        type = null;
+        startNode = endNode = null;
     }
 }

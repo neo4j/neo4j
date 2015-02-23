@@ -27,15 +27,18 @@ import java.io.Writer;
 import java.util.Iterator;
 import java.util.Random;
 
-import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.helpers.Args;
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.progress.ProgressListener;
+import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
+import org.neo4j.unsafe.impl.batchimport.input.csv.Deserialization;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
+import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
+
+import static java.lang.System.currentTimeMillis;
 
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.textual;
 
@@ -43,19 +46,35 @@ import static org.neo4j.helpers.progress.ProgressMonitorFactory.textual;
  * Utility for generating a nodes.csv and relationships.csv, with random data structured according
  * to supplied headers. Mostly for testing and trying out the batch importer tool.
  */
-public class CsvDataGenerator
+public class CsvDataGenerator<NODEFORMAT,RELFORMAT>
 {
-    private final Random random = new Random();
-    private int highNodeId;
+    private final long nodesSeed, relationshipsSeed;
     private final Header nodeHeader;
     private final Header relationshipHeader;
     private final Configuration config;
+    private final long nodes;
+    private final long relationships;
+    private final Deserialization<NODEFORMAT> nodeDeserialization;
+    private final Deserialization<RELFORMAT> relDeserialization;
+    private final int numberOfLabels;
+    private final int numberOfRelationshipTypes;
 
-    public CsvDataGenerator( Header nodeHeader, Header relationshipHeader, Configuration config )
+    public CsvDataGenerator( Header nodeHeader, Header relationshipHeader, Configuration config,
+            long nodes, long relationships, Deserialization<NODEFORMAT> nodeDeserialization,
+            Deserialization<RELFORMAT> relDeserialization,
+            int numberOfLabels, int numberOfRelationshipTypes )
     {
         this.nodeHeader = nodeHeader;
         this.relationshipHeader = relationshipHeader;
         this.config = config;
+        this.nodes = nodes;
+        this.relationships = relationships;
+        this.nodeDeserialization = nodeDeserialization;
+        this.relDeserialization = relDeserialization;
+        this.numberOfLabels = numberOfLabels;
+        this.numberOfRelationshipTypes = numberOfRelationshipTypes;
+        this.nodesSeed = currentTimeMillis();
+        this.relationshipsSeed = nodesSeed+1;
     }
 
     public String serializeNodeHeader()
@@ -99,108 +118,16 @@ public class CsvDataGenerator
         return serializeHeader( relationshipHeader );
     }
 
-    public Iterator<String> pullNodeData()
+    public InputIterator<NODEFORMAT> nodeData()
     {
-        return pullIterator( nodeHeader );
+        return new RandomDataIterator<>( nodeHeader, nodes, new Random( nodesSeed ), nodeDeserialization, nodes,
+                numberOfLabels, numberOfRelationshipTypes );
     }
 
-    private Iterator<String> pullIterator( final Header header )
+    public InputIterator<RELFORMAT> relationshipData()
     {
-        return new PrefetchingIterator<String>()
-        {
-            @Override
-            protected String fetchNextOrNull()
-            {
-                return serializeDataLine( header );
-            }
-        };
-    }
-
-    private String serializeDataLine( Header header )
-    {
-        StringBuilder builder = new StringBuilder();
-        for ( Entry entry : header.entries() )
-        {
-            if ( builder.length() > 0 )
-            {
-                builder.append( config.delimiter() );
-            }
-            serializeDataEntry( builder, entry );
-        }
-        return builder.toString();
-    }
-
-    private void serializeDataEntry( StringBuilder builder, Entry entry )
-    {
-        switch ( entry.type() )
-        {
-        case ID:
-            builder.append( highNodeId++ );
-            break;
-        case PROPERTY:
-            randomValue( builder, entry.extractor() );
-            break;
-        case LABEL:
-            randomLabels( builder, config.arrayDelimiter() );
-            break;
-        case START_ID: case END_ID:
-            builder.append( random.nextInt( highNodeId ) );
-            break;
-        case TYPE:
-            builder.append( "TYPE_" ).append( random.nextInt( 4 ) );
-            break;
-        default:
-            return;
-        }
-    }
-
-    private void randomValue( StringBuilder builder, Extractor<?> extractor )
-    {
-        // TODO crude way of determining value type
-        String type = extractor.toString();
-        if ( type.equals( "String" ) )
-        {
-            randomString( builder );
-        }
-        else if ( type.equals( "long" ) )
-        {
-            builder.append( random.nextInt( Integer.MAX_VALUE ) );
-        }
-        else if ( type.equals( "int" ) )
-        {
-            builder.append( random.nextInt( 20 ) );
-        }
-        else
-        {
-            throw new IllegalArgumentException( "" + extractor );
-        }
-    }
-
-    public Iterator<String> pullRelationshipData()
-    {
-        return pullIterator( relationshipHeader );
-    }
-
-    private void randomLabels( StringBuilder builder, char arrayDelimiter )
-    {
-        int length = random.nextInt( 3 );
-        for ( int i = 0; i < length; i++ )
-        {
-            if ( i > 0 )
-            {
-                builder.append( arrayDelimiter );
-            }
-            builder.append( "LABEL_" ).append( random.nextInt( 4 ) );
-        }
-    }
-
-    private void randomString( StringBuilder builder )
-    {
-        int length = random.nextInt( 10 )+5;
-        for ( int i = 0; i < length; i++ )
-        {
-            builder.append( (char) ('a' + random.nextInt( 20 )) );
-        }
+        return new RandomDataIterator<>( relationshipHeader, relationships, new Random( relationshipsSeed ),
+                relDeserialization, nodes, numberOfLabels, numberOfRelationshipTypes );
     }
 
     public static void main( String[] arguments ) throws IOException
@@ -208,40 +135,65 @@ public class CsvDataGenerator
         Args args = Args.parse( arguments );
         int nodeCount = args.getNumber( "nodes", null ).intValue();
         int relationshipCount = args.getNumber( "relationships", null ).intValue();
+        int labelCount = args.getNumber( "labels", 4 ).intValue();
+        int relationshipTypeCount = args.getNumber( "relationship-types", 4 ).intValue();
 
         Configuration config = Configuration.COMMAS;
         Extractors extractors = new Extractors( config.arrayDelimiter() );
-        Header nodeHeader = new Header( new Entry[] {
-                new Entry( null, Type.ID, null, extractors.string() ),
+        IdType idType = IdType.ACTUAL;
+        Header nodeHeader = sillyNodeHeader( idType, extractors );
+        Header relationshipHeader = bareboneRelationshipHeader( idType, extractors );
+
+        ProgressListener progress = textual( System.out ).singlePart( "Generating", nodeCount + relationshipCount );
+        CsvDataGenerator<String,String> generator = new CsvDataGenerator<>(
+                nodeHeader, relationshipHeader,
+                config, nodeCount, relationshipCount,
+                new StringDeserialization( config ), new StringDeserialization( config ),
+                labelCount, relationshipTypeCount );
+        writeData( generator.serializeNodeHeader(), generator.nodeData(),
+                new File( "target", "nodes.csv" ), progress );
+        writeData( generator.serializeRelationshipHeader(), generator.relationshipData(),
+                new File( "target", "relationships.csv" ), progress );
+        progress.done();
+    }
+
+    public static Header sillyNodeHeader( IdType idType, Extractors extractors )
+    {
+        return new Header( new Entry[] {
+                new Entry( null, Type.ID, null, idType.extractor( extractors ) ),
                 new Entry( "name", Type.PROPERTY, null, extractors.string() ),
                 new Entry( "age", Type.PROPERTY, null, extractors.int_() ),
                 new Entry( "something", Type.PROPERTY, null, extractors.string() ),
                 new Entry( null, Type.LABEL, null, extractors.stringArray() ),
         } );
-        Header relationshipHeader = new Header( new Entry[] {
-                new Entry( null, Type.START_ID, null, extractors.string() ),
-                new Entry( null, Type.END_ID, null, extractors.string() ),
+    }
+
+    public static Header bareboneNodeHeader( IdType idType, Extractors extractors )
+    {
+        return new Header( new Entry[] {
+                new Entry( null, Type.ID, null, idType.extractor( extractors ) ),
+                new Entry( null, Type.LABEL, null, extractors.stringArray() ),
+        } );
+    }
+
+    public static Header bareboneRelationshipHeader( IdType idType, Extractors extractors )
+    {
+        return new Header( new Entry[] {
+                new Entry( null, Type.START_ID, null, idType.extractor( extractors ) ),
+                new Entry( null, Type.END_ID, null, idType.extractor( extractors ) ),
                 new Entry( null, Type.TYPE, null, extractors.string() )
         } );
-
-        ProgressListener progress = textual( System.out ).singlePart( "Generating", nodeCount + relationshipCount );
-        CsvDataGenerator generator = new CsvDataGenerator( nodeHeader, relationshipHeader, config );
-        writeData( generator.serializeNodeHeader(), generator.pullNodeData(),
-                new File( "target", "nodes.csv" ), progress, nodeCount );
-        writeData( generator.serializeRelationshipHeader(), generator.pullRelationshipData(),
-                new File( "target", "relationships.csv" ), progress, relationshipCount );
-        progress.done();
     }
 
     private static void writeData( String header, Iterator<String> iterator, File file,
-            ProgressListener progress, int count ) throws IOException
+            ProgressListener progress ) throws IOException
     {
         System.out.println( "Writing " + file.getAbsolutePath() );
         try ( Writer out = new BufferedWriter( new FileWriter( file ), 102*1024*10 ) )
         {
             out.write( header );
             out.append( '\n' );
-            for ( int i = 0; i < count; i++ )
+            while ( iterator.hasNext() )
             {
                 out.write( iterator.next() );
                 out.append( '\n' );
