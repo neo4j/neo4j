@@ -19,17 +19,20 @@
  */
 package org.neo4j.unsafe.impl.batchimport.executor;
 
+import org.junit.Test;
+
 import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 
-import org.junit.Test;
-
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.transaction.log.ParkStrategy;
 import org.neo4j.test.DoubleLatch;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class DynamicTaskExecutorTest
 {
@@ -182,6 +185,36 @@ public class DynamicTaskExecutorTest
         // THEN
         assertExceptionOnSubmit( executor, exception );
         executor.shutdown( false ); // call would block if the shutdown as part of failure doesn't complete properly
+    }
+
+    @Test
+    public void shouldSurfaceTaskErrorInAssertHealthy() throws Exception
+    {
+        // GIVEN
+        TaskExecutor executor = new DynamicTaskExecutor( 2, 10, new ParkStrategy.Park( 1 ), getClass().getSimpleName() );
+        IOException exception = new IOException( "Failure" );
+
+        // WHEN
+        FailingTask failingTask = new FailingTask( exception );
+        executor.submit( failingTask );
+        failingTask.latch.await();
+
+        // WHEN
+        for ( int i = 0; i < 5; i++ )
+        {
+            try
+            {
+                executor.assertHealthy();
+                // OK, so the executor hasn't executed the finally block after task was done yet
+                Thread.sleep( 100 );
+            }
+            catch ( Exception e )
+            {
+                assertTrue( Exceptions.contains( e, exception.getMessage(), exception.getClass() ) );
+                return;
+            }
+        }
+        fail( "Should not be considered healthy after failing task" );
     }
 
     private void assertExceptionOnSubmit( TaskExecutor executor, IOException exception )

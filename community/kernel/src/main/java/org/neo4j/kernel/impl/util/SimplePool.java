@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.util;
 
 import org.neo4j.collection.pool.Pool;
-import org.neo4j.function.Factory;
 
 /**
  * Just a little GC free pool with a fixed max size.
@@ -28,21 +27,16 @@ import org.neo4j.function.Factory;
  */
 public class SimplePool<T> implements Pool<T>
 {
-    private final Object[] items;
+    private final T[] items;
     private final boolean[] acquiredMarkers;
 
-    public SimplePool( int size, Factory<T> factory )
+    public SimplePool( T[] items )
     {
-        this.items = new Object[size];
-        for ( int i = 0; i < size; i++ )
-        {
-            items[i] = factory.newInstance();
-        }
-        this.acquiredMarkers = new boolean[size];
+        this.items = items;
+        this.acquiredMarkers = new boolean[items.length];
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public synchronized T acquire()
     {
         int availableItemIndex;
@@ -58,7 +52,7 @@ public class SimplePool<T> implements Pool<T>
             }
         }
         acquiredMarkers[availableItemIndex] = true;
-        return (T) items[availableItemIndex];
+        return items[availableItemIndex];
     }
 
     @Override

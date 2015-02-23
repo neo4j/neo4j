@@ -19,14 +19,16 @@
  */
 package org.neo4j.unsafe.impl.batchimport.store;
 
+import sun.misc.Cleaner;
+
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.collection.pool.Pool;
-import org.neo4j.function.Factory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
@@ -180,7 +182,17 @@ public class BatchingPageCache implements PageCache
         // much bigger chunks. When doing so the OS doesn't seem to cache the file
         // like described above.
         return file.getName().endsWith( StoreFactory.RELATIONSHIP_STORE_NAME )
-                ? pageSize * bigFileMultiplier : pageSize;
+                ? maxPercentageOfHeapThough( pageSize * bigFileMultiplier, 10 ) : pageSize;
+    }
+
+    /**
+     * This method is introduced so that this page cache can function reasonably well even on small heaps,
+     * so that the relationship store buffer doesn't eat up most available off-heap (controlled by Bits class)
+     * memory, which is a percentage of total heap or something.
+     */
+    private int maxPercentageOfHeapThough( int size, float maxPercentageOfHeap )
+    {
+        return min( size, (int)(Runtime.getRuntime().maxMemory() * (maxPercentageOfHeap/100f)) );
     }
 
     void unmap( BatchingPagedFile pagedFile ) throws IOException
@@ -260,6 +272,7 @@ public class BatchingPageCache implements PageCache
         public void close() throws IOException
         {
             unmap( this );
+            singleCursor.free();
         }
 
         public void closeFile() throws IOException
@@ -289,6 +302,7 @@ public class BatchingPageCache implements PageCache
     class BatchingPageCursor implements PageCursor
     {
         private ByteBuffer currentBuffer;
+        private final ByteBuffer[] buffers;
         private final SimplePool<ByteBuffer> bufferPool;
         private final StoreChannel channel;
         private final Writer writer;
@@ -303,23 +317,46 @@ public class BatchingPageCache implements PageCache
             this.channel = channel;
             this.writer = writer;
             this.pageSize = pageSize;
-            bufferPool = new SimplePool<>( 2, new Factory<ByteBuffer>()
+            this.buffers = new ByteBuffer[2];
+            for ( int i = 0; i < buffers.length; i++ )
             {
-                @Override
-                public ByteBuffer newInstance()
+                try
                 {
-                    try
-                    {
-                        return ByteBuffer.allocateDirect( pageSize );
-                    }
-                    catch ( OutOfMemoryError e )
-                    {
-                        return ByteBuffer.allocate( pageSize );
-                    }
+                    buffers[i] = ByteBuffer.allocateDirect( pageSize );
                 }
-            } );
+                catch ( OutOfMemoryError e )
+                {
+                    buffers[i] = ByteBuffer.allocate( pageSize );
+                }
+            }
+            this.bufferPool = new SimplePool<>( buffers );
             this.currentBuffer = bufferPool.acquire();
             highestKnownPageId = channel.size() / pageSize;
+        }
+
+        private void free()
+        {
+            for ( ByteBuffer buffer : buffers )
+            {
+                optimisticallyAndPreemtivelyFree( buffer );
+            }
+        }
+
+        private void optimisticallyAndPreemtivelyFree( ByteBuffer byteBuffer )
+        {
+            if ( byteBuffer.isDirect() )
+            {
+                try
+                {
+                    Method method = byteBuffer.getClass().getMethod( "cleaner" );
+                    method.setAccessible( true );
+                    Cleaner cleaner = (Cleaner) method.invoke( byteBuffer );
+                    cleaner.clean();
+                }
+                catch ( Exception e )
+                {   // It's alright, we tried
+                }
+            }
         }
 
         @Override

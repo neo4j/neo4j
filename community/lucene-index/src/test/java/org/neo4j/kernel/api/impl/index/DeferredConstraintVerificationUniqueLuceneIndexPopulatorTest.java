@@ -39,8 +39,6 @@ import java.util.Collections;
 
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.ReferenceManager;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.kernel.api.index.IndexDescriptor;

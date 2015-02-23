@@ -19,12 +19,11 @@
  */
 package org.neo4j.unsafe.impl.batchimport.store;
 
-import java.util.concurrent.Future;
-
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.helpers.Factory;
+import java.util.concurrent.Future;
+
 import org.neo4j.kernel.impl.util.SimplePool;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.OtherThreadRule;
@@ -38,22 +37,11 @@ public class SimplePoolTest
     @Rule
     public final OtherThreadRule<Void> t2 = new OtherThreadRule<>();
 
-    private final Factory<Item> ITEM_FACTORY = new Factory<Item>()
-    {
-        int itemIndex;
-
-        @Override
-        public Item newInstance()
-        {
-            return new Item( itemIndex++ );
-        }
-    };
-
     @Test
     public void shouldWaitForFreeItem() throws Exception
     {
         // GIVEN
-        final SimplePool<Item> pool = new SimplePool<>( 2, ITEM_FACTORY );
+        final SimplePool<Item> pool = new SimplePool<>( items( 2 ) );
 
         // WHEN/THEN
         Item first = pool.acquire();
@@ -78,7 +66,7 @@ public class SimplePoolTest
     public void shouldNotRelyOnAcquireReleaseOrdering()
     {
         // Given
-        SimplePool<Item> pool = new SimplePool<>( 2, ITEM_FACTORY );
+        SimplePool<Item> pool = new SimplePool<>( items( 2 ) );
 
         // When
         Item first = pool.acquire();
@@ -93,7 +81,7 @@ public class SimplePoolTest
     public void shouldThrowWhenNonPooledObjectIsReleased()
     {
         // Given
-        SimplePool<Item> pool = new SimplePool<>( 2, ITEM_FACTORY );
+        SimplePool<Item> pool = new SimplePool<>( items( 2 ) );
 
         // When/Then throw
         pool.release( new Item( 42 ) );
@@ -107,5 +95,15 @@ public class SimplePoolTest
         {
             this.id = id;
         }
+    }
+
+    private Item[] items( int length )
+    {
+        Item[] items = new Item[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            items[i] = new Item( i );
+        }
+        return items;
     }
 }
