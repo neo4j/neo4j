@@ -65,6 +65,7 @@ public class IoQueue implements WriterFactory
         long endTime = System.currentTimeMillis()+MINUTES.toMillis( 10 );
         while ( jobMonitor.hasActiveJobs() )
         {
+            executor.assertHealthy();
             try
             {
                 Thread.sleep( 10 );

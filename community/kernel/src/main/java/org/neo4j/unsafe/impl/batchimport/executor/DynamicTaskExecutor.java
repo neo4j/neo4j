@@ -56,7 +56,7 @@ public class DynamicTaskExecutor implements TaskExecutor
     @Override
     public synchronized void setNumberOfProcessors( int count )
     {
-        assertNotShutDown();
+        assertHealthy();
         assert count > 0;
         if ( count == processors.length )
         {
@@ -110,16 +110,17 @@ public class DynamicTaskExecutor implements TaskExecutor
     @Override
     public void submit( Callable<?> task )
     {
-        assertNotShutDown();
+        assertHealthy();
         while ( !queue.offer( task ) )
         {   // Then just stay here and try
             parkAWhile();
-            assertNotShutDown();
+            assertHealthy();
         }
         notifyProcessors();
     }
 
-    private void assertNotShutDown()
+    @Override
+    public void assertHealthy()
     {
         if ( shutDown )
         {

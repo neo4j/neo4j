@@ -52,4 +52,13 @@ public interface TaskExecutor extends Parallelizable
      * executed and completed, before returning from this method.
      */
     void shutdown( boolean awaitAllCompleted );
+
+    /**
+     * Asserts that this {@link TaskExecutor} is healthy. Useful to call when deciding to wait on a condition
+     * this executor is expected to fulfill.
+     *
+     * @throws RuntimeException of some sort if this executor is in a bad stage, the original error that
+     * made this executor fail.
+     */
+    void assertHealthy();
 }
