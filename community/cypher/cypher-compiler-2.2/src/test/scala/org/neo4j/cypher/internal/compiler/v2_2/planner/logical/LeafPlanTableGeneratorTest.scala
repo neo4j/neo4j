@@ -31,23 +31,23 @@ class LeafPlanTableGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   test("single pattern node") {
     new given {
       qg = QueryGraph(patternNodes = Set("n"))
-      val solved = PlannerQuery.empty.withGraph(qg)
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      implicit val _ = ctx
+      val result = solver.apply(cfg.qg, None)
+      val solved = PlannerQuery.empty.withGraph(cfg.qg)
 
-      withLogicalPlanningContext { (ctx) =>
-        // when
-        implicit val x = ctx
-        val result = solver.apply(qg, None)
-
-        // then
-        result should equal(planTableWith(AllNodesScan("n", Set.empty)(solved)))
-      }
+      // then
+      result should equal(planTableWith(AllNodesScan("n", Set.empty)(solved)))
     }
+
   }
 
   test("pattern with two nodes - one allnodes and one labelscan") {
     new given {
-      private val label: LabelName = LabelName("Label")(pos)
-      private val hasLabels: Expression = HasLabels(ident("a"), Seq(label))(pos)
+      val label: LabelName = LabelName("Label")(pos)
+      val hasLabels: Expression = HasLabels(ident("a"), Seq(label))(pos)
+
       qg = QueryGraph(
         patternNodes = Set("a", "b"),
         selections = Selections.from(hasLabels)
@@ -56,28 +56,29 @@ class LeafPlanTableGeneratorTest extends CypherFunSuite with LogicalPlanningTest
       val solvedB = PlannerQuery.empty.withGraph(QueryGraph(patternNodes = Set("b")))
 
       knownLabels = Set("Label")
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      implicit val _ = ctx
+      implicit val table = ctx.semanticTable
+      import cfg._
 
-      withLogicalPlanningContext { (ctx) =>
-        // when
-        implicit val x = ctx
-        implicit val table = ctx.semanticTable
-        val result = solver.apply(qg, None)
+      val result = solver.apply(qg, None)
 
-        // then
-        result should equal(planTableWith(
-          NodeByLabelScan("a", LazyLabel(label), Set.empty)(solvedA),
-          AllNodesScan("b", Set.empty)(solvedB)
-        ))
-      }
+      // then
+      result should equal(planTableWith(
+        NodeByLabelScan("a", LazyLabel(label), Set.empty)(solvedA),
+        AllNodesScan("b", Set.empty)(solvedB)
+      ))
     }
+
   }
 
   test("single node multiple labels") {
     new given {
-      private val label1: LabelName = LabelName("Label1")(pos)
-      private val label2: LabelName = LabelName("Label2")(pos)
-      private val hasLabels1: Expression = HasLabels(ident("a"), Seq(label1))(pos)
-      private val hasLabels2: Expression = HasLabels(ident("a"), Seq(label2))(pos)
+      val label1 = LabelName("Label1")(pos)
+      val label2 = LabelName("Label2")(pos)
+      val hasLabels1 = HasLabels(ident("a"), Seq(label1))(pos)
+      val hasLabels2 = HasLabels(ident("a"), Seq(label2))(pos)
       qg = QueryGraph(
         patternNodes = Set("a", "b"),
         selections = Selections.from(hasLabels1, hasLabels2)
@@ -91,19 +92,19 @@ class LeafPlanTableGeneratorTest extends CypherFunSuite with LogicalPlanningTest
         "Label1" -> Cardinality(100),
         "Label2" -> Cardinality(10)
       )
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      // when
+      implicit val _ = ctx
+      implicit val table = ctx.semanticTable
+      import cfg._
 
-      withLogicalPlanningContext { (ctx) =>
-        // when
-        implicit val x = ctx
-        implicit val table = ctx.semanticTable
-        val result = solver.apply(qg, None)
+      val result = solver.apply(qg, None)
 
-        // then
-        result should equal(planTableWith(
-          Selection(Seq(hasLabels1), NodeByLabelScan("a", LazyLabel(label2), Set.empty)(solvedA))(solvedAWithLabels1),
-          AllNodesScan("b", Set.empty)(solvedB)
-        ))
-      }
+      // then
+      result should equal(planTableWith(
+        Selection(Seq(hasLabels1), NodeByLabelScan("a", LazyLabel(label2), Set.empty)(solvedA))(solvedAWithLabels1),
+        AllNodesScan("b", Set.empty)(solvedB)
+      ))
     }
   }
 }

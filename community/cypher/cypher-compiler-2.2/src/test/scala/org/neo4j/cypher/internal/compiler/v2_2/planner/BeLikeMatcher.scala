@@ -17,9 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.helpers.collection;
+package org.neo4j.cypher.internal.compiler.v2_2.planner
 
-public interface Visitable<V>
-{
-    void accept( V visitor );
+import org.scalatest.matchers.{MatchResult, Matcher}
+
+object BeLikeMatcher extends BeLikeMatcher
+
+trait BeLikeMatcher {
+  class BeLike(pf: PartialFunction[Object, Unit]) extends Matcher[Object] {
+
+    def apply(left: Object) = {
+      MatchResult(
+        pf.isDefinedAt(left),
+        s"""$left did not match the partial function""",
+        s"""$left matched the partial function"""
+      )
+    }
+  }
+
+  def beLike(pf: PartialFunction[Object, Unit]) = new BeLike(pf)
 }

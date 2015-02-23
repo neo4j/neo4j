@@ -26,3 +26,10 @@ sealed trait NameId {
 final case class LabelId(id: Int) extends NameId
 final case class RelTypeId(id: Int) extends NameId
 final case class PropertyKeyId(id: Int) extends NameId
+
+object NameId {
+  val WILDCARD: Int = -1
+
+  implicit def toKernelEncode(nameId: NameId): Int = nameId.id
+  implicit def toKernelEncode(nameId: Option[NameId]): Int = nameId.map(toKernelEncode).getOrElse(WILDCARD)
+}

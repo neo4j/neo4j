@@ -22,6 +22,14 @@ package org.neo4j.cypher.internal.compiler.v2_2.spi
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, PropertyKeyId, RelTypeId}
 
+object GraphStatistics {
+  val DEFAULT_RANGE_SELECTIVITY          = Selectivity(0.3)
+  val DEFAULT_PREDICATE_SELECTIVITY      = Selectivity(0.75)
+  val DEFAULT_EQUALITY_SELECTIVITY       = Selectivity(0.1)
+  val DEFAULT_NUMBER_OF_ID_LOOKUPS       = Cardinality(25)
+  val DEFAULT_REL_UNIQUENESS_SELECTIVITY = Selectivity(1.0 - 1 / 100 /*rel-cardinality*/)
+}
+
 trait GraphStatistics {
   def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality
 
@@ -35,10 +43,35 @@ trait GraphStatistics {
   def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity]
 }
 
-object GraphStatistics {
-  val DEFAULT_RANGE_SELECTIVITY          = Selectivity(0.3)
-  val DEFAULT_PREDICATE_SELECTIVITY      = Selectivity(0.75)
-  val DEFAULT_EQUALITY_SELECTIVITY       = Selectivity(0.1)
-  val DEFAULT_NUMBER_OF_ID_LOOKUPS       = Cardinality(25)
-  val DEFAULT_REL_UNIQUENESS_SELECTIVITY = Selectivity(1.0 - 1 / 100 /*rel-cardinality*/)
+class DelegatingGraphStatistics(delegate: GraphStatistics) extends GraphStatistics {
+  override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
+    delegate.nodesWithLabelCardinality(labelId)
+
+  override def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
+    delegate.cardinalityByLabelsAndRelationshipType(fromLabel, relTypeId, toLabel)
+
+  /*
+      Probability of any node with the given label, to have a property with a given value
+
+      indexSelectivity(:X, prop) = s => |MATCH (a:X)| * s = |MATCH (a:X) WHERE x.prop = *|
+   */
+  override def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
+    delegate.indexSelectivity(label, property)
 }
+
+class StatisticsCompletingGraphStatistics(delegate: GraphStatistics)
+  extends DelegatingGraphStatistics(delegate) {
+
+  override def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
+    (fromLabel, toLabel) match {
+      case (Some(_), Some(_)) =>
+        // TODO: read real counts from readOperations when they are gonna be properly computed and updated
+        Cardinality.min(
+          super.cardinalityByLabelsAndRelationshipType(fromLabel, relTypeId, None),
+          super.cardinalityByLabelsAndRelationshipType(None, relTypeId, toLabel)
+        )
+      case _ =>
+        super.cardinalityByLabelsAndRelationshipType(fromLabel, relTypeId, toLabel)
+    }
+}
+

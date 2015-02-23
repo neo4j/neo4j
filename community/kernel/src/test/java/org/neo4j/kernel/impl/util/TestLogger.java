@@ -56,7 +56,7 @@ public class TestLogger extends StringLogger
         UNKNOWN
     }
 
-    public static final class LogCall implements Visitable<LogCall>
+    public static final class LogCall implements Visitable<Visitor<LogCall, RuntimeException>>
     {
 
         protected final Level level;

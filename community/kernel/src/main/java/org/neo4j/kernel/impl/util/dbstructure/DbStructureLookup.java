@@ -17,9 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.helpers.collection;
+package org.neo4j.kernel.impl.util.dbstructure;
 
-public interface Visitable<V>
+import org.neo4j.helpers.Pair;
+
+import java.util.Iterator;
+
+public interface DbStructureLookup
 {
-    void accept( V visitor );
+    Iterator<Pair<Integer, String>> labels();
+    Iterator<Pair<Integer, String>> properties();
+    Iterator<Pair<Integer, String>> relationshipTypes();
+
+    Iterator<Pair<String, String>> knownIndices();
+    Iterator<Pair<String, String>> knownUniqueIndices();
+    Iterator<Pair<String, String>> knownUniqueConstraints();
+
+    long nodesWithLabelCardinality( int labelId );
+    long cardinalityByLabelsAndRelationshipType( int fromLabelId, int relTypeId, int toLabelId );
+    double indexSelectivity( int labelId, int propertyKeyId );
 }

@@ -40,13 +40,12 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
         generatePlanTable(AllNodesScan("a", Set.empty)(PlannerQuery(graph = QueryGraph(patternNodes = Set("a"))))),
         Seq(undefinedPlanProducer))
       qg = QueryGraph(patternNodes = Set("a"))
-      withLogicalPlanningContext { (ctx) =>
-        implicit val x = ctx
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
 
-        queryGraphSolver.plan(qg) should equal(
-          AllNodesScan("a", Set.empty)(null)
-        )
-      }
+      queryGraphSolver.plan(cfg.qg) should equal(
+        AllNodesScan("a", Set.empty)(null)
+      )
     }
   }
 
@@ -67,14 +66,12 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
       labelCardinality = immutable.Map(
         "B" -> Cardinality(10)
       )
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
 
-      withLogicalPlanningContext { (ctx) =>
-        implicit val x = ctx
-
-        queryGraphSolver.plan(qg) should equal(
-          Expand(NodeByLabelScan("b", LazyLabel("B"), Set.empty)(null), "b", Direction.INCOMING, Seq.empty, "a", "r")(null)
-        )
-      }
+      queryGraphSolver.plan(cfg.qg) should equal(
+        Expand(NodeByLabelScan("b", LazyLabel("B"), Set.empty)(null), "b", Direction.INCOMING, Seq.empty, "a", "r")(null)
+      )
     }
   }
 
@@ -102,17 +99,16 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
         "A" -> Cardinality(10),
         "B" -> Cardinality(1000)
       )
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
 
-      withLogicalPlanningContext { (ctx) =>
-        implicit val x = ctx
-
-        queryGraphSolver.plan(qg) should equal(
-          Selection(Seq(labelBPredicate),
-            Expand(
-              NodeByLabelScan("a", LazyLabel("A"), Set.empty)(null), "a", Direction.OUTGOING, Seq.empty, "b", "r")(null)
-          )(null))
-      }
+      queryGraphSolver.plan(cfg.qg) should equal(
+        Selection(Seq(labelBPredicate),
+          Expand(
+            NodeByLabelScan("a", LazyLabel("A"), Set.empty)(null), "a", Direction.OUTGOING, Seq.empty, "b", "r")(null)
+        )(null))
     }
+
   }
 
   test("should plan for a join between two pattern relationships") {
@@ -142,19 +138,18 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
         "A" -> Cardinality(10),
         "B" -> Cardinality(10)
       )
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
 
-      withLogicalPlanningContext { (ctx) =>
-        implicit val x = ctx
-
-        queryGraphSolver.plan(qg) should equal(
-          NodeHashJoin(Set("c"),
-            Expand(
-              NodeByLabelScan("a", LazyLabel("A"), Set.empty)(null), "a", Direction.OUTGOING, Seq.empty, "c", "r1")(null),
-            Expand(
-              NodeByLabelScan("b", LazyLabel("B"), Set.empty)(null), "b", Direction.INCOMING, Seq.empty, "c", "r2")(null)
-          )(null))
-      }
+      queryGraphSolver.plan(cfg.qg) should equal(
+        NodeHashJoin(Set("c"),
+          Expand(
+            NodeByLabelScan("a", LazyLabel("A"), Set.empty)(null), "a", Direction.OUTGOING, Seq.empty, "c", "r1")(null),
+          Expand(
+            NodeByLabelScan("b", LazyLabel("B"), Set.empty)(null), "b", Direction.INCOMING, Seq.empty, "c", "r2")(null)
+        )(null))
     }
+
   }
 
   test("should plan a simple argument row when everything is covered") {
@@ -164,14 +159,14 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
           Argument(Set("a"))(PlannerQuery(graph = QueryGraph(patternNodes = Set("a"), argumentIds = Set("a"))))()),
         Seq(undefinedPlanProducer))
       qg = QueryGraph(patternNodes = Set("a"), argumentIds = Set("a"))
-      withLogicalPlanningContext { (ctx) =>
-        implicit val x = ctx
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
 
-        queryGraphSolver.plan(qg) should equal(
-          Argument(Set("a"))(null)()
-        )
-      }
+      queryGraphSolver.plan(cfg.qg) should equal(
+        Argument(Set("a"))(null)()
+      )
     }
+
   }
 
   test("should plan a relationship pattern based on an argument row since part of the node pattern is already solved") {
@@ -190,15 +185,14 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
         Argument(Set("a"))(null)() -> Cardinality(10),
         AllNodesScan("b", Set.empty)(null) -> Cardinality(100)
       )
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
 
-      withLogicalPlanningContext { (ctx) =>
-        implicit val x = ctx
-
-        queryGraphSolver.plan(qg) should equal(
-          Expand(Argument(Set("a"))(null)(), "a", Direction.OUTGOING, Seq.empty, "b", "r", ExpandAll)(null)
-        )
-      }
+      queryGraphSolver.plan(cfg.qg) should equal(
+        Expand(Argument(Set("a"))(null)(), "a", Direction.OUTGOING, Seq.empty, "b", "r", ExpandAll)(null)
+      )
     }
+
   }
 
   test("should produce no plans for expand and join when the considered sub-query are not solved") {
@@ -220,13 +214,12 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
           PatternRelationship("r4", ("corp", "a2"), Direction.INCOMING, Seq.empty, SimplePatternLength),
           PatternRelationship("r5", ("a2", "c"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
         ))
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
 
-      withLogicalPlanningContext { (ctx) =>
-        implicit val x = ctx
-
-        queryGraphSolver.plan(qg) // should not throw
-      }
+      queryGraphSolver.plan(cfg.qg) // should not throw
     }
+
   }
 
   test("should plan cartesian product between 3 pattern nodes") {
@@ -241,23 +234,22 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
       qg = QueryGraph(
         patternNodes = Set("a", "b", "c"),
         selections = Selections.from(Equals(ident("b"), ident("c"))(pos)))
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
 
-      withLogicalPlanningContext { (ctx) =>
-        implicit val x = ctx
-
-        queryGraphSolver.plan(qg) should equal(
-          CartesianProduct(
-            AllNodesScan("a", Set.empty)(null),
-            Selection(qg.selections.flatPredicates,
-              CartesianProduct(
-                AllNodesScan("b", Set.empty)(null),
-                AllNodesScan("c", Set.empty)(null)
-              )(null)
+      queryGraphSolver.plan(cfg.qg) should equal(
+        CartesianProduct(
+          AllNodesScan("a", Set.empty)(null),
+          Selection(cfg.qg.selections.flatPredicates,
+            CartesianProduct(
+              AllNodesScan("b", Set.empty)(null),
+              AllNodesScan("c", Set.empty)(null)
             )(null)
           )(null)
-        )
-      }
+        )(null)
+      )
     }
+
   }
 
   test("should plan cartesian product between 1 pattern nodes and 1 pattern relationship") {
@@ -274,19 +266,17 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
         selections = Selections.from(Equals(ident("b"), ident("c"))(pos)),
         patternRelationships = Set(PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength))
       )
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
 
-      withLogicalPlanningContext { (ctx) =>
-        implicit val x = ctx
-
-        queryGraphSolver.plan(qg) should equal(
-          Selection(qg.selections.flatPredicates,
-            CartesianProduct(
-                Expand(AllNodesScan("a", Set.empty)(null), "a", Direction.OUTGOING, Seq.empty, "b", "r", ExpandAll)(null),
-              AllNodesScan("c", Set.empty)(null)
-            )(null)
+      queryGraphSolver.plan(cfg.qg) should equal(
+        Selection(cfg.qg.selections.flatPredicates,
+          CartesianProduct(
+            Expand(AllNodesScan("a", Set.empty)(null), "a", Direction.OUTGOING, Seq.empty, "b", "r", ExpandAll)(null),
+            AllNodesScan("c", Set.empty)(null)
           )(null)
-        )
-      }
+        )(null)
+      )
     }
   }
 
@@ -305,50 +295,47 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
       labelCardinality = immutable.Map(
         "B" -> Cardinality(10)
       )
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
 
-      withLogicalPlanningContext { (ctx) =>
-        implicit val x = ctx
-
-        queryGraphSolver.plan(qg) should equal(
-          Apply(
-            AllNodesScan("a", Set.empty)(null),
-            Optional(
-              Expand(Argument(Set("a"))(null)(), "a", Direction.OUTGOING, Seq.empty, "b", "r")(null)
-            )(null)
+      queryGraphSolver.plan(cfg.qg) should equal(
+        Apply(
+          AllNodesScan("a", Set.empty)(null),
+          Optional(
+            Expand(Argument(Set("a"))(null)(), "a", Direction.OUTGOING, Seq.empty, "b", "r")(null)
           )(null)
-        )
-      }
+        )(null)
+      )
     }
+
   }
 
   test("should solve empty graph with SingleRow") {
     new given {
       queryGraphSolver = ExhaustiveQueryGraphSolver.withDefaults()
       qg = QueryGraph.empty
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
 
-      withLogicalPlanningContext { (ctx) =>
-        implicit val x = ctx
-
-        queryGraphSolver.plan(qg) should equal(
-          SingleRow()
-        )
-      }
+      queryGraphSolver.plan(cfg.qg) should equal(
+        SingleRow()
+      )
     }
+
   }
 
   test("should solve plan an empty QG with arguments") {
     new given {
       queryGraphSolver = ExhaustiveQueryGraphSolver.withDefaults()
       qg = QueryGraph(argumentIds = Set(A), patternNodes = Set(A))
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
 
-      withLogicalPlanningContext { (ctx) =>
-        implicit val x = ctx
-
-        queryGraphSolver.plan(qg) should equal(
-          Argument(Set(A))(PlannerQuery(graph = qg))()
-        )
-      }
+      queryGraphSolver.plan(cfg.qg) should equal(
+        Argument(Set(A))(PlannerQuery(graph = cfg.qg))()
+      )
     }
+
   }
 
   test("should solve self looping pattern") {
@@ -358,15 +345,14 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
         patternNodes = Set(A),
         patternRelationships = Set(PatternRelationship("r", ("a", "a"), Direction.OUTGOING, Seq.empty, SimplePatternLength))
       )
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
 
-      withLogicalPlanningContext { (ctx) =>
-        implicit val x = ctx
-
-        queryGraphSolver.plan(qg) should equal(
-          Expand(AllNodesScan(A, Set.empty)(null), A, Direction.OUTGOING, Seq.empty, A, IdName("r"), ExpandInto)(null)
-        )
-      }
+      queryGraphSolver.plan(cfg.qg) should equal(
+        Expand(AllNodesScan(A, Set.empty)(null), A, Direction.OUTGOING, Seq.empty, A, IdName("r"), ExpandInto)(null)
+      )
     }
+
   }
 
   test("should plan for optional single relationship pattern between two known nodes") {
@@ -380,26 +366,25 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
           patternRelationships = Set(PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength))
         ))
       )
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
 
-      withLogicalPlanningContext { (ctx) =>
-        implicit val x = ctx
-
-        queryGraphSolver.plan(qg) should equal(
-          Apply(
-            CartesianProduct(
-              AllNodesScan(IdName("a"), Set.empty)(null),
-              AllNodesScan(IdName("b"), Set.empty)(null)
-            )(null),
-            Optional(
-              Expand(
-                Argument(Set("a", "b"))(null)(),
-                "a", Direction.OUTGOING, Seq.empty, "b", "r", ExpandInto
-              )(null)
+      queryGraphSolver.plan(cfg.qg) should equal(
+        Apply(
+          CartesianProduct(
+            AllNodesScan(IdName("a"), Set.empty)(null),
+            AllNodesScan(IdName("b"), Set.empty)(null)
+          )(null),
+          Optional(
+            Expand(
+              Argument(Set("a", "b"))(null)(),
+              "a", Direction.OUTGOING, Seq.empty, "b", "r", ExpandInto
             )(null)
           )(null)
-        )
-      }
+        )(null)
+      )
     }
+
   }
 
   test("should handle query starting with an optional match") {
@@ -414,23 +399,22 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
           patternRelationships = Set(PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)))
         )
       )
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
 
-      withLogicalPlanningContext { (ctx) =>
-        implicit val x = ctx
-
-        queryGraphSolver.plan(qg) should equal(
-          Apply(
-            SingleRow(),
-            Optional(
-              Expand(
-                AllNodesScan("a",Set.empty)(null),
-                "a", Direction.OUTGOING, Seq.empty, "b", "r", ExpandAll
-              )(null)
+      queryGraphSolver.plan(cfg.qg) should equal(
+        Apply(
+          SingleRow(),
+          Optional(
+            Expand(
+              AllNodesScan("a",Set.empty)(null),
+              "a", Direction.OUTGOING, Seq.empty, "b", "r", ExpandAll
             )(null)
           )(null)
-        )
-      }
+        )(null)
+      )
     }
+
   }
 
   private val undefinedPlanProducer: PlanProducer = new PlanProducer {

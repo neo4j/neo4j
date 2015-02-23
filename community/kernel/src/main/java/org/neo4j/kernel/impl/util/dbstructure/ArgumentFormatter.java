@@ -17,9 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.helpers.collection;
+package org.neo4j.kernel.impl.util.dbstructure;
 
-public interface Visitable<V>
+import java.io.IOException;
+import java.util.Collection;
+
+public interface ArgumentFormatter
 {
-    void accept( V visitor );
+    Collection<String> imports();
+    void formatArgument( Appendable appendable, Object arg ) throws IOException;
 }
