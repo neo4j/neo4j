@@ -19,57 +19,24 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.io.pagecache.Page;
 import org.neo4j.io.pagecache.PageEvictionCallback;
-import org.neo4j.jsr166e.StampedLock;
 
 final class MuninnPageEvictionCallback implements PageEvictionCallback
 {
-    private final PrimitiveLongObjectMap<MuninnPage>[] translationTables;
-    private final StampedLock[] translationTableLocks;
+    private final MuninnPagedFile file;
 
-    public MuninnPageEvictionCallback(
-            PrimitiveLongObjectMap<MuninnPage>[] translationTables,
-            StampedLock[] translationTableLocks )
+    public MuninnPageEvictionCallback( MuninnPagedFile file )
     {
-        this.translationTables = translationTables;
-        this.translationTableLocks = translationTableLocks;
+        this.file = file;
     }
 
     @Override
-    public void onEvict( long pageId, Page page )
+    public void onEvict( long filePageId, Page page )
     {
-        int stripe = (int) (pageId & MuninnPagedFile.translationTableStripeMask);
-        StampedLock translationTableLock = translationTableLocks[stripe];
-        PrimitiveLongObjectMap<MuninnPage> translationTable = translationTables[stripe];
-
-        // We use tryWriteLock here, because this call is in the way of
-        // releasing new pages to the freelist. This means that threads might
-        // be holding the translation table locks while they are in the middle
-        // of a page fault, waiting for a free page to become available. In
-        // that case, we would dead-lock with that thread, if we were to try
-        // and take the lock for real.
-        // On the other hand, it is perfectly fine for pinning threads to
-        // discover that a translation table has gone stale. In that case they
-        // will do a page fault, and fix the translation table themselves.
-        // As such, doing this clean up on eviction is not strictly necessary,
-        // though it helps keep the tables small.
-        long stamp = translationTableLock.tryWriteLock();
-        if ( stamp != 0 )
-        {
-            try
-            {
-                MuninnPage removed = translationTable.remove( pageId );
-                assert removed == page: "Removed unexpected page when " +
-                        "cleaning up translation table for filePageId " +
-                        pageId + ". Evicted " + page + " but removed " +
-                        removed + " from the " + "translation table.";
-            }
-            finally
-            {
-                translationTableLock.unlockWrite( stamp );
-            }
-        }
+        MuninnPage removed = file.evictPage( filePageId );
+        assert removed == page:
+                "Removed unexpected page when cleaning up translation table for filePageId " + filePageId + ". " +
+                "Evicted " + page + " but removed " + removed + " from the translation table.";
     }
 }

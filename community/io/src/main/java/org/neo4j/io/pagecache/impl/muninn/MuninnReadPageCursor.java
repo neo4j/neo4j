@@ -21,9 +21,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.IOException;
 
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.io.pagecache.PageSwapper;
-import org.neo4j.jsr166e.StampedLock;
 
 final class MuninnReadPageCursor extends MuninnPageCursor
 {
@@ -58,103 +56,20 @@ final class MuninnReadPageCursor extends MuninnPageCursor
             return false;
         }
         unpinCurrentPage();
-        pin( nextPageId );
+        pin( nextPageId, false );
         currentPageId = nextPageId;
         nextPageId++;
         return true;
     }
 
-    private void pin( long filePageId ) throws IOException
+    protected void lockPage( MuninnPage page )
     {
-        int stripe = (int) (filePageId & MuninnPagedFile.translationTableStripeMask);
-        StampedLock translationTableLock = pagedFile.translationTableLocks[stripe];
-        PrimitiveLongObjectMap<MuninnPage> translationTable = pagedFile.translationTables[stripe];
-        PageSwapper swapper = pagedFile.swapper;
-        pinEvent = pagedFile.tracer.beginPin( false, filePageId, swapper );
-        MuninnPage page;
-
-        long stamp = translationTableLock.tryOptimisticRead();
-        page = translationTable.get( filePageId );
-        if ( !translationTableLock.validate( stamp ) )
-        {
-            // The optimistic lock failed... Try again with a proper read lock.
-            stamp = translationTableLock.readLock();
-            try
-            {
-                page = translationTable.get( filePageId );
-            }
-            finally
-            {
-                translationTableLock.unlockRead( stamp );
-            }
-        }
-
-        // The PrimitiveLongObjectMap returns null for unmapped keys, so in that case we
-        // know with high probability that we are going to page fault.
-        // The only reason this might not happen, is that we are racing on the same
-        // exact fault with another thread, and that thread ends up winning the race.
-        if ( page == null )
-        {
-            // Because of the race, we have to check the table again once we have
-            // the write lock.
-            stamp = translationTableLock.writeLock();
-            page = translationTable.get( filePageId );
-            if ( page == null )
-            {
-                // Our translation table is still outdated. Go ahead and page
-                // fault.
-                pageFault( filePageId, translationTable, translationTableLock, stamp, swapper );
-                return;
-            }
-            // Another thread completed the page fault ahead of us.
-            // Let's proceed like nothing happened.
-            translationTableLock.unlockWrite( stamp );
-        }
-
         lockStamp = page.tryOptimisticRead();
-        if ( page.isBoundTo( swapper, filePageId ) )
-        {
-            // Our translation table was also up to date, and the page is bound to
-            // our file, and we could pin it since its not in the process of
-            // eviction.
-            pinCursorToPage( page, filePageId, swapper );
-            optimisticLock = true;
-            return;
-        }
+        optimisticLock = true;
+    }
 
-        // Our translation table is outdated because the page has been bound to a
-        // different file and/or filePageId.
-        // We want to update our translationTable and do a page fault, but first,
-        // we have to make sure that we are not racing with other threads that
-        // might have the same exact idea.
-        // To do this, we first have to lock the table, then check the table
-        // again, since another thread might have already completed the page fault
-        // for us.
-        stamp = translationTableLock.writeLock();
-        // Someone might have completed the page fault ahead of us, so we need
-        // to check again if the translation table is still outdated.
-        page = translationTable.get( filePageId );
-        if ( page != null )
-        {
-            // Either someone completed the page fault, or eviction has not yet
-            // cleared out our translation table entry.
-            // If we can pin the page now, someone already completed the page
-            // fault ahead of us.
-            lockStamp = page.readLock();
-            if ( page.isBoundTo( swapper, filePageId ) )
-            {
-                translationTableLock.unlockWrite( stamp );
-                pinCursorToPage( page, filePageId, swapper );
-                optimisticLock = false;
-                return;
-            }
-            page.unlockRead( lockStamp );
-            // The translation table still contain a stale entry.
-            // We'll overwrite it further down.
-        }
-        // The page is definitely no good, and our translation table is
-        // definitely out of date.
-        pageFault( filePageId, translationTable, translationTableLock, stamp, swapper );
+    protected void unlockPage( MuninnPage page )
+    {
     }
 
     @Override
@@ -202,7 +117,7 @@ final class MuninnReadPageCursor extends MuninnPageCursor
                 // is closed; we don't want unpinCurrentPage() to try unlocking
                 // this page.
                 page = null;
-                pin( currentPageId );
+                pin( currentPageId, false );
             }
         }
         return needsRetry;
