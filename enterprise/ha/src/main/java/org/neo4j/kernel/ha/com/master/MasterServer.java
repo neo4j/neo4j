@@ -31,6 +31,7 @@ import org.jboss.netty.channel.Channel;
 import org.neo4j.com.Protocol;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
+import org.neo4j.com.Response;
 import org.neo4j.com.Server;
 import org.neo4j.com.TransactionNotPresentOnMasterException;
 import org.neo4j.com.TxChecksumVerifier;
@@ -69,7 +70,10 @@ public class MasterServer extends Server<Master, Void>
     {
         try
         {
-            getRequestTarget().endLockSession( context, false );
+            try ( Response<Void> ignored = getRequestTarget().endLockSession( context, false ) )
+            {
+                // Lock session is closed
+            }
         }
         catch ( TransactionNotPresentOnMasterException e )
         {

@@ -157,9 +157,7 @@ public class CommitPusher extends LifecycleAdapter
                             try
                             {
                                 PullUpdateFuture pullUpdateFuture = currentPulls.get( 0 );
-                                Response<Void> response =
-                                        pullUpdateFuture.getSlave().pullUpdates( pullUpdateFuture.getTxId() );
-                                response.close();
+                                askSlaveToPullUpdates( pullUpdateFuture );
 
                                 // Notify the futures
                                 for ( PullUpdateFuture currentPull : currentPulls )
@@ -185,5 +183,15 @@ public class CommitPusher extends LifecycleAdapter
             } );
         }
         return queue;
+    }
+
+    private void askSlaveToPullUpdates( PullUpdateFuture pullUpdateFuture )
+    {
+        Slave slave = pullUpdateFuture.getSlave();
+        long lastTxId = pullUpdateFuture.getTxId();
+        try ( Response<Void> ignored = slave.pullUpdates( lastTxId ) )
+        {
+            // Slave will come back to me(master) and pull updates
+        }
     }
 }

@@ -32,8 +32,6 @@ import org.neo4j.kernel.impl.store.StoreId;
  */
 public class TransactionStreamResponse<T> extends Response<T>
 {
-    public static final byte RESPONSE_TYPE = 0;
-
     private final TransactionStream transactions;
 
     public TransactionStreamResponse( T response, StoreId storeId, TransactionStream transactions,
