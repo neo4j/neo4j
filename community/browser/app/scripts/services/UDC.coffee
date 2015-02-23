@@ -35,7 +35,6 @@ angular.module('neo4jApp.services')
           @data = @reset() unless angular.isObject(@data)
           @data.client_starts = (@data.client_starts || 0) + 1
           @save()
-          Intercom.user(@data.uuid, @data)
 
         reset: ->
           @data = {
@@ -63,6 +62,7 @@ angular.module('neo4jApp.services')
           if (@shouldPing(event))
             switch event
               when 'connect'
+                Intercom.user(@data.uuid, @data)
                 Intercom.update({
                   "companies": [
                       {
