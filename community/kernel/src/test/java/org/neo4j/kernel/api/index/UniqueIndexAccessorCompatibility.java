@@ -30,6 +30,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 
 import static java.util.Arrays.asList;
@@ -72,7 +73,7 @@ public class UniqueIndexAccessorCompatibility extends IndexProviderCompatibility
     }
 
     @Before
-    public void before() throws IOException
+    public void before() throws Exception
     {
         IndexConfiguration config = new IndexConfiguration( true );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, config );
@@ -102,7 +103,8 @@ public class UniqueIndexAccessorCompatibility extends IndexProviderCompatibility
         }
     }
 
-    private void updateAndCommit( List<NodePropertyUpdate> updates ) throws IOException, IndexEntryConflictException
+    private void updateAndCommit( List<NodePropertyUpdate> updates )
+            throws IOException, IndexEntryConflictException, IndexCapacityExceededException
     {
         try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {

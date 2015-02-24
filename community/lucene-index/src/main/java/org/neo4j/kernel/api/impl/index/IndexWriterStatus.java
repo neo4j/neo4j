@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -33,7 +32,7 @@ class IndexWriterStatus
     private static final String KEY_STATUS = "status";
     private static final String ONLINE = "online";
 
-    public void commitAsOnline( IndexWriter writer ) throws IOException
+    public void commitAsOnline( LuceneIndexWriter writer ) throws IOException
     {
         writer.commit( stringMap( KEY_STATUS, ONLINE ) );
     }
@@ -59,7 +58,7 @@ class IndexWriterStatus
         }
     }
 
-    public void close( IndexWriter writer ) throws IOException
+    public void close( LuceneIndexWriter writer ) throws IOException
     {
         writer.close( true );
     }

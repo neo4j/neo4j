@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.index.impl.lucene.LuceneDataSource.LUCENE_VERSION;
 import static org.neo4j.index.impl.lucene.LuceneDataSource.getDirectory;
 
@@ -30,18 +31,23 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.concurrent.locks.LockSupport;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.store.Directory;
+
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.index.lucene.ValueContext;
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
+import org.neo4j.kernel.api.impl.index.IndexWriterFactories;
+import org.neo4j.kernel.api.impl.index.LuceneIndexWriter;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.unsafe.batchinsert.BatchInserterIndex;
@@ -51,9 +57,8 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
     private final IndexIdentifier identifier;
     private final IndexType type;
     
-    private IndexWriter writer;
-    private boolean writerModified;
-    private IndexSearcher searcher;
+    private LuceneIndexWriter writer;
+    private SearcherManager searcherManager;
     private final boolean createdNow;
     private Map<String, LruCache<String, Collection<Long>>> cache;
     private int updateCount;
@@ -67,6 +72,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         this.identifier = identifier;
         this.type = IndexType.getIndexType( identifier, config );
         this.writer = instantiateWriter( storeDir );
+        this.searcherManager = instantiateSearcherManager( writer );
     }
     
     /**
@@ -99,7 +105,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
                 updateCount = 0;
             }
         }
-        catch ( IOException e )
+        catch ( IOException | IndexCapacityExceededException e )
         {
             throw new RuntimeException( e );
         }
@@ -194,18 +200,25 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
 
     private void removeFromCache( long entityId ) throws IOException, CorruptIndexException
     {
-        IndexSearcher searcher = searcher();
-        Query query = type.idTermQuery( entityId );
-        TopDocs docs = searcher.search( query, 1 );
-        if ( docs.totalHits > 0 )
+        IndexSearcher searcher = searcherManager.acquire();
+        try
         {
-            Document document = searcher.doc( docs.scoreDocs[0].doc );
-            for ( Fieldable field : document.getFields() )
+            Query query = type.idTermQuery( entityId );
+            TopDocs docs = searcher.search( query, 1 );
+            if ( docs.totalHits > 0 )
             {
-                String key = field.name();
-                Object value = field.stringValue();
-                removeFromCache( entityId, key, value );
+                Document document = searcher.doc( docs.scoreDocs[0].doc );
+                for ( Fieldable field : document.getFields() )
+                {
+                    String key = field.name();
+                    Object value = field.stringValue();
+                    removeFromCache( entityId, key, value );
+                }
             }
+        }
+        finally
+        {
+            searcherManager.release( searcher );
         }
     }
     
@@ -228,14 +241,26 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         }
     }
 
-    private IndexWriter instantiateWriter( File directory )
+    private LuceneIndexWriter instantiateWriter( File directory )
     {
         try
         {
             IndexWriterConfig writerConfig = new IndexWriterConfig( LUCENE_VERSION, type.analyzer );
             writerConfig.setRAMBufferSizeMB( determineGoodBufferSize( writerConfig.getRAMBufferSizeMB() ) );
-            IndexWriter writer = new IndexWriter( getDirectory( directory, identifier ), writerConfig );
-            return writer;
+            Directory luceneDir = getDirectory( directory, identifier );
+            return IndexWriterFactories.batchInsert( writerConfig ).create( luceneDir );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    private static SearcherManager instantiateSearcherManager( LuceneIndexWriter writer )
+    {
+        try
+        {
+            return writer.createSearcherManager();
         }
         catch ( IOException e )
         {
@@ -254,31 +279,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
     {
         try
         {
-            LuceneUtil.close( this.searcher );
-        }
-        finally
-        {
-            this.searcher = null;
-        }
-    }
-
-    private IndexSearcher searcher()
-    {
-        IndexSearcher result = this.searcher;
-        try
-        {
-            if ( result == null || writerModified )
-            {
-                if ( result != null )
-                {
-                    result.getIndexReader().close();
-                    result.close();
-                }
-                IndexReader newReader = IndexReader.open( writer, true );
-                result = new IndexSearcher( newReader );
-                writerModified = false;
-            }
-            return result;
+            this.searcherManager.close();
         }
         catch ( IOException e )
         {
@@ -286,19 +287,19 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         }
         finally
         {
-            this.searcher = result;
+            this.searcherManager = null;
         }
     }
-    
+
     private void closeWriter()
     {
         try
         {
             if ( this.writer != null )
             {
-                this.writer.optimize( true );
+                this.writer.optimize();
+                this.writer.close();
             }
-            LuceneUtil.close( this.writer );
         }
         catch ( IOException e )
         {
@@ -312,9 +313,10 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
 
     private IndexHits<Long> query( Query query, final String key, final Object value )
     {
+        IndexSearcher searcher = searcherManager.acquire();
         try
         {
-            Hits hits = new Hits( searcher(), query, null );
+            Hits hits = new Hits( searcher, query, null );
             HitsIterator result = new HitsIterator( hits );
             if ( key == null || this.cache == null || !this.cache.containsKey( key ) )
             {
@@ -349,6 +351,16 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         catch ( IOException e )
         {
             throw new RuntimeException( e );
+        }
+        finally
+        {
+            try
+            {
+                searcherManager.release( searcher );
+            }
+            catch ( IOException ignore )
+            {
+            }
         }
     }
 
@@ -387,11 +399,21 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         }
         return dir;
     }
-    
+
     @Override
     public void flush()
     {
-        writerModified = true;
+        try
+        {
+            while ( !searcherManager.maybeRefresh() )
+            {
+                LockSupport.parkNanos( MILLISECONDS.toNanos( 5 ) );
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
     
     @Override

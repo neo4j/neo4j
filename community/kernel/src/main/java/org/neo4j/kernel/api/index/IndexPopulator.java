@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.index;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.impl.api.index.UpdateMode;
 import org.neo4j.kernel.impl.api.index.SwallowingIndexUpdater;
 
@@ -49,7 +50,8 @@ public interface IndexPopulator
      * @param nodeId node id to index.
      * @param propertyValue property value for the entry to index.
      */
-    void add( long nodeId, Object propertyValue ) throws IndexEntryConflictException, IOException;
+    void add( long nodeId, Object propertyValue )
+            throws IndexEntryConflictException, IOException, IndexCapacityExceededException;
 
     /**
      * Verify constraints for all entries added so far.
@@ -91,7 +93,7 @@ public interface IndexPopulator
      * as {@link InternalIndexState#ONLINE} so that future invocations of its parent
      * {@link SchemaIndexProvider#getInitialState(long)} also returns {@link InternalIndexState#ONLINE}.
      */
-    void close( boolean populationCompletedSuccessfully ) throws IOException;
+    void close( boolean populationCompletedSuccessfully ) throws IOException, IndexCapacityExceededException;
 
     /**
      * Called then a population failed. The failure string should be stored for future retrieval by

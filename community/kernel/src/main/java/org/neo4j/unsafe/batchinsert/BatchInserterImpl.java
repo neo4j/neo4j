@@ -57,6 +57,7 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.StoreLocker;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
@@ -388,7 +389,7 @@ public class BatchInserterImpl implements BatchInserter
         recordAccess.commit();
     }
 
-    private void repopulateAllIndexes() throws IOException
+    private void repopulateAllIndexes() throws IOException, IndexCapacityExceededException
     {
         if ( !labelsTouched )
         {
@@ -439,6 +440,10 @@ public class BatchInserterImpl implements BatchInserter
                             {
                                 throw conflict.notAllowed( rules[i].getLabel(), rules[i].getPropertyKey() );
                             }
+                            catch ( IndexCapacityExceededException e )
+                            {
+                                throw new UnderlyingStorageException( e );
+                            }
                         }
                     }
                 }
@@ -465,7 +470,14 @@ public class BatchInserterImpl implements BatchInserter
         @Override
         public boolean visit( NodeLabelUpdate update ) throws IOException
         {
-            writer.write( update );
+            try
+            {
+                writer.write( update );
+            }
+            catch ( IndexCapacityExceededException e )
+            {
+                throw new UnderlyingStorageException( e );
+            }
             return true;
         }
 
@@ -841,7 +853,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             repopulateAllIndexes();
         }
-        catch ( IOException e )
+        catch ( IOException | IndexCapacityExceededException e )
         {
             throw new RuntimeException( e );
         }

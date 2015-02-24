@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.Reservation;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -80,6 +81,12 @@ public class PopulatingIndexProxy implements IndexProxy
     {
         return new IndexUpdater()
         {
+            @Override
+            public Reservation validate( Iterable<NodePropertyUpdate> updates ) throws IOException
+            {
+                return Reservation.EMPTY;
+            }
+
             @Override
             public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
             {
