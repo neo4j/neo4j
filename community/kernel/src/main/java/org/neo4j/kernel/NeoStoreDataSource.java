@@ -813,7 +813,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
                 new PhysicalLogFileInformation( logFiles, transactionMetadataCache, neoStore, logInformation );
 
         LogPruneStrategy logPruneStrategy = LogPruneStrategyFactory.fromConfigValue( fs, logFileInformation,
-                logFiles, neoStore, config.get( GraphDatabaseSettings.keep_logical_logs ) );
+                logFiles, neoStore, config.get( config.get(InternalAbstractGraphDatabase.Configuration.ephemeral) ? InternalAbstractGraphDatabase.Configuration.ephemeral_keep_logical_logs : GraphDatabaseSettings.keep_logical_logs ) );
 
         monitors.addMonitorListener( new LogPruning( logPruneStrategy, logging ) );
 

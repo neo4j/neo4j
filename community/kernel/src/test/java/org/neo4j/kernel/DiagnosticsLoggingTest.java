@@ -19,28 +19,37 @@
  */
 package org.neo4j.kernel;
 
-import org.junit.Test;
-
 import java.util.HashMap;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.LogMarker;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.test.ImpermanentGraphDatabase;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 
 public class DiagnosticsLoggingTest
 {
+    @Rule
+    public TemporaryFolder folder = new TemporaryFolder();
+
     @Test
     public void shouldSeeHelloWorld()
     {
-        FakeDatabase db = new FakeDatabase( new HashMap<String,String>() );
-        FakeLogger logger = db.getLogger();
+        FakeLogger logger = new FakeLogger();
+        GraphDatabaseService db = new GraphDatabaseFactory().setLogging( logger ).newEmbeddedDatabase( folder.getRoot
+                ().getAbsolutePath() );
+
         String messages = logger.getMessages();
         assertThat( messages, containsString( "Network information" ) );
         assertThat( messages, containsString( "Disk space on partition" ) );
@@ -51,11 +60,18 @@ public class DiagnosticsLoggingTest
     @Test
     public void shouldSeePageCacheConfigurationWithDumpConfigurationEnabled()
     {
-        HashMap<String,String> settings = new HashMap<>();
+        HashMap<String, String> settings = new HashMap<>();
         settings.put( GraphDatabaseSettings.dump_configuration.name(), "true" );
         settings.put( GraphDatabaseSettings.pagecache_memory.name(), "8M" );
-        FakeDatabase db = new FakeDatabase( settings );
-        FakeLogger logger = db.getLogger();
+
+        FakeLogger logger = new FakeLogger();
+        GraphDatabaseService db = new GraphDatabaseFactory().
+                setLogging( logger ).
+                newEmbeddedDatabaseBuilder( folder.getRoot().getAbsolutePath() ).
+                setConfig( GraphDatabaseSettings.dump_configuration, Settings.TRUE ).
+                setConfig( GraphDatabaseSettings.pagecache_memory, "8M" ).
+                newGraphDatabase();
+
         String messages = logger.getMessages();
         assertThat( messages, containsString( "Page cache size: 8MB" ) );
         db.shutdown();
@@ -158,26 +174,6 @@ public class DiagnosticsLoggingTest
         @Override
         public void shutdown() throws Throwable
         {
-        }
-    }
-
-    @SuppressWarnings("deprecation")
-    private class FakeDatabase extends ImpermanentGraphDatabase
-    {
-        public FakeDatabase( HashMap<String, String> settings )
-        {
-            super( settings );
-        }
-
-        @Override
-        protected Logging createLogging()
-        {
-            return new FakeLogger();
-        }
-
-        public FakeLogger getLogger()
-        {
-            return (FakeLogger) logging;
         }
     }
 }
