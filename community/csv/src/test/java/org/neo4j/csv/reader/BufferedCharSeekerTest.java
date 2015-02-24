@@ -440,6 +440,19 @@ public class BufferedCharSeekerTest
         assertFalse( seeker.seek( mark, COMMA ) );
     }
 
+    @Test
+    public void shouldTreatSingleBackslashesAsJustACharacter() throws Exception
+    {
+        // GIVEN
+        seeker = seeker( "4,\\\",f\\oo" );
+
+        // WHEN/THEN
+        assertNextValue( seeker, mark, COMMA, "4" );
+        assertNextValue( seeker, mark, COMMA, "\"" );
+        assertNextValue( seeker, mark, COMMA, "f\\oo" );
+        assertFalse( seeker.seek( mark, COMMA ) );
+    }
+
     private String[][] randomWeirdValues( int cols, int rows, char... except )
     {
         String[][] data = new String[rows][cols];

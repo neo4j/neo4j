@@ -127,6 +127,14 @@ public class BufferedCharSeeker implements CharSeeker, SourceMonitor
                     mark.set( seekStartPos, bufferPos - endOffset - skippedChars, ch, isQuoted );
                     return true;
                 }
+                else if ( ch == BACK_SLASH )
+                {
+                    int nextCh = peekChar();
+                    if ( nextCh == quoteChar )
+                    {   // Found a slash encoded quote
+                        repositionChar( bufferPos++, ++skippedChars );
+                    }
+                }
             }
             else
             {   // In quoted mode, i.e. within quotes
