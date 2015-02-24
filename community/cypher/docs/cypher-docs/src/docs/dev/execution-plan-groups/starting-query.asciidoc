@@ -1,0 +1,15 @@
+[[execution-plans-starting-query]]
+
+== Starting a query operators ==
+
+These operators find parts of the graph from which to start a query.
+
+:leveloffset: 2
+
+include::../ql/query-plan/all-nodes-scan.asciidoc[]
+include::../ql/query-plan/directed-relationship-by-id-seek.asciidoc[]
+include::../ql/query-plan/node-by-id-seek.asciidoc[]
+include::../ql/query-plan/node-by-label-scan.asciidoc[]
+include::../ql/query-plan/node-index-seek.asciidoc[]
+include::../ql/query-plan/node-unique-index-seek.asciidoc[]
+include::../ql/query-plan/undirected-relationship-by-id-seek.asciidoc[]
