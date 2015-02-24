@@ -19,21 +19,20 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import java.util.List;
-
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.List;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.subprocess.SubProcess;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asList;
 
@@ -43,12 +42,13 @@ public class SchemaRecoveryIT
     public void schemaTransactionsShouldSurviveRecovery() throws Exception
     {
         // given
-        Process process = new CreateConstraintButDoNotShutDown().start( testDirectory.absolutePath() );
+        String storeDir = testDirectory.absolutePath();
+        Process process = new CreateConstraintButDoNotShutDown().start( storeDir );
         process.waitForSchemaTransactionCommitted();
         SubProcess.kill( process );
 
         // when
-        GraphDatabaseService recoveredDatabase = new GraphDatabaseFactory().newEmbeddedDatabase( testDirectory.absolutePath() );
+        GraphDatabaseService recoveredDatabase = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
 
         // then
         assertEquals(1, constraints( recoveredDatabase ).size());
@@ -89,7 +89,7 @@ public class SchemaRecoveryIT
         @Override
         protected void startup( String storeDir ) throws Throwable
         {
-            GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+            GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
             try ( Transaction transaction = database.beginTx() )
             {
                 database.schema().constraintFor( label("User") ).assertPropertyIsUnique( "uuid" ).create();

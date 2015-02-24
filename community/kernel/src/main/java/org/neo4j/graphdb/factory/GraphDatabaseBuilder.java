@@ -145,14 +145,9 @@ public class GraphDatabaseBuilder
         Properties props = new Properties();
         try
         {
-            InputStream stream = url.openStream();
-            try
+            try ( InputStream stream = url.openStream() )
             {
                 props.load( stream );
-            }
-            finally
-            {
-                stream.close();
             }
         }
         catch ( Exception e )
@@ -179,6 +174,14 @@ public class GraphDatabaseBuilder
     public GraphDatabaseService newGraphDatabase()
     {
         return creator.newDatabase( config );
+    }
+
+    /**
+     * Used by tests via GraphDatabaseBuilderTestTools.
+     */
+    Map<String, String> getRawConfig()
+    {
+        return config;
     }
 
     public static class Delegator extends GraphDatabaseBuilder

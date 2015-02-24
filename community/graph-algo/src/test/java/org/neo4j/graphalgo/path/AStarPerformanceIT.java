@@ -19,10 +19,11 @@
  */
 package org.neo4j.graphalgo.path;
 
-import java.io.File;
-
 import org.junit.Ignore;
 import org.junit.Test;
+
+import java.io.File;
+
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.GraphDatabaseService;

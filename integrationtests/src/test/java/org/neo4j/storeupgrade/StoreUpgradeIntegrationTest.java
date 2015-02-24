@@ -59,6 +59,7 @@ import org.neo4j.server.Bootstrapper;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -130,9 +131,10 @@ public class StoreUpgradeIntegrationTest
         {
             File dir = store.prepareDirectory();
 
-            GraphDatabaseFactory factory = new GraphDatabaseFactory();
+            GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir.getAbsolutePath() );
             builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
+            builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
             GraphDatabaseService db = builder.newGraphDatabase();
             try
             {
@@ -157,6 +159,7 @@ public class StoreUpgradeIntegrationTest
             props.setProperty( Configurator.DATABASE_LOCATION_PROPERTY_KEY, dir.getAbsolutePath() );
             props.setProperty( Configurator.DB_TUNING_PROPERTY_FILE_KEY, configFile.getAbsolutePath() );
             props.setProperty( GraphDatabaseSettings.allow_store_upgrade.name(), "true" );
+            props.setProperty( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
             props.store( new FileWriter( configFile ), "" );
 
             try
@@ -189,9 +192,10 @@ public class StoreUpgradeIntegrationTest
         {
             // migrate the store using a single instance
             File dir = store.prepareDirectory();
-            GraphDatabaseFactory factory = new GraphDatabaseFactory();
+            GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir.getAbsolutePath() );
             builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
+            builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
             GraphDatabaseService db = builder.newGraphDatabase();
             try
             {
@@ -242,9 +246,10 @@ public class StoreUpgradeIntegrationTest
             // migrate the store using a single instance
             File dir = AbstractNeo4jTestCase.unzip( StoreUpgradeIntegrationTest.class, "0.A.3-to-be-recovered.zip" );
             new File( dir, "messages.log" ).delete(); // clear the log
-            GraphDatabaseFactory factory = new GraphDatabaseFactory();
+            GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder(dir.getAbsolutePath());
             builder.setConfig(GraphDatabaseSettings.allow_store_upgrade, "true");
+            builder.setConfig(GraphDatabaseSettings.pagecache_memory, "8m");
             try {
                 GraphDatabaseService db = builder.newGraphDatabase();
                 db.shutdown();
@@ -448,7 +453,6 @@ public class StoreUpgradeIntegrationTest
     {
         return new long[]{upgrade, size, unique, sampleSize};
     }
-
 
     private static IndexDescriptor awaitOnline( GraphDatabaseAPI db,
                                                 ThreadToStatementContextBridge bridge,

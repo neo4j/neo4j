@@ -19,19 +19,18 @@
  */
 package org.neo4j.management;
 
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
+
 import java.util.Collection;
 import java.util.Map;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.jmx.Kernel;
 import org.neo4j.jmx.Primitives;
 import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -39,23 +38,14 @@ import static org.junit.Assert.assertTrue;
 
 public class ManagementBeansTest
 {
+    @ClassRule
+    public static EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( ManagementBeansTest.class );
     private static GraphDatabaseAPI graphDb;
 
     @BeforeClass
     public static synchronized void startGraphDb()
     {
-        String directory = TargetDirectory.forTest( ManagementBeansTest.class ).makeGraphDbDir().getAbsolutePath();
-        graphDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( directory );
-    }
-
-    @AfterClass
-    public static synchronized void stopGraphDb()
-    {
-        if ( graphDb != null )
-        {
-            graphDb.shutdown();
-            graphDb = null;
-        }
+        graphDb = dbRule.getGraphDatabaseAPI();
     }
 
     @Test

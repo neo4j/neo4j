@@ -19,6 +19,16 @@
  */
 package examples;
 
+import org.apache.lucene.index.Term;
+import org.apache.lucene.queryParser.QueryParser.Operator;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.WildcardQuery;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -30,22 +40,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.index.Term;
-import org.apache.lucene.queryParser.QueryParser.Operator;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.WildcardQuery;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
@@ -71,7 +70,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
@@ -209,7 +207,7 @@ public class ImdbDocTest
     @Test
     public void deleteIndex()
     {
-        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( TargetDirectory.forTest(
+        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase( TargetDirectory.forTest(
                 getClass() ).cleanDirectory( "delete" ).getAbsolutePath() );
         try ( Transaction tx = graphDb.beginTx() )
         {
@@ -652,7 +650,7 @@ public class ImdbDocTest
         inserter.shutdown();
         // END SNIPPET: batchInsert
 
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( "target/neo4jdb-batchinsert" );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( "target/neo4jdb-batchinsert" );
         try ( Transaction tx = db.beginTx() )
         {
             Index<Node> index = db.index().forNodes( "actors" );

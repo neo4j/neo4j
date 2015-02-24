@@ -19,6 +19,13 @@
  */
 package org.neo4j.ha.upgrade;
 
+import org.junit.After;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+
 import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -30,13 +37,6 @@ import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.After;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-
 import org.neo4j.backup.OnlineBackup;
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
@@ -46,21 +46,19 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ha.UpdatePullerClient;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.cluster.ClusterSettings.cluster_server;
 import static org.neo4j.cluster.ClusterSettings.initial_hosts;
 import static org.neo4j.cluster.ClusterSettings.server_id;
@@ -248,6 +246,7 @@ public class RollingUpgradeIT
                 cluster_server.name(), localhost + ":" + (5000 + serverId),
                 ha_server.name(), localhost + ":" + (6000 + serverId),
                 GraphDatabaseSettings.allow_store_upgrade.name(), "true",
+                GraphDatabaseSettings.pagecache_memory.name(), "8m",
                 OnlineBackupSettings.online_backup_server.name(), localhost + ":" + backupPort( serverId ),
                 initial_hosts.name(), localhost + ":" + 5000 + "," + localhost + ":" + 5001 + "," + localhost + ":" + 5002 );
         return result;
@@ -318,7 +317,7 @@ public class RollingUpgradeIT
         startStandaloneDbToRunUpgrade( storeDir, i );
 
         // start that db up in this JVM
-        newDbs[i] = (GraphDatabaseAPI) new HighlyAvailableGraphDatabaseFactory()
+        newDbs[i] = (GraphDatabaseAPI) new TestHighlyAvailableGraphDatabaseFactory()
                 .newHighlyAvailableDatabaseBuilder( storeDir )
                 .setConfig( config( i ) )
                 .newGraphDatabase();
@@ -362,7 +361,7 @@ public class RollingUpgradeIT
         try
         {
             debug( "Starting standalone db " + dbIndex + " to run upgrade" );
-            tempDbForUpgrade = new GraphDatabaseFactory()
+            tempDbForUpgrade = new TestGraphDatabaseFactory()
                     .newEmbeddedDatabaseBuilder( storeDir )
                     .setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" )
                     .newGraphDatabase();

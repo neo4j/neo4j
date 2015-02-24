@@ -258,7 +258,6 @@ public class StoreAccess
     private static Map<String, String> defaultParams()
     {
         Map<String, String> params = new HashMap<>();
-        params.put( GraphDatabaseSettings.pagecache_memory.name(), "50%" );
         params.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), Settings.TRUE );
         return params;
     }

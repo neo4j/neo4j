@@ -35,7 +35,7 @@ import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.UTF8;
@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.PageCacheRule;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
 import static org.junit.Assert.assertFalse;
@@ -86,7 +87,7 @@ public class UpgradeStoreIT
     public void makeSureStoreWithTooManyRelationshipTypesCannotBeUpgraded() throws Exception
     {
         File path = path( 0 );
-        new GraphDatabaseFactory().newEmbeddedDatabase(  path.getPath() ).shutdown();
+        startAndStopDb( path );
         createManyRelationshipTypes( path, 0x10000 );
         assertCannotStart( path, "Shouldn't be able to upgrade with that many types set" );
     }
@@ -95,7 +96,7 @@ public class UpgradeStoreIT
     public void makeSureStoreWithDecentAmountOfRelationshipTypesCanBeUpgraded() throws Exception
     {
         File path = path( 1 );
-        new GraphDatabaseFactory().newEmbeddedDatabase(  path.getPath() ).shutdown();
+        startAndStopDb( path );
         createManyRelationshipTypes( path, 0xFFFF );
         assertCanStart( path );
     }
@@ -103,32 +104,36 @@ public class UpgradeStoreIT
     @Test( expected=TransactionFailureException.class )
     public void makeSureStoreWithTooBigStringBlockSizeCannotBeCreated() throws Exception
     {
-        new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(  path( 2 ).getPath()).setConfig( GraphDatabaseSettings.string_block_size, "" + (0x10000) ).newGraphDatabase().shutdown();
+        builderFor( path( 2 ) ).setConfig(
+                GraphDatabaseSettings.string_block_size, "" + (0x10000) ).newGraphDatabase().shutdown();
     }
 
     @Test
     public void makeSureStoreWithDecentStringBlockSizeCanBeCreated() throws Exception
     {
-        new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(  path( 3 ).getPath()).setConfig(GraphDatabaseSettings.string_block_size, "" + (0xFFFF) ).newGraphDatabase().shutdown();
+        builderFor( path( 3 ) ).setConfig(
+                GraphDatabaseSettings.string_block_size, "" + (0xFFFF) ).newGraphDatabase().shutdown();
     }
 
     @Test( expected=TransactionFailureException.class )
     public void makeSureStoreWithTooBigArrayBlockSizeCannotBeCreated() throws Exception
     {
-        new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(  path( 4 ).getPath()).setConfig( GraphDatabaseSettings.array_block_size, "" + (0x10000) ).newGraphDatabase().shutdown();
+        builderFor( path( 4 ) ).setConfig(
+                GraphDatabaseSettings.array_block_size, "" + (0x10000) ).newGraphDatabase().shutdown();
     }
 
     @Test
     public void makeSureStoreWithDecentArrayBlockSizeCanBeCreated() throws Exception
     {
-        new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(  path( 5 ).getPath()).setConfig( GraphDatabaseSettings.array_block_size, "" + (0xFFFF) ).newGraphDatabase().shutdown();
+        builderFor( path( 5 ) ).setConfig(
+                GraphDatabaseSettings.array_block_size, "" + (0xFFFF) ).newGraphDatabase().shutdown();
     }
 
     @Test
     public void makeSureStoreWithTooBigStringBlockSizeCannotBeUpgraded() throws Exception
     {
         File path = path( 6 );
-        new GraphDatabaseFactory().newEmbeddedDatabase(  path.getPath() ).shutdown();
+        startAndStopDb( path );
         setBlockSize( new File( path, "neostore.propertystore.db.strings" ), 0x10000, "StringPropertyStore v0.9.5" );
         assertCannotStart( path, "Shouldn't be able to upgrade with block size that big" );
     }
@@ -137,7 +142,7 @@ public class UpgradeStoreIT
     public void makeSureStoreWithDecentStringBlockSizeCanBeUpgraded() throws Exception
     {
         File path = path( 7 );
-        new GraphDatabaseFactory().newEmbeddedDatabase(  path.getPath() ).shutdown();
+        startAndStopDb( path );
         setBlockSize( new File( path, "neostore.propertystore.db.strings" ), 0xFFFF, "StringPropertyStore v0.9.5" );
         assertCanStart( path );
     }
@@ -146,7 +151,7 @@ public class UpgradeStoreIT
     public void makeSureStoreWithTooBigArrayBlockSizeCannotBeUpgraded() throws Exception
     {
         File path = path( 8 );
-        new GraphDatabaseFactory().newEmbeddedDatabase(  path.getPath() ).shutdown();
+        startAndStopDb( path );
         setBlockSize( new File( path, "neostore.propertystore.db.arrays" ), 0x10000, "ArrayPropertyStore v0.9.5" );
         assertCannotStart( path, "Shouldn't be able to upgrade with block size that big" );
     }
@@ -155,7 +160,7 @@ public class UpgradeStoreIT
     public void makeSureStoreWithDecentArrayBlockSizeCanBeUpgraded() throws Exception
     {
         File path = path( 9 );
-        new GraphDatabaseFactory().newEmbeddedDatabase(  path.getPath() ).shutdown();
+        startAndStopDb( path );
         setBlockSize( new File( path, "neostore.propertystore.db.arrays" ), 0xFFFF, "ArrayPropertyStore v0.9.5" );
         assertCanStart( path );
     }
@@ -167,11 +172,11 @@ public class UpgradeStoreIT
         File path = path( 10 );
         for ( int i = 0; i < 3; i++ )
         {
-            new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(  path.getPath()).setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE ).newGraphDatabase().shutdown();
+            builderFor( path ).setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE ).newGraphDatabase().shutdown();
         }
 
         setOlderNeoStoreVersion( path );
-        new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(  path.getPath()).setConfig( GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE ).newGraphDatabase().shutdown();
+        builderFor( path ).setConfig( GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE ).newGraphDatabase().shutdown();
 
         File oldLogDir = new File( path, "1.2-logs" );
         assertTrue( oldLogDir.exists() );
@@ -187,12 +192,12 @@ public class UpgradeStoreIT
     public void makeSureStoreCantBeUpgradedIfNotExplicitlyToldTo() throws Exception
     {
         File path = path( 11 );
-        new GraphDatabaseFactory().newEmbeddedDatabase(  path.getPath() ).shutdown();
+        startAndStopDb( path );
         setOlderNeoStoreVersion( path );
 
         try
         {
-            new GraphDatabaseFactory().newEmbeddedDatabase(  path.getPath() );
+            startDb( path );
             fail( "Shouldn't be able to upgrade if not told to" );
         }
         catch ( TransactionFailureException e )
@@ -208,12 +213,13 @@ public class UpgradeStoreIT
     public void makeSureStoreCantBeUpgradedIfNotExplicitlyToldTo2() throws Exception
     {
         File path = path( 12 );
-        new GraphDatabaseFactory().newEmbeddedDatabase(  path.getPath() ).shutdown();
+        startAndStopDb( path );
         setOlderNeoStoreVersion( path );
 
         try
         {
-            new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(  path.getPath()).setConfig( GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE ).newGraphDatabase().shutdown();
+            builderFor( path ).setConfig(
+                    GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE ).newGraphDatabase().shutdown();
             fail( "Shouldn't be able to upgrade if not told to" );
         }
         catch ( TransactionFailureException e )
@@ -229,16 +235,17 @@ public class UpgradeStoreIT
     public void makeSureStoreCanBeUpgradedIfExplicitlyToldTo() throws Exception
     {
         File path = path( 13 );
-        new GraphDatabaseFactory().newEmbeddedDatabase(  path.getPath() ).shutdown();
+        startAndStopDb( path );
         setOlderNeoStoreVersion( path );
-        new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(  path.getPath()).setConfig( GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE ).newGraphDatabase().shutdown();
+        builderFor( path ).setConfig( GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE ).newGraphDatabase()
+                          .shutdown();
     }
 
     @Test
     public void makeSureStoreCantBeUpgradedByBatchInserterEvenIfExplicitlyToldTo() throws Exception
     {
         File path = path( 14 );
-        new GraphDatabaseFactory().newEmbeddedDatabase(  path.getPath() ).shutdown();
+        startAndStopDb( path );
         setOlderNeoStoreVersion( path );
 
         try
@@ -256,7 +263,7 @@ public class UpgradeStoreIT
         GraphDatabaseService db = null;
         try
         {
-            db = new GraphDatabaseFactory().newEmbeddedDatabase( path.getPath() );
+            db = startDb( path );
             fail( failMessage );
         }
         catch ( TransactionFailureException e )
@@ -281,7 +288,7 @@ public class UpgradeStoreIT
         GraphDatabaseService db = null;
         try
         {
-            db = new GraphDatabaseFactory().newEmbeddedDatabase( path.getPath() );
+            db = startDb( path );
         }
         finally
         {
@@ -290,6 +297,21 @@ public class UpgradeStoreIT
                 db.shutdown();
             }
         }
+    }
+
+    private GraphDatabaseService startDb( File path )
+    {
+        return new TestGraphDatabaseFactory().newEmbeddedDatabase( path.getAbsolutePath() );
+    }
+
+    private void startAndStopDb( File path )
+    {
+        startDb( path ).shutdown();
+    }
+
+    private GraphDatabaseBuilder builderFor( File path )
+    {
+        return new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( path.getAbsolutePath() );
     }
 
     private void setOlderNeoStoreVersion( File path ) throws IOException

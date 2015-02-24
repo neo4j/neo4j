@@ -19,25 +19,20 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.TargetDirectory.forTest;
-
-import java.util.concurrent.CountDownLatch;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.concurrent.CountDownLatch;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.core.Caches;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.BreakpointHandler;
 import org.neo4j.test.subprocess.BreakpointTrigger;
@@ -46,6 +41,12 @@ import org.neo4j.test.subprocess.DebuggedThread;
 import org.neo4j.test.subprocess.EnabledBreakpoints;
 import org.neo4j.test.subprocess.ForeignBreakpoints;
 import org.neo4j.test.subprocess.SubProcessTestRunner;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.test.TargetDirectory.forTest;
 
 @ForeignBreakpoints( {
     @ForeignBreakpoints.BreakpointDef( type = "org.neo4j.kernel.impl.cache.AutoLoadingCache", method = "updateSize" )
@@ -62,7 +63,7 @@ public class TestHighPerformanceCacheRemoveSizeDiverge
     {
         try
         {
-        graphdb = (GraphDatabaseAPI) new GraphDatabaseFactory().
+        graphdb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
                 newEmbeddedDatabaseBuilder( forTest(TestHighPerformanceCacheRemoveSizeDiverge.class ).makeGraphDbDir(
                 ).getAbsolutePath()).
                 setConfig( stringMap( GraphDatabaseSettings.cache_type.name(), HighPerformanceCacheProvider.NAME ) ).

@@ -19,16 +19,16 @@
  */
 package org.neo4j.backup;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -49,17 +49,16 @@ import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.subprocess.SubProcess;
 
 import static java.lang.Integer.parseInt;
-
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 
@@ -263,7 +262,7 @@ public class TestBackup
         GraphDatabaseService db = null;
         try
         {
-            db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath.getPath() ).
+            db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath.getPath() ).
                 setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE ).
                 newGraphDatabase();
 
@@ -309,7 +308,7 @@ public class TestBackup
         GraphDatabaseService db = null;
         try
         {
-            db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath.getPath() ).
+            db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath.getPath() ).
                 setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE ).
                 newGraphDatabase();
 
@@ -343,7 +342,7 @@ public class TestBackup
     {
         String key = "name";
         String value = "Neo";
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath.getPath() ).
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( serverPath.getPath() ).
             setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE ).
             newGraphDatabase();
 
@@ -388,7 +387,7 @@ public class TestBackup
         String sourcePath = "target/var/serverdb-lock";
         FileUtils.deleteDirectory( new File( sourcePath ) );
 
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( sourcePath ).
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( sourcePath ).
             setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE ).
             newGraphDatabase();
         try
@@ -443,7 +442,7 @@ public class TestBackup
     {
         try
         {
-            new GraphDatabaseFactory().newEmbeddedDatabase( path).shutdown();
+            new TestGraphDatabaseFactory().newEmbeddedDatabase( path).shutdown();
             fail( "Could start up database in same process, store not locked" );
         }
         catch ( RuntimeException ex )
@@ -490,7 +489,7 @@ public class TestBackup
             GraphDatabaseService db = null;
             try
             {
-                db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
+                db = new TestGraphDatabaseFactory().newEmbeddedDatabase( path );
             }
             catch ( RuntimeException ex )
             {
@@ -555,7 +554,7 @@ public class TestBackup
 
     private GraphDatabaseService startGraphDatabase( File path, boolean withOnlineBackup )
     {
-        GraphDatabaseFactory dbFactory = new GraphDatabaseFactory()
+        GraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory()
         {
             @Override
             protected GraphDatabaseService newDatabase( String path, Map<String,String> config,

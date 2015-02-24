@@ -21,12 +21,12 @@ package org.neo4j.kernel.ha.lock.forseti;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
@@ -34,30 +34,26 @@ import static org.hamcrest.core.IsInstanceOf.instanceOf;
 public class ForsetiServiceLoadingTest
 {
     @Rule
-    public TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() );
 
     @Test
     public void shouldUseForsetiAsDefaultLockManager() throws Exception
     {
         // When
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( dir.absolutePath() );
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
 
         // Then
         assertThat( db.getDependencyResolver().resolveDependency( Locks.class ), instanceOf( ForsetiLockManager.class ) );
-        db.shutdown();
     }
 
     @Test
     public void shouldAllowUsingCommunityLockManager() throws Exception
     {
         // When
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( dir.absolutePath() )
-                .setConfig( InternalAbstractGraphDatabase.Configuration.lock_manager, "community" )
-                .newGraphDatabase();
+        dbRule.setConfig( InternalAbstractGraphDatabase.Configuration.lock_manager, "community" );
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
 
         // Then
         assertThat( db.getDependencyResolver().resolveDependency( Locks.class ), instanceOf( CommunityLockManger.class ) );
-        db.shutdown();
     }
 }

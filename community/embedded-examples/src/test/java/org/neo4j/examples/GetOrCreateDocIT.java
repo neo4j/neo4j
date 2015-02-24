@@ -18,17 +18,14 @@
  */
 package org.neo4j.examples;
 
-import static java.lang.String.format;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -36,17 +33,21 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.UniqueFactory;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static java.lang.String.format;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class GetOrCreateDocIT extends AbstractJavaDocTestBase
 {
     @BeforeClass
     public static void init()
     {
-        db = new GraphDatabaseFactory().newEmbeddedDatabase(
+        db = new TestGraphDatabaseFactory().newEmbeddedDatabase(
                 TargetDirectory.forTest( GetOrCreateDocIT.class ).makeGraphDbDir().getAbsolutePath()
              );
     }

@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -74,7 +75,7 @@ public class DuplicatePropertyRemoverTest
     @BeforeClass
     public static void setUp()
     {
-        GraphDatabaseFactory factory = new GraphDatabaseFactory();
+        GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         GraphDatabaseService db = factory.newEmbeddedDatabase( storePath.absolutePath() );
         api = (GraphDatabaseAPI) db;
 

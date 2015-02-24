@@ -19,11 +19,11 @@
  */
 package org.neo4j.consistency;
 
-import java.io.File;
-import java.util.Date;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.util.Date;
 
 import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.consistency.checking.GraphStoreFixture;
@@ -33,7 +33,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -41,11 +40,11 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.consistency.ConsistencyCheckService.defaultLogFileName;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.Property.property;
@@ -116,7 +115,7 @@ public class ConsistencyCheckServiceIntegrationTest
         // given
         ConsistencyCheckService service = new ConsistencyCheckService();
         Config configuration = new Config( stringMap(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( testDirectory.absolutePath() );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.absolutePath() );
 
         String propertyKey = "itemId";
         Label label = DynamicLabel.label( "Item" );

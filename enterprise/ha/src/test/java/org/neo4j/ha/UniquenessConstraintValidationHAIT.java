@@ -19,26 +19,25 @@
  */
 package org.neo4j.ha;
 
-import java.io.File;
-import java.util.concurrent.Future;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
+import java.util.concurrent.Future;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.test.OtherThreadRule;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.ha.ClusterManager;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.kernel.impl.api.integrationtest.UniquenessConstraintValidationConcurrencyIT.createNode;
 import static org.neo4j.test.OtherThreadRule.isWaiting;
@@ -195,7 +194,7 @@ public class UniquenessConstraintValidationHAIT
     private File databaseWithUniquenessConstraint( String label, String propertyKey )
     {
         File storeDir = new File( targetDir.directory(), "seed" );
-        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsolutePath() );
+        GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsolutePath() );
         try
         {
             Transaction tx = graphDb.beginTx();

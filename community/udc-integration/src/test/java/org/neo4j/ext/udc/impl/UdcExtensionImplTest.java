@@ -19,6 +19,16 @@
  */
 package org.neo4j.ext.udc.impl;
 
+import com.sun.jersey.spi.container.ContainerRequest;
+import org.apache.commons.io.FileUtils;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.localserver.LocalTestServer;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestName;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -31,22 +41,11 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import com.sun.jersey.spi.container.ContainerRequest;
-import org.apache.commons.io.FileUtils;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.localserver.LocalTestServer;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
-
 import org.neo4j.ext.udc.Edition;
 import org.neo4j.ext.udc.UdcConstants;
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.server.rest.web.CollectUserAgentFilter;
@@ -63,7 +62,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.stub;
-
 import static org.neo4j.ext.udc.UdcConstants.EDITION;
 import static org.neo4j.ext.udc.UdcConstants.MAC;
 import static org.neo4j.ext.udc.UdcConstants.REGISTRATION;
@@ -143,7 +141,7 @@ public class UdcExtensionImplTest
     {
         File possibleDirectory = new File( path, "should-record-failures" );
 
-        GraphDatabaseService graphdb = new GraphDatabaseFactory().
+        GraphDatabaseService graphdb = new TestGraphDatabaseFactory().
                 newEmbeddedDatabaseBuilder( possibleDirectory.getPath() ).
                 loadPropertiesFromURL( getClass().getResource( "/org/neo4j/ext/udc/udc.properties" ) ).
                 setConfig( UdcSettings.first_delay, "100" ).

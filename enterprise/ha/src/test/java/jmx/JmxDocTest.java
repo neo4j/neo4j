@@ -19,6 +19,10 @@
  */
 package jmx;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
@@ -43,14 +47,10 @@ import javax.management.MBeanServer;
 import javax.management.ObjectInstance;
 import javax.management.ObjectName;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
-import org.neo4j.ha.CreateEmptyDb;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.configuration.AsciiDocListGenerator;
 import org.neo4j.test.AsciiDocGenerator;
@@ -89,11 +89,13 @@ public class JmxDocTest
     public static void startDb() throws Exception
     {
         File storeDir = dir.makeGraphDbDir( /*clean=*/ );
-        CreateEmptyDb.at( storeDir );
-        d1b = new HighlyAvailableGraphDatabaseFactory().
-                newHighlyAvailableDatabaseBuilder( storeDir.getAbsolutePath() )
-                .setConfig( ClusterSettings.server_id, "1" ).setConfig( "jmx.port", "9913" ).
-                        setConfig( ClusterSettings.initial_hosts, ":5001" ).newGraphDatabase();
+        GraphDatabaseBuilder builder =
+                new TestHighlyAvailableGraphDatabaseFactory().newHighlyAvailableDatabaseBuilder(
+                        storeDir.getAbsolutePath() );
+        d1b = builder.setConfig( ClusterSettings.server_id, "1" )
+                     .setConfig( "jmx.port", "9913" )
+                     .setConfig( ClusterSettings.initial_hosts, ":5001" )
+                     .newGraphDatabase();
     }
 
     @AfterClass

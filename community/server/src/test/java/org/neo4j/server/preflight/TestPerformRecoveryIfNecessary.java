@@ -19,6 +19,10 @@
  */
 package org.neo4j.server.preflight;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileWriter;
@@ -27,11 +31,6 @@ import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Properties;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -41,10 +40,10 @@ import org.neo4j.kernel.impl.util.TestLogging;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.kernel.impl.recovery.TestStoreRecoverer.createLogFileForNextVersionWithSomeDataInIt;
 
 public class TestPerformRecoveryIfNecessary {
@@ -82,7 +81,7 @@ public class TestPerformRecoveryIfNecessary {
         // Given
         Config config = buildProperties();
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        new GraphDatabaseFactory().newEmbeddedDatabase( storeDirectory ).shutdown();
+        new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDirectory ).shutdown();
         
         PerformRecoveryIfNecessary task = new PerformRecoveryIfNecessary( config, new HashMap<String, String>(),
                 new PrintStream( outputStream ), DevNullLoggingService.DEV_NULL );
@@ -100,7 +99,7 @@ public class TestPerformRecoveryIfNecessary {
         StoreRecoverer recoverer = new StoreRecoverer();
         Config config = buildProperties();
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        new GraphDatabaseFactory().newEmbeddedDatabase( storeDirectory ).shutdown();
+        new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDirectory ).shutdown();
         // Make this look incorrectly shut down
         createLogFileForNextVersionWithSomeDataInIt( new File( storeDirectory ), new DefaultFileSystemAbstraction() );
 

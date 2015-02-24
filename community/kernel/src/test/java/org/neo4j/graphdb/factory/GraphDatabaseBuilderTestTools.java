@@ -17,16 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test;
+package org.neo4j.graphdb.factory;
 
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.configuration.Config;
 
-public class TestGraphDatabaseBuilder extends GraphDatabaseBuilder
+public class GraphDatabaseBuilderTestTools
 {
-    public TestGraphDatabaseBuilder( DatabaseCreator creator )
+    /**
+     * Create a copy of the current settings of the given {@link GraphDatabaseBuilder}, and return them as a
+     * {@link Config} object.
+     */
+    public static Config createConfigCopy( GraphDatabaseBuilder builder )
     {
-        super( creator );
-        super.config.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
+        return new Config( builder.getRawConfig() );
+    }
+
+    public static void clearConfig( GraphDatabaseBuilder builder )
+    {
+        builder.getRawConfig().clear();
     }
 }

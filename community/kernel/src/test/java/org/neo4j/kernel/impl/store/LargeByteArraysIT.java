@@ -19,18 +19,19 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import static java.lang.Math.max;
-import static java.lang.System.currentTimeMillis;
-import static org.neo4j.test.TargetDirectory.forTest;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import java.util.Random;
 
-import org.junit.Ignore;
-import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static java.lang.Math.max;
+import static java.lang.System.currentTimeMillis;
+import static org.neo4j.test.TargetDirectory.forTest;
 
 @Ignore( "Written as a reaction to an observed bug, but it doesn't seem to trigger it though" )
 public class LargeByteArraysIT
@@ -40,10 +41,8 @@ public class LargeByteArraysIT
     @Test
     public void largeByteArrays() throws Exception
     {
-        GraphDatabaseService db = new GraphDatabaseFactory().
-                newEmbeddedDatabase( forTest( getClass() ).
-                                cleanDirectory( "bytearrays" ).getAbsolutePath()
-                );
+        String storeDir = forTest( getClass() ).cleanDirectory( "bytearrays" ).getAbsolutePath();
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         try
         {
             for ( int i = 0; i < 100000; i++ )

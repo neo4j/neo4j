@@ -19,20 +19,16 @@
  */
 package matching;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -42,12 +38,17 @@ import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TraversalPosition;
 import org.neo4j.graphdb.Traverser.Order;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphmatching.PatternMatch;
 import org.neo4j.graphmatching.PatternMatcher;
 import org.neo4j.graphmatching.PatternNode;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 public class TestMatchingOfCircularPattern
 {
@@ -269,7 +270,9 @@ public class TestMatchingOfCircularPattern
     @BeforeClass
     public static void setUpDb()
     {
-        graphdb = new GraphDatabaseFactory().newEmbeddedDatabase( TargetDirectory.forTest( TestMatchingOfCircularPattern.class ).makeGraphDbDir().getAbsolutePath() );
+        String storeDir = TargetDirectory.forTest(
+                TestMatchingOfCircularPattern.class ).makeGraphDbDir().getAbsolutePath();
+        graphdb = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         Transaction tx = graphdb.beginTx();
         try
         {

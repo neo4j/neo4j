@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,11 +28,9 @@ import java.util.Map;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -43,7 +40,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -55,7 +52,7 @@ import static org.mockito.Mockito.when;
 public class IndexConsultedPropertyBlockSweeperTest
 {
     @Rule
-    public TargetDirectory.TestDirectory storePath = TargetDirectory.testDirForTest( IndexLookupTest.class );
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( IndexLookupTest.class );
 
     private GraphDatabaseAPI api;
     private long nodeId;
@@ -75,27 +72,25 @@ public class IndexConsultedPropertyBlockSweeperTest
     @Before
     public void setUp() throws IOException
     {
-        GraphDatabaseFactory factory = new GraphDatabaseFactory();
-        GraphDatabaseService db = factory.newEmbeddedDatabase( storePath.absolutePath() );
-        api = (GraphDatabaseAPI) db;
+        api = dbRule.getGraphDatabaseAPI();
 
         nonIndexedPropKey = "notIndexed";
         indexedPropKey = "indexed";
 
         Label usedLabel = DynamicLabel.label( "UsedLabel" );
 
-        try ( Transaction transaction = db.beginTx() )
+        try ( Transaction transaction = api.beginTx() )
         {
-            db.schema().indexFor( usedLabel ).on( indexedPropKey ).create();
+            api.schema().indexFor( usedLabel ).on( indexedPropKey ).create();
             transaction.success();
         }
 
-        try ( Transaction transaction = db.beginTx() )
+        try ( Transaction transaction = api.beginTx() )
         {
             indexedValue = "value1";
             nonIndexedValue = "value2";
 
-            Node nodeA = db.createNode( usedLabel );
+            Node nodeA = api.createNode( usedLabel );
             nodeA.setProperty( indexedPropKey, indexedValue );
             nodeA.setProperty( nonIndexedPropKey, nonIndexedValue );
             nodeId = nodeA.getId();
@@ -118,12 +113,6 @@ public class IndexConsultedPropertyBlockSweeperTest
         when( indexMock.contains( nodeId, indexedValue ) ).thenReturn( true );
 
         propertyRemoverMock = mock( DuplicatePropertyRemover.class );
-    }
-
-    @After
-    public void tearDown()
-    {
-        api.shutdown();
     }
 
     @Test

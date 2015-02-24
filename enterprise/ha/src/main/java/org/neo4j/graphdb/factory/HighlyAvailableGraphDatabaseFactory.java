@@ -29,19 +29,11 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
  */
 public class HighlyAvailableGraphDatabaseFactory extends GraphDatabaseFactory
 {
-
     @Override
-    public GraphDatabaseService newEmbeddedDatabase( final String path )
+    protected GraphDatabaseBuilder.DatabaseCreator createDatabaseCreator(
+            final String path, final GraphDatabaseFactoryState state )
     {
-        return newEmbeddedDatabaseBuilder( path ).newGraphDatabase();
-    }
-
-    @Override
-    public GraphDatabaseBuilder newEmbeddedDatabaseBuilder( final String path )
-    {
-        final GraphDatabaseFactoryState state = getStateCopy();
-
-        return new GraphDatabaseBuilder( new GraphDatabaseBuilder.DatabaseCreator()
+        return new GraphDatabaseBuilder.DatabaseCreator()
         {
 
             @Override
@@ -51,7 +43,7 @@ public class HighlyAvailableGraphDatabaseFactory extends GraphDatabaseFactory
 
                 return new HighlyAvailableGraphDatabase( path, config, state.databaseDependencies() );
             }
-        } );
+        };
     }
 
     /**

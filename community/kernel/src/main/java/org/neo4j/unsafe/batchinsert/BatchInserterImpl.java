@@ -294,7 +294,7 @@ public class BatchInserterImpl implements BatchInserter
     private Map<String, String> getDefaultParams()
     {
         Map<String, String> params = new HashMap<>();
-        params.put( GraphDatabaseSettings.pagecache_memory.name(), "1%" );
+        params.put( GraphDatabaseSettings.pagecache_memory.name(), "32m" );
         return params;
     }
 

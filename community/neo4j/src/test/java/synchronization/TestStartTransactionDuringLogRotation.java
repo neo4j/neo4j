@@ -35,18 +35,16 @@ import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.EmbeddedDatabaseRule;
 
 public class TestStartTransactionDuringLogRotation
 {
     @Rule
-    public TargetDirectory.TestDirectory storeDir = TargetDirectory.testDirForTest(
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule(
             TestStartTransactionDuringLogRotation.class );
 
     private GraphDatabaseAPI db;
@@ -62,10 +60,8 @@ public class TestStartTransactionDuringLogRotation
     @Before
     public void setUp() throws InterruptedException
     {
-        GraphDatabaseFactory factory = new GraphDatabaseFactory();
-        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( storeDir.absolutePath() );
-        builder.setConfig( GraphDatabaseSettings.logical_log_rotation_threshold.name(), "1M" );
-        db = (GraphDatabaseAPI) builder.newGraphDatabase();
+        dbRule.setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, "1M" );
+        db = dbRule.getGraphDatabaseAPI();
         executor = Executors.newCachedThreadPool();
         startLogRotationLatch = new CountDownLatch( 1 );
         completeLogRotationLatch = new CountDownLatch( 1 );
@@ -129,7 +125,6 @@ public class TestStartTransactionDuringLogRotation
     {
         writerStopped.set( true );
         writerTaskFuture.get( 10, TimeUnit.SECONDS );
-        db.shutdown();
         executor.shutdown();
     }
 

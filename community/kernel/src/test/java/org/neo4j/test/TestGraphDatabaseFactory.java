@@ -24,6 +24,7 @@ import java.util.Map;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.logging.Logging;
@@ -58,6 +59,14 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
     public GraphDatabaseBuilder newImpermanentDatabaseBuilder()
     {
         return newImpermanentDatabaseBuilder( ImpermanentGraphDatabase.PATH );
+    }
+
+    @Override
+    protected void configure( GraphDatabaseBuilder builder )
+    {
+        super.configure( builder );
+        // Reduce the default page cache memory size to 8 mega-bytes for test databases.
+        builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
     }
 
     @Override
