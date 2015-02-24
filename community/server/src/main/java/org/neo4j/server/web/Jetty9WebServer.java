@@ -519,6 +519,8 @@ public class Jetty9WebServer implements WebServer
                 log.debug( format( "Mounting static content from [%s] at [%s]", url, mountPoint ) );
 
                 addFiltersTo( staticContext );
+                staticContext.addFilter( new FilterHolder( new NoCacheHtmlFilter() ), "/*",
+                        EnumSet.of( DispatcherType.REQUEST, DispatcherType.FORWARD ) );
 
                 handlers.addHandler( staticContext );
             }
