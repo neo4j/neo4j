@@ -25,6 +25,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -55,10 +56,12 @@ public abstract class Bootstrapper
 
     protected final LifeSupport life = new LifeSupport();
     protected NeoServer server;
-	protected ConfigurationBuilder configurator;
+    protected ConfigurationBuilder configurator;
     private Thread shutdownHook;
     protected GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies();
-    private ConsoleLogger log;
+
+    // default logger to System.out so that we are always able to print errors even if logging has not been initialized
+    private ConsoleLogger log = new ConsoleLogger( StringLogger.SYSTEM );
 
     public static void main( String[] args )
     {
@@ -99,12 +102,12 @@ public abstract class Bootstrapper
     {
         try
         {
-            dependencies = dependencies.monitors(new Monitors());
+            dependencies = dependencies.monitors( new Monitors() );
             BufferingConsoleLogger consoleBuffer = new BufferingConsoleLogger();
-        	configurator = createConfigurationBuilder( consoleBuffer );
-        	dependencies = dependencies.logging(createLogging( configurator, dependencies.monitors()));
-        	log = dependencies.logging().getConsoleLog( getClass() );
-        	consoleBuffer.replayInto( log );
+            configurator = createConfigurationBuilder( consoleBuffer );
+            dependencies = dependencies.logging( createLogging( configurator, dependencies.monitors() ) );
+            log = dependencies.logging().getConsoleLog( getClass() );
+            consoleBuffer.replayInto( log );
 
             life.start();
 
@@ -136,7 +139,7 @@ public abstract class Bootstrapper
         }
     }
 
-    private Logging createLogging(ConfigurationBuilder configurator, Monitors monitors)
+    private Logging createLogging( ConfigurationBuilder configurator, Monitors monitors )
     {
         try
         {
@@ -145,9 +148,8 @@ public abstract class Bootstrapper
         }
         catch ( RuntimeException e )
         {
-            Logging logging = new SystemOutLogging();
-            logging.getConsoleLog( getClass() ).error( "Unable to initialize logging. Will fallback to System.out", e );
-            return logging;
+            log.error( "Unable to initialize logging. Will fallback to System.out", e );
+            return new SystemOutLogging();
         }
     }
 
@@ -160,7 +162,7 @@ public abstract class Bootstrapper
     protected abstract NeoServer createNeoServer();
 
     // TODO: stopArg is not used, check if it is safe to remove this method
-	public void stop( int stopArg )
+    public void stop( int stopArg )
     {
         stop();
     }
