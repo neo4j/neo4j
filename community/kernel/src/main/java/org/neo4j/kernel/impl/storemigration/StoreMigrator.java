@@ -73,7 +73,6 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication.PropertyDeduplicator;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -194,17 +193,8 @@ public class StoreMigrator implements StoreMigrationParticipant
         if ( versionToUpgradeFrom( storeDir ).equals( Legacy21Store.LEGACY_VERSION ) )
         {
             // create counters from scratch
-            final LifeSupport life = new LifeSupport();
-            life.start();
-            try
-            {
-                removeDuplicateEntityProperties( storeDir, migrationDir, pageCache, schemaIndexProvider );
-                rebuildCountsFromScratch( storeDir, migrationDir, lastTxId, pageCache );
-            }
-            finally
-            {
-                life.shutdown();
-            }
+            removeDuplicateEntityProperties( storeDir, migrationDir, pageCache, schemaIndexProvider );
+            rebuildCountsFromScratch( storeDir, migrationDir, lastTxId, pageCache );
         }
         else
         {

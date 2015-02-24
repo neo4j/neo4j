@@ -20,6 +20,9 @@
 package org.neo4j.graphdb.factory;
 
 import java.io.File;
+import java.lang.management.ManagementFactory;
+import java.lang.management.OperatingSystemMXBean;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,7 +57,6 @@ import static org.neo4j.helpers.Settings.min;
 import static org.neo4j.helpers.Settings.options;
 import static org.neo4j.helpers.Settings.port;
 import static org.neo4j.helpers.Settings.setting;
-import static org.neo4j.helpers.Settings.DirectMemoryUsage.directMemoryUsage;
 
 /**
  * Settings for Neo4j. Use this with {@link GraphDatabaseBuilder}.
@@ -211,15 +213,43 @@ public abstract class GraphDatabaseSettings
     @Internal
     public static final Setting<Long> mapped_memory_page_size = setting( "dbms.pagecache.pagesize", BYTES, "8192" );
 
-    @Description( "The amount of memory to use for mapping the store files, either in bytes or" +
-            " as a percentage of available memory. This will be clipped at the amount of" +
-            " free memory observed when the database starts, and automatically be rounded" +
-            " down to the nearest whole page. For example, if `500MB` is configured, but" +
-            " only 450MB of memory is free when the database starts, then the database will" +
-            " map at most 450MB. If `50%` is configured, and the system has a capacity of" +
-            " 4GB, then at most 2GB of memory will be mapped, unless the database observes" +
-            " that less than 2GB of memory is free when it starts." )
-    public static final Setting<Long> pagecache_memory = setting( "dbms.pagecache.memory", directMemoryUsage(), "50%" );
+    @Description( "The amount of memory to use for mapping the store files, in bytes (or kilobytes with the 'k' " +
+                  "suffix, megabytes with 'm' and gigabytes with 'g'). If Neo4j is running on a dedicated server, " +
+                  "then it is generally recommended to leave about 2-4 gigabytes for the operating system, give the " +
+                  "JVM enough heap to hold all your transaction state and query context, and then leave the rest for " +
+                  "the page cache. The default page cache memory assumes the machine is dedicated to running " +
+                  "Neo4j, and is heuristically set to 75% of RAM minus the max Java heap size." )
+    public static final Setting<Long> pagecache_memory =
+            setting( "dbms.pagecache.memory", BYTES, defaultPageCacheMemory() );
+
+    private static String defaultPageCacheMemory()
+    {
+        // Try to compute (RAM - maxheap) * 0.75 if we can get reliable numbers...
+        long maxHeapMemory = Runtime.getRuntime().maxMemory();
+        if ( 0 < maxHeapMemory && maxHeapMemory < Long.MAX_VALUE )
+        {
+            try
+            {
+                OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
+                Method getTotalPhysicalMemorySize = os.getClass().getMethod( "getTotalPhysicalMemorySize" );
+                getTotalPhysicalMemorySize.setAccessible( true );
+                long physicalMemory = (long) getTotalPhysicalMemorySize.invoke( os );
+                if ( 0 < physicalMemory && physicalMemory < Long.MAX_VALUE && maxHeapMemory < physicalMemory )
+                {
+                    long heuristic = (long) ((physicalMemory - maxHeapMemory) * 0.75);
+                    long min = 32 * 1024 * 1024; // We'd like at least 32 MiBs.
+                    long max = 1024 * 1024 * 1024 * 1024L; // Don't heuristically take more than 1 TiB.
+                    long memory = Math.min( max, Math.max( min, heuristic ) );
+                    return String.valueOf( memory );
+                }
+            }
+            catch ( Exception ignore )
+            {
+            }
+        }
+        // ... otherwise we just go with 2 GiBs.
+        return "2g";
+    }
 
     @Deprecated
     @Obsoleted( "This is no longer used" )

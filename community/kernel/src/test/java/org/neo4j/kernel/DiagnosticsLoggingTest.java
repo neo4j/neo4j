@@ -73,7 +73,7 @@ public class DiagnosticsLoggingTest
                 newGraphDatabase();
 
         String messages = logger.getMessages();
-        assertThat( messages, containsString( "Page cache size: 8MB" ) );
+        assertThat( messages, containsString( "Page cache size: 8 MiB" ) );
         db.shutdown();
     }
 

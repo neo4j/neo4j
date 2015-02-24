@@ -40,6 +40,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.DefaultFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
@@ -51,8 +52,11 @@ import static org.junit.Assert.assertThat;
 public class BatchInsertDocTest
 {
     @Test
-    public void insert() throws InterruptedException
+    public void insert() throws Exception
     {
+        // Make sure our scratch directory is clean
+        FileUtils.deleteRecursively( new File( "target/batchinserter-example" ) );
+
         // START SNIPPET: insert
         BatchInserter inserter = null;
         try
@@ -108,7 +112,7 @@ public class BatchInsertDocTest
     {
         // START SNIPPET: configuredInsert
         Map<String, String> config = new HashMap<>();
-        config.put( "dbms.pagecache.memory", "3G" );
+        config.put( "dbms.pagecache.memory", "512m" );
         BatchInserter inserter = BatchInserters.inserter(
                 new File("target/batchinserter-example-config").getAbsolutePath(), fileSystem, config );
         // Insert data here ... and then shut down:
@@ -121,7 +125,7 @@ public class BatchInsertDocTest
     {
         try ( Writer fw = fileSystem.openAsWriter( new File( "target/docs/batchinsert-config" ).getAbsoluteFile(), "utf-8", false ) )
         {
-            fw.append( "dbms.pagecache.memory=3G" );
+            fw.append( "dbms.pagecache.memory=512m" );
         }
 
         // START SNIPPET: configFileInsert
