@@ -36,6 +36,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
+import static org.neo4j.com.ResourceReleaser.NO_OP;
 
 public class AbstractTokenCreatorTest
 {
@@ -45,7 +46,7 @@ public class AbstractTokenCreatorTest
     private final RequestContext context = new RequestContext( 1, 2, 3, 4, 5 );
 
     private final String label = "A";
-    private final Response<Integer> response = new TransactionStreamResponse<>( 42, null, null, null );
+    private final Response<Integer> response = new TransactionStreamResponse<>( 42, null, null, NO_OP );
 
     private final AbstractTokenCreator creator = new AbstractTokenCreator( master, requestContextFactory )
     {

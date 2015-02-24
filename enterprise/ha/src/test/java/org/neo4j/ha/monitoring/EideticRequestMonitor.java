@@ -19,9 +19,11 @@
  */
 package org.neo4j.ha.monitoring;
 
-import java.util.Map;
+import java.net.SocketAddress;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.com.RequestContext;
+import org.neo4j.com.RequestType;
 import org.neo4j.com.monitor.RequestMonitor;
 
 /**
@@ -30,11 +32,11 @@ import org.neo4j.com.monitor.RequestMonitor;
  */
 public class EideticRequestMonitor implements RequestMonitor
 {
-    private AtomicInteger startedRequests = new AtomicInteger( 0 );
-    private AtomicInteger endedRequests = new AtomicInteger( 0 );
+    private final AtomicInteger startedRequests = new AtomicInteger( 0 );
+    private final AtomicInteger endedRequests = new AtomicInteger( 0 );
 
     @Override
-    public void beginRequest( Map<String, String> requestContext )
+    public void beginRequest( SocketAddress remoteAddress, RequestType<?> requestType, RequestContext requestContext )
     {
         startedRequests.incrementAndGet();
     }

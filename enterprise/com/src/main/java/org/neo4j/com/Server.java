@@ -672,11 +672,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         @SuppressWarnings( "unchecked" )
         public void run()
         {
-            Map<String,String> requestContext = new HashMap<>();
-            requestContext.put( "type", type.toString() );
-            requestContext.put( "remoteClient", channel.getRemoteAddress().toString() );
-            requestContext.put( "slaveContext", context.toString() );
-            requestMonitor.beginRequest( requestContext );
+            requestMonitor.beginRequest( channel.getRemoteAddress(), type, context );
             Response<R> response = null;
             Throwable failure = null;
             try

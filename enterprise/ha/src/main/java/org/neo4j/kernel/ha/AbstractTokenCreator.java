@@ -39,7 +39,10 @@ public abstract class AbstractTokenCreator implements TokenCreator
     @Override
     public final int getOrCreate( String name )
     {
-        return create( master, requestContextFactory.newRequestContext(), name ).response();
+        try ( Response<Integer> response = create( master, requestContextFactory.newRequestContext(), name ) )
+        {
+            return response.response();
+        }
     }
 
     protected abstract Response<Integer> create( Master master, RequestContext context, String name );

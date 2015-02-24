@@ -119,7 +119,7 @@ public class StoreCopyClient
         cleanDirectory( tempStore );
 
         // Request store files and transactions that will need recovery
-        try ( Response response = requester.copyStore( decorateWithProgressIndicator(
+        try ( Response<?> response = requester.copyStore( decorateWithProgressIndicator(
                 new ToFileStoreWriter( tempStore ) ) ) )
         {
             // Update highest archived log id

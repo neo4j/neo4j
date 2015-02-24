@@ -324,7 +324,10 @@ class BackupService
             client.start();
             unpacker.start();
 
-            unpacker.unpackResponse( client.incrementalBackup( context ), handler );
+            try ( Response<Void> response = client.incrementalBackup( context ) )
+            {
+                unpacker.unpackResponse( response, handler );
+            }
 
             consistent = true;
         }

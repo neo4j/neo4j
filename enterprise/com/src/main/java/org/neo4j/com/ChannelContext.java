@@ -19,37 +19,44 @@
  */
 package org.neo4j.com;
 
-import java.io.IOException;
+import org.jboss.netty.buffer.ChannelBuffer;
+import org.jboss.netty.channel.Channel;
 
-import org.neo4j.com.storecopy.ResponseUnpacker;
-import org.neo4j.kernel.impl.store.StoreId;
+import java.nio.ByteBuffer;
 
-/**
- * {@link Response} that carries {@link TransactionStream transaction data} as a side-effect, to be applied
- * before accessing the response value.
- *
- * @see ResponseUnpacker
- */
-public class TransactionStreamResponse<T> extends Response<T>
+import static java.util.Objects.requireNonNull;
+
+public class ChannelContext
 {
-    private final TransactionStream transactions;
+    private final Channel channel;
+    private final ChannelBuffer output;
+    private final ByteBuffer input;
 
-    public TransactionStreamResponse( T response, StoreId storeId, TransactionStream transactions,
-            ResourceReleaser releaser )
+    public ChannelContext( Channel channel, ChannelBuffer output, ByteBuffer input )
     {
-        super( response, storeId, releaser );
-        this.transactions = transactions;
+        this.channel = requireNonNull( channel );
+        this.output = requireNonNull( output );
+        this.input = requireNonNull( input );
+    }
+
+    public Channel channel()
+    {
+        return channel;
+    }
+
+    public ChannelBuffer output()
+    {
+        return output;
+    }
+
+    public ByteBuffer input()
+    {
+        return input;
     }
 
     @Override
-    public void accept( Response.Handler handler ) throws IOException
+    public String toString()
     {
-        transactions.accept( handler.transactions() );
-    }
-
-    @Override
-    public boolean hasTransactionsToBeApplied()
-    {
-        return true;
+        return "ChannelContext{channel=" + channel + ", output=" + output + ", input=" + input + "}";
     }
 }

@@ -21,6 +21,8 @@ package org.neo4j.kernel.ha;
 
 import java.io.IOException;
 
+import org.neo4j.com.RequestContext;
+import org.neo4j.com.Response;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
@@ -49,7 +51,11 @@ public class SlaveTransactionCommitProcess implements TransactionCommitProcess
     {
         try
         {
-            return master.commit( requestContextFactory.newRequestContext(representation.getLockSessionId()), representation ).response();
+            RequestContext context = requestContextFactory.newRequestContext( representation.getLockSessionId() );
+            try ( Response<Long> response = master.commit( context, representation ) )
+            {
+                return response.response();
+            }
         }
         catch ( IOException e )
         {

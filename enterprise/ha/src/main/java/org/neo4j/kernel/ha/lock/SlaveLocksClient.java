@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DeadlockDetectedException;
@@ -235,7 +236,10 @@ class SlaveLocksClient implements Locks.Client
         exclusiveLocks.clear();
         if ( initialized )
         {
-            master.endLockSession( requestContextFactory.newRequestContext( (int) client.getLockSessionId() ), true );
+            try ( Response<Void> ignored = master.endLockSession( newRequestContextFor( client ), true ) )
+            {
+                // Lock session is closed on master at this point
+            }
             initialized = false;
         }
         client.releaseAll();
@@ -248,7 +252,10 @@ class SlaveLocksClient implements Locks.Client
         exclusiveLocks.clear();
         if ( initialized )
         {
-            master.endLockSession( requestContextFactory.newRequestContext( client.getLockSessionId() ), true );
+            try ( Response<Void> ignored = master.endLockSession( newRequestContextFor( client ), true ) )
+            {
+                // Lock session is closed on master at this point
+            }
         }
         client.close();
     }
@@ -267,8 +274,12 @@ class SlaveLocksClient implements Locks.Client
             || resourceType == ResourceTypes.LEGACY_INDEX )
         {
             makeSureTxHasBeenInitialized();
-            return receiveLockResponse(
-                master.acquireSharedLock( requestContextFactory.newRequestContext( (int) getLockSessionId() ), resourceType, resourceId ));
+
+            RequestContext requestContext = newRequestContextFor( this );
+            try ( Response<LockResult> response = master.acquireSharedLock( requestContext, resourceType, resourceId ) )
+            {
+                return receiveLockResponse( response );
+            }
         }
         else
         {
@@ -276,11 +287,14 @@ class SlaveLocksClient implements Locks.Client
         }
     }
 
-    private boolean acquireExclusiveOnMaster( Locks.ResourceType resourceType, long ... resourceId )
+    private boolean acquireExclusiveOnMaster( Locks.ResourceType resourceType, long... resourceId )
     {
         makeSureTxHasBeenInitialized();
-        return receiveLockResponse(
-                master.acquireExclusiveLock( requestContextFactory.newRequestContext( getLockSessionId() ), resourceType, resourceId ));
+        RequestContext requestContext = newRequestContextFor( this );
+        try ( Response<LockResult> response = master.acquireExclusiveLock( requestContext, resourceType, resourceId ) )
+        {
+            return receiveLockResponse( response );
+        }
     }
 
     private boolean receiveLockResponse( Response<LockResult> response )
@@ -307,9 +321,9 @@ class SlaveLocksClient implements Locks.Client
         availabilityGuard.checkAvailability( config.getAvailabilityTimeout(), RuntimeException.class );
         if ( !initialized )
         {
-            try
+            try ( Response<Void> ignored = master.newLockSession( newRequestContextFor( client ) ) )
             {
-                master.newLockSession( requestContextFactory.newRequestContext( client.getLockSessionId() ) );
+                // Lock session is initialized on master at this point
             }
             catch ( TransactionFailureException e )
             {
@@ -319,6 +333,11 @@ class SlaveLocksClient implements Locks.Client
             }
             initialized = true;
         }
+    }
+
+    private RequestContext newRequestContextFor( Locks.Client client )
+    {
+        return requestContextFactory.newRequestContext( client.getLockSessionId() );
     }
 
     private UnsupportedOperationException newUnsupportedDirectTryLockUsageException()

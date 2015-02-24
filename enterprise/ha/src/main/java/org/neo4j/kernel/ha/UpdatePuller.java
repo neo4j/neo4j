@@ -25,6 +25,7 @@ import java.util.concurrent.locks.LockSupport;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.ComException;
 import org.neo4j.com.RequestContext;
+import org.neo4j.com.Response;
 import org.neo4j.com.TransactionObligationResponse;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
@@ -306,7 +307,10 @@ public class UpdatePuller implements Runnable, Lifecycle
         try
         {
             RequestContext context = requestContextFactory.newRequestContext();
-            master.pullUpdates( context );
+            try ( Response<Void> ignored = master.pullUpdates( context ) )
+            {
+                // Updates would be applied as part of response processing
+            }
         }
         catch ( ComException e )
         {
