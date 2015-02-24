@@ -317,7 +317,6 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     {
         // Do this with a scheduler, so that if it fails, it can retry later with an exponential backoff with max
         // wait time.
-        final URI masterUri = availableMasterId;
         /*
          * This is purely defensive and should never trigger. There was a race where the switch to slave task would
          * start after this instance was elected master and the task would constantly try to change as slave
@@ -325,9 +324,9 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
          * to complete, all in a single thread executor. However, this is a check worth doing because if this
          * condition slips through via some other code path it can cause trouble.
          */
-        if ( getServerId( masterUri ).equals( getServerId( me ) ) )
+        if ( getServerId( availableMasterId ).equals( getServerId( me ) ) )
         {
-            msgLog.error( "I (" + me + ") tried to switch to slave for myself as master (" + masterUri + ")"  );
+            msgLog.error( "I (" + me + ") tried to switch to slave for myself as master (" + availableMasterId + ")"  );
             return;
         }
         final AtomicLong wait = new AtomicLong();
@@ -347,7 +346,9 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     haCommunicationLife.shutdown();
                     haCommunicationLife = new LifeSupport();
 
-                    URI resultingSlaveHaURI = switchToSlave.switchToSlave( haCommunicationLife, me, masterUri, cancellationHandle );
+                    // it is important for availableMasterId to be re-read on every attempt so that
+                    // slave switching would not result in an infinite loop with wrong/stale availableMasterId
+                    URI resultingSlaveHaURI = switchToSlave.switchToSlave( haCommunicationLife, me, availableMasterId, cancellationHandle );
                     if ( resultingSlaveHaURI == null )
                     {
                         /*
