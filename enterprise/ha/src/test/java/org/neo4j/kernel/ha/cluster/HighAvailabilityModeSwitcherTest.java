@@ -25,14 +25,20 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.net.URI;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.protocol.election.Election;
+import org.neo4j.com.ComException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
@@ -43,10 +49,12 @@ import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -159,7 +167,7 @@ public class HighAvailabilityModeSwitcherTest
     }
 
     @Test
-    public void shouldReswitchToSlaveIfNewMasterBecameAvailableDuringSwitch() throws Throwable
+    public void shouldReswitchToSlaveIfNewMasterBecameElectedAndAvailableDuringSwitch() throws Throwable
     {
         // Given
         final CountDownLatch switching = new CountDownLatch( 1 );
@@ -219,6 +227,106 @@ public class HighAvailabilityModeSwitcherTest
         // Then
         // The second switch must happen and this test won't block
         slaveAvailable.await();
+    }
+
+    @Test
+    public void shouldRecognizeNewMasterIfNewMasterBecameAvailableDuringSwitch() throws Throwable
+    {
+        // When messages coming in the following ordering, the slave should detect that the master id has changed
+        // M1: Get masterIsAvailable for instance 1 at PENDING state, changing PENDING -> TO_SLAVE
+        // M2: Get masterIsAvailable for instance 2 at TO_SLAVE state, changing TO_SLAVE -> TO_SLAVE
+
+        System.gc();
+        // Given
+        final CountDownLatch firstMasterAvailableHandled = new CountDownLatch( 1 );
+        final CountDownLatch secondMasterAvailableComes = new CountDownLatch( 1 );
+        final CountDownLatch secondMasterAvailableHandled = new CountDownLatch( 1 );
+
+        SwitchToSlave switchToSlave = mock( SwitchToSlave.class );
+
+        Logging mock = mock( Logging.class );
+        when( mock.getMessagesLog( any( Class.class ) ) ).thenReturn( mock( StringLogger.class ) );
+        when( mock.getConsoleLog( any( Class.class ) ) ).thenReturn( mock( ConsoleLogger.class ) );
+        HighAvailabilityModeSwitcher toTest = new HighAvailabilityModeSwitcher( switchToSlave,
+                mock( SwitchToMaster.class ), mock( Election.class ), mock( ClusterMemberAvailability.class ),
+                mock( DependencyResolver.class ), mock )
+        {
+            @Override
+            ScheduledExecutorService createExecutor()
+            {
+                final ScheduledExecutorService executor = mock( ScheduledExecutorService.class );
+                final ExecutorService realExecutor = Executors.newSingleThreadExecutor();
+
+                when( executor.submit( any( Runnable.class ) ) ).thenAnswer( new Answer<Future<?>>()
+                {
+                    @Override
+                    public Future<?> answer( final InvocationOnMock invocation ) throws Throwable
+                    {
+                        return realExecutor.submit( new Runnable() {
+                            @Override
+                            public void run()
+                            {
+                                ((Runnable) invocation.getArguments()[0]).run();
+                            }
+                        });
+                    }
+                } );
+
+                when( executor.schedule( any( Runnable.class ), anyLong(), any( TimeUnit.class ) ) ).thenAnswer(
+                        new Answer<Future<?>>()
+                        {
+                            @Override
+                            public Future<?> answer( final InvocationOnMock invocation ) throws Throwable
+                            {
+                                realExecutor.submit( new Callable<Void>()
+                                {
+                                    @Override
+                                    public Void call() throws Exception
+                                    {
+                                        firstMasterAvailableHandled.countDown();
+
+                                        // wait until the second masterIsAvailable comes and then call switchToSlave method
+                                        secondMasterAvailableComes.await();
+                                        ((Runnable) invocation.getArguments()[0]).run();
+                                        secondMasterAvailableHandled.countDown();
+                                        return null;
+                                    };
+                                } );
+                                return mock( ScheduledFuture.class );
+                            }
+                        } );
+                return executor;
+            }
+        };
+        toTest.init();
+        toTest.start();
+        toTest.listeningAt( URI.create( "ha://server3?serverId=3" ) );
+
+        // When
+
+        // masterIsAvailable for instance 1
+        URI uri1 = URI.create( "ha://server1" );
+        // The first masterIsAvailable should fail so that the slave instance stops at TO_SLAVE state
+        doThrow( new ComException( "Fail to switch to slave and reschedule to retry" ) )
+                .when( switchToSlave )
+                .switchToSlave( any( LifeSupport.class ), any( URI.class ), eq( uri1 ), any( CancellationRequest.class ) );
+
+        toTest.masterIsAvailable( new HighAvailabilityMemberChangeEvent( PENDING, TO_SLAVE, new InstanceId( 1 ), uri1 ) );
+        firstMasterAvailableHandled.await(); // wait until the first masterIsAvailable triggers the exception handling process
+        verify( switchToSlave ).switchToSlave( any( LifeSupport.class ), any( URI.class ), eq( uri1 ),
+                any( CancellationRequest.class ) );
+
+
+        // masterIsAvailable for instance 2
+        URI uri2 = URI.create( "ha://server2" );
+        toTest.masterIsAvailable( new HighAvailabilityMemberChangeEvent( TO_SLAVE, TO_SLAVE, new InstanceId( 2 ), uri2 ) );
+        secondMasterAvailableComes.countDown();
+        secondMasterAvailableHandled.await(); // wait until switchToSlave method is invoked again
+
+        // Then
+        // switchToSlave should be retried with new master id
+        verify( switchToSlave ).switchToSlave( any( LifeSupport.class ), any( URI.class ), eq( uri2 ),
+                any( CancellationRequest.class ) );
     }
 
     @Test
