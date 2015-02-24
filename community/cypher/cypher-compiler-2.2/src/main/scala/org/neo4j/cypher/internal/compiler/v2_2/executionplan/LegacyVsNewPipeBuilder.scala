@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
 import org.neo4j.cypher.internal.compiler.v2_2.PreparedQuery
-import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{Statement, UpdateClause}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.CantHandleQueryException
+import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 
 class LegacyVsNewPipeBuilder(oldBuilder: PipeBuilder,
                              newBuilder: PipeBuilder,
@@ -30,11 +31,21 @@ class LegacyVsNewPipeBuilder(oldBuilder: PipeBuilder,
     val queryText = inputQuery.queryText
     try {
       monitor.newQuerySeen(queryText, inputQuery.statement)
+
+      // Temporary measure, to save time compiling update queries
+      if (containsUpdateClause(inputQuery.statement)) {
+        throw new CantHandleQueryException("Ronja does not handle update queries yet.")
+      }
+
       newBuilder.producePlan(inputQuery, planContext)
     } catch {
       case e: CantHandleQueryException =>
         monitor.unableToHandleQuery(queryText, inputQuery.statement, e)
         oldBuilder.producePlan(inputQuery, planContext)
     }
+  }
+
+  private def containsUpdateClause(s: Statement) = s.exists {
+    case _: UpdateClause => true
   }
 }
