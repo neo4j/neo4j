@@ -21,12 +21,17 @@ package org.neo4j.kernel.api.index;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
+
 public interface IndexUpdater extends AutoCloseable
 {
-    void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException;
+    Reservation validate( Iterable<NodePropertyUpdate> updates ) throws IOException, IndexCapacityExceededException;
+
+    void process( NodePropertyUpdate update )
+            throws IOException, IndexEntryConflictException, IndexCapacityExceededException;
 
     @Override
-    void close() throws IOException, IndexEntryConflictException;
+    void close() throws IOException, IndexEntryConflictException, IndexCapacityExceededException;
 
     void remove( Iterable<Long> nodeIds ) throws IOException;
 }

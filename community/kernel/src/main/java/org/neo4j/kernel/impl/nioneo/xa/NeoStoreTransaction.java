@@ -32,7 +32,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-
 import javax.transaction.xa.XAException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -42,13 +41,16 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdateNodeIdComparator;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.index.IndexUpdates;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.core.TransactionState;
@@ -93,7 +95,6 @@ import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static java.util.Arrays.binarySearch;
 import static java.util.Arrays.copyOf;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
@@ -266,6 +267,8 @@ public class NeoStoreTransaction extends XaTransaction
     private ArrayList<Command.LabelTokenCommand> labelTokenCommands;
     private ArrayList<Command.PropertyKeyTokenCommand> propertyKeyTokenCommands;
     private Command.NeoStoreCommand neoStoreCommand;
+
+    private ValidatedIndexUpdates indexUpdates = ValidatedIndexUpdates.NO_UPDATES;
 
     private boolean committed = false;
     private boolean prepared = false;
@@ -459,12 +462,25 @@ public class NeoStoreTransaction extends XaTransaction
                                                  + commands.size() + " instead";
         intercept( commands );
 
+        validateIndexUpdates();
+
         for ( Command command : commands )
         {
             addCommand( command );
         }
 
         integrityValidator.validateTransactionStartKnowledge( lastCommittedTxWhenTransactionStarted );
+    }
+
+    private void validateIndexUpdates()
+    {
+        if ( !nodeCommands.isEmpty() || !propCommands.isEmpty() )
+        {
+            IndexUpdates rawIndexUpdates = new LazyIndexUpdates( getNodeStore(), getPropertyStore(),
+                    groupedNodePropertyCommands( propCommands ), nodeCommands );
+
+            indexUpdates = indexes.validate( rawIndexUpdates );
+        }
     }
 
     protected void intercept( List<Command> commands )
@@ -666,6 +682,7 @@ public class NeoStoreTransaction extends XaTransaction
         }
         finally
         {
+            indexUpdates.close();
             clear();
         }
     }
@@ -747,116 +764,123 @@ public class NeoStoreTransaction extends XaTransaction
 
     private void applyCommit( LockGroup lockGroup, boolean isRecovered )
     {
-        committed = true;
-        CommandSorter sorter = new CommandSorter();
-        // reltypes
-        if ( relationshipTypeTokenCommands != null )
+        if ( isRecovered && !prepared ) // no preparation of this tx happened - need to validate index updates now
         {
-            java.util.Collections.sort( relationshipTypeTokenCommands, sorter );
-            for ( Command.RelationshipTypeTokenCommand command : relationshipTypeTokenCommands )
+            validateIndexUpdates();
+        }
+
+        try
+        {
+            committed = true;
+            CommandSorter sorter = new CommandSorter();
+            // reltypes
+            if ( relationshipTypeTokenCommands != null )
             {
-                command.execute();
-                if ( isRecovered )
+                java.util.Collections.sort( relationshipTypeTokenCommands, sorter );
+                for ( Command.RelationshipTypeTokenCommand command : relationshipTypeTokenCommands )
                 {
-                    addRelationshipType( (int) command.getKey() );
+                    command.execute();
+                    if ( isRecovered )
+                    {
+                        addRelationshipType( (int) command.getKey() );
+                    }
                 }
             }
-        }
-        // label keys
-        if ( labelTokenCommands != null )
-        {
-            java.util.Collections.sort( labelTokenCommands, sorter );
-            for ( Command.LabelTokenCommand command : labelTokenCommands )
+            // label keys
+            if ( labelTokenCommands != null )
             {
-                command.execute();
-                if ( isRecovered )
+                java.util.Collections.sort( labelTokenCommands, sorter );
+                for ( Command.LabelTokenCommand command : labelTokenCommands )
                 {
-                    addLabel( (int) command.getKey() );
+                    command.execute();
+                    if ( isRecovered )
+                    {
+                        addLabel( (int) command.getKey() );
+                    }
                 }
             }
-        }
-        // property keys
-        if ( propertyKeyTokenCommands != null )
-        {
-            java.util.Collections.sort( propertyKeyTokenCommands, sorter );
-            for ( Command.PropertyKeyTokenCommand command : propertyKeyTokenCommands )
+            // property keys
+            if ( propertyKeyTokenCommands != null )
             {
-                command.execute();
-                if ( isRecovered )
+                java.util.Collections.sort( propertyKeyTokenCommands, sorter );
+                for ( Command.PropertyKeyTokenCommand command : propertyKeyTokenCommands )
                 {
-                    addPropertyKey( (int) command.getKey() );
+                    command.execute();
+                    if ( isRecovered )
+                    {
+                        addPropertyKey( (int) command.getKey() );
+                    }
                 }
             }
-        }
 
-        // primitives
-        java.util.Collections.sort( relCommands, sorter );
-        java.util.Collections.sort( propCommands, sorter );
-        executeCreated( lockGroup, isRecovered, propCommands, relCommands, nodeCommands.values() );
-        executeModified( lockGroup, isRecovered, propCommands, relCommands, nodeCommands.values() );
-        executeDeleted( lockGroup, propCommands, relCommands, nodeCommands.values() );
+            // primitives
+            java.util.Collections.sort( relCommands, sorter );
+            java.util.Collections.sort( propCommands, sorter );
+            executeCreated( lockGroup, isRecovered, propCommands, relCommands, nodeCommands.values() );
+            executeModified( lockGroup, isRecovered, propCommands, relCommands, nodeCommands.values() );
+            executeDeleted( lockGroup, propCommands, relCommands, nodeCommands.values() );
 
-        // property change set for index updates
-        Collection<NodeLabelUpdate> labelUpdates = gatherLabelUpdatesSortedByNodeId();
-        if ( !labelUpdates.isEmpty() )
-        {
-            updateLabelScanStore( labelUpdates );
-            cacheAccess.applyLabelUpdates( labelUpdates );
-        }
-
-        if ( !nodeCommands.isEmpty() || !propCommands.isEmpty() )
-        {
-            indexes.updateIndexes( new LazyIndexUpdates(
-                    getNodeStore(), getPropertyStore(),
-                    groupedNodePropertyCommands( propCommands ), new HashMap<>( nodeCommands ) ) );
-        }
-
-        // schema rules. Execute these after generating the property updates so. If executed
-        // before and we've got a transaction that sets properties/labels as well as creating an index
-        // we might end up with this corner-case:
-        // 1) index rule created and index population job started
-        // 2) index population job processes some nodes, but doesn't complete
-        // 3) we gather up property updates and send those to the indexes. The newly created population
-        //    job might get those as updates
-        // 4) the population job will apply those updates as added properties, and might end up with duplicate
-        //    entries for the same property
-        for ( SchemaRuleCommand command : schemaRuleCommands )
-        {
-            command.setTxId( getCommitTxId() );
-            command.execute();
-            switch ( command.getMode() )
+            // property change set for index updates
+            Collection<NodeLabelUpdate> labelUpdates = gatherLabelUpdatesSortedByNodeId();
+            if ( !labelUpdates.isEmpty() )
             {
-            case DELETE:
-                cacheAccess.removeSchemaRuleFromCache( command.getKey() );
-                break;
-            default:
-                cacheAccess.addSchemaRule( command.getSchemaRule() );
+                updateLabelScanStore( labelUpdates );
+                cacheAccess.applyLabelUpdates( labelUpdates );
             }
-        }
 
-        if ( neoStoreCommand != null )
-        {
-            neoStoreCommand.execute();
+            indexes.updateIndexes( indexUpdates );
+
+            // schema rules. Execute these after generating the property updates so. If executed
+            // before and we've got a transaction that sets properties/labels as well as creating an index
+            // we might end up with this corner-case:
+            // 1) index rule created and index population job started
+            // 2) index population job processes some nodes, but doesn't complete
+            // 3) we gather up property updates and send those to the indexes. The newly created population
+            //    job might get those as updates
+            // 4) the population job will apply those updates as added properties, and might end up with duplicate
+            //    entries for the same property
+            for ( SchemaRuleCommand command : schemaRuleCommands )
+            {
+                command.setTxId( getCommitTxId() );
+                command.execute();
+                switch ( command.getMode() )
+                {
+                case DELETE:
+                    cacheAccess.removeSchemaRuleFromCache( command.getKey() );
+                    break;
+                default:
+                    cacheAccess.addSchemaRule( command.getSchemaRule() );
+                }
+            }
+
+            if ( neoStoreCommand != null )
+            {
+                neoStoreCommand.execute();
+                if ( isRecovered )
+                {
+                    removeGraphPropertiesFromCache();
+                }
+            }
+            if ( !isRecovered )
+            {
+                updateFirstRelationships();
+                // Update of the cached primitives will happen when calling commitChangesToCache,
+                // which should be done after applyCommit and after the XaResourceManager monitor
+                // has been released.
+            }
+            neoStore.setLastCommittedTx( getCommitTxId() );
             if ( isRecovered )
             {
-                removeGraphPropertiesFromCache();
+                neoStore.updateIdGenerators();
             }
         }
-        if ( !isRecovered )
+        finally
         {
-            updateFirstRelationships();
-            // Update of the cached primitives will happen when calling commitChangesToCache,
-            // which should be done after applyCommit and after the XaResourceManager monitor
-            // has been released.
-        }
-        neoStore.setLastCommittedTx( getCommitTxId() );
-        if ( isRecovered )
-        {
-            neoStore.updateIdGenerators();
+            indexUpdates.close();
         }
     }
 
-    private Collection<List<PropertyCommand>> groupedNodePropertyCommands( Iterable<PropertyCommand> propCommands )
+    private Map<Long,List<PropertyCommand>> groupedNodePropertyCommands( Iterable<PropertyCommand> propCommands )
     {
         // A bit too expensive data structure, but don't know off the top of my head how to make it better.
         Map<Long, List<PropertyCommand>> groups = new HashMap<>();
@@ -876,7 +900,7 @@ public class NeoStoreTransaction extends XaTransaction
             }
             group.add( command );
         }
-        return groups.values();
+        return groups;
     }
 
     public void commitChangesToCache()
@@ -929,7 +953,7 @@ public class NeoStoreTransaction extends XaTransaction
                 writer.write( update );
             }
         }
-        catch ( IOException e )
+        catch ( IOException | IndexCapacityExceededException e )
         {
             throw new UnderlyingStorageException( e );
         }
@@ -1105,6 +1129,8 @@ public class NeoStoreTransaction extends XaTransaction
         relationshipTypeTokenCommands = null;
         labelTokenCommands = null;
         neoStoreCommand = null;
+
+        indexUpdates = ValidatedIndexUpdates.NO_UPDATES;
     }
 
     private RelationshipTypeTokenStore getRelationshipTypeStore()
@@ -2385,6 +2411,16 @@ public class NeoStoreTransaction extends XaTransaction
             PropertyStore propertyStore, long nextProp, PropertyReceiver receiver )
     {
         Collection<PropertyRecord> chain = propertyStore.getPropertyRecordChain( nextProp );
+        if ( chain != null )
+        {
+            loadPropertyChain( chain, propertyStore, receiver );
+        }
+    }
+
+    static void loadProperties( PropertyStore propertyStore, long nextProp, PropertyReceiver receiver,
+            Map<Long,PropertyRecord> propertyLookup )
+    {
+        Collection<PropertyRecord> chain = propertyStore.getPropertyRecordChain( nextProp, propertyLookup );
         if ( chain != null )
         {
             loadPropertyChain( chain, propertyStore, receiver );

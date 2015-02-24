@@ -17,14 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.index;
+package org.neo4j.kernel.api.index;
 
-import java.io.IOException;
-
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.store.Directory;
-
-public interface LuceneIndexWriterFactory
+public interface Reservation
 {
-    IndexWriter create( Directory directory ) throws IOException;
+    static Reservation EMPTY = new Reservation()
+    {
+        @Override
+        public void release()
+        {
+        }
+    };
+
+    void release();
 }

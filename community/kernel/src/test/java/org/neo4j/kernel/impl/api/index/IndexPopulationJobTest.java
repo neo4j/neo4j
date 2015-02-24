@@ -49,6 +49,7 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.Reservation;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -413,6 +414,12 @@ public class IndexPopulationJobTest
             return new IndexUpdater()
             {
                 @Override
+                public Reservation validate( Iterable<NodePropertyUpdate> updates ) throws IOException
+                {
+                    return Reservation.EMPTY;
+                }
+
+                @Override
                 public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
                 {
                     switch ( update.getUpdateMode() )
@@ -484,6 +491,12 @@ public class IndexPopulationJobTest
         {
             return new IndexUpdater()
             {
+                @Override
+                public Reservation validate( Iterable<NodePropertyUpdate> updates ) throws IOException
+                {
+                    return Reservation.EMPTY;
+                }
+
                 @Override
                 public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
                 {

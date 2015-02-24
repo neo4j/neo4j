@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -59,14 +60,14 @@ public abstract class UniquePropertyIndexUpdater implements IndexUpdater
     }
 
     @Override
-    public void close() throws IOException, IndexEntryConflictException
+    public void close() throws IOException, IndexEntryConflictException, IndexCapacityExceededException
     {
         // flush updates
         flushUpdates( updates );
     }
 
     protected abstract void flushUpdates( Iterable<NodePropertyUpdate> updates )
-            throws IOException, IndexEntryConflictException;
+            throws IOException, IndexEntryConflictException, IndexCapacityExceededException;
 
     private DiffSets<Long> propertyValueDiffSet( Object value )
     {

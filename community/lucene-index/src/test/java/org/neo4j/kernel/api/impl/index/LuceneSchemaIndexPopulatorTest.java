@@ -33,6 +33,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
@@ -257,7 +258,7 @@ public class LuceneSchemaIndexPopulatorTest
         directory.close();
     }
 
-    private void assertIndexedValues( Hit... expectedHits ) throws IOException
+    private void assertIndexedValues( Hit... expectedHits ) throws IOException, IndexCapacityExceededException
     {
         switchToVerification();
         
@@ -275,7 +276,7 @@ public class LuceneSchemaIndexPopulatorTest
         }
     }
 
-    private void switchToVerification() throws IOException
+    private void switchToVerification() throws IOException, IndexCapacityExceededException
     {
         index.close( true );
         assertEquals( InternalIndexState.ONLINE, provider.getInitialState( indexId ) );
@@ -287,7 +288,7 @@ public class LuceneSchemaIndexPopulatorTest
             IndexPopulator populator,
             Iterable<NodePropertyUpdate> updates,
             PropertyAccessor accessor )
-            throws IOException, IndexEntryConflictException
+            throws IOException, IndexEntryConflictException, IndexCapacityExceededException
     {
         try ( IndexUpdater updater = populator.newPopulatingUpdater( accessor ) )
         {

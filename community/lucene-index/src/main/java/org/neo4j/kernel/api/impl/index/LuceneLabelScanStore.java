@@ -26,16 +26,15 @@ import java.util.Iterator;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexNotFoundException;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
@@ -52,13 +51,13 @@ public class LuceneLabelScanStore
 {
     private final LabelScanStorageStrategy strategy;
     private final DirectoryFactory directoryFactory;
-    private final LuceneIndexWriterFactory writerFactory;
+    private final IndexWriterFactory<LuceneIndexWriter> writerFactory;
     // We get in a full store stream here in case we need to fully rebuild the store if it's missing or corrupted.
     private final FullStoreChangeStream fullStoreStream;
     private final Monitor monitor;
     private Directory directory;
     private SearcherManager searcherManager;
-    private IndexWriter writer;
+    private LuceneIndexWriter writer;
     private boolean needsRebuild;
     private final File directoryLocation;
     private final FileSystemAbstraction fs;
@@ -123,7 +122,7 @@ public class LuceneLabelScanStore
     }
 
     public LuceneLabelScanStore( LabelScanStorageStrategy strategy, DirectoryFactory directoryFactory,
-            File directoryLocation, FileSystemAbstraction fs, LuceneIndexWriterFactory writerFactory,
+            File directoryLocation, FileSystemAbstraction fs, IndexWriterFactory<LuceneIndexWriter> writerFactory,
             FullStoreChangeStream fullStoreStream, Monitor monitor )
     {
         this.strategy = strategy;
@@ -142,7 +141,8 @@ public class LuceneLabelScanStore
     }
 
     @Override
-    public void updateDocument( Term documentTerm, Document document ) throws IOException
+    public void updateDocument( Term documentTerm, Document document )
+            throws IOException, IndexCapacityExceededException
     {
         writer.updateDocument( documentTerm, document );
     }
@@ -172,7 +172,7 @@ public class LuceneLabelScanStore
     }
 
     @Override
-    public void recover( Iterator<NodeLabelUpdate> updates ) throws IOException
+    public void recover( Iterator<NodeLabelUpdate> updates ) throws IOException, IndexCapacityExceededException
     {
         // The way we update and commit fits for recovery as well since we use writer.updateDocument(...)
         // which deletes any existing documents and just adds the new and up-to-date version.
@@ -270,11 +270,11 @@ public class LuceneLabelScanStore
                     "To trigger a rebuild, ensure the database is stopped, delete the files in '" +
                     directoryLocation.getAbsolutePath() + "', and then start the database again." );
         }
-        searcherManager = new SearcherManager( writer, true, new SearcherFactory() );
+        searcherManager = writer.createSearcherManager();
     }
 
     @Override
-    public void start() throws IOException
+    public void start() throws IOException, IndexCapacityExceededException
     {
         if ( needsRebuild )
         {   // we saw in init() that we need to rebuild the index, so do it here after the
@@ -286,7 +286,7 @@ public class LuceneLabelScanStore
         }
     }
 
-    private void write( Iterator<NodeLabelUpdate> updates ) throws IOException
+    private void write( Iterator<NodeLabelUpdate> updates ) throws IOException, IndexCapacityExceededException
     {
         try ( LabelScanWriter writer = newWriter() )
         {

@@ -36,9 +36,9 @@ public class LuceneSnapshotter
     private static final String NO_INDEX_COMMIT_TO_SNAPSHOT = "No index commit to snapshot";
     private static final String ID = "backup";
 
-    ResourceIterator<File> snapshot( File indexDir, IndexWriter writer ) throws IOException
+    ResourceIterator<File> snapshot( File indexDir, LuceneIndexWriter writer ) throws IOException
     {
-        SnapshotDeletionPolicy deletionPolicy = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
+        SnapshotDeletionPolicy deletionPolicy = (SnapshotDeletionPolicy) writer.getIndexDeletionPolicy();
 
         try
         {

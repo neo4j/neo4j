@@ -28,6 +28,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SearcherManager;
 
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
@@ -43,7 +44,7 @@ public interface LabelScanStorageStrategy
 
     interface StorageService
     {
-        void updateDocument( Term documentTerm, Document document ) throws IOException;
+        void updateDocument( Term documentTerm, Document document ) throws IOException, IndexCapacityExceededException;
 
         void deleteDocuments( Term documentTerm ) throws IOException;
 

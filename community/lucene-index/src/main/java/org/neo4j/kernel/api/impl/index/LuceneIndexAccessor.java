@@ -22,9 +22,7 @@ package org.neo4j.kernel.api.impl.index;
 import java.io.File;
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
@@ -33,12 +31,15 @@ import org.apache.lucene.store.Directory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.direct.BoundedIterable;
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.Reservation;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.api.index.UpdateMode;
 
 import static org.neo4j.kernel.api.impl.index.DirectorySupport.deleteDirectoryContents;
 
@@ -46,13 +47,14 @@ abstract class LuceneIndexAccessor implements IndexAccessor
 {
     protected final LuceneDocumentStructure documentStructure;
     protected final SearcherManager searcherManager;
-    protected final IndexWriter writer;
+    protected final ReservingLuceneIndexWriter writer;
 
     private final IndexWriterStatus writerStatus;
     private final Directory dir;
     private final File dirFile;
 
-    LuceneIndexAccessor( LuceneDocumentStructure documentStructure, LuceneIndexWriterFactory indexWriterFactory,
+    LuceneIndexAccessor( LuceneDocumentStructure documentStructure,
+                         IndexWriterFactory<ReservingLuceneIndexWriter> indexWriterFactory,
                          IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile )
             throws IOException
     {
@@ -61,7 +63,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
         this.dir = dirFactory.open( dirFile );
         this.writer = indexWriterFactory.create( dir );
         this.writerStatus = writerStatus;
-        this.searcherManager = new SearcherManager( writer, true, new SearcherFactory() );
+        this.searcherManager = writer.createSearcherManager();
     }
 
     @Override
@@ -124,7 +126,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
         return new LuceneSnapshotter().snapshot( this.dirFile, writer );
     }
 
-    private void addRecovered( long nodeId, Object value ) throws IOException
+    private void addRecovered( long nodeId, Object value ) throws IOException, IndexCapacityExceededException
     {
         IndexSearcher searcher = searcherManager.acquire();
         try
@@ -146,12 +148,12 @@ abstract class LuceneIndexAccessor implements IndexAccessor
         }
     }
 
-    protected void add( long nodeId, Object value ) throws IOException
+    protected void add( long nodeId, Object value ) throws IOException, IndexCapacityExceededException
     {
         writer.addDocument( documentStructure.newDocumentRepresentingProperty( nodeId, value ) );
     }
 
-    protected void change( long nodeId, Object valueAfter ) throws IOException
+    protected void change( long nodeId, Object valueAfter ) throws IOException, IndexCapacityExceededException
     {
         writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
                 documentStructure.newDocumentRepresentingProperty( nodeId, valueAfter ) );
@@ -160,6 +162,11 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     protected void remove( long nodeId ) throws IOException
     {
         writer.deleteDocuments( documentStructure.newQueryForChangeOrRemove( nodeId ) );
+    }
+
+    private synchronized void refreshSearcherManager() throws IOException
+    {
+        searcherManager.maybeRefresh();
     }
 
     private class LuceneIndexUpdater implements IndexUpdater
@@ -172,7 +179,43 @@ abstract class LuceneIndexAccessor implements IndexAccessor
         }
 
         @Override
-        public void process( NodePropertyUpdate update ) throws IOException
+        public Reservation validate( Iterable<NodePropertyUpdate> updates )
+                throws IOException, IndexCapacityExceededException
+        {
+            int insertionsCount = 0;
+            for ( NodePropertyUpdate update : updates )
+            {
+                // Only count additions and updates, since removals will not affect the size of the index
+                // until it is merged. Each update is in fact atomic (delete + add).
+                if ( update.getUpdateMode() == UpdateMode.ADDED || update.getUpdateMode() == UpdateMode.CHANGED )
+                {
+                    insertionsCount++;
+                }
+            }
+
+            writer.reserveInsertions( insertionsCount );
+
+            final int insertions = insertionsCount;
+            return new Reservation()
+            {
+                boolean released;
+
+                @Override
+                public void release()
+                {
+                    if ( released )
+                    {
+                        throw new IllegalStateException( "Reservation was already released. " +
+                                                         "Previously reserved " + insertions + " insertions" );
+                    }
+                    writer.removeReservedInsertions( insertions );
+                    released = true;
+                }
+            };
+        }
+
+        @Override
+        public void process( NodePropertyUpdate update ) throws IOException, IndexCapacityExceededException
         {
             switch ( update.getUpdateMode() )
             {
@@ -200,7 +243,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
         @Override
         public void close() throws IOException, IndexEntryConflictException
         {
-            searcherManager.maybeRefresh();
+            refreshSearcherManager();
         }
 
         @Override

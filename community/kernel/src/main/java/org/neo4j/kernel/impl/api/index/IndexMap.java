@@ -104,4 +104,9 @@ public final class IndexMap implements Cloneable
     {
         return indexesByDescriptor.keySet().iterator();
     }
+
+    public int size()
+    {
+        return indexesById.size();
+    }
 }

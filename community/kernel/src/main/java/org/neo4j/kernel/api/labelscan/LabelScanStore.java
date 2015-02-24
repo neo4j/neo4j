@@ -25,6 +25,7 @@ import java.util.Iterator;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
@@ -56,7 +57,7 @@ public interface LabelScanStore extends Lifecycle
      * @param updates the updates to store.
      * @throws IOException if there was a problem updating the store.
      */
-    void recover( Iterator<NodeLabelUpdate> updates ) throws IOException;
+    void recover( Iterator<NodeLabelUpdate> updates ) throws IOException, IndexCapacityExceededException;
 
     /**
      * Forces all changes to disk. Called at certain points from within Neo4j for example when
@@ -81,7 +82,7 @@ public interface LabelScanStore extends Lifecycle
      * Starts the store. After this has been called updates can be processed.
      */
     @Override
-    void start() throws IOException;
+    void start() throws IOException, IndexCapacityExceededException;
 
     @Override
     void stop() throws IOException;

@@ -22,28 +22,28 @@ package org.neo4j.kernel.api.impl.index;
 import java.io.File;
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 
 public abstract class LuceneIndexPopulator implements IndexPopulator
 {
     protected final LuceneDocumentStructure documentStructure;
-    private final LuceneIndexWriterFactory indexWriterFactory;
+    private final IndexWriterFactory<LuceneIndexWriter> indexWriterFactory;
     private final IndexWriterStatus writerStatus;
     private final DirectoryFactory dirFactory;
     private final File dirFile;
     private final FailureStorage failureStorage;
     private final long indexId;
 
-    protected IndexWriter writer;
+    protected LuceneIndexWriter writer;
     private Directory directory;
 
     LuceneIndexPopulator(
-            LuceneDocumentStructure documentStructure, LuceneIndexWriterFactory indexWriterFactory,
+            LuceneDocumentStructure documentStructure, IndexWriterFactory<LuceneIndexWriter> indexWriterFactory,
             IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile,
             FailureStorage failureStorage, long indexId )
     {
@@ -92,7 +92,7 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public void close( boolean populationCompletedSuccessfully ) throws IOException
+    public void close( boolean populationCompletedSuccessfully ) throws IOException, IndexCapacityExceededException
     {
         try
         {
@@ -121,5 +121,5 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
         failureStorage.storeIndexFailure( indexId, failure );
     }
 
-    protected abstract void flush() throws IOException;
+    protected abstract void flush() throws IOException, IndexCapacityExceededException;
 }

@@ -19,18 +19,18 @@
  */
 package org.neo4j.graphdb;
 
-import java.util.Map;
-
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Map;
+
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
 import static org.neo4j.graphdb.Neo4jMatchers.createIndex;
 import static org.neo4j.graphdb.Neo4jMatchers.findNodesByLabelAndProperty;
@@ -395,6 +395,56 @@ public class IndexingAcceptanceTest
             ResourceIterable<Node> result = graph.findNodesByLabelAndProperty( LABEL1, "name",  "Stefan" );
             assertEquals( asSet( node1, node2 ), asSet( result ) );
 
+            tx.success();
+        }
+    }
+
+    @Test
+    public void shouldAddIndexedPropertyToNodeWithDynamicLabels()
+    {
+        // Given
+        int indexesCount = 20;
+        String labelPrefix = "foo";
+        String propertyKeyPrefix = "bar";
+        String propertyValuePrefix = "baz";
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+
+        for ( int i = 0; i < indexesCount; i++ )
+        {
+            createIndex( db, DynamicLabel.label( labelPrefix + i ), propertyKeyPrefix + i );
+        }
+
+        // When
+        long nodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            nodeId = db.createNode().getId();
+            tx.success();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.getNodeById( nodeId );
+            for ( int i = 0; i < indexesCount; i++ )
+            {
+                node.addLabel( DynamicLabel.label( labelPrefix + i ) );
+                node.setProperty( propertyKeyPrefix + i, propertyValuePrefix + i );
+            }
+            tx.success();
+        }
+
+        // Then
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( int i = 0; i < indexesCount; i++ )
+            {
+                Label label = DynamicLabel.label( labelPrefix + i );
+                String key = propertyKeyPrefix + i;
+                String value = propertyValuePrefix + i;
+
+                ResourceIterable<Node> nodes = db.findNodesByLabelAndProperty( label, key, value );
+                assertEquals( 1, Iterables.count( nodes ) );
+            }
             tx.success();
         }
     }

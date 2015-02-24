@@ -45,7 +45,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.kernel.api.impl.index.AllNodesCollector.getAllNodes;
-import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
+import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.tracking;
 import static org.neo4j.kernel.api.properties.Property.intProperty;
 import static org.neo4j.kernel.api.properties.Property.longProperty;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
@@ -430,7 +430,7 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
         propertyAccessor = mock( PropertyAccessor.class );
         populator = new
                 DeferredConstraintVerificationUniqueLuceneIndexPopulator(
-                documentLogic, standard(),
+                documentLogic, tracking(),
                 new IndexWriterStatus(), directoryFactory, indexDirectory,
                 failureStorage, indexId, descriptor );
         populator.create();

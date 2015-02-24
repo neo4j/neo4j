@@ -30,6 +30,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.exceptions.index.ExceptionDuringFlipKernelException;
 import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexProxyAlreadyClosedKernelException;
@@ -332,13 +333,14 @@ public class FlippableIndexProxy implements IndexProxy
         }
 
         @Override
-        public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+        public void process( NodePropertyUpdate update )
+                throws IOException, IndexEntryConflictException, IndexCapacityExceededException
         {
             delegate.process( update );
         }
 
         @Override
-        public void close() throws IOException, IndexEntryConflictException
+        public void close() throws IOException, IndexEntryConflictException, IndexCapacityExceededException
         {
             try
             {

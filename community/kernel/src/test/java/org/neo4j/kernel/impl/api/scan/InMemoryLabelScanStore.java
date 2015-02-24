@@ -33,6 +33,7 @@ import java.util.Set;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.direct.NodeLabelRange;
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
@@ -68,7 +69,7 @@ public class InMemoryLabelScanStore implements LabelScanStore
     }
 
     @Override
-    public void recover( Iterator<NodeLabelUpdate> updates ) throws IOException
+    public void recover( Iterator<NodeLabelUpdate> updates ) throws IOException, IndexCapacityExceededException
     {
         try(LabelScanWriter writer = newWriter()) {
             while ( updates.hasNext() )

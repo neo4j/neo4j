@@ -24,6 +24,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -97,13 +98,14 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
             return new DelegatingIndexUpdater( super.newUpdater( mode ) )
             {
                 @Override
-                public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+                public void process( NodePropertyUpdate update )
+                        throws IOException, IndexEntryConflictException, IndexCapacityExceededException
                 {
                     delegate.process( update );
                 }
 
                 @Override
-                public void close() throws IOException, IndexEntryConflictException
+                public void close() throws IOException, IndexEntryConflictException, IndexCapacityExceededException
                 {
                     try
                     {

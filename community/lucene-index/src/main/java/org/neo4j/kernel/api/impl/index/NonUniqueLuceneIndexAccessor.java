@@ -25,8 +25,9 @@ import java.io.IOException;
 class NonUniqueLuceneIndexAccessor extends LuceneIndexAccessor
 {
     NonUniqueLuceneIndexAccessor( LuceneDocumentStructure documentStructure,
-                                  LuceneIndexWriterFactory indexWriterFactory, IndexWriterStatus writerStatus,
-                                  DirectoryFactory dirFactory, File dirFile ) throws IOException
+                                  IndexWriterFactory<ReservingLuceneIndexWriter> indexWriterFactory,
+                                  IndexWriterStatus writerStatus, DirectoryFactory dirFactory,
+                                  File dirFile ) throws IOException
     {
         super( documentStructure, indexWriterFactory, writerStatus, dirFactory, dirFile );
     }
