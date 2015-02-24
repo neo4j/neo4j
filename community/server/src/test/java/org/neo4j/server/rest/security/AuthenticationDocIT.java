@@ -319,7 +319,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
     {
         new File( "neo4j-home/data/dbms/authorization" ).delete(); // TODO: Implement a common component for managing Neo4j file structure and use that here
         server = CommunityServerBuilder.server()
-                .withProperty( ServerSettings.authorization_enabled.name(), Boolean.toString( authEnabled ) )
+                .withProperty( ServerSettings.auth_enabled.name(), Boolean.toString( authEnabled ) )
                 .build();
         server.start();
     }

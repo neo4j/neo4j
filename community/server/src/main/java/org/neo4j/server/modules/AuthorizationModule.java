@@ -45,7 +45,7 @@ public class AuthorizationModule implements ServerModule
     @Override
     public void start()
     {
-        if ( config.get( ServerSettings.authorization_enabled ) )
+        if ( config.get( ServerSettings.auth_enabled ) )
         {
             webServer.addFilter( new AuthorizationFilter( authManager, log ), "/*" );
         }

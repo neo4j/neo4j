@@ -105,7 +105,7 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
         // let the server endpoint be on a custom port
         config.configuration().setProperty(
                 Configurator.WEBSERVER_PORT_PROPERTY_KEY, "7575" );
-        config.configuration().setProperty( ServerSettings.authorization_enabled.name(), "false" );
+        config.configuration().setProperty( ServerSettings.auth_enabled.name(), "false" );
 
         WrappingNeoServerBootstrapper srv;
         srv = new WrappingNeoServerBootstrapper( graphdb, config );
@@ -125,7 +125,7 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
     public void shouldAllowShellConsoleWithoutCustomConfig()
     {
         ServerConfigurator config = new ServerConfigurator( myDb );
-        config.configuration().setProperty( ServerSettings.authorization_enabled.name(), "false" );
+        config.configuration().setProperty( ServerSettings.auth_enabled.name(), "false" );
         WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper( myDb, config );
         srv.start();
         String response = gen.get().payload(
@@ -143,7 +143,7 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
         String hostAddress = InetAddress.getLocalHost().getHostAddress();
         config.configuration().setProperty(
                 Configurator.WEBSERVER_ADDRESS_PROPERTY_KEY, hostAddress.toString() );
-        config.configuration().setProperty( ServerSettings.authorization_enabled.name(), "false" );
+        config.configuration().setProperty( ServerSettings.auth_enabled.name(), "false" );
         config.configuration().setProperty(
                 Configurator.WEBSERVER_PORT_PROPERTY_KEY, "8484" );
 
@@ -173,7 +173,7 @@ public class WrappingNeoServerBootstrapperDocIT extends ExclusiveServerTestBase
     {
         Configurator configurator = new ServerConfigurator(myDb);
 
-        configurator.configuration().setProperty( ServerSettings.authorization_enabled.name(), "false" );
+        configurator.configuration().setProperty( ServerSettings.auth_enabled.name(), "false" );
         WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper( myDb, configurator );
         srv.start();
 

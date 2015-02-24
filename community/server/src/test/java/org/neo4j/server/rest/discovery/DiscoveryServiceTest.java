@@ -48,7 +48,7 @@ public class DiscoveryServiceTest
         when( mockConfig.get( ServerInternalSettings.management_api_path ) ).thenReturn( managementUri );
         URI dataUri = new URI( "/data" );
         when( mockConfig.get( ServerInternalSettings.rest_api_path ) ).thenReturn( dataUri );
-        when(mockConfig.get( ServerSettings.authorization_enabled )).thenReturn( false );
+        when(mockConfig.get( ServerSettings.auth_enabled )).thenReturn( false );
 
         String baseUri = "http://www.example.com";
         DiscoveryService ds = new DiscoveryService( mockConfig, new EntityOutputFormat( new JsonFormat(), new URI(

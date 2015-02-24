@@ -57,7 +57,7 @@ public class InProcessServerBuilder implements TestServerBuilder
     public InProcessServerBuilder( File workingDir )
     {
         setDirectory( workingDir );
-        withConfig( ServerSettings.authorization_enabled, "false" );
+        withConfig( ServerSettings.auth_enabled, "false" );
         withConfig( WEBSERVER_PORT_PROPERTY_KEY, Integer.toString( freePort() ) );
     }
 
