@@ -195,6 +195,9 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
         -> N * N * N * Asel * A_T1_B_sel * Bsel * B_T1_C_sel * Csel *
         DEFAULT_REL_UNIQUENESS_SELECTIVITY,
 
+      "MATCH (a:A)-[r1:T1]->(b:B)-[r2:T1]->(a)"
+        -> N * N * Asel * A_T1_B_sel * Bsel * B_T1_A_sel,
+
       "MATCH (:A)-[r1:T1]->(:A)-[r2:T1]->(:B)-[r3:T1]->(:B)"
         -> A * A * B * B * A_T1_A_sel * A_T1_B_sel * B_T1_B_sel *
         Math.pow(DEFAULT_REL_UNIQUENESS_SELECTIVITY, 3), // Once per rel-uniqueness predicate
