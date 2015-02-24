@@ -36,6 +36,11 @@ We recommend that you install http://openjdk.java.net/[OpenJDK 7] or http://www.
 The installer will prompt to be granted Administrator privileges.
 Newer versions of Windows come with a SmartScreen feature that may prevent the installer from running -- you can make it run anyway by clicking "More info" on the "Windows protected your PC" screen.
 
+[TIP]
+If you install Neo4j using the windows installer and you already have an existing Neo4j installed it will ask if you want to upgrade.
+This should proceed without issue although some users have reported a `JRE is damaged` exception.
+If you see this error simply install Neo4j into a different location.
+
 [[windows-console]]
 === Windows Console Application ===
 1. Download the latest release from http://neo4j.com/download/.
@@ -114,5 +119,3 @@ Neo4j can be set up to run as several instances on one machine, providing for in
 
 For how to set this up, see <<ha-local-cluster>>.
 Just use the Neo4j edition of your choice, follow the guide and remember to not set the servers to run in HA mode.
-
-
