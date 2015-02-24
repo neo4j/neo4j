@@ -21,7 +21,6 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.impl.api.CountsAccessor;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 
@@ -36,15 +35,15 @@ public class RelationshipCountsProcessor implements StoreProcessor<RelationshipR
     // start node label id | relationship type | end node label id. Roughly 8Mb for 100,100,100
     private final long[][][] counts;
     private int[] startScratch = new int[20], endScratch = new int[20]; // and grows on demand
-    private final CountsTracker countsTracker;
+    private final CountsAccessor.Updater countsUpdater;
     private final int anyLabel;
     private final int anyRelationshipType;
 
     public RelationshipCountsProcessor( NodeLabelsCache nodeLabelCache,
-            int highLabelId, int highRelationshipTypeId, CountsTracker countsTracker )
+            int highLabelId, int highRelationshipTypeId, CountsAccessor.Updater countsUpdater )
     {
         this.nodeLabelCache = nodeLabelCache;
-        this.countsTracker = countsTracker;
+        this.countsUpdater = countsUpdater;
 
         // Instantiate with high id + 1 since we need that extra slot for the ANY counts
         this.counts = new long[highLabelId+1][highRelationshipTypeId+1][highLabelId+1];
@@ -104,29 +103,26 @@ public class RelationshipCountsProcessor implements StoreProcessor<RelationshipR
     @Override
     public void done()
     {
-        try ( CountsAccessor.Updater countsUpdater = countsTracker.updater() )
+        for ( int startNodeLabelId = 0; startNodeLabelId < counts.length; startNodeLabelId++ )
         {
-            for ( int startNodeLabelId = 0; startNodeLabelId < counts.length; startNodeLabelId++ )
+            long[][] types = counts[startNodeLabelId];
+            for ( int typeId = 0; typeId < types.length; typeId++ )
             {
-                long[][] types = counts[startNodeLabelId];
-                for ( int typeId = 0; typeId < types.length; typeId++ )
+                long[] endNodeLabelIds = types[typeId];
+                for ( int endNodeLabelId = 0; endNodeLabelId < endNodeLabelIds.length; endNodeLabelId++ )
                 {
-                    long[] endNodeLabelIds = types[typeId];
-                    for ( int endNodeLabelId = 0; endNodeLabelId < endNodeLabelIds.length; endNodeLabelId++ )
+                    if ( !COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS )
                     {
-                        if ( !COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS )
+                        if ( startNodeLabelId != anyLabel && endNodeLabelId != anyLabel )
                         {
-                            if ( startNodeLabelId != anyLabel && endNodeLabelId != anyLabel )
-                            {
-                                continue;
-                            }
+                            continue;
                         }
-                        int startLabel = startNodeLabelId == anyLabel ? ReadOperations.ANY_LABEL : startNodeLabelId;
-                        int type = typeId == anyRelationshipType ? ReadOperations.ANY_RELATIONSHIP_TYPE : typeId;
-                        int endLabel = endNodeLabelId == anyLabel ? ReadOperations.ANY_LABEL : endNodeLabelId;
-                        long count = endNodeLabelIds[endNodeLabelId];
-                        countsUpdater.incrementRelationshipCount( startLabel, type, endLabel, count );
                     }
+                    int startLabel = startNodeLabelId == anyLabel ? ReadOperations.ANY_LABEL : startNodeLabelId;
+                    int type = typeId == anyRelationshipType ? ReadOperations.ANY_RELATIONSHIP_TYPE : typeId;
+                    int endLabel = endNodeLabelId == anyLabel ? ReadOperations.ANY_LABEL : endNodeLabelId;
+                    long count = endNodeLabelIds[endNodeLabelId];
+                    countsUpdater.incrementRelationshipCount( startLabel, type, endLabel, count );
                 }
             }
         }

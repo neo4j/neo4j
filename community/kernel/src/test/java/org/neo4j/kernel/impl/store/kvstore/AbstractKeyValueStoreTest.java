@@ -385,14 +385,17 @@ public class AbstractKeyValueStoreTest
 
         public void put( String key, final String value ) throws IOException
         {
-            apply( new Update<String>( key )
+            try (EntryUpdater<String> updater = updater())
             {
-                @Override
-                protected void update( WritableBuffer buffer )
+                updater.apply( key, new ValueUpdate()
                 {
-                    writeKey( value, buffer );
-                }
-            } );
+                    @Override
+                    public void update( WritableBuffer target )
+                    {
+                        writeKey( value, target );
+                    }
+                } );
+            }
         }
 
         public String get( String key ) throws IOException

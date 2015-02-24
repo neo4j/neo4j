@@ -23,30 +23,30 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 
 /**
- * Calculates counts per label and puts data into {@link NodeLabelsCache} for use by {@link RelationshipCountsProcessor}.
+ * Calculates counts per label and puts data into {@link NodeLabelsCache} for use by {@link
+ * RelationshipCountsProcessor}.
  */
 public class NodeCountsProcessor implements StoreProcessor<NodeRecord>
 {
     private final NodeStore nodeStore;
     private final long[] labelCounts;
     private final NodeLabelsCache cache;
-    private final CountsTracker countsTracker;
+    private final CountsAccessor.Updater counts;
     private final int anyLabel;
 
     public NodeCountsProcessor( NodeStore nodeStore, NodeLabelsCache cache, int highLabelId,
-            CountsTracker countsTracker )
+                                CountsAccessor.Updater counts )
     {
         this.nodeStore = nodeStore;
         this.cache = cache;
         this.anyLabel = highLabelId;
-        this.countsTracker = countsTracker;
+        this.counts = counts;
         // Instantiate with high id + 1 since we need that extra slot for the ANY count
-        this.labelCounts = new long[highLabelId+1];
+        this.labelCounts = new long[highLabelId + 1];
     }
 
     @Override
@@ -70,12 +70,9 @@ public class NodeCountsProcessor implements StoreProcessor<NodeRecord>
     @Override
     public void done()
     {
-        try ( CountsAccessor.Updater updater = countsTracker.updater() )
+        for ( int i = 0; i < labelCounts.length; i++ )
         {
-            for ( int i = 0; i < labelCounts.length; i++ )
-            {
-                updater.incrementNodeCount( i == anyLabel ? ReadOperations.ANY_LABEL : i, labelCounts[i] );
-            }
+            counts.incrementNodeCount( i == anyLabel ? ReadOperations.ANY_LABEL : i, labelCounts[i] );
         }
     }
 }

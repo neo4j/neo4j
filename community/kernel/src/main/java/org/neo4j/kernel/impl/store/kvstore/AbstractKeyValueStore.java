@@ -29,7 +29,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.locking.LockWrapper;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static org.neo4j.kernel.impl.locking.LockWrapper.readLock;
 import static org.neo4j.kernel.impl.locking.LockWrapper.writeLock;
 
 /**
@@ -156,14 +155,6 @@ public abstract class AbstractKeyValueStore<Key, HeaderChanges> extends Lifecycl
         }
     }
 
-    protected final void apply( Update<Key> update ) throws IOException
-    {
-        try ( LockWrapper ignored = readLock( updateLock ) )
-        {
-            state.apply( update );
-        }
-    }
-
     protected void failedToOpenStoreFile( File path, Exception error )
     {
         // override to implement logging
@@ -184,32 +175,47 @@ public abstract class AbstractKeyValueStore<Key, HeaderChanges> extends Lifecycl
         // override to implement logging
     }
 
-    protected abstract class Updater implements AutoCloseable
+    protected final EntryUpdater<Key> updater( long txId )
     {
-        private final KeyValueStoreState<Key> state;
-        private Thread thread = Thread.currentThread();
+        return updater(); // TODO: this method should care about the txId
+    }
 
-        public Updater()
+    protected final EntryUpdater<Key> updater()
+    {
+        return new EntryUpdater<Key>( updateLock.readLock() )
         {
-            updateLock.readLock().lock();
-            this.state = AbstractKeyValueStore.this.state;
-        }
+            private final KeyValueStoreState<Key> state = AbstractKeyValueStore.this.state;
 
-        protected final void apply( Update<Key> update ) throws IOException
-        {
-            if ( thread != Thread.currentThread() )
+            @Override
+            public void apply( Key key, ValueUpdate update ) throws IOException
             {
-                throw new IllegalStateException( "Updater of " + AbstractKeyValueStore.this + " is not available." );
+                ensureSameThread();
+                state.apply( key, update, false );
             }
-            state.apply( update );
-        }
+        };
+    }
 
-        @Override
-        public final void close()
+    protected final EntryUpdater<Key> resetter()
+    {
+        return new EntryUpdater<Key>( updateLock.writeLock() )
         {
-            thread = null;
-            updateLock.readLock().unlock();
-        }
+            private final KeyValueStoreState<Key> state = AbstractKeyValueStore.this.state;
+
+            {
+                if ( state.hasChanges() )
+                {
+                    close();
+                    throw new IllegalStateException( "Cannot reset when there are changes!" );
+                }
+            }
+
+            @Override
+            public void apply( Key key, ValueUpdate update ) throws IOException
+            {
+                ensureOpen();
+                state.apply( key, update, true );
+            }
+        };
     }
 
     protected final void rotate( HeaderChanges headerChanges ) throws IOException
@@ -247,18 +253,6 @@ public abstract class AbstractKeyValueStore<Key, HeaderChanges> extends Lifecycl
             }
         }
         return true;
-    }
-
-    public static abstract class Update<Key>
-    {
-        final Key key;
-
-        public Update( Key key )
-        {
-            this.key = key;
-        }
-
-        protected abstract void update( WritableBuffer value );
     }
 
     public static abstract class Reader<Value>

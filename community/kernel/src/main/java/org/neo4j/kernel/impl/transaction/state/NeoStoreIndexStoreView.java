@@ -49,7 +49,6 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.register.Register.DoubleLongRegister;
 
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.EMPTY_LONG_ARRAY;
@@ -62,20 +61,13 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     private final NodeStore nodeStore;
     private final LockService locks;
     private final CountsTracker counts;
-    private final TransactionIdStore txIdStore;
 
     public NeoStoreIndexStoreView( LockService locks, NeoStore neoStore )
     {
-        this( locks, neoStore.getNodeStore(), neoStore.getPropertyStore(), neoStore.getCounts(), neoStore  );
-    }
-
-    public NeoStoreIndexStoreView( LockService locks, NodeStore nodeStore, PropertyStore propertyStore, CountsTracker counts, TransactionIdStore txIdStore )
-    {
         this.locks = locks;
-        this.propertyStore = propertyStore;
-        this.nodeStore = nodeStore;
-        this.counts = counts;
-        this.txIdStore = txIdStore;
+        this.propertyStore = neoStore.getPropertyStore();
+        this.nodeStore = neoStore.getNodeStore();
+        this.counts = neoStore.getCounts();
     }
 
     @Override
@@ -90,7 +82,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     {
         int labelId = descriptor.getLabelId();
         int propertyKeyId = descriptor.getPropertyKeyId();
-        try ( CountsAccessor.Updater updater = counts.updater() )
+        try ( CountsAccessor.IndexStatsUpdater updater = counts.updateIndexCounts() )
         {
             updater.replaceIndexSample( labelId, propertyKeyId, uniqueElements, maxUniqueElements );
             updater.replaceIndexUpdateAndSize( labelId, propertyKeyId, 0l, indexSize );
@@ -100,7 +92,10 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     @Override
     public void incrementIndexUpdates( IndexDescriptor descriptor, long updatesDelta )
     {
-        counts.incrementIndexUpdates( descriptor.getLabelId(), descriptor.getPropertyKeyId(), updatesDelta );
+        try ( CountsAccessor.IndexStatsUpdater updater = counts.updateIndexCounts() )
+        {
+            updater.incrementIndexUpdates( descriptor.getLabelId(), descriptor.getPropertyKeyId(), updatesDelta );
+        }
     }
 
     @Override

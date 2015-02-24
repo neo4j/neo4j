@@ -19,8 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 
@@ -31,12 +31,12 @@ import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 public class RelationshipCountsStage extends Stage
 {
     public RelationshipCountsStage( Configuration config, NodeLabelsCache cache, RelationshipStore relationshipStore,
-            int highLabelId, int highRelationshipTypeId, CountsTracker countsTracker )
+            int highLabelId, int highRelationshipTypeId, CountsAccessor.Updater countsUpdater )
     {
         super( "Relationship --> Relationship counts", config, false );
         add( new ReadRelationshipCountsDataStep( control(), config.batchSize(), config.movingAverageSize(),
                 relationshipStore ) );
         add( new ProcessRelationshipCountsDataStep( control(), cache, config.workAheadSize(),
-                config.movingAverageSize(), highLabelId, highRelationshipTypeId, countsTracker ) );
+                config.movingAverageSize(), highLabelId, highRelationshipTypeId, countsUpdater ) );
     }
 }

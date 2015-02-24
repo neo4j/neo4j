@@ -169,7 +169,7 @@ public class IndexStatisticsIT
 
     private void resetIndexCounts( int labelId, int pkId )
     {
-        try ( CountsAccessor.Updater updater = neoStore().getCounts().updater() )
+        try ( CountsAccessor.IndexStatsUpdater updater = neoStore().getCounts().updateIndexCounts() )
         {
             updater.replaceIndexSample( labelId, pkId, 0, 0 );
             updater.replaceIndexUpdateAndSize( labelId, pkId, 0, 0 );

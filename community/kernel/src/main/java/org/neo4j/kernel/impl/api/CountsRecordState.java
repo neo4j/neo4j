@@ -40,7 +40,7 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexStat
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
 
-public class CountsRecordState implements CountsAccessor, RecordState, CountsAccessor.Updater
+public class CountsRecordState implements CountsAccessor, RecordState, CountsAccessor.Updater, CountsAccessor.IndexStatsUpdater
 {
     /** Don't support these counts at the moment so don't compute them */
     private static final boolean COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS = false;
@@ -52,12 +52,6 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
     {
         counts( nodeKey( labelId ) ).copyTo( target );
         return target;
-    }
-
-    @Override
-    public Updater updater()
-    {
-        return this;
     }
 
     @Override

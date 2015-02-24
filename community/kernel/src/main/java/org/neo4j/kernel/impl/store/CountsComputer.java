@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store;
 
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
@@ -70,14 +71,14 @@ public class CountsComputer
     public void rebuildCounts()
     {
         NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO, highLabelId );
-        try
+        try ( CountsAccessor.Updater countsUpdater = countsTracker.reset() )
         {
             // Count nodes
             superviseDynamicExecution( new NodeStoreProcessorStage( "COUNT NODES", Configuration.DEFAULT, nodes,
-                    new NodeCountsProcessor( nodes, cache, highLabelId, countsTracker ) ) );
+                    new NodeCountsProcessor( nodes, cache, highLabelId, countsUpdater ) ) );
             // Count relationships
             superviseDynamicExecution( new RelationshipCountsStage( Configuration.DEFAULT, cache, relationships,
-                    highLabelId, highRelationshipTypeId, countsTracker ) );
+                    highLabelId, highRelationshipTypeId, countsUpdater ) );
         }
         finally
         {

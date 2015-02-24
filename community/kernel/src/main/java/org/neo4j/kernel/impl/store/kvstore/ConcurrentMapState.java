@@ -81,23 +81,27 @@ class ConcurrentMapState<Key> extends KeyValueStoreState<Key>
         return rotation.openStoreFile( path );
     }
 
+    @Override
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    public void apply( final AbstractKeyValueStore.Update<Key> update ) throws IOException
+    public void apply( Key key, ValueUpdate update, boolean reset ) throws IOException
     {
-        byte[] value = changes.get( update.key );
+        byte[] value = changes.get( key );
         if ( value == null )
         {
             final byte[] proposal = new byte[keys.valueSize()];
             synchronized ( proposal )
             {
-                value = changes.putIfAbsent( update.key, proposal );
+                value = changes.putIfAbsent( key, proposal );
                 if ( value == null )
                 {
                     BigEndianByteArrayBuffer buffer = new BigEndianByteArrayBuffer( proposal );
-                    PreviousValue<Key> lookup = new PreviousValue<>( keys,update.key, proposal );
-                    if ( !store.scan( lookup, lookup ) )
+                    if ( !reset )
                     {
-                        buffer.clear();
+                        PreviousValue<Key> lookup = new PreviousValue<>( keys, key, proposal );
+                        if ( !store.scan( lookup, lookup ) )
+                        {
+                            buffer.clear();
+                        }
                     }
                     update.update( buffer );
                     return;
@@ -106,7 +110,12 @@ class ConcurrentMapState<Key> extends KeyValueStoreState<Key>
         }
         synchronized ( value )
         {
-            update.update( new BigEndianByteArrayBuffer( value ) );
+            BigEndianByteArrayBuffer target = new BigEndianByteArrayBuffer( value );
+            if ( reset )
+            {
+                target.clear();
+            }
+            update.update( target );
         }
     }
 

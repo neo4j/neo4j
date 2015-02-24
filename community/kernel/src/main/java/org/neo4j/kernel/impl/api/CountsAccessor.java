@@ -47,19 +47,23 @@ public interface CountsAccessor extends CountsVisitor.Visitable
      */
     DoubleLongRegister indexSample( int labelId, int propertyKeyId, DoubleLongRegister target );
 
-    void incrementIndexUpdates( int labelId, int propertyKeyId, long delta );
-
-    Updater updater();
-
     interface Updater extends AutoCloseable
     {
         void incrementNodeCount( int labelId, long delta );
 
         void incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta );
 
+        @Override
+        void close();
+    }
+
+    interface IndexStatsUpdater extends AutoCloseable
+    {
         void replaceIndexUpdateAndSize( int labelId, int propertyKeyId, long updates, long size );
 
         void replaceIndexSample( int labelId, int propertyKeyId, long unique, long size );
+
+        void incrementIndexUpdates( int labelId, int propertyKeyId, long delta );
 
         @Override
         void close();
@@ -67,35 +71,37 @@ public interface CountsAccessor extends CountsVisitor.Visitable
 
     final class Initializer implements CountsVisitor
     {
-        private final Updater target;
+        private final Updater updater;
+        private final IndexStatsUpdater stats;
 
-        public Initializer( Updater target )
+        public Initializer( Updater updater, IndexStatsUpdater stats )
         {
-            this.target = target;
+            this.updater = updater;
+            this.stats = stats;
         }
 
         @Override
         public void visitNodeCount( int labelId, long count )
         {
-            target.incrementNodeCount( labelId, count );
+            updater.incrementNodeCount( labelId, count );
         }
 
         @Override
         public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
         {
-            target.incrementRelationshipCount( startLabelId, typeId, endLabelId, count );
+            updater.incrementRelationshipCount( startLabelId, typeId, endLabelId, count );
         }
 
         @Override
         public void visitIndexStatistics( int labelId, int propertyKeyId, long updates, long size )
         {
-            target.replaceIndexUpdateAndSize( labelId, propertyKeyId, updates, size );
+            stats.replaceIndexUpdateAndSize( labelId, propertyKeyId, updates, size );
         }
 
         @Override
         public void visitIndexSample( int labelId, int propertyKeyId, long unique, long size )
         {
-            target.replaceIndexSample( labelId, propertyKeyId, unique, size );
+            stats.replaceIndexSample( labelId, propertyKeyId, unique, size );
         }
     }
 }

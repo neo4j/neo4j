@@ -27,6 +27,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.function.Function;
+import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.CountsOracle;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
@@ -74,26 +75,29 @@ public class CountsTrackerTest
         }
 
         // when
-        oracle.update( tracker );
+        oracle.update( tracker, 2 );
 
         // then
         oracle.verify( tracker );
 
         // when
-        tracker.rotate( 17 );
+        tracker.rotate( 2 );
 
         // then
         oracle.verify( tracker );
 
         // when
-        tracker.incrementIndexUpdates( 1, 1, 2 );
+        try ( CountsAccessor.IndexStatsUpdater updater = tracker.updateIndexCounts() )
+        {
+            updater.incrementIndexUpdates( 1, 1, 2 );
+        }
 
         // then
         oracle.indexUpdatesAndSize( 1, 1, 12, 2 );
         oracle.verify( tracker );
 
         // when
-        tracker.rotate( 18 );
+        tracker.rotate( 3 );
 
         // then
         oracle.verify( tracker );
@@ -109,7 +113,7 @@ public class CountsTrackerTest
         try ( Lifespan life = new Lifespan() )
         {
             CountsTracker tracker = life.add( newTracker() );
-            oracle.update( tracker );
+            oracle.update( tracker, 1 );
             tracker.rotate( 1 );
         }
 
@@ -129,7 +133,7 @@ public class CountsTrackerTest
         try ( Lifespan life = new Lifespan() )
         {
             CountsTracker tracker = life.add( newTracker() );
-            oracle.update( tracker );
+            oracle.update( tracker, 1 );
             tracker.rotate( 1 );
 
             oracle.verify( tracker );
@@ -142,7 +146,7 @@ public class CountsTrackerTest
                 delta.relationship( n1, 1, n2 );
                 delta.relationship( n2, 2, n1 ); // relationshipType 2 has not been used before...
             }
-            delta.update( tracker );
+            delta.update( tracker, 2 );
             delta.update( oracle );
 
             // then
@@ -164,12 +168,12 @@ public class CountsTrackerTest
     {
         // given
         CountsOracle oracle = someData();
-        int newTxId = 2;
+        final int firstTransaction = 2, secondTransaction = 3;
         try ( Lifespan life = new Lifespan() )
         {
             CountsTracker tracker = life.add( newTracker() );
-            oracle.update( tracker );
-            tracker.rotate( newTxId );
+            oracle.update( tracker, firstTransaction );
+            tracker.rotate( firstTransaction );
         }
 
         // when
@@ -182,9 +186,9 @@ public class CountsTrackerTest
         }
         delta.update( oracle );
 
-        final Barrier.Control barrier = new Barrier.Control();
         try ( Lifespan life = new Lifespan() )
         {
+            final Barrier.Control barrier = new Barrier.Control();
             CountsTracker tracker = life.add( new CountsTracker(
                     the.logger(), the.fileSystem(), the.pageCache(), the.testPath() )
             {
@@ -202,8 +206,8 @@ public class CountsTrackerTest
                 {
                     try
                     {
-                        delta.update( tracker );
-                        tracker.rotate( 2 );
+                        delta.update( tracker, secondTransaction );
+                        tracker.rotate( secondTransaction );
                     }
                     catch ( IOException e )
                     {
@@ -258,7 +262,10 @@ public class CountsTrackerTest
         // given
         CountsTracker tracker = the.managed( newTracker() );
         File before = tracker.currentFile();
-        tracker.incrementIndexUpdates( 7, 8, 100 );
+        try ( CountsAccessor.IndexStatsUpdater updater = tracker.updateIndexCounts() )
+        {
+            updater.incrementIndexUpdates( 7, 8, 100 );
+        }
 
         // when
         tracker.rotate( tracker.txId() );

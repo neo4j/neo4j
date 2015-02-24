@@ -38,7 +38,7 @@ abstract class KeyValueStoreState<Key>
 
     public abstract DataProvider dataProvider() throws IOException;
 
-    public abstract void apply( AbstractKeyValueStore.Update<Key> update ) throws IOException;
+    public abstract void apply( Key key, ValueUpdate update, boolean reset ) throws IOException;
 
     // State transitions
 
@@ -191,7 +191,7 @@ abstract class KeyValueStoreState<Key>
         }
 
         @Override
-        public final void apply( AbstractKeyValueStore.Update<Key> update ) throws IOException
+        public void apply( Key key, ValueUpdate update, boolean reset )
         {
             throw invalidState();
         }

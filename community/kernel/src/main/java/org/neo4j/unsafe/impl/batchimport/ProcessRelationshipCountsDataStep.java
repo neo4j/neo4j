@@ -22,7 +22,7 @@ package org.neo4j.unsafe.impl.batchimport;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
@@ -37,17 +37,17 @@ public class ProcessRelationshipCountsDataStep extends ExecutorServiceStep<long[
     private final Map<Thread,RelationshipCountsProcessor> processors = new ConcurrentHashMap<>();
     private final int highLabelId;
     private final int highRelationshipTypeId;
-    private final CountsTracker countsTracker;
+    private final CountsAccessor.Updater countsUpdater;
 
     public ProcessRelationshipCountsDataStep( StageControl control, NodeLabelsCache cache,
             int workAheadSize, int movingAverageSize, int highLabelId, int highRelationshipTypeId,
-            CountsTracker countsTracker )
+            CountsAccessor.Updater countsUpdater )
     {
         super( control, "COUNT", workAheadSize, movingAverageSize, 1, true );
         this.cache = cache;
         this.highLabelId = highLabelId;
         this.highRelationshipTypeId = highRelationshipTypeId;
-        this.countsTracker = countsTracker;
+        this.countsUpdater = countsUpdater;
     }
 
     @Override
@@ -68,7 +68,7 @@ public class ProcessRelationshipCountsDataStep extends ExecutorServiceStep<long[
         {   // This is OK since in this step implementation we use TaskExecutor which sticks to its threads.
             // deterministically.
             processors.put( Thread.currentThread(), processor = new RelationshipCountsProcessor(
-                    cache, highLabelId, highRelationshipTypeId, countsTracker ) );
+                    cache, highLabelId, highRelationshipTypeId, countsUpdater ) );
         }
         return processor;
     }

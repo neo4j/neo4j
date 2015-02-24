@@ -111,12 +111,6 @@ public class TransactionRepresentationStoreApplier
     private NeoCommandHandler getCountsStoreApplier( long transactionId, TransactionApplicationMode mode )
     {
         CountsTracker counts = neoStore.getCounts();
-        if ( TransactionApplicationMode.RECOVERY == mode && !counts.acceptTx( transactionId ) )
-        {
-            return NeoCommandHandler.EMPTY;
-        }
-
-        assert counts.acceptTx( transactionId ) : counts;
-        return new CountsStoreApplier( counts.updater(), neoStore.getNodeStore() );
+        return new CountsStoreApplier( counts.apply( transactionId ), neoStore.getNodeStore() );
     }
 }
