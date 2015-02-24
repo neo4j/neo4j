@@ -162,7 +162,7 @@ public class UsersDocIT extends ExclusiveServerTestBase
     public void startServer(boolean authEnabled) throws IOException
     {
         new File( "neo4j-home/data/dbms/authorization" ).delete(); // TODO: Implement a common component for managing Neo4j file structure and use that here
-        server = CommunityServerBuilder.server().withProperty( ServerSettings.authorization_enabled.name(),
+        server = CommunityServerBuilder.server().withProperty( ServerSettings.auth_enabled.name(),
                 Boolean.toString( authEnabled ) ).build();
         server.start();
     }
@@ -180,7 +180,7 @@ public class UsersDocIT extends ExclusiveServerTestBase
 
     private String challengeResponse( String username, String password )
     {
-        return "Basic realm=\"Neo4j\" " + base64( username + ":" + password );
+        return "Basic " + base64( username + ":" + password );
     }
 
     private String dataURL()

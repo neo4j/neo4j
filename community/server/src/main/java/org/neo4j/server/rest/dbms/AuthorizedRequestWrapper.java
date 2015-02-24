@@ -53,13 +53,21 @@ public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
             }
 
             DelegatingPrinciple that = (DelegatingPrinciple) o;
-            return !username.equals( that.username );
+            return username.equals( that.username );
         }
 
         @Override
         public int hashCode()
         {
             return username.hashCode();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "DelegatingPrinciple{" +
+                    "username='" + username + '\'' +
+                    '}';
         }
     }
 
@@ -89,5 +97,47 @@ public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
     public boolean isUserInRole( String role )
     {
         return true;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "AuthorizedRequestWrapper{" +
+                "authType='" + authType + '\'' +
+                ", principle=" + principle +
+                '}';
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        AuthorizedRequestWrapper that = (AuthorizedRequestWrapper) o;
+        if ( !authType.equals( that.authType ) )
+        {
+            return false;
+        }
+        if ( !principle.equals( that.principle ) )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = authType.hashCode();
+        result = 31 * result + principle.hashCode();
+        return result;
     }
 }

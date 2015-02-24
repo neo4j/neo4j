@@ -40,7 +40,7 @@ public class AuthorizationDisabledIT extends ExclusiveServerTestBase
     public void shouldAllowDisablingAuthorization() throws Exception
     {
         // Given
-        server = CommunityServerBuilder.server().withProperty( ServerSettings.authorization_enabled.name(), "false" ).build();
+        server = CommunityServerBuilder.server().withProperty( ServerSettings.auth_enabled.name(), "false" ).build();
 
         // When
         server.start();

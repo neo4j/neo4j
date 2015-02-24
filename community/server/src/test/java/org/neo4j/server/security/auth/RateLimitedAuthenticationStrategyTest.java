@@ -54,7 +54,46 @@ public class RateLimitedAuthenticationStrategyTest
     }
 
     @Test
+    public void shouldNotSlowRequestRateOnLessThanMaxFailedAttempts() throws Exception
+    {
+        // Given
+        FakeClock clock = new FakeClock();
+        AuthenticationStrategy authStrategy = new RateLimitedAuthenticationStrategy( clock, 3 );
+        User user = new User( "user", Credential.forPassword( "right" ), false );
+
+        // When we've failed two times
+        assertThat( authStrategy.authenticate( user, "wrong" ), equalTo( AuthenticationResult.FAILURE ) );
+        assertThat( authStrategy.authenticate( user, "wrong" ), equalTo( AuthenticationResult.FAILURE ) );
+
+        // Then
+        assertThat( authStrategy.authenticate( user, "right" ), equalTo( AuthenticationResult.SUCCESS ));
+    }
+
+    @Test
     public void shouldSlowRequestRateOnMultipleFailedAttempts() throws Exception
+    {
+        // Given
+        FakeClock clock = new FakeClock();
+        AuthenticationStrategy authStrategy = new RateLimitedAuthenticationStrategy( clock, 3 );
+        User user = new User( "user", Credential.forPassword( "right" ), false );
+
+        // When we've failed three times
+        assertThat( authStrategy.authenticate( user, "wrong" ), equalTo( AuthenticationResult.FAILURE ) );
+        assertThat( authStrategy.authenticate( user, "wrong" ), equalTo( AuthenticationResult.FAILURE ) );
+        assertThat( authStrategy.authenticate( user, "wrong" ), equalTo( AuthenticationResult.FAILURE ) );
+
+        // Then
+        assertThat( authStrategy.authenticate( user, "wrong" ), equalTo( AuthenticationResult.TOO_MANY_ATTEMPTS ));
+
+        // But when time heals all wounds
+        clock.forward( 5, TimeUnit.SECONDS );
+
+        // Then things should be alright
+        assertThat( authStrategy.authenticate( user, "wrong" ), equalTo( AuthenticationResult.FAILURE ) );
+    }
+
+    @Test
+    public void shouldSlowRequestRateOnMultipleFailedAttemptsWhereAttemptIsValid() throws Exception
     {
         // Given
         FakeClock clock = new FakeClock();

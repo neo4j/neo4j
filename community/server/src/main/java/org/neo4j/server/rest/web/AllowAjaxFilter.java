@@ -33,7 +33,6 @@ import com.sun.jersey.spi.container.ContainerResponseFilter;
  */
 public class AllowAjaxFilter implements ContainerResponseFilter
 {
-
     private static final String ACCESS_CONTROL_ALLOW_ORIGIN = "Access-Control-Allow-Origin";
     private static final String ACCESS_CONTROL_ALLOW_METHODS = "Access-Control-Allow-Methods";
     private static final String ACCESS_CONTROL_ALLOW_HEADERS = "Access-Control-Allow-Headers";

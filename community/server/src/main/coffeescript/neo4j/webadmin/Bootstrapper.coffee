@@ -40,7 +40,7 @@ define(
           timeout : 1000 * 60 * 60 * 6 # Let requests run up to six hours
           beforeSend: (xhr) ->
             auth_data = localStorage.getItem("neo4j.authorization_data")
-            xhr.setRequestHeader("Authorization", "Basic realm=\"Neo4j\" " + auth_data) unless auth_data is null
+            xhr.setRequestHeader("Authorization", "Basic " + auth_data) unless auth_data is null
         })
 
         # Handle authorization errors
