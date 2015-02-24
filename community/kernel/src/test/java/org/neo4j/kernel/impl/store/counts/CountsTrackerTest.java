@@ -27,18 +27,28 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.function.Function;
+import org.neo4j.function.RawFunction;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.impl.api.CountsAccessor;
+import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.CountsOracle;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
 import org.neo4j.kernel.impl.store.kvstore.Resources;
 import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.register.Registers;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.ThreadingRule;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import static org.neo4j.kernel.impl.store.kvstore.Resources.InitialLifecycle.STARTED;
 import static org.neo4j.kernel.impl.store.kvstore.Resources.TestPath.FILE_IN_EXISTING_DIRECTORY;
@@ -274,6 +284,62 @@ public class CountsTrackerTest
         assertNotEquals( "rotated", before, tracker.currentFile() );
     }
 
+    @Test
+    @Resources.Life(STARTED)
+    public void shouldSupportTransactionsAppliedOutOfOrderOnRotation() throws Exception
+    {
+        // given
+        final CountsTracker tracker = the.managed( newTracker() );
+        try ( CountsAccessor.Updater tx = tracker.apply( 1 ) )
+        {
+            tx.incrementNodeCount( 1, 1 );
+        }
+        try ( CountsAccessor.Updater tx = tracker.apply( 3 ) )
+        {
+            tx.incrementNodeCount( 1, 1 );
+        }
+
+        // when
+        Future<Long> rotated = threading.executeAndAwait( new Rotation( 2 ), tracker, new Predicate<Thread>()
+        {
+            @Override
+            public boolean accept( Thread thread )
+            {
+                switch ( thread.getState() )
+                {
+                case BLOCKED:
+                case WAITING:
+                case TIMED_WAITING:
+                case TERMINATED:
+                    return true;
+                default:
+                    return false;
+                }
+            }
+        }, 10, SECONDS );
+        try ( CountsAccessor.Updater tx = tracker.apply( 4 ) )
+        {
+            tx.incrementNodeCount( 1, 1 );
+        }
+        try ( CountsAccessor.Updater tx = tracker.apply( 2 ) )
+        {
+            tx.incrementNodeCount( 1, 1 );
+        }
+
+        // then
+        assertEquals( "rotated transaction", 3, rotated.get().longValue() );
+        assertEquals( "stored transaction", 3, tracker.txId() );
+
+        // the value in memory
+        assertEquals( "count", 4, tracker.nodeCount( 1, Registers.newDoubleLongRegister() ).readSecond() );
+
+        // the value in the store
+        CountsVisitor visitor = mock( CountsVisitor.class );
+        tracker.visitFile( tracker.currentFile(), visitor );
+        verify( visitor ).visitNodeCount( 1, 3 );
+        verifyNoMoreInteractions( visitor );
+    }
+
     private CountsTracker newTracker()
     {
         return new CountsTracker( the.logger(), the.fileSystem(), the.pageCache(), the.testPath() );
@@ -293,5 +359,21 @@ public class CountsTrackerTest
         oracle.indexUpdatesAndSize( 1, 2, 0l, 50l );
         oracle.indexSampling( 1, 2, 25l, 50l );
         return oracle;
+    }
+
+    private static class Rotation implements RawFunction<CountsTracker, Long, IOException>
+    {
+        private final long txId;
+
+        Rotation( long txId )
+        {
+            this.txId = txId;
+        }
+
+        @Override
+        public Long apply( CountsTracker tracker ) throws IOException
+        {
+            return tracker.rotate( txId );
+        }
     }
 }
