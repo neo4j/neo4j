@@ -128,7 +128,7 @@ public class TestStartTransactionDuringLogRotation
     public void tearDown() throws Exception
     {
         writerStopped.set( true );
-        writerTaskFuture.get( 1, TimeUnit.SECONDS );
+        writerTaskFuture.get( 10, TimeUnit.SECONDS );
         db.shutdown();
         executor.shutdown();
     }
