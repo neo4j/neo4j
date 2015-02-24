@@ -25,7 +25,8 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
@@ -35,21 +36,20 @@ import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMo
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
+import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TargetDirectory.TestDirectory;
 
 import static org.junit.Assert.assertTrue;
 
 public class StoreMigratorTest
 {
-    private SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
+    private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
 
     private File createNeoStoreWithOlderVersion( String version ) throws IOException
     {
-        File storeDir = new File( "dir" ).getAbsoluteFile();
-        EphemeralFileSystemAbstraction fileSystem = fs.get();
-        fileSystem.mkdirs( storeDir );
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fileSystem, storeDir );
+        File storeDir = directory.directory().getAbsoluteFile();
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, storeDir );
         return storeDir;
     }
 
@@ -60,26 +60,27 @@ public class StoreMigratorTest
         File storeDirectory = createNeoStoreWithOlderVersion( Legacy20Store.LEGACY_VERSION );
         // and a state of the migration saying that it has done the actual migration
         Logging logging = new DevNullLoggingService();
-        PageCache pageCache = pageCacheRule.getPageCache( fs.get() );
-        StoreMigrator migrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fs.get(), logging );
+        PageCache pageCache = pageCacheRule.getPageCache( fs );
+        StoreMigrator migrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fs, logging );
         File migrationDir = new File( storeDirectory, StoreUpgrader.MIGRATION_DIRECTORY );
-        fs.get().mkdirs( migrationDir );
+        fs.mkdirs( migrationDir );
         assertTrue( migrator.needsMigration( storeDirectory ) );
         migrator.migrate( storeDirectory, migrationDir, schemaIndexProvider, pageCache );
         migrator.close();
 
         // WHEN simulating resuming the migration
-        migrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fs.get(), logging );
+        migrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fs, logging );
         migrator.moveMigratedFiles( migrationDir, storeDirectory );
 
         // THEN starting the new store should be successful
-        StoreFactory storeFactory = new StoreFactory( fs.get(), storeDirectory, pageCache,
+        StoreFactory storeFactory = new StoreFactory( fs, storeDirectory, pageCache,
                 logging.getMessagesLog( getClass() ), new Monitors() );
         storeFactory.newNeoStore( false ).close();
     }
 
     @Rule
-    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    public final TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    public final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     @Rule
     public final PageCacheRule pageCacheRule = new PageCacheRule();
 }
