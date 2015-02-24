@@ -311,8 +311,10 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     haCommunicationLife.shutdown();
                     haCommunicationLife = new LifeSupport();
 
+                    // it is important for availableMasterId to be re-read on every attempt so that
+                    // slave switching would not result in an infinite loop with wrong/stale availableMasterId
                     URI resultingSlaveHaURI =
-                            switchToSlave.switchToSlave( haCommunicationLife, me, masterUri, cancellationHandle );
+                            switchToSlave.switchToSlave( haCommunicationLife, me, availableMasterId, cancellationHandle );
                     if ( resultingSlaveHaURI == null )
                     {
                         /*
