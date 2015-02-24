@@ -24,10 +24,13 @@ import java.util.Map;
 
 import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.function.Function;
+import org.neo4j.kernel.impl.util.Validator;
+import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.unsafe.impl.batchimport.input.DataException;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
@@ -108,8 +111,9 @@ public class CsvInput implements Input
                     protected InputIterator<InputNode> entityDeserializer( CharSeeker dataStream, Header dataHeader,
                             Function<InputNode,InputNode> decorator )
                     {
-                        return new InputNodeDeserializer( dataHeader, dataStream, config.delimiter(), decorator,
-                                idType.idsAreExternal(), groups );
+                        return new InputEntityDeserializer<>( dataHeader, dataStream, config.delimiter(),
+                                new InputNodeDeserialization( dataHeader, groups, idType.idsAreExternal() ),
+                                decorator, Validators.<InputNode>emptyValidator() );
                     }
                 };
             }
@@ -131,8 +135,19 @@ public class CsvInput implements Input
                     protected InputIterator<InputRelationship> entityDeserializer( CharSeeker dataStream,
                               Header dataHeader, Function<InputRelationship,InputRelationship> decorator )
                     {
-                        return new InputRelationshipDeserializer( dataHeader, dataStream, config.delimiter(),
-                                decorator, groups );
+                        return new InputEntityDeserializer<>( dataHeader, dataStream, config.delimiter(),
+                                new InputRelationshipDeserialization( dataHeader, groups ),
+                                decorator, new Validator<InputRelationship>()
+                                {
+                                    @Override
+                                    public void validate( InputRelationship entity )
+                                    {
+                                        if ( !entity.hasTypeId() && entity.type() == null )
+                                        {
+                                            throw new DataException( entity + " is missing " + Type.TYPE + " field" );
+                                        }
+                                    }
+                                } );
                     }
                 };
             }
