@@ -37,7 +37,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.kernel.api.impl.index.AllNodesCollector.getAllNodes;
-import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
+import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.tracking;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
 
@@ -51,7 +51,7 @@ public class UniqueLuceneIndexPopulatorTest
         File indexDirectory = new File( "target/whatever" );
         final LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
         UniqueLuceneIndexPopulator populator = new UniqueLuceneIndexPopulator( 100,
-                documentStructure, standard(),
+                documentStructure, tracking(),
                 new IndexWriterStatus(), directoryFactory, indexDirectory, failureStorage, indexId );
         populator.create();
 
@@ -74,7 +74,7 @@ public class UniqueLuceneIndexPopulatorTest
         File indexDirectory = new File( "target/whatever" );
         final LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
         UniqueLuceneIndexPopulator populator = new UniqueLuceneIndexPopulator( 100,
-                documentStructure, standard(),
+                documentStructure, tracking(),
                 new IndexWriterStatus(), directoryFactory, indexDirectory, failureStorage, indexId );
         populator.create();
         int propertyKeyId = 100;
@@ -105,7 +105,7 @@ public class UniqueLuceneIndexPopulatorTest
     {
         // given
         UniqueLuceneIndexPopulator populator = new UniqueLuceneIndexPopulator( 100,
-                new LuceneDocumentStructure(), standard(),
+                new LuceneDocumentStructure(), tracking(),
                 new IndexWriterStatus(), new DirectoryFactory.InMemoryDirectoryFactory(), new File( "target/whatever" ),
                 failureStorage, indexId
         );
@@ -135,7 +135,7 @@ public class UniqueLuceneIndexPopulatorTest
         File indexDirectory = new File( "target/whatever" );
         final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
         UniqueLuceneIndexPopulator populator = new UniqueLuceneIndexPopulator( 2,
-                documentLogic, standard(),
+                documentLogic, tracking(),
                 new IndexWriterStatus(), directoryFactory, indexDirectory, failureStorage, indexId );
         populator.create();
 
@@ -163,7 +163,7 @@ public class UniqueLuceneIndexPopulatorTest
     {
         // given
         UniqueLuceneIndexPopulator populator = new UniqueLuceneIndexPopulator( 100,
-                new LuceneDocumentStructure(), standard(),
+                new LuceneDocumentStructure(), tracking(),
                 new IndexWriterStatus(), new DirectoryFactory.InMemoryDirectoryFactory(), new File( "target/whatever" ),
                 failureStorage, indexId
         );

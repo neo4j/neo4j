@@ -42,6 +42,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -340,7 +341,8 @@ public class FullCheckIntegrationTest
         verifyInconsistency( result, RecordType.LABEL_SCAN_DOCUMENT );
     }
 
-    private void write( LabelScanStore labelScanStore, Iterable<NodeLabelUpdate> nodeLabelUpdates ) throws IOException
+    private void write( LabelScanStore labelScanStore, Iterable<NodeLabelUpdate> nodeLabelUpdates )
+            throws IOException, IndexCapacityExceededException
     {
         try ( LabelScanWriter writer = labelScanStore.newWriter() )
         {

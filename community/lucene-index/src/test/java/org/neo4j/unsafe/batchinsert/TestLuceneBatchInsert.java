@@ -89,6 +89,7 @@ public class TestLuceneBatchInsert
             index.add( id, map( "name", "Joe" + i, "other", "Schmoe" ) );
             ids.put( i, id );
         }
+        index.flush();
 
         for ( int i = 0; i < count; i++ )
         {
@@ -207,6 +208,8 @@ public class TestLuceneBatchInsert
         index.add( node1, map( "number", numeric( 45 ) ) );
         long node2 = inserter.createNode( null );
         index.add( node2, map( "number", numeric( 21 ) ) );
+        index.flush();
+
         assertContains( index.query( "number",
                 newIntRange( "number", 21, 50, true, true ) ), node1, node2 );
 
@@ -232,7 +235,8 @@ public class TestLuceneBatchInsert
         long nodeId1 = inserter.createNode( null );
         batchIndex.add( nodeId1, map( "number", new ValueContext[]{ numeric( 45 ), numeric( 98 ) } ) );
         long nodeId2 = inserter.createNode( null );
-        batchIndex.add( nodeId2, map( "number", new ValueContext[]{ numeric( 47 ), numeric( 100 ) } ) );
+        batchIndex.add( nodeId2, map( "number", new ValueContext[]{numeric( 47 ), numeric( 100 )} ) );
+        batchIndex.flush();
 
         IndexHits<Long> batchIndexResult1 = batchIndex.query( "number", newIntRange( "number", 47, 98, true, true ) );
         assertThat( batchIndexResult1, contains(nodeId1, nodeId2));
@@ -344,6 +348,7 @@ public class TestLuceneBatchInsert
         props.put( "key", "value" );
         index.add( id, props );
         index.updateOrAdd( id, props );
+        index.flush();
         assertEquals( 1, index.get( "key", "value" ).size() );
         index.flush();
         props.put( "key", "value2" );
@@ -425,6 +430,7 @@ public class TestLuceneBatchInsert
         index.setCacheCapacity( key, 100000 );
         assertCacheIsEmpty( index, key );
         index.add( 1, map( key, "Persson" ) );
+        index.flush();
         assertCacheIsEmpty( index, key );
         assertEquals( 1, index.get( key, "Persson" ).getSingle().intValue() );
         provider.shutdown();

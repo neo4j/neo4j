@@ -22,17 +22,20 @@ package org.neo4j.kernel.api.impl.index;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.Reservation;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.UniquePropertyIndexUpdater;
 
 class UniqueLuceneIndexAccessor extends LuceneIndexAccessor
 {
     public UniqueLuceneIndexAccessor( LuceneDocumentStructure documentStructure,
-                                      LuceneIndexWriterFactory indexWriterFactory, IndexWriterStatus writerStatus,
-                                      DirectoryFactory dirFactory, File dirFile ) throws IOException
+                                      IndexWriterFactory<ReservingLuceneIndexWriter> indexWriterFactory,
+                                      IndexWriterStatus writerStatus, DirectoryFactory dirFactory,
+                                      File dirFile ) throws IOException
     {
         super( documentStructure, indexWriterFactory, writerStatus, dirFactory, dirFile );
     }
@@ -91,13 +94,20 @@ class UniqueLuceneIndexAccessor extends LuceneIndexAccessor
 
         @Override
         protected void flushUpdates( Iterable<NodePropertyUpdate> updates )
-                throws IOException, IndexEntryConflictException
+                throws IOException, IndexEntryConflictException, IndexCapacityExceededException
         {
             for ( NodePropertyUpdate update : updates )
             {
                 delegate.process( update );
             }
             delegate.close();
+        }
+
+        @Override
+        public Reservation validate( Iterable<NodePropertyUpdate> updates )
+                throws IOException, IndexCapacityExceededException
+        {
+            return delegate.validate( updates );
         }
 
         @Override

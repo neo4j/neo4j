@@ -19,39 +19,74 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.IOException;
-
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Version;
+
+import java.io.IOException;
+
 import org.neo4j.index.impl.lucene.LuceneDataSource;
 import org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy;
 
-public class IndexWriterFactories
+public final class IndexWriterFactories
 {
-    public static LuceneIndexWriterFactory standard()
+    private IndexWriterFactories()
     {
-        return new LuceneIndexWriterFactory()
+        throw new AssertionError( "Not for instantiation!" );
+    }
+
+    public static IndexWriterFactory<ReservingLuceneIndexWriter> reserving()
+    {
+        return new IndexWriterFactory<ReservingLuceneIndexWriter>()
         {
             @Override
-            public IndexWriter create( Directory directory ) throws IOException
+            public ReservingLuceneIndexWriter create( Directory directory ) throws IOException
             {
-                IndexWriterConfig writerConfig = new IndexWriterConfig( Version.LUCENE_36, LuceneDataSource.KEYWORD_ANALYZER );
-                writerConfig.setMaxBufferedDocs( 100000 ); // TODO figure out depending on environment?
-                writerConfig.setIndexDeletionPolicy( new MultipleBackupDeletionPolicy() );
-                writerConfig.setTermIndexInterval( 14 );
-
-                LogByteSizeMergePolicy mergePolicy = new LogByteSizeMergePolicy();
-                mergePolicy.setUseCompoundFile( true );
-                mergePolicy.setNoCFSRatio( 1.0 );
-                mergePolicy.setMinMergeMB( 0.1 );
-                mergePolicy.setMergeFactor( 2 );
-                writerConfig.setMergePolicy( mergePolicy );
-
-                return new IndexWriter( directory, writerConfig );
+                return new ReservingLuceneIndexWriter( directory, standardConfig() );
             }
         };
+    }
+
+    public static IndexWriterFactory<LuceneIndexWriter> tracking()
+    {
+        return new IndexWriterFactory<LuceneIndexWriter>()
+        {
+            @Override
+            public LuceneIndexWriter create( Directory directory ) throws IOException
+            {
+                return new TrackingLuceneIndexWriter( directory, standardConfig() );
+            }
+        };
+    }
+
+    public static IndexWriterFactory<LuceneIndexWriter> batchInsert( final IndexWriterConfig config )
+    {
+        return new IndexWriterFactory<LuceneIndexWriter>()
+        {
+            @Override
+            public LuceneIndexWriter create( Directory directory ) throws IOException
+            {
+                return new TrackingLuceneIndexWriter( directory, config );
+            }
+        };
+    }
+
+    private static IndexWriterConfig standardConfig()
+    {
+        IndexWriterConfig writerConfig = new IndexWriterConfig( Version.LUCENE_36, LuceneDataSource.KEYWORD_ANALYZER );
+
+        writerConfig.setMaxBufferedDocs( 100000 ); // TODO figure out depending on environment?
+        writerConfig.setIndexDeletionPolicy( new MultipleBackupDeletionPolicy() );
+        writerConfig.setTermIndexInterval( 14 );
+
+        LogByteSizeMergePolicy mergePolicy = new LogByteSizeMergePolicy();
+        mergePolicy.setUseCompoundFile( true );
+        mergePolicy.setNoCFSRatio( 1.0 );
+        mergePolicy.setMinMergeMB( 0.1 );
+        mergePolicy.setMergeFactor( 2 );
+        writerConfig.setMergePolicy( mergePolicy );
+
+        return writerConfig;
     }
 }

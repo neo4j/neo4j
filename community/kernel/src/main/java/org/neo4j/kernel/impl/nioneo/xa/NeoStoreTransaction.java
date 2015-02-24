@@ -37,13 +37,16 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdateNodeIdComparator;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.index.IndexUpdates;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.DenseNodeChainPosition;
 import org.neo4j.kernel.impl.core.RelationshipLoadingPosition;
@@ -98,6 +101,7 @@ import static java.util.Arrays.binarySearch;
 import static java.util.Arrays.copyOf;
 
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
+import static org.neo4j.kernel.impl.nioneo.xa.command.Command.*;
 import static org.neo4j.kernel.impl.nioneo.xa.command.Command.Mode.CREATE;
 import static org.neo4j.kernel.impl.nioneo.xa.command.Command.Mode.DELETE;
 import static org.neo4j.kernel.impl.nioneo.xa.command.Command.Mode.UPDATE;
@@ -141,6 +145,7 @@ public class NeoStoreTransaction extends XaTransaction
     private final NeoStoreTransactionContext context;
     private final NeoXaCommandExecutor executor;
 
+    private ValidatedIndexUpdates indexUpdates = ValidatedIndexUpdates.NO_UPDATES;
 
     /**
      * @param lastCommittedTxWhenTransactionStarted is the highest committed transaction id when this transaction
@@ -246,14 +251,14 @@ public class NeoStoreTransaction extends XaTransaction
         List<Command> commands = new ArrayList<>( noOfCommands );
         for ( RecordProxy<Integer, LabelTokenRecord, Void> record : context.getLabelTokenRecords().changes() )
         {
-            Command.LabelTokenCommand command = new Command.LabelTokenCommand();
+            LabelTokenCommand command = new LabelTokenCommand();
             command.init(  record.forReadingLinkage()  );
             context.getLabelTokenCommands().add( command );
             commands.add( command );
         }
         for ( RecordProxy<Integer, RelationshipTypeTokenRecord, Void> record : context.getRelationshipTypeTokenRecords().changes() )
         {
-            Command.RelationshipTypeTokenCommand command = new Command.RelationshipTypeTokenCommand();
+            RelationshipTypeTokenCommand command = new RelationshipTypeTokenCommand();
             command.init( record.forReadingLinkage() );
             context.getRelationshipTypeTokenCommands().add( command );
             commands.add( command );
@@ -262,14 +267,14 @@ public class NeoStoreTransaction extends XaTransaction
         {
             NodeRecord record = change.forReadingLinkage();
             integrityValidator.validateNodeRecord( record );
-            Command.NodeCommand command = new Command.NodeCommand();
+            NodeCommand command = new NodeCommand();
             command.init( change.getBefore(), record );
             context.getNodeCommands().put( record.getId(), command );
             commands.add( command );
         }
         for ( RecordProxy<Long, RelationshipRecord, Void> record : context.getRelRecords().changes() )
         {
-            Command.RelationshipCommand command = new Command.RelationshipCommand();
+            RelationshipCommand command = new RelationshipCommand();
             command.init(  record.forReadingLinkage()  );
             context.getRelCommands().add( command );
             commands.add( command );
@@ -284,15 +289,15 @@ public class NeoStoreTransaction extends XaTransaction
         }
         for ( RecordProxy<Integer, PropertyKeyTokenRecord, Void> record : context.getPropertyKeyTokenRecords().changes() )
         {
-            Command.PropertyKeyTokenCommand command =
-                    new Command.PropertyKeyTokenCommand();
+            PropertyKeyTokenCommand command =
+                    new PropertyKeyTokenCommand();
             command.init( record.forReadingLinkage() );
             context.getPropertyKeyTokenCommands().add( command );
             commands.add( command );
         }
         for ( RecordChange<Long, PropertyRecord, PrimitiveRecord> change : context.getPropertyRecords().changes() )
         {
-            Command.PropertyCommand command = new Command.PropertyCommand();
+            PropertyCommand command = new PropertyCommand();
             command.init( change.getBefore(), change.forReadingLinkage() );
             context.getPropCommands().add( command );
             commands.add( command );
@@ -300,14 +305,14 @@ public class NeoStoreTransaction extends XaTransaction
         for ( RecordChange<Long, Collection<DynamicRecord>, SchemaRule> change : context.getSchemaRuleChanges().changes() )
         {
             integrityValidator.validateSchemaRule( change.getAdditionalData() );
-            Command.SchemaRuleCommand command = new Command.SchemaRuleCommand();
+            SchemaRuleCommand command = new SchemaRuleCommand();
             command.init( change.getBefore(), change.forChangingData(), change.getAdditionalData(), -1 );
             context.getSchemaRuleCommands().add( command );
             commands.add( command );
         }
         for ( RecordProxy<Long, RelationshipGroupRecord, Integer> change : context.getRelGroupRecords().changes() )
         {
-            Command.RelationshipGroupCommand command = new Command.RelationshipGroupCommand();
+            RelationshipGroupCommand command = new RelationshipGroupCommand();
             command.init( change.forReadingData() );
             context.getRelGroupCommands().add( command );
             commands.add( command );
@@ -317,12 +322,25 @@ public class NeoStoreTransaction extends XaTransaction
                                                  + commands.size() + " instead";
         intercept( commands );
 
+        validateIndexUpdates();
+
         for ( Command command : commands )
         {
             addCommand( command );
         }
 
         integrityValidator.validateTransactionStartKnowledge( lastCommittedTxWhenTransactionStarted );
+    }
+
+    private void validateIndexUpdates()
+    {
+        if ( !context.getNodeCommands().isEmpty() || !context.getPropCommands().isEmpty() )
+        {
+            IndexUpdates rawIndexUpdates = new LazyIndexUpdates( getNodeStore(), getPropertyStore(),
+                    groupedNodePropertyCommands( context.getPropCommands() ), context.getNodeCommands() );
+
+            indexUpdates = indexes.validate( rawIndexUpdates );
+        }
     }
 
     protected void intercept( List<Command> commands )
@@ -333,41 +351,41 @@ public class NeoStoreTransaction extends XaTransaction
     @Override
     protected void injectCommand( XaCommand xaCommand )
     {
-        if ( xaCommand instanceof Command.NodeCommand )
+        if ( xaCommand instanceof NodeCommand )
         {
-            NodeCommand nodeCommand = (Command.NodeCommand) xaCommand;
+            NodeCommand nodeCommand = (NodeCommand) xaCommand;
             context.getNodeCommands().put( nodeCommand.getKey(), nodeCommand );
         }
-        else if ( xaCommand instanceof Command.RelationshipCommand )
+        else if ( xaCommand instanceof RelationshipCommand )
         {
-            context.getRelCommands().add( (Command.RelationshipCommand) xaCommand );
+            context.getRelCommands().add( (RelationshipCommand) xaCommand );
         }
-        else if ( xaCommand instanceof Command.PropertyCommand )
+        else if ( xaCommand instanceof PropertyCommand )
         {
-            context.getPropCommands().add( (Command.PropertyCommand) xaCommand );
+            context.getPropCommands().add( (PropertyCommand) xaCommand );
         }
-        else if ( xaCommand instanceof Command.PropertyKeyTokenCommand )
+        else if ( xaCommand instanceof PropertyKeyTokenCommand )
         {
-            context.getPropertyKeyTokenCommands().add( (Command.PropertyKeyTokenCommand) xaCommand );
+            context.getPropertyKeyTokenCommands().add( (PropertyKeyTokenCommand) xaCommand );
         }
-        else if ( xaCommand instanceof Command.RelationshipTypeTokenCommand )
+        else if ( xaCommand instanceof RelationshipTypeTokenCommand )
         {
-            context.getRelationshipTypeTokenCommands().add( (Command.RelationshipTypeTokenCommand) xaCommand );
+            context.getRelationshipTypeTokenCommands().add( (RelationshipTypeTokenCommand) xaCommand );
         }
-        else if ( xaCommand instanceof Command.LabelTokenCommand )
+        else if ( xaCommand instanceof LabelTokenCommand )
         {
-            context.getLabelTokenCommands().add( (Command.LabelTokenCommand) xaCommand );
+            context.getLabelTokenCommands().add( (LabelTokenCommand) xaCommand );
         }
-        else if ( xaCommand instanceof Command.NeoStoreCommand )
+        else if ( xaCommand instanceof NeoStoreCommand )
         {
             assert context.getNeoStoreCommand().getRecord() == null;
-            context.setNeoStoreCommand( (Command.NeoStoreCommand) xaCommand );
+            context.setNeoStoreCommand( (NeoStoreCommand) xaCommand );
         }
-        else if ( xaCommand instanceof Command.SchemaRuleCommand )
+        else if ( xaCommand instanceof SchemaRuleCommand )
         {
-            context.getSchemaRuleCommands().add( (Command.SchemaRuleCommand) xaCommand );
+            context.getSchemaRuleCommands().add( (SchemaRuleCommand) xaCommand );
         }
-        else if ( xaCommand instanceof Command.RelationshipGroupCommand )
+        else if ( xaCommand instanceof RelationshipGroupCommand )
         {
             context.getRelGroupCommands().add( (RelationshipGroupCommand) xaCommand );
         }
@@ -489,6 +507,7 @@ public class NeoStoreTransaction extends XaTransaction
         }
         finally
         {
+            indexUpdates.close();
             clear();
         }
     }
@@ -633,13 +652,18 @@ public class NeoStoreTransaction extends XaTransaction
     {
         try ( LockGroup lockGroup = new LockGroup() )
         {
+            if ( isRecovered && !prepared ) // no preparation of this tx happened - need to validate index updates now
+            {
+                validateIndexUpdates();
+            }
+
             committed = true;
             CommandSorter sorter = new CommandSorter();
             // reltypes
             if ( context.getRelationshipTypeTokenCommands().size() != 0 )
             {
                 java.util.Collections.sort( context.getRelationshipTypeTokenCommands(), sorter );
-                for ( Command.RelationshipTypeTokenCommand command : context.getRelationshipTypeTokenCommands() )
+                for ( RelationshipTypeTokenCommand command : context.getRelationshipTypeTokenCommands() )
                 {
                     executor.execute( command );
                     if ( isRecovered )
@@ -652,7 +676,7 @@ public class NeoStoreTransaction extends XaTransaction
             if ( context.getLabelTokenCommands().size() != 0 )
             {
                 java.util.Collections.sort( context.getLabelTokenCommands(), sorter );
-                for ( Command.LabelTokenCommand command : context.getLabelTokenCommands() )
+                for ( LabelTokenCommand command : context.getLabelTokenCommands() )
                 {
                     executor.execute( command );
                     if ( isRecovered )
@@ -665,7 +689,7 @@ public class NeoStoreTransaction extends XaTransaction
             if ( context.getPropertyKeyTokenCommands().size() != 0 )
             {
                 java.util.Collections.sort( context.getPropertyKeyTokenCommands(), sorter );
-                for ( Command.PropertyKeyTokenCommand command : context.getPropertyKeyTokenCommands() )
+                for ( PropertyKeyTokenCommand command : context.getPropertyKeyTokenCommands() )
                 {
                     executor.execute( command );
                     if ( isRecovered )
@@ -693,12 +717,7 @@ public class NeoStoreTransaction extends XaTransaction
                 cacheAccess.applyLabelUpdates( labelUpdates );
             }
 
-            if ( !context.getNodeCommands().isEmpty() || !context.getPropCommands().isEmpty() )
-            {
-                indexes.updateIndexes( new LazyIndexUpdates(
-                        getNodeStore(), getPropertyStore(),
-                        groupedNodePropertyCommands( context.getPropCommands() ), new HashMap<>( context.getNodeCommands() ) ) );
-            }
+            indexes.updateIndexes( indexUpdates );
 
             // schema rules. Execute these after generating the property updates so. If executed
             // before and we've got a transaction that sets properties/labels as well as creating an index
@@ -742,9 +761,14 @@ public class NeoStoreTransaction extends XaTransaction
                 neoStore.updateIdGenerators();
             }
         }
+        finally
+        {
+            indexUpdates.close();
+        }
     }
 
-    private Collection<List<Command.PropertyCommand>> groupedNodePropertyCommands( Iterable<Command.PropertyCommand> propCommands )
+    private Map<Long,List<Command.PropertyCommand>> groupedNodePropertyCommands(
+            Iterable<Command.PropertyCommand> propCommands )
     {
         // A bit too expensive data structure, but don't know off the top of my head how to make it better.
         Map<Long, List<Command.PropertyCommand>> groups = new HashMap<>();
@@ -764,7 +788,7 @@ public class NeoStoreTransaction extends XaTransaction
             }
             group.add( command );
         }
-        return groups.values();
+        return groups;
     }
 
     private Collection<NodeLabelUpdate> gatherLabelUpdatesSortedByNodeId()
@@ -802,7 +826,7 @@ public class NeoStoreTransaction extends XaTransaction
                 writer.write( update );
             }
         }
-        catch ( IOException e )
+        catch ( IOException | IndexCapacityExceededException e )
         {
             throw new UnderlyingStorageException( e );
         }
@@ -951,9 +975,9 @@ public class NeoStoreTransaction extends XaTransaction
         {
             lockGroup.add( locks.acquireNodeLock( command.getKey(), LockService.LockType.WRITE_LOCK ) );
         }
-        if ( command instanceof Command.PropertyCommand )
+        if ( command instanceof PropertyCommand )
         {
-            long nodeId = ((Command.PropertyCommand) command).getNodeId();
+            long nodeId = ((PropertyCommand) command).getNodeId();
             if ( nodeId != -1 )
             {
                 lockGroup.add( locks.acquireNodeLock( nodeId, LockService.LockType.WRITE_LOCK ) );
@@ -966,6 +990,7 @@ public class NeoStoreTransaction extends XaTransaction
         context.close();
         relGroupCache.clear();
         neoStoreRecord = null;
+        indexUpdates = ValidatedIndexUpdates.NO_UPDATES;
     }
 
     private RelationshipTypeTokenStore getRelationshipTypeStore()
@@ -1585,6 +1610,16 @@ public class NeoStoreTransaction extends XaTransaction
             PropertyStore propertyStore, long nextProp, PropertyReceiver receiver )
     {
         Collection<PropertyRecord> chain = propertyStore.getPropertyRecordChain( nextProp );
+        if ( chain != null )
+        {
+            loadPropertyChain( chain, propertyStore, receiver );
+        }
+    }
+
+    static void loadProperties( PropertyStore propertyStore, long nextProp, PropertyReceiver receiver,
+            Map<Long,PropertyRecord> propertyLookup )
+    {
+        Collection<PropertyRecord> chain = propertyStore.getPropertyRecordChain( nextProp, propertyLookup );
         if ( chain != null )
         {
             loadPropertyChain( chain, propertyStore, receiver );

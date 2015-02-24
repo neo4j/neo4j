@@ -43,19 +43,18 @@ public class LuceneSnapshotterTest
     private SnapshotDeletionPolicy snapshotPolicy;
 
     private IndexCommit luceneSnapshot;
-    private IndexWriter writer;
+    private LuceneIndexWriter writer;
 
     @Before
     public void setup() throws IOException
     {
-        writer = mock(IndexWriter.class);
+        writer = mock( LuceneIndexWriter.class );
         snapshotPolicy = mock(SnapshotDeletionPolicy.class);
         luceneSnapshot = mock(IndexCommit.class);
 
         IndexWriterConfig config = new IndexWriterConfig( Version.LUCENE_36, null );
 
-        config.setIndexDeletionPolicy( snapshotPolicy );
-        when( writer.getConfig() ).thenReturn( config );
+        when( writer.getIndexDeletionPolicy() ).thenReturn( snapshotPolicy );
 
         when(snapshotPolicy.snapshot( anyString() )).thenReturn( luceneSnapshot );
     }

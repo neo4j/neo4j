@@ -19,18 +19,19 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.concurrent.CountDownLatch;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.ArrayIterator;
@@ -57,7 +58,6 @@ import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.logging.Logging;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -68,14 +68,15 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
@@ -456,6 +457,49 @@ public class IndexingServiceTest
         // then no exception should be thrown.
     }
 
+    @Test
+    public void validatedIndexUpdatesShouldContainCorrectChangedNodeIds() throws IOException
+    {
+        // Given
+        IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
+
+        Set<Long> expectedChangedNodeIds = asSet( 1L, 2L, 3L, 4L, 5L );
+        IndexUpdates updates = mock( IndexUpdates.class );
+        when( updates.iterator() ).thenReturn( IteratorUtil.<NodePropertyUpdate>emptyIterator() );
+        when( updates.changedNodeIds() ).thenReturn( expectedChangedNodeIds );
+
+        // When
+        ValidatedIndexUpdates validatedUpdates = indexing.validate( updates );
+
+        // Then
+        assertEquals( expectedChangedNodeIds, validatedUpdates.changedNodeIds() );
+    }
+
+    @Test
+    public void shouldValidateAndCommitRecoveredUpdates() throws Exception
+    {
+        // Given
+        when( storeView.nodeAsUpdates( anyLong() ) ).thenAnswer( nodePropertyUpdates() );
+
+        IndexingService indexing = spy( newIndexingServiceWithMockedDependencies( populator, accessor, withData() ) );
+
+        ValidatedIndexUpdates validatedUpdates = mock( ValidatedIndexUpdates.class );
+        when( validatedUpdates.changedNodeIds() ).thenReturn( asSet( 1L, 2L, 3L ) );
+        indexing.updateIndexes( validatedUpdates );
+
+        ValidatedIndexUpdates validatedRecoveredUpdates = mock( ValidatedIndexUpdates.class );
+        when( indexing.validate( any( IndexUpdates.class ) ) ).thenReturn( validatedRecoveredUpdates );
+
+        // When
+        indexing.startIndexes();
+
+        // Then
+        InOrder inOrder = inOrder( indexing, validatedRecoveredUpdates );
+        inOrder.verify( indexing ).validate( any( IndexUpdates.class ) );
+        inOrder.verify( validatedRecoveredUpdates ).flush();
+        inOrder.verify( validatedRecoveredUpdates ).close();
+    }
+
     private Answer waitForLatch( final CountDownLatch latch ) {
         return new Answer() {
             @Override
@@ -474,6 +518,19 @@ public class IndexingServiceTest
             public ResourceIterator<File> answer( InvocationOnMock invocationOnMock ) throws Throwable
             {
                 return asResourceIterator(iterator( theFile ));
+            }
+        };
+    }
+
+    private Answer<Iterable<NodePropertyUpdate>> nodePropertyUpdates()
+    {
+        return new Answer<Iterable<NodePropertyUpdate>>()
+        {
+            @Override
+            public Iterable<NodePropertyUpdate> answer( InvocationOnMock invocation ) throws Throwable
+            {
+                long nodeId = (long) invocation.getArguments()[0];
+                return asSet( add( nodeId, String.valueOf( System.currentTimeMillis() ) ) );
             }
         };
     }
