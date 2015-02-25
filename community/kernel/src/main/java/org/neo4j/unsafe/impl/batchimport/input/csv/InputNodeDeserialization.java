@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import java.util.Arrays;
 
+import org.neo4j.csv.reader.SourceTraceability;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
@@ -40,8 +41,10 @@ public class InputNodeDeserialization extends InputEntityDeserialization<InputNo
     private String[] labels = new String[10];
     private int labelsCursor;
 
-    public InputNodeDeserialization( Header header, Groups groups, boolean idsAreExternal )
+    public InputNodeDeserialization( SourceTraceability source,  Header header, Groups groups, boolean idsAreExternal )
     {
+        super( source );
+
         // ID header entry is optional
         Entry idEntry = header.entry( Type.ID );
         this.group = groups.getOrCreate( idEntry != null ? idEntry.groupName() : null );
@@ -72,7 +75,9 @@ public class InputNodeDeserialization extends InputEntityDeserialization<InputNo
     @Override
     public InputNode materialize()
     {
-        return new InputNode( group, id, properties(), null, labels(), null );
+        return new InputNode(
+                source.sourceDescription(), source.lineNumber(), source.position(),
+                group, id, properties(), null, labels(), null );
     }
 
     @Override

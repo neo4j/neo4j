@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
+import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,6 +31,7 @@ import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.DataException;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
@@ -50,6 +52,7 @@ public class CsvInput implements Input
     private final IdType idType;
     private final Configuration config;
     private final Groups groups = new Groups();
+    private final Function<OutputStream,Collector<InputRelationship>> collectorFactory;
 
     /**
      * @param nodeDataFactory multiple {@link DataFactory} instances providing data, each {@link DataFactory}
@@ -66,7 +69,7 @@ public class CsvInput implements Input
     public CsvInput(
             Iterable<DataFactory<InputNode>> nodeDataFactory, Header.Factory nodeHeaderFactory,
             Iterable<DataFactory<InputRelationship>> relationshipDataFactory, Header.Factory relationshipHeaderFactory,
-            IdType idType, Configuration config )
+            IdType idType, Configuration config, Function<OutputStream,Collector<InputRelationship>> collectorFactory )
     {
         assertSaneConfiguration( config );
 
@@ -76,6 +79,7 @@ public class CsvInput implements Input
         this.relationshipHeaderFactory = relationshipHeaderFactory;
         this.idType = idType;
         this.config = config;
+        this.collectorFactory = collectorFactory;
     }
 
     private void assertSaneConfiguration( Configuration config )
@@ -112,7 +116,7 @@ public class CsvInput implements Input
                             Function<InputNode,InputNode> decorator )
                     {
                         return new InputEntityDeserializer<>( dataHeader, dataStream, config.delimiter(),
-                                new InputNodeDeserialization( dataHeader, groups, idType.idsAreExternal() ),
+                                new InputNodeDeserialization( dataStream, dataHeader, groups, idType.idsAreExternal() ),
                                 decorator, Validators.<InputNode>emptyValidator() );
                     }
                 };
@@ -136,7 +140,7 @@ public class CsvInput implements Input
                               Header dataHeader, Function<InputRelationship,InputRelationship> decorator )
                     {
                         return new InputEntityDeserializer<>( dataHeader, dataStream, config.delimiter(),
-                                new InputRelationshipDeserialization( dataHeader, groups ),
+                                new InputRelationshipDeserialization( dataStream, dataHeader, groups ),
                                 decorator, new Validator<InputRelationship>()
                                 {
                                     @Override
@@ -170,5 +174,11 @@ public class CsvInput implements Input
     public boolean specificRelationshipIds()
     {
         return false;
+    }
+
+    @Override
+    public Collector<InputRelationship> badRelationshipsCollector( OutputStream out )
+    {
+        return collectorFactory.apply( out );
     }
 }

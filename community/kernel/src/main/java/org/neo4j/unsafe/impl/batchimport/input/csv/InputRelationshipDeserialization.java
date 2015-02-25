@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
+import org.neo4j.csv.reader.SourceTraceability;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
@@ -35,8 +36,9 @@ public class InputRelationshipDeserialization extends InputEntityDeserialization
     private Object startNode;
     private Object endNode;
 
-    public InputRelationshipDeserialization( Header header, Groups groups )
+    public InputRelationshipDeserialization( SourceTraceability source, Header header, Groups groups )
     {
+        super( source );
         this.startNodeGroup = groups.getOrCreate( header.entry( Type.START_ID ).groupName() );
         this.endNodeGroup = groups.getOrCreate( header.entry( Type.END_ID ).groupName() );
     }
@@ -64,8 +66,9 @@ public class InputRelationshipDeserialization extends InputEntityDeserialization
     @Override
     public InputRelationship materialize()
     {
-        return new InputRelationship( properties(), null,
-                startNodeGroup, startNode, endNodeGroup, endNode, type, null );
+        return new InputRelationship(
+                source.sourceDescription(), source.lineNumber(), source.position(),
+                properties(), null, startNodeGroup, startNode, endNodeGroup, endNode, type, null );
     }
 
     @Override

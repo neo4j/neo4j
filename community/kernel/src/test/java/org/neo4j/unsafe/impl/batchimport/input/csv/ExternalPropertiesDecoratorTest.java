@@ -121,7 +121,7 @@ public class ExternalPropertiesDecoratorTest
 
     private InputNode node( Object id, Object... props )
     {
-        return new InputNode( id, props, null, InputEntity.NO_LABELS, null );
+        return new InputNode( "source", 1, 0, id, props, null, InputEntity.NO_LABELS, null );
     }
 
     private Factory<CharReadable> readable( final String data )

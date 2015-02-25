@@ -53,9 +53,16 @@ public class Legacy19NodeStoreReader implements LegacyNodeStoreReader
         maxId = (fileChannel.size() - endHeaderSize) / RECORD_SIZE;
     }
 
+    @Override
     public long getMaxId()
     {
         return maxId;
+    }
+
+    @Override
+    public int getRecordSize()
+    {
+        return RECORD_SIZE;
     }
 
     @Override

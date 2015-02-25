@@ -17,13 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.csv.reader;
+package org.neo4j.unsafe.impl.batchimport.input;
+
+import java.io.OutputStream;
+
+import org.neo4j.function.Function;
 
 /**
- * Gets notified when f.ex. a {@link CharReadable} changes source it reads from. The provided source description
- * should be suitable for human consumption, to aid in error messages or similar.
+ * Common implementations of {@link Collector}
  */
-public interface SourceMonitor
+public class Collectors
 {
-    void notify( String sourceDescription );
+    public static Collector<InputRelationship> badRelationshipsCollector( OutputStream out, int tolerance )
+    {
+        return new BadRelationshipsCollector( out, tolerance );
+    }
+
+    public static Function<OutputStream,Collector<InputRelationship>> badRelationships( final int tolerance )
+    {
+        return new Function<OutputStream,Collector<InputRelationship>>()
+        {
+            @Override
+            public Collector<InputRelationship> apply( OutputStream out ) throws RuntimeException
+            {
+                return badRelationshipsCollector( out, tolerance );
+            }
+        };
+    }
 }

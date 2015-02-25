@@ -58,6 +58,12 @@ public class Legacy20NodeStoreReader implements LegacyNodeStoreReader
     }
 
     @Override
+    public int getRecordSize()
+    {
+        return RECORD_SIZE;
+    }
+
+    @Override
     public Iterator<NodeRecord> iterator() throws IOException
     {
         final ByteBuffer buffer = ByteBuffer.allocateDirect( 4 * 1024 * RECORD_SIZE );

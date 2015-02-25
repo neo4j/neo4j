@@ -23,8 +23,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.CharBuffer;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * A {@link Readable}, but focused on {@code char[]}, via a {@link SectionedCharBuffer} with one of the main reasons
@@ -38,7 +36,7 @@ import java.util.List;
  * Also took the opportunity to let {@link CharReadable} extends {@link Closeable}, something that
  * {@link Readable} doesn't.
  */
-public interface CharReadable extends Closeable
+public interface CharReadable extends Closeable, SourceTraceability
 {
     /**
      * Reads characters into the {@link SectionedCharBuffer buffer}.
@@ -58,34 +56,8 @@ public interface CharReadable extends Closeable
      */
     SectionedCharBuffer read( SectionedCharBuffer buffer, int from ) throws IOException;
 
-    /**
-     * @return a low-level byte-like position of f.ex. total number of read bytes.
-     */
-    long position();
-
-    /**
-     * Add {@link SourceMonitor} to listen for when this readable potentially moves over to new data sources.
-     *
-     * @param sourceMonitor notifies about when this readable potentially moves over to new data sources.
-     */
-    void addSourceMonitor( SourceMonitor sourceMonitor );
-
-    /**
-     * @return information about the current source of data, for example for a file, the file path and name.
-     */
-    @Override
-    String toString();
-
-    public static abstract class Adapter implements CharReadable
+    public static abstract class Adapter extends SourceTraceability.Adapter implements CharReadable
     {
-        protected final List<SourceMonitor> monitors = new ArrayList<>();
-
-        @Override
-        public void addSourceMonitor( SourceMonitor sourceMonitor )
-        {
-            monitors.add( sourceMonitor );
-        }
-
         @Override
         public void close() throws IOException
         {   // Nothing to close

@@ -22,8 +22,6 @@ package org.neo4j.csv.reader;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.CharBuffer;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.locks.LockSupport;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -32,7 +30,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * Like an ordinary {@link CharReadable}, it's just that the reading happens in a separate thread, so when
  * a consumer wants to {@link #read(CharBuffer)} more data it's already available, merely a memcopy away.
  */
-public class ThreadAheadReadable extends Thread implements CharReadable, Closeable, SourceMonitor
+public class ThreadAheadReadable extends Thread implements CharReadable, Closeable
 {
     // A "long" time to wait is OK since these two threads: the owner and the read-ahead thread
     // notifies/unparks each other when it's time to continue on anyways
@@ -46,7 +44,6 @@ public class ThreadAheadReadable extends Thread implements CharReadable, Closeab
     private volatile boolean eof;
     private volatile IOException ioException;
 
-    private final List<SourceMonitor> sourceMonitors = new ArrayList<>();
     private String sourceDescription;
     // the variable below is read and changed in both the ahead thread and the caller,
     // but doesn't have to be volatile since it piggy-backs off of hasReadAhead.
@@ -59,8 +56,7 @@ public class ThreadAheadReadable extends Thread implements CharReadable, Closeab
         this.actual = actual;
         this.owner = Thread.currentThread();
         this.theOtherBuffer = new SectionedCharBuffer( bufferSize );
-        this.sourceDescription = actual.toString();
-        actual.addSourceMonitor( this );
+        this.sourceDescription = actual.sourceDescription();
         setDaemon( true );
         start();
     }
@@ -88,15 +84,10 @@ public class ThreadAheadReadable extends Thread implements CharReadable, Closeab
         buffer.compact( resultBuffer, from );
         theOtherBuffer = buffer;
 
-        // handle source notifications that has happened
+        // make any change in source official
         if ( newSourceDescription != null )
         {
             sourceDescription = newSourceDescription;
-            // At this point the new source is official, so tell that to our external monitors
-            for ( SourceMonitor monitor : sourceMonitors )
-            {
-                monitor.notify( newSourceDescription );
-            }
             newSourceDescription = null;
         }
 
@@ -151,6 +142,12 @@ public class ThreadAheadReadable extends Thread implements CharReadable, Closeab
                 try
                 {
                     theOtherBuffer = actual.read( theOtherBuffer, theOtherBuffer.front() );
+                    String sourceDescriptionAfterRead = actual.sourceDescription();
+                    if ( !sourceDescription.equals( sourceDescriptionAfterRead ) )
+                    {
+                        newSourceDescription = sourceDescriptionAfterRead;
+                    }
+
                     if ( !theOtherBuffer.hasAvailable() )
                     {
                         eof = true;
@@ -179,22 +176,17 @@ public class ThreadAheadReadable extends Thread implements CharReadable, Closeab
     }
 
     @Override
-    public void notify( String sourceDescription )
-    {   // Called when the underlying readable, read by the thread-ahead, changes source
-        newSourceDescription = sourceDescription;
-    }
-
-    @Override
-    public void addSourceMonitor( SourceMonitor sourceMonitor )
-    {
-        sourceMonitors.add( sourceMonitor );
-    }
-
-    @Override
-    public String toString()
+    public String sourceDescription()
     {   // Returns the source information of where this reader is perceived to be. The fact that this
         // thing reads ahead should be visible in this description.
         return sourceDescription;
+    }
+
+    @Override
+    public long lineNumber()
+    {   // Generally line numbers aren't tracked at this level of the reading process, let's leave that
+        // to CharSeeker for the time being.
+        return 1;
     }
 
     public static CharReadable threadAhead( CharReadable actual, int bufferSize )

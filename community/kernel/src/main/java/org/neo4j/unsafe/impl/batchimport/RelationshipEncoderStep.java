@@ -28,7 +28,9 @@ import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository;
 
+import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
+import static org.neo4j.graphdb.Direction.OUTGOING;
 
 /**
  * Creates batches of relationship records, with the "next" relationship
@@ -79,8 +81,17 @@ public class RelationshipEncoderStep extends ExecutorServiceStep<Batch<InputRela
                         specificIds + ", but " + batchRelationship + " didn't honor that" );
             }
             long relationshipId = specificIds ? batchRelationship.specificId() : nextRelationshipId++;
+            // Ids have been verified to exist in CalculateDenseNodeStep
             long startNodeId = ids[i*2];
             long endNodeId = ids[i*2+1];
+            if ( startNodeId == -1 || endNodeId == -1 )
+            {   // This means that we here have a relationship that refers to missing nodes.
+                // It also means that we tolerate some amount of bad relationships and CalculateDenseNodesStep
+                // already have reported this to the bad collector.
+                batch.records[i] = null;
+                continue;
+            }
+
             relationshipStore.setHighestPossibleIdInUse( relationshipId );
             int typeId = batchRelationship.hasTypeId() ? batchRelationship.typeId() :
                     relationshipTypeRepository.getOrCreateId( batchRelationship.type() );
@@ -89,10 +100,11 @@ public class RelationshipEncoderStep extends ExecutorServiceStep<Batch<InputRela
             relationshipRecord.setInUse( true );
 
             // Set first/second next rel
+            boolean loop = startNodeId == endNodeId;
             long firstNextRel = nodeRelationshipLink.getAndPutRelationship(
-                    startNodeId, typeId, batchRelationship.startDirection(), relationshipId, true );
+                    startNodeId, typeId, loop ? BOTH : OUTGOING, relationshipId, true );
             relationshipRecord.setFirstNextRel( firstNextRel );
-            if ( batchRelationship.isLoop() )
+            if ( loop )
             {
                 relationshipRecord.setSecondNextRel( firstNextRel );
             }

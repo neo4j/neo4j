@@ -21,7 +21,6 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.util.Collections;
 
-import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -45,13 +44,13 @@ public final class NodeEncoderStep extends ExecutorServiceStep<Batch<InputNode,N
     private final IdGenerator idGenerator;
     private final NodeStore nodeStore;
     private final BatchingLabelTokenRepository labelHolder;
-    private final ResourceIterable<Object> allIds;
+    private final InputIterable<Object> allIds;
 
     public NodeEncoderStep( StageControl control, Configuration config,
             IdMapper idMapper, IdGenerator idGenerator,
             BatchingLabelTokenRepository labelHolder,
             NodeStore nodeStore,
-            ResourceIterable<Object> allIds )
+            InputIterable<Object> allIds )
     {
         super( control, "NODE", config.workAheadSize(), config.movingAverageSize(), 1 );
         this.idMapper = idMapper;

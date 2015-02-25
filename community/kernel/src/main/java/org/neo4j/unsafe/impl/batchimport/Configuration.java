@@ -89,6 +89,12 @@ public interface Configuration
      */
     int movingAverageSize();
 
+    /**
+     * File name of log accepting bad entries encountered during import. Can be relative (to where the
+     * initiator of the import is) or absolute.
+     */
+    String badFileName();
+
     public static class Default implements Configuration
     {
         private static final int OPTIMAL_FILE_CHANNEL_CHUNK_SIZE = 1024 * 4;
@@ -150,6 +156,12 @@ public interface Configuration
         public int movingAverageSize()
         {
             return 100;
+        }
+
+        @Override
+        public String badFileName()
+        {
+            return "not-imported.bad";
         }
     }
 
@@ -217,6 +229,12 @@ public interface Configuration
         public int movingAverageSize()
         {
             return defaults.movingAverageSize();
+        }
+
+        @Override
+        public String badFileName()
+        {
+            return defaults.badFileName();
         }
     }
 

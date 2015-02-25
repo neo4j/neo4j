@@ -23,12 +23,14 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 
+import static java.lang.String.format;
+
 import static org.neo4j.csv.reader.Mark.END_OF_LINE_CHARACTER;
 
 /**
  * Much like a {@link BufferedReader} for a {@link Reader}.
  */
-public class BufferedCharSeeker implements CharSeeker, SourceMonitor
+public class BufferedCharSeeker implements CharSeeker, SourceTraceability
 {
     private static final int KB = 1024, MB = KB * KB;
     public static final int DEFAULT_BUFFER_SIZE = 8 * MB;
@@ -54,7 +56,7 @@ public class BufferedCharSeeker implements CharSeeker, SourceMonitor
     private int lineStartPos;
     // bufferPos when we started reading the current field
     private int seekStartPos;
-    // effectively 1-based value of which logical "line" we're reading a.t.m.
+    // 1-based value of which logical line we're reading a.t.m.
     private int lineNumber;
     // flag to know if we've read to the end
     private boolean eof;
@@ -62,6 +64,7 @@ public class BufferedCharSeeker implements CharSeeker, SourceMonitor
     private final char quoteChar;
     // this absolute position + bufferPos is the current position in the source we're reading
     private long absoluteBufferStartPosition;
+    private String sourceDescription;
 
     public BufferedCharSeeker( CharReadable reader )
     {
@@ -81,7 +84,7 @@ public class BufferedCharSeeker implements CharSeeker, SourceMonitor
         this.bufferPos = this.bufferEnd = charBuffer.pivot();
         this.quoteChar = quoteChar;
         this.lineStartPos = this.bufferPos;
-        reader.addSourceMonitor( this );
+        this.sourceDescription = reader.sourceDescription();
     }
 
     @Override
@@ -266,6 +269,12 @@ public class BufferedCharSeeker implements CharSeeker, SourceMonitor
             int shift = seekStartPos-charBuffer.back();
             seekStartPos = charBuffer.back();
             lineStartPos -= shift;
+            String sourceDescriptionAfterRead = reader.sourceDescription();
+            if ( !sourceDescription.equals( sourceDescriptionAfterRead ) )
+            {   // We moved over to a new source, reset line number
+                lineNumber = 0;
+                sourceDescription = sourceDescriptionAfterRead;
+            }
             return charBuffer.hasAvailable();
         }
         return true;
@@ -284,14 +293,21 @@ public class BufferedCharSeeker implements CharSeeker, SourceMonitor
     }
 
     @Override
-    public void notify( String sourceDescription )
+    public String sourceDescription()
     {
-        lineNumber = 0;
+        return sourceDescription;
+    }
+
+    @Override
+    public long lineNumber()
+    {
+        return lineNumber;
     }
 
     @Override
     public String toString()
     {
-        return reader + ":" + lineNumber;
+        return format( "%s[buffer:%s, seekPos:%d, line:%d]", getClass().getSimpleName(),
+                charBuffer, seekStartPos, lineNumber );
     }
 }

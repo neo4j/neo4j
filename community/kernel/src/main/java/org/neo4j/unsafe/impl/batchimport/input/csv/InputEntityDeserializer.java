@@ -170,8 +170,14 @@ public class InputEntityDeserializer<ENTITY extends InputEntity>
     }
 
     @Override
-    public String toString()
+    public String sourceDescription()
     {
-        return data.toString();
+        return data.sourceDescription();
+    }
+
+    @Override
+    public long lineNumber()
+    {
+        return data.lineNumber();
     }
 }

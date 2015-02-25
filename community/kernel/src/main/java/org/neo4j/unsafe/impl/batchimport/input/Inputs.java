@@ -20,11 +20,9 @@
 package org.neo4j.unsafe.impl.batchimport.input;
 
 import java.io.File;
-import java.util.Iterator;
+import java.io.OutputStream;
 
-import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
-import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
@@ -41,23 +39,22 @@ import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.relation
 
 public class Inputs
 {
-    public static Input input( final Iterable<InputNode> nodes, final Iterable<InputRelationship> relationships,
+    public static Input input(
+            final InputIterable<InputNode> nodes, final InputIterable<InputRelationship> relationships,
             final IdMapper idMapper, final IdGenerator idGenerator, final boolean specificRelationshipIds )
     {
-        final InputIterable<InputNode> resourceNodes = asInputIterable( nodes );
-        final InputIterable<InputRelationship> resourceRelationships = asInputIterable( relationships );
         return new Input()
         {
             @Override
             public InputIterable<InputRelationship> relationships()
             {
-                return resourceRelationships;
+                return relationships;
             }
 
             @Override
             public InputIterable<InputNode> nodes()
             {
-                return resourceNodes;
+                return nodes;
             }
 
             @Override
@@ -77,6 +74,12 @@ public class Inputs
             {
                 return specificRelationshipIds;
             }
+
+            @Override
+            public Collector<InputRelationship> badRelationshipsCollector( OutputStream out )
+            {
+                return Collectors.badRelationshipsCollector( out, 0 );
+            }
         };
     }
 
@@ -86,43 +89,7 @@ public class Inputs
         return new CsvInput(
                 nodeData( data( NO_NODE_DECORATOR, nodes ) ), defaultFormatNodeFileHeader(),
                 relationshipData( data( NO_RELATIONSHIP_DECORATOR, relationships ) ),
-                defaultFormatRelationshipFileHeader(), idType, configuration );
-    }
-
-    public static <T> InputIterable<T> asInputIterable( final Iterable<T> iterable )
-    {
-        return new InputIterable<T>()
-        {
-            @Override
-            public InputIterator<T> iterator()
-            {
-                return new PlainInputIterator<>( iterable.iterator() );
-            }
-        };
-    }
-
-    private static class PlainInputIterator<T> extends IteratorWrapper<T,T> implements InputIterator<T>
-    {
-        public PlainInputIterator( Iterator<T> iteratorToWrap )
-        {
-            super( iteratorToWrap );
-        }
-
-        @Override
-        protected T underlyingObjectToObject( T object )
-        {
-            return object;
-        }
-
-        @Override
-        public void close()
-        {   // Nothing to close here
-        }
-
-        @Override
-        public long position()
-        {
-            return 0;
-        }
+                defaultFormatRelationshipFileHeader(), idType, configuration,
+                Collectors.badRelationships( 0 ) );
     }
 }

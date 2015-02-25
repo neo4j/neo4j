@@ -21,12 +21,10 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
-import org.neo4j.unsafe.impl.batchimport.input.InputException;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
-
-import static java.lang.Math.max;
 
 /**
  * Runs through relationship input and counts relationships per node so that dense nodes can be designated.
@@ -34,13 +32,14 @@ import static java.lang.Math.max;
 public class CalculateDenseNodesStep extends ExecutorServiceStep<Batch<InputRelationship,RelationshipRecord>>
 {
     private final NodeRelationshipLink nodeRelationshipLink;
-    private long highestSeenNodeId;
+    private final Collector<InputRelationship> badRelationshipsCollector;
 
     public CalculateDenseNodesStep( StageControl control, Configuration config,
-            NodeRelationshipLink nodeRelationshipLink )
+            NodeRelationshipLink nodeRelationshipLink, Collector<InputRelationship> badRelationshipsCollector )
     {
         super( control, "CALCULATOR", config.workAheadSize(), config.movingAverageSize(), 1 );
         this.nodeRelationshipLink = nodeRelationshipLink;
+        this.badRelationshipsCollector = badRelationshipsCollector;
     }
 
     @Override
@@ -53,42 +52,30 @@ public class CalculateDenseNodesStep extends ExecutorServiceStep<Batch<InputRela
             InputRelationship rel = input[i];
             long startNode = ids[i*2];
             long endNode = ids[i*2+1];
-            ensureNodeFound( "start", rel, startNode );
-            ensureNodeFound( "end", rel, endNode );
 
-            try
+            incrementCount( rel, startNode, rel.startNode() );
+            if ( startNode != endNode )
             {
-                nodeRelationshipLink.incrementCount( startNode );
+                incrementCount( rel, endNode, rel.endNode() );
             }
-            catch ( ArrayIndexOutOfBoundsException e )
-            {
-                throw new RuntimeException( "Input relationship " + rel + " refers to missing start node " +
-                        rel.startNode(), e );
-            }
-            if ( !rel.isLoop() )
-            {
-                try
-                {
-                    nodeRelationshipLink.incrementCount( endNode );
-                }
-                catch ( ArrayIndexOutOfBoundsException e )
-                {
-                    throw new RuntimeException( "Input relationship " + rel + " refers to missing end node " +
-                            rel.endNode(), e );
-                }
-            }
-
-            highestSeenNodeId = max( highestSeenNodeId, max( startNode, endNode ) );
         }
         return null; // end of the line
     }
 
-    private void ensureNodeFound( String nodeDescription, InputRelationship relationship, long actualNodeId )
+    private void incrementCount( InputRelationship relationship, long nodeId, Object inputNodeId )
     {
-        if ( actualNodeId == -1 )
+        if ( nodeId != -1 )
         {
-            throw new InputException( relationship + " specified " + nodeDescription +
-                    " node that hasn't been imported" );
+            try
+            {
+                nodeRelationshipLink.incrementCount( nodeId );
+                return;
+            }
+            catch ( ArrayIndexOutOfBoundsException e )
+            {   // This is odd, but may happen. We'll tell the bad relationship collector below
+            }
         }
+
+        badRelationshipsCollector.collect( relationship, inputNodeId );
     }
 }

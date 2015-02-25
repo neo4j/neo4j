@@ -76,13 +76,7 @@ public class Readables
         }
 
         @Override
-        public long position()
-        {
-            return 0;
-        }
-
-        @Override
-        public String toString()
+        public String sourceDescription()
         {
             return "EMPTY";
         }
@@ -96,6 +90,7 @@ public class Readables
         return new CharReadable.Adapter()
         {
             private long position;
+            private final String sourceDescription = reader.toString();
 
             @Override
             public SectionedCharBuffer read( SectionedCharBuffer buffer, int from ) throws IOException
@@ -119,9 +114,9 @@ public class Readables
             }
 
             @Override
-            public String toString()
+            public String sourceDescription()
             {
-                return reader.toString();
+                return sourceDescription;
             }
         };
     }

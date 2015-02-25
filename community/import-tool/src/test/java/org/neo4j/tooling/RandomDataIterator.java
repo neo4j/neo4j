@@ -21,6 +21,8 @@ package org.neo4j.tooling;
 
 import java.util.Random;
 
+import org.neo4j.csv.reader.SourceTraceability;
+import org.neo4j.function.Function;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
@@ -42,21 +44,23 @@ public class RandomDataIterator<T> extends PrefetchingIterator<T> implements Inp
     private final long nodeCount;
     private final Distribution<String> labels;
     private final Distribution<String> relationshipTypes;
+    private final String sourceDescription;
 
     private long cursor;
     private long position;
 
     public RandomDataIterator( Header header, long limit, Random random,
-            Deserialization<T> deserialization, long nodeCount,
+            Function<SourceTraceability,Deserialization<T>> deserialization, long nodeCount,
             int labelCount, int relationshipTypeCount )
     {
         this.header = header;
         this.limit = limit;
         this.random = random;
-        this.deserialization = deserialization;
+        this.deserialization = deserialization.apply( this );
         this.nodeCount = nodeCount;
         this.labels = new Distribution<>( tokens( "Label", labelCount ) );
         this.relationshipTypes = new Distribution<>( tokens( "TYPE", relationshipTypeCount ) );
+        this.sourceDescription = getClass().getSimpleName() + ":" + header;
     }
 
     private String[] tokens( String prefix, int count )
@@ -192,6 +196,18 @@ public class RandomDataIterator<T> extends PrefetchingIterator<T> implements Inp
     @Override
     public void close()
     {   // Nothing to close
+    }
+
+    @Override
+    public String sourceDescription()
+    {
+        return sourceDescription;
+    }
+
+    @Override
+    public long lineNumber()
+    {
+        return cursor;
     }
 
     @Override

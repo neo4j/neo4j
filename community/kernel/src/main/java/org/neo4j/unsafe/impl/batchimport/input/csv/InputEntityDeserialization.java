@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import java.util.Arrays;
 
+import org.neo4j.csv.reader.SourceTraceability;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 
@@ -31,8 +32,15 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
  */
 public abstract class InputEntityDeserialization<ENTITY extends InputEntity> implements Deserialization<ENTITY>
 {
+    protected final SourceTraceability source;
+
     private Object[] properties = new Object[10*2];
     private int propertiesCursor;
+
+    public InputEntityDeserialization( SourceTraceability source )
+    {
+        this.source = source;
+    }
 
     public void addProperty( String name, Object value )
     {

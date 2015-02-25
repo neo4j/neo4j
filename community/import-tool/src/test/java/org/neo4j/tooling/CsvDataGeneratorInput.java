@@ -19,16 +19,23 @@
  */
 package org.neo4j.tooling;
 
+import java.io.OutputStream;
+
+import org.neo4j.csv.reader.SourceTraceability;
+import org.neo4j.function.Function;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
+import org.neo4j.unsafe.impl.batchimport.input.Collectors;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
+import org.neo4j.unsafe.impl.batchimport.input.csv.Deserialization;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.input.csv.InputNodeDeserialization;
@@ -41,13 +48,27 @@ public class CsvDataGeneratorInput extends CsvDataGenerator<InputNode,InputRelat
 {
     private final IdType idType;
 
-    public CsvDataGeneratorInput( Header nodeHeader, Header relationshipHeader,
-            Configuration config, long nodes, long relationships, Groups groups, IdType idType,
+    public CsvDataGeneratorInput( final Header nodeHeader, final Header relationshipHeader,
+            Configuration config, long nodes, long relationships, final Groups groups, final IdType idType,
             int numberOfLabels, int numberOfRelationshipTypes )
     {
         super( nodeHeader, relationshipHeader, config, nodes, relationships,
-                new InputNodeDeserialization( nodeHeader, groups, idType.idsAreExternal() ),
-                new InputRelationshipDeserialization( relationshipHeader, groups ),
+                new Function<SourceTraceability,Deserialization<InputNode>>()
+                {
+                    @Override
+                    public Deserialization<InputNode> apply( SourceTraceability source ) throws RuntimeException
+                    {
+                        return new InputNodeDeserialization( source, nodeHeader, groups, idType.idsAreExternal() );
+                    }
+                },
+                new Function<SourceTraceability,Deserialization<InputRelationship>>()
+                {
+                    @Override
+                    public Deserialization<InputRelationship> apply( SourceTraceability from ) throws RuntimeException
+                    {
+                        return new InputRelationshipDeserialization( from, relationshipHeader, groups );
+                    }
+                },
                 numberOfLabels, numberOfRelationshipTypes );
         this.idType = idType;
     }
@@ -94,5 +115,11 @@ public class CsvDataGeneratorInput extends CsvDataGenerator<InputNode,InputRelat
     public boolean specificRelationshipIds()
     {
         return false;
+    }
+
+    @Override
+    public Collector<InputRelationship> badRelationshipsCollector( OutputStream out )
+    {
+        return Collectors.badRelationshipsCollector( out, 0 );
     }
 }

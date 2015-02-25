@@ -21,7 +21,6 @@ package org.neo4j.unsafe.impl.batchimport.input;
 
 import java.util.Collection;
 
-import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Pair;
 
 import static org.neo4j.unsafe.impl.batchimport.input.Group.GLOBAL;
@@ -41,20 +40,22 @@ public class InputRelationship extends InputEntity
     private final Group startNodeGroup;
     private final Group endNodeGroup;
 
-    public InputRelationship(
+    public InputRelationship( String sourceDescription, long lineNumber, long position,
             Object[] properties, Long firstPropertyId, Object startNode, Object endNode,
             String type, Integer typeId )
     {
-        this( properties, firstPropertyId, GLOBAL, startNode, GLOBAL, endNode, type, typeId );
+        this( sourceDescription, lineNumber, position,
+                properties, firstPropertyId, GLOBAL, startNode, GLOBAL, endNode, type, typeId );
     }
 
     public InputRelationship(
+            String sourceDescription, long lineNumber, long position,
             Object[] properties, Long firstPropertyId,
             Group startNodeGroups, Object startNode,
             Group endNodeGroups, Object endNode,
             String type, Integer typeId )
     {
-        super( properties, firstPropertyId );
+        super( sourceDescription, lineNumber, position, properties, firstPropertyId );
         this.startNodeGroup = startNodeGroups;
         this.startNode = startNode;
         this.endNodeGroup = endNodeGroups;
@@ -97,16 +98,6 @@ public class InputRelationship extends InputEntity
     public Object endNode()
     {
         return endNode;
-    }
-
-    public boolean isLoop()
-    {
-        return startNode.equals( endNode );
-    }
-
-    public Direction startDirection()
-    {
-        return isLoop() ? Direction.BOTH : Direction.OUTGOING;
     }
 
     public String type()

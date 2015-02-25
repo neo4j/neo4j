@@ -29,6 +29,8 @@ public interface LegacyRelationshipStoreReader extends Closeable
 {
     long getMaxId();
 
+    int getRecordSize();
+
     Iterator<RelationshipRecord> iterator( long approximateStartId ) throws IOException;
 
     public static class ReusableRelationship

@@ -148,6 +148,12 @@ public class ThreadAheadReadableTest
         {
             return actual.position();
         }
+
+        @Override
+        public String sourceDescription()
+        {
+            return getClass().getSimpleName();
+        }
     }
 
     private static char[] chars( int start, int length )

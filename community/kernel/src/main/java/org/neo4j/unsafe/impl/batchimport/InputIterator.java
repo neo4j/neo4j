@@ -19,16 +19,47 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import java.util.NoSuchElementException;
+
+import org.neo4j.csv.reader.Readables;
+import org.neo4j.csv.reader.SourceTraceability;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 
 /**
  * A {@link ResourceIterator} with added methods suitable for {@link Input} into a {@link BatchImporter}.
  */
-public interface InputIterator<T> extends ResourceIterator<T>
+public interface InputIterator<T> extends ResourceIterator<T>, SourceTraceability
 {
-    /**
-     * @return a low-level byte-like position of f.ex. total number of read bytes.
-     */
-    long position();
+    public static class Adapter<T> extends SourceTraceability.Adapter implements InputIterator<T>
+    {
+        @Override
+        public String sourceDescription()
+        {
+            return Readables.EMPTY.sourceDescription();
+        }
+
+        @Override
+        public void close()
+        {   // Nothing to close
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            return false;
+        }
+
+        @Override
+        public T next()
+        {
+            throw new NoSuchElementException();
+        }
+
+        @Override
+        public void remove()
+        {
+            throw new UnsupportedOperationException();
+        }
+    }
 }

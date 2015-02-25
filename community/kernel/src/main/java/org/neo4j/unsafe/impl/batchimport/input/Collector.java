@@ -17,22 +17,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration.legacystore;
+package org.neo4j.unsafe.impl.batchimport.input;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.Iterator;
 
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-
-public interface LegacyNodeStoreReader extends Closeable
+/**
+ * Collects items and is {@link #close() closed} after any and all items have been collected.
+ * The {@link Collector} is responsible for closing whatever closeable resource received from the importer.
+ */
+public interface Collector<T> extends AutoCloseable
 {
-    long getMaxId();
+    void collect( T item, Object specificValue );
 
-    int getRecordSize();
+    int badEntries();
 
-    Iterator<NodeRecord> iterator() throws IOException;
-
+    /**
+     * Flushes whatever changes to the underlying resource supplied from the importer.
+     */
     @Override
-    void close() throws IOException;
+    void close();
+
+    public static abstract class Adapter<T> implements Collector<T>
+    {
+        @Override
+        public void close()
+        {   // Nothing to close
+        }
+
+        @Override
+        public int badEntries()
+        {
+            return 0;
+        }
+    }
 }
