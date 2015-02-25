@@ -17,26 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util.function;
 
-import org.junit.Test;
+package org.neo4j.kernel.impl.store.kvstore;
 
-import static junit.framework.TestCase.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-public class OptionalTest
+final class ValueLookup<Value> extends ValueSink
 {
-    @Test
-    public void shouldFallbackIfNone() throws Exception
-    {
-        // Given
-        Optional<Object> none = Optionals.none();
+    private final AbstractKeyValueStore.Reader<Value> reader;
+    private Value value;
 
-        // When & then
-        assertFalse( none.isPresent() );
-        assertTrue( none.or( 1 ).isPresent() );
-        assertEquals( none.or(1).get(), 1);
-        assertEquals( none.or(none).or(2).get(), 2);
+    public ValueLookup( AbstractKeyValueStore.Reader<Value> reader )
+    {
+        this.reader = reader;
+    }
+
+    @Override
+    protected void value( ReadableBuffer value )
+    {
+        this.value = reader.parseValue( value );
+    }
+
+    public Value value( boolean useDefault )
+    {
+        return useDefault ? reader.defaultValue() : value;
     }
 }

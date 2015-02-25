@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.api.CountsAccessor;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.NodeCountsProcessor;
 import org.neo4j.unsafe.impl.batchimport.NodeStoreProcessorStage;
@@ -32,57 +30,65 @@ import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
 
-public class CountsComputer
+public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
 {
-    public static void computeCounts( GraphDatabaseAPI api )
+    public static void recomputeCounts( NeoStore stores )
     {
-        computeCounts( api.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate() );
-    }
-
-    public static void computeCounts( NeoStore stores )
-    {
-        computeCounts( stores.getNodeStore(), stores.getRelationshipStore(), stores.getCounts(),
-                (int)stores.getLabelTokenStore().getHighId(), (int)stores.getRelationshipTypeTokenStore().getHighId() );
-    }
-
-    public static void computeCounts( NodeStore nodeStore, RelationshipStore relationshipStore,
-            CountsTracker countsTracker, int highLabelId, int highRelationshipTypeId )
-    {
-        new CountsComputer( nodeStore, relationshipStore, countsTracker,
-                highLabelId, highRelationshipTypeId ).rebuildCounts();
+        try ( CountsAccessor.Updater countsUpdater = stores.getCounts().reset() )
+        {
+            new CountsComputer( stores ).initialize( countsUpdater );
+        }
     }
 
     private final NodeStore nodes;
     private final RelationshipStore relationships;
-    private final CountsTracker countsTracker;
     private final int highLabelId;
     private final int highRelationshipTypeId;
+    private final long lastCommittedTransactionId;
 
-    public CountsComputer( NodeStore nodes, RelationshipStore relationships, CountsTracker countsTracker,
-            int highLabelId, int highRelationshipTypeId )
+    public CountsComputer( NeoStore stores )
     {
+        this( stores.getLastCommittedTransactionId(),
+              stores.getNodeStore(), stores.getRelationshipStore(),
+              (int) stores.getLabelTokenStore().getHighId(),
+              (int) stores.getRelationshipTypeTokenStore().getHighId() );
+    }
+
+    public CountsComputer( long lastCommittedTransactionId, NodeStore nodes, RelationshipStore relationships,
+                           int highLabelId,
+                           int highRelationshipTypeId )
+    {
+        this.lastCommittedTransactionId = lastCommittedTransactionId;
         this.nodes = nodes;
         this.relationships = relationships;
-        this.countsTracker = countsTracker;
         this.highLabelId = highLabelId;
         this.highRelationshipTypeId = highRelationshipTypeId;
     }
 
-    public void rebuildCounts()
+    @Override
+    public void initialize( CountsAccessor.Updater countsUpdater )
     {
         NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO, highLabelId );
-        try ( CountsAccessor.Updater countsUpdater = countsTracker.reset() )
+        try
         {
             // Count nodes
             superviseDynamicExecution( new NodeStoreProcessorStage( "COUNT NODES", Configuration.DEFAULT, nodes,
-                    new NodeCountsProcessor( nodes, cache, highLabelId, countsUpdater ) ) );
+                                                                    new NodeCountsProcessor( nodes, cache, highLabelId,
+                                                                                             countsUpdater ) ) );
             // Count relationships
             superviseDynamicExecution( new RelationshipCountsStage( Configuration.DEFAULT, cache, relationships,
-                    highLabelId, highRelationshipTypeId, countsUpdater ) );
+                                                                    highLabelId, highRelationshipTypeId,
+                                                                    countsUpdater ) );
         }
         finally
         {
             cache.close();
         }
+    }
+
+    @Override
+    public long initialVersion()
+    {
+        return lastCommittedTransactionId;
     }
 }

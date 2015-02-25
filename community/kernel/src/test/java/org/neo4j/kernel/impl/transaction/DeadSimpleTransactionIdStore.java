@@ -35,7 +35,7 @@ public class DeadSimpleTransactionIdStore implements TransactionIdStore
     private final AtomicLong committingTransactionId = new AtomicLong();
     private final OutOfOrderSequence committedTransactionId = new ArrayQueueOutOfOrderSequence( -1, 100 );
     private final OutOfOrderSequence closedTransactionId = new ArrayQueueOutOfOrderSequence( -1, 100 );
-    private final long initialTransactionId;
+    private final long previouslyCommittedTxId;
     private final long initialTransactionChecksum;
 
     public DeadSimpleTransactionIdStore()
@@ -43,17 +43,11 @@ public class DeadSimpleTransactionIdStore implements TransactionIdStore
         this( TransactionIdStore.BASE_TX_ID, 0 );
     }
 
-    public DeadSimpleTransactionIdStore( long initialTransactionId, long checksum )
+    public DeadSimpleTransactionIdStore( long previouslyCommittedTxId, long checksum )
     {
-        setLastCommittedAndClosedTransactionId( initialTransactionId, checksum );
-        this.initialTransactionId = initialTransactionId;
+        setLastCommittedAndClosedTransactionId( previouslyCommittedTxId, checksum );
+        this.previouslyCommittedTxId = previouslyCommittedTxId;
         this.initialTransactionChecksum = checksum;
-    }
-
-    // Only exposed in tests that needs it
-    public long getLastCommittingTransactionId()
-    {
-        return committingTransactionId.get();
     }
 
     @Override
@@ -83,7 +77,7 @@ public class DeadSimpleTransactionIdStore implements TransactionIdStore
     @Override
     public long[] getUpgradeTransaction()
     {
-        return new long[] {initialTransactionId, initialTransactionChecksum};
+        return new long[] {previouslyCommittedTxId, initialTransactionChecksum};
     }
 
     @Override

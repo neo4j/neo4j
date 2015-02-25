@@ -22,10 +22,7 @@ package org.neo4j.kernel.impl.store.kvstore;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.Map;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -36,6 +33,7 @@ import org.neo4j.kernel.lifecycle.Lifespan;
 
 import static org.junit.Assert.assertEquals;
 
+import static org.neo4j.kernel.impl.store.kvstore.DataProvider.EMPTY_DATA_PROVIDER;
 import static org.neo4j.kernel.impl.store.kvstore.Resources.InitialLifecycle.STARTED;
 import static org.neo4j.kernel.impl.store.kvstore.Resources.TestPath.FILE_IN_EXISTING_DIRECTORY;
 
@@ -82,7 +80,7 @@ public class AbstractKeyValueStoreTest
         Store store = the.managed( new Store() );
 
         // when
-        store.rotate( Collections.<String, Object>emptyMap() );
+        store.prepareRotation( 1 ).rotate();
     }
 
     @Test
@@ -101,7 +99,7 @@ public class AbstractKeyValueStoreTest
         assertEquals( "too old", store.get( "age" ) );
 
         // when
-        store.rotate( Collections.<String, Object>emptyMap() );
+        store.prepareRotation( 1 ).rotate();
 
         // then
         assertEquals( "hello world", store.get( "message" ) );
@@ -138,6 +136,18 @@ public class AbstractKeyValueStoreTest
             {
                 return Long.compare( lhs.get( TX_ID ), rhs.get( TX_ID ) );
             }
+
+            @Override
+            protected long version( Headers headers )
+            {
+                return headers.get( TX_ID );
+            }
+
+            @Override
+            protected void updateHeaders( Headers.Builder headers, long version )
+            {
+                headers.put( TX_ID, version );
+            }
         }
         try ( Lifespan life = new Lifespan() )
         {
@@ -146,7 +156,8 @@ public class AbstractKeyValueStoreTest
             // when
             for ( long txId = 2; txId <= 10; txId++ )
             {
-                store.rotate( Collections.singletonMap( "txId", (Object) txId ) );
+                store.updater( txId ).get().close();
+                store.prepareRotation( txId ).rotate();
             }
         }
 
@@ -184,15 +195,12 @@ public class AbstractKeyValueStoreTest
                 return Long.compare( lhs.get( TX_ID ), rhs.get( TX_ID ) );
             }
         };
-        Field state = AbstractKeyValueStore.class.getDeclaredField( "state" );
-        state.setAccessible( true );
-        @SuppressWarnings("unchecked")
-        RotationStrategy rotation = ((KeyValueStoreState.Stopped) state.get( store )).rotation;
+        RotationStrategy rotation = store.rotationStrategy;
 
         // when
         File[] files = new File[10];
         {
-            Pair<File, KeyValueStoreFile> file = rotation.create();
+            Pair<File, KeyValueStoreFile> file = rotation.create( EMPTY_DATA_PROVIDER, 1 );
             files[0] = file.first();
             for ( int txId = 2, i = 1; i < files.length; txId <<= 1, i++ )
             {
@@ -282,18 +290,31 @@ public class AbstractKeyValueStoreTest
     }
 
     @Rotation(Rotation.Strategy.INCREMENTING)
-    class Store extends AbstractKeyValueStore<String, Map<String, Object>>
+    class Store extends AbstractKeyValueStore<String>
     {
         private final HeaderField<?>[] headerFields;
 
         private Store( HeaderField<?>... headerFields )
         {
-            super( the.fileSystem(), the.pageCache(), the.testPath(), 16, 16, headerFields );
+            super( the.fileSystem(), the.pageCache(), the.testPath(), null, 16, 16, headerFields );
             this.headerFields = headerFields;
+            setEntryUpdaterInitializer( new DataInitializer<EntryUpdater<String>>()
+            {
+                @Override
+                public void initialize( EntryUpdater<String> stringEntryUpdater )
+                {
+                }
+
+                @Override
+                public long initialVersion()
+                {
+                    return 0;
+                }
+            } );
         }
 
         @Override
-        protected Headers initialHeaders()
+        protected Headers initialHeaders( long version )
         {
             Headers.Builder builder = Headers.headersBuilder();
             for ( HeaderField<?> field : headerFields )
@@ -317,21 +338,6 @@ public class AbstractKeyValueStoreTest
         protected int compareHeaders( Headers lhs, Headers rhs )
         {
             return 0;
-        }
-
-        @Override
-        protected Headers updateHeaders( Headers headers, Map<String, Object> changes )
-        {
-            Headers.Builder builder = Headers.headersBuilder();
-            for ( HeaderField<?> field : headers.fields() )
-            {
-                Object change = changes.get( field.toString() );
-                if ( change != null )
-                {
-                    putField( builder, field, change );
-                }
-            }
-            return builder.headers();
         }
 
         @SuppressWarnings("unchecked")
@@ -374,6 +380,25 @@ public class AbstractKeyValueStoreTest
         protected String fileTrailer()
         {
             return "And that's all folks.";
+        }
+
+        @Override
+        protected void updateHeaders( Headers.Builder headers, long version )
+        {
+        }
+
+        @Override
+        protected long version( Headers headers )
+        {
+            try
+            {
+                String filename = this.currentFile().getName();
+                return Integer.parseInt( filename.substring( filename.lastIndexOf( '.' ) + 1 ) );
+            }
+            catch ( IllegalStateException e )
+            {
+                return 0;
+            }
         }
 
         @Override

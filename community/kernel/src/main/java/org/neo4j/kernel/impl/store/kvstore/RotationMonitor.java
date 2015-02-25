@@ -21,28 +21,37 @@
 package org.neo4j.kernel.impl.store.kvstore;
 
 import java.io.File;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 
-@Inherited
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
-public @interface State
+public interface RotationMonitor
 {
-    Strategy value();
+    void failedToOpenStoreFile( File path, Exception failure );
 
-    enum Strategy implements ActiveState.Factory
+    void beforeRotation( File from, File next, Headers headers );
+
+    void rotationFailed( File from, File next, Headers headers, Exception failure );
+
+    void rotationSucceeded( File from, File next, Headers headers );
+
+    RotationMonitor NONE = new RotationMonitor()
     {
-        CONCURRENT_HASH_MAP
+        @Override
+        public void failedToOpenStoreFile( File path, Exception failure )
         {
-            @Override
-            public <Key> ActiveState<Key> open( ReadableState<Key> store, File file )
-            {
-                return new ConcurrentMapState<>( store, file );
-            }
-        };
-    }
+        }
+
+        @Override
+        public void beforeRotation( File from, File next, Headers headers )
+        {
+        }
+
+        @Override
+        public void rotationFailed( File from, File next, Headers headers, Exception failure )
+        {
+        }
+
+        @Override
+        public void rotationSucceeded( File from, File next, Headers headers )
+        {
+        }
+    };
 }

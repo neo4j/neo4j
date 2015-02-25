@@ -19,18 +19,17 @@
  */
 package org.neo4j.kernel.impl.recovery;
 
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+
+import org.junit.Test;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -44,6 +43,7 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -104,7 +104,7 @@ public class TestStoreRecoverer
         NeoStoreUtil util = new NeoStoreUtil( store, fileSystem );
 
         LifeSupport life = new LifeSupport();
-        DeadSimpleTransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 2, 0 );
+        DeadSimpleTransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( util.getLastCommittedTx(), 0 );
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 10 );
         PhysicalLogFiles logFiles = new PhysicalLogFiles( store, PhysicalLogFile.DEFAULT_NAME, fileSystem );
         LogFile logFile = life.add( new PhysicalLogFile( fileSystem, logFiles, 1000, transactionIdStore,

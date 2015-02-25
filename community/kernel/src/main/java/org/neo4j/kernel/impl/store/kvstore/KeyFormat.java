@@ -40,11 +40,13 @@ interface KeyFormat<Key>
         }
     }
 
-    DataProvider filter( DataProvider provider );
-
-    int valueSize();
-
     void writeKey( Key key, WritableBuffer buffer );
 
     int keySize();
+
+    int valueSize();
+
+    long version( Headers headers );
+
+    DataProvider filter( DataProvider provider );
 }

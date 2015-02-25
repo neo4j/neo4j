@@ -17,26 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util.function;
 
-import org.junit.Test;
+package org.neo4j.kernel.impl.store.kvstore;
 
-import static junit.framework.TestCase.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import java.io.IOException;
 
-public class OptionalTest
+public interface PreparedRotation
 {
-    @Test
-    public void shouldFallbackIfNone() throws Exception
-    {
-        // Given
-        Optional<Object> none = Optionals.none();
-
-        // When & then
-        assertFalse( none.isPresent() );
-        assertTrue( none.or( 1 ).isPresent() );
-        assertEquals( none.or(1).get(), 1);
-        assertEquals( none.or(none).or(2).get(), 2);
-    }
+    long rotate() throws IOException;
 }

@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
+import java.io.File;
+import java.io.IOException;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.io.File;
-import java.io.IOException;
 
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -332,12 +332,12 @@ public class CountsComputerTest
               NodeStore nodeStore = storeFactory.newNodeStore();
               RelationshipStore relationshipStore = storeFactory.newRelationshipStore() )
         {
-            CountsTracker tracker = life.add( tracker = storeFactory.newCountsStore() );
-            CountsComputer.computeCounts( nodeStore, relationshipStore, tracker,
-                    (int)storeFactory.getHighId( StoreFile.LABEL_TOKEN_STORE, LabelTokenStore.RECORD_SIZE ),
-                    (int)storeFactory.getHighId( StoreFile.RELATIONSHIP_TYPE_TOKEN_STORE,
-                            RelationshipTypeTokenStore.RECORD_SIZE ) );
-            tracker.rotate( lastCommittedTransactionId );
+            int highLabelId = (int) storeFactory.getHighId( StoreFile.LABEL_TOKEN_STORE, LabelTokenStore.RECORD_SIZE );
+            int highRelationshipTypeId = (int) storeFactory.getHighId(
+                    StoreFile.RELATIONSHIP_TYPE_TOKEN_STORE, RelationshipTypeTokenStore.RECORD_SIZE );
+            CountsComputer countsComputer = new CountsComputer(
+                    lastCommittedTransactionId, nodeStore, relationshipStore, highLabelId, highRelationshipTypeId );
+            life.add( storeFactory.newCountsStore().setInitializer( countsComputer ) );
         }
     }
 

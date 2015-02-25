@@ -68,7 +68,7 @@ public class CountsOracle
 
     public void update( CountsTracker target, long txId )
     {
-        try ( CountsAccessor.Updater updater = target.apply( txId );
+        try ( CountsAccessor.Updater updater = target.apply( txId ).get();
               CountsAccessor.IndexStatsUpdater stats = target.updateIndexCounts() )
         {
             state.accept( new CountsAccessor.Initializer( updater, stats ) );

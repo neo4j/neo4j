@@ -83,14 +83,22 @@ public class Functions
 
     public static <T> Function<T, T> identity()
     {
-        return new Function<T, T>()
+        return covariantIdentity();
+    }
+
+    private static Function IDENTITY = new Function()
+    {
+        @Override
+        public Object apply( Object value ) throws Exception
         {
-            @Override
-            public T apply( T from )
-            {
-                return from;
-            }
-        };
+            return value;
+        }
+    };
+
+    @SuppressWarnings("unchecked")
+    public static <To, From extends To> Function<From, To> covariantIdentity()
+    {
+        return IDENTITY;
     }
 
     public static <From, From2, To> Function2<Function<From, From2>, Function<From2, To>, Function<From, To>> compose()

@@ -34,12 +34,15 @@ abstract class RotationStrategy
     protected final FileSystemAbstraction fs;
     protected final PageCache pages;
     private final ProgressiveFormat format;
+    private final RotationMonitor monitor;
 
-    RotationStrategy( FileSystemAbstraction fs, PageCache pages, ProgressiveFormat format )
+    RotationStrategy( FileSystemAbstraction fs, PageCache pages, ProgressiveFormat format,
+                      RotationMonitor monitor )
     {
         this.fs = fs;
         this.pages = pages;
         this.format = format;
+        this.monitor = monitor;
     }
 
     protected abstract File initialFile();
@@ -63,7 +66,7 @@ abstract class RotationStrategy
                 }
                 catch ( Exception e )
                 {
-                    format.failedToOpenStoreFile( candidatePath, e );
+                    monitor.failedToOpenStoreFile( candidatePath, e );
                     continue;
                 }
                 if ( result == null || format.compareHeaders( result.headers(), file.headers() ) < 0 )
@@ -84,19 +87,19 @@ abstract class RotationStrategy
         return result == null ? null : Pair.of( path, result );
     }
 
-    public final Pair<File, KeyValueStoreFile> create()
-            throws IOException
+    public final Pair<File, KeyValueStoreFile> create( DataProvider initialData, long version ) throws IOException
     {
         File path = initialFile();
-        format.createEmptyStore( fs, path, format.keySize(), format.valueSize(), format.initialHeaders() );
-        return Pair.of( path, format.openStore( fs, pages, path ) );
+        return Pair.of( path, format.createStore(
+                fs, pages, path, format.keySize(), format.valueSize(), format.initialHeaders( version ),
+                initialData ) );
     }
 
     public final Pair<File, KeyValueStoreFile> next( File file, Headers headers, DataProvider data )
             throws IOException
     {
         File path = nextFile( file );
-        format.beforeRotation( file, path, headers );
+        monitor.beforeRotation( file, path, headers );
         KeyValueStoreFile store;
         try
         {
@@ -104,10 +107,10 @@ abstract class RotationStrategy
         }
         catch ( Exception e )
         {
-            format.rotationFailed( file, path, headers, e );
+            monitor.rotationFailed( file, path, headers, e );
             throw e;
         }
-        format.rotationSucceeded( file, path, headers );
+        monitor.rotationSucceeded( file, path, headers );
         return Pair.of( path, store );
     }
 
@@ -121,9 +124,10 @@ abstract class RotationStrategy
         private final File left;
         private final File right;
 
-        LeftRight( FileSystemAbstraction fs, PageCache pages, ProgressiveFormat format, File left, File right )
+        LeftRight( FileSystemAbstraction fs, PageCache pages, ProgressiveFormat format,
+                   RotationMonitor monitor, File left, File right )
         {
-            super( fs, pages, format );
+            super( fs, pages, format, monitor );
             this.left = left;
             this.right = right;
         }
@@ -163,9 +167,10 @@ abstract class RotationStrategy
         private static final Pattern SUFFIX = Pattern.compile( "\\.[0-9]+" );
         private final File base;
 
-        public Incrementing( FileSystemAbstraction fs, PageCache pages, ProgressiveFormat format, File base )
+        public Incrementing( FileSystemAbstraction fs, PageCache pages, ProgressiveFormat format,
+                             RotationMonitor monitor, File base )
         {
-            super( fs, pages, format );
+            super( fs, pages, format, monitor );
             this.base = base;
         }
 

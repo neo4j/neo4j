@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import java.util.concurrent.locks.Lock;
+
 public class LockWrapper implements AutoCloseable
 {
     public static LockWrapper readLock( java.util.concurrent.locks.ReadWriteLock lock )
@@ -31,7 +33,7 @@ public class LockWrapper implements AutoCloseable
         return new LockWrapper( lock.writeLock() );
     }
 
-    private final java.util.concurrent.locks.Lock lock;
+    private java.util.concurrent.locks.Lock lock;
 
     public LockWrapper( java.util.concurrent.locks.Lock lock )
     {
@@ -41,6 +43,15 @@ public class LockWrapper implements AutoCloseable
     @Override
     public void close()
     {
-        lock.unlock();
+        if ( lock != null )
+        {
+            lock.unlock();
+            lock = null;
+        }
+    }
+
+    public Lock get()
+    {
+        return lock;
     }
 }

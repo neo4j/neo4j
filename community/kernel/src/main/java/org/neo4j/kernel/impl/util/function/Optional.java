@@ -19,15 +19,21 @@
  */
 package org.neo4j.kernel.impl.util.function;
 
+import org.neo4j.function.Function;
+
 /**
  * Represents a value that may or may not exist.
  */
 public interface Optional<TYPE>
 {
     TYPE get();
+
     boolean isPresent();
 
-    Optional<TYPE> or(Optional<TYPE> secondChoice);
-    Optional<TYPE> or(TYPE secondChoice);
+    Optional<TYPE> or( Optional<TYPE> secondChoice );
+
+    Optional<TYPE> or( TYPE secondChoice );
+
+    <To> Optional<To> map( Function<TYPE, ? extends To> conversion );
 }
 

@@ -26,11 +26,16 @@ import java.util.concurrent.locks.Lock;
 public abstract class EntryUpdater<Key> implements AutoCloseable
 {
     private final Lock lock;
-    private Thread thread = Thread.currentThread();
+    private Thread thread;
 
     EntryUpdater( Lock lock )
     {
-        (this.lock = lock).lock();
+        this.lock = lock;
+        if ( lock != null )
+        {
+            this.thread = Thread.currentThread();
+            lock.lock();
+        }
     }
 
     public abstract void apply( Key key, ValueUpdate update ) throws IOException;
@@ -49,7 +54,7 @@ public abstract class EntryUpdater<Key> implements AutoCloseable
         }
     }
 
-    protected void ensureSameThread()
+    protected void ensureOpenOnSameThread()
     {
         if ( thread != Thread.currentThread() )
         {
@@ -64,4 +69,23 @@ public abstract class EntryUpdater<Key> implements AutoCloseable
             throw new IllegalStateException( "The updater is not available." );
         }
     }
+
+    @SuppressWarnings("unchecked")
+    static <Key> EntryUpdater<Key> noUpdates()
+    {
+        return NO_UPDATES;
+    }
+
+    private static final EntryUpdater NO_UPDATES = new EntryUpdater( null )
+    {
+        @Override
+        public void apply( Object o, ValueUpdate update )
+        {
+        }
+
+        @Override
+        public void close()
+        {
+        }
+    };
 }

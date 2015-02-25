@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.cache;
 
 import java.lang.management.ManagementFactory;
-
+import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.management.openmbean.CompositeDataSupport;
 
@@ -85,8 +85,10 @@ public class HPCSettingFunctions
         {
             String explicitNodeCacheSize     = settings.apply( HighPerformanceCacheSettings.node_cache_size.name() );
             String explicitRelCacheSize      = settings.apply( HighPerformanceCacheSettings.relationship_cache_size.name() );
-            String explicitNodeArrayFraction = settings.apply( HighPerformanceCacheSettings.node_cache_array_fraction.name() );
-            String explicitRelArrayFraction  = settings.apply( HighPerformanceCacheSettings.relationship_cache_array_fraction.name() );
+            String explicitNodeArrayFraction = settings.apply(
+                    HighPerformanceCacheSettings.node_cache_array_fraction.name() );
+            String explicitRelArrayFraction  = settings.apply(
+                    HighPerformanceCacheSettings.relationship_cache_array_fraction.name() );
 
             if( explicitNodeCacheSize != null
                     || explicitRelCacheSize != null
@@ -139,22 +141,17 @@ public class HPCSettingFunctions
 
     private static Optional<Long> memoryPoolMax( final String bean )
     {
-        return new Optionals.LazyOptional<Long>()
+        try
         {
-            @Override
-            protected Long evaluate()
-            {
-                try
-                {
-                    return (long) ((CompositeDataSupport) ManagementFactory.getPlatformMBeanServer()
-                            .getAttribute( new ObjectName( bean ), "Usage" )).get( "max" );
-                }
-                catch(Exception e)
-                {
-                    return null;
-                }
-            }
-        };
+            MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+            CompositeDataSupport attribute = (CompositeDataSupport) server.getAttribute(
+                    new ObjectName( bean ), "Usage" );
+            return Optionals.some( (Long) attribute.get( "max" ) );
+        }
+        catch ( Exception e )
+        {
+            return Optionals.none();
+        }
     }
 
     private static long heap()

@@ -121,7 +121,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
                                                          long lastCommittedTx, CountsTracker counts )
         {
             TransactionWriter writer = new TransactionWriter();
-            try ( CountsAccessor.Updater updater = counts.apply( lastCommittedTx + 1 ) )
+            try ( CountsAccessor.Updater updater = counts.apply( lastCommittedTx + 1 ).get() )
             {
                 transactionData( new TransactionDataBuilder( writer, updater ), idGenerator );
             }

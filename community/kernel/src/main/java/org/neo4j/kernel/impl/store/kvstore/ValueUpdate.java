@@ -20,6 +20,9 @@
 
 package org.neo4j.kernel.impl.store.kvstore;
 
+/**
+ * A commutative update to a value.
+ */
 public interface ValueUpdate
 {
     void update( WritableBuffer target );

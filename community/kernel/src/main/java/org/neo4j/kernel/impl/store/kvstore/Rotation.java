@@ -44,7 +44,8 @@ public @interface Rotation
         LEFT_RIGHT
         {
             @Override
-            RotationStrategy create( FileSystemAbstraction fs, PageCache pages, ProgressiveFormat format, File base,
+            RotationStrategy create( FileSystemAbstraction fs, PageCache pages, ProgressiveFormat format,
+                                     RotationMonitor monitor, File base,
                                      String[] parameters )
             {
                 if ( parameters == null || parameters.length != 2 )
@@ -54,20 +55,21 @@ public @interface Rotation
                 String parent = base.getParent();
                 String l = base.getName() + parameters[0], r = base.getName() + parameters[1];
                 final File left = new File( parent, l ), right = new File( parent, r );
-                return new RotationStrategy.LeftRight( fs, pages, format, left, right );
+                return new RotationStrategy.LeftRight( fs, pages, format, monitor, left, right );
             }
         },
         INCREMENTING
         {
             @Override
-            RotationStrategy create( FileSystemAbstraction fs, PageCache pages, ProgressiveFormat format, File base,
+            RotationStrategy create( FileSystemAbstraction fs, PageCache pages, ProgressiveFormat format,
+                                     RotationMonitor monitor, File base,
                                      String[] parameters )
             {
-                return new RotationStrategy.Incrementing( fs, pages, format, base );
+                return new RotationStrategy.Incrementing( fs, pages, format, monitor, base );
             }
         };
 
         abstract RotationStrategy create( FileSystemAbstraction fs, PageCache pages, ProgressiveFormat format,
-                                          File base, String... parameters );
+                                          RotationMonitor monitor, File base, String... parameters );
     }
 }

@@ -31,15 +31,21 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.kvstore.AbstractKeyValueStore;
+import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
+import org.neo4j.kernel.impl.store.kvstore.EntryUpdater;
 import org.neo4j.kernel.impl.store.kvstore.HeaderField;
 import org.neo4j.kernel.impl.store.kvstore.Headers;
 import org.neo4j.kernel.impl.store.kvstore.MetadataVisitor;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
 import org.neo4j.kernel.impl.store.kvstore.Rotation;
+import org.neo4j.kernel.impl.store.kvstore.RotationMonitor;
 import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
 import org.neo4j.kernel.impl.store.kvstore.WritableBuffer;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.util.function.Optional;
 import org.neo4j.register.Register;
+
+import static java.lang.String.format;
 
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSampleKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexStatisticsKey;
@@ -63,7 +69,7 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relations
  * {@code kvstore}-package, see {@link org.neo4j.kernel.impl.store.kvstore.KeyValueStoreFile} for a good entry point.
  */
 @Rotation(value = Rotation.Strategy.LEFT_RIGHT, parameters = {CountsTracker.LEFT, CountsTracker.RIGHT})
-public class CountsTracker extends AbstractKeyValueStore<CountsKey, FileVersion.Change>
+public class CountsTracker extends AbstractKeyValueStore<CountsKey>
         implements CountsVisitor.Visitable, CountsAccessor
 {
     /** The format specifier for the current version of the store file format. */
@@ -73,12 +79,57 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey, FileVersion.
     private static final HeaderField<?>[] HEADER_FIELDS = new HeaderField[]{FileVersion.FILE_VERSION};
     public static final String LEFT = ".a", RIGHT = ".b";
     public static final String TYPE_DESCRIPTOR = "CountsStore";
-    private final StringLogger logger;
 
-    public CountsTracker( StringLogger logger, FileSystemAbstraction fs, PageCache pages, File baseFile )
+    public CountsTracker( final StringLogger logger, FileSystemAbstraction fs, PageCache pages, File baseFile )
     {
-        super( fs, pages, baseFile, 16, 16, HEADER_FIELDS );
-        this.logger = logger;
+        super( fs, pages, baseFile, new RotationMonitor()
+        {
+            @Override
+            public void failedToOpenStoreFile( File path, Exception error )
+            {
+                logger.logMessage( "Failed to open counts store file: " + path, error );
+            }
+
+            @Override
+            public void beforeRotation( File source, File target, Headers headers )
+            {
+                logger.logMessage( format( "About to rotate counts store at transaction %d to [%s], from [%s].",
+                                           headers.get( FileVersion.FILE_VERSION ).txId, target, source ) );
+            }
+
+            @Override
+            public void rotationSucceeded( File source, File target, Headers headers )
+            {
+                logger.logMessage( format( "Successfully rotated counts store at transaction %d to [%s], from [%s].",
+                                           headers.get( FileVersion.FILE_VERSION ).txId, target, source ) );
+            }
+
+            @Override
+            public void rotationFailed( File source, File target, Headers headers, Exception e )
+            {
+                logger.logMessage( format( "Failed to rotate counts store at transaction %d to [%s], from [%s].",
+                                           headers.get( FileVersion.FILE_VERSION ).txId, target, source ), e );
+            }
+        }, 16, 16, HEADER_FIELDS );
+    }
+
+    public CountsTracker setInitializer( final DataInitializer<Updater> initializer )
+    {
+        setEntryUpdaterInitializer( new DataInitializer<EntryUpdater<CountsKey>>()
+        {
+            @Override
+            public void initialize( EntryUpdater<CountsKey> updater )
+            {
+                initializer.initialize( new CountsUpdater( updater ) );
+            }
+
+            @Override
+            public long initialVersion()
+            {
+                return initializer.initialVersion();
+            }
+        } );
+        return this;
     }
 
     /**
@@ -87,16 +138,7 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey, FileVersion.
      */
     public long rotate( long txId ) throws IOException
     {
-        logger.debug( "Start writing new counts store with txId=" + txId );
-        rotate( new FileVersion.Change( txId ) );
-        logger.debug( "Completed writing of counts store with txId=" + txId );
-        return txId; // TODO: this is not guaranteed to be true since transactions are applied out-of-order
-    }
-
-    public boolean acceptTx( long txId )
-    {
-        Headers headers = headers();
-        return headers != null && headers.get( FileVersion.FILE_VERSION ).txId < txId;
+        return prepareRotation( txId ).rotate();
     }
 
     public long txId()
@@ -147,13 +189,9 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey, FileVersion.
         return get( indexSampleKey( labelId, propertyKeyId ), target );
     }
 
-    public CountsAccessor.Updater apply( long txId )
+    public Optional<CountsAccessor.Updater> apply( long txId )
     {
-        if ( !acceptTx( txId ) )
-        {
-            return CountsUpdater.NONE;
-        }
-        return new CountsUpdater( updater( txId ) );
+        return updater( txId ).<CountsAccessor.Updater>map( CountsUpdater.FACTORY );
     }
 
     public CountsAccessor.IndexStatsUpdater updateIndexCounts()
@@ -185,9 +223,9 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey, FileVersion.
     }
 
     @Override
-    protected Headers initialHeaders()
+    protected Headers initialHeaders( long txId )
     {
-        return Headers.headersBuilder().put( FileVersion.FILE_VERSION, new FileVersion( -1, 1 ) ).headers();
+        return Headers.headersBuilder().put( FileVersion.FILE_VERSION, new FileVersion( txId ) ).headers();
     }
 
     @Override
@@ -204,14 +242,6 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey, FileVersion.
             cmp = Long.compare( lhs.minorVersion, rhs.minorVersion );
         }
         return cmp;
-    }
-
-    @Override
-    protected Headers updateHeaders( Headers headers, FileVersion.Change changes )
-    {
-        return Headers.headersBuilder()
-                      .put( FileVersion.FILE_VERSION, headers.get( FileVersion.FILE_VERSION ).update( changes ) )
-                      .headers();
     }
 
     @Override
@@ -239,41 +269,21 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey, FileVersion.
     }
 
     @Override
-    protected void failedToOpenStoreFile( File path, Exception error )
+    protected void updateHeaders( Headers.Builder headers, long version )
     {
-        logger.logMessage( "Failed to open counts store file: " + path, error );
-    }
-
-    protected void beforeRotation( File source, File target, Headers headers )
-    {
-        logger.logMessage( String.format( "About to rotate counts store at transaction %d to [%s], from [%s].",
-                                          headers.get( FileVersion.FILE_VERSION ).txId, target, source ) );
+        headers.put( FileVersion.FILE_VERSION, headers.get( FileVersion.FILE_VERSION ).update( version ) );
     }
 
     @Override
-    protected void rotationSucceeded( File source, File target, Headers headers )
+    protected long version( Headers headers )
     {
-        logger.logMessage( String.format( "Successfully rotated counts store at transaction %d to [%s], from [%s].",
-                                          headers.get( FileVersion.FILE_VERSION ).txId, target, source ) );
-    }
-
-    @Override
-    protected void rotationFailed( File source, File target, Headers headers, Exception e )
-    {
-        logger.logMessage( String.format( "Failed to rotate counts store at transaction %d to [%s], from [%s].",
-                                          headers.get( FileVersion.FILE_VERSION ).txId, target, source ), e );
+        return headers == null ? FileVersion.INITIAL_TX_ID : headers.get( FileVersion.FILE_VERSION ).txId;
     }
 
     @Override
     protected void writeFormatSpecifier( WritableBuffer formatSpecifier )
     {
         formatSpecifier.put( 0, FORMAT );
-    }
-
-    @Override
-    protected boolean hasHeaderChanges( Headers headers, FileVersion.Change change )
-    {
-        return headers != null && headers.get( FileVersion.FILE_VERSION ).txId != change.txId;
     }
 
     private class DelegatingVisitor extends Visitor implements MetadataVisitor

@@ -52,6 +52,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import static org.neo4j.kernel.impl.util.function.Optionals.some;
+
 public class TransactionRepresentationStoreApplierTest
 {
     private final IndexingService indexService = mock( IndexingService.class );
@@ -68,7 +70,7 @@ public class TransactionRepresentationStoreApplierTest
     {
         final CountsTracker tracker = mock( CountsTracker.class );
         when( neoStore.getCounts() ).thenReturn( tracker );
-        when( tracker.apply( anyLong() ) ).thenReturn( mock( CountsAccessor.Updater.class ) );
+        when( tracker.apply( anyLong() ) ).thenReturn( some( mock( CountsAccessor.Updater.class ) ) );
     }
 
     @Test

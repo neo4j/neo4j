@@ -19,31 +19,44 @@
  */
 package org.neo4j.kernel.impl.util.function;
 
+import org.neo4j.function.Function;
+
 public class Optionals
 {
-    public static final Optional NONE = new Optional(){
-
+    private static final Optional NONE = new Optional()
+    {
         @Override
-        public Object get() {
+        public Object get()
+        {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public boolean isPresent() {
+        public boolean isPresent()
+        {
             return false;
         }
 
         @Override
-        public Optional or( Optional secondChoice ) {
+        public Optional or( Optional secondChoice )
+        {
             return secondChoice;
         }
 
         @Override
-        public Optional or( Object secondChoice ) {
+        public Optional or( Object secondChoice )
+        {
             return some( secondChoice );
+        }
+
+        @Override
+        public Optional map( Function conversion )
+        {
+            return this;
         }
     };
 
+    @SuppressWarnings("unchecked")
     public static <TYPE> Optional<TYPE> none()
     {
         return NONE;
@@ -51,69 +64,37 @@ public class Optionals
 
     public static <TYPE> Optional<TYPE> some( final TYPE obj )
     {
-        return new Optional<TYPE>(){
-
+        return new Optional<TYPE>()
+        {
             @Override
-            public TYPE get() {
+            public TYPE get()
+            {
                 return obj;
             }
 
             @Override
-            public boolean isPresent() {
+            public boolean isPresent()
+            {
                 return true;
             }
 
             @Override
-            public Optional<TYPE> or( Optional<TYPE> secondChoice ) {
+            public Optional<TYPE> or( Optional<TYPE> secondChoice )
+            {
                 return this;
             }
 
             @Override
-            public Optional<TYPE> or( TYPE secondChoice ) {
+            public Optional<TYPE> or( TYPE secondChoice )
+            {
                 return this;
             }
-        };
-    }
 
-    public static abstract class LazyOptional<TYPE> implements Optional<TYPE>
-    {
-        private TYPE value;
-        private boolean evaluated = false;
-
-        protected abstract TYPE evaluate();
-
-        @Override
-        public TYPE get()
-        {
-            if(!isPresent())
+            @Override
+            public <To> Optional<To> map( Function<TYPE, ? extends To> conversion )
             {
-                throw new UnsupportedOperationException();
+                return some( conversion.apply( obj ) );
             }
-            return value();
-        }
-
-        @Override
-        public boolean isPresent()
-        {
-            return value() != null;
-        }
-
-        @Override
-        public Optional<TYPE> or( Optional<TYPE> secondChoice )
-        {
-            return isPresent() ? this : secondChoice;
-        }
-
-        @Override
-        public Optional<TYPE> or( TYPE secondChoice )
-        {
-            return isPresent() ? this : some(secondChoice);
-        }
-
-        private TYPE value()
-        {
-            if(!evaluated) value = evaluate();
-            return value;
-        }
+        };
     }
 }

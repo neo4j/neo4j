@@ -23,9 +23,12 @@ package org.neo4j.kernel.impl.store.counts;
 import org.neo4j.kernel.impl.store.kvstore.HeaderField;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
 import org.neo4j.kernel.impl.store.kvstore.WritableBuffer;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 
 final class FileVersion
 {
+    static final long INITIAL_TX_ID = TransactionIdStore.BASE_TX_ID;
+    static final int INITIAL_MINOR_VERSION = 0;
     final long txId;
     final long minorVersion;
     static final HeaderField<FileVersion> FILE_VERSION = new HeaderField<FileVersion>()
@@ -50,25 +53,26 @@ final class FileVersion
         }
     };
 
+    public FileVersion( long txId )
+    {
+        this( txId, INITIAL_MINOR_VERSION );
+    }
+
+    public FileVersion update( long txId )
+    {
+        return new FileVersion( txId, this.txId == txId ? minorVersion + 1 : INITIAL_MINOR_VERSION );
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "FileVersion[txId=%d, minorVersion=%d]", txId, minorVersion );
+    }
+
     FileVersion( long txId, long minorVersion )
     {
 
         this.txId = txId;
         this.minorVersion = minorVersion;
-    }
-
-    FileVersion update( Change changes )
-    {
-        return new FileVersion( changes.txId, this.txId == changes.txId ? minorVersion + 1 : 1 );
-    }
-
-    static class Change
-    {
-        final long txId;
-
-        Change( long txId )
-        {
-            this.txId = txId;
-        }
     }
 }

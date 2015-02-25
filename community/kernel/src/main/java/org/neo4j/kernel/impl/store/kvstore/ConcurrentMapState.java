@@ -26,41 +26,35 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
 
-import org.neo4j.helpers.Pair;
-
-class ConcurrentMapState<Key> extends KeyValueStoreState<Key>
+class ConcurrentMapState<Key> extends ActiveState<Key>
 {
-    static class PreState<Key> extends KeyValueStoreState.Stopped<Key>
+    private final ConcurrentMap<Key, byte[]> changes;
+    private final File file;
+    private final AtomicLong highestAppliedVersion;
+    private final AtomicLong appliedChanges;
+    private final long previousVersion;
+
+    ConcurrentMapState( ReadableState<Key> store, File file )
     {
-        private final KeyFormat<Key> keys;
-
-        PreState( RotationStrategy rotation, KeyFormat<Key> keys )
-        {
-            super( rotation );
-            this.keys = keys;
-        }
-
-        @Override
-        KeyValueStoreState<Key> create( File path, KeyValueStoreFile store )
-        {
-            return new ConcurrentMapState<>( rotation, keys, store, path );
-        }
+        super( store );
+        this.previousVersion = store.version();
+        this.file = file;
+        this.highestAppliedVersion = new AtomicLong( previousVersion );
+        this.changes = new ConcurrentHashMap<>();
+        this.appliedChanges = new AtomicLong();
     }
 
-    private final RotationStrategy rotation;
-    private final KeyFormat<Key> keys;
-    private final KeyValueStoreFile store;
-    private final ConcurrentMap<Key, byte[]> changes = new ConcurrentHashMap<>();
-    private final File file;
-
-    private ConcurrentMapState( RotationStrategy rotation, KeyFormat<Key> keys,
-                                KeyValueStoreFile store, File file )
+    private ConcurrentMapState( Prototype<Key> prototype, ReadableState<Key> store, File file )
     {
-        this.rotation = rotation;
-        this.keys = keys;
-        this.store = store;
+        super( store );
+        this.previousVersion = store.version();
         this.file = file;
+        this.changes = prototype.changes;
+        this.highestAppliedVersion = prototype.highestAppliedVersion;
+        this.appliedChanges = prototype.appliedChanges;
     }
 
     @Override
@@ -70,25 +64,106 @@ class ConcurrentMapState<Key> extends KeyValueStoreState<Key>
     }
 
     @Override
-    public File file()
+    public EntryUpdater<Key> updater( long version, Lock lock )
     {
-        return file;
+        if ( version <= previousVersion )
+        {
+            return EntryUpdater.noUpdates();
+        }
+        update( highestAppliedVersion, version );
+        return new Updater<>( lock, store, changes, appliedChanges );
     }
 
     @Override
-    KeyValueStoreFile openStoreFile( File path ) throws IOException
+    public EntryUpdater<Key> unsafeUpdater( Lock lock )
     {
-        return rotation.openStoreFile( path );
+        return new Updater<>( lock, store, changes, null );
+    }
+
+    private static class Updater<Key> extends EntryUpdater<Key>
+    {
+        private AtomicLong changeCounter;
+        private final ReadableState<Key> store;
+        private final ConcurrentMap<Key, byte[]> changes;
+
+        Updater( Lock lock, ReadableState<Key> store, ConcurrentMap<Key, byte[]> changes, AtomicLong changeCounter )
+        {
+            super( lock );
+            this.changeCounter = changeCounter;
+            this.store = store;
+            this.changes = changes;
+        }
+
+        @Override
+        public void apply( Key key, ValueUpdate update ) throws IOException
+        {
+            ensureOpenOnSameThread();
+            applyUpdate( store, changes, key, update, false );
+        }
+
+        @Override
+        public void close()
+        {
+            if ( changeCounter != null )
+            {
+                changeCounter.incrementAndGet();
+                changeCounter = null;
+            }
+            super.close();
+        }
     }
 
     @Override
+    protected long storedVersion()
+    {
+        return previousVersion;
+    }
+
+    @Override
+    protected EntryUpdater<Key> resettingUpdater( Lock lock, final Runnable closeAction )
+    {
+        if ( hasChanges() )
+        {
+            throw new IllegalStateException( "Cannot reset when there are changes!" );
+        }
+        return new EntryUpdater<Key>( lock )
+        {
+            @Override
+            public void apply( Key key, ValueUpdate update ) throws IOException
+            {
+                ensureOpen();
+                applyUpdate( store, changes, key, update, true );
+            }
+
+            @Override
+            public void close()
+            {
+                try
+                {
+                    closeAction.run();
+                }
+                finally
+                {
+                    super.close();
+                }
+            }
+        };
+    }
+
+    @Override
+    protected PrototypeState<Key> prototype( long version )
+    {
+        return new Prototype<>( this, version );
+    }
+
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    public void apply( Key key, ValueUpdate update, boolean reset ) throws IOException
+    static <Key> void applyUpdate( ReadableState<Key> store, ConcurrentMap<Key, byte[]> changes,
+                                   Key key, ValueUpdate update, boolean reset ) throws IOException
     {
         byte[] value = changes.get( key );
         if ( value == null )
         {
-            final byte[] proposal = new byte[keys.valueSize()];
+            final byte[] proposal = new byte[store.keyFormat().valueSize()];
             synchronized ( proposal )
             {
                 value = changes.putIfAbsent( key, proposal );
@@ -97,8 +172,8 @@ class ConcurrentMapState<Key> extends KeyValueStoreState<Key>
                     BigEndianByteArrayBuffer buffer = new BigEndianByteArrayBuffer( proposal );
                     if ( !reset )
                     {
-                        PreviousValue<Key> lookup = new PreviousValue<>( keys, key, proposal );
-                        if ( !store.scan( lookup, lookup ) )
+                        PreviousValue lookup = new PreviousValue( proposal );
+                        if ( !store.lookup( key, lookup ) )
                         {
                             buffer.clear();
                         }
@@ -119,76 +194,172 @@ class ConcurrentMapState<Key> extends KeyValueStoreState<Key>
         }
     }
 
-    private static class PreviousValue<Key> extends KeyFormat.Searcher<Key> implements KeyValueVisitor{
+    private static void update( AtomicLong highestAppliedVersion, long version )
+    {
+        for ( long high; ; )
+        {
+            high = highestAppliedVersion.get();
+            if ( version <= high )
+            {
+                return;
+            }
+            if ( highestAppliedVersion.compareAndSet( high, version ) )
+            {
+                return;
+            }
+        }
+    }
+
+    private static class Prototype<Key> extends PrototypeState<Key>
+    {
+        final ConcurrentMap<Key, byte[]> changes = new ConcurrentHashMap<>();
+        final AtomicLong highestAppliedVersion, appliedChanges = new AtomicLong();
+
+        Prototype( ConcurrentMapState<Key> state, long version )
+        {
+            super( state );
+            this.highestAppliedVersion = new AtomicLong( version );
+        }
+
+        @Override
+        protected ActiveState<Key> create( ReadableState<Key> sub, File file )
+        {
+            return new ConcurrentMapState<>( this, sub, file );
+        }
+
+        @Override
+        protected EntryUpdater<Key> updater( long version, Lock lock )
+        {
+            update( highestAppliedVersion, version );
+            return new Updater<>( lock, store, changes, appliedChanges );
+        }
+
+        @Override
+        protected EntryUpdater<Key> unsafeUpdater( Lock lock )
+        {
+            return new Updater<>( lock, store, changes, null );
+        }
+
+        @Override
+        protected boolean hasChanges()
+        {
+            return !changes.isEmpty();
+        }
+
+        @Override
+        protected long version()
+        {
+            return highestAppliedVersion.get();
+        }
+
+        @Override
+        protected boolean lookup( Key key, ValueSink sink ) throws IOException
+        {
+            return performLookup( store, changes, key, sink );
+        }
+
+        @Override
+        protected DataProvider dataProvider() throws IOException
+        {
+            return ConcurrentMapState.dataProvider( store, changes );
+        }
+    }
+
+    private static class PreviousValue extends ValueSink
+    {
         private final byte[] proposal;
 
-        PreviousValue( KeyFormat<Key> keys, Key key, byte[] proposal )
+        PreviousValue( byte[] proposal )
         {
-            super( keys, key );
             this.proposal = proposal;
         }
 
         @Override
-        public boolean visit( ReadableBuffer key, ReadableBuffer value )
+        protected void value( ReadableBuffer value )
         {
             value.get( 0, proposal );
-            return false;
         }
     }
 
     @Override
-    public KeyValueStoreState<Key> rotate( Headers headers ) throws IOException
+    protected long version()
     {
-        try
-        {
-            Pair<File, KeyValueStoreFile> next = rotation.next( file, headers, keys.filter( dataProvider() ) );
-            return new ConcurrentMapState<>( rotation, keys, next.other(), next.first() );
-        }
-        finally
-        {
-            store.close();
-        }
+        return highestAppliedVersion.get();
     }
 
-    public Headers headers()
+    @Override
+    protected long applied()
     {
-        return store.headers();
+        return appliedChanges.get();
     }
 
-    public KeyValueStoreState<Key> close() throws IOException
-    {
-        store.close();
-        return null;
-    }
-
-    public boolean hasChanges()
+    @Override
+    protected boolean hasChanges()
     {
         return !changes.isEmpty();
     }
 
-    public <Value> Value lookup( Key key, AbstractKeyValueStore.Reader<Value> valueReader ) throws IOException
+    @Override
+    protected void close() throws IOException
+    {
+        store.close();
+    }
+
+    @Override
+    protected File file()
+    {
+        return file;
+    }
+
+    @Override
+    protected Factory factory()
+    {
+        return State.Strategy.CONCURRENT_HASH_MAP;
+    }
+
+    @Override
+    protected boolean lookup( Key key, ValueSink sink ) throws IOException
+    {
+        return performLookup( store, changes, key, sink );
+    }
+
+    private static <Key> boolean performLookup( ReadableState<Key> store, ConcurrentMap<Key, byte[]> changes,
+                                                Key key, ValueSink sink ) throws IOException
     {
         byte[] value = changes.get( key );
         if ( value != null )
         {
-            return valueReader.parseValue( new BigEndianByteArrayBuffer( value ) );
+            sink.value( new BigEndianByteArrayBuffer( value ) );
+            return true;
         }
-        ValueFetcher<Key, Value> lookup = new ValueFetcher<>( keys, key, valueReader );
-        try
-        {
-            if ( store.scan( lookup, lookup ) )
-            {
-                return lookup.value;
-            }
-        }
-        catch ( RuntimeException e )
-        {
-            throw new IOException( "Lookup failure for key=" + key, e );
-        }
-        return valueReader.defaultValue();
+        return store.lookup( key, sink );
     }
 
-    private byte[][] sortedUpdates()
+    /**
+     * This method is expected to be called under a lock preventing modification to the state.
+     */
+    @Override
+    public DataProvider dataProvider() throws IOException
+    {
+        return dataProvider( store, changes );
+    }
+
+    private static <Key> DataProvider dataProvider( ReadableState<Key> store, ConcurrentMap<Key, byte[]> changes )
+            throws IOException
+    {
+        if ( changes.isEmpty() )
+        {
+            return store.dataProvider();
+        }
+        else
+        {
+            KeyFormat<Key> keys = store.keyFormat();
+            return new KeyValueMerger( store.dataProvider(), new UpdateProvider(
+                    sortedUpdates( keys, changes ) ), keys.keySize(), keys.valueSize() );
+        }
+    }
+
+    private static <Key> byte[][] sortedUpdates( KeyFormat<Key> keys, ConcurrentMap<Key, byte[]> changes )
     {
         Entry[] buffer = new Entry[changes.size()];
         Iterator<Map.Entry<Key, byte[]>> entries = changes.entrySet().iterator();
@@ -210,27 +381,6 @@ class ConcurrentMapState<Key> extends KeyValueStoreState<Key>
         return result;
     }
 
-    /**
-     * This method is expected to be called under a lock preventing modification to the state.
-     */
-    public DataProvider dataProvider() throws IOException
-    {
-        if ( changes.isEmpty() )
-        {
-            return store.dataProvider();
-        }
-        else
-        {
-            return new KeyValueMerger( store.dataProvider(), new UpdateProvider( sortedUpdates() ),
-                                       keys.keySize(), keys.valueSize() );
-        }
-    }
-
-    public int totalEntriesStored()
-    {
-        return store.entryCount();
-    }
-
     private static class Entry implements Comparable<Entry>
     {
         final byte[] key, value;
@@ -245,25 +395,6 @@ class ConcurrentMapState<Key> extends KeyValueStoreState<Key>
         public int compareTo( Entry that )
         {
             return BigEndianByteArrayBuffer.compare( this.key, that.key, 0 );
-        }
-    }
-
-    private static class ValueFetcher<Key, Value> extends KeyFormat.Searcher<Key> implements KeyValueVisitor
-    {
-        private final AbstractKeyValueStore.Reader<Value> reader;
-        Value value;
-
-        ValueFetcher( KeyFormat<Key> keys, Key key, AbstractKeyValueStore.Reader<Value> reader )
-        {
-            super( keys, key );
-            this.reader = reader;
-        }
-
-        @Override
-        public boolean visit( ReadableBuffer key, ReadableBuffer value )
-        {
-            this.value = reader.parseValue( value );
-            return false;
         }
     }
 

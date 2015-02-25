@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store.counts;
 
 import java.io.IOException;
 
+import org.neo4j.function.Function;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
@@ -36,7 +37,14 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relations
 
 final class CountsUpdater implements CountsAccessor.Updater, CountsAccessor.IndexStatsUpdater, AutoCloseable
 {
-    static final CountsUpdater NONE = new CountsUpdater( null );
+    static final Function<EntryUpdater<CountsKey>, CountsUpdater> FACTORY = new Function<EntryUpdater<CountsKey>, CountsUpdater>()
+    {
+        @Override
+        public CountsUpdater apply( EntryUpdater<CountsKey> updater ) throws RuntimeException
+        {
+            return new CountsUpdater( updater );
+        }
+    };
     private final EntryUpdater<CountsKey> updater;
 
     public CountsUpdater( EntryUpdater<CountsKey> updater )
@@ -56,16 +64,13 @@ final class CountsUpdater implements CountsAccessor.Updater, CountsAccessor.Inde
     @Override
     public void incrementNodeCount( int labelId, long delta )
     {
-        if ( updater != null )
+        try
         {
-            try
-            {
-                updater.apply( nodeKey( labelId ), incrementSecondBy( delta ) );
-            }
-            catch ( IOException e )
-            {
-                throw new UnderlyingStorageException( e );
-            }
+            updater.apply( nodeKey( labelId ), incrementSecondBy( delta ) );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
         }
     }
 
@@ -81,16 +86,13 @@ final class CountsUpdater implements CountsAccessor.Updater, CountsAccessor.Inde
     @Override
     public void incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta )
     {
-        if ( updater != null )
+        try
         {
-            try
-            {
-                updater.apply( relationshipKey( startLabelId, typeId, endLabelId ), incrementSecondBy( delta ) );
-            }
-            catch ( IOException e )
-            {
-                throw new UnderlyingStorageException( e );
-            }
+            updater.apply( relationshipKey( startLabelId, typeId, endLabelId ), incrementSecondBy( delta ) );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
         }
     }
 
@@ -107,16 +109,13 @@ final class CountsUpdater implements CountsAccessor.Updater, CountsAccessor.Inde
     @Override
     public void replaceIndexUpdateAndSize( int labelId, int propertyKeyId, long updates, long size )
     {
-        if ( updater != null )
+        try
         {
-            try
-            {
-                updater.apply( indexStatisticsKey( labelId, propertyKeyId ), new Write( updates, size ) );
-            }
-            catch ( IOException e )
-            {
-                throw new UnderlyingStorageException( e );
-            }
+            updater.apply( indexStatisticsKey( labelId, propertyKeyId ), new Write( updates, size ) );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
         }
     }
 
@@ -133,16 +132,13 @@ final class CountsUpdater implements CountsAccessor.Updater, CountsAccessor.Inde
     @Override
     public void replaceIndexSample( int labelId, int propertyKeyId, long unique, long size )
     {
-        if ( updater != null )
+        try
         {
-            try
-            {
-                updater.apply( indexSampleKey( labelId, propertyKeyId ), new Write( unique, size ) );
-            }
-            catch ( IOException e )
-            {
-                throw new UnderlyingStorageException( e );
-            }
+            updater.apply( indexSampleKey( labelId, propertyKeyId ), new Write( unique, size ) );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
         }
     }
 
@@ -153,27 +149,20 @@ final class CountsUpdater implements CountsAccessor.Updater, CountsAccessor.Inde
     @Override
     public void incrementIndexUpdates( int labelId, int propertyKeyId, long delta )
     {
-
-        if ( updater != null )
+        try
         {
-            try
-            {
-                updater.apply( indexStatisticsKey( labelId, propertyKeyId ), incrementFirstBy( delta ) );
-            }
-            catch ( IOException e )
-            {
-                throw new UnderlyingStorageException( e );
-            }
+            updater.apply( indexStatisticsKey( labelId, propertyKeyId ), incrementFirstBy( delta ) );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
         }
     }
 
     @Override
     public void close()
     {
-        if ( updater != null )
-        {
-            updater.close();
-        }
+        updater.close();
     }
 
     private static class Write implements ValueUpdate

@@ -24,38 +24,53 @@ import java.io.IOException;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import org.neo4j.function.Consumer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.locking.LockWrapper;
+import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.util.function.Optional;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
+import static org.neo4j.kernel.impl.locking.LockWrapper.readLock;
 import static org.neo4j.kernel.impl.locking.LockWrapper.writeLock;
 
 /**
  * The base for building a key value store based on rotating immutable
  * {@linkplain KeyValueStoreFile key/value store files}
  *
- * @param <Key>           a base type for the keys stored in this store.
- * @param <HeaderChanges> a type that signifies changes in headers on rotation.
+ * @param <Key> a base type for the keys stored in this store.
  */
 @Rotation(/*default strategy:*/Rotation.Strategy.LEFT_RIGHT/*(subclasses can override)*/)
 @State(/*default strategy:*/State.Strategy.CONCURRENT_HASH_MAP/*(subclasses can override)*/)
-public abstract class AbstractKeyValueStore<Key, HeaderChanges> extends LifecycleAdapter
+public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
 {
     private final ReadWriteLock updateLock = new ReentrantReadWriteLock( /*fair=*/true );
     private final Format format;
-    private volatile KeyValueStoreState<Key> state;
-    final int keySize, valueSize;
+    final RotationStrategy rotationStrategy;
+    private volatile ProgressiveState<Key> state;
+    private DataInitializer<EntryUpdater<Key>> stateInitializer;
+    final int keySize;
+    final int valueSize;
 
-    public AbstractKeyValueStore( FileSystemAbstraction fs, PageCache pages, File base, int keySize, int valueSize,
-                                  HeaderField<?>... headerFields )
+    public AbstractKeyValueStore( FileSystemAbstraction fs, PageCache pages, File base, RotationMonitor monitor,
+                                  int keySize, int valueSize, HeaderField<?>... headerFields )
     {
         this.keySize = keySize;
         this.valueSize = valueSize;
         Rotation rotation = getClass().getAnnotation( Rotation.class );
+        if ( monitor == null )
+        {
+            monitor = RotationMonitor.NONE;
+        }
         this.format = new Format( headerFields );
-        this.state = getClass().getAnnotation( State.class ).value().initialState(
-                rotation.value().create( fs, pages, format, base, rotation.parameters() ), format );
+        this.rotationStrategy = rotation.value().create( fs, pages, format, monitor, base, rotation.parameters() );
+        this.state = new DeadState.Stopped<>( format, getClass().getAnnotation( State.class ).value() );
+    }
+
+    protected final void setEntryUpdaterInitializer( DataInitializer<EntryUpdater<Key>> stateInitializer )
+    {
+        this.stateInitializer = stateInitializer;
     }
 
     @Override
@@ -64,18 +79,19 @@ public abstract class AbstractKeyValueStore<Key, HeaderChanges> extends Lifecycl
         return String.format( "%s[state=%s, hasChanges=%s]", getClass().getSimpleName(), state, state.hasChanges() );
     }
 
-    protected final <Value> Value lookup( Key key, Reader<Value> lookup ) throws IOException
+    protected final <Value> Value lookup( Key key, Reader<Value> reader ) throws IOException
     {
-        return state.lookup( key, lookup );
+        ValueLookup<Value> lookup = new ValueLookup<>( reader );
+        return lookup.value( !state.lookup( key, lookup ) );
     }
 
     /** Introspective feature, not thread safe. */
     protected final void visitAll( Visitor visitor ) throws IOException
     {
-        KeyValueStoreState<Key> state = this.state;
+        ProgressiveState<Key> state = this.state;
         if ( visitor instanceof MetadataVisitor )
         {
-            ((MetadataVisitor) visitor).visitMetadata( state.file(), headers(), state.totalEntriesStored() );
+            ((MetadataVisitor) visitor).visitMetadata( state.file(), headers(), state.storedEntryCount() );
         }
         try ( DataProvider provider = state.dataProvider() )
         {
@@ -85,7 +101,7 @@ public abstract class AbstractKeyValueStore<Key, HeaderChanges> extends Lifecycl
 
     protected final void visitFile( File path, Visitor visitor ) throws IOException
     {
-        try ( KeyValueStoreFile file = state.openStoreFile( path ) )
+        try ( KeyValueStoreFile file = rotationStrategy.openStoreFile( path ) )
         {
             if ( visitor instanceof MetadataVisitor )
             {
@@ -104,16 +120,9 @@ public abstract class AbstractKeyValueStore<Key, HeaderChanges> extends Lifecycl
 
     protected abstract void writeFormatSpecifier( WritableBuffer formatSpecifier );
 
-    protected abstract Headers initialHeaders();
+    protected abstract Headers initialHeaders( long version );
 
     protected abstract int compareHeaders( Headers lhs, Headers rhs );
-
-    protected boolean hasHeaderChanges( Headers headers, HeaderChanges diff )
-    {
-        return true;
-    }
-
-    protected abstract Headers updateHeaders( Headers headers, HeaderChanges changes );
 
     protected abstract String fileTrailer();
 
@@ -129,7 +138,7 @@ public abstract class AbstractKeyValueStore<Key, HeaderChanges> extends Lifecycl
 
     public int totalEntriesStored()
     {
-        return state.totalEntriesStored();
+        return state.storedEntryCount();
     }
 
     public final File currentFile()
@@ -142,7 +151,7 @@ public abstract class AbstractKeyValueStore<Key, HeaderChanges> extends Lifecycl
     {
         try ( LockWrapper ignored = writeLock( updateLock ) )
         {
-            state = state.init();
+            state = state.initialize( rotationStrategy );
         }
     }
 
@@ -151,93 +160,108 @@ public abstract class AbstractKeyValueStore<Key, HeaderChanges> extends Lifecycl
     {
         try ( LockWrapper ignored = writeLock( updateLock ) )
         {
-            state = state.start();
+            state = state.start( stateInitializer );
         }
     }
 
-    protected void failedToOpenStoreFile( File path, Exception error )
+    protected final Optional<EntryUpdater<Key>> updater( final long version )
     {
-        // override to implement logging
-    }
-
-    protected void rotationFailed( File source, File target, Headers headers, Exception e )
-    {
-        // override to implement logging
-    }
-
-    protected void rotationSucceeded( File source, File target, Headers headers )
-    {
-        // override to implement logging
-    }
-
-    protected void beforeRotation( File source, File target, Headers headers )
-    {
-        // override to implement logging
-    }
-
-    protected final EntryUpdater<Key> updater( long txId )
-    {
-        return updater(); // TODO: this method should care about the txId
+        try ( LockWrapper lock = readLock( updateLock ) )
+        {
+            return state.optionalUpdater( version, lock.get() );
+        }
     }
 
     protected final EntryUpdater<Key> updater()
     {
-        return new EntryUpdater<Key>( updateLock.readLock() )
+        try ( LockWrapper lock = readLock( updateLock ) )
         {
-            private final KeyValueStoreState<Key> state = AbstractKeyValueStore.this.state;
-
-            @Override
-            public void apply( Key key, ValueUpdate update ) throws IOException
-            {
-                ensureSameThread();
-                state.apply( key, update, false );
-            }
-        };
+            return state.unsafeUpdater( lock.get() );
+        }
     }
 
     protected final EntryUpdater<Key> resetter()
     {
-        return new EntryUpdater<Key>( updateLock.writeLock() )
+        try ( LockWrapper lock = writeLock( updateLock ) )
         {
-            private final KeyValueStoreState<Key> state = AbstractKeyValueStore.this.state;
-
+            return state.resetter( lock.get(), new Runnable()
             {
-                if ( state.hasChanges() )
+                @Override
+                public void run()
                 {
-                    close();
-                    throw new IllegalStateException( "Cannot reset when there are changes!" );
+                    try
+                    {
+                        prepareRotation( version( headers() ) ).rotate();
+                    }
+                    catch ( IOException e )
+                    {
+                        throw new UnderlyingStorageException( e );
+                    }
                 }
-            }
-
-            @Override
-            public void apply( Key key, ValueUpdate update ) throws IOException
-            {
-                ensureOpen();
-                state.apply( key, update, true );
-            }
-        };
+            } );
+        }
     }
 
-    protected final void rotate( HeaderChanges headerChanges ) throws IOException
+    /**
+     * Prepare for rotation. Sets up the internal structures to ensure that all changes up to and including the changes
+     * of the specified version are applied before rotation takes place. This method does not block, however if all
+     * required changes have not been applied {@linkplain PreparedRotation#rotate() the rotate method} will block
+     * waiting for all changes to be applied. Invoking {@linkplain PreparedRotation#rotate() the rotate method} some
+     * time after all requested transactions have been applied is ok, since setting the store up for rotation does
+     * not block updates, it just sorts them into updates that apply before rotation and updates that apply after.
+     *
+     * @param version the smallest version to include in the rotation. Note that the actual rotated version might be a
+     *                later version than this version. The actual rotated version is returned by
+     *                {@link PreparedRotation#rotate()}.
+     */
+    protected final PreparedRotation prepareRotation( final long version )
     {
         try ( LockWrapper ignored = writeLock( updateLock ) )
         {
-            KeyValueStoreState<Key> current = state;
-            if ( !current.hasChanges() )
+            ProgressiveState<Key> prior = state;
+            if ( prior.storedVersion() == version && !prior.hasChanges() )
             {
-                if ( !hasHeaderChanges( current.headers(), headerChanges ) )
+                return new PreparedRotation()
                 {
-                    return;
-                }
+                    @Override
+                    public long rotate() throws IOException
+                    {
+                        return version;
+                    }
+                };
             }
-            state = state.rotate( updateHeaders( current.headers(), headerChanges ) );
+            final RotationState<Key> rotation = prior.prepareRotation( version );
+            state = rotation;
+            return new PreparedRotation()
+            {
+                @Override
+                public long rotate() throws IOException
+                {
+                    final long version = rotation.version();
+                    ProgressiveState<Key> next = rotation.rotate( rotationStrategy, new Consumer<Headers.Builder>()
+                    {
+                        @Override
+                        public void accept( Headers.Builder value )
+                        {
+                            updateHeaders( value, version );
+                        }
+                    } );
+                    try ( LockWrapper ignored = writeLock( updateLock ) )
+                    {
+                        state = next;
+                    }
+                    return version;
+                }
+            };
         }
     }
+
+    protected abstract void updateHeaders( Headers.Builder headers, long version );
 
     @Override
     public final void shutdown() throws IOException
     {
-        state = state.shutdown();
+        state = state.stop();
     }
 
     private boolean transfer( EntryVisitor<WritableBuffer> producer, EntryVisitor<ReadableBuffer> consumer )
@@ -293,6 +317,8 @@ public abstract class AbstractKeyValueStore<Key, HeaderChanges> extends Lifecycl
         return format.defaultHeaderFieldsForFormat( formatSpecifier );
     }
 
+    protected abstract long version( Headers headers );
+
     private final class Format extends ProgressiveFormat implements KeyFormat<Key>
     {
         Format( HeaderField<?>... headerFields )
@@ -336,15 +362,21 @@ public abstract class AbstractKeyValueStore<Key, HeaderChanges> extends Lifecycl
         }
 
         @Override
-        public Headers initialHeaders()
+        public Headers initialHeaders( long version )
         {
-            return AbstractKeyValueStore.this.initialHeaders();
+            return AbstractKeyValueStore.this.initialHeaders( version );
         }
 
         @Override
         public int keySize()
         {
             return AbstractKeyValueStore.this.keySize;
+        }
+
+        @Override
+        public long version( Headers headers )
+        {
+            return AbstractKeyValueStore.this.version( headers );
         }
 
         @Override
@@ -384,30 +416,6 @@ public abstract class AbstractKeyValueStore<Key, HeaderChanges> extends Lifecycl
         public int valueSize()
         {
             return AbstractKeyValueStore.this.valueSize;
-        }
-
-        @Override
-        public void failedToOpenStoreFile( File path, Exception error )
-        {
-            AbstractKeyValueStore.this.failedToOpenStoreFile( path, error );
-        }
-
-        @Override
-        public void beforeRotation( File source, File target, Headers headers )
-        {
-            AbstractKeyValueStore.this.beforeRotation( source, target, headers );
-        }
-
-        @Override
-        public void rotationSucceeded( File source, File target, Headers headers )
-        {
-            AbstractKeyValueStore.this.rotationSucceeded( source, target, headers );
-        }
-
-        @Override
-        public void rotationFailed( File source, File target, Headers headers, Exception e )
-        {
-            AbstractKeyValueStore.this.rotationFailed( source, target, headers, e );
         }
     }
 }
