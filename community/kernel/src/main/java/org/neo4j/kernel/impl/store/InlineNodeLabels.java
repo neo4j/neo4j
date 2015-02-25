@@ -102,12 +102,6 @@ public class InlineNodeLabels implements NodeLabels
         return Collections.emptyList();
     }
 
-    @Override
-    public void ensureHeavy( NodeStore nodeStore )
-    {
-        // no dynamic records
-    }
-
     static boolean tryInlineInNodeRecord( NodeRecord node, long[] ids, Collection<DynamicRecord> changedDynamicRecords )
     {
         // We reserve the high header bit for future extensions of the format of the in-lined label bits

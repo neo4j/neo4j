@@ -35,7 +35,5 @@ public interface NodeLabels
 
     Collection<DynamicRecord> remove( long labelId, NodeStore nodeStore );
 
-    void ensureHeavy( NodeStore nodeStore );
-
     boolean isInlined();
 }

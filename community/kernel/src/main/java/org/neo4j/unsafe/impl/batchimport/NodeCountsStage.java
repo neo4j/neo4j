@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.api.CountsAccessor;
+import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
@@ -28,15 +29,14 @@ import org.neo4j.unsafe.impl.batchimport.staging.Stage;
  * Reads all records from {@link RelationshipStore} and process the counts in them. Uses a {@link NodeLabelsCache}
  * previously populated by f.ex {@link ProcessNodeCountsDataStep}.
  */
-public class RelationshipCountsStage extends Stage
+public class NodeCountsStage extends Stage
 {
-    public RelationshipCountsStage( Configuration config, NodeLabelsCache cache, RelationshipStore relationshipStore,
-            int highLabelId, int highRelationshipTypeId, CountsAccessor.Updater countsUpdater )
+    public NodeCountsStage( Configuration config, NodeLabelsCache cache, NodeStore nodeStore,
+            int highLabelId, CountsAccessor.Updater countsUpdater )
     {
-        super( "Relationship counts", config, false );
-        add( new ReadRelationshipCountsDataStep( control(), config.batchSize(), config.movingAverageSize(),
-                relationshipStore ) );
-        add( new ProcessRelationshipCountsDataStep( control(), cache, config.workAheadSize(),
-                config.movingAverageSize(), highLabelId, highRelationshipTypeId, countsUpdater ) );
+        super( "Node counts", config, false );
+        add( new ReadNodeCountsDataStep( control(), config.batchSize(), config.movingAverageSize(), nodeStore ) );
+        add( new ProcessNodeCountsDataStep( control(), cache, config.workAheadSize(),
+                config.movingAverageSize(), nodeStore, highLabelId, countsUpdater ) );
     }
 }

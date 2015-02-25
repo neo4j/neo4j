@@ -22,8 +22,7 @@ package org.neo4j.kernel.impl.store;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
-import org.neo4j.unsafe.impl.batchimport.NodeCountsProcessor;
-import org.neo4j.unsafe.impl.batchimport.NodeStoreProcessorStage;
+import org.neo4j.unsafe.impl.batchimport.NodeCountsStage;
 import org.neo4j.unsafe.impl.batchimport.RelationshipCountsStage;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
@@ -72,9 +71,8 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
         try
         {
             // Count nodes
-            superviseDynamicExecution( new NodeStoreProcessorStage( "COUNT NODES", Configuration.DEFAULT, nodes,
-                                                                    new NodeCountsProcessor( nodes, cache, highLabelId,
-                                                                                             countsUpdater ) ) );
+            superviseDynamicExecution( new NodeCountsStage( Configuration.DEFAULT, cache, nodes,
+                                                            highLabelId, countsUpdater ) );
             // Count relationships
             superviseDynamicExecution( new RelationshipCountsStage( Configuration.DEFAULT, cache, relationships,
                                                                     highLabelId, highRelationshipTypeId,
