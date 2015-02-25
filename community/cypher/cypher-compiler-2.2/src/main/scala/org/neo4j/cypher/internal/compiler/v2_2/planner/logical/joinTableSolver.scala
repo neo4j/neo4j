@@ -19,13 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{PatternRelationship, IdName}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 
-trait Solvable
-final case class SolvableRelationship(rel: PatternRelationship) extends Solvable
-final case class SolvableBlock(solvables: Set[Solvable]) extends Solvable
+object joinTableSolver extends ExhaustiveTableSolver {
 
-object Solvables {
-  def apply(qg: QueryGraph): Set[Solvable] = qg.patternRelationships.map(SolvableRelationship)
+  import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer.planNodeHashJoin
+
+  override def apply(goal: Set[Solvable], table: Set[Solvable] => Option[LogicalPlan]): Set[LogicalPlan] = {
+    val result = for (
+      leftGoal <- goal.subsets;
+      lhs <- table(leftGoal);
+      rightGoal = goal -- leftGoal;
+      rhs <- table(rightGoal);
+      overlap = lhs.availableSymbols intersect rhs.availableSymbols if overlap.nonEmpty
+    ) yield Set(
+      planNodeHashJoin(overlap, lhs, rhs),
+      planNodeHashJoin(overlap, rhs, lhs)
+    )
+    result.flatten.toSet
+  }
 }

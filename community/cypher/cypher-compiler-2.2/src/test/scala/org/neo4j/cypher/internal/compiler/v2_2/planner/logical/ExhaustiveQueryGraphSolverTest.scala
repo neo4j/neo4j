@@ -20,112 +20,169 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{Equals, HasLabels, LabelName}
+import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport2, PlannerQuery, QueryGraph, Selections}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{Selections, LogicalPlanningTestSupport2, QueryGraph}
 import org.neo4j.graphdb.Direction
 
-import scala.collection.{Map, immutable}
+import scala.collection.immutable
 
-//class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
-//
-//  private val A = IdName("a")
-//
-//  test("should plan for a single node pattern") {
-//    new given {
-//      queryGraphSolver = ExhaustiveQueryGraphSolver.withDefaults()
-//      qg = QueryGraph(patternNodes = Set("a"))
-//    }.withLogicalPlanningContext { (cfg, ctx) =>
-//      implicit val x = ctx
-//
-//      queryGraphSolver.plan(cfg.qg) should equal(
-//        AllNodesScan("a", Set.empty)(null)
-//      )
-//    }
-//  }
-//
-//  test("should plan for a single relationship pattern") {
-//    new given {
-//      queryGraphSolver = ExhaustiveQueryGraphSolver.withDefaults()
-//      qg = QueryGraph(
-//        patternNodes = Set("a", "b"),
-//        patternRelationships = Set(PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)),
-//        selections = Selections.from(HasLabels(ident("b"), Seq(LabelName("B")(pos)))(pos))
-//      )
-//
-//      labelCardinality = immutable.Map(
-//        "B" -> Cardinality(10)
-//      )
-//    }.withLogicalPlanningContext { (cfg, ctx) =>
-//      implicit val x = ctx
-//
-//      queryGraphSolver.plan(cfg.qg) should equal(
-//        Expand(NodeByLabelScan("b", LazyLabel("B"), Set.empty)(null), "b", Direction.INCOMING, Seq.empty, "a", "r")(null)
-//      )
-//    }
-//  }
-//
-//  test("should plan for a single relationship pattern with labels on both sides") {
-//    val labelBPredicate = HasLabels(ident("b"), Seq(LabelName("B")(pos)))(pos)
-//    new given {
-//      queryGraphSolver = ExhaustiveQueryGraphSolver.withDefaults()
-//      qg = QueryGraph(
-//        patternNodes = Set("a", "b"),
-//        patternRelationships = Set(PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)),
-//        selections = Selections.from(
-//          HasLabels(ident("a"), Seq(LabelName("A")(pos)))(pos),
-//          labelBPredicate)
-//      )
-//
-//      labelCardinality = immutable.Map(
-//        "A" -> Cardinality(10),
-//        "B" -> Cardinality(1000)
-//      )
-//    }.withLogicalPlanningContext { (cfg, ctx) =>
-//      implicit val x = ctx
-//
-//      queryGraphSolver.plan(cfg.qg) should equal(
-//        Selection(Seq(labelBPredicate),
-//          Expand(
-//            NodeByLabelScan("a", LazyLabel("A"), Set.empty)(null), "a", Direction.OUTGOING, Seq.empty, "b", "r")(null)
-//        )(null))
-//    }
-//
-//  }
-//
-//  test("should plan for a join between two pattern relationships") {
-//    // MATCH (a:A)-[r1]->(c)-[r2]->(b:B)
-//    new given {
-//      queryGraphSolver = ExhaustiveQueryGraphSolver.withDefaults()
-//      qg = QueryGraph(
-//        patternNodes = Set("a", "b", "c"),
-//        patternRelationships = Set(
-//          PatternRelationship("r1", ("a", "c"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
-//          PatternRelationship("r2", ("c", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
-//        ),
-//        selections = Selections.from(
-//          HasLabels(ident("a"), Seq(LabelName("A")(pos)))(pos),
-//          HasLabels(ident("b"), Seq(LabelName("B")(pos)))(pos))
-//      )
-//
-//      labelCardinality = immutable.Map(
-//        "A" -> Cardinality(10),
-//        "B" -> Cardinality(10)
-//      )
-//    }.withLogicalPlanningContext { (cfg, ctx) =>
-//      implicit val x = ctx
-//
-//      queryGraphSolver.plan(cfg.qg) should equal(
-//        NodeHashJoin(Set("c"),
-//          Expand(
-//            NodeByLabelScan("a", LazyLabel("A"), Set.empty)(null), "a", Direction.OUTGOING, Seq.empty, "c", "r1")(null),
-//          Expand(
-//            NodeByLabelScan("b", LazyLabel("B"), Set.empty)(null), "b", Direction.INCOMING, Seq.empty, "c", "r2")(null)
-//        )(null))
-//    }
-//
-//  }
+class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+
+  private val A = IdName("a")
+
+  test("should plan for a single node pattern") {
+    new given {
+      queryGraphSolver = ExhaustiveQueryGraphSolver()
+      qg = QueryGraph(patternNodes = Set("a"))
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
+
+      queryGraphSolver.plan(cfg.qg) should equal(
+        AllNodesScan("a", Set.empty)(null)
+      )
+    }
+  }
+
+  test("should plan cartesian product between 3 pattern nodes") {
+    new given {
+      queryGraphSolver = ExhaustiveQueryGraphSolver()
+      qg = QueryGraph(
+        patternNodes = Set("a", "b", "c")
+      )
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
+
+      queryGraphSolver.plan(cfg.qg) should equal(
+        CartesianProduct(
+          CartesianProduct(
+            AllNodesScan("a", Set.empty)(null),
+            AllNodesScan("b", Set.empty)(null)
+          )(null),
+          AllNodesScan("c", Set.empty)(null)
+        )(null)
+      )
+    }
+  }
+
+  test("should plan for a single relationship pattern") {
+    new given {
+      queryGraphSolver = ExhaustiveQueryGraphSolver()
+      qg = QueryGraph(
+        patternNodes = Set("a", "b"),
+        patternRelationships = Set(PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)),
+        selections = Selections.from(HasLabels(ident("b"), Seq(LabelName("B")(pos)))(pos))
+      )
+
+      labelCardinality = immutable.Map(
+        "B" -> Cardinality(10)
+      )
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
+
+      queryGraphSolver.plan(cfg.qg) should equal(
+        Expand(NodeByLabelScan("b", LazyLabel("B"), Set.empty)(null), "b", Direction.INCOMING, Seq.empty, "a", "r")(null)
+      )
+    }
+  }
+
+  test("should plan for a single relationship pattern with labels on both sides") {
+    val labelBPredicate = HasLabels(ident("b"), Seq(LabelName("B")(pos)))(pos)
+    new given {
+      queryGraphSolver = ExhaustiveQueryGraphSolver()
+      qg = QueryGraph(
+        patternNodes = Set("a", "b"),
+        patternRelationships = Set(PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)),
+        selections = Selections.from(
+          HasLabels(ident("a"), Seq(LabelName("A")(pos)))(pos),
+          labelBPredicate)
+      )
+
+      labelCardinality = immutable.Map(
+        "A" -> Cardinality(10),
+        "B" -> Cardinality(1000)
+      )
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
+
+      queryGraphSolver.plan(cfg.qg) should equal(
+        Selection(Seq(labelBPredicate),
+          Expand(
+            NodeByLabelScan("a", LazyLabel("A"), Set.empty)(null), "a", Direction.OUTGOING, Seq.empty, "b", "r")(null)
+        )(null))
+    }
+  }
+
+  test("should plan for a join between two pattern relationships") {
+    // MATCH (a:A)-[r1]->(c)-[r2]->(b:B)
+    new given {
+      queryGraphSolver = ExhaustiveQueryGraphSolver(solvers = Seq(joinTableSolver))
+      qg = QueryGraph(
+        patternNodes = Set("a", "b", "c"),
+        patternRelationships = Set(
+          PatternRelationship("r1", ("a", "c"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
+          PatternRelationship("r2", ("c", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+        ),
+        selections = Selections.from(
+          HasLabels(ident("a"), Seq(LabelName("A")(pos)))(pos),
+          HasLabels(ident("b"), Seq(LabelName("B")(pos)))(pos))
+      )
+
+      labelCardinality = immutable.Map(
+        "A" -> Cardinality(10),
+        "B" -> Cardinality(10)
+      )
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
+
+      queryGraphSolver.plan(cfg.qg) should equal(
+        NodeHashJoin(Set("c"),
+          Expand(
+            NodeByLabelScan("a", LazyLabel("A"), Set.empty)(null), "a", Direction.OUTGOING, Seq.empty, "c", "r1")(null),
+          Expand(
+            NodeByLabelScan("b", LazyLabel("B"), Set.empty)(null), "b", Direction.INCOMING, Seq.empty, "c", "r2")(null)
+        )(null))
+    }
+  }
+
+  test("should plan for a join between two pattern relationships and apply a selection") {
+    // MATCH (a:A)-[r1]->(c)-[r2]->(b:B) WHERE r1.foo = r2.foo
+    new given {
+      val predicate = Equals(Property(ident("r1"), PropertyKeyName("foo")(pos))(pos), Property(ident("r2"), PropertyKeyName("foo")(pos))(pos))(pos)
+      queryGraphSolver = ExhaustiveQueryGraphSolver(solvers = Seq(joinTableSolver))
+      qg = QueryGraph(
+        patternNodes = Set("a", "b", "c"),
+        patternRelationships = Set(
+          PatternRelationship("r1", ("a", "c"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
+          PatternRelationship("r2", ("c", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+        ),
+        selections = Selections.from(
+          predicate,
+          HasLabels(ident("a"), Seq(LabelName("A")(pos)))(pos),
+          HasLabels(ident("b"), Seq(LabelName("B")(pos)))(pos))
+      )
+
+      labelCardinality = immutable.Map(
+        "A" -> Cardinality(10),
+        "B" -> Cardinality(10)
+      )
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
+
+      queryGraphSolver.plan(cfg.qg) should equal(
+        Selection(Seq(cfg.predicate),
+          NodeHashJoin(Set("c"),
+            Expand(
+              NodeByLabelScan("a", LazyLabel("A"), Set.empty)(null), "a", Direction.OUTGOING, Seq.empty, "c", "r1")(null),
+            Expand(
+              NodeByLabelScan("b", LazyLabel("B"), Set.empty)(null), "b", Direction.INCOMING, Seq.empty, "c", "r2")(null)
+          )(null)
+        )(null)
+      )
+    }
+  }
+
 //
 //  test("should plan a simple argument row when everything is covered") {
 //    new given {
@@ -181,7 +238,8 @@ import scala.collection.{Map, immutable}
 //
 //  }
 //
-//  test("should plan cartesian product between 3 pattern nodes") {
+//
+//  test("should plan cartesian product between 3 pattern nodes and using a single predicate between 2 pattern nodes") {
 //    new given {
 //      queryGraphSolver = ExhaustiveQueryGraphSolver.withDefaults()
 //      qg = QueryGraph(
@@ -202,7 +260,6 @@ import scala.collection.{Map, immutable}
 //        )(null)
 //      )
 //    }
-//
 //  }
 //
 //  test("should plan cartesian product between 1 pattern nodes and 1 pattern relationship") {
@@ -361,4 +418,4 @@ import scala.collection.{Map, immutable}
 //      )
 //    }
 //  }
-//}
+}

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps._
 
 case class PlanningStrategyConfiguration(
@@ -27,7 +28,15 @@ case class PlanningStrategyConfiguration(
   applySelections: PlanTransformer[QueryGraph],
   projectAllEndpoints: PlanTransformer[QueryGraph],
   pickBestCandidate: CandidateSelector
-)
+) {
+
+  def kit(implicit context: LogicalPlanningContext) = (qg: QueryGraph) =>
+    PlanningStrategyKit(
+      select = plan => applySelections(plan, qg)
+    )
+}
+
+case class PlanningStrategyKit(select: LogicalPlan => LogicalPlan)
 
 object PlanningStrategyConfiguration {
   val default = PlanningStrategyConfiguration(

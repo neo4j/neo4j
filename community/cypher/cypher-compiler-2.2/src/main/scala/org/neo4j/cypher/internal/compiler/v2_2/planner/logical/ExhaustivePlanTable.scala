@@ -19,13 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{PatternRelationship, IdName}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 
-trait Solvable
-final case class SolvableRelationship(rel: PatternRelationship) extends Solvable
-final case class SolvableBlock(solvables: Set[Solvable]) extends Solvable
+import scala.collection.mutable
 
-object Solvables {
-  def apply(qg: QueryGraph): Set[Solvable] = qg.patternRelationships.map(SolvableRelationship)
+class ExhaustivePlanTable extends (Set[Solvable] => Option[LogicalPlan]) {
+  private var table = new mutable.HashMap[Set[Solvable], LogicalPlan]()
+
+  def head = table.head._2
+
+  def apply(solved: Set[Solvable]): Option[LogicalPlan] = table.get(solved)
+
+  def put(solved: Set[Solvable], plan: LogicalPlan): Unit = {
+    table.put(solved, plan)
+  }
+
+  def remove(solved: Set[Solvable]): Unit = {
+    table.remove(solved)
+  }
 }

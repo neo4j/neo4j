@@ -77,13 +77,3 @@ object GreedyPlanTable {
     override def toString(): String = s"PlanTable:\n${m.toString()}"
   }
 }
-
-object ExhaustivePlanTable {
-  def empty: PlanTable = new ExhaustivePlanTable()
-  def apply(plans: LogicalPlan*): PlanTable = plans.foldLeft(empty)(_ + _)
-
-  private case class ExhaustivePlanTable(m: mutable.Map[QueryGraph, LogicalPlan] = mutable.Map.empty) extends PlanTable {
-    override def +(newPlan: LogicalPlan): PlanTable = { m += (newPlan.solved.lastQueryGraph -> newPlan) ; this }
-  }
-}
-

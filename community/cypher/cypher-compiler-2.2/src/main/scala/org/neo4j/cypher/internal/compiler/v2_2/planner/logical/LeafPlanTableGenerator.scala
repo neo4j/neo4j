@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{LogicalLeafPlan, LogicalPlan}
 
 case class LeafPlanTableGenerator(config: PlanningStrategyConfiguration) extends PlanTableGenerator {
   def apply(queryGraph: QueryGraph, leafPlan: Option[LogicalPlan])(implicit context: LogicalPlanningContext): PlanTable = {
@@ -30,8 +30,7 @@ case class LeafPlanTableGenerator(config: PlanningStrategyConfiguration) extends
   }
 }
 
-object leafPlanOptions
-  extends LogicalPlanningFunction2[PlanningStrategyConfiguration, QueryGraph, Iterable[LogicalPlan]] {
+object leafPlanOptions extends LogicalLeafPlan.Finder {
 
   def apply(config: PlanningStrategyConfiguration, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Iterable[LogicalPlan] = {
     val select = config.applySelections.asFunctionInContext
