@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -29,12 +26,21 @@ import org.apache.lucene.index.SnapshotDeletionPolicy;
 import org.apache.lucene.util.Version;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+
 import org.neo4j.graphdb.ResourceIterator;
 
-import static java.util.Arrays.asList;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.TestCase.assertFalse;
-import static org.mockito.Mockito.*;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
+import static java.util.Arrays.asList;
 
 public class LuceneSnapshotterTest
 {

@@ -19,13 +19,14 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.SnapshotDeletionPolicy;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 
-import org.apache.lucene.index.IndexCommit;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.SnapshotDeletionPolicy;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 
@@ -58,7 +59,7 @@ public class LuceneSnapshotter
     {
         private final File indexDirectory;
         private final SnapshotDeletionPolicy deletionPolicy;
-        private Iterator<String> fileNames;
+        private final Iterator<String> fileNames;
 
         LuceneSnapshotIterator( File indexDirectory, IndexCommit snapshotPoint, SnapshotDeletionPolicy deletionPolicy )
                 throws IOException

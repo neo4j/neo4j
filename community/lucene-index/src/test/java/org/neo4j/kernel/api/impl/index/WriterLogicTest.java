@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
@@ -33,6 +30,9 @@ import org.apache.lucene.util.Version;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
 
 import static org.junit.Assert.assertTrue;
 
@@ -48,21 +48,21 @@ public class WriterLogicTest
         IndexWriter writer = newWriter();
         writer.addDocument( newDocument() );
         logic.commitAsOnline( writer );
-        
+
         // WHEN
         writer.close( true );
 
         // THEN
         assertTrue( "Should have had online status set", logic.isOnline( directory ) );
     }
-    
+
     @Test
     public void forceShouldKeepOnlineStatus() throws Exception
     {
         // GIVEN
         IndexWriter writer = newWriter();
         logic.commitAsOnline( writer );
-        
+
         // WHEN
         writer.addDocument( newDocument() );
         logic.commitAsOnline( writer );
@@ -71,7 +71,7 @@ public class WriterLogicTest
         // THEN
         assertTrue( "Should have had online status set", logic.isOnline( directory ) );
     }
-    
+
     @Test
     public void otherWriterSessionShouldKeepOnlineStatusEvenIfNotForcingBeforeClosing() throws Exception
     {
@@ -79,7 +79,7 @@ public class WriterLogicTest
         IndexWriter writer = newWriter();
         logic.commitAsOnline( writer );
         writer.close( true );
-        
+
         // WHEN
         writer = newWriter();
         writer.addDocument( newDocument() );
@@ -88,11 +88,11 @@ public class WriterLogicTest
         // THEN
         assertTrue( "Should have had online status set", logic.isOnline( directory ) );
     }
-    
+
     private final IndexWriterStatus logic = new IndexWriterStatus();
     private Directory directory;
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
-    
+
     @Before
     public void before() throws Exception
     {
@@ -105,12 +105,12 @@ public class WriterLogicTest
     {
         dirFactory.close();
     }
-    
+
     private IndexWriter newWriter() throws IOException
     {
         return new IndexWriter( directory, new IndexWriterConfig( Version.LUCENE_35, KEYWORD_ANALYZER ) );
     }
-    
+
     private Document newDocument()
     {
         Document doc = new Document();

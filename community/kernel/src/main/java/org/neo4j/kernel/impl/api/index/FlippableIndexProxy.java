@@ -45,10 +45,15 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 
 public class FlippableIndexProxy implements IndexProxy
 {
-    private boolean closed;
+    private volatile boolean closed;
     private final ReadWriteLock lock = new ReentrantReadWriteLock( true );
-    private IndexProxyFactory flipTarget;
-    private IndexProxy delegate;
+    private volatile IndexProxyFactory flipTarget;
+    // This variable below is volatile because it can be changed in flip or flipTo
+    // and even though it may look like acquiring the read lock, when using this variable
+    // for various things, execution flow would go through a memory barrier of some sort.
+    // But it turns out that that may not be the case. F.ex. ReentrantReadWriteLock
+    // code uses unsafe compareAndSwap that sort of circumvents an equivalent of a volatile read.
+    private volatile IndexProxy delegate;
 
     public FlippableIndexProxy()
     {
