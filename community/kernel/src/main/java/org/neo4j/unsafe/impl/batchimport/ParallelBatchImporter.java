@@ -57,7 +57,6 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Utils.idsOf;
 import static org.neo4j.unsafe.impl.batchimport.WriterFactories.parallel;
@@ -68,7 +67,7 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.sup
  * {@link BatchImporter} which tries to exercise as much of the available resources to gain performance.
  * Or rather ensure that the slowest resource (usually I/O) is fully saturated and that enough work is
  * being performed to keep that slowest resource saturated all the time.
- *
+ * <p/>
  * Overall goals: split up processing cost by parallelizing. Keep CPUs busy, keep I/O busy and writing sequentially.
  * I/O is only allowed to be read to and written from sequentially, any random access drastically reduces performance.
  * Goes through multiple stages where each stage has one or more steps executing in parallel, passing
@@ -129,7 +128,7 @@ public class ParallelBatchImporter implements BatchImporter
         File badRelationshipsFile = new File( config.badFileName() );
         boolean hasBadRelationships = false;
         try ( BatchingNeoStore neoStore = new BatchingNeoStore( fileSystem, storeDir, config,
-                      writeMonitor, logging, monitors, writerFactory, additionalInitialIds );
+                writeMonitor, logging, monitors, writerFactory, additionalInitialIds );
               OutputStream badRelationshipsOutput = new BufferedOutputStream(
                       fileSystem.openAsOutputStream( badRelationshipsFile, false ) );
               Collector<InputRelationship> badRelationships =
@@ -190,17 +189,17 @@ public class ParallelBatchImporter implements BatchImporter
             // Determine if we have enough available memory to be able to execute all remaining processors
             // in parallel.
             if ( disableParallelizationSinceItCausesWrongCountsComputations() &&
-                    enoughAvailableMemoryForRemainingProcessors( nodeRelationshipLink ) )
+                 enoughAvailableMemoryForRemainingProcessors( nodeRelationshipLink ) )
             {
                 // Stages 4, 5, 6 and 7
                 executeStages( new NodeStoreProcessorStage( "Node --> Relationship + Node counts", config,
                         neoStore.getNodeStore(), new StoreProcessor.Multiple<>(
-                                nodeFirstRelationshipProcessor, nodeCountsProcessor ) ) );
+                        nodeFirstRelationshipProcessor, nodeCountsProcessor ) ) );
                 nodeRelationshipLink.clearRelationships();
                 executeStages( new RelationshipStoreProcessorStage(
                         "Relationship --> Relationship + Relationship counts", config,
                         neoStore.getRelationshipStore(), new StoreProcessor.Multiple<>(
-                                relationshipLinkerProcessor, relationshipCountsProcessor ) ) );
+                        relationshipLinkerProcessor, relationshipCountsProcessor ) ) );
             }
             else
             {
@@ -233,7 +232,7 @@ public class ParallelBatchImporter implements BatchImporter
             if ( hasBadRelationships )
             {
                 logger.warn( "There were " + badRelationships.badEntries() + " bad relationships which were skipped " +
-                        "and logged into " + badRelationshipsFile.getAbsolutePath() );
+                             "and logged into " + badRelationshipsFile.getAbsolutePath() );
             }
         }
         catch ( Throwable t )
@@ -283,7 +282,7 @@ public class ParallelBatchImporter implements BatchImporter
     public class NodeStage extends Stage
     {
         public NodeStage( InputIterable<InputNode> nodes, IdMapper idMapper, IdGenerator idGenerator,
-                          BatchingNeoStore neoStore )
+                BatchingNeoStore neoStore )
         {
             super( "Nodes", config, idGenerator.dependsOnInput() );
             add( new InputIteratorBatcherStep<>( control(), config.batchSize(), config.movingAverageSize(),
@@ -291,7 +290,8 @@ public class ParallelBatchImporter implements BatchImporter
 
             NodeStore nodeStore = neoStore.getNodeStore();
             PropertyStore propertyStore = neoStore.getPropertyStore();
-            add( new PropertyEncoderStep<>( control(), config, 1, neoStore.getPropertyKeyRepository(), propertyStore ) );
+            add( new PropertyEncoderStep<>( control(), config, 1, neoStore.getPropertyKeyRepository(),
+                    propertyStore ) );
             add( new NodeEncoderStep( control(), config, idMapper, idGenerator,
                     neoStore.getLabelRepository(), nodeStore, idsOf( nodes ) ) );
             add( new EntityStoreUpdaterStep<>( control(), config, nodeStore, propertyStore,
@@ -326,7 +326,8 @@ public class ParallelBatchImporter implements BatchImporter
             RelationshipStore relationshipStore = neoStore.getRelationshipStore();
             PropertyStore propertyStore = neoStore.getPropertyStore();
             add( new RelationshipPreparationStep( control(), config, idMapper ) );
-            add( new PropertyEncoderStep<>( control(), config, 1, neoStore.getPropertyKeyRepository(), propertyStore ) );
+            add( new PropertyEncoderStep<>( control(), config, 1, neoStore.getPropertyKeyRepository(),
+                    propertyStore ) );
             add( new RelationshipEncoderStep( control(), config,
                     neoStore.getRelationshipTypeRepository(), relationshipStore, nodeRelationshipLink, specificIds ) );
             add( new EntityStoreUpdaterStep<>( control(), config,

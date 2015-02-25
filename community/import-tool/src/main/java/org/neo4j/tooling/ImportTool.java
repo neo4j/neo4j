@@ -67,6 +67,7 @@ import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.data;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
+import static java.lang.System.out;
 
 /**
  * User-facing command line tool around a {@link BatchImporter}.
@@ -251,8 +252,9 @@ public class ImportTool
         Logging logging = life.add( new ClassicLoggingService(
                 new Config( stringMap( store_dir.name(), storeDir.getAbsolutePath() ) ) ) );
         life.start();
+        org.neo4j.unsafe.impl.batchimport.Configuration config = importConfiguration( processors, badFileName );
         BatchImporter importer = new ParallelBatchImporter( storeDir.getPath(),
-                importConfiguration( processors, badFileName ),
+                config,
                 logging,
                 ExecutionMonitors.defaultVisible() );
         boolean success = false;
@@ -267,6 +269,13 @@ public class ImportTool
         }
         finally
         {
+            File badRelationships = new File( config.badFileName() );
+            if ( badRelationships.exists() )
+            {
+                out.println("There were bad relationships which were skipped " +
+                            "and logged into " + badRelationships.getAbsolutePath());
+            }
+
             life.shutdown();
             if ( !success )
             {
