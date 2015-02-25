@@ -30,8 +30,6 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
-import java.lang.ref.Reference;
-import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
@@ -51,11 +49,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
 import java.util.zip.ZipEntry;
@@ -1024,13 +1019,6 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     {
         private static final int[] SIZES;
         private static final byte[] zeroBuffer = new byte[1024];
-        /**
-         * Holds a set of pools of unused BytBuffers, where pools are implemented by {@link Queue}s.
-         * Each pool contains only {@link ByteBuffer} of the same size. This way, we have pools for
-         * different sized {@link ByteBuffer}, and can pick an available byte buffer that suits what
-         * we want to store quickly.
-         */
-        private static volatile AtomicReferenceArray<Queue<Reference<ByteBuffer>>> POOLS;
         private ByteBuffer buf;
 
         public DynamicByteBuffer()
@@ -1044,30 +1032,6 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             int sizeIndex = sizeIndexFor( toClone.capacity() );
             buf = allocate( sizeIndex );
             copyByteBufferContents( toClone, buf );
-        }
-
-        private static synchronized Queue<Reference<ByteBuffer>> getOrCreatePoolForSize( int sizeIndex )
-        {
-            AtomicReferenceArray<Queue<Reference<ByteBuffer>>> pools = POOLS;
-            if ( sizeIndex >= pools.length() )
-            {
-                int newSize = pools.length();
-                while ( sizeIndex >= newSize )
-                {
-                    newSize <<= 1;
-                }
-                AtomicReferenceArray<Queue<Reference<ByteBuffer>>> newPool = new AtomicReferenceArray<>( newSize );
-                for ( int i = 0; i < pools.length(); i++ )
-                {
-                    newPool.set( i, pools.get( i ) );
-                }
-                for ( int i = pools.length(); i < newPool.length(); i++ )
-                {
-                    newPool.set( i, new ConcurrentLinkedQueue<Reference<ByteBuffer>>() );
-                }
-                POOLS = pools = newPool;
-            }
-            return pools.get( sizeIndex );
         }
 
         private static int sizeIndexFor( int capacity )
@@ -1100,12 +1064,6 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         {
             int K = 1024;
             SIZES = new int[]{64 * K, 128 * K, 256 * K, 512 * K, 1024 * K};
-
-            POOLS = new AtomicReferenceArray<>( SIZES.length );
-            for ( int sizeIndex = 0; sizeIndex < SIZES.length; sizeIndex++ )
-            {
-                POOLS.set( sizeIndex, new ConcurrentLinkedQueue<Reference<ByteBuffer>>() );
-            }
         }
 
         private void copyByteBufferContents( ByteBuffer from, ByteBuffer to )
@@ -1131,33 +1089,9 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
          */
         private ByteBuffer allocate( int sizeIndex )
         {
-            for ( int enlargement = 0; enlargement < 2; enlargement++ )
-            {
-                AtomicReferenceArray<Queue<Reference<ByteBuffer>>> pools = POOLS;
-                if ( sizeIndex + enlargement < pools.length() )
-                {
-                    Queue<Reference<ByteBuffer>> queue = pools.get( sizeIndex + enlargement );
-                    if ( queue != null )
-                    {
-                        for (; ; )
-                        {
-                            Reference<ByteBuffer> ref = queue.poll();
-                            if ( ref == null )
-                            {
-                                break;
-                            }
-                            ByteBuffer buffer = ref.get();
-                            if ( buffer != null )
-                            {
-                                return buffer;
-                            }
-                        }
-                    }
-                }
-            }
-            return ByteBuffer.allocateDirect( (sizeIndex < SIZES.length) ? SIZES[sizeIndex]
-                                                                         : ((sizeIndex - SIZES.length + 1) *
-                                                                            SIZES[SIZES.length - 1]) );
+            int capacity = (sizeIndex < SIZES.length) ?
+                           SIZES[sizeIndex] : ((sizeIndex - SIZES.length + 1) * SIZES[SIZES.length - 1]);
+            return ByteBuffer.allocateDirect( capacity );
         }
 
         void free()
@@ -1165,28 +1099,6 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             try
             {
                 clear();
-                int sizeIndex = buf.capacity() / SIZES[SIZES.length - 1];
-                if ( sizeIndex == 0 )
-                {
-                    for (; sizeIndex < SIZES.length; sizeIndex++ )
-                    {
-                        if ( buf.capacity() == SIZES[sizeIndex] )
-                        {
-                            break;
-                        }
-                    }
-                }
-                else
-                {
-                    sizeIndex += SIZES.length - 1;
-                }
-                AtomicReferenceArray<Queue<Reference<ByteBuffer>>> pools = POOLS;
-                // Use soft references to the buffers to allow the GC to reclaim
-                // unused buffers if memory gets scarce.
-                SoftReference<ByteBuffer> ref = new SoftReference<>( buf );
-
-                // Put our buffer into a pool, create a pool for the buffer size if one does not exist
-                (sizeIndex < pools.length() ? pools.get( sizeIndex ) : getOrCreatePoolForSize( sizeIndex )).add( ref );
             }
             finally
             {
@@ -1344,14 +1256,6 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         public CombiningIterator( Iterator<? extends Iterator<T>> iterators )
         {
             this.iterators = iterators;
-        }
-
-        public CombiningIterator( T first, Iterator<T> rest )
-        {
-            this( Collections.<Iterator<T>>emptyList() );
-            this.hasFetchedNext = true;
-            this.nextObject = first;
-            this.currentIterator = rest;
         }
 
         @Override
