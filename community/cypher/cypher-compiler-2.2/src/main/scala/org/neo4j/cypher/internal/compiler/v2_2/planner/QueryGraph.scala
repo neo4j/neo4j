@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.Expressi
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 
-import scala.collection.GenTraversableOnce
+import scala.collection.{mutable, GenTraversableOnce}
 
 case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty,
                       patternNodes: Set[IdName] = Set.empty,
@@ -136,6 +136,55 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   def patternNodeLabels: Map[IdName, Set[LabelName]] =
     patternNodes.collect { case node: IdName => node -> selections.labelsOnNode(node) }.toMap
+
+  /**
+   * Returns the connected patterns of this query graph where each connected pattern is represented by a QG.
+   * Does not include optional matches, shortest paths or predicates that have dependencies across multiple of the
+   * connected query graphs.
+   */
+  def connectedComponents: Seq[QueryGraph] = {
+    val visited = mutable.Set.empty[IdName]
+    patternNodes.toSeq.collect {
+      case patternNode if !visited(patternNode) =>
+        val qg = connectedComponentFor(patternNode, visited)
+        val coveredIds = qg.coveredIds
+        val predicates = selections.predicates.filter(_.dependencies.subsetOf(coveredIds))
+        val arguments = argumentIds
+        val filteredHints = hints.filter(h => coveredIds.contains(IdName(h.identifier.name)))
+        val shortestPaths = shortestPathPatterns.filter {
+          p => coveredIds.contains(p.rel.nodes._1) && coveredIds.contains(p.rel.nodes._2)
+        }
+        qg.
+          withSelections(Selections(predicates)).
+          withArgumentIds(arguments).
+          addHints(filteredHints).
+          addShortestPaths(shortestPaths.toSeq: _*)
+    }
+  }
+
+  private def connectedComponentFor(startNode: IdName, visited: mutable.Set[IdName]): QueryGraph = {
+    val queue = mutable.Queue(startNode)
+    var qg = QueryGraph.empty.withArgumentIds(argumentIds)
+    while (queue.nonEmpty) {
+      val node = queue.dequeue()
+      qg = if (visited(node)) {
+        qg
+      } else {
+        visited += node
+
+        val filteredPatterns = patternRelationships.filter { rel =>
+          rel.coveredIds.contains(node) && !qg.patternRelationships.contains(rel)
+        }
+
+        queue.enqueue(filteredPatterns.toSeq.map(_.otherSide(node)): _*)
+
+        qg
+          .addPatternNodes(node)
+          .addPatternRelationships(filteredPatterns.toSeq)
+      }
+    }
+    qg
+  }
 
   // This is here to stop usage of copy from the outside
   private def copy(patternRelationships: Set[PatternRelationship] = patternRelationships,
