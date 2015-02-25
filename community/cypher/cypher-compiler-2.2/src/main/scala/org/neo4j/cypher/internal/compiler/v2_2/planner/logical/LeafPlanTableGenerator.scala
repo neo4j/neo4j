@@ -24,6 +24,16 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 
 case class LeafPlanTableGenerator(config: PlanningStrategyConfiguration) extends PlanTableGenerator {
   def apply(queryGraph: QueryGraph, leafPlan: Option[LogicalPlan])(implicit context: LogicalPlanningContext): PlanTable = {
+    val bestLeafPlans = leafPlanOptions(config, queryGraph)
+    val startTable: PlanTable = leafPlan.foldLeft(context.strategy.emptyPlanTable)(_ + _)
+    bestLeafPlans.foldLeft(startTable)(_ + _)
+  }
+}
+
+object leafPlanOptions
+  extends LogicalPlanningFunction2[PlanningStrategyConfiguration, QueryGraph, Iterable[LogicalPlan]] {
+
+  def apply(config: PlanningStrategyConfiguration, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Iterable[LogicalPlan] = {
     val select = config.applySelections.asFunctionInContext
     val pickBest = config.pickBestCandidate.asFunctionInContext
     val projectAllEndpoints = config.projectAllEndpoints.asFunctionInContext
@@ -31,7 +41,6 @@ case class LeafPlanTableGenerator(config: PlanningStrategyConfiguration) extends
     val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph, projectAllEndpoints)
     val leafPlanCandidateListsWithSelections = leafPlanCandidateLists.map(_.map(select(_, queryGraph)))
     val bestLeafPlans: Iterable[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(pickBest(_))
-    val startTable: PlanTable = leafPlan.foldLeft(context.strategy.emptyPlanTable)(_ + _)
-    bestLeafPlans.foldLeft(startTable)(_ + _)
+    bestLeafPlans
   }
 }
