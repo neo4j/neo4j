@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import org.apache.lucene.index.IndexCommit;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
