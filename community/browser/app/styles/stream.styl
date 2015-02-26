@@ -175,7 +175,8 @@
           max-height: frame-result-height
           min-height: frame-min-height
           .table-holder
-            height: (frame-result-height - middlebar-height)
+            max-height: (frame-result-height - middlebar-height)
+            min-height: (frame-min-height - middlebar-height)
             overflow: auto
             background: #fff
 
