@@ -28,6 +28,11 @@ import org.neo4j.function.Consumer;
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.Clock;
 
+import static java.lang.String.format;
+import static java.lang.System.currentTimeMillis;
+
+import static org.neo4j.helpers.Format.duration;
+
 /**
  * A concurrent repository that allows users to manage objects with a specified timeout on idleness.
  * The repository owns the lifecycle of it's objects, granting clients exclusive access to them via its
@@ -38,13 +43,13 @@ import org.neo4j.helpers.Clock;
  */
 public class TimedRepository<KEY, VALUE> implements Runnable
 {
-    private final ConcurrentMap<KEY, Entry<VALUE>> repo = new ConcurrentHashMap<>();
+    private final ConcurrentMap<KEY, Entry> repo = new ConcurrentHashMap<>();
     private final Factory<VALUE> factory;
     private final Consumer<VALUE> reaper;
     private final long timeout;
     private final Clock clock;
 
-    private class Entry<VALUE>
+    private class Entry
     {
         static final int IDLE = 0, IN_USE = 1, MARKED_FOR_END = 2;
 
@@ -83,6 +88,13 @@ public class TimedRepository<KEY, VALUE> implements Runnable
         {
             return state.get() == MARKED_FOR_END;
         }
+
+        @Override
+        public String toString()
+        {
+            return format( "%s[%s last accessed at %d (%s ago)", getClass().getSimpleName(),
+                    value, latestActivityTimestamp, duration( currentTimeMillis()-latestActivityTimestamp ) );
+        }
     }
 
     public TimedRepository( Factory<VALUE> provider, Consumer<VALUE> reaper, long timeout, Clock clock )
@@ -96,10 +108,12 @@ public class TimedRepository<KEY, VALUE> implements Runnable
     public void begin( KEY key ) throws ConcurrentAccessException
     {
         VALUE instance = factory.newInstance();
-        if(repo.putIfAbsent( key, new Entry<>( instance ) ) != null)
+        Entry existing;
+        if ( (existing = repo.putIfAbsent( key, new Entry( instance ) )) != null )
         {
             reaper.accept( instance ); // Need to clear up our optimistically allocated value
-            throw new ConcurrentAccessException( String.format("Cannot begin '%s', because an entry with that key already exists.", key) );
+            throw new ConcurrentAccessException( String.format(
+                    "Cannot begin '%s', because %s with that key already exists.", key, existing ) );
         }
     }
 
@@ -111,7 +125,7 @@ public class TimedRepository<KEY, VALUE> implements Runnable
     {
         while(true)
         {
-            Entry<VALUE> entry = repo.get( key );
+            Entry entry = repo.get( key );
             if ( entry == null )
             {
                 return;
@@ -151,7 +165,7 @@ public class TimedRepository<KEY, VALUE> implements Runnable
 
     public VALUE acquire( KEY key ) throws NoSuchEntryException, ConcurrentAccessException
     {
-        Entry<VALUE> entry = repo.get( key );
+        Entry entry = repo.get( key );
         if(entry == null)
         {
             throw new NoSuchEntryException( String.format("Cannot access '%s', no such entry exists.", key) );
@@ -160,15 +174,12 @@ public class TimedRepository<KEY, VALUE> implements Runnable
         {
             return entry.value;
         }
-        else
-        {
-            throw new ConcurrentAccessException( String.format("Cannot access '%s', because another client is currently using it.", key) );
-        }
+        throw new ConcurrentAccessException( String.format("Cannot access '%s', because another client is currently using it.", key) );
     }
 
     public void release( KEY key )
     {
-        Entry<VALUE> entry = repo.get( key );
+        Entry entry = repo.get( key );
         if(!entry.release())
         {
             // This happens when another client has asked that this entry be ended while we were using it, leaving us
@@ -188,7 +199,7 @@ public class TimedRepository<KEY, VALUE> implements Runnable
         long maxAllowedAge = clock.currentTimeMillis() - timeout;
         for ( KEY key : keys() )
         {
-            Entry<VALUE> entry = repo.get( key );
+            Entry entry = repo.get( key );
             if(entry != null && entry.latestActivityTimestamp < maxAllowedAge)
             {
                 if(entry.acquire() && entry.latestActivityTimestamp < maxAllowedAge)

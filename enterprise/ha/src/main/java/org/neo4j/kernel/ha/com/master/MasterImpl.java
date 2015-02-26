@@ -324,7 +324,9 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
         catch ( ConcurrentAccessException e )
         {
-            throw new TransactionFailureException(Status.Transaction.ConcurrentRequest, "The lock session requested to start is already in use. Please retry your request in a few seconds." );
+            throw new TransactionFailureException( Status.Transaction.ConcurrentRequest, e,
+                    "The lock session requested to start is already in use. " +
+                    "Please retry your request in a few seconds." );
         }
         return spi.packTransactionObligationResponse( context, null );
     }

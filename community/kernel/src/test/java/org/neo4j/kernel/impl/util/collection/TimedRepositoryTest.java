@@ -19,27 +19,31 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.junit.Test;
 import org.neo4j.function.Consumer;
 import org.neo4j.function.Factory;
 import org.neo4j.test.ArtificialClock;
 
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class TimedRepositoryTest
 {
-    private AtomicLong valueGenerator = new AtomicLong();
-    private List<Long> reapedValues = new ArrayList<>();
+    private final AtomicLong valueGenerator = new AtomicLong();
+    private final List<Long> reapedValues = new ArrayList<>();
 
-    private Factory<Long> provider = new Factory<Long>()
+    private final Factory<Long> provider = new Factory<Long>()
     {
         @Override
         public Long newInstance()
@@ -47,7 +51,7 @@ public class TimedRepositoryTest
             return valueGenerator.getAndIncrement();
         }
     };
-    private Consumer<Long> consumer = new Consumer<Long>()
+    private final Consumer<Long> consumer = new Consumer<Long>()
     {
         @Override
         public void accept( Long value )
@@ -59,7 +63,6 @@ public class TimedRepositoryTest
     private final long timeout = 100;
     private final ArtificialClock clock = new ArtificialClock();
     private final TimedRepository<Long, Long> repo = new TimedRepository<>( provider, consumer, timeout, clock );
-
 
     @Test
     public void shouldManageLifecycleWithNoTimeouts() throws Exception
@@ -165,7 +168,8 @@ public class TimedRepositoryTest
             fail( "Should not have been able to begin." );
         } catch( ConcurrentAccessException e )
         {
-            assertThat(e.getMessage(), equalTo("Cannot begin '1', because an entry with that key already exists."));
+            assertThat(e.getMessage(), containsString("Cannot begin '1', because Entry") );
+            assertThat(e.getMessage(), containsString(" with that key already exists."));
         }
     }
 
@@ -216,8 +220,9 @@ public class TimedRepositoryTest
         } catch( ConcurrentAccessException e )
         {
 
-        // Then
-            assertThat(e.getMessage(), equalTo("Cannot begin '1', because an entry with that key already exists."));
+            // Then
+            assertThat(e.getMessage(), containsString("Cannot begin '1', because Entry") );
+            assertThat(e.getMessage(), containsString(" with that key already exists."));
         }
         assertThat(reapedValues, equalTo(asList(1l)));
     }

@@ -26,6 +26,8 @@ import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongObjectVisitor;
 import org.neo4j.kernel.impl.locking.Locks;
 
+import static java.lang.String.format;
+
 public class CommunityLockClient implements Locks.Client
 {
     private final LockManagerImpl manager;
@@ -218,7 +220,7 @@ public class CommunityLockClient implements Locks.Client
         return map;
     }
 
-    private PrimitiveIntObjectVisitor<PrimitiveLongObjectMap<LockResource>, RuntimeException> typeReadReleaser = new
+    private final PrimitiveIntObjectVisitor<PrimitiveLongObjectMap<LockResource>, RuntimeException> typeReadReleaser = new
             PrimitiveIntObjectVisitor<PrimitiveLongObjectMap<LockResource>, RuntimeException>()
     {
         @Override
@@ -229,7 +231,7 @@ public class CommunityLockClient implements Locks.Client
         }
     };
 
-    private PrimitiveIntObjectVisitor<PrimitiveLongObjectMap<LockResource>, RuntimeException> typeWriteReleaser = new
+    private final PrimitiveIntObjectVisitor<PrimitiveLongObjectMap<LockResource>, RuntimeException> typeWriteReleaser = new
             PrimitiveIntObjectVisitor<PrimitiveLongObjectMap<LockResource>, RuntimeException>()
     {
         @Override
@@ -240,7 +242,7 @@ public class CommunityLockClient implements Locks.Client
         }
     };
 
-    private PrimitiveLongObjectVisitor<LockResource, RuntimeException> writeReleaser = new PrimitiveLongObjectVisitor<LockResource, RuntimeException>()
+    private final PrimitiveLongObjectVisitor<LockResource, RuntimeException> writeReleaser = new PrimitiveLongObjectVisitor<LockResource, RuntimeException>()
     {
         @Override
         public boolean visited( long key, LockResource lockResource ) throws RuntimeException
@@ -250,7 +252,7 @@ public class CommunityLockClient implements Locks.Client
         }
     };
 
-    private PrimitiveLongObjectVisitor<LockResource, RuntimeException> readReleaser = new PrimitiveLongObjectVisitor<LockResource, RuntimeException>()
+    private final PrimitiveLongObjectVisitor<LockResource, RuntimeException> readReleaser = new PrimitiveLongObjectVisitor<LockResource, RuntimeException>()
     {
         @Override
         public boolean visited( long key, LockResource lockResource ) throws RuntimeException
@@ -259,4 +261,10 @@ public class CommunityLockClient implements Locks.Client
             return false;
         }
     };
+
+    @Override
+    public String toString()
+    {
+        return format( "%s[%d]", getClass().getSimpleName(), getLockSessionId() );
+    }
 }
