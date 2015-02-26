@@ -1,5 +1,40 @@
 For Release Notes, see http://neo4j.com/release-notes/neo4j-${project.version}/
 
+2.2.0-RC1
+---------
+Kernel:
+o Fixed race condition where constraint index would be made available before it was actually ready.
+o Import tool allows user to specify a threshold of failed relationships (due to a missing node) to
+  accept rather than throwing an exception as soon as one is encountered.
+o Improved speed of rebuilding counts store by using import tool counts computer.
+o Fixed bug where we could read past the last page of the counts store.
+o Fixed issue where failed unique constraints weren't being correctly orphaned on recovery.
+
+Cypher:
+o Fixes problem where eagerness was unnecessarily being introduced.
+o Updates to the cost model to reflect measured costs of operators.
+o Fixes problem with PERIODIC COMMIT interacting badly with LOAD CSV
+
+Browser:
+o Cache busting for static HTML to improve the browser experience when upgrading
+  between Neo4j versions.
+o Added toggle for finding internal relationships
+o Made motd autodetect protocol for requests
+o Added config option to disable motd
+o Can now download TXT from shell frames
+o Can now download JSON from http frames (all rest calls except cypher).
+
+Consistency checker:
+o Better explanation of empty token name
+
+CSV:
+o CSV reading code now aware of source information for better error reporting
+o Improved performance around reading of CSV files
+
+HA:
+o Fixed a bug where a slave would enter an infinite loop trying to switch to SLAVE for a stale master.
+o Ensure all responses from remote calls are properly closed
+
 2.2.0-M04
 ---------
 Kernel:

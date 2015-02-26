@@ -1,3 +1,7 @@
+2.2.0-RC1
+---------
+o Better explanation of empty token name
+
 2.2.0-M04
 ---------
 o Fixes an issue where two different values in a constraint index would be wrongly reported as duplicates
@@ -30,7 +34,7 @@ o Consistency checks on non-constraint indexes is significantly
 --------------------
 o Write out log file if inconsistencies are found.
 o Improved configuration for memory mapping with MOST_FREQUENTLY_USED window pool.
-o Consistency checker defaults to using the 'most frequently used' implementation when 
+o Consistency checker defaults to using the 'most frequently used' implementation when
   on Windows to avoid memory (un)mapping problems
 
 1.9.M01 (2012-10-23)

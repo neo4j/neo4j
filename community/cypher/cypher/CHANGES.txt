@@ -1,4 +1,4 @@
-2.2.0-RC
+2.2.0-RC1
 ---------
 o Fixes problem where eagerness was unnecessarily being introduced.
 o Updates to the cost model to reflect measured costs of operators.
