@@ -33,10 +33,13 @@ import org.neo4j.com.storecopy.TransactionObligationFulfiller;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
+import org.neo4j.kernel.ha.com.master.InvalidEpochException;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
+import org.neo4j.kernel.ha.com.slave.InvalidEpochExceptionHandler;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.CappedOperation;
@@ -129,17 +132,19 @@ public class UpdatePuller implements Runnable, Lifecycle
     private final PauseListener listener;
     private final HighAvailabilityMemberStateMachine memberStateMachine;
     private final InstanceId instanceId;
+    private final InvalidEpochExceptionHandler invalidEpochHandler;
     private Thread me;
 
     UpdatePuller( HighAvailabilityMemberStateMachine memberStateMachine,
             RequestContextFactory requestContextFactory, Master master, LastUpdateTime lastUpdateTime,
-            Logging logging, InstanceId instanceId )
+            Logging logging, InstanceId instanceId, InvalidEpochExceptionHandler invalidEpochHandler )
     {
         this.memberStateMachine = memberStateMachine;
         this.requestContextFactory = requestContextFactory;
         this.master = master;
         this.lastUpdateTime = lastUpdateTime;
         this.instanceId = instanceId;
+        this.invalidEpochHandler = invalidEpochHandler;
         this.logger = logging.getMessagesLog( getClass() );
         this.cappedLogger = new CappedOperation<Pair<String, ? extends Exception>>(
                 CappedOperation.count( 10 ) )
@@ -273,7 +278,7 @@ public class UpdatePuller implements Runnable, Lifecycle
             // The caller strictly requires the update puller to be active so should throw exception
             if ( strictlyAssertActive )
             {
-                throw new IllegalStateException( this + " is not active " + this );
+                throw new IllegalStateException( this + " is not active" );
             }
 
             // The caller is OK with ignoring an inactive update puller, so just return
@@ -312,11 +317,15 @@ public class UpdatePuller implements Runnable, Lifecycle
                 // Updates would be applied as part of response processing
             }
         }
+        catch ( InvalidEpochException e )
+        {
+            invalidEpochHandler.handle();
+        }
         catch ( ComException e )
         {
             cappedLogger.event( Pair.of( "Pull updates by " + this + " failed due to network error.", e ) );
         }
-        catch ( Exception e )
+        catch ( Throwable e )
         {
             logger.error( "Pull updates by " + this + " failed", e );
         }
@@ -328,8 +337,12 @@ public class UpdatePuller implements Runnable, Lifecycle
         @Override
         public void masterIsElected( HighAvailabilityMemberChangeEvent event )
         {
-            // A new master is elected, pause here until we know about its availability
-            pause();
+            if ( event.getNewState() != HighAvailabilityMemberState.SLAVE )
+            {
+                // A new master is elected, for which me, being a slave, means a switch is imminent
+                // so I'll just pause until I'm fully available as a slave again.
+                pause();
+            }
         }
 
         @Override
