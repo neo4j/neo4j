@@ -41,7 +41,7 @@ import scala.language.implicitConversions
 
 case class SemanticPlan(plan: LogicalPlan, semanticTable: SemanticTable)
 
-trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport {
+trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
   self: CypherFunSuite =>
 
   var kernelMonitors = new org.neo4j.kernel.monitoring.Monitors
@@ -194,8 +194,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
   class fromDbStructure(dbStructure: Visitable[DbStructureVisitor])
     extends DelegatingLogicalPlanningConfiguration(DbStructureLogicalPlanningConfiguration(dbStructure))
-
-  implicit def idName(name: String): IdName = IdName(name)
 
   implicit def lazyLabel(label: String)(implicit plan: SemanticPlan): LazyLabel =
     LazyLabel(LabelName(label)(_))(plan.semanticTable)

@@ -35,7 +35,7 @@ import org.neo4j.helpers.Clock
 
 import scala.collection.mutable
 
-trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionTestSupport {
+trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
   self: CypherFunSuite =>
 
   val kernelMonitors = new org.neo4j.kernel.monitoring.Monitors
@@ -172,8 +172,6 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def planTableWith(plans: LogicalPlan*)(implicit ctx: LogicalPlanningContext) =
     plans.foldLeft(ctx.strategy.emptyPlanTable)(_ + _)
-
-  implicit def idName(name: String): IdName = IdName(name)
 }
 
 case class FakePlan(availableSymbols: Set[IdName])(val solved: PlannerQuery) extends LogicalPlan with LogicalPlanWithoutExpressions {
