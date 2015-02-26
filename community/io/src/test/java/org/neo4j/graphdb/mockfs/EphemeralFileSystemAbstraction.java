@@ -1091,7 +1091,22 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         {
             int capacity = (sizeIndex < SIZES.length) ?
                            SIZES[sizeIndex] : ((sizeIndex - SIZES.length + 1) * SIZES[SIZES.length - 1]);
-            return ByteBuffer.allocateDirect( capacity );
+            try
+            {
+                return ByteBuffer.allocateDirect( capacity );
+            }
+            catch ( OutOfMemoryError oom )
+            {
+                try
+                {
+                    return ByteBuffer.allocate( capacity );
+                }
+                catch ( OutOfMemoryError secondOom )
+                {
+                    oom.addSuppressed( secondOom );
+                    throw oom;
+                }
+            }
         }
 
         void free()
