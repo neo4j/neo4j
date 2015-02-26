@@ -145,12 +145,26 @@ public enum StoreFile
             CountsTracker.TYPE_DESCRIPTOR,
             StoreFactory.COUNTS_STORE + CountsTracker.LEFT,
             AbstractStore.ALL_STORES_VERSION
-    ),
+    )
+            {
+                @Override
+                boolean isOptional()
+                {
+                    return true;
+                }
+            },
     COUNTS_STORE_RIGHT(
             CountsTracker.TYPE_DESCRIPTOR,
             StoreFactory.COUNTS_STORE + CountsTracker.RIGHT,
             AbstractStore.ALL_STORES_VERSION
-    ),
+    )
+            {
+                @Override
+                boolean isOptional()
+                {
+                    return true;
+                }
+            },
 
     NEO_STORE(
             NeoStore.TYPE_DESCRIPTOR,
@@ -269,17 +283,33 @@ public enum StoreFile
     {
         for ( StoreFile file : files )
         {
-            setStoreVersionTrailer( fs, new File( storeDir, file.storeFileName() ),
+            setStoreVersionTrailer( fs, new File( storeDir, file.storeFileName() ), file.isOptional(),
                     buildTypeDescriptorAndVersion( file.typeDescriptor(), version ) );
         }
         setRecord( fs, new File( storeDir, DEFAULT_NAME ), Position.STORE_VERSION, versionStringToLong( version ) );
     }
 
-    private static void setStoreVersionTrailer( FileSystemAbstraction fs,
-                                                File targetStoreFileName, String versionTrailer ) throws IOException
+    boolean isOptional()
+    {
+        return false;
+    }
+
+    private static void setStoreVersionTrailer( FileSystemAbstraction fs, File targetStoreFileName, boolean optional,
+                                                String versionTrailer ) throws IOException
     {
         byte[] trailer = UTF8.encode( versionTrailer );
         long fileSize = 0;
+        if ( !fs.fileExists( targetStoreFileName ) )
+        {
+            if ( optional )
+            {
+                return;
+            }
+            else
+            {
+                throw new IllegalStateException( "Required file missing: " + targetStoreFileName );
+            }
+        }
         try ( StoreChannel fileChannel = fs.open( targetStoreFileName, "rw" ) )
         {
             fileSize = fileChannel.size();

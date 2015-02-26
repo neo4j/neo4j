@@ -479,7 +479,7 @@ public class BatchInserterImpl implements BatchInserter
             throw new UnderlyingStorageException( e );
         }
 
-        CountsComputer.computeCounts( neoStore );
+        CountsComputer.recomputeCounts( neoStore );
     }
 
     private class InitialNodeLabelCreationVisitor implements Visitor<NodeLabelUpdate, IOException>

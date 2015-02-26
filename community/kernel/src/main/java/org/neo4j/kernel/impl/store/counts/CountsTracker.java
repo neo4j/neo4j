@@ -30,16 +30,22 @@ import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
-import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
 import org.neo4j.kernel.impl.store.kvstore.AbstractKeyValueStore;
-import org.neo4j.kernel.impl.store.kvstore.CollectedMetadata;
+import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
+import org.neo4j.kernel.impl.store.kvstore.EntryUpdater;
+import org.neo4j.kernel.impl.store.kvstore.HeaderField;
+import org.neo4j.kernel.impl.store.kvstore.Headers;
 import org.neo4j.kernel.impl.store.kvstore.MetadataVisitor;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
 import org.neo4j.kernel.impl.store.kvstore.Rotation;
+import org.neo4j.kernel.impl.store.kvstore.RotationMonitor;
 import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
 import org.neo4j.kernel.impl.store.kvstore.WritableBuffer;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.util.function.Optional;
 import org.neo4j.register.Register;
+
+import static java.lang.String.format;
 
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSampleKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexStatisticsKey;
@@ -53,8 +59,9 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relations
  * (big endian) order. These store files are immutable, and on store-flush the implementation swaps the read and write
  * file in a {@linkplain Rotation.Strategy#LEFT_RIGHT left/right pattern}.
  *
- * This class defines {@linkplain CountsTracker.KeyFormat the key serialisation format},
- * {@linkplain CountsTracker.ValueFormat the value serialisation format}, and {@linkplain Metadata the metadata format}.
+ * This class defines {@linkplain KeyFormat the key serialisation format},
+ * {@linkplain CountsUpdater the value serialisation format}, and
+ * {@linkplain #HEADER_FIELDS the header fields}.
  *
  * The {@linkplain AbstractKeyValueStore parent class} defines the life cycle of the store.
  *
@@ -62,43 +69,86 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relations
  * {@code kvstore}-package, see {@link org.neo4j.kernel.impl.store.kvstore.KeyValueStoreFile} for a good entry point.
  */
 @Rotation(value = Rotation.Strategy.LEFT_RIGHT, parameters = {CountsTracker.LEFT, CountsTracker.RIGHT})
-public class CountsTracker extends AbstractKeyValueStore<CountsKey, Metadata, Metadata.Diff>
+public class CountsTracker extends AbstractKeyValueStore<CountsKey>
         implements CountsVisitor.Visitable, CountsAccessor
 {
     /** The format specifier for the current version of the store file format. */
     private static final byte[] FORMAT = {'N', 'e', 'o', 'C', 'o', 'u', 'n', 't',
                                           'S', 't', 'o', 'r', 'e', /**/0, 0, 'V'};
+    @SuppressWarnings("unchecked")
+    private static final HeaderField<?>[] HEADER_FIELDS = new HeaderField[]{FileVersion.FILE_VERSION};
     public static final String LEFT = ".a", RIGHT = ".b";
     public static final String TYPE_DESCRIPTOR = "CountsStore";
-    private final StringLogger logger;
 
-    public CountsTracker( StringLogger logger, FileSystemAbstraction fs, PageCache pages, File baseFile )
+    public CountsTracker( final StringLogger logger, FileSystemAbstraction fs, PageCache pages, File baseFile )
     {
-        super( fs, pages, baseFile, 16, 16, Metadata.KEYS );
-        this.logger = logger;
+        super( fs, pages, baseFile, new RotationMonitor()
+        {
+            @Override
+            public void failedToOpenStoreFile( File path, Exception error )
+            {
+                logger.logMessage( "Failed to open counts store file: " + path, error );
+            }
+
+            @Override
+            public void beforeRotation( File source, File target, Headers headers )
+            {
+                logger.logMessage( format( "About to rotate counts store at transaction %d to [%s], from [%s].",
+                                           headers.get( FileVersion.FILE_VERSION ).txId, target, source ) );
+            }
+
+            @Override
+            public void rotationSucceeded( File source, File target, Headers headers )
+            {
+                logger.logMessage( format( "Successfully rotated counts store at transaction %d to [%s], from [%s].",
+                                           headers.get( FileVersion.FILE_VERSION ).txId, target, source ) );
+            }
+
+            @Override
+            public void rotationFailed( File source, File target, Headers headers, Exception e )
+            {
+                logger.logMessage( format( "Failed to rotate counts store at transaction %d to [%s], from [%s].",
+                                           headers.get( FileVersion.FILE_VERSION ).txId, target, source ), e );
+            }
+        }, 16, 16, HEADER_FIELDS );
     }
 
-    public void rotate( long txId ) throws IOException
+    public CountsTracker setInitializer( final DataInitializer<Updater> initializer )
     {
-        logger.debug( "Start writing new counts store with txId=" + txId );
-        rotate( new Metadata.Diff( txId ) );
-        logger.debug( "Completed writing of counts store with txId=" + txId );
+        setEntryUpdaterInitializer( new DataInitializer<EntryUpdater<CountsKey>>()
+        {
+            @Override
+            public void initialize( EntryUpdater<CountsKey> updater )
+            {
+                initializer.initialize( new CountsUpdater( updater ) );
+            }
+
+            @Override
+            public long initialVersion()
+            {
+                return initializer.initialVersion();
+            }
+        } );
+        return this;
     }
 
-    public boolean acceptTx( long txId )
+    /**
+     * @param txId the lowest transaction id that must be included in the snapshot created by the rotation.
+     * @return the highest transaction id that was included in the snapshot created by the rotation.
+     */
+    public long rotate( long txId ) throws IOException
     {
-        Metadata metadata = metadata();
-        return metadata != null && metadata.txId < txId;
+        return prepareRotation( txId ).rotate();
     }
 
     public long txId()
     {
-        return metadata().txId;
+        return headers().get( FileVersion.FILE_VERSION ).txId;
     }
 
     public long minorVersion()
     {
-        return metadata().minorVersion;
+        return headers().get( FileVersion.FILE_VERSION ).minorVersion;
     }
 
     public Register.DoubleLongRegister get( CountsKey key, Register.DoubleLongRegister target )
@@ -139,27 +189,19 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey, Metadata, Me
         return get( indexSampleKey( labelId, propertyKeyId ), target );
     }
 
-    /**
-     * For key format, see {@link KeyFormat#visitIndexStatistics(int, int, long, long)}
-     * For value format, see {@link ValueFormat#replaceIndexUpdateAndSize(int, int, long, long)}
-     */
-    @Override
-    public void incrementIndexUpdates( int labelId, int propertyKeyId, long delta )
+    public Optional<CountsAccessor.Updater> apply( long txId )
     {
-        try
-        {
-            apply( new UpdateFirstValue( indexStatisticsKey( labelId, propertyKeyId ), delta ) );
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
+        return updater( txId ).<CountsAccessor.Updater>map( CountsUpdater.FACTORY );
     }
 
-    @Override
-    public CountsAccessor.Updater updater()
+    public CountsAccessor.IndexStatsUpdater updateIndexCounts()
     {
-        return new ValueFormat();
+        return new CountsUpdater( updater() );
+    }
+
+    public CountsAccessor.Updater reset()
+    {
+        return new CountsUpdater( resetter() );
     }
 
     @Override
@@ -181,18 +223,18 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey, Metadata, Me
     }
 
     @Override
-    protected Metadata initialMetadata()
+    protected Headers initialHeaders( long txId )
     {
-        return new Metadata( -1, 1 );
+        return Headers.headersBuilder().put( FileVersion.FILE_VERSION, new FileVersion( txId ) ).headers();
     }
 
     @Override
-    protected int compareMetadata( Metadata lhs, Metadata rhs )
+    protected int compareHeaders( Headers lhs, Headers rhs )
     {
-        return compare( lhs, rhs );
+        return compare( lhs.get( FileVersion.FILE_VERSION ), rhs.get( FileVersion.FILE_VERSION ) );
     }
 
-    static int compare( Metadata lhs, Metadata rhs )
+    static int compare( FileVersion lhs, FileVersion rhs )
     {
         int cmp = Long.compare( lhs.txId, rhs.txId );
         if ( cmp == 0 )
@@ -200,12 +242,6 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey, Metadata, Me
             cmp = Long.compare( lhs.minorVersion, rhs.minorVersion );
         }
         return cmp;
-    }
-
-    @Override
-    protected Metadata updateMetadata( Metadata metadata, Metadata.Diff changes )
-    {
-        return metadata.update( changes );
     }
 
     @Override
@@ -217,34 +253,11 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey, Metadata, Me
     @Override
     protected CountsKey readKey( ReadableBuffer key ) throws UnknownKey
     {
-        switch ( key.getByte( 0 ) )
-        {
-        case KeyFormat.NODE_COUNT:
-            return CountsKeyFactory.nodeKey( key.getInt( 12 ) );
-        case KeyFormat.RELATIONSHIP_COUNT:
-            return CountsKeyFactory.relationshipKey( key.getInt( 4 ), key.getInt( 8 ), key.getInt( 12 ) );
-        case KeyFormat.INDEX:
-            switch ( key.getByte( 15 ) )
-            {
-            case KeyFormat.INDEX_STATS:
-                return indexStatisticsKey( key.getInt( 4 ), key.getInt( 8 ) );
-            case KeyFormat.INDEX_SAMPLE:
-                return CountsKeyFactory.indexSampleKey( key.getInt( 4 ), key.getInt( 8 ) );
-            }
-        default:
-            throw new UnknownKey( "Unknown key type: " + key );
-        }
+        return KeyFormat.readKey( key );
     }
 
     @Override
-    protected Metadata buildMetadata( ReadableBuffer formatSpecifier, CollectedMetadata metadata )
-    {
-        Metadata.TxId txId = metadata.getMetadata( Metadata.TX_ID );
-        return new Metadata( txId.txId, txId.minorVersion );
-    }
-
-    @Override
-    protected String extractFileTrailer( Metadata metadata )
+    protected String fileTrailer()
     {
         return StoreFactory.buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR );
     }
@@ -256,29 +269,15 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey, Metadata, Me
     }
 
     @Override
-    protected void failedToOpenStoreFile( File path, Exception error )
+    protected void updateHeaders( Headers.Builder headers, long version )
     {
-        logger.logMessage( "Failed to open counts store file: " + path, error );
-    }
-
-    protected void beforeRotation( File source, File target, Metadata metadata )
-    {
-        logger.logMessage( String.format( "About to rotate counts store at transaction %d to [%s], from [%s].",
-                                          metadata.txId, target, source ) );
+        headers.put( FileVersion.FILE_VERSION, headers.get( FileVersion.FILE_VERSION ).update( version ) );
     }
 
     @Override
-    protected void rotationSucceeded( File source, File target, Metadata metadata )
+    protected long version( Headers headers )
     {
-        logger.logMessage( String.format( "Successfully rotated counts store at transaction %d to [%s], from [%s].",
-                                          metadata.txId, target, source ) );
-    }
-
-    @Override
-    protected void rotationFailed( File source, File target, Metadata metadata, Exception e )
-    {
-        logger.logMessage( String.format( "Failed to rotate counts store at transaction %d to [%s], from [%s].",
-                                          metadata.txId, target, source ), e );
+        return headers == null ? FileVersion.INITIAL_TX_ID : headers.get( FileVersion.FILE_VERSION ).txId;
     }
 
     @Override
@@ -287,13 +286,7 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey, Metadata, Me
         formatSpecifier.put( 0, FORMAT );
     }
 
-    @Override
-    protected boolean hasMetadataChanges( Metadata metadata, Metadata.Diff diff )
-    {
-        return metadata != null && metadata.txId != diff.txId;
-    }
-
-    private class DelegatingVisitor extends Visitor implements MetadataVisitor<Metadata>
+    private class DelegatingVisitor extends Visitor implements MetadataVisitor
     {
         private final CountsVisitor visitor;
 
@@ -311,11 +304,11 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey, Metadata, Me
 
         @SuppressWarnings("unchecked")
         @Override
-        public void visitMetadata( File path, Metadata metadata, int entryCount )
+        public void visitMetadata( File path, Headers headers, int entryCount )
         {
-            if ( visitor instanceof MetadataVisitor<?> )
+            if ( visitor instanceof MetadataVisitor )
             {
-                ((MetadataVisitor<Metadata>) visitor).visitMetadata( path, metadata, entryCount );
+                ((MetadataVisitor) visitor).visitMetadata( path, headers, entryCount );
             }
         }
 
@@ -329,193 +322,6 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey, Metadata, Me
             else
             {
                 return super.visitUnknownKey( exception, key, value );
-            }
-        }
-    }
-
-    private static class KeyFormat implements CountsVisitor
-    {
-        private static final byte NODE_COUNT = 1, RELATIONSHIP_COUNT = 2, INDEX = 127, INDEX_STATS = 1, INDEX_SAMPLE = 2;
-        private final WritableBuffer buffer;
-
-        public KeyFormat( WritableBuffer key )
-        {
-            assert key.size() >= 16;
-            this.buffer = key;
-        }
-
-        /**
-         * Key format:
-         * <pre>
-         *  0 1 2 3 4 5 6 7   8 9 A B C D E F
-         * [t,0,0,0,0,0,0,0 ; 0,0,0,0,l,l,l,l]
-         *  t - entry type - "{@link #NODE_COUNT}"
-         *  l - label id
-         * </pre>
-         * For value format, see {@link ValueFormat#incrementNodeCount(int, long)}.
-         */
-        @Override
-        public void visitNodeCount( int labelId, long count )
-        {
-            buffer.putByte( 0, NODE_COUNT )
-                  .putInt( 12, labelId );
-        }
-
-        /**
-         * Key format:
-         * <pre>
-         *  0 1 2 3 4 5 6 7   8 9 A B C D E F
-         * [t,0,0,0,s,s,s,s ; r,r,r,r,e,e,e,e]
-         *  t - entry type - "{@link #RELATIONSHIP_COUNT}"
-         *  s - start label id
-         *  r - relationship type id
-         *  e - end label id
-         * </pre>
-         * For value format, see {@link ValueFormat#incrementRelationshipCount(int, int, int, long)}
-         */
-        @Override
-        public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
-        {
-            buffer.putByte( 0, RELATIONSHIP_COUNT )
-                  .putInt( 4, startLabelId )
-                  .putInt( 8, typeId )
-                  .putInt( 12, endLabelId );
-        }
-
-        /**
-         * Key format:
-         * <pre>
-         *  0 1 2 3 4 5 6 7   8 9 A B C D E F
-         * [t,0,0,0,l,l,l,l ; p,p,p,p,0,0,0,k]
-         *  t - index entry marker - "{@link #INDEX}"
-         *  k - entry (sub)type - "{@link #INDEX_STATS}"
-         *  l - label id
-         *  p - property key id
-         * </pre>
-         * For value format, see {@link ValueFormat#replaceIndexUpdateAndSize(int, int, long, long)}.
-         */
-        @Override
-        public void visitIndexStatistics( int labelId, int propertyKeyId, long updates, long size )
-        {
-            indexKey( INDEX_STATS, labelId, propertyKeyId );
-        }
-
-        /**
-         * Key format:
-         * <pre>
-         *  0 1 2 3 4 5 6 7   8 9 A B C D E F
-         * [t,0,0,0,l,l,l,l ; p,p,p,p,0,0,0,k]
-         *  t - index entry marker - "{@link #INDEX}"
-         *  k - entry (sub)type - "{@link #INDEX_SAMPLE}"
-         *  l - label id
-         *  p - property key id
-         * </pre>
-         * For value format, see {@link ValueFormat#replaceIndexSample(int, int, long, long)}.
-         */
-        @Override
-        public void visitIndexSample( int labelId, int propertyKeyId, long unique, long size )
-        {
-            indexKey( INDEX_SAMPLE, labelId, propertyKeyId );
-        }
-
-        private void indexKey( byte indexKey, int labelId, int propertyKeyId )
-        {
-            buffer.putByte( 0, INDEX )
-                  .putInt( 4, labelId )
-                  .putInt( 8, propertyKeyId )
-                  .putByte( 15, indexKey );
-        }
-    }
-
-    private class ValueFormat extends AbstractKeyValueStore<CountsKey, ?, ?>.Updater implements CountsAccessor.Updater
-    {
-        /**
-         * Value format:
-         * <pre>
-         *  0 1 2 3 4 5 6 7   8 9 A B C D E F
-         * [0,0,0,0,0,0,0,0 ; c,c,c,c,c,c,c,c]
-         *  c - number of matching nodes
-         * </pre>
-         * For key format, see {@link KeyFormat#visitNodeCount(int, long)}
-         */
-        @Override
-        public void incrementNodeCount( int labelId, final long delta )
-        {
-            try
-            {
-                apply( new UpdateSecondValue( nodeKey( labelId ), delta ) );
-            }
-            catch ( IOException e )
-            {
-                throw new UnderlyingStorageException( e );
-            }
-        }
-
-        /**
-         * Value format:
-         * <pre>
-         *  0 1 2 3 4 5 6 7   8 9 A B C D E F
-         * [0,0,0,0,0,0,0,0 ; c,c,c,c,c,c,c,c]
-         *  c - number of matching relationships
-         * </pre>
-         * For key format, see {@link KeyFormat#visitRelationshipCount(int, int, int, long)}
-         */
-        @Override
-        public void incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta )
-        {
-            try
-            {
-                apply( new UpdateSecondValue( relationshipKey( startLabelId, typeId, endLabelId ), delta ) );
-            }
-            catch ( IOException e )
-            {
-                throw new UnderlyingStorageException( e );
-            }
-        }
-
-        /**
-         * Value format:
-         * <pre>
-         *  0 1 2 3 4 5 6 7   8 9 A B C D E F
-         * [u,u,u,u,u,u,u,u ; s,s,s,s,s,s,s,s]
-         *  u - number of updates
-         *  s - size of index
-         * </pre>
-         * For key format, see {@link KeyFormat#visitIndexStatistics(int, int, long, long)}
-         */
-        @Override
-        public void replaceIndexUpdateAndSize( int labelId, int propertyKeyId, final long updates, final long size )
-        {
-            try
-            {
-                apply( new AssignValues( indexStatisticsKey( labelId, propertyKeyId ), updates, size ) );
-            }
-            catch ( IOException e )
-            {
-                throw new UnderlyingStorageException( e );
-            }
-        }
-
-        /**
-         * Value format:
-         * <pre>
-         *  0 1 2 3 4 5 6 7   8 9 A B C D E F
-         * [u,u,u,u,u,u,u,u ; s,s,s,s,s,s,s,s]
-         *  u - number of unique values
-         *  s - size of index
-         * </pre>
-         * For key format, see {@link KeyFormat#visitIndexSample(int, int, long, long)}
-         */
-        @Override
-        public void replaceIndexSample( int labelId, int propertyKeyId, final long unique, final long size )
-        {
-            try
-            {
-                apply( new AssignValues( indexSampleKey( labelId, propertyKeyId ), unique, size ) );
-            }
-            catch ( IOException e )
-            {
-                throw new UnderlyingStorageException( e );
             }
         }
     }

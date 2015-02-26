@@ -19,23 +19,11 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
-class StubCollector extends MetadataCollector<Map<String, byte[]>>
+class StubCollector extends MetadataCollector
 {
-    private final HeaderField<Map<String, byte[]>, byte[]>[] headerFields;
-
     StubCollector( int entriesPerPage, String... header )
     {
-        this( entriesPerPage, headerFields( header ) );
-    }
-
-    private StubCollector( int entriesPerPage, HeaderField<Map<String, byte[]>, byte[]>[] headerFields )
-    {
-        super( entriesPerPage, headerFields );
-        this.headerFields = headerFields;
+        super( entriesPerPage, headerFields( header ) );
     }
 
     @Override
@@ -44,27 +32,10 @@ class StubCollector extends MetadataCollector<Map<String, byte[]>>
         return true;
     }
 
-    @Override
-    Map<String, byte[]> metadata()
-    {
-        return metadata( headerFields, this );
-    }
-
-    static Map<String, byte[]> metadata( HeaderField<Map<String, byte[]>, byte[]>[] headerFields,
-                                         CollectedMetadata metadata )
-    {
-        Map<String, byte[]> result = new HashMap<>();
-        for ( HeaderField<Map<String, byte[]>, byte[]> field : headerFields )
-        {
-            result.put( field.toString(), metadata.getMetadata( field ) );
-        }
-        return Collections.unmodifiableMap( result );
-    }
-
-    static HeaderField<Map<String, byte[]>, byte[]>[] headerFields( String[] keys )
+    static HeaderField<byte[]>[] headerFields( String[] keys )
     {
         @SuppressWarnings("unchecked")
-        HeaderField<Map<String, byte[]>, byte[]>[] fields = new HeaderField[keys.length];
+        HeaderField<byte[]>[] fields = new HeaderField[keys.length];
         for ( int i = 0; i < keys.length; i++ )
         {
             fields[i] = headerField( keys[i] );
@@ -72,9 +43,9 @@ class StubCollector extends MetadataCollector<Map<String, byte[]>>
         return fields;
     }
 
-    private static HeaderField<Map<String, byte[]>, byte[]> headerField( final String key )
+    private static HeaderField<byte[]> headerField( final String key )
     {
-        return new HeaderField<Map<String, byte[]>, byte[]>()
+        return new HeaderField<byte[]>()
         {
             @Override
             public byte[] read( ReadableBuffer header )
@@ -83,9 +54,9 @@ class StubCollector extends MetadataCollector<Map<String, byte[]>>
             }
 
             @Override
-            public void write( Map<String, byte[]> headers, WritableBuffer header )
+            public void write( byte[] bytes, WritableBuffer header )
             {
-                header.put( 0, headers.get( key ) );
+                header.put( 0, bytes );
             }
 
             @Override

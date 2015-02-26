@@ -33,14 +33,12 @@ import static org.neo4j.kernel.impl.store.kvstore.BigEndianByteArrayBuffer.compa
 
 /**
  * Stores Key/Value pairs sorted by the key in unsigned big-endian order.
- *
- * @param <META> the type of object to hold the metadata of a store file.
  */
-public class KeyValueStoreFile<META> implements Closeable
+public class KeyValueStoreFile implements Closeable
 {
-    public META metadata()
+    public Headers headers()
     {
-        return metadata;
+        return headers;
     }
 
     /**
@@ -141,7 +139,7 @@ public class KeyValueStoreFile<META> implements Closeable
     private final PagedFile file;
     private final int keySize;
     private final int valueSize;
-    private final META metadata;
+    private final Headers headers;
     private final int headerEntries;
     /** Includes header entries (and data entries), but not the trailer entry. */
     private final int totalEntries;
@@ -152,14 +150,14 @@ public class KeyValueStoreFile<META> implements Closeable
      */
     private final byte[] pageCatalogue;
 
-    KeyValueStoreFile( PagedFile file, int keySize, int valueSize, Metadata<META> metadata )
+    KeyValueStoreFile( PagedFile file, int keySize, int valueSize, Metadata metadata )
     {
         this.file = file;
         this.keySize = keySize;
         this.valueSize = valueSize;
         this.headerEntries = metadata.headerEntries();
         this.totalEntries = metadata.totalEntries();
-        this.metadata = metadata.metadata();
+        this.headers = metadata.headers();
         this.pageCatalogue = metadata.pageCatalogue();
     }
 
@@ -174,7 +172,7 @@ public class KeyValueStoreFile<META> implements Closeable
             Buffer key, Buffer value )
             throws IOException
     {
-        boolean visitMeta = !(visitor instanceof KeyValueVisitor);
+        boolean visitHeaders = !(visitor instanceof KeyValueVisitor);
         try ( PageCursor cursor = file.io( startOffset / file.pageSize(), PF_NO_GROW | PF_SHARED_LOCK ) )
         {
             if ( !cursor.next() )
@@ -182,17 +180,17 @@ public class KeyValueStoreFile<META> implements Closeable
                 return;
             }
             readKeyValuePair( cursor, startOffset, key, value );
-            visitKeyValuePairs( file.pageSize(), cursor, startOffset, visitor, visitMeta, key, value );
+            visitKeyValuePairs( file.pageSize(), cursor, startOffset, visitor, visitHeaders, key, value );
         }
     }
 
     /** Expects the first key/value-pair to be read into the buffers already, reads subsequent pairs (if requested). */
     private static <Buffer extends BigEndianByteArrayBuffer> void visitKeyValuePairs(
-            int pageSize, PageCursor cursor, int offset, EntryVisitor<? super Buffer> visitor, boolean visitMeta,
+            int pageSize, PageCursor cursor, int offset, EntryVisitor<? super Buffer> visitor, boolean visitHeaders,
             Buffer key, Buffer value )
             throws IOException
     {
-        while ( visitable( key, visitMeta ) && visitor.visit( key, value ) )
+        while ( visitable( key, visitHeaders ) && visitor.visit( key, value ) )
         {
             offset += key.size() + value.size();
             if ( offset >= pageSize )

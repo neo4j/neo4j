@@ -17,26 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.counts;
 
-import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
-import org.neo4j.kernel.impl.store.kvstore.AbstractKeyValueStore;
-import org.neo4j.kernel.impl.store.kvstore.WritableBuffer;
+package org.neo4j.kernel.impl.store.kvstore;
 
-class UpdateSecondValue extends AbstractKeyValueStore.Update<CountsKey>
+final class ValueLookup<Value> extends ValueSink
 {
-    private static final int OFFSET = 8;
-    private final long delta;
+    private final AbstractKeyValueStore.Reader<Value> reader;
+    private Value value;
 
-    UpdateSecondValue( CountsKey key, long delta )
+    public ValueLookup( AbstractKeyValueStore.Reader<Value> reader )
     {
-        super( key );
-        this.delta = delta;
+        this.reader = reader;
     }
 
     @Override
-    protected void update( WritableBuffer value )
+    protected void value( ReadableBuffer value )
     {
-        value.putLong( OFFSET, value.getLong( OFFSET ) + delta );
+        this.value = reader.parseValue( value );
+    }
+
+    public Value value( boolean useDefault )
+    {
+        return useDefault ? reader.defaultValue() : value;
     }
 }

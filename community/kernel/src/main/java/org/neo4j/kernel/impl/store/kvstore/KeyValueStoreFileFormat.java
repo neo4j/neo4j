@@ -32,19 +32,17 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * Defines the format of a {@link KeyValueStoreFile}.
- *
- * @param <META> the type of object to hold the metadata of a store file.
  */
-public abstract class KeyValueStoreFileFormat<META>
+public abstract class KeyValueStoreFileFormat
 {
     private final int maxSize;
-    private final HeaderField<META, ?>[] headerFields;
+    private final HeaderField<?>[] headerFields;
 
     /**
      * @param maxSize      the largest possible size of a key or value that conforms to this format.
      * @param headerFields identifiers for the entries to write from the metadata to the store.
      */
-    public KeyValueStoreFileFormat( int maxSize, HeaderField<META, ?>... headerFields )
+    public KeyValueStoreFileFormat( int maxSize, HeaderField<?>... headerFields )
     {
         if ( maxSize < 0 )
         {
@@ -54,27 +52,27 @@ public abstract class KeyValueStoreFileFormat<META>
         this.headerFields = headerFields.clone();
     }
 
-    public final KeyValueStoreFile<META> createStore(
+    public final KeyValueStoreFile createStore(
             FileSystemAbstraction fs, PageCache pages, File path, int keySize, int valueSize,
-            META metadata, DataProvider data ) throws IOException
+            Headers headers, DataProvider data ) throws IOException
     {
         return create( requireNonNull( fs, FileSystemAbstraction.class.getSimpleName() ),
                        requireNonNull( path, "path" ),
                        requireNonNull( pages, PageCache.class.getSimpleName() ),
                        keySize, valueSize,
-                       requireNonNull( metadata, "metadata" ),
+                       requireNonNull( headers, "headers" ),
                        requireNonNull( data, "data" ) );
     }
 
     public final void createEmptyStore(
-            FileSystemAbstraction fs, File path, int keySize, int valueSize, META metadata ) throws IOException
+            FileSystemAbstraction fs, File path, int keySize, int valueSize, Headers headers ) throws IOException
     {
         create( requireNonNull( fs, FileSystemAbstraction.class.getSimpleName() ),
                 requireNonNull( path, "path" ), null, keySize, valueSize,
-                requireNonNull( metadata, "metadata" ), null );
+                requireNonNull( headers, "headers" ), null );
     }
 
-    public final KeyValueStoreFile<META> openStore( FileSystemAbstraction fs, PageCache pages, File path )
+    public final KeyValueStoreFile openStore( FileSystemAbstraction fs, PageCache pages, File path )
             throws IOException
     {
         return open( requireNonNull( fs, FileSystemAbstraction.class.getSimpleName() ),
@@ -84,19 +82,18 @@ public abstract class KeyValueStoreFileFormat<META>
 
     protected abstract void writeFormatSpecifier( WritableBuffer formatSpecifier );
 
-    protected abstract String extractFileTrailer( META metadata );
+    /** A trailer for writing at the end of a new file. */
+    protected abstract String fileTrailer();
 
-    protected HeaderField<META, ?>[] headerFields( ReadableBuffer formatSpecifier )
+    protected HeaderField<?>[] headerFieldsForFormat( ReadableBuffer formatSpecifier )
     {
         return headerFields.clone();
     }
 
-    protected abstract META buildMetadata( ReadableBuffer formatSpecifier, CollectedMetadata metadata );
-
     // IMPLEMENTATION
 
     /** Create a collector for interpreting metadata from a file. */
-    private MetadataCollector<META> metadata( ReadableBuffer formatSpecifier, int pageSize, int keySize, int valueSize )
+    private MetadataCollector metadata( ReadableBuffer formatSpecifier, int pageSize, int keySize, int valueSize )
     {
         byte[] format = new byte[formatSpecifier.size()];
         for ( int i = 0; i < format.length; i++ )
@@ -104,8 +101,8 @@ public abstract class KeyValueStoreFileFormat<META>
             format[i] = formatSpecifier.getByte( i );
         }
         final BigEndianByteArrayBuffer specifier = new BigEndianByteArrayBuffer( format );
-        HeaderField<META, ?>[] headerFields = headerFields( formatSpecifier );
-        return new MetadataCollector<META>( pageSize / (keySize + valueSize), headerFields )
+        HeaderField<?>[] headerFields = headerFieldsForFormat( formatSpecifier );
+        return new MetadataCollector( pageSize / (keySize + valueSize), headerFields )
         {
             @Override
             boolean verifyFormatSpecifier( ReadableBuffer value )
@@ -124,12 +121,6 @@ public abstract class KeyValueStoreFileFormat<META>
                 }
                 return false;
             }
-
-            @Override
-            META metadata()
-            {
-                return buildMetadata( specifier, this );
-            }
         };
     }
 
@@ -141,13 +132,13 @@ public abstract class KeyValueStoreFileFormat<META>
      * @param pages        if {@code null} the newly created store fill will not be opened.
      * @param keySize      the size of the keys in the new store.
      * @param valueSize    the size of the values in the new store.
-     * @param metadata     the metadata to write to the store.
+     * @param headers      the headers to write to the store.
      * @param dataProvider the data to write into the store, {@code null} is accepted to mean no data.
      * @return an opened version of the newly created store file - iff a {@link PageCache} was provided.
      */
-    private KeyValueStoreFile<META> create(
+    private KeyValueStoreFile create(
             FileSystemAbstraction fs, File path, PageCache pages, int keySize, int valueSize,
-            META metadata, DataProvider dataProvider ) throws IOException
+            Headers headers, DataProvider dataProvider ) throws IOException
     {
         if ( keySize <= 0 || keySize > maxSize || valueSize <= 0 || valueSize > maxSize )
         {
@@ -164,7 +155,7 @@ public abstract class KeyValueStoreFileFormat<META>
                                                 BigEndianByteArrayBuffer.toString( value.buffer ) );
         }
         int pageSize = pageSize( pages, keySize, valueSize );
-        try ( KeyValueWriter<META> writer = newWriter( fs, path, value, pages, pageSize, keySize, valueSize );
+        try ( KeyValueWriter writer = newWriter( fs, path, value, pages, pageSize, keySize, valueSize );
               DataProvider data = dataProvider )
         {
             // header
@@ -172,12 +163,12 @@ public abstract class KeyValueStoreFileFormat<META>
             {
                 throw new IllegalStateException( "The format specifier should be a valid header value" );
             }
-            for ( HeaderField<META, ?> header : headerFields )
+            for ( HeaderField<?> header : headerFields )
             {
-                header.write( metadata, value );
+                headers.write( header, value );
                 if ( !writer.writeHeader( key, value ) )
                 {
-                    throw new IllegalArgumentException( "Invalid metadata value. " + header + ": " + value );
+                    throw new IllegalArgumentException( "Invalid header value. " + header + ": " + value );
                 }
             }
             if ( headerFields.length == 0 )
@@ -204,13 +195,13 @@ public abstract class KeyValueStoreFileFormat<META>
             {
                 throw new IllegalStateException( "The trailing size header should be valid" );
             }
-            writer.writeTrailer( extractFileTrailer( metadata ) );
+            writer.writeTrailer( fileTrailer() );
             return writer.openStoreFile();
         }
     }
 
-    private KeyValueWriter<META> newWriter( FileSystemAbstraction fs, File path, ReadableBuffer formatSpecifier,
-                                            PageCache pages, int pageSize, int keySize, int valueSize )
+    private KeyValueWriter newWriter( FileSystemAbstraction fs, File path, ReadableBuffer formatSpecifier,
+                                      PageCache pages, int pageSize, int keySize, int valueSize )
             throws IOException
     {
         return KeyValueWriter.create( metadata( formatSpecifier, pageSize, keySize, valueSize ),
@@ -225,7 +216,7 @@ public abstract class KeyValueStoreFileFormat<META>
      * @param pages the page cache to use for opening the store file.
      * @return the opened store file.
      */
-    private KeyValueStoreFile<META> open( FileSystemAbstraction fs, File path, PageCache pages ) throws IOException
+    private KeyValueStoreFile open( FileSystemAbstraction fs, File path, PageCache pages ) throws IOException
     {
         ByteBuffer buffer = ByteBuffer.wrap( new byte[maxSize * 4] );
         try ( StoreChannel file = fs.open( path, "r" ) )
@@ -280,10 +271,10 @@ public abstract class KeyValueStoreFileFormat<META>
                 buffer.position( keySize );
                 buffer.limit( keySize + valueSize );
                 value.dataFrom( buffer );
-                MetadataCollector<META> metadata = metadata( value, pageSize, keySize, valueSize );
+                MetadataCollector metadata = metadata( value, pageSize, keySize, valueSize );
                 // scan and catalogue all entries in the file
                 KeyValueStoreFile.scanAll( file, 0, metadata, key, value );
-                KeyValueStoreFile<META> storeFile = new KeyValueStoreFile<>( file, keySize, valueSize, metadata );
+                KeyValueStoreFile storeFile = new KeyValueStoreFile( file, keySize, valueSize, metadata );
                 file = null;
                 return storeFile;
             }

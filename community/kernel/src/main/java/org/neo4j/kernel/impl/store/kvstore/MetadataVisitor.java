@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.store.kvstore;
 
 import java.io.File;
 
-public interface MetadataVisitor<Meta>
+public interface MetadataVisitor
 {
-    void visitMetadata( File path, Meta metadata, int entryCount );
+    void visitMetadata( File path, Headers headers, int entryCount );
 }

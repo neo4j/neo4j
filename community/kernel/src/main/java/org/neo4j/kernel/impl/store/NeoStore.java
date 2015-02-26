@@ -35,7 +35,9 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
@@ -176,6 +178,21 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
                         lastCommittedTx, lastClosedTx ) );
             }
         };
+        counts.setInitializer( new DataInitializer<CountsAccessor.Updater>()
+        {
+            @Override
+            public void initialize( CountsAccessor.Updater updater )
+            {
+                stringLogger.warn( "Missing counts store, rebuilding it." );
+                new CountsComputer( NeoStore.this ).initialize( updater );
+            }
+
+            @Override
+            public long initialVersion()
+            {
+                return getLastCommittedTransactionId();
+            }
+        } );
         try
         {
             counts.init(); // TODO: move this to LifeCycle
@@ -967,26 +984,5 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     {
         // TODO: move this to LifeCycle
         counts.start();
-        if ( counts.txId() == -1 )
-        {
-            stringLogger.warn( "Missing counts store, rebuilding it." );
-            try
-            {
-                CountsComputer.computeCounts( this );
-                counts.rotate( getLastCommittedTransactionId() );
-            }
-            catch ( Throwable failure )
-            {
-                try
-                {
-                    counts.shutdown();
-                }
-                catch ( Throwable err )
-                {
-                    failure.addSuppressed( err );
-                }
-                throw failure;
-            }
-        }
     }
 }

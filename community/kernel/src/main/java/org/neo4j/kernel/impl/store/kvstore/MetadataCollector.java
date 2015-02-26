@@ -26,19 +26,18 @@ import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
-abstract class MetadataCollector<META> extends Metadata<META>
-        implements EntryVisitor<BigEndianByteArrayBuffer>, CollectedMetadata
+abstract class MetadataCollector extends Metadata implements EntryVisitor<BigEndianByteArrayBuffer>
 {
     private static final byte[] NO_DATA = new byte[0];
     private final int entriesPerPage;
-    private final HeaderField<META, ?>[] headerFields;
-    private final Map<HeaderField<META, ?>, Integer> headerIndexes = new HashMap<>();
+    private final HeaderField<?>[] headerFields;
+    private final Map<HeaderField<?>, Integer> headerIndexes = new HashMap<>();
     private final Object[] headerValues;
     private int header, data;
     private State state = State.expecting_format_specifier;
     private byte[] catalogue = NO_DATA;
 
-    public MetadataCollector( int entriesPerPage, HeaderField<META, ?>[] headerFields )
+    public MetadataCollector( int entriesPerPage, HeaderField<?>[] headerFields )
     {
         this.entriesPerPage = entriesPerPage;
         this.headerFields = headerFields = headerFields.clone();
@@ -56,12 +55,9 @@ abstract class MetadataCollector<META> extends Metadata<META>
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public <Value> Value getMetadata( HeaderField<?, Value> field )
+    public Headers headers()
     {
-        @SuppressWarnings("SuspiciousMethodCalls")
-        Integer index = headerIndexes.get( field );
-        return index == null ? null : (Value)headerValues[index];
+        return Headers.indexedHeaders( headerIndexes, headerValues.clone() );
     }
 
     @Override
@@ -109,8 +105,7 @@ abstract class MetadataCollector<META> extends Metadata<META>
         expecting_format_specifier
         {
             @Override
-            boolean visit( MetadataCollector<?> collector,
-                           BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value )
+            boolean visit( MetadataCollector collector, BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value )
             {
                 if ( !key.allZeroes() )
                 {
@@ -129,8 +124,7 @@ abstract class MetadataCollector<META> extends Metadata<META>
         expecting_header
         {
             @Override
-            boolean visit( MetadataCollector<?> collector,
-                           BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value )
+            boolean visit( MetadataCollector collector, BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value )
             {
                 if ( !key.allZeroes() )
                 {
@@ -159,8 +153,7 @@ abstract class MetadataCollector<META> extends Metadata<META>
         reading_header
         {
             @Override
-            boolean visit( MetadataCollector<?> collector,
-                           BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value )
+            boolean visit( MetadataCollector collector, BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value )
             {
                 if ( key.allZeroes() )
                 {
@@ -193,8 +186,7 @@ abstract class MetadataCollector<META> extends Metadata<META>
         reading_data
         {
             @Override
-            boolean visit( MetadataCollector<?> collector,
-                           BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value )
+            boolean visit( MetadataCollector collector, BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value )
             {
                 if ( key.allZeroes() )
                 {
@@ -219,8 +211,7 @@ abstract class MetadataCollector<META> extends Metadata<META>
         done
         {
             @Override
-            boolean visit( MetadataCollector<?> collector,
-                           BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value )
+            boolean visit( MetadataCollector collector, BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value )
             {
                 throw new IllegalStateException( "Metadata collection has completed." );
             }
@@ -228,14 +219,13 @@ abstract class MetadataCollector<META> extends Metadata<META>
         in_error
         {
             @Override
-            boolean visit( MetadataCollector<?> collector,
-                           BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value )
+            boolean visit( MetadataCollector collector, BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value )
             {
                 throw new IllegalStateException( "Metadata collection has failed." );
             }
         };
 
-        abstract boolean visit( MetadataCollector<?> collector,
+        abstract boolean visit( MetadataCollector collector,
                                 BigEndianByteArrayBuffer key, BigEndianByteArrayBuffer value );
         // </pre>
     }

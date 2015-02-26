@@ -36,9 +36,11 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -79,8 +81,20 @@ public class FullCheck
         DiffRecordAccess records = recordAccess( stores.nativeStores() );
         execute( stores, decorator, records, report );
         ownerCheck.scanForOrphanChains( progressFactory );
-        countsBuilder.checkCounts( stores.nativeStores().getCounts(), new ConsistencyReporter( records, report ),
-                progressFactory );
+        CountsAccessor counts = stores.nativeStores().getCounts();
+        if ( counts instanceof CountsTracker )
+        {
+            CountsTracker tracker = (CountsTracker) counts;
+            try
+            {
+                tracker.start();
+            }
+            catch ( Exception e )
+            {
+                // let's hope it was already started :)
+            }
+        }
+        countsBuilder.checkCounts( counts, new ConsistencyReporter( records, report ), progressFactory );
 
         if ( !summary.isConsistent() )
         {

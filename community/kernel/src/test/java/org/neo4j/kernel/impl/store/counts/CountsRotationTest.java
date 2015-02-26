@@ -51,9 +51,10 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import static org.neo4j.kernel.impl.store.kvstore.SortedKeyValueStoreHeader.BASE_MINOR_VERSION;
+import static org.neo4j.kernel.impl.store.counts.FileVersion.INITIAL_MINOR_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
@@ -70,14 +71,14 @@ public class CountsRotationTest
 
         // THEN
         assertTrue( fs.fileExists( alphaStoreFile() ) );
-        assertTrue( fs.fileExists( betaStoreFile() ) );
+        assertFalse( fs.fileExists( betaStoreFile() ) );
 
         try ( Lifespan life = new Lifespan() )
         {
             CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
                                                            new File( dir.getPath(), COUNTS_STORE_BASE ) ) );
             assertEquals( BASE_TX_ID, store.txId() );
-//            assertEquals( BASE_MINOR_VERSION + 1, store.minorVersion() );
+            assertEquals( INITIAL_MINOR_VERSION, store.minorVersion() );
             assertEquals( 0, store.totalEntriesStored() );
             assertEquals( 0, allRecords( store ).size() );
         }
@@ -87,7 +88,7 @@ public class CountsRotationTest
             CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
                                                            new File( dir.getPath(), COUNTS_STORE_BASE ) ) );
             assertEquals( BASE_TX_ID, store.txId() );
-            assertEquals( BASE_MINOR_VERSION, store.minorVersion() );
+            assertEquals( INITIAL_MINOR_VERSION, store.minorVersion() );
             assertEquals( 0, store.totalEntriesStored() );
             assertEquals( 0, allRecords( store ).size() );
         }
@@ -117,7 +118,7 @@ public class CountsRotationTest
                                                            new File( dir.getPath(), COUNTS_STORE_BASE ) ) );
             // a transaction for creating the label and a transaction for the node
             assertEquals( BASE_TX_ID + 1 + 1, store.txId() );
-            assertEquals( BASE_MINOR_VERSION, store.minorVersion() );
+            assertEquals( INITIAL_MINOR_VERSION, store.minorVersion() );
             // one for all nodes and one for the created "A" label
             assertEquals( 1 + 1, store.totalEntriesStored() );
             assertEquals( 1 + 1, allRecords( store ).size() );
@@ -158,7 +159,7 @@ public class CountsRotationTest
             // in the stats
             // a transaction for creating the label and a transaction for the node
             assertEquals( BASE_TX_ID + 1 + 1, store.txId() );
-            assertEquals( BASE_MINOR_VERSION, store.minorVersion() );
+            assertEquals( INITIAL_MINOR_VERSION, store.minorVersion() );
             // one for all nodes and one for the created "B" label
             assertEquals( 1 + 1, store.totalEntriesStored() );
             assertEquals( 1 + 1, allRecords( store ).size() );

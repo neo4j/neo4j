@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import java.io.IOException;
 
+import org.neo4j.function.Function;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.LegacyIndexApplier.ProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -29,7 +30,6 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.CacheInvalidationTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.HighIdTransactionApplier;
@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.command.NeoStoreTransactionApplier;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
+import org.neo4j.kernel.impl.util.function.Optional;
 
 /**
  * Holistic application of {@link TransactionRepresentation transactions} onto the store. Includes application
@@ -55,6 +56,7 @@ public class TransactionRepresentationStoreApplier
     private final ProviderLookup legacyIndexProviderLookup;
     private final PropertyLoader propertyLoader;
     private final IdOrderingQueue legacyIndexTransactionOrdering;
+    private final Function<CountsAccessor.Updater, NeoCommandHandler> handlerFactory;
 
     public TransactionRepresentationStoreApplier(
             IndexingService indexingService, LabelScanStore labelScanStore, NeoStore neoStore,
@@ -70,6 +72,7 @@ public class TransactionRepresentationStoreApplier
         this.indexConfigStore = indexConfigStore;
         this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
         this.propertyLoader = new PropertyLoader( neoStore );
+        this.handlerFactory = new CommandHandlerFactory( neoStore );
     }
 
     public void apply( TransactionRepresentation representation, LockGroup locks,
@@ -110,13 +113,28 @@ public class TransactionRepresentationStoreApplier
 
     private NeoCommandHandler getCountsStoreApplier( long transactionId, TransactionApplicationMode mode )
     {
-        CountsTracker counts = neoStore.getCounts();
-        if ( TransactionApplicationMode.RECOVERY == mode && !counts.acceptTx( transactionId ) )
+        Optional<NeoCommandHandler> handlerOption = neoStore.getCounts().apply( transactionId ).map( handlerFactory );
+        if ( mode == TransactionApplicationMode.RECOVERY )
         {
-            return NeoCommandHandler.EMPTY;
+            handlerOption = handlerOption.or( NeoCommandHandler.EMPTY );
+        }
+        return handlerOption.get();
+    }
+
+    private static class CommandHandlerFactory implements Function<CountsAccessor.Updater, NeoCommandHandler>
+    {
+        private final NeoStore neoStore;
+
+        CommandHandlerFactory( NeoStore neoStore )
+        {
+            this.neoStore = neoStore;
         }
 
-        assert counts.acceptTx( transactionId ) : counts;
-        return new CountsStoreApplier( counts.updater(), neoStore.getNodeStore() );
+        @Override
+        public NeoCommandHandler apply( CountsAccessor.Updater updater )
+                throws RuntimeException
+        {
+            return new CountsStoreApplier( updater, neoStore.getNodeStore() );
+        }
     }
 }

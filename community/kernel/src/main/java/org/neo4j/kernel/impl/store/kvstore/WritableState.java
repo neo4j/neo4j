@@ -17,26 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.counts;
 
-import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
-import org.neo4j.kernel.impl.store.kvstore.AbstractKeyValueStore;
-import org.neo4j.kernel.impl.store.kvstore.WritableBuffer;
+package org.neo4j.kernel.impl.store.kvstore;
 
-class UpdateFirstValue extends AbstractKeyValueStore.Update<CountsKey>
+import java.util.concurrent.locks.Lock;
+
+import org.neo4j.kernel.impl.util.function.Optional;
+
+abstract class WritableState<Key> extends ReadableState<Key>
 {
-    private static final int OFFSET = 0;
-    private final long delta;
+    abstract Optional<EntryUpdater<Key>> optionalUpdater( long version, Lock lock );
 
-    UpdateFirstValue( CountsKey key, long delta )
-    {
-        super( key );
-        this.delta = delta;
-    }
+    protected abstract EntryUpdater<Key> unsafeUpdater( Lock lock );
 
-    @Override
-    protected void update( WritableBuffer value )
-    {
-        value.putLong( OFFSET, value.getLong( OFFSET ) + delta );
-    }
+    protected abstract boolean hasChanges();
+
+    abstract EntryUpdater<Key> resetter( Lock lock, Runnable runnable );
 }

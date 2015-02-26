@@ -19,14 +19,14 @@
  */
 package org.neo4j.consistency.checking;
 
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
-
 import java.io.File;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -57,11 +57,11 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
-import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
@@ -121,7 +121,10 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
                                                          long lastCommittedTx, CountsTracker counts )
         {
             TransactionWriter writer = new TransactionWriter();
-            transactionData( new TransactionDataBuilder( writer, counts ), idGenerator );
+            try ( CountsAccessor.Updater updater = counts.apply( lastCommittedTx + 1 ).get() )
+            {
+                transactionData( new TransactionDataBuilder( writer, updater ), idGenerator );
+            }
             return writer.representation( new byte[0], masterId, authorId, startTimestamp, lastCommittedTx,
                    currentTimeMillis() );
         }
@@ -193,9 +196,9 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
     public static final class TransactionDataBuilder
     {
         private final TransactionWriter writer;
-        private final CountsAccessor counts;
+        private final CountsAccessor.Updater counts;
 
-        public TransactionDataBuilder( TransactionWriter writer, CountsTracker counts )
+        public TransactionDataBuilder( TransactionWriter writer, CountsAccessor.Updater counts )
         {
             this.writer = writer;
             this.counts = counts;
@@ -292,18 +295,12 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
 
         public void incrementNodeCount( int labelId, long delta )
         {
-            try ( CountsAccessor.Updater updater = counts.updater() )
-            {
-                updater.incrementNodeCount( labelId, delta );
-            }
+            counts.incrementNodeCount( labelId, delta );
         }
 
         public void incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta )
         {
-            try ( CountsAccessor.Updater updater = counts.updater() )
-            {
-                updater.incrementRelationshipCount( startLabelId, typeId, endLabelId, delta );
-            }
+            counts.incrementRelationshipCount( startLabelId, typeId, endLabelId, delta );
         }
     }
 

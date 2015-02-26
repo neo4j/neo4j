@@ -29,6 +29,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Format;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
@@ -132,7 +133,8 @@ public class ParallelBatchImporter implements BatchImporter
               OutputStream badRelationshipsOutput = new BufferedOutputStream(
                       fileSystem.openAsOutputStream( badRelationshipsFile, false ) );
               Collector<InputRelationship> badRelationships =
-                      input.badRelationshipsCollector( badRelationshipsOutput ) )
+                      input.badRelationshipsCollector( badRelationshipsOutput );
+              CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset() )
         {
             // Some temporary caches and indexes in the import
             IdMapper idMapper = input.idMapper();
@@ -176,14 +178,14 @@ public class ParallelBatchImporter implements BatchImporter
             StoreProcessor<NodeRecord> nodeFirstRelationshipProcessor = new NodeFirstRelationshipProcessor(
                     neoStore.getRelationshipGroupStore(), nodeRelationshipLink );
             StoreProcessor<NodeRecord> nodeCountsProcessor = new NodeCountsProcessor( neoStore.getNodeStore(),
-                    nodeLabelsCache, neoStore.getLabelRepository().getHighId(), neoStore.getCountsStore() );
+                    nodeLabelsCache, neoStore.getLabelRepository().getHighId(), countsUpdater );
 
             // Remaining relationship processors
             StoreProcessor<RelationshipRecord> relationshipLinkerProcessor =
                     new RelationshipLinkbackProcessor( nodeRelationshipLink );
             RelationshipCountsProcessor relationshipCountsProcessor = new RelationshipCountsProcessor(
                     nodeLabelsCache, neoStore.getLabelRepository().getHighId(),
-                    neoStore.getRelationshipTypeRepository().getHighId(), neoStore.getCountsStore() );
+                    neoStore.getRelationshipTypeRepository().getHighId(), countsUpdater );
 
             // Determine if we have enough available memory to be able to execute all remaining processors
             // in parallel.
@@ -220,7 +222,7 @@ public class ParallelBatchImporter implements BatchImporter
                 // Stage 7 -- count label-[type]->label
                 executeStages( new RelationshipCountsStage( config, nodeLabelsCache, neoStore.getRelationshipStore(),
                         neoStore.getLabelRepository().getHighId(),
-                        neoStore.getRelationshipTypeRepository().getHighId(), neoStore.getCountsStore() ) );
+                        neoStore.getRelationshipTypeRepository().getHighId(), countsUpdater ) );
             }
 
             // We're done, do some final logging about it

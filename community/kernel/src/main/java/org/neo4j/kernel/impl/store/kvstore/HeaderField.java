@@ -20,9 +20,9 @@
 
 package org.neo4j.kernel.impl.store.kvstore;
 
-public interface HeaderField<MetaData, Value>
+public interface HeaderField<Value>
 {
     Value read( ReadableBuffer header );
 
-    void write( MetaData headers, WritableBuffer header );
+    void write( Value value, WritableBuffer header );
 }

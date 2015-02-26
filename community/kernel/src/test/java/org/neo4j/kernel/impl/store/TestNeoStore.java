@@ -19,13 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -36,6 +29,12 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.function.primitive.FunctionFromPrimitiveLongLongToPrimitiveLong;
 import org.neo4j.graphdb.DependencyResolver;
@@ -114,6 +113,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
 
@@ -124,8 +124,8 @@ public class TestNeoStore
     private NeoStoreDataSource ds;
     private File path;
 
-    @ClassRule
-    public static PageCacheRule pageCacheRule = new PageCacheRule();
+    @Rule
+    public PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     @Rule public TargetDirectory.TestDirectory dir = TargetDirectory.testDirForTestWithEphemeralFS( fs.get(),
             getClass() );
@@ -1301,6 +1301,7 @@ public class TestNeoStore
         neoStore.setStoreVersion( 7 );
         neoStore.setGraphNextProp( 8 );
         neoStore.setLatestConstraintIntroducingTx( 9 );
+        neoStore.rebuildCountStoreIfNeeded();
         neoStore.flush();
         neoStore.close();
 

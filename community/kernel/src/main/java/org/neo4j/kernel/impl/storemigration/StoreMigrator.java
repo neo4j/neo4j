@@ -316,14 +316,15 @@ public class StoreMigrator implements StoreMigrationParticipant
         {
             try ( Lifespan life = new Lifespan() )
             {
-                CountsTracker tracker = life.add( new CountsTracker( logging.getMessagesLog( CountsTracker.class ),
-                                                                 fileSystem, pageCache, storeFileBase ) );
-                CountsComputer.computeCounts( nodeStore, relationshipStore, tracker,
-                        (int)storeFactory.getHighId( StoreFile.LABEL_TOKEN_STORE,
-                                LabelTokenStore.RECORD_SIZE ),
-                        (int)storeFactory.getHighId( StoreFile.RELATIONSHIP_TYPE_TOKEN_STORE,
-                                RelationshipTypeTokenStore.RECORD_SIZE ) );
-                tracker.rotate( lastTxId );
+                int highLabelId = (int) storeFactory.getHighId( StoreFile.LABEL_TOKEN_STORE,
+                                                                LabelTokenStore.RECORD_SIZE );
+                int highRelationshipTypeId = (int) storeFactory.getHighId( StoreFile.RELATIONSHIP_TYPE_TOKEN_STORE,
+                                                                           RelationshipTypeTokenStore.RECORD_SIZE );
+                CountsComputer initializer = new CountsComputer(
+                        lastTxId, nodeStore, relationshipStore, highLabelId, highRelationshipTypeId );
+                life.add( new CountsTracker(
+                        logging.getMessagesLog( CountsTracker.class ), fileSystem, pageCache, storeFileBase )
+                                  .setInitializer( initializer ) );
             }
         }
     }

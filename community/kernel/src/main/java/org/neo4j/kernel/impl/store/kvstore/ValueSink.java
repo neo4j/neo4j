@@ -17,27 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.counts;
 
-import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
-import org.neo4j.kernel.impl.store.kvstore.AbstractKeyValueStore;
-import org.neo4j.kernel.impl.store.kvstore.WritableBuffer;
+package org.neo4j.kernel.impl.store.kvstore;
 
-class AssignValues extends AbstractKeyValueStore.Update<CountsKey>
+abstract class ValueSink implements KeyValueVisitor
 {
-    private final long first, second;
-
-    public AssignValues( CountsKey key, long first, long second )
-    {
-        super( key );
-        this.first = first;
-        this.second = second;
-    }
+    protected abstract void value( ReadableBuffer value );
 
     @Override
-    protected void update( WritableBuffer value )
+    public final boolean visit( ReadableBuffer key, ReadableBuffer value )
     {
-        value.putLong( 0, first );
-        value.putLong( 8, second );
+        value( value );
+        return false;
     }
 }

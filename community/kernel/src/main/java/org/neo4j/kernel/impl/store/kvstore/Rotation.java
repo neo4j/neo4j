@@ -44,9 +44,9 @@ public @interface Rotation
         LEFT_RIGHT
         {
             @Override
-            <Meta> RotationStrategy<Meta> create( FileSystemAbstraction fs, PageCache pages,
-                                                  ProgressiveFormat<Meta> format, File base,
-                                                  String[] parameters )
+            RotationStrategy create( FileSystemAbstraction fs, PageCache pages, ProgressiveFormat format,
+                                     RotationMonitor monitor, File base,
+                                     String[] parameters )
             {
                 if ( parameters == null || parameters.length != 2 )
                 {
@@ -55,22 +55,21 @@ public @interface Rotation
                 String parent = base.getParent();
                 String l = base.getName() + parameters[0], r = base.getName() + parameters[1];
                 final File left = new File( parent, l ), right = new File( parent, r );
-                return new RotationStrategy.LeftRight<>( fs, pages, format, left, right );
+                return new RotationStrategy.LeftRight( fs, pages, format, monitor, left, right );
             }
         },
         INCREMENTING
         {
             @Override
-            <Meta> RotationStrategy<Meta> create( FileSystemAbstraction fs, PageCache pages,
-                                                  ProgressiveFormat<Meta> format, final File base,
-                                                  String[] parameters )
+            RotationStrategy create( FileSystemAbstraction fs, PageCache pages, ProgressiveFormat format,
+                                     RotationMonitor monitor, File base,
+                                     String[] parameters )
             {
-                return new RotationStrategy.Incrementing<>( fs, pages, format, base );
+                return new RotationStrategy.Incrementing( fs, pages, format, monitor, base );
             }
         };
 
-        abstract <Meta> RotationStrategy<Meta> create( FileSystemAbstraction fs, PageCache pages,
-                                                       ProgressiveFormat<Meta> format, File base,
-                                                       String... parameters );
+        abstract RotationStrategy create( FileSystemAbstraction fs, PageCache pages, ProgressiveFormat format,
+                                          RotationMonitor monitor, File base, String... parameters );
     }
 }

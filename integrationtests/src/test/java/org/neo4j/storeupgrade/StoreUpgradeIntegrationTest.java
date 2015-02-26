@@ -19,11 +19,6 @@
  */
 package org.neo4j.storeupgrade;
 
-import org.junit.Test;
-import org.junit.experimental.runners.Enclosed;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -33,6 +28,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
+
+import org.junit.Test;
+import org.junit.experimental.runners.Enclosed;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -65,8 +65,8 @@ import org.neo4j.tooling.GlobalGraphOperations;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.helpers.collection.Iterables.concat;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -416,10 +416,7 @@ public class StoreUpgradeIntegrationTest
             long lastCommittedTxId = neoStore.getLastCommittedTransactionId();
 
             CountsTracker counts = neoStore.getCounts();
-            assertTrue(
-                    "expected correct last tx id to be used by counts store",
-                    !counts.acceptTx( lastCommittedTxId ) && counts.acceptTx( lastCommittedTxId + 1 )
-            );
+            assertEquals( lastCommittedTxId, counts.txId() );
 
             assertThat( lastCommittedTxId, is( store.lastTxId ) );
         }

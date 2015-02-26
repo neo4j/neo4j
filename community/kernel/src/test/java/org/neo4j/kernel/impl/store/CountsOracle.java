@@ -24,6 +24,7 @@ import java.util.List;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.api.CountsVisitor;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.register.Register;
 
 import static org.junit.Assert.assertEquals;
@@ -65,23 +66,24 @@ public class CountsOracle
         state.replaceIndexSample( labelId, propertyKeyId, unique, size );
     }
 
-    public void update( CountsAccessor target )
+    public void update( CountsTracker target, long txId )
     {
-        try ( CountsAccessor.Updater updater = target.updater() )
+        try ( CountsAccessor.Updater updater = target.apply( txId ).get();
+              CountsAccessor.IndexStatsUpdater stats = target.updateIndexCounts() )
         {
-            state.accept( new CountsAccessor.Initializer( updater ) );
+            state.accept( new CountsAccessor.Initializer( updater, stats ) );
         }
     }
 
     public void update( CountsOracle target )
     {
-        update( target.state );
+        state.accept( new CountsAccessor.Initializer( target.state, target.state ) );
     }
 
     public <Tracker extends CountsVisitor.Visitable & CountsAccessor> void verify( final Tracker tracker )
     {
         CountsRecordState seenState = new CountsRecordState();
-        final CountsAccessor.Initializer initializer = new CountsAccessor.Initializer( seenState );
+        final CountsAccessor.Initializer initializer = new CountsAccessor.Initializer( seenState, seenState );
         List<CountsRecordState.Difference> differences = state.verify( new CountsVisitor.Visitable()
         {
             @Override

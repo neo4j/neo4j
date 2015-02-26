@@ -17,9 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.store.kvstore;
 
-public interface CollectedMetadata
+import java.io.IOException;
+
+public interface PreparedRotation
 {
-    <Value> Value getMetadata( HeaderField<?, Value> field );
+    long rotate() throws IOException;
 }

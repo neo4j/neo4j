@@ -109,7 +109,7 @@ public class RecountFromTransactions
                 while ( cursor.next() )
                 {
                     try ( CommandApplierFacade visitor = new CommandApplierFacade(
-                            new NodeStoreApplier( nodes ), new CountsStoreApplier( counts.updater(), nodes ) ) )
+                            new NodeStoreApplier( nodes ), new CountsStoreApplier( counts, nodes ) ) )
                     {
                         cursor.get().accept( visitor );
                     }
