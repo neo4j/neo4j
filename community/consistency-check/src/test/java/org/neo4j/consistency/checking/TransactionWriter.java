@@ -284,6 +284,16 @@ public class TransactionWriter
         addCommand( command );
     }
 
+    public void incrementNodeCount( int labelId, long delta )
+    {
+        addCommand( new Command.NodeCountsCommand().init( labelId, delta ) );
+    }
+
+    public void incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta )
+    {
+        addCommand( new Command.RelationshipCountsCommand().init( startLabelId, typeId, endLabelId, delta ) );
+    }
+
     private static <T extends TokenRecord> T withName( T record, int[] dynamicIds, String name )
     {
         if ( dynamicIds == null || dynamicIds.length == 0 )

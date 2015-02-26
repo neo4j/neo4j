@@ -42,5 +42,6 @@ public interface NeoCommandType
     public static final byte INDEX_DELETE_COMMAND = (byte) 14;
     public static final byte INDEX_CREATE_COMMAND = (byte) 15;
 
-    byte UPDATE_COUNTS_COMMAND = (byte) 16;
+    byte UPDATE_RELATIONSHIP_COUNTS_COMMAND = (byte) 16;
+    byte UPDATE_NODE_COUNTS_COMMAND = (byte) 17;
 }

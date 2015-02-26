@@ -20,12 +20,16 @@
 package recovery;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
@@ -34,6 +38,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
@@ -57,6 +62,7 @@ import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
 /**
  * Arbitrary recovery scenarios boiled down to as small tests as possible
  */
+@RunWith( Parameterized.class )
 public class TestRecoveryScenarios
 {
     @Test
@@ -67,7 +73,7 @@ public class TestRecoveryScenarios
         rotateLog();
         setProperty( node, "other-key", 1 );
         deleteNode( node );
-        flushAll();
+        flush.flush( db );
 
         // WHEN
         crashAndRestart( indexProvider );
@@ -96,7 +102,7 @@ public class TestRecoveryScenarios
         addLabel( node, label );
         InMemoryIndexProvider outdatedIndexProvider = indexProvider.snapshot();
         removeProperty( node, "key" );
-        flushAll();
+        flush.flush( db );
 
         // WHEN
         crashAndRestart( outdatedIndexProvider );
@@ -132,7 +138,7 @@ public class TestRecoveryScenarios
         InMemoryIndexProvider outdatedIndexProvider = indexProvider.snapshot();
         setProperty( node, "key", "value" );
         removeLabels( node, labels );
-        flushAll();
+        flush.flush( db );
 
         // WHEN
         crashAndRestart( outdatedIndexProvider );
@@ -235,10 +241,52 @@ public class TestRecoveryScenarios
         }
     }
 
+    @Parameterized.Parameters(name = "{0}")
+    public static List<Object[]> flushStrategy()
+    {
+        List<Object[]> parameters = new ArrayList<>(  );
+        for ( FlushStrategy flushStrategy : FlushStrategy.values() )
+        {
+            parameters.add( flushStrategy.parameters );
+        }
+        return parameters;
+    }
+
+    @SuppressWarnings("deprecation")
+    public enum FlushStrategy
+    {
+        FORCE_EVERYTHING
+                {
+                    @Override
+                    void flush( GraphDatabaseAPI db )
+                    {
+                        db.getDependencyResolver().resolveDependency( LogRotationControl.class ).forceEverything();
+                    }
+                },
+        FLUSH_PAGE_CACHE
+                {
+                    @Override
+                    void flush( GraphDatabaseAPI db ) throws IOException
+                    {
+                        db.getDependencyResolver().resolveDependency( PageCache.class ).flush();
+                    }
+                };
+        final Object[] parameters = new Object[]{this};
+
+        abstract void flush( GraphDatabaseAPI db ) throws IOException;
+    }
+
     public final @Rule EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private final Label label = label( "label" );
     @SuppressWarnings("deprecation") private GraphDatabaseAPI db;
     private final InMemoryIndexProvider indexProvider = new InMemoryIndexProvider( 100 );
+
+    private final FlushStrategy flush;
+
+    public TestRecoveryScenarios( FlushStrategy flush )
+    {
+        this.flush = flush;
+    }
 
     @SuppressWarnings("deprecation")
     @Before
@@ -262,11 +310,6 @@ public class TestRecoveryScenarios
     private void rotateLog() throws IOException
     {
         db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
-    }
-
-    private void flushAll()
-    {
-        db.getDependencyResolver().resolveDependency( LogRotationControl.class ).forceEverything();
     }
 
     private void deleteNode( Node node )

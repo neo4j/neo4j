@@ -32,9 +32,11 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.NeoStoreCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.NodeCountsCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyKeyTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCountsCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipGroupCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
@@ -292,12 +294,26 @@ public class CommandApplierFacade implements NeoCommandHandler, Visitor<Command,
     }
 
     @Override
-    public boolean visitUpdateCountsCommand( Command.CountsCommand command ) throws IOException
+    public boolean visitNodeCountsCommand( NodeCountsCommand command ) throws IOException
     {
         boolean result = false;
         for ( NeoCommandHandler handler : handlers )
         {
-            if ( handler.visitUpdateCountsCommand( command ) )
+            if ( handler.visitNodeCountsCommand( command ) )
+            {
+                result = true;
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public boolean visitRelationshipCountsCommand( RelationshipCountsCommand command ) throws IOException
+    {
+        boolean result = false;
+        for ( NeoCommandHandler handler : handlers )
+        {
+            if ( handler.visitRelationshipCountsCommand( command ) )
             {
                 result = true;
             }

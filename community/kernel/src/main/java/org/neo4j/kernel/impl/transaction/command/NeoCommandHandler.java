@@ -31,9 +31,11 @@ import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.NeoStoreCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.NodeCountsCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyKeyTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCountsCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipGroupCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
@@ -90,7 +92,9 @@ public interface NeoCommandHandler extends AutoCloseable
 
     boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException;
 
-    boolean visitUpdateCountsCommand( Command.CountsCommand command ) throws IOException;
+    boolean visitNodeCountsCommand( NodeCountsCommand command ) throws IOException;
+
+    boolean visitRelationshipCountsCommand( RelationshipCountsCommand command ) throws IOException;
 
     /**
      * Applies pending changes that might have been accumulated when visiting the commands.
@@ -198,7 +202,13 @@ public interface NeoCommandHandler extends AutoCloseable
         }
 
         @Override
-        public boolean visitUpdateCountsCommand( Command.CountsCommand command ) throws IOException
+        public boolean visitNodeCountsCommand( NodeCountsCommand command )
+        {
+            return false;
+        }
+
+        @Override
+        public boolean visitRelationshipCountsCommand( RelationshipCountsCommand command ) throws IOException
         {
             return false;
         }
@@ -314,9 +324,15 @@ public interface NeoCommandHandler extends AutoCloseable
         }
 
         @Override
-        public boolean visitUpdateCountsCommand( Command.CountsCommand command ) throws IOException
+        public boolean visitNodeCountsCommand( NodeCountsCommand command ) throws IOException
         {
-            return delegate.visitUpdateCountsCommand( command );
+            return delegate.visitNodeCountsCommand( command );
+        }
+
+        @Override
+        public boolean visitRelationshipCountsCommand( RelationshipCountsCommand command ) throws IOException
+        {
+            return delegate.visitRelationshipCountsCommand( command );
         }
 
         @Override

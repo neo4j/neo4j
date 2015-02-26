@@ -78,7 +78,10 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
     @Override
     public void incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta )
     {
-        counts( relationshipKey( startLabelId, typeId, endLabelId ) ).increment( 0l, delta );
+        if ( delta != 0 )
+        {
+            counts( relationshipKey( startLabelId, typeId, endLabelId ) ).increment( 0l, delta );
+        }
     }
 
     @Override
@@ -283,11 +286,20 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
         }
 
         @Override
+        public void visitNodeCount( int labelId, long count )
+        {
+            if ( count != 0 )
+            {   // Only add commands for counts that actually change
+                commands.add( new Command.NodeCountsCommand().init( labelId, count ) );
+            }
+        }
+
+        @Override
         public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
         {
             if ( count != 0 )
             {   // Only add commands for counts that actually change
-                commands.add( new Command.CountsCommand().init( startLabelId, typeId, endLabelId, count ) );
+                commands.add( new Command.RelationshipCountsCommand().init( startLabelId, typeId, endLabelId, count ) );
             }
         }
     }

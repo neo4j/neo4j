@@ -19,17 +19,6 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.model.Statement;
-
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -40,6 +29,17 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.model.Statement;
 
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.GraphStoreFixture;
@@ -89,8 +89,10 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static java.util.Arrays.asList;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
 import static org.neo4j.consistency.checking.full.ExecutionOrderIntegrationTest.config;
@@ -100,6 +102,8 @@ import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
+import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
+import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
@@ -677,7 +681,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.RELATIONSHIP, 2 )
-                   .verify( RecordType.COUNTS, 1 )
+                   .verify( RecordType.COUNTS, 3 )
                    .andThatsAllFolks();
     }
 
@@ -1182,6 +1186,8 @@ public class FullCheckIntegrationTest
                 tx.create( withNext( inUse( new RelationshipRecord( relA, otherNode, otherNode, typeId ) ), relB ) );
                 tx.create( withPrev( inUse( new RelationshipRecord( relB, otherNode, otherNode, typeId ) ), relA ) );
                 tx.create( withOwner( withRelationships( inUse( new RelationshipGroupRecord( group, typeId ) ), relB, relB, relB ), node ) );
+                tx.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, 2 );
+                tx.incrementRelationshipCount( ANY_LABEL, typeId, ANY_LABEL, 2 );
             }
         } );
 
@@ -1356,6 +1362,8 @@ public class FullCheckIntegrationTest
                 tx.create( new RelationshipRecord( rel, otherNode, otherNode, typeB ) );
                 tx.create( withOwner( withRelationships( new RelationshipGroupRecord( group, typeA ),
                         rel, rel, rel ), node ) );
+                tx.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, 1 );
+                tx.incrementRelationshipCount( ANY_LABEL, typeB, ANY_LABEL, 1 );
             }
         } );
 
@@ -1396,6 +1404,8 @@ public class FullCheckIntegrationTest
                 tx.create( new NodeRecord( nodeA, true, groupA, NO_NEXT_PROPERTY.intValue() ) );
                 tx.create( new NodeRecord( nodeB, false, rel, NO_NEXT_PROPERTY.intValue() ) );
                 tx.create( firstInChains( new RelationshipRecord( rel, nodeA, nodeB, typeA ), 1 ) );
+                tx.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, 1 );
+                tx.incrementRelationshipCount( ANY_LABEL, typeA, ANY_LABEL, 1 );
 
                 tx.create( withOwner( withRelationship( withNext( new RelationshipGroupRecord( groupA, typeA ), groupB ),
                         Direction.OUTGOING, rel ), nodeA ) );

@@ -48,6 +48,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
+import org.neo4j.kernel.impl.transaction.command.Command.NodeCountsCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCountsCommand;
 import org.neo4j.kernel.impl.transaction.command.CommandReaderFactory.DynamicRecordAdder;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.ReadPastEndException;
@@ -158,9 +160,14 @@ public class PhysicalLogNeoCommandReaderV2 implements CommandReader
             command = new IndexCommand.CreateCommand();
             break;
         }
-        case NeoCommandType.UPDATE_COUNTS_COMMAND:
+        case NeoCommandType.UPDATE_RELATIONSHIP_COUNTS_COMMAND:
         {
-            command = new Command.CountsCommand();
+            command = new RelationshipCountsCommand();
+            break;
+        }
+        case NeoCommandType.UPDATE_NODE_COUNTS_COMMAND:
+        {
+            command = new NodeCountsCommand();
             break;
         }
         default:
@@ -702,7 +709,16 @@ public class PhysicalLogNeoCommandReaderV2 implements CommandReader
         }
 
         @Override
-        public boolean visitUpdateCountsCommand( Command.CountsCommand command ) throws IOException
+        public boolean visitNodeCountsCommand( NodeCountsCommand command ) throws IOException
+        {
+            int labelId = channel.getInt();
+            long delta = channel.getLong();
+            command.init( labelId, delta );
+            return false;
+        }
+
+        @Override
+        public boolean visitRelationshipCountsCommand( RelationshipCountsCommand command ) throws IOException
         {
             int startLabelId = channel.getInt();
             int typeId = channel.getInt();
