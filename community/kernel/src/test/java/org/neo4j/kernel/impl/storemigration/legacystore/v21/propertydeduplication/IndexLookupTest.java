@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication;
 
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -28,11 +27,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.DynamicLabel;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
@@ -40,7 +37,7 @@ import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -52,7 +49,7 @@ import static org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydedup
 public class IndexLookupTest
 {
     @ClassRule
-    public static TargetDirectory.TestDirectory storePath = TargetDirectory.testDirForTest( IndexLookupTest.class );
+    public static EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( IndexLookupTest.class );
 
     private static GraphDatabaseAPI api;
     private static IndexLookup indexLookup;
@@ -70,9 +67,7 @@ public class IndexLookupTest
     @BeforeClass
     public static void setUp()
     {
-        GraphDatabaseFactory factory = new GraphDatabaseFactory();
-        GraphDatabaseService db = factory.newEmbeddedDatabase( storePath.absolutePath() );
-        api = (GraphDatabaseAPI) db;
+        api = dbRule.getGraphDatabaseAPI();
 
         String notUsedIndexPropKey = "notUsed";
         String usedIndexPropKey = "used";
@@ -80,24 +75,24 @@ public class IndexLookupTest
         Label usedLabel = DynamicLabel.label( "UsedLabel" );
         Label notUsedLabel = DynamicLabel.label( "NotUsedLabel" );
 
-        try ( Transaction transaction = db.beginTx() )
+        try ( Transaction transaction = api.beginTx() )
         {
-            db.schema().indexFor( usedLabel ).on( usedIndexPropKey ).create();
+            api.schema().indexFor( usedLabel ).on( usedIndexPropKey ).create();
             transaction.success();
         }
 
-        try ( Transaction transaction = db.beginTx() )
+        try ( Transaction transaction = api.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
+            api.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
             indexedNodePropertyValue = "value1";
             notIndexedNodePropertyValue = "value2";
 
-            Node nodeA = db.createNode( usedLabel );
+            Node nodeA = api.createNode( usedLabel );
             nodeA.setProperty( usedIndexPropKey, indexedNodePropertyValue );
             nodeA.setProperty( notUsedIndexPropKey, notIndexedNodePropertyValue );
             indexedNode = nodeA.getId();
 
-            Node nodeB = db.createNode( notUsedLabel );
+            Node nodeB = api.createNode( notUsedLabel );
             nodeB.setProperty( usedIndexPropKey, notIndexedNodePropertyValue );
             nodeB.setProperty( notUsedIndexPropKey, indexedNodePropertyValue );
             notIndexedNode = nodeB.getId();
@@ -119,12 +114,6 @@ public class IndexLookupTest
         PropertyKeyTokenStore propertyKeyTokenStore = neoStore.getPropertyKeyTokenStore();
         notUsedPropertyId = findTokenFor( propertyKeyTokenStore, notUsedIndexPropKey ).id();
         usedPropertyId = findTokenFor( propertyKeyTokenStore, usedIndexPropKey ).id();
-    }
-
-    @AfterClass
-    public static void tearDown()
-    {
-        api.shutdown();
     }
 
     @Test

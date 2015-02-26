@@ -30,11 +30,11 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -56,7 +56,7 @@ public class TestLuceneSchemaBatchInsertIT
         inserter.shutdown();
 
         // THEN
-        GraphDatabaseFactory graphDatabaseFactory = new GraphDatabaseFactory();
+        GraphDatabaseFactory graphDatabaseFactory = new TestGraphDatabaseFactory();
         GraphDatabaseAPI db = (GraphDatabaseAPI) graphDatabaseFactory.newEmbeddedDatabase( storeDir );
         DependencyResolver dependencyResolver = db.getDependencyResolver();
         SchemaIndexProvider schemaIndexProvider = dependencyResolver.resolveDependency(

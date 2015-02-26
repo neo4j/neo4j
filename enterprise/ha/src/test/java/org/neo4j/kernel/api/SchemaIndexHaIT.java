@@ -37,7 +37,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
 import org.neo4j.helpers.Predicate;
@@ -563,7 +563,7 @@ public class SchemaIndexHaIT
         }
     }
 
-    private static class ControlledGraphDatabaseFactory extends HighlyAvailableGraphDatabaseFactory
+    private static class ControlledGraphDatabaseFactory extends TestHighlyAvailableGraphDatabaseFactory
     {
         final Map<GraphDatabaseService,SchemaIndexProvider> perDbIndexProvider = new ConcurrentHashMap<>();
         private final KernelExtensionFactory<?> factory;

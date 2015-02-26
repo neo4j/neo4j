@@ -19,25 +19,26 @@
  */
 package org.neo4j.backup;
 
-import static org.junit.Assert.assertEquals;
-
-import java.io.File;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+
+import java.io.File;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertEquals;
 
 public class IncrementalBackupTests
 {
@@ -135,7 +136,7 @@ public class IncrementalBackupTests
 
     private GraphDatabaseService startGraphDatabase( File path )
     {
-        return new GraphDatabaseFactory().
+        return new TestGraphDatabaseFactory().
                 newEmbeddedDatabaseBuilder( path.getPath() ).
                 setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ).
                 setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE ).

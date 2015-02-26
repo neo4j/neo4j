@@ -19,17 +19,17 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import org.junit.Test;
+
 import java.io.File;
 import java.util.concurrent.TimeUnit;
-
-import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertTrue;
@@ -54,7 +54,7 @@ public class RecoveryIT
         process.waitFor();
 
         System.out.println( path );
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( path );
         Transaction transaction = db.beginTx();
         try
         {

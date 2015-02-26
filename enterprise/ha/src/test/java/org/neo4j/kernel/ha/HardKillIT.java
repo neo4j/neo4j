@@ -19,10 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,7 +28,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
-import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.paxos.MemberIsAvailable;
@@ -42,11 +38,16 @@ import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class HardKillIT
 {
@@ -185,7 +186,7 @@ public class HardKillIT
 
     private static HighlyAvailableGraphDatabase startDb( int serverId )
     {
-        GraphDatabaseBuilder builder = new HighlyAvailableGraphDatabaseFactory()
+        GraphDatabaseBuilder builder = new TestHighlyAvailableGraphDatabaseFactory()
                 .newHighlyAvailableDatabaseBuilder( path( serverId ) )
                 .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5002,127.0.0.1:5003" )
                 .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + serverId) )

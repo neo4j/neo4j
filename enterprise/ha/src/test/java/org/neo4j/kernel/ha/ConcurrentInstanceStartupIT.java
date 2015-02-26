@@ -19,18 +19,18 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.junit.Test;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
-import org.junit.Test;
-
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertTrue;
@@ -117,7 +117,7 @@ public class ConcurrentInstanceStartupIT
 
     private HighlyAvailableGraphDatabase startDbAtBase( int i, String initialHosts )
     {
-        GraphDatabaseBuilder masterBuilder = new HighlyAvailableGraphDatabaseFactory()
+        GraphDatabaseBuilder masterBuilder = new TestHighlyAvailableGraphDatabaseFactory()
                 .newHighlyAvailableDatabaseBuilder( path( i ).getAbsolutePath() )
                 .setConfig( ClusterSettings.initial_hosts, initialHosts )
                 .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + ( 5000 + i ) )

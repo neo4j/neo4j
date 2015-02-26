@@ -19,6 +19,9 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import org.junit.Ignore;
+import org.junit.Test;
+
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -30,15 +33,11 @@ import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import org.junit.Ignore;
-import org.junit.Test;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.collection.MapUtil;
@@ -46,6 +45,7 @@ import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -56,15 +56,13 @@ public class TestMigration
     @Test
     public void canReadAndUpgradeOldIndexStoreFormat() throws Exception
     {
-        String path = "target/var/old-index-store";
-        Neo4jTestCase.deleteFileOrDirectory( new File( path ) );
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
-        db.shutdown();
+        File path = new File( "target/var/old-index-store" );
+        Neo4jTestCase.deleteFileOrDirectory( path );
+        startDatabase( path ).shutdown();
         InputStream stream = getClass().getClassLoader().getResourceAsStream( "old-index.db" );
         writeFile( stream, new File( path, "index.db" ) );
-        db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
-        Transaction transaction = db.beginTx();
-        try
+        GraphDatabaseService db = startDatabase( path );
+        try ( Transaction ignore = db.beginTx() )
         {
             assertTrue( db.index().existsForNodes( "indexOne" ) );
             Index<Node> indexOne = db.index().forNodes( "indexOne" );
@@ -75,10 +73,6 @@ public class TestMigration
             assertTrue( db.index().existsForRelationships( "indexThree" ) );
             Index<Relationship> indexThree = db.index().forRelationships( "indexThree" );
             verifyConfiguration( db, indexThree, LuceneIndexImplementation.EXACT_CONFIG );
-        }
-        finally
-        {
-            transaction.finish();
         }
         db.shutdown();
     }
@@ -120,7 +114,7 @@ public class TestMigration
             bos.flush();
             bos.close();
         }
-        return new GraphDatabaseFactory().newEmbeddedDatabase( path.getAbsolutePath() );
+        return startDatabase( path );
     }
 
     private void verifyConfiguration( GraphDatabaseService db, Index<? extends PropertyContainer> index, Map<String, String> config )
@@ -147,7 +141,7 @@ public class TestMigration
         Map<String, String> correctConfig = MapUtil.stringMap( "type", "exact", IndexManager.PROVIDER, "lucene" );
         File storeDir = new File( "target/var/index" );
         Neo4jTestCase.deleteFileOrDirectory( storeDir );
-        GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getPath() );
+        GraphDatabaseService graphDb = startDatabase( storeDir );
         Transaction transaction = graphDb.beginTx();
         try
         {
@@ -166,7 +160,7 @@ public class TestMigration
         graphDb.shutdown();
 
         removeProvidersFromIndexDbFile( storeDir );
-        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getPath() );
+        graphDb = startDatabase( storeDir );
         transaction = graphDb.beginTx();
         try
         {
@@ -186,7 +180,7 @@ public class TestMigration
         graphDb.shutdown();
 
         removeProvidersFromIndexDbFile( storeDir );
-        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getPath() );
+        graphDb = startDatabase( storeDir );
         transaction = graphDb.beginTx();
         try
         {
@@ -203,6 +197,11 @@ public class TestMigration
             transaction.finish();
         }
         graphDb.shutdown();
+    }
+
+    private GraphDatabaseService startDatabase( File storeDir )
+    {
+        return new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.getPath() );
     }
 
     private void removeProvidersFromIndexDbFile( File storeDir )

@@ -31,9 +31,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilderTestTools;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Provider;
@@ -41,6 +42,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
 public abstract class DatabaseRule extends ExternalResource
@@ -86,9 +88,10 @@ public abstract class DatabaseRule extends ExternalResource
 
     private <T> T transaction( Function<? super GraphDatabaseService, T> function, boolean commit )
     {
-        try ( Transaction tx = database.beginTx() )
+        GraphDatabaseService db = getGraphDatabaseService();
+        try ( Transaction tx = db.beginTx() )
         {
-            T result = function.apply( database );
+            T result = function.apply( db );
 
             if ( commit )
             {
@@ -100,27 +103,27 @@ public abstract class DatabaseRule extends ExternalResource
 
     public Result execute( String query ) throws QueryExecutionException
     {
-        return database.execute( query );
+        return getGraphDatabaseAPI().execute( query );
     }
 
     public Result execute( String query, Map<String, Object> parameters ) throws QueryExecutionException
     {
-        return database.execute( query, parameters );
+        return getGraphDatabaseAPI().execute( query, parameters );
     }
 
     public Transaction beginTx()
     {
-        return database.beginTx();
+        return getGraphDatabaseAPI().beginTx();
     }
 
     public Node createNode( Label... labels )
     {
-        return database.createNode( labels );
+        return getGraphDatabaseAPI().createNode( labels );
     }
 
     public Schema schema()
     {
-        return database.schema();
+        return getGraphDatabaseAPI().schema();
     }
 
     @Override
@@ -136,7 +139,7 @@ public abstract class DatabaseRule extends ExternalResource
     }
 
     @SuppressWarnings("deprecation")
-    public void create() throws IOException
+    private void create() throws IOException
     {
         createResources();
         try
@@ -145,9 +148,6 @@ public abstract class DatabaseRule extends ExternalResource
             configure( factory );
             databaseBuilder = newBuilder( factory );
             configure( databaseBuilder );
-            database = (GraphDatabaseAPI) databaseBuilder.newGraphDatabase();
-            storeDir = database.getStoreDir();
-            statementProvider = resolveDependency( ThreadToStatementContextBridge.class );
         }
         catch ( RuntimeException e )
         {
@@ -178,22 +178,47 @@ public abstract class DatabaseRule extends ExternalResource
         // Override to configure the database
 
         // Adjusted defaults for testing
-        builder.setConfig( GraphDatabaseSettings.pagecache_memory, "20M" );
+    }
+
+    public GraphDatabaseBuilder setConfig( Setting<?> setting, String value )
+    {
+        return databaseBuilder.setConfig( setting, value );
+    }
+
+    public Config getConfigCopy()
+    {
+        return GraphDatabaseBuilderTestTools.createConfigCopy( databaseBuilder );
+    }
+
+    public void resetConfig()
+    {
+        GraphDatabaseBuilderTestTools.clearConfig( databaseBuilder );
     }
 
     public GraphDatabaseService getGraphDatabaseService()
     {
-        return database;
+        return getGraphDatabaseAPI();
     }
 
     public GraphDatabaseAPI getGraphDatabaseAPI()
     {
+        ensureStarted();
         return database;
+    }
+
+    private synchronized void ensureStarted()
+    {
+        if ( database == null )
+        {
+            database = (GraphDatabaseAPI) databaseBuilder.newGraphDatabase();
+            storeDir = database.getStoreDir();
+            statementProvider = resolveDependency( ThreadToStatementContextBridge.class );
+        }
     }
 
     public static interface RestartAction
     {
-        void run( FileSystemAbstraction fs, File storeDirectory );
+        void run( FileSystemAbstraction fs, File storeDirectory ) throws IOException;
 
         public static RestartAction EMPTY = new RestartAction()
         {
@@ -205,13 +230,18 @@ public abstract class DatabaseRule extends ExternalResource
         };
     }
 
-    public void restartDatabase( RestartAction action )
+    public GraphDatabaseAPI restartDatabase() throws IOException
+    {
+        return restartDatabase( RestartAction.EMPTY );
+    }
+
+    public GraphDatabaseAPI restartDatabase( RestartAction action ) throws IOException
     {
         FileSystemAbstraction fs = resolveDependency( FileSystemAbstraction.class );
         database.shutdown();
         action.run( fs, new File( storeDir ) );
-        database = (GraphDatabaseAPI) databaseBuilder.newGraphDatabase();
-        statementProvider = resolveDependency( ThreadToStatementContextBridge.class );
+        database = null;
+        return getGraphDatabaseAPI();
     }
 
     public void shutdown()
@@ -231,10 +261,20 @@ public abstract class DatabaseRule extends ExternalResource
         }
     }
 
+    public void stopAndKeepFiles()
+    {
+        if ( database != null )
+        {
+            database.shutdown();
+            database = null;
+            statementProvider = null;
+        }
+    }
+
     public void clearCache()
     {
         NeoStoreDataSource dataSource =
-                database.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
+                getGraphDatabaseAPI().getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
 
         dataSource.getNodeCache().clear();
         dataSource.getRelationshipCache().clear();
@@ -242,11 +282,12 @@ public abstract class DatabaseRule extends ExternalResource
 
     public <T> T resolveDependency( Class<T> type )
     {
-        return database.getDependencyResolver().resolveDependency( type );
+        return getGraphDatabaseAPI().getDependencyResolver().resolveDependency( type );
     }
 
     public Statement statement()
     {
+        ensureStarted();
         return statementProvider.instance();
     }
 }

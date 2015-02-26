@@ -19,19 +19,18 @@
  */
 package org.neo4j.consistency.repair;
 
-import java.io.File;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -39,6 +38,7 @@ import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 
@@ -113,7 +113,7 @@ public class RelationshipChainExplorerTest
     private StoreAccess createStoreWithOneHighDegreeNodeAndSeveralDegreeTwoNodes( int nDegreeTwoNodes )
     {
         File storeDirectory = storeLocation.directory();
-        GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabase( storeDirectory.getPath() );
+        GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDirectory.getPath() );
         Transaction transaction = database.beginTx();
         try
         {

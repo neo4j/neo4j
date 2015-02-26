@@ -32,7 +32,6 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.Service;
@@ -53,6 +52,7 @@ import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.StoreCopyMonitor;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -61,7 +61,6 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 
@@ -108,7 +107,7 @@ public class StoreCopyClientTest
                 new StoreCopyClient( config, loadKernelExtensions(), console, logging, fs, storeCopyMonitor );
 
         final GraphDatabaseAPI original =
-                (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( originalDir );
+                (GraphDatabaseAPI) startDatabase( originalDir );
 
         try ( Transaction tx = original.beginTx() )
         {
@@ -123,7 +122,7 @@ public class StoreCopyClientTest
         copier.copyStore( storeCopyRequest, cancellationRequest );
 
         // Then
-        GraphDatabaseService copy = new GraphDatabaseFactory().newEmbeddedDatabase( copyDir );
+        GraphDatabaseService copy = startDatabase( copyDir );
 
         try ( Transaction tx = copy.beginTx() )
         {
@@ -144,6 +143,11 @@ public class StoreCopyClientTest
         }
 
         verify( storeCopyRequest, times( 1 ) ).done();
+    }
+
+    private GraphDatabaseService startDatabase( String storeDir )
+    {
+        return new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
     }
 
     @Test
@@ -182,7 +186,7 @@ public class StoreCopyClientTest
                 new StoreCopyClient( config, loadKernelExtensions(), console, logging, fs, storeCopyMonitor );
 
         final GraphDatabaseAPI original =
-                (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( originalDir );
+                (GraphDatabaseAPI) startDatabase( originalDir );
 
         try ( Transaction tx = original.beginTx() )
         {
@@ -197,7 +201,7 @@ public class StoreCopyClientTest
         copier.copyStore( storeCopyRequest, cancellationRequest );
 
         // Then
-        GraphDatabaseService copy = new GraphDatabaseFactory().newEmbeddedDatabase( copyDir );
+        GraphDatabaseService copy = startDatabase( copyDir );
 
         try ( Transaction tx = copy.beginTx() )
         {

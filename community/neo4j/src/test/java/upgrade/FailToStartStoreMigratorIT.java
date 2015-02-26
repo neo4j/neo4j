@@ -19,18 +19,18 @@
  */
 package upgrade;
 
-import java.io.File;
-
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import java.io.File;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.core.NonUniqueTokenException;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.Unzip;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -51,7 +51,7 @@ public class FailToStartStoreMigratorIT
         // when
         try
         {
-            new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir.getAbsolutePath() ).
+            new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir.getAbsolutePath() ).
                     setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" ).
                     newGraphDatabase();
             fail( "should have failed to start" );

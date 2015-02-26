@@ -24,7 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.GraphDatabaseAPI;
 
@@ -33,7 +33,7 @@ public class StartInstanceInAnotherJvm
     public static void main( String[] args )
     {
         String dir = args[0];
-        GraphDatabaseAPI newSlave = (GraphDatabaseAPI) new HighlyAvailableGraphDatabaseFactory()
+        GraphDatabaseAPI newSlave = (GraphDatabaseAPI) new TestHighlyAvailableGraphDatabaseFactory()
                 .newHighlyAvailableDatabaseBuilder( dir )
                 .setConfig( Args.parse( args ).asMap() )
                 .newGraphDatabase();

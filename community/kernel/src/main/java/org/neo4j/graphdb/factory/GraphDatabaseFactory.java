@@ -70,9 +70,18 @@ public class GraphDatabaseFactory
     public GraphDatabaseBuilder newEmbeddedDatabaseBuilder( final String path )
     {
         final GraphDatabaseFactoryState state = getStateCopy();
-        return new GraphDatabaseBuilder( new GraphDatabaseBuilder.DatabaseCreator()
+        GraphDatabaseBuilder.DatabaseCreator creator = createDatabaseCreator( path, state );
+        GraphDatabaseBuilder builder = new GraphDatabaseBuilder( creator );
+        configure( builder );
+        return builder;
+    }
+
+    protected GraphDatabaseBuilder.DatabaseCreator createDatabaseCreator(
+            final String path, final GraphDatabaseFactoryState state )
+    {
+        return new GraphDatabaseBuilder.DatabaseCreator()
         {
-            @SuppressWarnings("deprecation")
+            @SuppressWarnings( "deprecation" )
             @Override
             public GraphDatabaseService newDatabase( Map<String,String> config )
             {
@@ -80,7 +89,12 @@ public class GraphDatabaseFactory
                 Dependencies dependencies = state.databaseDependencies();
                 return GraphDatabaseFactory.this.newDatabase( path, config, dependencies );
             }
-        } );
+        };
+    }
+
+    protected void configure( GraphDatabaseBuilder builder )
+    {
+        // Let the default configuration pass through.
     }
 
     @SuppressWarnings( "deprecation" )

@@ -19,18 +19,18 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.index.lucene.unsafe.batchinsert.LuceneBatchInserterIndexProvider;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserterIndex;
 import org.neo4j.unsafe.batchinsert.BatchInserterIndexProvider;
@@ -47,13 +47,13 @@ import static org.neo4j.index.impl.lucene.LuceneIndexImplementation.EXACT_CONFIG
 public class BatchInsertionIT
 {
     @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( BatchInsertionIT.class );
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( BatchInsertionIT.class );
 
     @Test
     public void shouldIndexNodesWithMultipleLabels() throws Exception
     {
         // Given
-        String path = testDir.directory().getAbsolutePath();
+        String path = dbRule.getStoreDir().getAbsolutePath();
         BatchInserter inserter = BatchInserters.inserter( path );
 
         inserter.createNode( map( "name", "Bob" ), label( "User" ), label( "Admin" ) );
@@ -65,7 +65,7 @@ public class BatchInsertionIT
         inserter.shutdown();
 
         // Then
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path );
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
         try ( Transaction tx = db.beginTx() )
         {
             assertThat( count( db.findNodes( label( "User" ), "name", "Bob" ) ), equalTo(1) );
@@ -82,7 +82,7 @@ public class BatchInsertionIT
     public void shouldNotIndexNodesWithWrongLabel() throws Exception
     {
         // Given
-        BatchInserter inserter = BatchInserters.inserter( testDir.directory().getAbsolutePath() );
+        BatchInserter inserter = BatchInserters.inserter( dbRule.getStoreDir().getAbsolutePath() );
 
         inserter.createNode( map("name", "Bob"), label( "User" ), label("Admin"));
 
@@ -92,7 +92,7 @@ public class BatchInsertionIT
         inserter.shutdown();
 
         // Then
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase(testDir.directory().getAbsolutePath());
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
         try(Transaction tx = db.beginTx())
         {
             assertThat( count( db.findNodes( label( "Banana" ), "name", "Bob" ) ), equalTo(0) );
@@ -107,7 +107,7 @@ public class BatchInsertionIT
     @Test
     public void shouldBeAbleToMakeRepeatedCallsToSetNodeProperty() throws Exception
     {
-        BatchInserter inserter = BatchInserters.inserter( testDir.directory().getAbsolutePath() );
+        BatchInserter inserter = BatchInserters.inserter( dbRule.getStoreDir().getAbsolutePath() );
         long nodeId = inserter.createNode( Collections.<String, Object>emptyMap() );
 
         final Object finalValue = 87;
@@ -118,7 +118,7 @@ public class BatchInsertionIT
         inserter.setNodeProperty( nodeId, "a", finalValue );
         inserter.shutdown();
 
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase(testDir.directory().getAbsolutePath());
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
         try(Transaction ignored = db.beginTx())
         {
             assertThat( db.getNodeById( nodeId ).getProperty( "a" ), equalTo( finalValue ) );
@@ -132,7 +132,7 @@ public class BatchInsertionIT
     @Test
     public void shouldBeAbleToMakeRepeatedCallsToSetNodePropertyWithMultiplePropertiesPerBlock() throws Exception
     {
-        BatchInserter inserter = BatchInserters.inserter( testDir.directory().getAbsolutePath() );
+        BatchInserter inserter = BatchInserters.inserter( dbRule.getStoreDir().getAbsolutePath() );
         long nodeId = inserter.createNode( Collections.<String, Object>emptyMap() );
 
         final Object finalValue1 = 87;
@@ -145,7 +145,7 @@ public class BatchInsertionIT
         inserter.setNodeProperty( nodeId, "a", finalValue1 );
         inserter.shutdown();
 
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase(testDir.directory().getAbsolutePath());
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
         try(Transaction ignored = db.beginTx())
         {
             assertThat( db.getNodeById( nodeId ).getProperty( "a" ), equalTo( finalValue1 ) );
@@ -161,7 +161,7 @@ public class BatchInsertionIT
     @Test
     public void testInsertionSpeed()
     {
-        BatchInserter inserter = BatchInserters.inserter( testDir.directory().getAbsolutePath() );
+        BatchInserter inserter = BatchInserters.inserter( dbRule.getStoreDir().getAbsolutePath() );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
         BatchInserterIndex index = provider.nodeIndex( "yeah", EXACT_CONFIG );
         index.setCacheCapacity( "key", 1000000 );

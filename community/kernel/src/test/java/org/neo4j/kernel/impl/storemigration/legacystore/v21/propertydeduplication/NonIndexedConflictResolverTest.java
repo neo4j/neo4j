@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,10 +30,8 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.NeoStore;
@@ -46,20 +43,19 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication.PropertyDeduplicatorTestUtil.findTokenFor;
 import static org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplication.PropertyDeduplicatorTestUtil.replacePropertyKey;
 
 public class NonIndexedConflictResolverTest
 {
     @Rule
-    public TargetDirectory.TestDirectory storePath = TargetDirectory.testDirForTest( IndexLookupTest.class );
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( IndexLookupTest.class );
     private GraphDatabaseAPI api;
     private PropertyKeyTokenStore propertyKeyTokenStore;
     private PropertyStore propertyStore;
@@ -72,9 +68,7 @@ public class NonIndexedConflictResolverTest
     @Before
     public void setUp()
     {
-        GraphDatabaseFactory factory = new GraphDatabaseFactory();
-        GraphDatabaseService db = factory.newEmbeddedDatabase( storePath.absolutePath() );
-        api = (GraphDatabaseAPI) db;
+        api = dbRule.getGraphDatabaseAPI();
 
         String propKeyA = "keyA";
         String propKeyB = "keyB";
@@ -82,19 +76,19 @@ public class NonIndexedConflictResolverTest
         String propKeyD = "keyD";
         String propKeyE = "keyE";
 
-        try ( Transaction transaction = db.beginTx() )
+        try ( Transaction transaction = api.beginTx() )
         {
-            Node nodeA = db.createNode();
+            Node nodeA = api.createNode();
             nodeA.setProperty( propKeyA, "value" );
             nodeA.setProperty( propKeyB, "value" );
             nodeIdA = nodeA.getId();
 
-            Node nodeB = db.createNode();
+            Node nodeB = api.createNode();
             nodeB.setProperty( propKeyA, "value" );
             nodeB.setProperty( propKeyB, "value" );
             nodeIdB = nodeB.getId();
 
-            Node nodeC = db.createNode();
+            Node nodeC = api.createNode();
             nodeC.setProperty( propKeyA, "longer val" );
             nodeC.setProperty( propKeyB, "longer val" );
             nodeC.setProperty( propKeyC, "longer val" );
@@ -126,12 +120,6 @@ public class NonIndexedConflictResolverTest
         replacePropertyKey( propertyStore, nodeRecordC, tokenC, tokenA );
         replacePropertyKey( propertyStore, nodeRecordC, tokenD, tokenA );
         replacePropertyKey( propertyStore, nodeRecordC, tokenE, tokenA );
-    }
-
-    @After
-    public void tearDown()
-    {
-        api.shutdown();
     }
 
     @Test

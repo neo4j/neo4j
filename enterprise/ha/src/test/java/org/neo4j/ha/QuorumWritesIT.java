@@ -19,12 +19,12 @@
  */
 package org.neo4j.ha;
 
+import org.junit.Ignore;
+import org.junit.Test;
+
 import java.io.File;
 import java.net.URI;
 import java.util.concurrent.CountDownLatch;
-
-import org.junit.Ignore;
-import org.junit.Test;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -35,7 +35,7 @@ import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -48,7 +48,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
 @Ignore("To be rewritten")
@@ -202,8 +201,8 @@ public class QuorumWritesIT
         waitOnRoleIsAvailable( master, latch4, HighAvailabilityModeSwitcher.MASTER );
         waitOnRoleIsAvailable( master, latch5, HighAvailabilityModeSwitcher.SLAVE );
 
-        HighlyAvailableGraphDatabase replacement = (HighlyAvailableGraphDatabase) new
-                HighlyAvailableGraphDatabaseFactory().
+        HighlyAvailableGraphDatabase replacement =
+                (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                 newHighlyAvailableDatabaseBuilder( new File( root, "replacement" ).getAbsolutePath() ).
                 setConfig( ClusterSettings.cluster_server, ":5010" ).
                 setConfig( HaSettings.ha_server, ":6010" ).

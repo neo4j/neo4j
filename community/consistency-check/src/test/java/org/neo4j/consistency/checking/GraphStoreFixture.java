@@ -21,15 +21,13 @@ package org.neo4j.consistency.checking;
 
 import java.io.File;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -65,6 +63,7 @@ import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.Collections.singletonMap;
@@ -337,8 +336,8 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         // and the next startup of the store would do recovery where the transaction would have been
         // applied and all would have been well.
 
-        GraphDatabaseAPI database = (GraphDatabaseAPI) new GraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( directory ).setConfig( configuration( false ) ).newGraphDatabase();
+        GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory );
+        GraphDatabaseAPI database = (GraphDatabaseAPI) builder.newGraphDatabase();
         try ( LockGroup locks = new LockGroup() )
         {
             TransactionRepresentationCommitProcess commitProcess =
@@ -361,11 +360,6 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         }
     }
 
-    protected Map<String, String> configuration( boolean initialData )
-    {
-        return new HashMap<>();
-    }
-
     private String directory;
     private long schemaId;
     private long nodeId;
@@ -381,9 +375,8 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
 
     private void generateInitialData()
     {
-        GraphDatabaseAPI graphDb = (GraphDatabaseAPI) new GraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( directory ).setConfig( configuration( true ) )
-                .newGraphDatabase();
+        GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory );
+        GraphDatabaseAPI graphDb = (GraphDatabaseAPI) builder.newGraphDatabase();
         try
         {
             generateInitialData( graphDb );

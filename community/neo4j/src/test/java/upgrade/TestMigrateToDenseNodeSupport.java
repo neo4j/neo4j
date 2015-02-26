@@ -19,12 +19,12 @@
  */
 package upgrade;
 
-import java.io.File;
-import java.util.Set;
-
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import java.io.File;
+import java.util.Set;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -40,11 +40,11 @@ import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.DynamicLabel.label;
@@ -153,7 +153,7 @@ public class TestMigrateToDenseNodeSupport
     public void migrateDbWithDenseNodes() throws Exception
     {
         // migrate
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir.getAbsolutePath() )
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir.getAbsolutePath() )
                 .setConfig( allow_store_upgrade, "true" ).newGraphDatabase();
         db.shutdown();
 
@@ -161,7 +161,7 @@ public class TestMigrateToDenseNodeSupport
         assertConsistentStore( dir );
 
         // open again to do extra checks
-        db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir.getAbsolutePath() ).newGraphDatabase();
+        db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir.getAbsolutePath() ).newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {
             ResourceIterator<Node> allNodesWithLabel = db.findNodes( referenceNode );

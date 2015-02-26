@@ -19,6 +19,10 @@
  */
 package org.neo4j.ha;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.InputStream;
 import java.net.URI;
@@ -29,17 +33,13 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePullerClient;
@@ -47,7 +47,6 @@ import org.neo4j.test.StreamConsumer;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertFalse;
-
 import static org.neo4j.test.TargetDirectory.forTest;
 
 /**
@@ -184,7 +183,7 @@ public class TestPullUpdatesApplied
 
     private static HighlyAvailableGraphDatabase database( int serverId, String path )
     {
-        return (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
+        return (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                 newHighlyAvailableDatabaseBuilder( path )
                 .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + serverId) )
                 .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )

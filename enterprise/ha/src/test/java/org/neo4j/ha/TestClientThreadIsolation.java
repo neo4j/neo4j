@@ -19,16 +19,16 @@
  */
 package org.neo4j.ha;
 
-import java.util.concurrent.CountDownLatch;
-
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.concurrent.CountDownLatch;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.test.TargetDirectory;
@@ -58,15 +58,15 @@ public class TestClientThreadIsolation
             "readNextChunk", "waitTxCopyToStart", "finish"})
     public void testTransactionsPulled() throws Exception
     {
-        final HighlyAvailableGraphDatabase master = (HighlyAvailableGraphDatabase) new
-                HighlyAvailableGraphDatabaseFactory().
+        final HighlyAvailableGraphDatabase master =
+                (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                 newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( TestClientThreadIsolation.class ).cleanDirectory(
                         "master" ).getAbsolutePath() ).
                 setConfig( ClusterSettings.server_id, "1" ).
                 newGraphDatabase();
 
-        final HighlyAvailableGraphDatabase slave1 = (HighlyAvailableGraphDatabase) new
-                HighlyAvailableGraphDatabaseFactory().
+        final HighlyAvailableGraphDatabase slave1 =
+                (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                 newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( TestClientThreadIsolation.class ).cleanDirectory(
                         "slave1" ).getAbsolutePath() ).
                 setConfig( ClusterSettings.cluster_server, "127.0.0.1:5002" ).

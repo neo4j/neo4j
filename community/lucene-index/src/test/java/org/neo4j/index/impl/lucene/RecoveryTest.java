@@ -19,12 +19,13 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import java.io.File;
-import java.util.Map;
-
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Map;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -40,12 +41,12 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
+import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.test.ProcessStreamHandler;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 /**
@@ -53,8 +54,10 @@ import static org.neo4j.graphdb.DynamicRelationshipType.withName;
  */
 public class RecoveryTest
 {
+    private static final File path = new File( "target/var/recovery" );
+    @Rule
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( path );
     private GraphDatabaseService graphDb;
-    private File path = new File( "target/var/recovery" );
 
     @Before
     public void setup()
@@ -63,29 +66,19 @@ public class RecoveryTest
         startDB();
     }
 
-    @After
-    public void tearDown()
-    {
-        if ( graphDb != null )
-        {
-            shutdownDB();
-        }
-    }
-
     private void shutdownDB()
     {
-        graphDb.shutdown();
+        dbRule.stopAndKeepFiles();
     }
 
     private void startDB()
     {
-        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( path.getPath() );
+        graphDb = dbRule.getGraphDatabaseService();
     }
 
-    private void forceRecover()
+    private void forceRecover() throws IOException
     {
-        shutdownDB();
-        startDB();
+        graphDb = dbRule.restartDatabase();
     }
 
     @Test
