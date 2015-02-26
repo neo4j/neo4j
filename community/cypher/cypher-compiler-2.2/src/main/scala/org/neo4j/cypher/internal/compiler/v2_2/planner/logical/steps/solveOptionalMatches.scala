@@ -48,6 +48,13 @@ case class solveOptionalMatches(solvers: Seq[OptionalSolver]) {
     }
   }
 
+  /*
+    MATCH a->b WHERE b.foo = expr(p)
+    OM p = a
+
+
+   */
+
   private def findQGsToSolve(plan: LogicalPlan, table: PlanTable, graphs: Seq[QueryGraph]): Seq[QueryGraph] = {
 
     @tailrec

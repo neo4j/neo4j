@@ -75,16 +75,49 @@ case class ExhaustiveQueryGraphSolver(leafPlanFinder: LogicalLeafPlan.Finder = l
   override def emptyPlanTable: PlanTable = GreedyPlanTable.empty
 
   def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = {
-    val kitFactory = config.kit
-    val plans = queryGraph.connectedComponents.map { qg => planComponent(qg, kitFactory(qg)) }
+    implicit val kitFactory = config.kitInContext
+    val components = queryGraph.connectedComponents
+    val plans = if (components.isEmpty) planEmptyComponent(queryGraph) else planComponents(components)
 
-    val kit = kitFactory(queryGraph)
+    implicit val kit = kitFactory(queryGraph)
+    val result = connectComponents(plans, queryGraph.optionalMatches)
+    result
+  }
 
-    // TODO: Properly plan cartesian products
-    plans.reduceOption( (l, r) => kit.select(planCartesianProduct(l, r)) ).getOrElse {
-      val plan = if (queryGraph.argumentIds.isEmpty) planSingleRow() else planQueryArgumentRow(queryGraph)
-      kit.select(plan)
+  @tailrec
+  private def connectComponents(plans: Seq[LogicalPlan], optionalMatches: Seq[QueryGraph])(implicit context: LogicalPlanningContext, kit: PlanningStrategyKit): LogicalPlan = {
+    if (plans.size == 1) {
+      optionalMatches.foldLeft(plans.head) { (plan, qg) => withOptionalMatch(qg)(plan).get }
+    } else {
+      val (nextOptional, nextOptionals) = if (optionalMatches.nonEmpty) (optionalMatches.headOption, optionalMatches.tail) else (None, Seq.empty)
+      val optionalPlans = nextOptional.map( qg => plans.flatMap(plan => withOptionalMatch(qg)(plan)) ).getOrElse(Seq.empty)
+      val (candidates, newOptionals) = if (optionalPlans.isEmpty) (plans, optionalMatches) else (optionalPlans, nextOptionals)
+      val cartesianProducts =
+        (for( left <- candidates.iterator; right <- candidates.iterator if left != right )
+         yield kit.select(planCartesianProduct(left, right)) -> Set(left, right)).toMap
+      val bestCartesian = pickBestPlan(cartesianProducts.keys.iterator).get
+      val oldPlans = cartesianProducts(bestCartesian)
+      val newPlans = plans.filterNot(oldPlans) :+ bestCartesian
+
+      connectComponents(newPlans, newOptionals)
     }
+  }
+
+  private def withOptionalMatch(optionalMatch: QueryGraph)(plan: LogicalPlan)(implicit context: LogicalPlanningContext): Option[LogicalPlan] =
+    if ((optionalMatch.argumentIds -- plan.availableSymbols).isEmpty) {
+      val candidates = config.optionalSolvers.flatMap { solver => solver(optionalMatch, plan) }
+      val best = pickBestPlan(candidates.iterator)
+      best
+    } else {
+      None
+    }
+
+  private def planComponents(components: Seq[QueryGraph])(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan], kitFactory: (QueryGraph) => PlanningStrategyKit): Seq[LogicalPlan] =
+    components.map { qg => planComponent(qg, kitFactory(qg)) }
+
+  private def planEmptyComponent(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan], kitFactory: (QueryGraph) => PlanningStrategyKit): Seq[LogicalPlan] = {
+    val plan = if (queryGraph.argumentIds.isEmpty) planSingleRow() else planQueryArgumentRow(queryGraph)
+    Seq(kitFactory(queryGraph).select(plan))
   }
 
   private def planComponent(initialQg: QueryGraph, kit: PlanningStrategyKit)(implicit context: LogicalPlanningContext, leafPlanWeHopeToGetAwayWithIgnoring: Option[LogicalPlan]): LogicalPlan = {
@@ -99,7 +132,7 @@ case class ExhaustiveQueryGraphSolver(leafPlanFinder: LogicalLeafPlan.Finder = l
 
       val initialToDo = Solvables(qg)
       val solutionGenerator = newSolutionGenerator(qg, kit, table)
-      iterate(qg, initialToDo, kit, table, solutionGenerator)
+      solvePatterns(qg, initialToDo, kit, table, solutionGenerator)
 
       // TODO: Not exactly pretty
       table.head
@@ -109,7 +142,7 @@ case class ExhaustiveQueryGraphSolver(leafPlanFinder: LogicalLeafPlan.Finder = l
   }
 
   @tailrec
-  private def iterate(qg: QueryGraph, toDo: Set[Solvable], kit: PlanningStrategyKit, table: ExhaustivePlanTable, solutionGenerator: Set[Solvable] => Iterator[LogicalPlan])(implicit context: LogicalPlanningContext): Unit = {
+  private def solvePatterns(qg: QueryGraph, toDo: Set[Solvable], kit: PlanningStrategyKit, table: ExhaustivePlanTable, solutionGenerator: Set[Solvable] => Iterator[LogicalPlan])(implicit context: LogicalPlanningContext): Unit = {
     val size = toDo.size
     if (size > 1) {
       // line 7-16
@@ -133,7 +166,7 @@ case class ExhaustiveQueryGraphSolver(leafPlanFinder: LogicalLeafPlan.Finder = l
       table.put(Set(blockSolved), bestBlock)
       val newToDo = toDo -- bestSolvables + blockSolved
       bestSolvables.subsets.foreach(table.remove)
-      iterate(qg, newToDo, kit, table, solutionGenerator)
+      solvePatterns(qg, newToDo, kit, table, solutionGenerator)
     }
   }
 

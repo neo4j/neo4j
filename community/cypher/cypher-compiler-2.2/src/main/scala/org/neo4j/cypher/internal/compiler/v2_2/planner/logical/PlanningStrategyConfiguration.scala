@@ -22,15 +22,17 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.solveOptionalMatches.OptionalSolver
 
 case class PlanningStrategyConfiguration(
-  leafPlanners: LeafPlannerList,
-  applySelections: PlanTransformer[QueryGraph],
-  projectAllEndpoints: PlanTransformer[QueryGraph],
-  pickBestCandidate: CandidateSelector
-) {
+    leafPlanners: LeafPlannerList,
+    applySelections: PlanTransformer[QueryGraph],
+    projectAllEndpoints: PlanTransformer[QueryGraph],
+    optionalSolvers: Set[OptionalSolver],
+    pickBestCandidate: CandidateSelector
+  ) {
 
-  def kit(implicit context: LogicalPlanningContext) = (qg: QueryGraph) =>
+  def kitInContext(implicit context: LogicalPlanningContext) = (qg: QueryGraph) =>
     PlanningStrategyKit(
       select = plan => applySelections(plan, qg)
     )
@@ -43,6 +45,10 @@ object PlanningStrategyConfiguration {
     pickBestCandidate = pickBestPlan,
     applySelections = selectPatternPredicates(selectCovered),
     projectAllEndpoints = projectEndpoints.all,
+    optionalSolvers = Set(
+      applyOptional,
+      outerHashJoin
+    ),
     leafPlanners = LeafPlannerList(
       argumentLeafPlanner,
 

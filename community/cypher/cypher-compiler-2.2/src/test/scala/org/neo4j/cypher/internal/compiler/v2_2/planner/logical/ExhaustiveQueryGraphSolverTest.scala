@@ -53,11 +53,11 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
 
       queryGraphSolver.plan(cfg.qg) should equal(
         CartesianProduct(
+          AllNodesScan("a", Set.empty)(null),
           CartesianProduct(
-            AllNodesScan("a", Set.empty)(null),
-            AllNodesScan("b", Set.empty)(null)
-          )(null),
-          AllNodesScan("c", Set.empty)(null)
+            AllNodesScan("b", Set.empty)(null),
+            AllNodesScan("c", Set.empty)(null)
+          )(null)
         )(null)
       )
     }
@@ -344,11 +344,11 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
       queryGraphSolver.plan(cfg.qg) should equal(
         Selection(cfg.qg.selections.flatPredicates,
           CartesianProduct(
+            AllNodesScan("b", Set.empty)(null),
             CartesianProduct(
               AllNodesScan("a", Set.empty)(null),
-              AllNodesScan("b", Set.empty)(null)
-            )(null),
-            AllNodesScan("c", Set.empty)(null)
+              AllNodesScan("c", Set.empty)(null)
+            )(null)
           )(null)
         )(null)
       )
@@ -377,95 +377,91 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
     }
   }
 
-//
-//  test("should plan for optional single relationship pattern") {
-//    new given {
-//      queryGraphSolver = ExhaustiveQueryGraphSolver.withDefaults()
-//      qg = QueryGraph(// MATCH a OPTIONAL MATCH a-[r]->b
-//        patternNodes = Set("a"),
-//        optionalMatches = Seq(QueryGraph(
-//          patternNodes = Set("a", "b"),
-//          argumentIds = Set("a"),
-//          patternRelationships = Set(PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength))
-//        ))
-//      )
-//
-//      labelCardinality = immutable.Map(
-//        "B" -> Cardinality(10)
-//      )
-//    }.withLogicalPlanningContext { (cfg, ctx) =>
-//      implicit val x = ctx
-//
-//      queryGraphSolver.plan(cfg.qg) should equal(
-//        Apply(
-//          AllNodesScan("a", Set.empty)(null),
-//          Optional(
-//            Expand(Argument(Set("a"))(null)(), "a", Direction.OUTGOING, Seq.empty, "b", "r")(null)
-//          )(null)
-//        )(null)
-//      )
-//    }
-//
-//  }
-//
-//  test("should plan for optional single relationship pattern between two known nodes") {
-//    new given {
-//      queryGraphSolver = ExhaustiveQueryGraphSolver.withDefaults()
-//      qg = QueryGraph(// MATCH a, b OPTIONAL MATCH a-[r]->b
-//        patternNodes = Set("a", "b"),
-//        optionalMatches = Seq(QueryGraph(
-//          patternNodes = Set("a", "b"),
-//          argumentIds = Set("a", "b"),
-//          patternRelationships = Set(PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength))
-//        ))
-//      )
-//    }.withLogicalPlanningContext { (cfg, ctx) =>
-//      implicit val x = ctx
-//
-//      queryGraphSolver.plan(cfg.qg) should equal(
-//        Apply(
-//          CartesianProduct(
-//            AllNodesScan(IdName("a"), Set.empty)(null),
-//            AllNodesScan(IdName("b"), Set.empty)(null)
-//          )(null),
-//          Optional(
-//            Expand(
-//              Argument(Set("a", "b"))(null)(),
-//              "a", Direction.OUTGOING, Seq.empty, "b", "r", ExpandInto
-//            )(null)
-//          )(null)
-//        )(null)
-//      )
-//    }
-//
-//  }
-//
-//  test("should handle query starting with an optional match") {
-//    new given {
-//      queryGraphSolver = ExhaustiveQueryGraphSolver.withDefaults()
-//      qg = QueryGraph( // OPTIONAL MATCH a-->b RETURN b a
-//        patternNodes = Set.empty,
-//        argumentIds = Set.empty,
-//        optionalMatches = Seq(QueryGraph(
-//          patternNodes = Set("a","b"),
-//          argumentIds = Set.empty,
-//          patternRelationships = Set(PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)))
-//        )
-//      )
-//    }.withLogicalPlanningContext { (cfg, ctx) =>
-//      implicit val x = ctx
-//
-//      queryGraphSolver.plan(cfg.qg) should equal(
-//        Apply(
-//          SingleRow(),
-//          Optional(
-//            Expand(
-//              AllNodesScan("a",Set.empty)(null),
-//              "a", Direction.OUTGOING, Seq.empty, "b", "r", ExpandAll
-//            )(null)
-//          )(null)
-//        )(null)
-//      )
-//    }
-//  }
+  test("should plan for optional single relationship pattern") {
+    new given {
+      queryGraphSolver = ExhaustiveQueryGraphSolver()
+      qg = QueryGraph(// MATCH a OPTIONAL MATCH a-[r]->b
+        patternNodes = Set("a"),
+        optionalMatches = Seq(QueryGraph(
+          patternNodes = Set("a", "b"),
+          argumentIds = Set("a"),
+          patternRelationships = Set(PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength))
+        ))
+      )
+
+      labelCardinality = immutable.Map(
+        "B" -> Cardinality(10)
+      )
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
+
+      queryGraphSolver.plan(cfg.qg) should equal(
+        Apply(
+          AllNodesScan("a", Set.empty)(null),
+          Optional(
+            Expand(Argument(Set("a"))(null)(), "a", Direction.OUTGOING, Seq.empty, "b", "r")(null)
+          )(null)
+        )(null)
+      )
+    }
+  }
+
+  test("should plan for optional single relationship pattern between two known nodes") {
+    new given {
+      queryGraphSolver = ExhaustiveQueryGraphSolver(solvers = Seq.empty)
+      qg = QueryGraph(// MATCH a, b OPTIONAL MATCH a-[r]->b
+        patternNodes = Set("a", "b"),
+        optionalMatches = Seq(QueryGraph(
+          patternNodes = Set("a", "b"),
+          argumentIds = Set("a", "b"),
+          patternRelationships = Set(PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength))
+        ))
+      )
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
+
+      queryGraphSolver.plan(cfg.qg) should equal(
+        OuterHashJoin(
+          Set("a", "b"),
+          CartesianProduct(
+            AllNodesScan(IdName("a"), Set.empty)(null),
+            AllNodesScan(IdName("b"), Set.empty)(null)
+          )(null),
+          Expand(
+            AllNodesScan(IdName("b"), Set.empty)(null),
+            "b", Direction.INCOMING, Seq.empty, "a", "r", ExpandAll
+          )(null)
+        )(null)
+      )
+    }
+  }
+
+  test("should handle query starting with an optional match") {
+    new given {
+      queryGraphSolver = ExhaustiveQueryGraphSolver(solvers = Seq.empty)
+      qg = QueryGraph( // OPTIONAL MATCH a-->b RETURN b a
+        patternNodes = Set.empty,
+        argumentIds = Set.empty,
+        optionalMatches = Seq(QueryGraph(
+          patternNodes = Set("a","b"),
+          argumentIds = Set.empty,
+          patternRelationships = Set(PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)))
+        )
+      )
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
+
+      queryGraphSolver.plan(cfg.qg) should equal(
+        Apply(
+          SingleRow(),
+          Optional(
+            Expand(
+              AllNodesScan("b",Set.empty)(null),
+              "b", Direction.INCOMING, Seq.empty, "a", "r", ExpandAll
+            )(null)
+          )(null)
+        )(null)
+      )
+    }
+  }
 }
