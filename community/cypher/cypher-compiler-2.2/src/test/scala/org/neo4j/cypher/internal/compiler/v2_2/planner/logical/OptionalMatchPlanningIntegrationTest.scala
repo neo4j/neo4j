@@ -144,12 +144,11 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
                          |RETURN m""".stripMargin).plan.endoRewrite(unnestOptional)
     val s = PlannerQuery.empty
     val allNodesN:LogicalPlan = AllNodesScan(IdName("n"),Set())(s)
-    val allNodesM:LogicalPlan = AllNodesScan(IdName("m"),Set())(s)
     val predicate: Expression = In(Property(ident("m"), PropertyKeyName("prop") _) _, Collection(List(SignedDecimalIntegerLiteral("42") _)) _) _
-    val expand = Expand(Selection(Vector(predicate), allNodesM)(s), IdName("m"), Direction.BOTH, List(), IdName("n"), IdName("r"), ExpandAll)(s)
     plan should equal(
       Projection(
-        OuterHashJoin(Set(IdName("n")), allNodesN, expand)(s),
+        OptionalExpand( allNodesN, IdName( "n" ), Direction.BOTH, Seq.empty, IdName( "m" ), IdName( "r" ), ExpandAll,
+          Vector( predicate ) )( s ),
         Map("m" -> ident("m"))
       )(s)
     )
