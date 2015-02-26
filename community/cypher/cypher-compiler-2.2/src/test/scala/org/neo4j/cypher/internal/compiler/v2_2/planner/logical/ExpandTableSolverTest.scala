@@ -30,6 +30,7 @@ class ExpandTableSolverTest extends CypherFunSuite with LogicalPlanConstructionT
   import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 
   val solvable1 = mock[Solvable]
+  when(solvable1.solvedRelationship).thenReturn(None)
 
   val plan1 = mock[LogicalPlan]
   val plan2 = mock[LogicalPlan]
@@ -42,20 +43,23 @@ class ExpandTableSolverTest extends CypherFunSuite with LogicalPlanConstructionT
 
   test("does not expand based on empty table") {
     val solvable2 = mock[Solvable]
+    when(solvable2.solvedRelationship).thenReturn(None)
 
     expandTableSolver(qg, Set(solvable1, solvable2), table) should be(empty)
   }
 
   test("expands if an unsolved pattern relationship overlaps once with a single solved plan") {
-    val pattern = PatternRelationship('r2, ('b, 'c), Direction.OUTGOING, Seq.empty, SimplePatternLength)
-    val solvable2 = SolvableRelationship(pattern)
+    val pattern1 = PatternRelationship('r1, ('a, 'b), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+    val solvable1 = SolvableRelationship(pattern1)
+    val pattern2 = PatternRelationship('r2, ('b, 'c), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+    val solvable2 = SolvableRelationship(pattern2)
 
     when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b))
 
     table.put(Set(solvable1), plan1)
 
     expandTableSolver(qg, Set(solvable1, solvable2), table).toSet should equal(Set(
-      planSimpleExpand(plan1, 'b, Direction.OUTGOING, 'c, pattern, ExpandAll)
+      planSimpleExpand(plan1, 'b, Direction.OUTGOING, 'c, pattern2, ExpandAll)
     ))
   }
 
@@ -86,6 +90,7 @@ class ExpandTableSolverTest extends CypherFunSuite with LogicalPlanConstructionT
 
   test("expands if an unsolved pattern relationship overlaps with multiple solved plans") {
     val solvable2 = mock[Solvable]
+    when(solvable2.solvedRelationship).thenReturn(None)
     when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b, 'c, 'r2, 'd))
 
     table.put(Set(solvable1, solvable2), plan1)

@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.{applyOptio
 import scala.annotation.tailrec
 
 object ExhaustiveQueryGraphSolver {
-  val MAX_SEARCH_DEPTH = 8
+  val MAX_SEARCH_DEPTH = 5
 
   // TODO: Make sure this is tested by extracting tests from greedy expand step
   def planSinglePatternSide(qg: QueryGraph, patternRel: PatternRelationship, plan: LogicalPlan, nodeId: IdName): Option[LogicalPlan] = {
@@ -75,13 +75,28 @@ case class ExhaustiveQueryGraphSolver(leafPlanFinder: LogicalLeafPlan.Finder = l
   override def emptyPlanTable: PlanTable = GreedyPlanTable.empty
 
   def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = {
-    implicit val kitFactory = config.kitInContext
+    implicit val kitFactory = kitFactoryWithShortestPathSupport(config.kitInContext)
     val components = queryGraph.connectedComponents
     val plans = if (components.isEmpty) planEmptyComponent(queryGraph) else planComponents(components)
 
     implicit val kit = kitFactory(queryGraph)
     val result = connectComponents(plans, queryGraph.optionalMatches)
     result
+  }
+
+  // TODO: Get rid off
+  private def kitFactoryWithShortestPathSupport(kitFactory: QueryGraph => PlanningStrategyKit) = (qg: QueryGraph) => {
+    val oldKit = kitFactory(qg)
+    oldKit.copy(
+      select = { (plan: LogicalPlan) =>
+        qg.shortestPathPatterns.foldLeft(oldKit.select(plan)) { (plan, sp) =>
+          if (sp.isFindableFrom(plan.availableSymbols))
+            oldKit.select(planShortestPaths(plan, sp))
+          else
+            plan
+        }
+      }
+    )
   }
 
   @tailrec
