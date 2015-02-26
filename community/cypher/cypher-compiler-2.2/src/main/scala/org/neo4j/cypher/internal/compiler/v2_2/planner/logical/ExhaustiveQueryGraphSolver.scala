@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.{applyOptio
 import scala.annotation.tailrec
 
 object ExhaustiveQueryGraphSolver {
-  val MAX_SEARCH_DEPTH = 5
+  val MAX_SEARCH_DEPTH = 8
 
   // TODO: Make sure this is tested by extracting tests from greedy expand step
   def planSinglePatternSide(qg: QueryGraph, patternRel: PatternRelationship, plan: LogicalPlan, nodeId: IdName): Option[LogicalPlan] = {
@@ -79,6 +79,8 @@ case class ExhaustiveQueryGraphSolver(leafPlanFinder: LogicalLeafPlan.Finder = l
     val plans = queryGraph.connectedComponents.map { qg => planComponent(qg, kitFactory(qg)) }
 
     val kit = kitFactory(queryGraph)
+
+    // TODO: Properly plan cartesian products
     plans.reduceOption( (l, r) => kit.select(planCartesianProduct(l, r)) ).getOrElse {
       val plan = if (queryGraph.argumentIds.isEmpty) planSingleRow() else planQueryArgumentRow(queryGraph)
       kit.select(plan)
