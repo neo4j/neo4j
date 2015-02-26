@@ -30,7 +30,7 @@ object expandTableSolver extends ExhaustiveTableSolver {
     val result =
       for(
         solvable <- goal.iterator;
-        pattern <- Solvable.relationship(solvable);
+        pattern <- solvable.solvedRelationship;
         solved = goal - solvable;
         plan <- table(solved) // if !plan.solved.graph.patternRelationships(pattern)
       ) yield {

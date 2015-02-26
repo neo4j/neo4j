@@ -146,7 +146,7 @@ case class ExhaustiveQueryGraphSolver(leafPlanFinder: LogicalLeafPlan.Finder = l
     val size = toDo.size
     if (size > 1) {
       // line 7-16
-      val k = Math.min(size, MAX_SEARCH_DEPTH)
+      val k = Math.min(size, MAX_SEARCH_DEPTH) // TODO: Inject as parameter
       for (i <- 2 to k;
            goal <- toDo.subsets(i);
            candidates = solutionGenerator(goal);
@@ -162,7 +162,7 @@ case class ExhaustiveQueryGraphSolver(leafPlanFinder: LogicalLeafPlan.Finder = l
 
       // TODO: Test this
       // line 18 - 21
-      val blockSolved = SolvableBlock(bestSolvables)
+      val blockSolved = SolvableBlock(bestSolvables.flatMap(_.solvables))
       table.put(Set(blockSolved), bestBlock)
       val newToDo = toDo -- bestSolvables + blockSolved
       bestSolvables.subsets.foreach(table.remove)

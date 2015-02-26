@@ -22,15 +22,22 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.PatternRelationship
 
-trait Solvable
-final case class SolvableRelationship(rel: PatternRelationship) extends Solvable
-final case class SolvableBlock(solvables: Set[Solvable]) extends Solvable
+sealed trait Solvable {
+  def solvables: Set[SolvableLeaf]
 
-object Solvable {
-  def relationship(solvable: Solvable): Option[PatternRelationship] = solvable match {
-    case SolvableRelationship(pattern) => Some(pattern)
-    case _                             => None
-  }
+  def solvedRelationship: Option[PatternRelationship] = None
+}
+
+sealed trait SolvableLeaf extends Solvable {
+  self =>
+
+  override def solvables: Set[SolvableLeaf] = Set(self)
+}
+
+final case class SolvableBlock(solvables: Set[SolvableLeaf]) extends Solvable
+
+final case class SolvableRelationship(relationship: PatternRelationship) extends SolvableLeaf {
+  override def solvedRelationship = Some(relationship)
 }
 
 object Solvables {
