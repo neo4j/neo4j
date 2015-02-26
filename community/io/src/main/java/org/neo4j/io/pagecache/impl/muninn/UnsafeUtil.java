@@ -368,6 +368,26 @@ public final class UnsafeUtil
         unsafe.putObjectVolatile( obj, offset, value );
     }
 
+    public static int arrayBaseOffset( Class klass )
+    {
+        return unsafe.arrayBaseOffset( klass );
+    }
+
+    public static int arrayIndexScale( Class klass )
+    {
+        int scale = unsafe.arrayIndexScale( klass );
+        if ( scale == 0 )
+        {
+            throw new AssertionError( "Array type too narrow for unsafe access: " + klass );
+        }
+        return scale;
+    }
+
+    public static int arrayOffset( int index, int base, int scale )
+    {
+        return base + index * scale;
+    }
+
     public static void setMemory( long address, long bytes, byte value )
     {
         unsafe.setMemory( address, bytes, value );

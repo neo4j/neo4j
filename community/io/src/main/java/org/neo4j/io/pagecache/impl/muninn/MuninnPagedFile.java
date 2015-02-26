@@ -22,24 +22,27 @@ package org.neo4j.io.pagecache.impl.muninn;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.jsr166e.StampedLock;
+import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
+import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
+
+import static org.neo4j.io.pagecache.impl.muninn.UnsafeUtil.arrayOffset;
+import static org.neo4j.io.pagecache.impl.muninn.UnsafeUtil.getAndSetObject;
 
 final class MuninnPagedFile implements PagedFile
 {
-    private static int stripeFactor = Integer.getInteger(
-            "org.neo4j.io.pagecache.impl.muninn.MuninnPagedFile.stripeFactor", 10 );
-    static final int translationTableStripeLevel = 1 << stripeFactor;
-    static final int translationTableStripeMask = translationTableStripeLevel - 1;
+    private static final int translationTableChunkSizePower = Integer.getInteger(
+            "org.neo4j.io.pagecache.impl.muninn.MuninnPagedFile.translationTableChunkSizePower", 12 );
+    private static final int translationTableChunkSize = 1 << translationTableChunkSizePower;
+    private static final int translationTableChunkSizeMask = translationTableChunkSize - 1;
+    private static final int translationTableChunkArrayBase = UnsafeUtil.arrayBaseOffset( MuninnPage[].class );
+    private static final int translationTableChunkArrayScale = UnsafeUtil.arrayIndexScale( MuninnPage[].class );
 
     private static final long referenceCounterOffset =
             UnsafeUtil.getFieldOffset( MuninnPagedFile.class, "referenceCounter" );
@@ -47,12 +50,12 @@ final class MuninnPagedFile implements PagedFile
             UnsafeUtil.getFieldOffset( MuninnPagedFile.class, "lastPageId" );
 
     final MuninnPageCache pageCache;
-    // This is the table where we translate file-page-ids to cache-page-ids:
     final int pageSize;
     final PageCacheTracer tracer;
 
-    final PrimitiveLongObjectMap<MuninnPage>[] translationTables;
-    final StampedLock[] translationTableLocks;
+    // This is the table where we translate file-page-ids to cache-page-ids. Only one thread can perform a resize at
+    // a time, and we ensure this mutual exclusion using the monitor lock on this MuninnPagedFile object.
+    volatile Object[][] translationTable;
 
     final PageSwapper swapper;
     private final MuninnCursorPool cursorPool;
@@ -74,22 +77,31 @@ final class MuninnPagedFile implements PagedFile
         this.cursorPool = cursorPool;
         this.tracer = tracer;
 
-        // The translation table and its locks are striped to reduce lock
-        // contention.
-        // This is important as both eviction and page faulting will grab
-        // these locks, and will hold them for the duration of their respective
-        // operation.
-        translationTables = new PrimitiveLongObjectMap[translationTableStripeLevel];
-        translationTableLocks = new StampedLock[translationTableStripeLevel];
-        for ( int i = 0; i < translationTableStripeLevel; i++ )
-        {
-            translationTables[i] = Primitive.longObjectMap( 8 );
-            translationTableLocks[i] = new StampedLock();
-        }
-        PageEvictionCallback onEviction = new MuninnPageEvictionCallback(
-                translationTables, translationTableLocks );
+        // The translation table is an array of arrays of references to either null, MuninnPage objects, or Latch
+        // objects. The table only grows the outer array, and all the inner "chunks" all stay the same size. This
+        // means that pages can be addressed with simple bit-wise operations on the filePageId. Eviction sets slots
+        // to null with volatile writes. Page faults CAS's in a latch that will be opened after the page fault has
+        // completed and written the final page reference to the slot. The initial CAS on a page fault is what
+        // ensures that only a single thread will fault a page at a time. Look-ups use volatile reads of the slots.
+        // If a look-up finds a latch, it awaits on it and retries the look-up. If a look-up finds a null reference,
+        // it initiates a page fault. If a look-up finds that it is out of bounds of the translation table, it
+        // resizes the table by first taking the resize lock, then verifying that the given filePageId is still out
+        // of bounds, then creates a new and larger outer array, then copies over the existing inner arrays, fills
+        // the remaining outer array slots with more inner arrays, and then finally assigns the new outer array to
+        // the translationTable field and releases the resize lock.
+        PageEvictionCallback onEviction = new MuninnPageEvictionCallback( this );
         swapper = swapperFactory.createPageSwapper( file, pageSize, onEviction );
-        initialiseLastPageId( swapper.getLastPageId() );
+        long lastPageId = swapper.getLastPageId();
+
+        int initialChunks = 1 + computeChunkId( lastPageId );
+        Object[][] tt = new Object[initialChunks][];
+        for ( int i = 0; i < initialChunks; i++ )
+        {
+            tt[i] = new Object[translationTableChunkSize];
+        }
+        translationTable = tt;
+
+        initialiseLastPageId( lastPageId );
     }
 
     @Override
@@ -154,20 +166,24 @@ final class MuninnPagedFile implements PagedFile
     {
         try ( MajorFlushEvent flushEvent = tracer.beginFileFlush( swapper ) )
         {
-            PageFlusher flusher = new PageFlusher( swapper, flushEvent );
-            for ( int i = 0; i < translationTableStripeLevel; i++ )
+            FlushEventOpportunity flushOpportunity = flushEvent.flushEventOpportunity();
+            for ( Object[] chunk : translationTable )
             {
-                PrimitiveLongObjectMap<MuninnPage> translationTable = translationTables[i];
-                StampedLock translationTableLock = translationTableLocks[i];
-
-                long stamp = translationTableLock.readLock();
-                try
+                for ( Object element : chunk )
                 {
-                    translationTable.visitEntries( flusher );
-                }
-                finally
-                {
-                    translationTableLock.unlockRead( stamp );
+                    if ( element instanceof MuninnPage )
+                    {
+                        MuninnPage page = (MuninnPage) element;
+                        long stamp = page.readLock();
+                        try
+                        {
+                            page.flush( swapper, page.getFilePageId(), flushOpportunity );
+                        }
+                        finally
+                        {
+                            page.unlockRead( stamp );
+                        }
+                    }
                 }
             }
             force();
@@ -242,5 +258,60 @@ final class MuninnPagedFile implements PagedFile
     MuninnPage grabFreePage( PageFaultEvent faultEvent ) throws IOException
     {
         return pageCache.grabFreePage( faultEvent );
+    }
+
+    /**
+     * Remove the mapping of the given filePageId from the translation table, and return the evicted page object.
+     * @param filePageId The id of the file page to evict.
+     * @return The page object of the evicted file page.
+     */
+    MuninnPage evictPage( long filePageId )
+    {
+        int chunkId = computeChunkId( filePageId );
+        long chunkOffset = computeChunkOffset( filePageId );
+        Object[] chunk = translationTable[chunkId];
+        Object element = getAndSetObject( chunk, chunkOffset, null );
+        assert element instanceof MuninnPage: "Expected to evict a MuninnPage but found " + element;
+        return (MuninnPage) element;
+    }
+
+    /**
+     * Expand the translation table such that it can include at least the given chunkId.
+     * @param maxChunkId The new translation table must be big enough to include at least this chunkId.
+     * @return A reference to the expanded transaction table.
+     */
+    synchronized Object[][] expandCapacity( int maxChunkId )
+    {
+        Object[][] tt = translationTable;
+        if ( tt.length <= maxChunkId )
+        {
+            int newLength = computeNewRootTableLength( maxChunkId );
+            Object[][] ntt = new Object[newLength][];
+            System.arraycopy( tt, 0, ntt, 0, tt.length );
+            for ( int i = tt.length; i < ntt.length; i++ )
+            {
+                ntt[i] = new Object[translationTableChunkSize];
+            }
+            tt = ntt;
+            translationTable = tt;
+        }
+        return tt;
+    }
+
+    private int computeNewRootTableLength( int maxChunkId )
+    {
+        // Grow by approx. 10% but always by at least one full chunk.
+        return 1 + (int) (maxChunkId * 1.1);
+    }
+
+    int computeChunkId( long filePageId )
+    {
+        return (int) (filePageId >>> translationTableChunkSizePower);
+    }
+
+    long computeChunkOffset( long filePageId )
+    {
+        int index = (int) (filePageId & translationTableChunkSizeMask);
+        return arrayOffset( index, translationTableChunkArrayBase, translationTableChunkArrayScale );
     }
 }

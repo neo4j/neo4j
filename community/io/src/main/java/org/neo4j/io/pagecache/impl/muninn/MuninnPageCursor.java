@@ -20,14 +20,15 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.IOException;
-import java.lang.Override;
 
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
-import org.neo4j.jsr166e.StampedLock;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PinEvent;
+
+import static org.neo4j.io.pagecache.impl.muninn.UnsafeUtil.compareAndSwapObject;
+import static org.neo4j.io.pagecache.impl.muninn.UnsafeUtil.getObjectVolatile;
+import static org.neo4j.io.pagecache.impl.muninn.UnsafeUtil.putObjectVolatile;
 
 abstract class MuninnPageCursor implements PageCursor
 {
@@ -103,18 +104,84 @@ abstract class MuninnPageCursor implements PageCursor
     }
 
     /**
-     * NOTE: Must be called while holding the right translationTableLock.writeLock
-     * for the given translationTable!!!
-     * This method will release that write lock on the translation table as part
-     * of the page faulting!
+     * Pin the desired file page to this cursor, page faulting it into memory if it isn't there already.
+     * @param filePageId The file page id we want to pin this cursor to.
+     * @param exclusive 'true' if we will be taking an exclusive lock on the page as part of the pin.
+     * @throws IOException if anything goes wrong with the pin, most likely during a page fault.
      */
-    protected void pageFault(
-            long filePageId,
-            PrimitiveLongObjectMap<MuninnPage> translationTable,
-            StampedLock translationTableLock,
-            long ttlStamp,
-            PageSwapper swapper ) throws IOException
+    protected void pin( long filePageId, boolean exclusive ) throws IOException
     {
+        PageSwapper swapper = pagedFile.swapper;
+        pinEvent = pagedFile.tracer.beginPin( exclusive, filePageId, swapper );
+        int chunkId = pagedFile.computeChunkId( filePageId );
+        // The chunkOffset is the addressing offset into the chunk array object for the relevant array slot. Using
+        // this, we can access the array slot with Unsafe.
+        long chunkOffset = pagedFile.computeChunkOffset( filePageId );
+        Object[][] tt = pagedFile.translationTable;
+        if ( tt.length <= chunkId )
+        {
+            tt = pagedFile.expandCapacity( chunkId );
+        }
+        Object[] chunk = tt[chunkId];
+
+        // Now, if the reference in the chunk slot is a latch, we wait on it and look up again (in a loop, since the
+        // page might get evicted right after the page fault completes). If we find a page, we lock it and check its
+        // binding (since it might get evicted and faulted into something else in the time between our look up and
+        // our locking of the page). If the reference is null or it referred to a page that had wrong bindings, we CAS
+        // in a latch. If that CAS succeeds, we page fault, set the slot to the faulted in page and open the latch.
+        // If the CAS failed, we retry the look up and start over from the top.
+        Object item;
+        do
+        {
+            item = getObjectVolatile( chunk, chunkOffset );
+            if ( item == null )
+            {
+                // Looks like there's no mapping, so we'd like to do a page fault.
+                Latch latch = new Latch();
+                if ( compareAndSwapObject( chunk, chunkOffset, null, latch ) )
+                {
+                    // We managed to inject our latch, so we now own the right to perform the page fault. We also
+                    // have a duty to eventually release and remove the latch, no matter what happens now.
+                    item = pageFault( filePageId, swapper, chunkOffset, chunk, latch );
+                }
+            }
+            else if ( item.getClass() == Latch.class )
+            {
+                // We found a latch, so someone else is already doing a page fault for this page. So we'll just wait
+                // for them to finish, and grab the page then.
+                Latch latch = (Latch) item;
+                latch.await();
+                item = null;
+            }
+            else
+            {
+                // We got *a* page, but we might be racing with eviction. To cope with that, we have to take some
+                // kind of lock on the page, and check that it is indeed bound to what we expect. If not, then it has
+                // been evicted, and possibly even page faulted into something else. In this case, we discard the
+                // item and try again, as the eviction thread would have set the chunk array slot to null.
+                MuninnPage page = (MuninnPage) item;
+                lockPage( page );
+                if ( !page.isBoundTo( swapper, filePageId ) )
+                {
+                    unlockPage( page );
+                    item = null;
+                }
+            }
+        }
+        while ( item == null );
+        pinCursorToPage( (MuninnPage) item, filePageId, swapper );
+    }
+
+    private MuninnPage pageFault(
+            long filePageId, PageSwapper swapper, long chunkOffset, Object[] chunk, Latch latch )
+            throws IOException
+    {
+        // We are page faulting. This is a critical time, because we currently have the given latch in the chunk array
+        // slot that we are faulting into. We MUST make sure to release that latch, and remove it from the chunk, no
+        // matter what happens. Otherwise other threads will get stuck waiting forever for our page fault to finish.
+        // If we manage to get a free page to fault into, then we will also be taking a write lock on that page, to
+        // protect it against concurrent eviction as we assigning a binding to the page. If anything goes wrong, then
+        // we must make sure to release that write lock as well.
         PageFaultEvent faultEvent = pinEvent.beginPageFault();
         MuninnPage page;
         long stamp;
@@ -123,24 +190,23 @@ abstract class MuninnPageCursor implements PageCursor
             // The grabFreePage method might throw.
             page = pagedFile.grabFreePage( faultEvent );
 
-            // We got a free page, and we know that we have race-free access to it.
-            // Well, it's not entirely race free, because other paged files might have
-            // it in their translation tables, and try to pin it.
-            // However, they will all fail because when they try to pin, the page will
-            // either be 1) free, 2) bound to our file, or 3) the page is write locked.
+            // We got a free page, and we know that we have race-free access to it. Well, it's not entirely race
+            // free, because other paged files might have it in their translation tables (or rather, their reads of
+            // their translation tables might race with eviction) and try to pin it.
+            // However, they will all fail because when they try to pin, the page will either be 1) free, 2) bound to
+            // our file, or 3) the page is write locked.
             stamp = page.writeLock();
-            translationTable.put( filePageId, page );
         }
         catch ( Throwable throwable )
         {
+            // Make sure to unstuck the page fault latch.
+            putObjectVolatile( chunk, chunkOffset, null );
+            latch.release();
             faultEvent.done( throwable );
+            // We don't need to worry about the 'stamp' here, because the writeLock call is uninterruptible, so it
+            // can't really fail.
             throw throwable;
         }
-        finally
-        {
-            translationTableLock.unlockWrite( ttlStamp );
-        }
-
         try
         {
             // Check if we're racing with unmapping. We have the page lock
@@ -153,13 +219,19 @@ abstract class MuninnPageCursor implements PageCursor
         }
         catch ( Throwable throwable )
         {
+            // Make sure to unlock the page, so the eviction thread can pick up our trash.
             page.unlockWrite( stamp );
+            // Make sure to unstuck the page fault latch.
+            putObjectVolatile( chunk, chunkOffset, null );
+            latch.release();
             faultEvent.done( throwable );
             throw throwable;
         }
         convertPageFaultLock( page, stamp );
-        pinCursorToPage( page, filePageId, swapper );
+        putObjectVolatile( chunk, chunkOffset, page );
+        latch.release();
         faultEvent.done();
+        return page;
     }
 
     protected void assertPagedFileStillMapped()
@@ -175,6 +247,10 @@ abstract class MuninnPageCursor implements PageCursor
     protected abstract void convertPageFaultLock( MuninnPage page, long stamp );
 
     protected abstract void pinCursorToPage( MuninnPage page, long filePageId, PageSwapper swapper );
+
+    protected abstract void lockPage( MuninnPage page );
+
+    protected abstract void unlockPage( MuninnPage page );
 
     // --- IO methods:
 
