@@ -22,6 +22,9 @@ package org.neo4j.collection.pool;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -64,9 +67,13 @@ public class LinkedQueuePoolTest
         StatefulMonitor stateMonitor = new StatefulMonitor();
         FakeClock clock = new FakeClock();
         final LinkedQueuePool<Object> pool = getLinkedQueuePool( stateMonitor, clock, 5 );
+        ExecutorService executor = Executors.newCachedThreadPool();
 
         // WHEN
-        acquireFromPool( pool, 5 );
+        acquireFromPool( pool, 5, executor );
+
+        executor.shutdown();
+        executor.awaitTermination( 10, TimeUnit.SECONDS );
 
         // THEN
         assertEquals( -1, stateMonitor.currentPeakSize.get() );
@@ -81,9 +88,13 @@ public class LinkedQueuePoolTest
         StatefulMonitor stateMonitor = new StatefulMonitor();
         FakeClock clock = new FakeClock();
         final LinkedQueuePool<Object> pool = getLinkedQueuePool( stateMonitor, clock, 5 );
+        ExecutorService executor = Executors.newCachedThreadPool();
 
         // WHEN
-        acquireFromPool( pool, 15 );
+        acquireFromPool( pool, 15, executor );
+
+        executor.shutdown();
+        executor.awaitTermination( 10, TimeUnit.SECONDS );
 
         // THEN
         assertEquals( -1, stateMonitor.currentPeakSize.get() );
@@ -102,11 +113,12 @@ public class LinkedQueuePoolTest
         StatefulMonitor stateMonitor = new StatefulMonitor();
         FakeClock clock = new FakeClock();
         final LinkedQueuePool<Object> pool = getLinkedQueuePool( stateMonitor, clock, MIN_SIZE );
+        ExecutorService executor = Executors.newCachedThreadPool();
 
         // when
-        List<FlyweightHolder<Object>> holders = acquireFromPool( pool, MAX_SIZE );
+        List<FlyweightHolder<Object>> holders = acquireFromPool( pool, MAX_SIZE, executor );
         clock.forward( 110, TimeUnit.MILLISECONDS );
-        holders.addAll( acquireFromPool( pool, 1 ) ); // Needed to trigger the alarm
+        holders.addAll( acquireFromPool( pool, 1, executor ) ); // Needed to trigger the alarm
 
         // then
         assertEquals( MAX_SIZE + 1, stateMonitor.currentPeakSize.get() );
@@ -117,6 +129,10 @@ public class LinkedQueuePoolTest
         {
             holder.end();
         }
+
+        executor.shutdown();
+        executor.awaitTermination( 10, TimeUnit.SECONDS );
+
     }
 
     @Test
@@ -128,11 +144,12 @@ public class LinkedQueuePoolTest
         StatefulMonitor stateMonitor = new StatefulMonitor();
         FakeClock clock = new FakeClock();
         final LinkedQueuePool<Object> pool = getLinkedQueuePool( stateMonitor, clock, MIN_SIZE );
+        ExecutorService executor = Executors.newCachedThreadPool();
 
         // when
         for ( int i = 0; i < 200; i++ )
         {
-            List<FlyweightHolder<Object>> newOnes = acquireFromPool( pool, 1 );
+            List<FlyweightHolder<Object>> newOnes = acquireFromPool( pool, 1, executor );
             CountDownLatch release = new CountDownLatch( newOnes.size() );
             for ( FlyweightHolder newOne : newOnes )
             {
@@ -140,6 +157,9 @@ public class LinkedQueuePoolTest
             }
             release.await();
         }
+
+        executor.shutdown();
+        executor.awaitTermination( 10, TimeUnit.SECONDS );
 
         // then
         assertEquals( -1, stateMonitor.currentPeakSize.get() ); // no alarm has rung, -1 is the default
@@ -158,16 +178,20 @@ public class LinkedQueuePoolTest
         FakeClock clock = new FakeClock();
         final LinkedQueuePool<Object> pool = getLinkedQueuePool( stateMonitor, clock, MIN_SIZE );
         List<FlyweightHolder<Object>> holders = new LinkedList<>();
+        ExecutorService executor = Executors.newCachedThreadPool();
 
-        buildAPeakOfAcquiredFlyweightsAndTriggerAlarmWithSideEffects( MAX_SIZE, clock, pool, holders );
+        buildAPeakOfAcquiredFlyweightsAndTriggerAlarmWithSideEffects( MAX_SIZE, clock, pool, holders, executor );
 
         // when
         // After the peak, stay below MIN_SIZE concurrent usage, using up all already present Flyweights.
         clock.forward( 110, TimeUnit.MILLISECONDS );
         for ( int i = 0; i < MAX_SIZE; i++ )
         {
-            acquireFromPool( pool, 1 ).get( 0 ).release();
+            acquireFromPool( pool, 1, executor ).get( 0 ).release();
         }
+
+        executor.shutdown();
+        executor.awaitTermination( 10, TimeUnit.SECONDS );
 
         // then
 
@@ -192,8 +216,9 @@ public class LinkedQueuePoolTest
         FakeClock clock = new FakeClock();
         final LinkedQueuePool<Object> pool = getLinkedQueuePool( stateMonitor, clock, MIN_SIZE );
         List<FlyweightHolder<Object>> holders = new LinkedList<>();
+        ExecutorService executor = Executors.newCachedThreadPool();
 
-        buildAPeakOfAcquiredFlyweightsAndTriggerAlarmWithSideEffects( MAX_SIZE, clock, pool, holders );
+        buildAPeakOfAcquiredFlyweightsAndTriggerAlarmWithSideEffects( MAX_SIZE, clock, pool, holders, executor );
 
         // when
         // After the peak, stay at MID_SIZE concurrent usage, using up all already present Flyweights in the process
@@ -205,13 +230,17 @@ public class LinkedQueuePoolTest
         {
             // The latch is necessary to reduce races between batches
             CountDownLatch release = new CountDownLatch( MID_SIZE );
-            for ( FlyweightHolder holder : acquireFromPool( pool, MID_SIZE ) )
+            for ( FlyweightHolder holder : acquireFromPool( pool, MID_SIZE, executor ) )
             {
                 holder.release( release );
             }
             release.await();
             clock.forward( 110, TimeUnit.MILLISECONDS );
         }
+
+        executor.shutdown();
+        executor.awaitTermination( 10, TimeUnit.SECONDS );
+
 
         // then
         // currentPeakSize should be at MID_SIZE
@@ -221,6 +250,17 @@ public class LinkedQueuePoolTest
         // only the excess from the MAX_SIZE down to mid size must have been disposed
         // +1 for the alarm from buildAPeakOfAcquiredFlyweightsAndTriggerAlarmWithSideEffects
         assertEquals( MAX_SIZE - MID_SIZE + 1, stateMonitor.disposed.get() );
+    }
+
+//    @Test
+    public void loop() throws Exception
+    {
+        for ( int i = 0; i < 1000000; i++ )
+        {
+            if (i%1000 == 0)
+                System.out.println(i);
+            shouldMaintainPoolAtHighWatermarkWhenConcurrentUsagePassesMinSize();
+        }
     }
 
     @Test
@@ -235,8 +275,9 @@ public class LinkedQueuePoolTest
         FakeClock clock = new FakeClock();
         final LinkedQueuePool<Object> pool = getLinkedQueuePool( stateMonitor, clock, MIN_SIZE );
         List<FlyweightHolder<Object>> holders = new LinkedList<>();
+        ExecutorService executor = Executors.newCachedThreadPool();
 
-        buildAPeakOfAcquiredFlyweightsAndTriggerAlarmWithSideEffects( MAX_SIZE, clock, pool, holders );
+        buildAPeakOfAcquiredFlyweightsAndTriggerAlarmWithSideEffects( MAX_SIZE, clock, pool, holders, executor );
 
         // when
         // After the peak, stay well below concurrent usage, using up all already present Flyweights in the process
@@ -247,13 +288,16 @@ public class LinkedQueuePoolTest
         {
             // The latch is necessary to reduce races between batches
             CountDownLatch release = new CountDownLatch( BELOW_MIN_SIZE );
-            for ( FlyweightHolder holder : acquireFromPool( pool, BELOW_MIN_SIZE ) )
+            for ( FlyweightHolder holder : acquireFromPool( pool, BELOW_MIN_SIZE, executor ) )
             {
                 holder.release( release );
             }
             release.await();
             clock.forward( 110, TimeUnit.MILLISECONDS );
         }
+
+        executor.shutdown();
+        executor.awaitTermination( 10, TimeUnit.SECONDS );
 
         // then
         // currentPeakSize should be at MIN_SIZE / 5
@@ -270,7 +314,11 @@ public class LinkedQueuePoolTest
 
         // when
         // After the lull, recreate a peak
-        buildAPeakOfAcquiredFlyweightsAndTriggerAlarmWithSideEffects( MAX_SIZE, clock, pool, holders );
+        executor = Executors.newCachedThreadPool();
+        buildAPeakOfAcquiredFlyweightsAndTriggerAlarmWithSideEffects( MAX_SIZE, clock, pool, holders, executor );
+
+        executor.shutdown();
+        executor.awaitTermination( 10, TimeUnit.SECONDS );
 
         // then
         assertEquals( MAX_SIZE - MIN_SIZE + 1, stateMonitor.created.get() );
@@ -281,15 +329,15 @@ public class LinkedQueuePoolTest
     private void buildAPeakOfAcquiredFlyweightsAndTriggerAlarmWithSideEffects( int MAX_SIZE, FakeClock clock,
                                                                               LinkedQueuePool<Object>
                                                                                       pool,
-                                                                              List<FlyweightHolder<Object>> holders ) throws
+                                                                              List<FlyweightHolder<Object>> holders, Executor executor ) throws
             InterruptedException
     {
-        holders.addAll( acquireFromPool( pool, MAX_SIZE ) );
+        holders.addAll( acquireFromPool( pool, MAX_SIZE, executor ) );
 
         clock.forward( 110, TimeUnit.MILLISECONDS );
 
         // "Ring the bell" only on acquisition, of course.
-        holders.addAll( acquireFromPool( pool, 1 ) );
+        holders.addAll( acquireFromPool( pool, 1, executor ) );
 
         for ( FlyweightHolder holder : holders )
         {
@@ -312,16 +360,15 @@ public class LinkedQueuePoolTest
             new LinkedQueuePool.CheckStrategy.TimeoutCheckStrategy( 100, clock ), stateMonitor );
     }
 
-    private <R> List<FlyweightHolder<R>>  acquireFromPool( final LinkedQueuePool<R> pool, int times ) throws InterruptedException
+    private <R> List<FlyweightHolder<R>>  acquireFromPool( final LinkedQueuePool<R> pool, int times, Executor executor ) throws InterruptedException
     {
         List<FlyweightHolder<R>> acquirers = new LinkedList<>();
         final CountDownLatch latch = new CountDownLatch( times );
         for ( int i = 0; i < times; i++ )
         {
             FlyweightHolder<R> holder = new FlyweightHolder<R>( pool, latch );
-            Thread t = new Thread( holder );
             acquirers.add( holder );
-            t.start();
+            executor.execute( holder );
         }
         latch.await();
         return acquirers;
