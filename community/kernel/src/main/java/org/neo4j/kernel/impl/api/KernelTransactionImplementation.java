@@ -59,14 +59,14 @@ import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
-import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
-import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
-import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
+import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.impl.util.collection.ArrayCollection;
 
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
@@ -419,14 +419,21 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
         finally
         {
-            closed = true;
-            closing = false;
-            transactionEvent.setSuccess( success );
-            transactionEvent.setFailure( failure );
-            transactionEvent.setTransactionType( transactionType.name() );
-            transactionEvent.setReadOnly( txState == null || !txState.hasChanges() );
-            transactionEvent.close();
-            transactionEvent = null;
+            try
+            {
+                closed = true;
+                closing = false;
+                transactionEvent.setSuccess( success );
+                transactionEvent.setFailure( failure );
+                transactionEvent.setTransactionType( transactionType.name() );
+                transactionEvent.setReadOnly( txState == null || !txState.hasChanges() );
+                transactionEvent.close();
+                transactionEvent = null;
+            }
+            finally
+            {
+                release();
+            }
         }
     }
 
@@ -563,7 +570,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         try
         {
-            release();
             closeTransaction();
             hooks.afterCommit( txState, this, hooksState );
         }
@@ -577,7 +583,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         try
         {
-            release();
             closeTransaction();
             hooks.afterRollback( txState, this, hooksState );
         }
