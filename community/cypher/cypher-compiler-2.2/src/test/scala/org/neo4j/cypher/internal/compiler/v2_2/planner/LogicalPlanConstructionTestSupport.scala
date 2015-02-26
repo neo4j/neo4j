@@ -25,5 +25,6 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 import scala.language.implicitConversions
 
 trait LogicalPlanConstructionTestSupport extends CypherTestSupport {
-  implicit def idName(name: String): IdName = IdName(name)
+  implicit protected def idName(name: String): IdName = IdName(name)
+  implicit protected def idSymbol(name: Symbol): IdName = IdName(name.name)
 }

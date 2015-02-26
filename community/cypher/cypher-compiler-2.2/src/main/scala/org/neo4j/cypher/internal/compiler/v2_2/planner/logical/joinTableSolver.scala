@@ -19,14 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 
 object joinTableSolver extends ExhaustiveTableSolver {
 
   import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer.planNodeHashJoin
 
-  override def apply(goal: Set[Solvable], table: Set[Solvable] => Option[LogicalPlan]): Set[LogicalPlan] = {
-    val result = for (
+  override def apply(qg: QueryGraph, goal: Set[Solvable], table: Set[Solvable] => Option[LogicalPlan]): Set[LogicalPlan] = {
+    val result = for(
       leftGoal <- goal.subsets;
       lhs <- table(leftGoal);
       rightGoal = goal -- leftGoal;
@@ -39,3 +40,6 @@ object joinTableSolver extends ExhaustiveTableSolver {
     result.flatten.toSet
   }
 }
+
+
+

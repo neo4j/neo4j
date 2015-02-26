@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalPlan, PatternRelationship}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanConstructionTestSupport, PlannerQuery, QueryGraph}
 
-class JoinSolverTest extends CypherFunSuite {
+class JoinTableSolverTest extends CypherFunSuite with LogicalPlanConstructionTestSupport {
 
   import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 
@@ -38,32 +38,32 @@ class JoinSolverTest extends CypherFunSuite {
 
   val table = new ExhaustivePlanTable
 
-  test("does not join base don empty table") {
-    joinTableSolver(Set(solvable1, solvable2), table) should be(empty)
+  val qg = mock[QueryGraph]
+
+  test("does not join based on empty table") {
+    joinTableSolver(qg, Set(solvable1, solvable2), table) should be(empty)
   }
 
   test("joins plans that solve a single pattern relationship") {
-    when(plan1.availableSymbols).thenReturn(ids('a, 'r1, 'b))
-    when(plan2.availableSymbols).thenReturn(ids('b, 'r2, 'c))
+    when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b))
+    when(plan2.availableSymbols).thenReturn(Set[IdName]('b, 'r2, 'c))
 
     table.put(Set(solvable1), plan1)
     table.put(Set(solvable2), plan2)
 
-    joinTableSolver(Set(solvable1, solvable2), table).toSet should equal(Set(
-      planNodeHashJoin(ids('b), plan1, plan2),
-      planNodeHashJoin(ids('b), plan2, plan1)
+    joinTableSolver(qg, Set(solvable1, solvable2), table).toSet should equal(Set(
+      planNodeHashJoin(Set('b), plan1, plan2),
+      planNodeHashJoin(Set('b), plan2, plan1)
     ))
   }
 
   test("does not join plans that do not overlap") {
-    when(plan1.availableSymbols).thenReturn(ids('a, 'r1, 'b))
-    when(plan2.availableSymbols).thenReturn(ids('c, 'r2, 'd))
+    when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b))
+    when(plan2.availableSymbols).thenReturn(Set[IdName]('c, 'r2, 'd))
 
     table.put(Set(solvable1), plan1)
     table.put(Set(solvable2), plan2)
 
-    joinTableSolver(Set(solvable1, solvable2), table) should be(empty)
+    joinTableSolver(qg, Set(solvable1, solvable2), table) should be(empty)
   }
-
-  private def ids(ids: Symbol*) = ids.map(_.toString()).map(IdName.apply).toSet
 }

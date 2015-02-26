@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 
 import scala.collection.mutable
 
+// TODO: Make immutable
 class ExhaustivePlanTable extends (Set[Solvable] => Option[LogicalPlan]) {
   private var table = new mutable.HashMap[Set[Solvable], LogicalPlan]()
 

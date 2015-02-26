@@ -22,6 +22,26 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 
-trait ExhaustiveTableSolver {
-  def apply(qg: QueryGraph, goal: Set[Solvable], table: Set[Solvable] => Option[LogicalPlan]): Set[LogicalPlan]
+object expandTableSolver extends ExhaustiveTableSolver {
+
+  import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.ExhaustiveQueryGraphSolver.planSinglePatternSide
+
+  override def apply(qg: QueryGraph, goal: Set[Solvable], table: (Set[Solvable]) => Option[LogicalPlan]): Set[LogicalPlan] = {
+    val result = for(
+      solvable <- goal;
+      solved = goal - solvable;
+      plan <- table(solved)
+    ) yield {
+      solvable match {
+
+        case SolvableRelationship(pattern) =>
+          planSinglePatternSide(qg, pattern, plan, pattern.left) ++
+          planSinglePatternSide(qg, pattern, plan, pattern.right)
+
+        case _ =>
+          Set.empty
+      }
+    }
+    result.flatten
+  }
 }

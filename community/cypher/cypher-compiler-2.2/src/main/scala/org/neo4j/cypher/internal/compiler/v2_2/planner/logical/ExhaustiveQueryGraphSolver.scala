@@ -32,24 +32,56 @@ import scala.annotation.tailrec
 
 object ExhaustiveQueryGraphSolver {
   val MAX_SEARCH_DEPTH = 5
+
+  // TODO: Make sure this is tested by extracting tests from greedy expand step
+  def planSinglePatternSide(qg: QueryGraph, patternRel: PatternRelationship, plan: LogicalPlan, nodeId: IdName): Set[LogicalPlan] = {
+    val availableSymbols = plan.availableSymbols
+    if (availableSymbols(nodeId)) {
+      val dir = patternRel.directionRelativeTo(nodeId)
+      val otherSide = patternRel.otherSide(nodeId)
+      val overlapping = availableSymbols.contains(otherSide)
+      val mode = if (overlapping) ExpandInto else ExpandAll
+
+      patternRel.length match {
+        case SimplePatternLength =>
+          Set(planSimpleExpand(plan, nodeId, dir, otherSide, patternRel, mode))
+
+        case length: VarPatternLength =>
+          // TODO: Move selections out here (?)
+          val availablePredicates = qg.selections.predicatesGiven(availableSymbols + patternRel.name)
+          val (predicates, allPredicates) = availablePredicates.collect {
+            case all@AllIterablePredicate(FilterScope(identifier, Some(innerPredicate)), relId@Identifier(patternRel.name.name))
+              if identifier == relId || !innerPredicate.dependencies(relId) =>
+              (identifier, innerPredicate) -> all
+          }.unzip
+          Set(planVarExpand(plan, nodeId, dir, otherSide, patternRel, predicates, allPredicates, mode))
+      }
+    } else {
+      Set.empty
+    }
+  }
 }
 
 case class ExhaustiveQueryGraphSolver(leafPlanFinder: LogicalLeafPlan.Finder = leafPlanOptions,
                                       bestPlanFinder: CandidateSelector = pickBestPlan,
                                       config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default,
-                                      solvers: Seq[ExhaustiveTableSolver] = Seq(joinTableSolver),
+                                      solvers: Seq[ExhaustiveTableSolver] = Seq(joinTableSolver, expandTableSolver),
                                       optionalSolvers: Seq[OptionalSolver] = Seq(applyOptional, outerHashJoin))
   extends QueryGraphSolver with PatternExpressionSolving {
+
+  import ExhaustiveQueryGraphSolver.planSinglePatternSide
 
   // TODO: For selection, for now
   override def emptyPlanTable: PlanTable = GreedyPlanTable.empty
 
   def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = {
-    val kit = config.kit
-    val plans = queryGraph.connectedComponents.map { qg => planComponent(qg, kit(qg)) }
+    val kitFactory = config.kit
+    val plans = queryGraph.connectedComponents.map { qg => planComponent(qg, kitFactory(qg)) }
 
-    plans.reduceOption(planCartesianProduct).getOrElse {
-      ???
+    val kit = kitFactory(queryGraph)
+    plans.reduceOption( (l, r) => kit.select(planCartesianProduct(l, r)) ).getOrElse {
+      val plan = if (queryGraph.argumentIds.isEmpty) planSingleRow() else planQueryArgumentRow(queryGraph)
+      kit.select(plan)
     }
   }
 
@@ -62,7 +94,7 @@ case class ExhaustiveQueryGraphSolver(leafPlanFinder: LogicalLeafPlan.Finder = l
       val table = initTable(qg, kit, leaves)
 
       val initialToDo = Solvables(qg)
-      iterate(initialToDo, kit, table)
+      iterate(qg, initialToDo, kit, table)
 
       table.head
     } else {
@@ -71,29 +103,32 @@ case class ExhaustiveQueryGraphSolver(leafPlanFinder: LogicalLeafPlan.Finder = l
   }
 
   @tailrec
-  private def iterate(toDo: Set[Solvable], kit: PlanningStrategyKit, table: ExhaustivePlanTable)(implicit context: LogicalPlanningContext): Unit = {
+  private def iterate(fullQG: QueryGraph, toDo: Set[Solvable], kit: PlanningStrategyKit, table: ExhaustivePlanTable)(implicit context: LogicalPlanningContext): Unit = {
     val size = toDo.size
     if (size > 1) {
       // line 7-16
       val k = Math.min(size, MAX_SEARCH_DEPTH)
       for (i <- 2 to k;
            goal <- toDo.subsets(i);
-           candidates = solvers.flatMap(solver => solver(goal, table)).map(kit.select);
+           // TODO: Make sure this is executed lazily to avoid mem blowup
+           candidates = solvers.flatMap(solver => solver(fullQG, goal, table)).map(kit.select);
            best <- bestPlanFinder(candidates)) {
         table.put(goal, best)
       }
 
+      // TODO: Get rid of map
       // line 17
-      val blockCandidates = toDo.subsets(k).flatMap( set => table(set).map(_ -> set)).toMap
+      val blockCandidates = toDo.subsets(k).flatMap( set => table(set).map(_ -> set) ).toMap
       val bestBlock = bestPlanFinder(blockCandidates.keys.toSeq).getOrElse(throw new InternalException("Did not find a single solution for a block"))
-      val bestSolved = blockCandidates(bestBlock)
+      val bestSolvables = blockCandidates(bestBlock)
 
+      // TODO: Test this
       // line 18 - 21
-      val blockSolved = SolvableBlock(bestSolved)
+      val blockSolved = SolvableBlock(bestSolvables)
       table.put(Set(blockSolved), bestBlock)
-      val newToDo = toDo -- bestSolved + blockSolved
-      bestSolved.subsets.foreach(table.remove)
-      iterate(newToDo, kit, table)
+      val newToDo = toDo -- bestSolvables + blockSolved
+      bestSolvables.subsets.foreach(table.remove)
+      iterate(fullQG, newToDo, kit, table)
     }
   }
 
@@ -108,35 +143,10 @@ case class ExhaustiveQueryGraphSolver(leafPlanFinder: LogicalLeafPlan.Finder = l
   }
 
   private def planSinglePattern(qg: QueryGraph, pattern: PatternRelationship, leaves: Seq[LogicalPlan]): Seq[LogicalPlan] =
+    // TODO: Filter plans that already solve pattern
     leaves.flatMap { plan =>
       val (start, end) = pattern.nodes
       planSinglePatternSide(qg, pattern, plan, start) ++ planSinglePatternSide(qg, pattern, plan, end)
     }
-
-  private def planSinglePatternSide(qg: QueryGraph, patternRel: PatternRelationship, plan: LogicalPlan, nodeId: IdName): Set[LogicalPlan] = {
-    val availableSymbols = plan.availableSymbols
-    if (availableSymbols(nodeId)) {
-      val dir = patternRel.directionRelativeTo(nodeId)
-      val otherSide = patternRel.otherSide(nodeId)
-      val overlapping = availableSymbols.contains(otherSide)
-      val mode = if (overlapping) ExpandInto else ExpandAll
-
-      patternRel.length match {
-        case SimplePatternLength =>
-          Set(planSimpleExpand(plan, nodeId, dir, otherSide, patternRel, mode))
-
-        case length: VarPatternLength =>
-          val availablePredicates = qg.selections.predicatesGiven(availableSymbols + patternRel.name)
-          val (predicates, allPredicates) = availablePredicates.collect {
-            case all@AllIterablePredicate(FilterScope(identifier, Some(innerPredicate)), relId@Identifier(patternRel.name.name))
-              if identifier == relId || !innerPredicate.dependencies(relId) =>
-              (identifier, innerPredicate) -> all
-          }.unzip
-          Set(planVarExpand(plan, nodeId, dir, otherSide, patternRel, predicates, allPredicates, mode))
-      }
-    } else {
-      Set.empty
-    }
-  }
 }
 
