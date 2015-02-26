@@ -20,24 +20,27 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{NodeHashJoin, LogicalPlan}
 
 object joinTableSolver extends ExhaustiveTableSolver {
 
   import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer.planNodeHashJoin
 
-  override def apply(qg: QueryGraph, goal: Set[Solvable], table: Set[Solvable] => Option[LogicalPlan]): Set[LogicalPlan] = {
-    val result = for(
-      leftGoal <- goal.subsets;
-      lhs <- table(leftGoal);
-      rightGoal = goal -- leftGoal;
-      rhs <- table(rightGoal);
-      overlap = lhs.availableSymbols intersect rhs.availableSymbols if overlap.nonEmpty
-    ) yield Set(
-      planNodeHashJoin(overlap, lhs, rhs),
-      planNodeHashJoin(overlap, rhs, lhs)
-    )
-    result.flatten.toSet
+  override def apply(qg: QueryGraph, goal: Set[Solvable], table: Set[Solvable] => Option[LogicalPlan]): Iterator[LogicalPlan] = {
+    val result: Iterator[Iterator[NodeHashJoin]] =
+      for(
+        leftGoal <- goal.subsets;
+        lhs <- table(leftGoal);
+        rightGoal = goal -- leftGoal;
+        rhs <- table(rightGoal);
+        overlap = lhs.availableSymbols intersect rhs.availableSymbols if overlap.nonEmpty
+      ) yield {
+        Iterator(
+          planNodeHashJoin(overlap, lhs, rhs),
+          planNodeHashJoin(overlap, rhs, lhs)
+        )
+      }
+    result.flatten
   }
 }
 

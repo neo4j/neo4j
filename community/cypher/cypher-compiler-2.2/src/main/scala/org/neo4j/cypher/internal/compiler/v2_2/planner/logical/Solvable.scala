@@ -20,12 +20,22 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{PatternRelationship, IdName}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.PatternRelationship
 
 trait Solvable
 final case class SolvableRelationship(rel: PatternRelationship) extends Solvable
 final case class SolvableBlock(solvables: Set[Solvable]) extends Solvable
 
+object Solvable {
+  def relationship(solvable: Solvable): Option[PatternRelationship] = solvable match {
+    case SolvableRelationship(pattern) => Some(pattern)
+    case _                             => None
+  }
+}
+
 object Solvables {
   def apply(qg: QueryGraph): Set[Solvable] = qg.patternRelationships.map(SolvableRelationship)
 }
+
+
+

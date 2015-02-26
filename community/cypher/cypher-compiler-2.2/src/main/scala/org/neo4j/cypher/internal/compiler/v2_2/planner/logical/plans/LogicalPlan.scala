@@ -101,7 +101,7 @@ abstract class LogicalLeafPlan extends LogicalPlan {
 }
 
 object LogicalLeafPlan {
-  type Finder = LogicalPlanningFunction2[PlanningStrategyConfiguration, QueryGraph, Iterable[LogicalPlan]]
+  type Finder = LogicalPlanningFunction2[PlanningStrategyConfiguration, QueryGraph, Set[LogicalPlan]]
 }
 
 final case class IdName(name: String) extends PageDocFormatting // with ToPrettyString[IdName] {

@@ -30,7 +30,7 @@ class CompositeQueryGraphSolver(solver1: TentativeQueryGraphSolver, solver2: Ten
   def emptyPlanTable: PlanTable = solver1.emptyPlanTable
 
   def tryPlan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]) = {
-    val availableSolutions = solver1.tryPlan(queryGraph).toSeq ++ solver2.tryPlan(queryGraph).toSeq
-    pickBestPlan(availableSolutions)
+    val availableSolutions = solver1.tryPlan(queryGraph).toSeq ++ solver2.tryPlan(queryGraph)
+    pickBestPlan(availableSolutions.iterator)
   }
 }

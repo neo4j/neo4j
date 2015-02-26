@@ -95,8 +95,8 @@ class PickBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   private def assertTopPlan(winner: LogicalPlan, candidates: LogicalPlan*)(GIVEN: given) {
     val environment = LogicalPlanningEnvironment(GIVEN)
     implicit val context = LogicalPlanningContext(null, environment.metricsFactory.newMetrics(GIVEN.graphStatistics, environment.semanticTable), null, null, QueryGraphCardinalityInput(Map.empty, Cardinality(1)))
-    pickBestPlan(candidates) should equal(Some(winner))
-    pickBestPlan(candidates.reverse) should equal(Some(winner))
+    pickBestPlan(candidates.iterator) should equal(Some(winner))
+    pickBestPlan(candidates.reverse.iterator) should equal(Some(winner))
   }
 }
 

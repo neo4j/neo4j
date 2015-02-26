@@ -34,6 +34,7 @@ trait LogicalPlanningFunction2[-A1, -A2, +B] {
   def asFunctionInContext(implicit context: LogicalPlanningContext): (A1, A2) => B = apply
 }
 
+// TODO: Return Iterator
 trait CandidateGenerator[T] extends LogicalPlanningFunction2[T, QueryGraph, Seq[LogicalPlan]]
 trait PlanTableGenerator extends LogicalPlanningFunction2[QueryGraph, Option[LogicalPlan], PlanTable]
 
@@ -56,6 +57,6 @@ object CandidateGenerator {
 trait PlanTransformer[-T] extends LogicalPlanningFunction2[LogicalPlan, T, LogicalPlan]
 trait PlanTableTransformer[-T] extends LogicalPlanningFunction2[PlanTable, T, PlanTable]
 
-trait CandidateSelector extends LogicalPlanningFunction1[Seq[LogicalPlan], Option[LogicalPlan]]
+trait CandidateSelector extends LogicalPlanningFunction1[Iterator[LogicalPlan], Option[LogicalPlan]]
 
 trait LeafPlanner  extends LogicalPlanningFunction1[QueryGraph, Seq[LogicalPlan]]

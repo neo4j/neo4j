@@ -32,14 +32,14 @@ case class LeafPlanTableGenerator(config: PlanningStrategyConfiguration) extends
 
 object leafPlanOptions extends LogicalLeafPlan.Finder {
 
-  def apply(config: PlanningStrategyConfiguration, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Iterable[LogicalPlan] = {
+  def apply(config: PlanningStrategyConfiguration, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Set[LogicalPlan] = {
     val select = config.applySelections.asFunctionInContext
     val pickBest = config.pickBestCandidate.asFunctionInContext
     val projectAllEndpoints = config.projectAllEndpoints.asFunctionInContext
 
     val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph, projectAllEndpoints)
     val leafPlanCandidateListsWithSelections = leafPlanCandidateLists.map(_.map(select(_, queryGraph)))
-    val bestLeafPlans: Iterable[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(pickBest(_))
-    bestLeafPlans
+    val bestLeafPlans: Iterable[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(x => pickBest(x.iterator))
+    bestLeafPlans.toSet
   }
 }

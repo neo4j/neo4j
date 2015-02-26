@@ -26,22 +26,19 @@ object expandTableSolver extends ExhaustiveTableSolver {
 
   import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.ExhaustiveQueryGraphSolver.planSinglePatternSide
 
-  override def apply(qg: QueryGraph, goal: Set[Solvable], table: (Set[Solvable]) => Option[LogicalPlan]): Set[LogicalPlan] = {
-    val result = for(
-      solvable <- goal;
-      solved = goal - solvable;
-      plan <- table(solved)
-    ) yield {
-      solvable match {
-
-        case SolvableRelationship(pattern) =>
-          planSinglePatternSide(qg, pattern, plan, pattern.left) ++
-          planSinglePatternSide(qg, pattern, plan, pattern.right)
-
-        case _ =>
-          Set.empty
+  override def apply(qg: QueryGraph, goal: Set[Solvable], table: (Set[Solvable]) => Option[LogicalPlan]): Iterator[LogicalPlan] = {
+    val result =
+      for(
+        solvable <- goal.iterator;
+        pattern <- Solvable.relationship(solvable);
+        solved = goal - solvable;
+        plan <- table(solved) // if !plan.solved.graph.patternRelationships(pattern)
+      ) yield {
+          Iterator(
+            planSinglePatternSide(qg, pattern, plan, pattern.left),
+            planSinglePatternSide(qg, pattern, plan, pattern.right)
+          ).flatten
       }
-    }
-    result.flatten
+      result.flatten
   }
 }

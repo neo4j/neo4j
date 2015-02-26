@@ -34,7 +34,7 @@ object ExhaustiveQueryGraphSolver {
   val MAX_SEARCH_DEPTH = 5
 
   // TODO: Make sure this is tested by extracting tests from greedy expand step
-  def planSinglePatternSide(qg: QueryGraph, patternRel: PatternRelationship, plan: LogicalPlan, nodeId: IdName): Set[LogicalPlan] = {
+  def planSinglePatternSide(qg: QueryGraph, patternRel: PatternRelationship, plan: LogicalPlan, nodeId: IdName): Option[LogicalPlan] = {
     val availableSymbols = plan.availableSymbols
     if (availableSymbols(nodeId)) {
       val dir = patternRel.directionRelativeTo(nodeId)
@@ -44,7 +44,7 @@ object ExhaustiveQueryGraphSolver {
 
       patternRel.length match {
         case SimplePatternLength =>
-          Set(planSimpleExpand(plan, nodeId, dir, otherSide, patternRel, mode))
+          Some(planSimpleExpand(plan, nodeId, dir, otherSide, patternRel, mode))
 
         case length: VarPatternLength =>
           // TODO: Move selections out here (?)
@@ -54,10 +54,10 @@ object ExhaustiveQueryGraphSolver {
               if identifier == relId || !innerPredicate.dependencies(relId) =>
               (identifier, innerPredicate) -> all
           }.unzip
-          Set(planVarExpand(plan, nodeId, dir, otherSide, patternRel, predicates, allPredicates, mode))
+          Some(planVarExpand(plan, nodeId, dir, otherSide, patternRel, predicates, allPredicates, mode))
       }
     } else {
-      Set.empty
+      None
     }
   }
 }
@@ -87,31 +87,32 @@ case class ExhaustiveQueryGraphSolver(leafPlanFinder: LogicalLeafPlan.Finder = l
 
   private def planComponent(qg: QueryGraph, kit: PlanningStrategyKit)(implicit context: LogicalPlanningContext, leafPlanWeHopeToGetAwayWithIgnoring: Option[LogicalPlan]): LogicalPlan = {
     // TODO: Investigate dropping leafPlanWeHopeToGetAwayWithIgnoring argument
-    val leaves = leafPlanFinder(config, qg).toSeq // TODO: Get rid off toSeq
+    val leaves = leafPlanFinder(config, qg)
     if (qg.patternRelationships.size > 0) {
 
       // line 1-4
       val table = initTable(qg, kit, leaves)
 
       val initialToDo = Solvables(qg)
-      iterate(qg, initialToDo, kit, table)
+      val solutionGenerator = newSolutionGenerator(qg, kit, table)
+      iterate(qg, initialToDo, kit, table, solutionGenerator)
 
+      // TODO: Not exactly pretty
       table.head
     } else {
-      bestPlanFinder(leaves).getOrElse(throw new InternalException("Found no leaf plan for connected component.  This must not happen."))
+      bestPlanFinder(leaves.iterator).getOrElse(throw new InternalException("Found no leaf plan for connected component.  This must not happen."))
     }
   }
 
   @tailrec
-  private def iterate(fullQG: QueryGraph, toDo: Set[Solvable], kit: PlanningStrategyKit, table: ExhaustivePlanTable)(implicit context: LogicalPlanningContext): Unit = {
+  private def iterate(qg: QueryGraph, toDo: Set[Solvable], kit: PlanningStrategyKit, table: ExhaustivePlanTable, solutionGenerator: Set[Solvable] => Iterator[LogicalPlan])(implicit context: LogicalPlanningContext): Unit = {
     val size = toDo.size
     if (size > 1) {
       // line 7-16
       val k = Math.min(size, MAX_SEARCH_DEPTH)
       for (i <- 2 to k;
            goal <- toDo.subsets(i);
-           // TODO: Make sure this is executed lazily to avoid mem blowup
-           candidates = solvers.flatMap(solver => solver(fullQG, goal, table)).map(kit.select);
+           candidates = solutionGenerator(goal);
            best <- bestPlanFinder(candidates)) {
         table.put(goal, best)
       }
@@ -119,7 +120,7 @@ case class ExhaustiveQueryGraphSolver(leafPlanFinder: LogicalLeafPlan.Finder = l
       // TODO: Get rid of map
       // line 17
       val blockCandidates = toDo.subsets(k).flatMap( set => table(set).map(_ -> set) ).toMap
-      val bestBlock = bestPlanFinder(blockCandidates.keys.toSeq).getOrElse(throw new InternalException("Did not find a single solution for a block"))
+      val bestBlock = bestPlanFinder(blockCandidates.keys.iterator).getOrElse(throw new InternalException("Did not find a single solution for a block"))
       val bestSolvables = blockCandidates(bestBlock)
 
       // TODO: Test this
@@ -128,25 +129,31 @@ case class ExhaustiveQueryGraphSolver(leafPlanFinder: LogicalLeafPlan.Finder = l
       table.put(Set(blockSolved), bestBlock)
       val newToDo = toDo -- bestSolvables + blockSolved
       bestSolvables.subsets.foreach(table.remove)
-      iterate(fullQG, newToDo, kit, table)
+      iterate(qg, newToDo, kit, table, solutionGenerator)
     }
   }
 
-  def initTable(qg: QueryGraph, kit: PlanningStrategyKit, leaves: Seq[LogicalPlan])(implicit context: LogicalPlanningContext): ExhaustivePlanTable = {
+  def initTable(qg: QueryGraph, kit: PlanningStrategyKit, leaves: Set[LogicalPlan])(implicit context: LogicalPlanningContext): ExhaustivePlanTable = {
     val table = new ExhaustivePlanTable
     qg.patternRelationships.foreach { pattern =>
-      val accessPlans = planSinglePattern(qg, pattern, leaves).map(kit.select)
+      val accessPlans = planSinglePattern(qg, pattern, leaves.iterator).map(kit.select)
       val bestAccessor = bestPlanFinder(accessPlans).getOrElse(throw new InternalException("Found no access plan for a pattern relationship in a connected component.  This must not happen."))
       table.put(Set(SolvableRelationship(pattern)), bestAccessor)
     }
     table
   }
 
-  private def planSinglePattern(qg: QueryGraph, pattern: PatternRelationship, leaves: Seq[LogicalPlan]): Seq[LogicalPlan] =
+  private def planSinglePattern(qg: QueryGraph, pattern: PatternRelationship, leaves: Iterator[LogicalPlan]): Iterator[LogicalPlan] =
     // TODO: Filter plans that already solve pattern
     leaves.flatMap { plan =>
       val (start, end) = pattern.nodes
       planSinglePatternSide(qg, pattern, plan, start) ++ planSinglePatternSide(qg, pattern, plan, end)
     }
+
+  private def newSolutionGenerator(qg: QueryGraph, kit: PlanningStrategyKit, table: ExhaustivePlanTable): (Set[Solvable]) => Iterator[LogicalPlan] = {
+    val solverFunctions = solvers.map { solver => (goal: Set[Solvable]) => solver(qg, goal, table)}
+    val solutionGenerator = (goal: Set[Solvable]) => solverFunctions.iterator.flatMap { solver => solver(goal).map(kit.select) }
+    solutionGenerator
+  }
 }
 

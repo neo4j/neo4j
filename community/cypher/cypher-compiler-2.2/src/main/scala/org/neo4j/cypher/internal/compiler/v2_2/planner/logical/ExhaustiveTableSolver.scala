@@ -23,5 +23,5 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 
 trait ExhaustiveTableSolver {
-  def apply(qg: QueryGraph, goal: Set[Solvable], table: Set[Solvable] => Option[LogicalPlan]): Set[LogicalPlan]
+  def apply(qg: QueryGraph, goal: Set[Solvable], table: Set[Solvable] => Option[LogicalPlan]): Iterator[LogicalPlan]
 }
