@@ -28,7 +28,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.ReferenceManager;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -123,28 +122,4 @@ public class LuceneAllDocumentsReaderTest
         }
     }
 
-    private static class SearcherManagerStub extends ReferenceManager<IndexSearcher>
-    {
-        SearcherManagerStub( IndexSearcher searcher )
-        {
-            this.current = searcher;
-        }
-
-        @Override
-        protected void decRef( IndexSearcher reference ) throws IOException
-        {
-        }
-
-        @Override
-        protected IndexSearcher refreshIfNeeded( IndexSearcher referenceToRefresh ) throws IOException
-        {
-            return null;
-        }
-
-        @Override
-        protected boolean tryIncRef( IndexSearcher reference )
-        {
-            return true;
-        }
-    }
 }

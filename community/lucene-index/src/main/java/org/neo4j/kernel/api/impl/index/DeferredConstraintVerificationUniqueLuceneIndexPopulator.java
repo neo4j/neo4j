@@ -31,8 +31,8 @@ import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ReferenceManager;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TermQuery;
 
 import org.neo4j.helpers.ThisShouldNotHappenError;
@@ -54,10 +54,12 @@ import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KE
 class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
     private final IndexDescriptor descriptor;
-    private SearcherManager searcherManager;
+    private final SearcherManagerFactory searcherManagerFactory;
+    private ReferenceManager<IndexSearcher> searcherManager;
 
     DeferredConstraintVerificationUniqueLuceneIndexPopulator( LuceneDocumentStructure documentStructure,
                                                               IndexWriterFactory<LuceneIndexWriter> writers,
+                                                              SearcherManagerFactory searcherManagerFactory,
                                                               IndexWriterStatus writerStatus,
                                                               DirectoryFactory dirFactory, File dirFile,
                                                               FailureStorage failureStorage, long indexId,
@@ -65,13 +67,27 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
     {
         super( documentStructure, writers, writerStatus, dirFactory, dirFile, failureStorage, indexId );
         this.descriptor = descriptor;
+        this.searcherManagerFactory = searcherManagerFactory;
     }
 
     @Override
     public void create() throws IOException
     {
         super.create();
-        searcherManager = writer.createSearcherManager();
+        searcherManager = searcherManagerFactory.create( writer );
+    }
+
+    @Override
+    public void drop() throws IOException
+    {
+        try
+        {
+            searcherManager.close();
+        }
+        finally
+        {
+            super.drop();
+        }
     }
 
     @Override
@@ -200,6 +216,19 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
                 throw new UnsupportedOperationException( "should not remove() from populating index" );
             }
         };
+    }
+
+    @Override
+    public void close( boolean populationCompletedSuccessfully ) throws IOException, IndexCapacityExceededException
+    {
+        try
+        {
+            searcherManager.close();
+        }
+        finally
+        {
+            super.close( populationCompletedSuccessfully );
+        }
     }
 
     private static class DuplicateCheckingCollector extends Collector
