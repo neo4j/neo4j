@@ -57,7 +57,7 @@ public class DiagnosticsLoggingTest
         FakeDatabase db = new FakeDatabase( settings );
         FakeLogger logger = db.getLogger();
         String messages = logger.getMessages();
-        assertThat( messages, containsString( "Page cache size: 8MB" ) );
+        assertThat( messages, containsString( "Page cache size: 8 MiB" ) );
         db.shutdown();
     }
 

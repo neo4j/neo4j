@@ -27,7 +27,7 @@ import java.util.Map;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePullerClient;
@@ -37,7 +37,6 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.TargetDirectory.forTest;
@@ -158,7 +157,7 @@ public class TestInstanceJoin
 
     private static HighlyAvailableGraphDatabase start( String storeDir, int i, Map<String, String> additionalConfig )
     {
-        HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
+        HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                 newHighlyAvailableDatabaseBuilder( storeDir )
                 .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + i) )
                 .setConfig( ClusterSettings.server_id, i + "" )

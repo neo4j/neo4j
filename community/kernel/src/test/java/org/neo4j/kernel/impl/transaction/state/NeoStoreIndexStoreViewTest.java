@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,11 +26,15 @@ import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.Statement;
@@ -54,21 +52,20 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 
 public class NeoStoreIndexStoreViewTest
 {
     @Rule
-    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() );
 
     Label label = DynamicLabel.label( "Person" );
 
@@ -162,8 +159,7 @@ public class NeoStoreIndexStoreViewTest
     @Before
     public void before() throws KernelException
     {
-        String graphDbPath = testDirectory.directory().getAbsolutePath();
-        graphDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( graphDbPath );
+        graphDb = dbRule.getGraphDatabaseAPI();
 
         createAlistairAndStefanNodes();
         getOrCreateIds();
@@ -186,13 +182,6 @@ public class NeoStoreIndexStoreViewTest
         } );
         storeView = new NeoStoreIndexStoreView( locks, neoStore );
     }
-
-    @After
-    public void after()
-    {
-        graphDb.shutdown();
-    }
-
 
     private void createAlistairAndStefanNodes()
     {

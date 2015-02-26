@@ -39,30 +39,26 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.kernel.impl.util.Validators;
+import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.test.Mute;
 import org.neo4j.test.RandomRule;
-import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 
+import static java.lang.System.currentTimeMillis;
+import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.lang.System.currentTimeMillis;
-import static java.util.Arrays.asList;
-
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.alwaysTrue;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.ArrayUtil.join;
@@ -80,7 +76,7 @@ public class ImportToolTest
 
         // WHEN
         ImportTool.main( arguments(
-                "--into",          directory.absolutePath(),
+                "--into",          dbRule.getStoreDir().getAbsolutePath(),
                 "--nodes",         nodeData( true, config, nodeIds, alwaysTrue() ).getAbsolutePath(),
                 "--relationships", relationshipData( true, config, nodeIds, alwaysTrue() ).getAbsolutePath() ) );
 
@@ -97,7 +93,7 @@ public class ImportToolTest
 
         // WHEN
         ImportTool.main( arguments(
-                "--into", directory.absolutePath(),
+                "--into", dbRule.getStoreDir().getAbsolutePath(),
                 "--delimiter", "TAB",
                 "--array-delimiter", String.valueOf( config.arrayDelimiter() ),
                 "--nodes",
@@ -120,7 +116,7 @@ public class ImportToolTest
 
         // WHEN
         ImportTool.main( arguments(
-                "--into", directory.absolutePath(),
+                "--into", dbRule.getStoreDir().getAbsolutePath(),
                 "--nodes", // One group with one header file and one data file
                     nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
                     nodeData( false, config, nodeIds, lines( 0, NODE_COUNT/2 ) ).getAbsolutePath(),
@@ -149,7 +145,7 @@ public class ImportToolTest
 
         // WHEN
         ImportTool.main( arguments(
-                "--into", directory.absolutePath(),
+                "--into", dbRule.getStoreDir().getAbsolutePath(),
                 "--nodes:" + join( firstLabels, ":" ),
                     nodeData( true, config, nodeIds, lines( 0, NODE_COUNT/2 ) ).getAbsolutePath(),
                 "--nodes:" + join( secondLabels, ":" ),
@@ -203,12 +199,12 @@ public class ImportToolTest
 
         // WHEN
         ImportTool.main( arguments(
-                "--into",          directory.absolutePath(),
+                "--into",          dbRule.getStoreDir().getAbsolutePath(),
                 "--nodes",         nodeData( true, config, nodeIds, alwaysTrue() ).getAbsolutePath() ) );
                 // no relationships
 
         // THEN
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
         try ( Transaction tx = db.beginTx() )
         {
             int nodeCount = 0;
@@ -220,10 +216,6 @@ public class ImportToolTest
             }
             assertEquals( NODE_COUNT, nodeCount );
             tx.success();
-        }
-        finally
-        {
-            db.shutdown();
         }
     }
 
@@ -243,7 +235,7 @@ public class ImportToolTest
 
         // WHEN
         String[] args = arguments(
-                "--into", directory.absolutePath(),
+                "--into",  dbRule.getStoreDir().getAbsolutePath(),
                 "--nodes", nodeHeader( config, groupOne ) + MULTI_FILE_DELIMITER +
                            nodeData( false, config, groupOneNodeIds, alwaysTrue() ),
                 "--nodes", nodeHeader( config, groupTwo ) + MULTI_FILE_DELIMITER +
@@ -256,7 +248,7 @@ public class ImportToolTest
         ImportTool.main( args );
 
         // THEN
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
         try ( Transaction tx = db.beginTx() )
         {
             int nodeCount = 0;
@@ -268,10 +260,6 @@ public class ImportToolTest
             }
             assertEquals( 6, nodeCount );
             tx.success();
-        }
-        finally
-        {
-            db.shutdown();
         }
     }
 
@@ -287,7 +275,7 @@ public class ImportToolTest
         try
         {
             ImportTool.main( arguments(
-                    "--into",          directory.absolutePath(),
+                    "--into",          dbRule.getStoreDir().getAbsolutePath(),
                     "--nodes",         nodeHeader( config, "MyGroup" ) + MULTI_FILE_DELIMITER +
                     nodeData( false, config, groupOneNodeIds, alwaysTrue() ),
                     "--nodes",         nodeHeader( config ) + MULTI_FILE_DELIMITER +
@@ -312,7 +300,7 @@ public class ImportToolTest
 
         // WHEN
         ImportTool.main( arguments(
-                "--into",          directory.absolutePath(),
+                "--into",          dbRule.getStoreDir().getAbsolutePath(),
                 "--nodes",         nodeData( true, config, nodeIds, alwaysTrue() ).getAbsolutePath(),
                                    // there will be no :TYPE specified in the header of the relationships below
                 "--relationships:" + type,
@@ -336,7 +324,7 @@ public class ImportToolTest
         try
         {
             ImportTool.main( arguments(
-                    "--into",  directory.absolutePath(),
+                    "--into",  dbRule.getStoreDir().getAbsolutePath(),
                     "--nodes", nodeHeaderFile.getAbsolutePath() + MULTI_FILE_DELIMITER +
                                nodeData1.getAbsolutePath() + MULTI_FILE_DELIMITER +
                                nodeData2.getAbsolutePath() ) );
@@ -366,11 +354,11 @@ public class ImportToolTest
                 Triplet.of( "missing", "a", "KNOWS" ) ); // line 3 of file2
         File relationshipData1 = relationshipData( true, config, relationships.iterator(), lines( 0, 2 ), true );
         File relationshipData2 = relationshipData( false, config, relationships.iterator(), lines( 2, 5 ), true );
-        File bad = directory.file( "bad.log" );
+        File bad = file( "bad.log" );
 
         // WHEN importing data where some relationships refer to missing nodes
         ImportTool.main( arguments(
-                "--into",          directory.absolutePath(),
+                "--into",          dbRule.getStoreDir().getAbsolutePath(),
                 "--nodes",         nodeData.getAbsolutePath(),
                 "--bad",           bad.getAbsolutePath(),
                 "--bad-tolerance", "2",
@@ -401,13 +389,13 @@ public class ImportToolTest
                 Triplet.of( "missing", "a", "KNOWS" ) ); // line 3 of file2
         File relationshipData1 = relationshipData( true, config, relationships.iterator(), lines( 0, 2 ), true );
         File relationshipData2 = relationshipData( false, config, relationships.iterator(), lines( 2, 5 ), true );
-        File bad = directory.file( "bad.log" );
+        File bad = file( "bad.log" );
 
         // WHEN importing data where some relationships refer to missing nodes
         try
         {
             ImportTool.main( arguments(
-                    "--into",          directory.absolutePath(),
+                    "--into",          dbRule.getStoreDir().getAbsolutePath(),
                     "--nodes",         nodeData.getAbsolutePath(),
                     "--bad",           bad.getAbsolutePath(),
                     "--bad-tolerance", "1",
@@ -468,7 +456,7 @@ public class ImportToolTest
             Validator<Node> nodeAdditionalValidation,
             Validator<Relationship> relationshipAdditionalValidation )
     {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
         try ( Transaction tx = db.beginTx() )
         {
             int nodeCount = 0, relationshipCount = 0;
@@ -487,10 +475,6 @@ public class ImportToolTest
             }
             assertEquals( RELATIONSHIP_COUNT, relationshipCount );
             tx.success();
-        }
-        finally
-        {
-            db.shutdown();
         }
     }
 
@@ -517,7 +501,7 @@ public class ImportToolTest
     private File nodeData( boolean includeHeader, Configuration config, List<String> nodeIds,
                            PrimitiveIntPredicate linePredicate ) throws FileNotFoundException
     {
-        File file = directory.file( fileName( "nodes.csv" ) );
+        File file = file( fileName( "nodes.csv" ) );
         try ( PrintStream writer = new PrintStream( file ) )
         {
             if ( includeHeader )
@@ -536,7 +520,7 @@ public class ImportToolTest
 
     private File nodeHeader( Configuration config, String idGroup ) throws FileNotFoundException
     {
-        File file = directory.file( fileName( "nodes-header.csv" ) );
+        File file = file( fileName( "nodes-header.csv" ) );
         try ( PrintStream writer = new PrintStream( file ) )
         {
             writeNodeHeader( writer, config, idGroup );
@@ -612,7 +596,7 @@ public class ImportToolTest
             Iterator<Triplet<String,String,String>> data, PrimitiveIntPredicate linePredicate,
             boolean specifyType ) throws FileNotFoundException
     {
-        File file = directory.file( fileName( "relationships.csv" ) );
+        File file = file( fileName( "relationships.csv" ) );
         try ( PrintStream writer = new PrintStream( file ) )
         {
             if ( includeHeader )
@@ -632,7 +616,7 @@ public class ImportToolTest
     private File relationshipHeader( Configuration config, String startIdGroup, String endIdGroup, boolean specifyType )
             throws FileNotFoundException
     {
-        File file = directory.file( fileName( "relationships-header.csv" ) );
+        File file = file( fileName( "relationships-header.csv" ) );
         try ( PrintStream writer = new PrintStream( file ) )
         {
             writeRelationshipHeader( writer, config, startIdGroup, endIdGroup, specifyType );
@@ -643,6 +627,11 @@ public class ImportToolTest
     private String fileName( String name )
     {
         return dataIndex++ + "-" + name;
+    }
+
+    private File file( String localname )
+    {
+        return new File( dbRule.getStoreDir(), localname );
     }
 
     private void writeRelationshipHeader( PrintStream writer, Configuration config,
@@ -717,7 +706,8 @@ public class ImportToolTest
     private static final int RELATIONSHIP_COUNT = 10_000;
     private static final int NODE_COUNT = 100;
 
-    public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() );
     public final @Rule RandomRule random = new RandomRule();
     public final @Rule Mute mute = Mute.mute( Mute.System.values() );
     private int dataIndex;

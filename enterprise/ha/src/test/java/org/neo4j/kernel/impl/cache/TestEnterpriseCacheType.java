@@ -21,13 +21,15 @@ package org.neo4j.kernel.impl.cache;
 
 import org.junit.After;
 import org.junit.Test;
+
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.cluster.ClusterSettings.server_id;
@@ -39,7 +41,7 @@ public class TestEnterpriseCacheType
     {
         // GIVEN
         // -- an embedded graph database with default cache type config
-        db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
 
         // THEN
         // -- the selected cache type should be HPC
@@ -51,8 +53,12 @@ public class TestEnterpriseCacheType
     {
         // GIVEN
         // -- an HA graph database with default cache type config
-        db = (GraphDatabaseAPI) new HighlyAvailableGraphDatabaseFactory().newHighlyAvailableDatabaseBuilder( storeDir )
-                .setConfig( server_id, "1" ).setConfig( ClusterSettings.initial_hosts, ":5001" ).newGraphDatabase();
+        GraphDatabaseBuilder builder =
+                new TestHighlyAvailableGraphDatabaseFactory().newHighlyAvailableDatabaseBuilder( storeDir );
+        db = (GraphDatabaseAPI) builder
+                .setConfig( server_id, "1" )
+                .setConfig( ClusterSettings.initial_hosts, ":5001" )
+                .newGraphDatabase();
 
         // THEN
         assertEquals( HighPerformanceCacheProvider.NAME, getCacheTypeUsed() );

@@ -19,16 +19,16 @@
  */
 package org.neo4j.backup;
 
-import java.io.File;
-import java.net.InetAddress;
-
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.File;
+import java.net.InetAddress;
+
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Settings;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.fail;
 
@@ -47,7 +47,7 @@ public class TestConfiguration
     @Test
     public void testOnByDefault() throws Exception
     {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( SOURCE_DIR );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( SOURCE_DIR );
         OnlineBackup.from( InetAddress.getLocalHost().getHostAddress() ).full( BACKUP_DIR );
         db.shutdown();
     }
@@ -55,7 +55,7 @@ public class TestConfiguration
     @Test
     public void testOffByConfig() throws Exception
     {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( SOURCE_DIR ).
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( SOURCE_DIR ).
             setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ).
             newGraphDatabase();
         try
@@ -72,7 +72,7 @@ public class TestConfiguration
     @Test
     public void testEnableDefaultsInConfig() throws Exception
     {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( SOURCE_DIR ).
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( SOURCE_DIR ).
             setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE ).
             newGraphDatabase();
 
@@ -84,7 +84,7 @@ public class TestConfiguration
     public void testEnableCustomPortInConfig() throws Exception
     {
         String customPort = "12345";
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( SOURCE_DIR ).
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( SOURCE_DIR ).
             setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE ).
             setConfig( OnlineBackupSettings.online_backup_server, ":"+customPort ).newGraphDatabase();
         try

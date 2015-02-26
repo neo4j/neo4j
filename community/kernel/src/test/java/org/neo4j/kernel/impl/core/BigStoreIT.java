@@ -19,27 +19,19 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static java.lang.Math.pow;
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
-
-import java.io.File;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Map;
-
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Map;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -50,11 +42,20 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.test.EmbeddedDatabaseRule;
+
+import static java.lang.Math.pow;
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 
 public class BigStoreIT implements RelationshipType
 {
@@ -62,8 +63,8 @@ public class BigStoreIT implements RelationshipType
     
     private static final String PATH = "target/var/big";
     private GraphDatabaseService db;
-    public @Rule
-    TestName testName = new TestName()
+    @Rule
+    public TestName testName = new TestName()
     {
         @Override
         public String getMethodName()
@@ -71,21 +72,16 @@ public class BigStoreIT implements RelationshipType
             return BigStoreIT.this.getClass().getSimpleName() + "#" + super.getMethodName();
         }
     };
+    @Rule
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( BigStoreIT.class );
+
     
     @Before
     public void doBefore()
     {
         // Delete before just to be sure
         deleteFileOrDirectory( new File( PATH ) );
-        db = new GraphDatabaseFactory().newEmbeddedDatabase( PATH );
-    }
-    
-    @After
-    public void doAfter()
-    {
-        db.shutdown();
-        // Delete after because it's so darn big
-        deleteFileOrDirectory( new File( PATH ) );
+        db = dbRule.getGraphDatabaseService();
     }
     
     @Override
@@ -167,10 +163,9 @@ public class BigStoreIT implements RelationshipType
         }
         tx.success();
         tx.finish();
-        
-        db.shutdown();
-        db = new GraphDatabaseFactory().newEmbeddedDatabase( PATH );
-        
+
+        db = dbRule.restartDatabase();
+
         // Verify the data
         int verified = 0;
         
@@ -190,7 +185,7 @@ public class BigStoreIT implements RelationshipType
         }
         assertEquals( count, verified );
     }
-    
+
     private static final Label REFERENCE = DynamicLabel.label( "Reference" );
     
     private Node createReferenceNode( GraphDatabaseService db )
@@ -253,7 +248,7 @@ public class BigStoreIT implements RelationshipType
         }
     }
 
-    private void testHighIds( long highMark, int minus, int requiredHeapMb )
+    private void testHighIds( long highMark, int minus, int requiredHeapMb ) throws IOException
     {
         if ( !machineIsOkToRunThisTest( testName.getMethodName(), requiredHeapMb ) )
         {
@@ -306,8 +301,7 @@ public class BigStoreIT implements RelationshipType
             }
             if ( i == 0 )
             {
-                db.shutdown();
-                db = new GraphDatabaseFactory().newEmbeddedDatabase( PATH );
+                db = dbRule.restartDatabase();
             }
         }
     }

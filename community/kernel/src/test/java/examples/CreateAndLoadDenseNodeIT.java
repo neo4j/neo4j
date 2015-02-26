@@ -19,29 +19,30 @@
  */
 package examples;
 
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+
+import java.io.File;
+
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.test.BatchTransaction;
+import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.TargetDirectory;
+
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.test.BatchTransaction.beginBatchTx;
-
-import java.io.File;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.test.BatchTransaction;
-import org.neo4j.test.TargetDirectory;
 
 @Ignore( "Not a test. Here for show-off purposes" )
 public class CreateAndLoadDenseNodeIT
@@ -75,26 +76,26 @@ public class CreateAndLoadDenseNodeIT
         return count;
     }
 
-    private final File storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
+    @Rule
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule(
+            TargetDirectory.forTest( getClass() ).makeGraphDbDir() );
     private GraphDatabaseService db;
 
     @Before
     public void before()
     {
         createDbIfNecessary();
-        db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir.getPath() )
-                .setConfig( GraphDatabaseSettings.cache_type, "none" )
-                .setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" )
-                .newGraphDatabase();
+        dbRule.setConfig( GraphDatabaseSettings.cache_type, "none" )
+              .setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
+        db = dbRule.getGraphDatabaseService();
     }
 
     private void createDbIfNecessary()
     {
-        if ( !new File( storeDir, "neostore" ).exists() )
+        if ( !new File( dbRule.getStoreDir(), "neostore" ).exists() )
         {
-            db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getPath() );
-            BatchTransaction tx = beginBatchTx( db );
-            try
+            db = dbRule.getGraphDatabaseService();
+            try ( BatchTransaction tx = beginBatchTx( db ) )
             {
                 Node node = db.createNode();
                 createRelationships( tx, node, MyRelTypes.TEST, INCOMING, 1 );
@@ -106,8 +107,7 @@ public class CreateAndLoadDenseNodeIT
             }
             finally
             {
-                tx.close();
-                db.shutdown();
+                dbRule.stopAndKeepFiles();
             }
         }
     }
@@ -122,11 +122,5 @@ public class CreateAndLoadDenseNodeIT
             firstNode.createRelationshipTo( otherNode, type );
             tx.increment();
         }
-    }
-
-    @After
-    public void after()
-    {
-        db.shutdown();
     }
 }

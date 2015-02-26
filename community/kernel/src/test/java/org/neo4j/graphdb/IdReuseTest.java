@@ -21,9 +21,8 @@ package org.neo4j.graphdb;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
@@ -31,13 +30,13 @@ import static org.junit.Assert.assertThat;
 public class IdReuseTest
 {
     @Rule
-    public TemporaryFolder folder = new TemporaryFolder(  );
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( IdReuseTest.class );
 
     @Test
     public void shouldReuseNodeIdsFromRolledBackTransaction() throws Exception
     {
         // Given
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( folder.getRoot().getAbsolutePath() );
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
         try (Transaction tx = db.beginTx())
         {
             db.createNode();
@@ -45,8 +44,7 @@ public class IdReuseTest
             tx.failure();
         }
 
-        db.shutdown();
-        db = new GraphDatabaseFactory().newEmbeddedDatabase( folder.getRoot().getAbsolutePath() );
+        db = dbRule.restartDatabase();
 
         // When
         Node node;
@@ -65,7 +63,7 @@ public class IdReuseTest
     public void shouldReuseRelationshipIdsFromRolledBackTransaction() throws Exception
     {
         // Given
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( folder.getRoot().getAbsolutePath() );
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
         Node node1, node2;
         try (Transaction tx = db.beginTx())
         {
@@ -82,8 +80,7 @@ public class IdReuseTest
             tx.failure();
         }
 
-        db.shutdown();
-        db = new GraphDatabaseFactory().newEmbeddedDatabase( folder.getRoot().getAbsolutePath() );
+        db = dbRule.restartDatabase();
 
         // When
         Relationship relationship;

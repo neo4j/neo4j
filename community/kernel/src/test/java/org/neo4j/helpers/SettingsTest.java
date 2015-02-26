@@ -293,48 +293,6 @@ public class SettingsTest
     }
 
     @Test
-    public void testMemoryUse() throws Exception
-    {
-        // Given
-        Setting<Long> memUse = setting("mySetting", new Settings.DirectMemoryUsage( 1024, 100 ), "5%");
-
-        // When && Then
-        assertThat(memUse.apply( Functions.<String, String>constant( null )),  equalTo(51l));
-        assertThat(memUse.apply( Functions.<String, String>constant( "35M" )), equalTo(95l));
-        assertThat(memUse.apply( Functions.<String, String>constant( "85%" )), equalTo(95l));
-
-        try
-        {
-            memUse.apply( Functions.<String, String>constant( "bala%" ) );
-            fail("Should've thrown.");
-        }
-        catch(InvalidSettingException e)
-        {
-            assertThat(e.getMessage(), equalTo("Bad value 'bala%' for setting 'mySetting': Invalid memory fraction, expected a value between 0.0% and 100.0%." ));
-        }
-
-        try
-        {
-            memUse.apply( Functions.<String, String>constant( "110.14%" ) );
-            fail("Should've thrown.");
-        }
-        catch(InvalidSettingException e)
-        {
-            assertThat(e.getMessage(), equalTo("Bad value '110.14%' for setting 'mySetting': Invalid memory fraction, expected a value between 0.0% and 100.0%." ));
-        }
-    }
-
-    @Test
-    public void testMemoryUsageConfigFromSystemMemory() throws Exception
-    {
-        // Given
-        Setting<Long> memUse = setting("mySetting", Settings.DirectMemoryUsage.directMemoryUsage(), "100%");
-
-        // When && then
-        assertThat(memUse.apply( Functions.<String,String>constant( null ) ), greaterThan( 0l ));
-    }
-
-    @Test
     public void testNormalizedRelativeURI() throws Exception
     {
         // Given

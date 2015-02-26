@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.io.IOException;
-import java.lang.reflect.Field;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,9 +31,12 @@ import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.impl.StaticLoggerBinder;
 
+import java.io.IOException;
+import java.lang.reflect.Field;
+
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.test.CleanupRule;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -75,7 +75,7 @@ public class LoggerFactoryIT
         PowerMockito.mockStatic( StaticLoggerBinder.class );
         PowerMockito.when( StaticLoggerBinder.getSingleton() ).thenReturn( mockedInstance );
 
-        GraphDatabaseService graphDatabaseService = cleanup.add( new GraphDatabaseFactory().newEmbeddedDatabase(
+        GraphDatabaseService graphDatabaseService = cleanup.add( new TestGraphDatabaseFactory().newEmbeddedDatabase(
                 graphDbFolder.getRoot().getAbsolutePath() ) );
         assertGraphDatabaseLoggingMatches( "org.neo4j.kernel.logging.ClassicLoggingService", graphDatabaseService );
 
@@ -84,7 +84,7 @@ public class LoggerFactoryIT
     @Test
     public void shouldUseLogbackServiceWithStandardStaticLoggerBinder() throws Exception
     {
-        GraphDatabaseService graphDatabaseService = cleanup.add( new GraphDatabaseFactory().newEmbeddedDatabase(
+        GraphDatabaseService graphDatabaseService = cleanup.add( new TestGraphDatabaseFactory().newEmbeddedDatabase(
                 graphDbFolder.getRoot().getAbsolutePath() ) );
         assertGraphDatabaseLoggingMatches( "org.neo4j.kernel.logging.LogbackService", graphDatabaseService );
     }

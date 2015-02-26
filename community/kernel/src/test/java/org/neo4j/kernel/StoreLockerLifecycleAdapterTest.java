@@ -19,16 +19,14 @@
  */
 package org.neo4j.kernel;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertThat;
@@ -36,29 +34,25 @@ import static org.junit.Assert.fail;
 
 public class StoreLockerLifecycleAdapterTest
 {
-    @Rule public TestName testName = new TestName();
-    private String storeDir;
-    
-    @Before
-    public void before()
-    {
-        storeDir = TargetDirectory.forTest( getClass() ).cleanDirectory( testName.getMethodName() ).getAbsolutePath();
-    }
+    @Rule
+    public TestName testName = new TestName();
+    @Rule
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() );
 
     @Test
     public void shouldAllowDatabasesToUseFilesetsSequentially() throws Exception
     {
-        new GraphDatabaseFactory().newEmbeddedDatabase( storeDir ).shutdown();
-        new GraphDatabaseFactory().newEmbeddedDatabase( storeDir ).shutdown();
+        dbRule.getGraphDatabaseService();
+        dbRule.restartDatabase();
     }
 
     @Test
     public void shouldNotAllowDatabasesToUseFilesetsConcurrently() throws Exception
     {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        dbRule.getGraphDatabaseService();
         try
         {
-            new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+            new TestGraphDatabaseFactory().newEmbeddedDatabase( dbRule.getStoreDir().getAbsolutePath() );
 
             fail();
         }
@@ -66,19 +60,15 @@ public class StoreLockerLifecycleAdapterTest
         {
             assertThat( e.getCause().getCause(), instanceOf( StoreLockException.class ) );
         }
-        finally
-        {
-            db.shutdown();
-        }
     }
 
     @Test
     public void shouldNotAllowDatabasesToUseFilesetsConcurrentlyEvenIfTheyAreInReadOnlyMode() throws Exception
     {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        dbRule.getGraphDatabaseService();
         try
         {
-            new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir).
+            new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( dbRule.getStoreDir().getAbsolutePath() ).
                     setConfig( GraphDatabaseSettings.read_only, Settings.TRUE ).
                     newGraphDatabase();
 
@@ -87,10 +77,6 @@ public class StoreLockerLifecycleAdapterTest
         catch ( RuntimeException e )
         {
             assertThat( e.getCause().getCause(), instanceOf( StoreLockException.class ) );
-        }
-        finally
-        {
-            db.shutdown();
         }
     }
 }

@@ -19,16 +19,20 @@
  */
 package org.neo4j.test;
 
+import org.junit.rules.TemporaryFolder;
+
 import java.io.File;
 import java.io.IOException;
 
-import org.junit.rules.TemporaryFolder;
-
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.io.fs.FileUtils;
 
 /**
  * JUnit @Rule for configuring, creating and managing an EmbeddedGraphDatabase instance.
+ *
+ * The database instance is created lazily, so configurations can be injected prior to calling
+ * {@link #getGraphDatabaseService()}.
  */
 public class EmbeddedDatabaseRule extends DatabaseRule
 {
@@ -86,11 +90,38 @@ public class EmbeddedDatabaseRule extends DatabaseRule
             }
         };
     }
+
+    public EmbeddedDatabaseRule( final File storeDir )
+    {
+        this.temp = new TempDirectory()
+        {
+            @Override
+            public File root()
+            {
+                return storeDir;
+            }
+
+            @Override
+            public void delete() throws IOException
+            {
+                FileUtils.deleteRecursively( storeDir );
+            }
+
+            @Override
+            public void create() throws IOException
+            {
+                if ( !storeDir.isDirectory() && !storeDir.mkdirs() )
+                {
+                    throw new IOException( "Failed to create test directory: " + storeDir );
+                }
+            }
+        };
+    }
     
     @Override
     protected GraphDatabaseFactory newFactory()
     {
-        return new GraphDatabaseFactory();
+        return new TestGraphDatabaseFactory();
     }
     
     @Override
@@ -116,6 +147,11 @@ public class EmbeddedDatabaseRule extends DatabaseRule
         {
             throw new RuntimeException( e );
         }
+    }
+
+    public File getStoreDir()
+    {
+        return temp.root();
     }
     
     private interface TempDirectory

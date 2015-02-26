@@ -21,13 +21,14 @@ package org.neo4j.kernel;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.test.ManagedResource;
 import org.neo4j.test.TargetDirectory;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertSame;
 
 public class HaKernelDataTest
 {
@@ -48,7 +49,7 @@ public class HaKernelDataTest
         @Override
         protected HighlyAvailableGraphDatabase createResource( TargetDirectory.TestDirectory dir ) throws Exception
         {
-            return (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
+            return (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                     newHighlyAvailableDatabaseBuilder( dir.directory().getAbsolutePath() )
                     .setConfig( ClusterSettings.server_id, "1" )
                     .setConfig( ClusterSettings.initial_hosts, ":5001" )

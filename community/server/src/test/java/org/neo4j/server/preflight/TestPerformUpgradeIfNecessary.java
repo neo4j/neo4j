@@ -19,16 +19,16 @@
  */
 package org.neo4j.server.preflight;
 
+import org.junit.Test;
+import org.mockito.InOrder;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 
-import org.junit.Test;
-import org.mockito.InOrder;
-
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Visitor;
@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.kernel.impl.util.TestLogging;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.Unzip;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 
@@ -50,7 +51,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-
 import static org.neo4j.io.fs.FileUtils.copyRecursively;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 import static org.neo4j.kernel.logging.DevNullLoggingService.DEV_NULL;
@@ -67,7 +67,9 @@ public class TestPerformUpgradeIfNecessary
     public void shouldExitImmediatelyIfStoreIsAlreadyAtLatestVersion() throws IOException
     {
         Config serverConfig = buildProperties( false );
-        new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( STORE_DIRECTORY.getPath() ).newGraphDatabase().shutdown();
+        GraphDatabaseBuilder builder =
+                new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( STORE_DIRECTORY.getPath() );
+        builder.newGraphDatabase().shutdown();
 
         Monitor monitor = mock( Monitor.class );
         PerformUpgradeIfNecessary upgrader = new PerformUpgradeIfNecessary( serverConfig,

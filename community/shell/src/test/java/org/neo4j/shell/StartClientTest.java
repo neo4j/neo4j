@@ -19,14 +19,15 @@
  */
 package org.neo4j.shell;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -50,6 +51,12 @@ public class StartClientTest
             builder.setConfig( ShellSettings.remote_shell_enabled, Settings.TRUE );
         }
     };
+
+    @Before
+    public void startDatabase()
+    {
+        db.getGraphDatabaseService();
+    }
 
     @Test
     public void givenShellClientWhenOpenFileThenExecuteFileCommands()

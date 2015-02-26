@@ -18,16 +18,15 @@
  */
 package org.neo4j.examples;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
 
 import java.io.File;
 import java.util.Iterator;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.EstimateEvaluator;
 import org.neo4j.graphalgo.GraphAlgoFactory;
@@ -42,11 +41,14 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.EmbeddedDatabaseRule;
+
+import static org.junit.Assert.assertEquals;
 
 public class PathFindingDocTest
 {
+    @ClassRule
+    public static EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( PathFindingDocTest.class );
     private static GraphDatabaseService graphDb;
     private Transaction tx;
 
@@ -58,9 +60,7 @@ public class PathFindingDocTest
     @BeforeClass
     public static void startDb()
     {
-        String storeDir = TargetDirectory.forTest( PathFindingDocTest.class ).makeGraphDbDir().getAbsolutePath();
-        deleteFileOrDirectory( new File( storeDir ) );
-        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        graphDb = dbRule.getGraphDatabaseAPI();
     }
 
     @Before
@@ -74,19 +74,6 @@ public class PathFindingDocTest
     {
         tx.success();
         tx.close();
-    }
-
-    @AfterClass
-    public static void shutdownDb()
-    {
-        try
-        {
-            if ( graphDb != null ) graphDb.shutdown();
-        }
-        finally
-        {
-            graphDb = null;
-        }
     }
 
     @Test

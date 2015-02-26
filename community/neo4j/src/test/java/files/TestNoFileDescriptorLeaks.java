@@ -19,28 +19,24 @@
  */
 package files;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
-
-import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Settings;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
-
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class TestNoFileDescriptorLeaks
@@ -53,8 +49,7 @@ public class TestNoFileDescriptorLeaks
     }
 
     @Rule
-    public TargetDirectory.TestDirectory directory =
-            TargetDirectory.testDirForTest( TestNoFileDescriptorLeaks.class );
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( TestNoFileDescriptorLeaks.class );
 
     private GraphDatabaseService db;
     private MBeanServer jmx;
@@ -69,15 +64,9 @@ public class TestNoFileDescriptorLeaks
     @Before
     public void setUp() throws Exception
     {
-        db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
+        db = dbRule.getGraphDatabaseService();
         osMBean = ObjectName.getInstance("java.lang:type=OperatingSystem");
         jmx = getPlatformMBeanServer();
-    }
-
-    @After
-    public void stopNeo()
-    {
-        db.shutdown();
     }
 
     private long getOpenFileDescriptorCount() throws Exception

@@ -19,6 +19,10 @@
  */
 package org.neo4j.tooling;
 
+import org.apache.commons.lang3.StringUtils;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
@@ -26,24 +30,19 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.ImportTool.Options;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.helpers.ArrayUtil.join;
 import static org.neo4j.tooling.ImportTool.MULTI_FILE_DELIMITER;
 
@@ -474,7 +473,7 @@ public class ImportToolDocIT
 
     private void verifyData()
     {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
         try ( Transaction tx = db.beginTx() )
         {
             int nodeCount = 0, relationshipCount = 0, sequelCount = 0;

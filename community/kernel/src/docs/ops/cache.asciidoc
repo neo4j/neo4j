@@ -50,10 +50,9 @@ IMPORTANT: Note that the block sizes can only be configured at store creation ti
 |========================================================
 | Parameter                 | Possible values   | Effect
 | dbms.pagecache.memory     |
-  The maximum amount of memory to use for the file buffer cache, either in bytes
-  (or greater byte-like units, such as `100M` for 100 mega-bytes, or `4G` for 4 giga-bytes)
-  or a percentage of the available amount of memory. |
-  The amount of memory to use for mapping the store files, either in bytes or as a percentage of available memory. This will be clipped at the amount of free memory observed when the database starts, and automatically be rounded down to the nearest whole page. For example, if `500MB` is configured, but only 450MB of memory is free when the database starts, then the database will map at most 450MB. If `50%` is configured, and the system has a capacity of 4GB, then at most 2GB of memory will be mapped, unless the database observes that less than 2GB of memory is free when it starts.
+  The maximum amount of memory to use for the file buffer cache, either in bytes, or greater byte-like units, such as `100m` for 100 mega-bytes, or `4g` for 4 giga-bytes. |
+  The amount of memory to use for mapping the store files, in a unit of bytes.
+  This will automatically be rounded down to the nearest whole page.
 | string_block_size .2+^.^| The number of bytes per block. |
   Specifies the block size for storing strings.
   This parameter is only honored when the store is created, otherwise it is ignored.

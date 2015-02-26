@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -49,9 +49,7 @@ import static java.lang.Thread.sleep;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.junit.Assert.fail;
-
 import static org.neo4j.ha.upgrade.RollingUpgradeIT.type1;
 import static org.neo4j.ha.upgrade.RollingUpgradeIT.type2;
 import static org.neo4j.ha.upgrade.Utils.execJava;
@@ -65,7 +63,7 @@ public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDat
         Args arguments = Args.parse( args );
         String storeDir = arguments.orphans().get( 0 );
 
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new HighlyAvailableGraphDatabaseFactory()
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestHighlyAvailableGraphDatabaseFactory()
                 .newHighlyAvailableDatabaseBuilder( storeDir )
                 .setConfig( arguments.asMap() )
                 .newGraphDatabase();

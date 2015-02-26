@@ -19,17 +19,16 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
+import java.io.File;
+import java.io.IOException;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Settings;
 import org.neo4j.io.fs.FileLock;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -37,6 +36,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.StoreLocker;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -97,7 +97,7 @@ public class TestOsSpecificLocks
     public void testDatabaseLocking()
     {
         assumeTrue( Settings.osIsWindows() );
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( path.getPath() );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( path.getPath() );
         Transaction tx = db.beginTx();
         db.createNode();
         tx.success();
@@ -105,7 +105,7 @@ public class TestOsSpecificLocks
         assertTrue( new File( path, "lock" ).exists() );
         try
         {
-            new GraphDatabaseFactory().newEmbeddedDatabase( path.getPath() );
+            new TestGraphDatabaseFactory().newEmbeddedDatabase( path.getPath() );
             fail("Should not be able to start up another db in the same dir");
         }
         catch ( Exception e )
