@@ -33,7 +33,9 @@ import java.util.List;
 import java.util.UUID;
 
 import org.neo4j.function.primitive.PrimitiveIntPredicate;
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
@@ -417,6 +419,35 @@ public class ImportToolTest
             // THEN
             assertThat( e.getMessage(), containsString( relationshipData2.getAbsolutePath() + ":3" ) );
         }
+    }
+
+    @Test
+    public void shouldHandleAdditiveLabelsWithSpaces() throws Exception
+    {
+        // GIVEN
+        List<String> nodeIds = nodeIds();
+        Configuration config = Configuration.COMMAS;
+        final Label label1 = DynamicLabel.label( "My First Label" );
+        final Label label2 = DynamicLabel.label( "My Other Label" );
+
+        // WHEN
+        ImportTool.main( arguments(
+                "--into", directory.absolutePath(),
+                "--nodes:My First Label:My Other Label",
+                        nodeData( true, config, nodeIds, alwaysTrue() ).getAbsolutePath(),
+                "--relationships", relationshipData( true, config, nodeIds, alwaysTrue() ).getAbsolutePath()
+                 ) );
+
+        // THEN
+        verifyData( new Validator<Node>()
+        {
+            @Override
+            public void validate( Node node )
+            {
+                assertTrue( node.hasLabel( label1 ) );
+                assertTrue( node.hasLabel( label2 ) );
+            }
+        }, Validators.<Relationship>emptyValidator() );
     }
 
     protected void assertNodeHasLabels( Node node, String[] names )
