@@ -46,6 +46,7 @@ angular.module('neo4jApp.settings', ['neo4jApp.utils'])
     showVizDiagnostics: false
     acceptsReplies: false
     enableMotd: true
+    confirmOnPageExit: false
   })
 
 angular.module('neo4jApp.settings')

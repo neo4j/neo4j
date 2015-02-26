@@ -108,14 +108,13 @@ angular.module('neo4jApp.controllers')
           if val.neo4j_version then $scope.motd.setCallToActionVersion(val.neo4j_version)
         , true
 
+        confirmOnPageExit = () ->
+          e = e || window.event
+          message = 'Any text will block the navigation and display a prompt';
+          e.returnValue = message if e
+          message
+        $window.onbeforeunload = null
+        $window.onbeforeunload = confirmOnPageExit if Settings.confirmOnPageExit
+
         refresh()
     ]
-
-  .run([
-    '$rootScope'
-    'Editor'
-    ($scope, Editor) ->
-      # everything should be assembled
-      # Editor.setContent(":play intro")
-      # Editor.execScript(":play intro")
-  ])
