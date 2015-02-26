@@ -85,11 +85,13 @@ case class ExhaustiveQueryGraphSolver(leafPlanFinder: LogicalLeafPlan.Finder = l
     }
   }
 
-  private def planComponent(qg: QueryGraph, kit: PlanningStrategyKit)(implicit context: LogicalPlanningContext, leafPlanWeHopeToGetAwayWithIgnoring: Option[LogicalPlan]): LogicalPlan = {
+  private def planComponent(initialQg: QueryGraph, kit: PlanningStrategyKit)(implicit context: LogicalPlanningContext, leafPlanWeHopeToGetAwayWithIgnoring: Option[LogicalPlan]): LogicalPlan = {
     // TODO: Investigate dropping leafPlanWeHopeToGetAwayWithIgnoring argument
-    val leaves = leafPlanFinder(config, qg)
-    if (qg.patternRelationships.size > 0) {
+    val leaves = leafPlanFinder(config, initialQg)
+    val sharedPatterns = leaves.map(_.solved.graph.patternRelationships).reduceOption(_ intersect _).getOrElse(Set.empty)
+    val qg = initialQg.withoutPatternRelationships(sharedPatterns)
 
+    if (qg.patternRelationships.size > 0) {
       // line 1-4
       val table = initTable(qg, kit, leaves)
 

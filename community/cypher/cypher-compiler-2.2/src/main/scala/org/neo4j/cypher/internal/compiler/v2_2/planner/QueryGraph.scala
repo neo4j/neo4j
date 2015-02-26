@@ -162,6 +162,9 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     }
   }
 
+  def withoutPatternRelationships(patterns: Set[PatternRelationship]): QueryGraph =
+    copy( patternRelationships = patternRelationships -- patterns )
+
   private def connectedComponentFor(startNode: IdName, visited: mutable.Set[IdName]): QueryGraph = {
     val queue = mutable.Queue(startNode)
     var qg = QueryGraph.empty.withArgumentIds(argumentIds)

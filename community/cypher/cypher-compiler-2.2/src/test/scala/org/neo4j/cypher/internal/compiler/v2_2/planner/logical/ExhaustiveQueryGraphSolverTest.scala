@@ -29,10 +29,9 @@ import org.neo4j.graphdb.Direction
 import scala.collection.immutable
 
 class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
-
   test("should plan for a single node pattern") {
     new given {
-      queryGraphSolver = ExhaustiveQueryGraphSolver()
+      queryGraphSolver = ExhaustiveQueryGraphSolver(solvers = Seq.empty)
       qg = QueryGraph(patternNodes = Set("a"))
     }.withLogicalPlanningContext { (cfg, ctx) =>
       implicit val x = ctx
@@ -45,7 +44,7 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
 
   test("should plan cartesian product between 3 pattern nodes") {
     new given {
-      queryGraphSolver = ExhaustiveQueryGraphSolver()
+      queryGraphSolver = ExhaustiveQueryGraphSolver(solvers = Seq.empty)
       qg = QueryGraph(
         patternNodes = Set("a", "b", "c")
       )
@@ -66,7 +65,7 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
 
   test("should plan for a single relationship pattern") {
     new given {
-      queryGraphSolver = ExhaustiveQueryGraphSolver()
+      queryGraphSolver = ExhaustiveQueryGraphSolver(solvers = Seq.empty)
       qg = QueryGraph(
         patternNodes = Set("a", "b"),
         patternRelationships = Set(PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)),
@@ -88,7 +87,7 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
   test("should plan for a single relationship pattern with labels on both sides") {
     val labelBPredicate = HasLabels(ident("b"), Seq(LabelName("B")(pos)))(pos)
     new given {
-      queryGraphSolver = ExhaustiveQueryGraphSolver()
+      queryGraphSolver = ExhaustiveQueryGraphSolver(solvers = Seq.empty)
       qg = QueryGraph(
         patternNodes = Set("a", "b"),
         patternRelationships = Set(PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)),
@@ -183,7 +182,7 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
 
   test("should solve self looping pattern") {
     new given {
-      queryGraphSolver = ExhaustiveQueryGraphSolver(solvers = Seq())
+      queryGraphSolver = ExhaustiveQueryGraphSolver(solvers = Seq.empty)
       qg = QueryGraph(
         patternNodes = Set("a"),
         patternRelationships = Set(PatternRelationship("r", ("a", "a"), Direction.OUTGOING, Seq.empty, SimplePatternLength))
@@ -224,7 +223,7 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
 
   test("should solve empty graph with SingleRow") {
     new given {
-      queryGraphSolver = ExhaustiveQueryGraphSolver()
+      queryGraphSolver = ExhaustiveQueryGraphSolver(solvers = Seq.empty)
       qg = QueryGraph.empty
     }.withLogicalPlanningContext { (cfg, ctx) =>
       implicit val x = ctx
@@ -237,7 +236,7 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
 
   test("should plan a simple argument row when everything is covered") {
     new given {
-      queryGraphSolver = ExhaustiveQueryGraphSolver()
+      queryGraphSolver = ExhaustiveQueryGraphSolver(solvers = Seq.empty)
       qg = QueryGraph(argumentIds = Set("a"))
     }.withLogicalPlanningContext { (cfg, ctx) =>
       implicit val x = ctx
@@ -247,6 +246,44 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
       )
     }
   }
+
+  test("should handle projected endpoints") {
+    new given {
+      queryGraphSolver = ExhaustiveQueryGraphSolver(solvers = Seq.empty)
+      qg = QueryGraph(
+        patternNodes = Set("a", "b"),
+        patternRelationships = Set(PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)),
+        argumentIds = Set("r"))
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
+
+      queryGraphSolver.plan(cfg.qg) should equal(
+        ProjectEndpoints(Argument(Set("r"))(null)(), "r", "a", startInScope = false, "b", endInScope = false, None, directed = true, SimplePatternLength)(null)
+      )
+    }
+  }
+
+  test("should expand from projected endpoints") {
+    new given {
+      queryGraphSolver = ExhaustiveQueryGraphSolver(solvers = Seq(expandTableSolver))
+      val pattern1 = PatternRelationship("r1", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+      val pattern2 = PatternRelationship("r2", ("b", "c"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+      qg = QueryGraph(
+        patternNodes = Set("a", "b", "c"),
+        patternRelationships = Set(pattern1, pattern2),
+        argumentIds = Set("r1"))
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
+
+      queryGraphSolver.plan(cfg.qg) should equal(
+        Expand(
+          ProjectEndpoints(Argument(Set("r1"))(null)(), "r1", "a", startInScope = false, "b", endInScope = false, None, directed = true, SimplePatternLength)(null),
+          "b", Direction.OUTGOING, Seq.empty, "c", "r2", ExpandAll
+        )(null)
+      )
+    }
+  }
+
 
 //
 //  test("should plan a relationship pattern based on an argument row since part of the node pattern is already solved") {
