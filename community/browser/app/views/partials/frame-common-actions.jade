@@ -1,5 +1,15 @@
 .code-bar
   ul.actions.list-inline
+    li.dropdown(dropdown="", ng-show='frame.type == "http"')
+      a.button.fa.fa-download.dropdown-toggle(dropdown-toggle="")
+      ul.dropdown-menu
+        li
+          a(exportable ng-click='exportJSON(frame.response)') Download JSON
+    li.dropdown(dropdown="", ng-show='frame.type == "shell"')
+      a.button.fa.fa-download.dropdown-toggle(dropdown-toggle="")
+      ul.dropdown-menu
+        li
+          a(exportable ng-click='exportText(frame.response)') Download TXT
     li.dropdown(dropdown="", ng-show='frame.type == "cypher"')
       a.button.fa.fa-download.dropdown-toggle(dropdown-toggle="")
       ul.dropdown-menu

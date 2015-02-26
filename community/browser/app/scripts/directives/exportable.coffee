@@ -98,6 +98,10 @@ angular.module('neo.exportable', ['neo.csv'])
 
           exportService.download('export.csv', 'text/csv;charset=utf-8', csv.output())
 
+        $scope.exportText = (data) ->
+          return unless data
+          exportService.download('result.txt', 'text/plain', data)
+
         $scope.exportGraSS = (data) ->
           exportService.download('graphstyle.grass', 'text/plain', data)
 
