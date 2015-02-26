@@ -1,3 +1,9 @@
+2.2.0-RC
+---------
+o Fixes problem where eagerness was unnecessarily being introduced.
+o Updates to the cost model to reflect measured costs of operators.
+o Fixes problem with PERIODIC COMMIT interacting badly with LOAD CSV
+
 2.2.0-M04
 ---------
 o Fixes #3910 - Semantic errors not propagated correctly to the user
