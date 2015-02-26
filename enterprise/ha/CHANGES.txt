@@ -1,3 +1,8 @@
+2.2.0-RC1
+---------
+o Fixed a bug where a slave would enter an infinite loop trying to switch to SLAVE for a stale master.
+o Ensure all responses from remote calls are properly closed
+
 2.1.6
 -----
 o Fixes issue where if the master lost contact with a majority of slaves

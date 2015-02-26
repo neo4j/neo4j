@@ -1,3 +1,13 @@
+2.2.0-RC1
+---------
+o Cache busting for static HTML to improve the browser experience when upgrading
+  between Neo4j versions.
+o Added toggle for finding internal relationships
+o Made motd autodetect protocol for requests
+o Added config option to disable motd
+o Can now download TXT from shell frames
+o Can now download JSON from http frames (all rest calls except cypher).
+
 2.2.0-M04
 ---------
 o Username & password are now used for all interactions.

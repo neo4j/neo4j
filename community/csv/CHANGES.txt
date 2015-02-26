@@ -1,3 +1,8 @@
+2.2.0-RC1
+---------
+o CSV reading code now aware of source information for better error reporting
+o Improved performance around reading of CSV files
+
 2.2.0-M03
 ---------
 o CSV now parses quoted-empty-fields as empty strings and unquoted-empty-fields as null
