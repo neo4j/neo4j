@@ -22,35 +22,25 @@ package org.neo4j.kernel.impl.store.counts;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.api.CommandApplierFacade;
 import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.api.CountsStoreApplier;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.pagecache.StandalonePageCache;
-import org.neo4j.kernel.impl.store.DynamicArrayStore;
-import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.keys.IndexSampleKey;
 import org.neo4j.kernel.impl.store.counts.keys.IndexStatisticsKey;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
-import static org.neo4j.kernel.impl.store.StoreFactory.buildTypeDescriptorAndVersion;
 
 public class RecountFromTransactions
 {
@@ -83,7 +73,7 @@ public class RecountFromTransactions
         {
             StoreFactory factory = new StoreFactory( fs, path, pages, StringLogger.DEV_NULL, new Monitors() );
 
-            CountsRecordState counts = rebuildCounts( transactions, nodeStore, factory );
+            CountsRecordState counts = rebuildCounts( transactions );
 
             DumpCountsStore dump = new DumpCountsStore( System.out, factory );
             System.out.println( "Expected counts:" );
@@ -98,21 +88,16 @@ public class RecountFromTransactions
         }
     }
 
-    private static CountsRecordState rebuildCounts( TransactionStream transactions, File nodeStore,
-                                                    StoreFactory factory ) throws IOException
+    private static CountsRecordState rebuildCounts( TransactionStream transactions ) throws IOException
     {
         CountsRecordState counts = new CountsRecordState();
-        try ( NodeStore nodes = createNodeStore( factory, nodeStore ) )
+        try ( IOCursor<CommittedTransactionRepresentation> cursor = transactions.cursor() )
         {
-            try ( IOCursor<CommittedTransactionRepresentation> cursor = transactions.cursor() )
+            while ( cursor.next() )
             {
-                while ( cursor.next() )
+                try ( CommandApplierFacade visitor = new CommandApplierFacade( new CountsStoreApplier( counts ) ) )
                 {
-                    try ( CommandApplierFacade visitor = new CommandApplierFacade(
-                            new NodeStoreApplier( nodes ), new CountsStoreApplier( counts, nodes ) ) )
-                    {
-                        cursor.get().accept( visitor );
-                    }
+                    cursor.get().accept( visitor );
                 }
             }
         }
@@ -154,48 +139,8 @@ public class RecountFromTransactions
         fs.deleteFile( new File( storeFile.getPath() + ".id" ) );
     }
 
-    private static NodeStore createNodeStore( StoreFactory factory, File nodeStore )
-    {
-        int labelStoreBlockSize = 60;
-        factory.createEmptyDynamicStore(
-                nodeLabelStore( nodeStore ), labelStoreBlockSize, DynamicArrayStore.VERSION, IdType.NODE_LABELS );
-        factory.createEmptyStore( nodeStore, buildTypeDescriptorAndVersion( NodeStore.TYPE_DESCRIPTOR ) );
-        return factory.newNodeStore( nodeStore );
-    }
-
     private static File nodeLabelStore( File nodeStore )
     {
         return new File( nodeStore.getPath() + StoreFactory.LABELS_PART );
-    }
-
-    private static class NodeStoreApplier extends NeoCommandHandler.Adapter
-    {
-        private final NodeStore nodes;
-
-        NodeStoreApplier( NodeStore nodes )
-        {
-            this.nodes = nodes;
-        }
-
-        @Override
-        public boolean visitNodeCommand( Command.NodeCommand command ) throws IOException
-        {
-            NodeRecord state = command.getAfter();
-            if ( state.inUse() )
-            {
-                nodes.updateRecord( state );
-            }
-            Collection<DynamicRecord> records = state.getDynamicLabelRecords();
-            List<DynamicRecord> updated = new ArrayList<>( records.size() );
-            for ( DynamicRecord record : records )
-            {
-                if ( record.inUse() )
-                {
-                    updated.add( record );
-                }
-            }
-            nodes.updateDynamicLabelRecords( updated );
-            return false;
-        }
     }
 }

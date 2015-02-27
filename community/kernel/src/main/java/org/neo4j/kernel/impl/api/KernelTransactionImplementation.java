@@ -601,7 +601,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     {
-        private final RelationshipDataExtractor relationshipData = new RelationshipDataExtractor();
+        private final RelationshipDataExtractor edge = new RelationshipDataExtractor();
         private boolean clearState;
 
         void done()
@@ -623,6 +623,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         public void visitCreatedNode( long id )
         {
             recordState.nodeCreate( id );
+            counts.incrementNodeCount( ANY_LABEL, 1 );
         }
 
         @Override
@@ -630,10 +631,15 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             try
             {
+                counts.incrementNodeCount( ANY_LABEL, -1 );
                 PrimitiveIntIterator labels = storeLayer.nodeGetLabels( id );
                 if ( labels.hasNext() )
                 {
                     final int[] removed = PrimitiveIntCollections.asArray( labels );
+                    for ( int label : removed )
+                    {
+                        counts.incrementNodeCount( label, -1 );
+                    }
                     storeLayer.nodeVisitDegrees( id, new DegreeVisitor()
                     {
                         @Override
@@ -641,12 +647,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         {
                             for ( int label : removed )
                             {
-                                // untyped
-                                counts.incrementRelationshipCount( label, -1, -1, -outgoing );
-                                counts.incrementRelationshipCount( -1, -1, label, -incoming );
-                                // typed
-                                counts.incrementRelationshipCount( label, type, -1, -outgoing );
-                                counts.incrementRelationshipCount( -1, type, label, -incoming );
+                                updateRelationshipsCountsFromDegrees( type, label, -outgoing, -incoming );
                             }
                         }
                     } );
@@ -664,19 +665,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             try
             {
-                // update counts
-                for ( PrimitiveIntIterator labels = labelsOf( startNode ); labels.hasNext(); )
-                {
-                    int label = labels.next();
-                    counts.incrementRelationshipCount( label, ANY_RELATIONSHIP_TYPE, ANY_LABEL, 1 );
-                    counts.incrementRelationshipCount( label, type, ANY_LABEL, 1 );
-                }
-                for ( PrimitiveIntIterator labels = labelsOf( endNode ); labels.hasNext(); )
-                {
-                    int label = labels.next();
-                    counts.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, label, 1 );
-                    counts.incrementRelationshipCount( ANY_LABEL, type, label, 1 );
-                }
+                updateRelationshipCount( startNode, type, endNode, 1 );
             }
             catch ( EntityNotFoundException e )
             {
@@ -692,20 +681,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             try
             {
-                // update counts
-                storeLayer.relationshipVisit( id, relationshipData );
-                for ( PrimitiveIntIterator labels = labelsOf( relationshipData.startNode() ); labels.hasNext(); )
-                {
-                    int label = labels.next();
-                    counts.incrementRelationshipCount( label, ANY_RELATIONSHIP_TYPE, ANY_LABEL, -1 );
-                    counts.incrementRelationshipCount( label, relationshipData.type(), ANY_LABEL, -1 );
-                }
-                for ( PrimitiveIntIterator labels = labelsOf( relationshipData.endNode() ); labels.hasNext(); )
-                {
-                    int label = labels.next();
-                    counts.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, label, -1 );
-                    counts.incrementRelationshipCount( ANY_LABEL, relationshipData.type(), label, -1 );
-                }
+                storeLayer.relationshipVisit( id, edge );
+                updateRelationshipCount( edge.startNode(), edge.type(), edge.endNode(), -1 );
             }
             catch ( EntityNotFoundException e )
             {
@@ -715,11 +692,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
             // record the state changes to be made to the store
             recordState.relDelete( id );
-        }
-
-        private PrimitiveIntIterator labelsOf( long nodeId ) throws EntityNotFoundException
-        {
-            return StateHandlingStatementOperations.nodeGetLabels( storeLayer, txState, nodeId );
         }
 
         @Override
@@ -788,6 +760,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             // update counts
             if ( !(added.isEmpty() && removed.isEmpty()) )
             {
+                for ( Integer label : added )
+                {
+                    counts.incrementNodeCount( label, 1 );
+                }
+                for ( Integer label : removed )
+                {
+                    counts.incrementNodeCount( label, -1 );
+                }
                 // get the relationship counts from *before* this transaction,
                 // the relationship changes will compensate for what happens during the transaction
                 storeLayer.nodeVisitDegrees( id, new DegreeVisitor()
@@ -797,21 +777,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     {
                         for ( Integer label : added )
                         {
-                            // untyped
-                            counts.incrementRelationshipCount( label, -1, -1, outgoing );
-                            counts.incrementRelationshipCount( -1, -1, label, incoming );
-                            // typed
-                            counts.incrementRelationshipCount( label, type, -1, outgoing );
-                            counts.incrementRelationshipCount( -1, type, label, incoming );
+                            updateRelationshipsCountsFromDegrees( type, label, outgoing, incoming );
                         }
                         for ( Integer label : removed )
                         {
-                            // untyped
-                            counts.incrementRelationshipCount( label, -1, -1, -outgoing );
-                            counts.incrementRelationshipCount( -1, -1, label, -incoming );
-                            // typed
-                            counts.incrementRelationshipCount( label, type, -1, -outgoing );
-                            counts.incrementRelationshipCount( -1, type, label, -incoming );
+                            updateRelationshipsCountsFromDegrees( type, label, -outgoing, -incoming );
                         }
                     }
                 } );
@@ -922,5 +892,34 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             legacyIndexTransactionState.createIndex( IndexEntityType.Relationship, name, config );
         }
+    }
+
+    private void updateRelationshipsCountsFromDegrees( int type, int label, int outgoing, int incoming )
+    {
+        // untyped
+        counts.incrementRelationshipCount( label, ANY_RELATIONSHIP_TYPE, ANY_LABEL, outgoing );
+        counts.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, label, incoming );
+        // typed
+        counts.incrementRelationshipCount( label, type, ANY_LABEL, outgoing );
+        counts.incrementRelationshipCount( ANY_LABEL, type, label, incoming );
+    }
+
+    private void updateRelationshipCount( long startNode, int type, long endNode, int delta )
+            throws EntityNotFoundException
+    {
+        updateRelationshipsCountsFromDegrees( type, ANY_LABEL, delta, 0 );
+        for ( PrimitiveIntIterator startLabels = labelsOf( startNode ); startLabels.hasNext(); )
+        {
+            updateRelationshipsCountsFromDegrees( type, startLabels.next(), delta, 0 );
+        }
+        for ( PrimitiveIntIterator endLabels = labelsOf( endNode ); endLabels.hasNext(); )
+        {
+            updateRelationshipsCountsFromDegrees( type, endLabels.next(), 0, delta );
+        }
+    }
+
+    private PrimitiveIntIterator labelsOf( long nodeId ) throws EntityNotFoundException
+    {
+        return StateHandlingStatementOperations.nodeGetLabels( storeLayer, txState, nodeId );
     }
 }

@@ -36,6 +36,8 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.command.Command.NodeCountsCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCountsCommand;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes;
@@ -388,7 +390,13 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>,L
         }
 
         @Override
-        public boolean visitUpdateCountsCommand( Command.CountsCommand command ) throws IOException
+        public boolean visitNodeCountsCommand( NodeCountsCommand command )
+        {
+            return false;
+        }
+
+        @Override
+        public boolean visitRelationshipCountsCommand( RelationshipCountsCommand command ) throws IOException
         {
             return false;
         }

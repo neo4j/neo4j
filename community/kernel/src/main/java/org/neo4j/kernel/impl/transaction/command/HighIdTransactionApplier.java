@@ -40,7 +40,8 @@ import org.neo4j.kernel.impl.store.record.Abstract64BitRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
-import org.neo4j.kernel.impl.transaction.command.Command.CountsCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.NodeCountsCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCountsCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.NeoStoreCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
@@ -186,9 +187,15 @@ public class HighIdTransactionApplier implements NeoCommandHandler
     }
 
     @Override
-    public boolean visitUpdateCountsCommand( CountsCommand command ) throws IOException
+    public boolean visitNodeCountsCommand( NodeCountsCommand command ) throws IOException
     {
-        return delegate.visitUpdateCountsCommand( command );
+        return delegate.visitNodeCountsCommand( command );
+    }
+
+    @Override
+    public boolean visitRelationshipCountsCommand( RelationshipCountsCommand command ) throws IOException
+    {
+        return delegate.visitRelationshipCountsCommand( command );
     }
 
     @Override

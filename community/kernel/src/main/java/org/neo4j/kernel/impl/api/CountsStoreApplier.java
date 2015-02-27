@@ -20,40 +20,27 @@
 package org.neo4j.kernel.impl.api;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.function.Function;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
-import org.neo4j.kernel.impl.util.statistics.IntCounter;
-
-import static org.neo4j.collection.primitive.Primitive.iterator;
-import static org.neo4j.collection.primitive.Primitive.longSet;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
-import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
-import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
-import static org.neo4j.kernel.impl.store.NodeLabelsField.fieldPointsToDynamicRecordOfLabels;
-import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
 public class CountsStoreApplier extends NeoCommandHandler.Adapter
 {
+    static final Function<CountsAccessor.Updater, NeoCommandHandler> FACTORY =
+            new Function<CountsAccessor.Updater, NeoCommandHandler>()
+            {
+                @Override
+                public NeoCommandHandler apply( CountsAccessor.Updater updater )
+                {
+                    return new CountsStoreApplier( updater );
+                }
+            };
     private final CountsAccessor.Updater countsUpdater;
-    private final NodeStore nodeStore;
-    private final Map<Integer/*labelId*/, IntCounter> labelDelta = new HashMap<>();
-    private final Map<Integer/*typeId*/, IntCounter> relationshipTypeDelta = new HashMap<>();
 
-    private int nodesDelta;
-    private int relsDelta;
-
-    public CountsStoreApplier( CountsAccessor.Updater countsUpdater, NodeStore nodeStore )
+    public CountsStoreApplier( CountsAccessor.Updater countsUpdater )
     {
         this.countsUpdater = countsUpdater;
-        this.nodeStore = nodeStore;
     }
 
     @Override
@@ -62,134 +49,18 @@ public class CountsStoreApplier extends NeoCommandHandler.Adapter
         countsUpdater.close();
     }
 
-    private static <KEY> IntCounter counter( Map<KEY, IntCounter> map, KEY key )
-    {
-        IntCounter counter = map.get( key );
-        if ( counter == null )
-        {
-            map.put( key, counter = new IntCounter() );
-        }
-        return counter;
-    }
-
-    private static PrimitiveLongIterator diff( long[] remove, long[] add )
-    {
-        if ( add == null || add.length == 0 )
-        {
-            return emptyIterator();
-        }
-        else if ( remove == null || remove.length == 0 )
-        {
-            return iterator( add );
-        }
-        else
-        {
-            return removeAll( addAll( longSet( add.length ), add ), remove ).iterator();
-        }
-    }
-
-    private static PrimitiveLongSet addAll( PrimitiveLongSet target, long... all )
-    {
-        for ( long label : all )
-        {
-            target.add( label );
-        }
-        return target;
-    }
-
-    private static PrimitiveLongSet removeAll( PrimitiveLongSet target, long... all )
-    {
-        for ( long label : all )
-        {
-            target.remove( label );
-        }
-        return target;
-    }
-
     @Override
-    public boolean visitNodeCommand( Command.NodeCommand command ) throws IOException
+    public boolean visitNodeCountsCommand( Command.NodeCountsCommand command )
     {
-        NodeRecord before = command.getBefore(), after = command.getAfter();
-        if ( !before.inUse() && after.inUse() )
-        { // node added
-            nodesDelta++;
-        }
-        else if ( before.inUse() && !after.inUse() )
-        { // node deleted
-            nodesDelta--;
-        }
-        if ( before.getLabelField() != after.getLabelField() ||
-             fieldPointsToDynamicRecordOfLabels( before.getLabelField() ) )
-        {
-            long[] labelsBefore = labels( before );
-            long[] labelsAfter = labels( after );
-            for ( PrimitiveLongIterator added = diff( labelsBefore, labelsAfter ); added.hasNext(); )
-            {
-                label( added.next() ).increment();
-            }
-            for ( PrimitiveLongIterator removed = diff( labelsAfter, labelsBefore ); removed.hasNext(); )
-            {
-                label( removed.next() ).decrement();
-            }
-        }
-        return false;
-    }
-
-    private IntCounter label( long label )
-    {
-        return counter( labelDelta, (int) label );
-    }
-
-    @Override
-    public boolean visitRelationshipCommand( Command.RelationshipCommand command ) throws IOException
-    {
-        RelationshipRecord record = command.getRecord();
-        if ( record.isCreated() )
-        {
-            relsDelta++;
-            relationshipType( record.getType() ).increment();
-        }
-        else if ( !record.inUse() )
-        {
-            relsDelta--;
-            relationshipType( record.getType() ).decrement();
-        }
+        countsUpdater.incrementNodeCount( command.labelId(), command.delta() );
         return false;
     }
 
     @Override
-    public boolean visitUpdateCountsCommand( Command.CountsCommand command ) throws IOException
+    public boolean visitRelationshipCountsCommand( Command.RelationshipCountsCommand command ) throws IOException
     {
         countsUpdater.incrementRelationshipCount(
                 command.startLabelId(), command.typeId(), command.endLabelId(), command.delta() );
         return false;
-    }
-
-    private IntCounter relationshipType( int type )
-    {
-        return counter( relationshipTypeDelta, type );
-    }
-
-    @Override
-    public void apply()
-    {
-        // nodes
-        countsUpdater.incrementNodeCount( ANY_LABEL, nodesDelta );
-        for ( Map.Entry<Integer, IntCounter> label : labelDelta.entrySet() )
-        {
-            countsUpdater.incrementNodeCount( label.getKey(), label.getValue().value() );
-        }
-
-        // relationships
-        countsUpdater.incrementRelationshipCount( ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL, relsDelta );
-        for ( Map.Entry<Integer, IntCounter> type : relationshipTypeDelta.entrySet() )
-        {
-            countsUpdater.incrementRelationshipCount( ANY_LABEL, type.getKey(), ANY_LABEL, type.getValue().value() );
-        }
-    }
-
-    private long[] labels( NodeRecord node )
-    {
-        return node.inUse() ? parseLabelsField( node ).get( nodeStore ) : null;
     }
 }

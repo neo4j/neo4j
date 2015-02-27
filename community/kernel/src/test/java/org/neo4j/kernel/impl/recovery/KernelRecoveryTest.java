@@ -28,10 +28,12 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.NodeCountsCommand;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -75,11 +77,13 @@ public class KernelRecoveryTest
                     // Tx before recovery
                     startEntry( -1, -1 ),
                     commandEntry( node1, NodeCommand.class ),
+                    commandEntry( ReadOperations.ANY_LABEL, NodeCountsCommand.class ),
                     commitEntry( 2 ),
 
                     // Tx after recovery
                     startEntry( -1, -1 ),
                     commandEntry( node2, NodeCommand.class ),
+                    commandEntry( ReadOperations.ANY_LABEL, NodeCountsCommand.class ),
                     commitEntry( 3 )
                 )
         );

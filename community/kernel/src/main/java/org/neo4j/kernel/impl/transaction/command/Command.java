@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.command;
 import java.io.IOException;
 import java.util.Collection;
 
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -39,6 +38,7 @@ import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;
 
 import static java.lang.String.format;
 import static java.util.Collections.unmodifiableCollection;
+
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.util.IdPrettyPrinter.label;
 import static org.neo4j.kernel.impl.util.IdPrettyPrinter.relationshipType;
@@ -455,20 +455,61 @@ public abstract class Command
         }
     }
 
-    public static class CountsCommand extends Command
+    public static class NodeCountsCommand extends Command
+    {
+        private int labelId;
+        private long delta;
+
+        public NodeCountsCommand init( int labelId, long delta )
+        {
+            setup( labelId, Mode.UPDATE );
+            assert delta != 0 : "Tried to create a NodeCountsCommand for something that didn't change any count";
+            this.labelId = labelId;
+            this.delta = delta;
+            return this;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format( "UpdateCounts[(%s) %s %d]",
+                                  label( labelId ), delta < 0 ? "-" : "+", Math.abs( delta ) );
+        }
+
+        @Override
+        public boolean handle( NeoCommandHandler handler ) throws IOException
+        {
+            return handler.visitNodeCountsCommand( this );
+        }
+
+        @Override
+        public void accept( CommandRecordVisitor visitor )
+        {
+            // no record to visit
+        }
+
+        public int labelId()
+        {
+            return labelId;
+        }
+
+        public long delta()
+        {
+            return delta;
+        }
+    }
+
+    public static class RelationshipCountsCommand extends Command
     {
         private int startLabelId;
         private int typeId;
         private int endLabelId;
         private long delta;
 
-        public CountsCommand init( int startLabelId, int typeId, int endLabelId, long delta )
+        public RelationshipCountsCommand init( int startLabelId, int typeId, int endLabelId, long delta )
         {
-            assert startLabelId != ReadOperations.ANY_LABEL || endLabelId != ReadOperations.ANY_LABEL : String.format(
-                    "CountsCommand should only be used for composite counts. " +
-                    "The key may contain at most one wildcard label. startLabelId=%s, typeId=%s, endLabelId=%s",
-                    startLabelId, typeId, endLabelId );
-            assert delta != 0 : "Tried to create a CountsCommand for something that didn't change any count";
+            setup( typeId, Mode.UPDATE );
+            assert delta != 0 : "Tried to create a RelationshipCountsCommand for something that didn't change any count";
             this.startLabelId = startLabelId;
             this.typeId = typeId;
             this.endLabelId = endLabelId;
@@ -487,7 +528,7 @@ public abstract class Command
         @Override
         public boolean handle( NeoCommandHandler handler ) throws IOException
         {
-            return handler.visitUpdateCountsCommand( this );
+            return handler.visitRelationshipCountsCommand( this );
         }
 
         @Override

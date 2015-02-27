@@ -41,6 +41,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.command.Command.NodeCountsCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCountsCommand;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandType;
 
@@ -270,9 +272,18 @@ public class CommandWriter implements NeoCommandHandler
     }
 
     @Override
-    public boolean visitUpdateCountsCommand( Command.CountsCommand command ) throws IOException
+    public boolean visitNodeCountsCommand( NodeCountsCommand command ) throws IOException
     {
-        channel.put( NeoCommandType.UPDATE_COUNTS_COMMAND );
+        channel.put( NeoCommandType.UPDATE_NODE_COUNTS_COMMAND );
+        channel.putInt( command.labelId() )
+               .putLong( command.delta() );
+        return false;
+    }
+
+    @Override
+    public boolean visitRelationshipCountsCommand( RelationshipCountsCommand command ) throws IOException
+    {
+        channel.put( NeoCommandType.UPDATE_RELATIONSHIP_COUNTS_COMMAND );
         channel.putInt( command.startLabelId() )
                .putInt( command.typeId() )
                .putInt( command.endLabelId() )

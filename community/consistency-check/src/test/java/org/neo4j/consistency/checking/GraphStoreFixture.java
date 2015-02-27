@@ -34,20 +34,21 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.impl.index.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.store.NodeLabelsField;
+import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -117,13 +118,10 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         protected abstract void transactionData( TransactionDataBuilder tx, IdGenerator next );
 
         public TransactionRepresentation representation( IdGenerator idGenerator, int masterId, int authorId,
-                                                         long lastCommittedTx, CountsTracker counts )
+                                                         long lastCommittedTx, NodeStore nodes )
         {
             TransactionWriter writer = new TransactionWriter();
-            try ( CountsAccessor.Updater updater = counts.apply( lastCommittedTx + 1 ).get() )
-            {
-                transactionData( new TransactionDataBuilder( writer, updater ), idGenerator );
-            }
+            transactionData( new TransactionDataBuilder( writer, nodes ), idGenerator );
             return writer.representation( new byte[0], masterId, authorId, startTimestamp, lastCommittedTx,
                    currentTimeMillis() );
         }
@@ -195,12 +193,12 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
     public static final class TransactionDataBuilder
     {
         private final TransactionWriter writer;
-        private final CountsAccessor.Updater counts;
+        private final NodeStore nodes;
 
-        public TransactionDataBuilder( TransactionWriter writer, CountsAccessor.Updater counts )
+        public TransactionDataBuilder( TransactionWriter writer, NodeStore nodes )
         {
             this.writer = writer;
-            this.counts = counts;
+            this.nodes = nodes;
         }
 
         public void createSchema( Collection<DynamicRecord> beforeRecords, Collection<DynamicRecord> afterRecords,
@@ -214,22 +212,17 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
 
         public void propertyKey( int id, String key )
         {
-            writer.propertyKey( id, key, id+1 );
+            writer.propertyKey( id, key, id + 1 );
         }
 
         public void nodeLabel( int id, String name )
         {
-            writer.label( id, name, id+1 );
+            writer.label( id, name, id + 1 );
         }
 
         public void relationshipType( int id, String relationshipType )
         {
-            writer.relationshipType( id, relationshipType, id+1 );
-        }
-
-        public void create( NodeRecord node )
-        {
-            writer.create( node );
+            writer.relationshipType( id, relationshipType, id + 1 );
         }
 
         public void update( NeoStoreRecord record )
@@ -237,13 +230,22 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
             writer.update( record );
         }
 
+        public void create( NodeRecord node )
+        {
+            updateCounts( node, 1 );
+            writer.create( node );
+        }
+
         public void update( NodeRecord before, NodeRecord after )
         {
+            updateCounts( before, -1 );
+            updateCounts( after, 1 );
             writer.update( before, after );
         }
 
         public void delete( NodeRecord node )
         {
+            updateCounts( node, -1 );
             writer.delete( node );
         }
 
@@ -292,14 +294,23 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
             writer.delete( before, property );
         }
 
+        private void updateCounts( NodeRecord node, int delta )
+        {
+            writer.incrementNodeCount( ReadOperations.ANY_LABEL, delta );
+            for ( long label : NodeLabelsField.parseLabelsField( node ).get( nodes ) )
+            {
+                writer.incrementNodeCount( (int)label, delta );
+            }
+        }
+
         public void incrementNodeCount( int labelId, long delta )
         {
-            counts.incrementNodeCount( labelId, delta );
+            writer.incrementNodeCount( labelId, delta );
         }
 
         public void incrementRelationshipCount( int startLabelId, int typeId, int endLabelId, long delta )
         {
-            counts.incrementRelationshipCount( startLabelId, typeId, endLabelId, delta );
+            writer.incrementRelationshipCount( startLabelId, typeId, endLabelId, delta );
         }
     }
 
@@ -349,9 +360,9 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
                             TransactionApplicationMode.EXTERNAL );
             TransactionIdStore transactionIdStore = database.getDependencyResolver().resolveDependency(
                     TransactionIdStore.class );
-            CountsTracker counts = database.getDependencyResolver().resolveDependency( NeoStore.class ).getCounts();
+            NodeStore nodes = database.getDependencyResolver().resolveDependency( NeoStore.class ).getNodeStore();
             commitProcess.commit( transaction.representation( idGenerator(), masterId(), myId(),
-                    transactionIdStore.getLastCommittedTransactionId(), counts ), locks,
+                    transactionIdStore.getLastCommittedTransactionId(), nodes ), locks,
                     CommitEvent.NULL );
         }
         finally
