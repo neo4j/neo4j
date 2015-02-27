@@ -37,36 +37,30 @@ article.guide(ng-controller="AdLibDataController")
                   label Value
                   input.form-control(ng-model='propertyValueB')
 
-      .col-sm-8 
-        table.table.table-striped.table-bordered
+      .col-sm-8
+        table.table.table-striped.table-bordered.table-fixed.th-100
           tr
             th Using Data
-            td 
-              | From a node labeled 
-              input(ng-model="nodeLabelA", size="6")
-              |  with a property called 
-              input(ng-model="propertyKeyA", size="6")
-              |  which has value 
-              input(ng-model="propertyValueA", size="8")
-              |  , through a relationship of type 
-              input(ng-model="relationshipType", size='8')
-              |  to another node labeled {{nodeLabelB}}
-              |  with a property called 
-              input(ng-model="propertyKeyB", size="6")
-              |  which has value 
-              input(ng-model="propertyValueB", size="8")
-          tr 
+            td
+              | From a node labeled &quot;{{nodeLabelA}}&quot;
+              |  with a property called &quot;{{propertyKeyA}}&quot;
+              |  which has value &quot;{{propertyValueA}}&quot;
+              |  , through a relationship of type &quot;{{relationshipType}}&quot;
+              |  to another node labeled &quot;{{nodeLabelB}}&quot;
+              |  with a property called &quot;{{propertyKeyB}}&quot;
+              |  which has value &quot;{{propertyValueB}}&quot;
+          tr
             th Create
-            td Create a &quot;{{nodeLabelA}}&quot; node 
+            td Create a &quot;{{nodeLabelA}}&quot; node
               |  with a property called &quot;{{propertyKeyA}}&quot;
               |  that has value &quot;{{propertyValueA}}&quot;. (Or create Node B)
               figure
                 pre.code.runnable.
-                  CREATE (n:{{nodeLabelA}} { {{propertyKeyA}}: '{{propertyValueA}}' }) RETURN n
+                  CREATE (n:{{nodeLabelA | tickitize}} { {{propertyKeyA | tickitize}}: '{{propertyValueA}}' }) RETURN n
               figure
                 pre.code.runnable.
-                  CREATE (n:{{nodeLabelB}} { {{propertyKeyB}}: '{{propertyValueB}}' }) RETURN n
-          tr 
+                  CREATE (n:{{nodeLabelB | tickitize}} { {{propertyKeyB | tickitize}}: '{{propertyValueB}}' }) RETURN n
+          tr
             th Relate
             td From a &quot;{{nodeLabelA}}&quot; node
               |  with a &quot;{{propertyKeyA}}&quot; property
@@ -75,23 +69,23 @@ article.guide(ng-controller="AdLibDataController")
               |  relationship to a &quot;{{nodeLabelB}}&quot; with &quot;{{propertyKeyB}}&quot; value &quot;{{propertyValueB}}&quot;.
               figure
                 pre.code.runnable.
-                  MATCH (a:{{nodeLabelA}} { {{propertyKeyA}}: '{{propertyValueA}}' }), (b:{{nodeLabelB}} { {{propertyKeyB}}: '{{propertyValueB}}' }) 
-                  CREATE (a)-[:{{relationshipType}}]-&gt;(b)
-          tr 
+                  MATCH (a:{{nodeLabelA | tickitize}} { {{propertyKeyA | tickitize}}: '{{propertyValueA}}' }), (b:{{nodeLabelB | tickitize}} { {{propertyKeyB | tickitize}}: '{{propertyValueB}}' })
+                  CREATE (a)-[:{{relationshipType | tickitize}}]-&gt;(b)
+          tr
             th Merge node
             td Find or create a &quot;{{nodeLabelA}}&quot; node
               |  with &quot;{{propertyKeyA}}&quot; of &quot;{{propertyValueA}}&quot;.
               figure
                 pre.code.runnable.
-                  MERGE (n:{{nodeLabelA}} { {{propertyKeyA}}: '{{propertyValueA}}' }) RETURN n
-          tr 
+                  MERGE (n:{{nodeLabelA | tickitize}} { {{propertyKeyA | tickitize}}: '{{propertyValueA}}' }) RETURN n
+          tr
             th Merge relationship
-            td Find or create a relationship from a &quot;{{nodeLabelA}} with &quot;{{propertyKeyA}}&quot; of &quot;{{propertyValueA}}&quot; 
+            td Find or create a relationship from a &quot;{{nodeLabelA}} with &quot;{{propertyKeyA}}&quot; of &quot;{{propertyValueA}}&quot;
               |  through a &quot;{{relationshipType}}&quot; relationship
               |  to a &quot;{{nodeLabelB}}&quot; node with &quot;{{propertyKeyB}}&quot; of &quot;{{propertyValueB}}&quot;.
               figure
                 pre.code.runnable.
-                  MATCH (a:{{nodeLabelA}} { {{propertyKeyA}}: '{{propertyValueA}}' }), (b:{{nodeLabelB}} { {{propertyKeyB}}: '{{propertyValueB}}' }) 
+                  MATCH (a:{{nodeLabelA | tickitize}} { {{propertyKeyA | tickitize}}: '{{propertyValueA}}' }), (b:{{nodeLabelB | tickitize}} { {{propertyKeyB | tickitize}}: '{{propertyValueB}}' })
                   MERGE (a)-[:{{relationshipType}}]-&gt;(b)
     slide.row-fluid
       .col-sm-4
@@ -130,33 +124,27 @@ article.guide(ng-controller="AdLibDataController")
                   label Value
                   input.form-control(ng-model='propertyValueB')
 
-      .col-sm-8 
-        table.table.table-striped.table-bordered
+      .col-sm-8
+        table.table.table-striped.table-bordered.table-fixed.th-100
           tr
             th Using Data
-            td 
-              | From a node labeled 
-              input(ng-model="nodeLabelA", size="6")
-              |  with a property called 
-              input(ng-model="propertyKeyA", size="6")
-              |  which has value 
-              input(ng-model="propertyValueA", size="8")
-              |  , through a relationship of type 
-              input(ng-model="relationshipType", size='8')
-              |  to another node labeled {{nodeLabelB}}
-              |  with a property called 
-              input(ng-model="propertyKeyB", size="6")
-              |  which has value 
-              input(ng-model="propertyValueB", size="8")
-          tr 
+            td
+              | From a node labeled &quot;{{nodeLabelA}}&quot;
+              |  with a property called &quot;{{propertyKeyA}}&quot;
+              |  which has value &quot;{{propertyValueA}}&quot;
+              |  , through a relationship of type &quot;{{relationshipType}}&quot;
+              |  to another node labeled &quot;{{nodeLabelB}}&quot;
+              |  with a property called &quot;{{propertyKeyB}}&quot;
+              |  which has value &quot;{{propertyValueB}}&quot;
+          tr
             th Find one
             td Find a node labeled &quot;{{nodeLabelA}}&quot;
               |  with a property called &quot;{{propertyKeyA}}&quot;
               |  that has value &quot;{{propertyValueA}}&quot;.
               figure
                 pre.code.runnable.
-                  MATCH (n:{{nodeLabelA}} { {{propertyKeyA}}: '{{propertyValueA}}' }) RETURN n      
-          tr 
+                  MATCH (n:{{nodeLabelA | tickitize}} { {{propertyKeyA | tickitize}}: '{{propertyValueA}}' }) RETURN n
+          tr
             th Find related neighbors
             td From a &quot;{{nodeLabelA}}&quot; node
               |  with a &quot;{{propertyKeyA}}&quot;
@@ -164,8 +152,8 @@ article.guide(ng-controller="AdLibDataController")
               |  find neighbors related by &quot;{{relationshipType}}&quot;.
               figure
                 pre.code.runnable.
-                  MATCH (n:{{nodeLabelA}} { {{propertyKeyA}}: '{{propertyValueA}}' })-[:{{relationshipType}}]-(neighbors) RETURN n,neighbors
-          tr 
+                  MATCH (n:{{nodeLabelA| tickitize}} { {{propertyKeyA | tickitize}}: '{{propertyValueA}}' })-[:{{relationshipType | tickitize}}]-(neighbors) RETURN n,neighbors
+          tr
             th Variable length paths
             td From a &quot;{{nodeLabelA}}&quot; node
               |  with a &quot;{{propertyKeyA}}&quot;
@@ -173,26 +161,26 @@ article.guide(ng-controller="AdLibDataController")
               |  follow &quot;{{relationshipType}}&quot; relationships up to {{relationshipDepth}} hops away.
               figure
                 pre.code.runnable.
-                  MATCH (n:{{nodeLabelA}} { {{propertyKeyA}}: '{{propertyValueA}}' })-[:{{relationshipType}}*1..{{relationshipDepth}}]-(neighbors) RETURN n, collect(DISTINCT neighbors)
-          tr 
+                  MATCH (n:{{nodeLabelA}} { {{propertyKeyA | tickitize}}: '{{propertyValueA}}' })-[:{{relationshipType | tickitize}}*1..{{relationshipDepth}}]-(neighbors) RETURN n, collect(DISTINCT neighbors)
+          tr
             th Shortest path
             td From a &quot;{{nodeLabelA}}&quot; node
               |  with a &quot;{{propertyKeyA}}&quot;
               |  of &quot;{{propertyValueA}}&quot;
-              |  find the shortest &quot;{{relationshipType}}&quot; path to 
+              |  find the shortest &quot;{{relationshipType}}&quot; path to
               | a &quot;{{nodeLabelB}}&quot; node with &quot;{{propertyKeyB}}&quot; of &quot;{{propertyValueB}}&quot;
               figure
                 pre.code.runnable.
                   MATCH p=shortestPath(
-                    (a:{{nodeLabelA}} { {{propertyKeyA}}: '{{propertyValueA}}' })-[:{{relationshipType}}]-(b:{{nodeLabelB}} { {{propertyKeyB}}: '{{propertyValueB}}'})
+                    (a:{{nodeLabelA | tickitize}} { {{propertyKeyA | tickitize}}: '{{propertyValueA}}' })-[:{{relationshipType | tickitize}}]-(b:{{nodeLabelB | tickitize}} { {{propertyKeyB | tickitize}}: '{{propertyValueB}}'})
                   )
                   RETURN p
-                  
+
     slide.row-fluid.header
       .col-sm-4
         h3 Next steps
       .col-sm-4
-        h3 More code 
+        h3 More code
         ul.undecorated
           li
             a(play-topic='northwind-graph') Northwind Graph

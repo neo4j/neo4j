@@ -5,11 +5,11 @@ article.guide
         h3 Northwind Graph
         p.lead From RDBMS to Graph, using a classic dataset
       .col-sm-9
-        p The 
+        p The
           em Northwind Graph
-          |  demonstrates how to migrate from a 
+          |  demonstrates how to migrate from a
           | relational database to Neo4j. The transformation
-          | is iterative and deliberate, emphasizing the conceptual shift from 
+          | is iterative and deliberate, emphasizing the conceptual shift from
           | relational tables to the nodes and relationships of a graph.
         p This guide will show you how to:
         ol.big
@@ -21,8 +21,8 @@ article.guide
       .col-sm-3
         h3 Product Catalog
         p Northwind sells food products in a few categories, provided by suppliers.
-          | Let's start by loading the product catalog tables. 
-        p The load statements to the right require public internet access. 
+          | Let's start by loading the product catalog tables.
+        p The load statements to the right require public internet access.
           code LOAD CSV
           |  will retrieve a CSV file from a valid URL, applying a Cypher statement to
           | each row using a named map (here we're using the name `row`).
@@ -41,22 +41,20 @@ article.guide
           pre.pre-scrollable.code.runnable.
             LOAD CSV WITH HEADERS FROM "http://data.neo4j.com/northwind/products.csv" AS row
             CREATE (n:Product)
-            SET n = row, 
-              n.productID = toInt(row.productID), n.supplierID = toInt(row.supplierID), 
-              n.categoryID = toInt(row.categoryID), n.unitPrice = toFloat(row.unitPrice),
-              n.unitsInStock = toInt(row.unitsInStock), n.unitsOnOrder = toInt(row.unitsOnOrder), 
+            SET n = row,
+              n.unitPrice = toFloat(row.unitPrice),
+              n.unitsInStock = toInt(row.unitsInStock), n.unitsOnOrder = toInt(row.unitsOnOrder),
               n.reorderLevel = toInt(row.reorderLevel), n.discontinued = (row.discontinued &lt;&gt; "0")
         figure
           pre.pre-scrollable.code.runnable.
             LOAD CSV WITH HEADERS FROM "http://data.neo4j.com/northwind/categories.csv" AS row
             CREATE (n:Category)
-            SET n = row, n.categoryID = toInt(row.categoryID)
+            SET n = row
         figure
           pre.pre-scrollable.code.runnable.
             LOAD CSV WITH HEADERS FROM "http://data.neo4j.com/northwind/suppliers.csv" AS row
             CREATE (n:Supplier)
-            SET n = row,
-                n.supplierID = toInt(row.supplierID)
+            SET n = row
         h4 Create indexes
         figure
           pre.pre-scrollable.code.runnable.
@@ -70,7 +68,7 @@ article.guide
     slide.row-fluid
       .col-sm-3
         h3 Product Catalog Graph
-        p The products, categories and suppliers are related through foreign key references. 
+        p The products, categories and suppliers are related through foreign key references.
           | Let's promote those to data relationships to realize the graph, then try some
           | queries using patterns.
         p
@@ -89,6 +87,9 @@ article.guide
             MATCH (p:Product),(c:Category)
             WHERE p.categoryID = c.categoryID
             CREATE (p)-[:PART_OF]-&gt;(c)
+          figcaption Calculate join, materialize relationship. (See&nbsp;
+            a(href="http://neo4j.com/developer/guide-importing-data-and-etl")&nbsp; importing guide
+            |  for more details)
         figure
           pre.pre-scrollable.code.runnable.
             MATCH (p:Product),(s:Supplier)
@@ -97,13 +98,13 @@ article.guide
         h4 Query using patterns
         figure
           pre.pre-scrollable.code.runnable.
-            MATCH (s:Supplier)--&gt;(:Product)--&gt;(c:Category) 
+            MATCH (s:Supplier)--&gt;(:Product)--&gt;(c:Category)
             RETURN s.companyName as Company, collect(distinct c.categoryName) as Categories
           figcaption List the product categories provided by each supplier.
         figure
           pre.pre-scrollable.code.runnable.
-            MATCH (c:Category {categoryName:"Produce"})&lt;--(:Product)&lt;--(s:Supplier) 
-            RETURN s.companyName as ProduceSuppliers
+            MATCH (c:Category {categoryName:"Produce"})&lt;--(:Product)&lt;--(s:Supplier)
+            RETURN DISTINCT s.companyName as ProduceSuppliers
           figcaption Find the produce suppliers.
     slide.row-fluid
       .col-sm-3
@@ -129,9 +130,7 @@ article.guide
           pre.pre-scrollable.code.runnable.
             LOAD CSV WITH HEADERS FROM "http://data.neo4j.com/northwind/orders.csv" AS row
             CREATE (n:Order)
-            SET n = row, 
-                n.orderID = toInt(row.orderID),
-                n.employeeID = toInt(row.employeeID)
+            SET n = row
         figure
           pre.pre-scrollable.code.runnable.
             CREATE INDEX ON :Customer(customerID)
@@ -147,7 +146,7 @@ article.guide
     slide.row-fluid
       .col-sm-3
         h3 Customer Order Graph
-        p Notice that Order Details are always part of an Order and that they 
+        p Notice that Order Details are always part of an Order and that they
           i relate
           |  the Order to a Product &mdash; they're a join table. Join tables
           | are always a sign of a data relationship, indicating shared information
@@ -167,15 +166,16 @@ article.guide
           pre.pre-scrollable.code.runnable.
             LOAD CSV WITH HEADERS FROM "http://data.neo4j.com/northwind/order-details.csv" AS row
             MATCH (p:Product), (o:Order)
-            WHERE p.productID = toInt(row.productID) AND o.orderID = toInt(row.orderID)
+            WHERE p.productID = row.productID AND o.orderID = row.orderID
             CREATE (o)-[details:ORDERS]-&gt;(p)
-            SET details = row
+            SET details = row,
+              details.quantity = toInt(row.quantity)
         h4 Query using patterns
         figure
           pre.pre-scrollable.code.runnable.
-            MATCH (cust:Customer)-[:PURCHASED]-&gt;(:Order)-[:ORDERS]-&gt;(p:Product),
+            MATCH (cust:Customer)-[:PURCHASED]-&gt;(:Order)-[o:ORDERS]-&gt;(p:Product),
                   (p)-[:PART_OF]-&gt;(c:Category {categoryName:"Produce"})
-            RETURN cust.contactName as ProduceConsumers
+            RETURN DISTINCT cust.contactName as CustomerName, SUM(o.quantity) AS TotalProductsPurchased
 
     slide.row-fluid.header
       .col-sm-4
@@ -183,7 +183,7 @@ article.guide
         br
         h3 Next steps
       .col-sm-4
-        h3 More code 
+        h3 More code
         ul.undecorated
           li
             a(play-topic='movie-graph') Movie Graph
