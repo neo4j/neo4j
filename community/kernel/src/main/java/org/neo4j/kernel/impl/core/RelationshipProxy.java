@@ -47,7 +47,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     public interface RelationshipActions
     {
         Statement statement();
-        
+
         Node newNodeProxy( long nodeId );
 
         RelationshipType getRelationshipTypeById( int type );
@@ -82,11 +82,12 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     @Override
     public void visit( long id, int type, long startNode, long endNode ) throws RuntimeException
     {
-        assert (0xFFFF_FFF0_0000_0000L & id) == 0 &&     // 36 bits
+        assert (0xFFFF_FFF0_0000_0000L & id) == 0 &&        // 36 bits
                (0xFFFF_FFF0_0000_0000L & startNode) == 0 && // 36 bits
-               (0xFFFF_FFF0_0000_0000L & endNode) == 0 && // 36 bits
-               (0xFFFF_0000 & type) == 0;                // 16 bits
-        this.hiBits = (short) ((id >> 32) | ((startNode >> 28) & 0x00F0) | ((startNode >> 28) & 0x0F00));
+               (0xFFFF_FFF0_0000_0000L & endNode) == 0 &&   // 36 bits
+               (0xFFFF_0000 & type) == 0                    // 16 bits
+               : "For id:" + id + ", type:" + type + ", source:" + startNode + ", target:" + endNode;
+        this.hiBits = (short) ((id >> 32) | ((startNode >> 28) & 0x00F0) | ((endNode >> 24) & 0x0F00));
         this.type = (short) type;
         this.loId = (int) id;
         this.loSource = (int) startNode;
@@ -111,7 +112,8 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     @Override
     public long getId()
     {
-        return hiBits == 0 ? loId : ((hiBits & 0x000FL) << 32 | loId);
+        long loBits = allBitsOf( loId );
+        return hiBits == 0 ? loBits : ((hiBits & 0x000FL) << 32 | loBits);
     }
 
     private int typeId()
@@ -123,13 +125,20 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     private long sourceId()
     {
         initializeData();
-        return hiBits == 0 ? loSource : ((hiBits & 0x00F0L) << 28 | loSource);
+        long loBits = allBitsOf( loSource );
+        return hiBits == 0 ? loBits : ((hiBits & 0x00F0L) << 28 | loBits);
     }
 
     private long targetId()
     {
         initializeData();
-        return hiBits == 0 ? loTarget : ((hiBits & 0x0F00L) << 24 | loTarget);
+        long loBits = allBitsOf( loTarget );
+        return hiBits == 0 ? loBits : ((hiBits & 0x0F00L) << 24 | loBits);
+    }
+
+    private long allBitsOf( int bits )
+    {
+        return bits&0xFFFFFFFFL;
     }
 
     @Override
