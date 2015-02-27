@@ -42,31 +42,31 @@ article.guide
             LOAD CSV WITH HEADERS FROM "http://data.neo4j.com/northwind/products.csv" AS row
             CREATE (n:Product)
             SET n = row, 
-              n.ProductID = toInt(row.ProductID), n.SupplierID = toInt(row.SupplierID), 
-              n.CategoryID = toInt(row.CategoryID), n.UnitPrice = toFloat(row.UnitPrice),
-              n.UnitsInStock = toInt(row.UnitsInStock), n.UnitsOnOrder = toInt(row.UnitsOnOrder), 
-              n.ReorderLevel = toInt(row.ReorderLevel), n.Discontinued = (row.Discontinued &lt;&gt; "0")
+              n.productID = toInt(row.productID), n.supplierID = toInt(row.supplierID), 
+              n.categoryID = toInt(row.categoryID), n.unitPrice = toFloat(row.unitPrice),
+              n.unitsInStock = toInt(row.unitsInStock), n.unitsOnOrder = toInt(row.unitsOnOrder), 
+              n.reorderLevel = toInt(row.reorderLevel), n.discontinued = (row.discontinued &lt;&gt; "0")
         figure
           pre.pre-scrollable.code.runnable.
             LOAD CSV WITH HEADERS FROM "http://data.neo4j.com/northwind/categories.csv" AS row
             CREATE (n:Category)
-            SET n = row, n.CategoryID = toInt(row.CategoryID)
+            SET n = row, n.categoryID = toInt(row.categoryID)
         figure
           pre.pre-scrollable.code.runnable.
             LOAD CSV WITH HEADERS FROM "http://data.neo4j.com/northwind/suppliers.csv" AS row
             CREATE (n:Supplier)
             SET n = row,
-                n.SupplierID = toInt(row.SupplierID)
+                n.supplierID = toInt(row.supplierID)
         h4 Create indexes
         figure
           pre.pre-scrollable.code.runnable.
-            CREATE INDEX ON :Product(ProductID)
+            CREATE INDEX ON :Product(productID)
         figure
           pre.pre-scrollable.code.runnable.
-            CREATE INDEX ON :Category(CategoryID)
+            CREATE INDEX ON :Category(categoryID)
         figure
           pre.pre-scrollable.code.runnable.
-            CREATE INDEX ON :Supplier(SupplierID)
+            CREATE INDEX ON :Supplier(supplierID)
     slide.row-fluid
       .col-sm-3
         h3 Product Catalog Graph
@@ -87,23 +87,23 @@ article.guide
         figure
           pre.pre-scrollable.code.runnable.
             MATCH (p:Product),(c:Category)
-            WHERE p.CategoryID = c.CategoryID
+            WHERE p.categoryID = c.categoryID
             CREATE (p)-[:PART_OF]-&gt;(c)
         figure
           pre.pre-scrollable.code.runnable.
             MATCH (p:Product),(s:Supplier)
-            WHERE p.SupplierID = s.SupplierID
+            WHERE p.supplierID = s.supplierID
             CREATE (s)-[:SUPPLIES]-&gt;(p)
         h4 Query using patterns
         figure
           pre.pre-scrollable.code.runnable.
             MATCH (s:Supplier)--&gt;(:Product)--&gt;(c:Category) 
-            RETURN s.CompanyName as Company, collect(distinct c.CategoryName) as Categories
+            RETURN s.companyName as Company, collect(distinct c.categoryName) as Categories
           figcaption List the product categories provided by each supplier.
         figure
           pre.pre-scrollable.code.runnable.
-            MATCH (c:Category {CategoryName:"Produce"})&lt;--(:Product)&lt;--(s:Supplier) 
-            RETURN s.CompanyName as ProduceSuppliers
+            MATCH (c:Category {categoryName:"Produce"})&lt;--(:Product)&lt;--(s:Supplier) 
+            RETURN s.companyName as ProduceSuppliers
           figcaption Find the produce suppliers.
     slide.row-fluid
       .col-sm-3
@@ -130,19 +130,19 @@ article.guide
             LOAD CSV WITH HEADERS FROM "http://data.neo4j.com/northwind/orders.csv" AS row
             CREATE (n:Order)
             SET n = row, 
-                n.OrderID = toInt(row.OrderID),
-                n.EmployeeID = toInt(row.EmployeeID)
+                n.orderID = toInt(row.orderID),
+                n.employeeID = toInt(row.employeeID)
         figure
           pre.pre-scrollable.code.runnable.
-            CREATE INDEX ON :Customer(CustomerID)
+            CREATE INDEX ON :Customer(customerID)
         figure
           pre.pre-scrollable.code.runnable.
-            CREATE INDEX ON :Orders(OrderID)
+            CREATE INDEX ON :Orders(orderID)
         h4 Create data relationships
         figure
           pre.pre-scrollable.code.runnable.
             MATCH (c:Customer),(o:Order)
-            WHERE c.CustomerID = o.CustomerID
+            WHERE c.customerID = o.customerID
             CREATE (c)-[:PURCHASED]-&gt;(o)
     slide.row-fluid
       .col-sm-3
@@ -167,15 +167,15 @@ article.guide
           pre.pre-scrollable.code.runnable.
             LOAD CSV WITH HEADERS FROM "http://data.neo4j.com/northwind/order-details.csv" AS row
             MATCH (p:Product), (o:Order)
-            WHERE p.ProductID = toInt(row.ProductID) AND o.OrderID = toInt(row.OrderID)
+            WHERE p.productID = toInt(row.productID) AND o.orderID = toInt(row.orderID)
             CREATE (o)-[details:ORDERS]-&gt;(p)
             SET details = row
         h4 Query using patterns
         figure
           pre.pre-scrollable.code.runnable.
             MATCH (cust:Customer)-[:PURCHASED]-&gt;(:Order)-[:ORDERS]-&gt;(p:Product),
-                  (p)-[:PART_OF]-&gt;(c:Category {CategoryName:"Produce"})
-            RETURN cust.ContactName as ProduceConsumers
+                  (p)-[:PART_OF]-&gt;(c:Category {categoryName:"Produce"})
+            RETURN cust.contactName as ProduceConsumers
 
     slide.row-fluid.header
       .col-sm-4
