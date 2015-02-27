@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 
-import scala.collection.{immutable, mutable, Map}
+import scala.collection.immutable
 
 trait PlanTable extends ((QueryGraph) => LogicalPlan) {
   def uniquePlan: LogicalPlan = {

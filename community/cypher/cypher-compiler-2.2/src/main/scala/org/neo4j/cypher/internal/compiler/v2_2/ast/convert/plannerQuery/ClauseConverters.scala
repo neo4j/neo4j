@@ -219,11 +219,14 @@ object ClauseConverters {
           val nonHints = items.collect { case Left(item) => item }
 
           if (nonHints.nonEmpty) {
-            //all other start queries is delegated to legacy planner
+            // all other start queries is delegated to legacy planner
             throw new CantHandleQueryException()
           }
 
-          qg.addHints(hints)
+          val nodeIds = hints.collect { case n: NodeHint => IdName(n.identifier.name)}
+
+          qg.addPatternNodes(nodeIds: _*)
+            .addHints(hints)
         }
     }
   }

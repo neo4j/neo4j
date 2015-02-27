@@ -26,6 +26,14 @@ sealed trait Hint extends ASTNode with ASTPhrase with SemanticCheckable {
   def identifier: Identifier
 }
 
+trait NodeHint {
+  self: Hint =>
+}
+
+trait RelationshipHint {
+  self: Hint =>
+}
+
 object Hint {
   implicit val byIdentifier =
     Ordering.by { (hint: Hint) => hint.identifier }(Identifier.byName)
@@ -40,11 +48,11 @@ sealed trait LegacyIndexHint extends Hint {
   self: StartItem =>
 }
 
-case class UsingIndexHint(identifier: Identifier, label: LabelName, property: Identifier)(val position: InputPosition) extends UsingHint {
+case class UsingIndexHint(identifier: Identifier, label: LabelName, property: Identifier)(val position: InputPosition) extends UsingHint with NodeHint {
   def semanticCheck = identifier.ensureDefined chain identifier.expectType(CTNode.covariant)
 }
 
-case class UsingScanHint(identifier: Identifier, label: LabelName)(val position: InputPosition) extends UsingHint {
+case class UsingScanHint(identifier: Identifier, label: LabelName)(val position: InputPosition) extends UsingHint with NodeHint {
   def semanticCheck = identifier.ensureDefined chain identifier.expectType(CTNode.covariant)
 }
 
@@ -60,10 +68,10 @@ sealed trait NodeStartItem extends StartItem {
 }
 
 case class NodeByIdentifiedIndex(identifier: Identifier, index: Identifier, key: Identifier, value: Expression)(val position: InputPosition)
-  extends NodeStartItem with LegacyIndexHint
+  extends NodeStartItem with LegacyIndexHint with NodeHint
 
 case class NodeByIndexQuery(identifier: Identifier, index: Identifier, query: Expression)(val position: InputPosition)
-  extends NodeStartItem with LegacyIndexHint
+  extends NodeStartItem with LegacyIndexHint with NodeHint
 
 case class NodeByParameter(identifier: Identifier, parameter: Parameter)(val position: InputPosition) extends NodeStartItem
 case class AllNodes(identifier: Identifier)(val position: InputPosition) extends NodeStartItem
@@ -75,8 +83,8 @@ sealed trait RelationshipStartItem extends StartItem {
 case class RelationshipByIds(identifier: Identifier, ids: Seq[UnsignedIntegerLiteral])(val position: InputPosition) extends RelationshipStartItem
 case class RelationshipByParameter(identifier: Identifier, parameter: Parameter)(val position: InputPosition) extends RelationshipStartItem
 case class AllRelationships(identifier: Identifier)(val position: InputPosition) extends RelationshipStartItem
-case class RelationshipByIdentifiedIndex(identifier: Identifier, index: Identifier, key: Identifier, value: Expression)(val position: InputPosition) extends RelationshipStartItem with LegacyIndexHint
-case class RelationshipByIndexQuery(identifier: Identifier, index: Identifier, query: Expression)(val position: InputPosition) extends RelationshipStartItem with LegacyIndexHint
+case class RelationshipByIdentifiedIndex(identifier: Identifier, index: Identifier, key: Identifier, value: Expression)(val position: InputPosition) extends RelationshipStartItem with LegacyIndexHint with RelationshipHint
+case class RelationshipByIndexQuery(identifier: Identifier, index: Identifier, query: Expression)(val position: InputPosition) extends RelationshipStartItem with LegacyIndexHint with RelationshipHint
 
 // no longer supported non-hint legacy start items
 

@@ -27,7 +27,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   implicit def withPos[T](expr: InputPosition => T): T = expr(pos)
 
-  def ident(name: String) = Identifier(name)(pos)
+  def ident(name: String): Identifier = Identifier(name)(pos)
 
   def propEquality(identifier: String, propKey: String, intValue: Int) = {
     val prop: Expression = Property(ident(identifier), PropertyKeyName(propKey)(pos))(pos)

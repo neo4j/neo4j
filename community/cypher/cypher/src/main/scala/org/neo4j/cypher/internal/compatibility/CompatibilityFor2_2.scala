@@ -103,14 +103,14 @@ object exceptionHandlerFor2_2 extends MapToPublicExceptions[CypherException] {
     try {
       body
     }
-//    catch {
-//      case e: CypherException_v2_2 =>
-//        f(e)
-//        throw e.mapToPublic(exceptionHandlerFor2_2)
-//      case e: Throwable =>
-//        f(e)
-//        throw e
-//    }
+    catch {
+      case e: CypherException_v2_2 =>
+        f(e)
+        throw e.mapToPublic(exceptionHandlerFor2_2)
+      case e: Throwable =>
+        f(e)
+        throw e
+    }
   }
 
   def failedIndexException(indexName: String): CypherException = throw new FailedIndexException(indexName)

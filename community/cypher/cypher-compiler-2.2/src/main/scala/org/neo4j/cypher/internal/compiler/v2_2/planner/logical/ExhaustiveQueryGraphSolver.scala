@@ -177,7 +177,7 @@ case class ExhaustiveQueryGraphSolver(leafPlanFinder: LogicalLeafPlan.Finder = l
       // TODO: Not exactly pretty
       table.head
     } else {
-      val solutionPlans = leaves.groupBy(_.availableSymbols)(qg.coveredIds)
+      val solutionPlans = leaves.filter(plan => (qg.coveredIds -- plan.availableSymbols).isEmpty)
       bestPlanFinder(solutionPlans.iterator).getOrElse(throw new InternalException("Found no leaf plan for connected component.  This must not happen."))
     }
   }
@@ -222,16 +222,23 @@ case class ExhaustiveQueryGraphSolver(leafPlanFinder: LogicalLeafPlan.Finder = l
   }
 
   private def planSinglePattern(qg: QueryGraph, pattern: PatternRelationship, leaves: Iterator[LogicalPlan]): Iterator[LogicalPlan] =
-    // TODO: Filter plans that already solve pattern
-    leaves.flatMap { plan =>
-      val (start, end) = pattern.nodes
-      planSinglePatternSide(qg, pattern, plan, start) ++ planSinglePatternSide(qg, pattern, plan, end)
-    }
+    leaves.collect {
+      case plan => // TODO: if !plan.solved.graph.patternRelationships.contains(pattern) =>
+        val (start, end) = pattern.nodes
+        val leftPlan = planSinglePatternSide(qg, pattern, plan, start)
+        val rightPlan = planSinglePatternSide(qg, pattern, plan, end)
+        includeOption(includeOption(Set.empty, leftPlan), rightPlan)
+    }.flatten
 
   private def newSolutionGenerator(qg: QueryGraph, kit: PlanningStrategyKit, table: ExhaustivePlanTable): (Set[Solvable]) => Iterator[LogicalPlan] = {
     val solverFunctions = solvers.map { solver => (goal: Set[Solvable]) => solver(qg, goal, table)}
     val solutionGenerator = (goal: Set[Solvable]) => solverFunctions.iterator.flatMap { solver => solver(goal).map(kit.select) }
     solutionGenerator
+  }
+
+  private def includeOption[T](set: Set[T], opt: Option[T]): Set[T] = opt match {
+    case Some(value) => set + value
+    case None        => set
   }
 }
 

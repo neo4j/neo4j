@@ -370,8 +370,8 @@ class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanning
       queryGraphSolver.plan(cfg.qg) should equal(
         Selection(cfg.qg.selections.flatPredicates,
           CartesianProduct(
-            Expand(AllNodesScan("b", Set.empty)(null), "b", Direction.INCOMING, Seq.empty, "a", "r", ExpandAll)(null),
-            AllNodesScan("c", Set.empty)(null)
+            AllNodesScan("c", Set.empty)(null),
+            Expand(AllNodesScan("b", Set.empty)(null), "b", Direction.INCOMING, Seq.empty, "a", "r", ExpandAll)(null)
           )(null)
         )(null)
       )

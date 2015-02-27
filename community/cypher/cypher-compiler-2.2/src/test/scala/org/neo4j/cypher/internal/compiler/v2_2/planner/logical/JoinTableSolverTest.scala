@@ -39,6 +39,7 @@ class JoinTableSolverTest extends CypherFunSuite with LogicalPlanConstructionTes
   val table = new ExhaustivePlanTable
 
   val qg = mock[QueryGraph]
+  when(qg.argumentIds).thenReturn(Set.empty[IdName])
 
   test("does not join based on empty table") {
     joinTableSolver(qg, Set(solvable1, solvable2), table) should be(empty)
@@ -46,7 +47,9 @@ class JoinTableSolverTest extends CypherFunSuite with LogicalPlanConstructionTes
 
   test("joins plans that solve a single pattern relationship") {
     when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b))
+    when(plan1.solved).thenReturn(PlannerQuery(QueryGraph.empty.addPatternNodes('a, 'b)))
     when(plan2.availableSymbols).thenReturn(Set[IdName]('b, 'r2, 'c))
+    when(plan2.solved).thenReturn(PlannerQuery(QueryGraph.empty.addPatternNodes('b, 'c)))
 
     table.put(Set(solvable1), plan1)
     table.put(Set(solvable2), plan2)
@@ -59,7 +62,9 @@ class JoinTableSolverTest extends CypherFunSuite with LogicalPlanConstructionTes
 
   test("does not join plans that do not overlap") {
     when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b))
+    when(plan1.solved).thenReturn(PlannerQuery(QueryGraph.empty.addPatternNodes('a, 'b)))
     when(plan2.availableSymbols).thenReturn(Set[IdName]('c, 'r2, 'd))
+    when(plan2.solved).thenReturn(PlannerQuery(QueryGraph.empty.addPatternNodes('c, 'd)))
 
     table.put(Set(solvable1), plan1)
     table.put(Set(solvable2), plan2)
@@ -72,7 +77,6 @@ class JoinTableSolverTest extends CypherFunSuite with LogicalPlanConstructionTes
     when(plan1.solved).thenReturn(PlannerQuery(QueryGraph.empty.addPatternNodes('a, 'b)))
     when(plan2.availableSymbols).thenReturn(Set[IdName]('c, 'r2, 'd, 'x))
     when(plan2.solved).thenReturn(PlannerQuery(QueryGraph.empty.addPatternNodes('c, 'd)))
-    when(qg.argumentIds).thenReturn(Set.empty[IdName])
 
     table.put(Set(solvable1), plan1)
     table.put(Set(solvable2), plan2)
