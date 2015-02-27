@@ -6,6 +6,7 @@ These operators take rows produced by another operator and transform them to a d
 
 :leveloffset: 2
 
+include::../ql/query-plan/argument.asciidoc[]
 include::../ql/query-plan/distinct.asciidoc[]
 include::../ql/query-plan/eager-aggregation.asciidoc[]
 include::../ql/query-plan/filter.asciidoc[]

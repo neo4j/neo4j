@@ -23,7 +23,7 @@ Operators are grouped into high-level categories.
 
 :leveloffset: 1
 
-include::execution-plan-groups/starting-query.asciidoc[]
+include::execution-plan-groups/leaf-node.asciidoc[]
 
 :leveloffset: 1
 
@@ -31,7 +31,7 @@ include::execution-plan-groups/expand.asciidoc[]
 
 :leveloffset: 1
 
-include::execution-plan-groups/combining.asciidoc[]
+include::execution-plan-groups/join.asciidoc[]
 
 :leveloffset: 1
 

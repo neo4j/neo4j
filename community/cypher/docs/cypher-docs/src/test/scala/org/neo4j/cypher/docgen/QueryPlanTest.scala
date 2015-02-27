@@ -220,6 +220,26 @@ class QueryPlanTest extends DocumentingTestBase {
     )
   }
 
+  @Test def argument() {
+    profileQuery(
+      title = "Argument",
+      text =
+        """The Argument operator is used in conjunction with Apply.
+          |It receives rows from Apply, processes them and then sends the result back.
+          |
+          |The following query will find where my friends work and how many of them work there.
+        """.stripMargin,
+      queryText =
+        """MATCH (person:Person {name: "me"})-[:FRIENDS_WITH]-(friend:Person)
+          |OPTIONAL MATCH (friend)-[:WORKS_IN]-(location:Location)-[:IN]-(country:Country)
+          |RETURN location, country, COUNT(*)""".stripMargin,
+      assertion = (p) => {
+        assertThat(p.executionPlanDescription().toString, containsString("Argument"))
+      }
+    )
+  }
+
+
   @Test def optionalMatch() {
     profileQuery(
       title = "Optional",
@@ -293,16 +313,39 @@ class QueryPlanTest extends DocumentingTestBase {
     profileQuery(
       title = "Expand All",
       text =
-        """Given a start node, expand will follow relationships coming in or out, depending on the pattern relationship. Can also handle variable length pattern relationships.
+        """Given a start node, expand all will follow relationships coming in or out, depending on the pattern
+          |relationship. Can also handle variable length pattern relationships.
           |
-          |The following query will return my friends of friends.
+          |The following query will return my friends.
         """.stripMargin,
-      queryText = """MATCH (p:Person {name: "me"})-[:FRIENDS_WITH]->(fof) RETURN fof""",
+      queryText = """MATCH (p:Person {name: "me"})-[:FRIENDS_WITH]->(f) RETURN f""",
       assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("Expand(All)"))
     )
   }
 
-  @Test def semiApply() {
+  @Test def expandInto() {
+    profileQuery(
+      title = "Expand Into",
+      text =
+        """Given two known end points, expand into will only expand relationships which connect the nodes at those
+          |end points.
+          |
+          |The following query finds 50 pairs of people and locations and then expands any relationships that may
+          |exist between those pairs and returns both nodes and the relationship type.
+        """.stripMargin,
+      queryText =
+        """MATCH (p:Person), (l:Location)
+          |WITH p,l
+          |LIMIT 50
+          |MATCH (p)-[rel]->(l)
+          |RETURN p, TYPE(rel), l""".stripMargin,
+      assertion = (p) =>  {
+        assertThat(p.executionPlanDescription().toString, containsString("Expand(Into)"))
+      }
+    )
+  }
+
+    @Test def semiApply() {
     profileQuery(
       title = "Semi Apply",
       text =
@@ -477,8 +520,7 @@ class QueryPlanTest extends DocumentingTestBase {
     )
   }
 
-  //24-11-2014: Davide - Ignored since we disabled varlength planning in 2.2M01 release (TODO: reenable it asap)
-  @Ignore def apply() {
+  @Test def apply() {
     profileQuery(
       title = "Apply",
       text =
@@ -486,14 +528,12 @@ class QueryPlanTest extends DocumentingTestBase {
           |Every row being produced on the left hand side of the Apply operator will be fed to the Argument operator on the right hand side, and then Apply will yield the results coming from the RHS.
           |Apply, being a nested loop, can be seen as a warning that a better plan was not found.
           |
-          |The following query will return all the people that have at least one friend and the city they work in.
+          |The following query will find where my friends work and how many of them work there.
         """.stripMargin,
       queryText =
-        """MATCH (p:Person)-[:FRIENDS_WITH]->(f)
-           WITH p, count(f) as fs
-           WHERE fs > 0
-           OPTIONAL MATCH (p)-[:WORKS_IN*1..2]->(city)
-           RETURN p, city
+        """MATCH (person:Person {name: "me"})-[:FRIENDS_WITH]-(friend:Person)
+          |OPTIONAL MATCH (friend)-[:WORKS_IN]-(location:Location)-[:IN]-(country:Country)
+          |RETURN location, country, COUNT(*)
         """.stripMargin,
       assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("Apply"))
     )

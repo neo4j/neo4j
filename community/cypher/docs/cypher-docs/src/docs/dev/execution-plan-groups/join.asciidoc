@@ -1,10 +1,12 @@
-[[execution-plans-combining]]
+[[execution-plans-join]]
 
-== Combining operators ==
+== Join operators ==
 
 :leveloffset: 2
 
+include::../ql/query-plan/apply.asciidoc[]
 include::../ql/query-plan/anti-semi-apply.asciidoc[]
+include::../ql/query-plan/cartesian-product.asciidoc[]
 include::../ql/query-plan/let-anti-semi-apply.asciidoc[]
 include::../ql/query-plan/let-semi-apply.asciidoc[]
 include::../ql/query-plan/select-or-anti-semi-apply.asciidoc[]
