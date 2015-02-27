@@ -189,7 +189,7 @@ case class ExhaustiveQueryGraphSolver(leafPlanFinder: LogicalLeafPlan.Finder = l
       // line 7-16
       val k = Math.min(size, MAX_SEARCH_DEPTH) // TODO: Inject as parameter
       for (i <- 2 to k;
-           goal <- toDo.subsets(i);
+           goal <- toDo.subsets(i) if !table.contains(goal); // If we already have an optimal plan, no need to replan
            candidates = solutionGenerator(goal);
            best <- bestPlanFinder(candidates)) {
         table.put(goal, best)

@@ -25,7 +25,7 @@ import scala.collection.mutable
 
 // TODO: Make immutable
 class ExhaustivePlanTable extends (Set[Solvable] => Option[LogicalPlan]) {
-  private var table = new mutable.HashMap[Set[Solvable], LogicalPlan]()
+  private val table = new mutable.HashMap[Set[Solvable], LogicalPlan]()
 
   def head = table.head._2
 
@@ -38,4 +38,6 @@ class ExhaustivePlanTable extends (Set[Solvable] => Option[LogicalPlan]) {
   def remove(solved: Set[Solvable]): Unit = {
     table.remove(solved)
   }
+
+  def contains(solved: Set[Solvable]): Boolean = table.contains(solved)
 }
