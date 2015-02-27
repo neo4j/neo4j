@@ -28,10 +28,10 @@ import org.neo4j.cypher.internal.compiler.v2_2.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_2.planner.PlanningMonitor
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.graphdb._
-import org.neo4j.graphdb.factory.{GraphDatabaseFactory, GraphDatabaseSettings}
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.io.fs.FileUtils
 import org.neo4j.kernel.TopLevelTransaction
-import org.neo4j.test.ImpermanentGraphDatabase
+import org.neo4j.test.{TestGraphDatabaseFactory, ImpermanentGraphDatabase}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -1080,9 +1080,9 @@ order by a.COL1""")
 
   private def createReadOnlyEngine(): ExecutionEngine = {
     FileUtils.deleteRecursively(new File("target/readonly"))
-    val old = new GraphDatabaseFactory().newEmbeddedDatabase("target/readonly")
+    val old = new TestGraphDatabaseFactory().newEmbeddedDatabase("target/readonly")
     old.shutdown()
-    val db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder("target/readonly")
+    val db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder("target/readonly")
       .setConfig( GraphDatabaseSettings.read_only, "true" )
       .newGraphDatabase()
     new ExecutionEngine(db)

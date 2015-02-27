@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
@@ -98,7 +99,7 @@ public class DeferredIndexedConflictResolutionTest
     @Before
     public void setUp()
     {
-        GraphDatabaseFactory factory = new GraphDatabaseFactory();
+        GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         db = factory.newEmbeddedDatabase( storePath.absolutePath() );
         GraphDatabaseAPI api = (GraphDatabaseAPI) db;
 

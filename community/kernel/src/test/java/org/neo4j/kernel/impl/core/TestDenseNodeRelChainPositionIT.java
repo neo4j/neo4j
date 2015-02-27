@@ -19,22 +19,22 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.io.File;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 
@@ -56,7 +56,7 @@ public class TestDenseNodeRelChainPositionIT
         File dbPath = TargetDirectory.forTest( getClass() )
                 .cleanDirectory( "givenDenseNodeWhenAskForWrongDirectionThenIncorrectNrOfRelsReturned" );
         // Given
-        GraphDatabaseAPI db = cleanup.add( (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(
+        GraphDatabaseAPI db = cleanup.add( (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder(
                 dbPath.getAbsolutePath() ).newGraphDatabase() );
 
         Node node1;

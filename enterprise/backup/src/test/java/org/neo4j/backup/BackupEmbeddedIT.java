@@ -19,37 +19,37 @@
  */
 package org.neo4j.backup;
 
+import org.apache.commons.io.FileUtils;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.commons.io.FileUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Settings;
 import org.neo4j.test.DbRepresentation;
+import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.test.ProcessStreamHandler;
-import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.Settings.osIsWindows;
+import static org.neo4j.test.TargetDirectory.forTest;
 
 public class BackupEmbeddedIT
 {
-    public static final File PATH = TargetDirectory.forTest( BackupEmbeddedIT.class ).cleanDirectory( "db" );
-    public static final File BACKUP_PATH = TargetDirectory.forTest( BackupEmbeddedIT.class ).cleanDirectory( "backup" +
-            "-db" );
+    public static final File PATH = forTest( BackupEmbeddedIT.class ).cleanDirectory( "db" );
+    public static final File BACKUP_PATH = forTest( BackupEmbeddedIT.class ).cleanDirectory( "backup-db" );
 
+    @Rule
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( PATH );
     private GraphDatabaseService db;
     private String ip;
 
@@ -57,7 +57,6 @@ public class BackupEmbeddedIT
     public void before() throws Exception
     {
         if ( osIsWindows() ) return;
-        FileUtils.deleteDirectory( PATH );
         FileUtils.deleteDirectory( BACKUP_PATH  );
         ip = InetAddress.getLocalHost().getHostAddress();
     }
@@ -72,13 +71,6 @@ public class BackupEmbeddedIT
         tx.success();
         tx.finish();
         return DbRepresentation.of( db );
-    }
-
-    @After
-    public void after()
-    {
-        if ( osIsWindows() ) return;
-        db.shutdown();
     }
 
     @Test
@@ -128,21 +120,19 @@ public class BackupEmbeddedIT
 
     private void startDb( String backupPort )
     {
-        GraphDatabaseBuilder dbBuild = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( PATH
-                .getPath() ).
-                setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE );
+        dbRule.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE );
         if(backupPort != null)
         {
-            dbBuild = dbBuild.setConfig( OnlineBackupSettings.online_backup_server, ip +":" + backupPort );
+            dbRule.setConfig( OnlineBackupSettings.online_backup_server, ip +":" + backupPort );
         }
-        db = dbBuild.newGraphDatabase();
+        db = dbRule.getGraphDatabaseService();
         createSomeData( db );
     }
 
     public static int runBackupToolFromOtherJvmToGetExitCode( String... args )
             throws Exception
     {
-        List<String> allArgs = new ArrayList<String>( Arrays.asList( "java", "-cp", System.getProperty( "java.class.path" ), BackupTool.class.getName() ) );
+        List<String> allArgs = new ArrayList<>( Arrays.asList( "java", "-cp", System.getProperty( "java.class.path" ), BackupTool.class.getName() ) );
         allArgs.addAll( Arrays.asList( args ) );
 
         Process process = Runtime.getRuntime().exec( allArgs.toArray( new String[allArgs.size()] ));

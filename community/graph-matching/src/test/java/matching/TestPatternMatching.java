@@ -19,10 +19,12 @@
  */
 package matching;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,19 +34,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphmatching.CommonValueMatchers;
 import org.neo4j.graphmatching.PatternMatch;
 import org.neo4j.graphmatching.PatternMatcher;
@@ -56,6 +51,12 @@ import org.neo4j.test.GraphHolder;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestData;
+import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class TestPatternMatching implements GraphHolder
 {
@@ -91,7 +92,8 @@ public class TestPatternMatching implements GraphHolder
     @BeforeClass
     public static void setUpDb()
     {
-        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( TargetDirectory.forTest( TestPatternMatching.class ).makeGraphDbDir().getAbsolutePath() );
+        String storeDir = TargetDirectory.forTest( TestPatternMatching.class ).makeGraphDbDir().getAbsolutePath();
+        graphDb = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
     }
 
     @Before

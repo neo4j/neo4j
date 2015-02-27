@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit
 import java.io.{FileOutputStream, File}
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.test.TestGraphDatabaseFactory
 
 class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport {
 
@@ -94,7 +95,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
 
   private def createDbWithFailedIndex: GraphDatabaseService = {
     new File("target/test-data/impermanent-db").deleteAll()
-    var graph = new GraphDatabaseFactory().newEmbeddedDatabase("target/test-data/impermanent-db")
+    var graph = new TestGraphDatabaseFactory().newEmbeddedDatabase("target/test-data/impermanent-db")
     eengine = new ExecutionEngine(graph)
     execute("CREATE INDEX ON :Person(name)")
     execute("create (:Person {name:42})")
@@ -111,7 +112,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     stream.write(65)
     stream.close()
 
-    graph = new GraphDatabaseFactory().newEmbeddedDatabase("target/test-data/impermanent-db")
+    graph = new TestGraphDatabaseFactory().newEmbeddedDatabase("target/test-data/impermanent-db")
     eengine = new ExecutionEngine(graph)
     graph
   }

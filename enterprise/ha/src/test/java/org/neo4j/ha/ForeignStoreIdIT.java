@@ -19,6 +19,19 @@
  */
 package org.neo4j.ha;
 
+import org.junit.After;
+import org.junit.Test;
+
+import java.io.File;
+
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
+import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.tooling.GlobalGraphOperations;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.cluster.ClusterSettings.cluster_server;
@@ -27,18 +40,6 @@ import static org.neo4j.cluster.ClusterSettings.server_id;
 import static org.neo4j.kernel.ha.HaSettings.ha_server;
 import static org.neo4j.kernel.ha.HaSettings.state_switch_timeout;
 
-import java.io.File;
-
-import org.junit.After;
-import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
-import org.neo4j.test.TargetDirectory;
-import org.neo4j.tooling.GlobalGraphOperations;
-
 public class ForeignStoreIdIT
 {
     @Test
@@ -46,7 +47,7 @@ public class ForeignStoreIdIT
     {
         // GIVEN
         // -- one instance running
-        firstInstance = new HighlyAvailableGraphDatabaseFactory()
+        firstInstance = new TestHighlyAvailableGraphDatabaseFactory()
                 .newHighlyAvailableDatabaseBuilder( DIR.cleanDirectory( "1" ).getAbsolutePath() )
                 .setConfig( server_id, "1" )
                 .setConfig( cluster_server, "127.0.0.1:5001" )
@@ -58,7 +59,7 @@ public class ForeignStoreIdIT
 
         // WHEN
         // -- the other joins
-        foreignInstance = new HighlyAvailableGraphDatabaseFactory()
+        foreignInstance = new TestHighlyAvailableGraphDatabaseFactory()
                 .newHighlyAvailableDatabaseBuilder( foreignDbStoreDir )
                 .setConfig( server_id, "2" )
                 .setConfig( initial_hosts, "127.0.0.1:5001" )
@@ -78,7 +79,7 @@ public class ForeignStoreIdIT
     {
         // GIVEN
         // -- one instance running
-        firstInstance = new HighlyAvailableGraphDatabaseFactory()
+        firstInstance = new TestHighlyAvailableGraphDatabaseFactory()
                 .newHighlyAvailableDatabaseBuilder( DIR.cleanDirectory( "1" ).getAbsolutePath() )
                 .setConfig( server_id, "1" )
                 .setConfig( initial_hosts, "127.0.0.1:5001" )
@@ -91,7 +92,7 @@ public class ForeignStoreIdIT
 
         // WHEN
         // -- the other joins
-        foreignInstance = new HighlyAvailableGraphDatabaseFactory()
+        foreignInstance = new TestHighlyAvailableGraphDatabaseFactory()
                 .newHighlyAvailableDatabaseBuilder( foreignDbStoreDir )
                 .setConfig( server_id, "2" )
                 .setConfig( initial_hosts, "127.0.0.1:5001" )
@@ -146,7 +147,7 @@ public class ForeignStoreIdIT
     private String createAnotherStore( File directory, int transactions )
     {
         String storeDir = directory.getAbsolutePath();
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         createNodes( db, transactions, "node" );
         db.shutdown();
         return storeDir;

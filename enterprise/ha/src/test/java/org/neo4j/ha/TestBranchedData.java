@@ -19,32 +19,33 @@
  */
 package org.neo4j.ha;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.SillyUtils.nonNull;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+import org.junit.After;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 
-import org.junit.After;
-import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.ha.BranchedDataPolicy;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 import org.neo4j.test.ha.ClusterManager.RepairKit;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.SillyUtils.nonNull;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
 public class TestBranchedData
 {
@@ -61,7 +62,7 @@ public class TestBranchedData
             Thread.sleep( 1 ); // To make sure we get different timestamps
         }
 
-        new HighlyAvailableGraphDatabaseFactory().
+        new TestHighlyAvailableGraphDatabaseFactory().
                 newHighlyAvailableDatabaseBuilder( dir.getAbsolutePath() )
                 .setConfig( ClusterSettings.server_id, "1" )
                 .setConfig( ClusterSettings.initial_hosts, ":5001" )
@@ -112,7 +113,7 @@ public class TestBranchedData
 
     private void createTransaction( String storeDir, String name )
     {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
         try
         {
             createNode( db, name );
@@ -155,7 +156,7 @@ public class TestBranchedData
 
     private void startDbAndCreateNode()
     {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( dir.getAbsolutePath() );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( dir.getAbsolutePath() );
         Transaction tx = db.beginTx();
         db.createNode();
         tx.success();

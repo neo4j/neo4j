@@ -23,17 +23,18 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProviderFactory;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.EmbeddedDatabaseRule;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
@@ -41,17 +42,14 @@ import static org.junit.Assert.fail;
 public class ConstraintCreationIT
 {
     private static final Label LABEL = DynamicLabel.label( "label1" );
-    private GraphDatabaseAPI db;
-
     @Rule
-    public final TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( ConstraintCreationIT.class );
 
     @Test
     public void shouldNotLeaveLuceneIndexFilesHangingAroundIfConstraintCreationFails()
     {
         // given
-        GraphDatabaseAPI db =
-                (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( testDirectory.directory().getPath() );
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -74,7 +72,7 @@ public class ConstraintCreationIT
         catch ( ConstraintViolationException ignored )  { }
 
         // then
-        try(Transaction tx = db.beginTx())
+        try(Transaction ignore = db.beginTx())
         {
             assertEquals(0, Iterables.count(db.schema().getIndexes() ));
         }
@@ -86,8 +84,5 @@ public class ConstraintCreationIT
         File[] files = new File(schemaStorePath, indexId ).listFiles();
         assertNotNull( files );
         assertEquals(0, files.length);
-
-        db.shutdown();
     }
-
 }

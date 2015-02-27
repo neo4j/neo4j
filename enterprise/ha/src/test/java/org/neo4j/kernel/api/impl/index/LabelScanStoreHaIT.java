@@ -19,29 +19,29 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-
 import org.apache.lucene.store.LockObtainFailedException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.test.ha.ClusterManager.allAvailabilityGuardsReleased;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
@@ -110,7 +110,7 @@ public class LabelScanStoreHaIT
     public void setup()
     {
         KernelExtensionFactory<?> testExtension = new LuceneLabelScanStoreExtension( 100, monitor );
-        HighlyAvailableGraphDatabaseFactory factory = new HighlyAvailableGraphDatabaseFactory();
+        HighlyAvailableGraphDatabaseFactory factory = new TestHighlyAvailableGraphDatabaseFactory();
         factory.addKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList( testExtension ) );
         clusterManager = new ClusterManager.Builder( rootDirectory )
                 .withDbFactory( factory )
@@ -121,7 +121,7 @@ public class LabelScanStoreHaIT
             {
                 if ( serverId == 1 )
                 {
-                    GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase(
+                    GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase(
                             storeDir.getAbsolutePath() );
                     try
                     {

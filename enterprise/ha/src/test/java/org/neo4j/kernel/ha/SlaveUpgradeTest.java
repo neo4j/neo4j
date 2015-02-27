@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.io.File;
-
 import org.junit.Test;
 
+import java.io.File;
+
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByDatabaseModeException;
@@ -44,7 +44,7 @@ public class SlaveUpgradeTest
             File dir = TargetDirectory.forTest( getClass() ).cleanDirectory( "haShouldFailToStartWithOldStore" );
             MigrationTestUtils.find20FormatStoreDirectory( dir );
 
-            new HighlyAvailableGraphDatabaseFactory()
+            new TestHighlyAvailableGraphDatabaseFactory()
                     .newHighlyAvailableDatabaseBuilder( dir.getAbsolutePath() )
                     .setConfig( ClusterSettings.server_id, "1" ).newGraphDatabase();
 

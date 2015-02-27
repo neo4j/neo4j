@@ -22,6 +22,7 @@ package org.neo4j.backup;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 
 public class EmbeddedServer implements ServerInterface
@@ -33,6 +34,7 @@ public class EmbeddedServer implements ServerInterface
         GraphDatabaseBuilder graphDatabaseBuilder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir );
         graphDatabaseBuilder.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE );
         graphDatabaseBuilder.setConfig( OnlineBackupSettings.online_backup_server, serverAddress );
+        graphDatabaseBuilder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
         this.db = graphDatabaseBuilder.newGraphDatabase();
     }
     

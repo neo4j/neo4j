@@ -41,7 +41,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -63,6 +62,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Settings;
@@ -89,9 +89,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
-
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.io.fs.FileUtils.copyRecursively;
 
@@ -150,13 +148,13 @@ public class ClusterManager
     public ClusterManager( Provider clustersProvider, File root, Map<String,String> commonConfig,
                            Map<Integer,Map<String,String>> instanceConfig )
     {
-        this( clustersProvider, root, commonConfig, instanceConfig, new HighlyAvailableGraphDatabaseFactory() );
+        this( clustersProvider, root, commonConfig, instanceConfig, new TestHighlyAvailableGraphDatabaseFactory() );
     }
 
     public ClusterManager( Provider clustersProvider, File root, Map<String,String> commonConfig )
     {
         this( clustersProvider, root, commonConfig, Collections.<Integer,Map<String,String>>emptyMap(),
-                new HighlyAvailableGraphDatabaseFactory() );
+                new TestHighlyAvailableGraphDatabaseFactory() );
     }
 
     /**
@@ -568,7 +566,7 @@ public class ClusterManager
         private final Map<Integer,Map<String,String>> instanceConfig = new HashMap<>();
         private Provider provider = clusterOfSize( 3 );
         private Map<String,String> commonConfig = emptyMap();
-        private HighlyAvailableGraphDatabaseFactory factory = new HighlyAvailableGraphDatabaseFactory();
+        private HighlyAvailableGraphDatabaseFactory factory = new TestHighlyAvailableGraphDatabaseFactory();
         private StoreDirInitializer initializer;
 
         public Builder( File root )
@@ -972,32 +970,24 @@ public class ClusterManager
                 {
                     storeDirInitializer.initializeStoreDir( serverId.toIntegerIndex(), storeDir );
                 }
-                GraphDatabaseBuilder graphDatabaseBuilder = dbFactory.newHighlyAvailableDatabaseBuilder(
-                        storeDir.getAbsolutePath() ).
-                                                                             setConfig( ClusterSettings.cluster_name,
-                                                                                     name ).
-                                                                             setConfig( ClusterSettings.initial_hosts,
-                                                                                     initialHosts.toString() ).
-                                                                             setConfig( ClusterSettings.server_id,
-                                                                                     serverId + "" ).
-                                                                             setConfig( ClusterSettings.cluster_server,
-                                                                                     "0.0.0.0:" + clusterPort ).
-                                                                             setConfig( HaSettings.ha_server,
-                                                                                     ":" + haPort ).
-                                                                             setConfig(
-                                                                                     OnlineBackupSettings
-                                                                                             .online_backup_enabled,
-                                                                                     Settings.FALSE ).
-                                                                             setConfig( commonConfig );
+                GraphDatabaseBuilder builder =
+                        dbFactory.newHighlyAvailableDatabaseBuilder( storeDir.getAbsolutePath() );
+                builder.setConfig( ClusterSettings.cluster_name, name );
+                builder.setConfig( ClusterSettings.initial_hosts, initialHosts.toString() );
+                builder.setConfig( ClusterSettings.server_id, serverId + "" );
+                builder.setConfig( ClusterSettings.cluster_server, "0.0.0.0:" + clusterPort );
+                builder.setConfig( HaSettings.ha_server, ":" + haPort );
+                builder.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
+                builder.setConfig( commonConfig );
                 if ( instanceConfig.containsKey( serverId.toIntegerIndex() ) )
                 {
-                    graphDatabaseBuilder.setConfig( instanceConfig.get( serverId.toIntegerIndex() ) );
+                    builder.setConfig( instanceConfig.get( serverId.toIntegerIndex() ) );
                 }
 
-                config( graphDatabaseBuilder, name, serverId );
+                config( builder, name, serverId );
 
                 final HighlyAvailableGraphDatabaseProxy graphDatabase = new HighlyAvailableGraphDatabaseProxy(
-                        graphDatabaseBuilder );
+                        builder );
 
                 members.put( serverId, graphDatabase );
 

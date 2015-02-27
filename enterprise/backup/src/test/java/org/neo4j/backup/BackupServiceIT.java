@@ -21,7 +21,6 @@ package org.neo4j.backup;
 
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,9 +29,7 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -41,12 +38,11 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
@@ -64,9 +60,11 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.logging.DevNullLoggingService;
-import org.neo4j.kernel.monitoring.StoreCopyMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.monitoring.StoreCopyMonitor;
+import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.DbRepresentation;
+import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.test.Mute;
 import org.neo4j.test.TargetDirectory;
 
@@ -78,7 +76,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 public class BackupServiceIT
@@ -150,40 +147,20 @@ public class BackupServiceIT
     private static final String RELATIONSHIP_STORE = "neostore.relationshipstore.db";
     private static final String BACKUP_HOST = "localhost";
 
-    @Rule
-    public TargetDirectory.TestDirectory testDirectory = target.testDirectory();
+    private FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+    private File storeDir = target.cleanDirectory( "store_dir" ) ;
+    private File backupDir = target.cleanDirectory( "backup_dir" );
+    public int backupPort = 8200;
 
+    @Rule
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( storeDir );
     @Rule
     public Mute mute = Mute.muteAll();
-
-    private FileSystemAbstraction fileSystem;
-    private File storeDir;
-    private File backupDir;
-    public int backupPort = 8200;
-    private GraphDatabaseAPI database;
 
     @Before
     public void setup() throws IOException
     {
-        fileSystem = new DefaultFileSystemAbstraction();
-
-        storeDir = new File( testDirectory.directory(), "store_dir" );
-        fileSystem.deleteRecursively( storeDir );
-        fileSystem.mkdir( storeDir );
-
-        backupDir = new File( testDirectory.directory(), "backup_dir" );
-        fileSystem.deleteRecursively( backupDir );
-
         backupPort = backupPort + 1;
-    }
-
-    @After
-    public void tearDown()
-    {
-        if ( database != null )
-        {
-            database.shutdown();
-        }
     }
 
     @Test
@@ -210,13 +187,14 @@ public class BackupServiceIT
     public void shouldCopyStoreFiles() throws Throwable
     {
         // given
-        GraphDatabaseService db = createDb( storeDir, defaultBackupPortHostParams() );
+        defaultBackupPortHostParams();
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         createAndIndexNode( db, 1 );
 
         // when
         BackupService backupService = new BackupService( fileSystem );
         backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
-                false, defaultConfig(), BackupClient.BIG_READ_TIMEOUT );
+                false, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT );
         db.shutdown();
 
         // then
@@ -240,14 +218,15 @@ public class BackupServiceIT
         */
 
         // given
-        GraphDatabaseAPI db = createDb( storeDir, defaultBackupPortHostParams() );
+        defaultBackupPortHostParams();
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
 
         for ( int i = 0; i < 100; i++ )
         {
             createAndIndexNode( db, i );
         }
 
-        File oldLog = db.getDependencyResolver().resolveDependency( LogFile.class ).currentLogFile();
+        final File oldLog = db.getDependencyResolver().resolveDependency( LogFile.class ).currentLogFile();
         rotate( db );
 
         for ( int i = 0; i < 1; i++ )
@@ -258,11 +237,16 @@ public class BackupServiceIT
 
         long lastCommittedTxBefore = db.getDependencyResolver().resolveDependency( NeoStore.class )
                 .getLastCommittedTransactionId();
-        db.shutdown();
 
-        FileUtils.deleteFile( oldLog );
+        db = dbRule.restartDatabase( new DatabaseRule.RestartAction()
+        {
+            @Override
+            public void run( FileSystemAbstraction fs, File storeDirectory ) throws IOException
+            {
+                FileUtils.deleteFile( oldLog );
+            }
+        } );
 
-        db = createDb( storeDir, defaultBackupPortHostParams() );
         long lastCommittedTxAfter = db.getDependencyResolver().resolveDependency( NeoStore.class )
                 .getLastCommittedTransactionId();
 
@@ -270,7 +254,7 @@ public class BackupServiceIT
         BackupService backupService = new BackupService( fileSystem );
         BackupService.BackupOutcome outcome = backupService.doFullBackup( BACKUP_HOST, backupPort,
                 backupDir.getAbsolutePath(),
-                true, defaultConfig(), BackupClient.BIG_READ_TIMEOUT );
+                true, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT );
 
         db.shutdown();
 
@@ -286,12 +270,13 @@ public class BackupServiceIT
         // This test highlights a special case where an empty store can return transaction metadata for transaction 0.
 
         // given
-        GraphDatabaseService db = createDb( storeDir, defaultBackupPortHostParams() );
+        defaultBackupPortHostParams();
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
 
         // when
         BackupService backupService = new BackupService( fileSystem );
         backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
-                false, defaultConfig(), BackupClient.BIG_READ_TIMEOUT );
+                false, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT );
         db.shutdown();
 
         // then
@@ -304,13 +289,14 @@ public class BackupServiceIT
     public void shouldFindTransactionLogContainingLastNeoStoreTransaction() throws Throwable
     {
         // given
-        GraphDatabaseService db = createDb( storeDir, defaultBackupPortHostParams() );
+        defaultBackupPortHostParams();
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         createAndIndexNode( db, 1 );
 
         // when
         BackupService backupService = new BackupService( fileSystem );
         backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
-                false, defaultConfig(), BackupClient.BIG_READ_TIMEOUT );
+                false, dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT );
         db.shutdown();
 
         // then
@@ -322,7 +308,8 @@ public class BackupServiceIT
     public void shouldFindValidPreviousCommittedTxIdInFirstNeoStoreLog() throws Throwable
     {
         // given
-        GraphDatabaseAPI db = createDb( storeDir, defaultBackupPortHostParams() );
+        defaultBackupPortHostParams();
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         createAndIndexNode( db, 1 );
         createAndIndexNode( db, 2 );
         createAndIndexNode( db, 3 );
@@ -335,7 +322,7 @@ public class BackupServiceIT
         // when
         BackupService backupService = new BackupService( fileSystem );
         backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false,
-                new Config( defaultBackupPortHostParams() ), BackupClient.BIG_READ_TIMEOUT );
+                dbRule.getConfigCopy(), BackupClient.BIG_READ_TIMEOUT );
         db.shutdown();
 
         // then
@@ -346,13 +333,15 @@ public class BackupServiceIT
     public void shouldFindTransactionLogContainingLastLuceneTransaction() throws Throwable
     {
         // given
-        GraphDatabaseService db = createDb( storeDir, defaultBackupPortHostParams() );
+        defaultBackupPortHostParams();
+        Config defaultConfig = dbRule.getConfigCopy();
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         createAndIndexNode( db, 1 );
 
         // when
         BackupService backupService = new BackupService( fileSystem );
         backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
-                false, defaultConfig(), BackupClient.BIG_READ_TIMEOUT );
+                false, defaultConfig, BackupClient.BIG_READ_TIMEOUT );
         db.shutdown();
 
         // then
@@ -364,10 +353,11 @@ public class BackupServiceIT
     public void shouldGiveHelpfulErrorMessageIfLogsPrunedPastThePointOfNoReturn() throws Exception
     {
         // Given
-        Map<String,String> config = defaultBackupPortHostParams();
-        config.put( GraphDatabaseSettings.keep_logical_logs.name(), "false" );
+        defaultBackupPortHostParams();
+        Config defaultConfig = dbRule.getConfigCopy();
+        dbRule.setConfig( GraphDatabaseSettings.keep_logical_logs, "false" );
         // have logs rotated on every transaction
-        GraphDatabaseAPI db = createDb( storeDir, config );
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         BackupService backupService = new BackupService( fileSystem );
 
         createAndIndexNode( db, 1 );
@@ -375,7 +365,7 @@ public class BackupServiceIT
 
         // A full backup
         backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
-                false, defaultConfig(), BackupClient.BIG_READ_TIMEOUT );
+                false, defaultConfig, BackupClient.BIG_READ_TIMEOUT );
 
         // And the log the backup uses is rotated out
         createAndIndexNode( db, 2 );
@@ -405,17 +395,18 @@ public class BackupServiceIT
     public void shouldFallbackToFullBackupIfIncrementalFailsAndExplicitlyAskedToDoThis() throws Exception
     {
         // Given
-        Map<String,String> config = defaultBackupPortHostParams();
-        config.put( GraphDatabaseSettings.keep_logical_logs.name(), "false" );
+        defaultBackupPortHostParams();
+        Config defaultConfig = dbRule.getConfigCopy();
+        dbRule.setConfig( GraphDatabaseSettings.keep_logical_logs, "false" );
         // have logs rotated on every transaction
-        GraphDatabaseAPI db = createDb( storeDir, config );
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         BackupService backupService = new BackupService( fileSystem );
 
         createAndIndexNode( db, 1 );
 
         // A full backup
         backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
-                false, defaultConfig(), BackupClient.BIG_READ_TIMEOUT );
+                false, defaultConfig, BackupClient.BIG_READ_TIMEOUT );
 
         // And the log the backup uses is rotated out
         createAndIndexNode( db, 2 );
@@ -428,7 +419,7 @@ public class BackupServiceIT
         // when
         backupService.doIncrementalBackupOrFallbackToFull(
                 BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
-                false, defaultConfig(), BackupClient.BIG_READ_TIMEOUT );
+                false, defaultConfig, BackupClient.BIG_READ_TIMEOUT );
 
         // Then
         db.shutdown();
@@ -444,9 +435,10 @@ public class BackupServiceIT
     public void shouldHandleBackupWhenLogFilesHaveBeenDeleted() throws Exception
     {
         // Given
-        Map<String,String> config = defaultBackupPortHostParams();
-        config.put( GraphDatabaseSettings.keep_logical_logs.name(), "false" );
-        GraphDatabaseAPI db = createDb( storeDir, config );
+        defaultBackupPortHostParams();
+        Config defaultConfig = dbRule.getConfigCopy();
+        dbRule.setConfig( GraphDatabaseSettings.keep_logical_logs, "false" );
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         BackupService backupService = new BackupService( fileSystem );
 
         createAndIndexNode( db, 1 );
@@ -454,50 +446,57 @@ public class BackupServiceIT
         // A full backup
         backupService.doIncrementalBackupOrFallbackToFull(
                 BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
-                false, defaultConfig(), BackupClient.BIG_READ_TIMEOUT );
+                false, defaultConfig, BackupClient.BIG_READ_TIMEOUT );
 
         // And the log the backup uses is rotated out
         createAndIndexNode( db, 2 );
-        db = deleteLogFilesAndRestart( config, db );
+        db = deleteLogFilesAndRestart();
 
         createAndIndexNode( db, 3 );
-        db = deleteLogFilesAndRestart( config, db );
+        db = deleteLogFilesAndRestart();
 
         // when
         backupService.doIncrementalBackupOrFallbackToFull(
                 BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
-                false, defaultConfig(), BackupClient.BIG_READ_TIMEOUT );
+                false, defaultConfig, BackupClient.BIG_READ_TIMEOUT );
 
         // Then
         db.shutdown();
         assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
     }
 
-    private GraphDatabaseAPI deleteLogFilesAndRestart( Map<String,String> config, GraphDatabaseAPI db )
+    private GraphDatabaseAPI deleteLogFilesAndRestart()
+            throws IOException
     {
-        db.shutdown();
-        for ( File logFile : storeDir.listFiles( new FileFilter()
+        final FileFilter logFileFilter = new FileFilter()
         {
             @Override
             public boolean accept( File pathname )
             {
                 return pathname.getName().contains( "logical" );
             }
-        } ) )
+        };
+        return dbRule.restartDatabase( new DatabaseRule.RestartAction()
         {
-            logFile.delete();
-        }
-        db = createDb( storeDir, config );
-        return db;
+            @Override
+            public void run( FileSystemAbstraction fs, File storeDirectory ) throws IOException
+            {
+                for ( File logFile : storeDir.listFiles( logFileFilter ) )
+                {
+                    logFile.delete();
+                }
+            }
+        } );
     }
 
     @Test
     public void shouldDoFullBackupOnIncrementalFallbackToFullIfNoBackupFolderExists() throws Exception
     {
         // Given
-        Map<String,String> config = defaultBackupPortHostParams();
-        config.put( GraphDatabaseSettings.keep_logical_logs.name(), "false" );
-        GraphDatabaseAPI db = createDb( storeDir, config );
+        defaultBackupPortHostParams();
+        Config defaultConfig = dbRule.getConfigCopy();
+        dbRule.setConfig( GraphDatabaseSettings.keep_logical_logs, "false" );
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         BackupService backupService = new BackupService( fileSystem );
 
         createAndIndexNode( db, 1 );
@@ -505,7 +504,7 @@ public class BackupServiceIT
         // when
         backupService.doIncrementalBackupOrFallbackToFull(
                 BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
-                false, defaultConfig(), BackupClient.BIG_READ_TIMEOUT );
+                false, defaultConfig, BackupClient.BIG_READ_TIMEOUT );
 
         // then
         db.shutdown();
@@ -516,68 +515,62 @@ public class BackupServiceIT
     public void shouldContainTransactionsThatHappenDuringBackupProcess() throws Throwable
     {
         // given
-        Map<String,String> params = defaultBackupPortHostParams();
-        params.put( OnlineBackupSettings.online_backup_enabled.name(), "false" );
+        defaultBackupPortHostParams();
+        Config defaultConfig = dbRule.getConfigCopy();
+        dbRule.setConfig( OnlineBackupSettings.online_backup_enabled, "false" );
+        Config withOnlineBackupEnabled = dbRule.getConfigCopy();
 
         final List<String> storesThatHaveBeenStreamed = new ArrayList<>();
         final CountDownLatch firstStoreFinishedStreaming = new CountDownLatch( 1 );
         final CountDownLatch transactionCommitted = new CountDownLatch( 1 );
 
-        final GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(
-                storeDir.getAbsolutePath() ).setConfig( params ).newGraphDatabase();
+        final GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
 
         createAndIndexNode( db, 1 ); // create some data
 
         NeoStoreDataSource ds = db.getDependencyResolver().resolveDependency( DataSourceManager.class ).getDataSource();
         long expectedLastTxId = ds.getNeoStore().getLastCommittedTransactionId();
-        BackupService.BackupOutcome backupOutcome;
-        try
+
+        Monitors monitors = new Monitors();
+        monitors.addMonitorListener( new StoreSnoopingMonitor( firstStoreFinishedStreaming, transactionCommitted,
+                storesThatHaveBeenStreamed ) );
+
+        OnlineBackupKernelExtension backup = new OnlineBackupKernelExtension(
+                defaultConfig,
+                db,
+                db.getDependencyResolver().resolveDependency( KernelPanicEventGenerator.class ),
+                new DevNullLoggingService(),
+                monitors );
+        backup.start();
+
+
+        // when
+        BackupService backupService = new BackupService( fileSystem );
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.execute( new Runnable()
         {
-            Config config = new Config( defaultBackupPortHostParams() );
-            Monitors monitors = new Monitors();
-            monitors.addMonitorListener( new StoreSnoopingMonitor( firstStoreFinishedStreaming, transactionCommitted,
-                    storesThatHaveBeenStreamed ) );
-
-            OnlineBackupKernelExtension backup = new OnlineBackupKernelExtension(
-                    config,
-                    db,
-                    db.getDependencyResolver().resolveDependency( KernelPanicEventGenerator.class ),
-                    new DevNullLoggingService(),
-                    monitors );
-            backup.start();
-
-
-            // when
-            BackupService backupService = new BackupService( fileSystem );
-            ExecutorService executor = Executors.newSingleThreadExecutor();
-            executor.execute( new Runnable()
+            @Override
+            public void run()
             {
-                @Override
-                public void run()
-                {
-                    awaitLatch( firstStoreFinishedStreaming );
+                awaitLatch( firstStoreFinishedStreaming );
 
-                    createAndIndexNode( db, 1 );
-                    db.getDependencyResolver().resolveDependency( DataSourceManager.class ).getDataSource()
-                            .getNeoStore().flush();
+                createAndIndexNode( db, 1 );
+                db.getDependencyResolver().resolveDependency( DataSourceManager.class ).getDataSource()
+                  .getNeoStore().flush();
 
-                    transactionCommitted.countDown();
-                }
-            } );
+                transactionCommitted.countDown();
+            }
+        } );
 
-            backupOutcome = backupService.doFullBackup( BACKUP_HOST, backupPort,
-                    backupDir.getAbsolutePath(), true, new Config( params ), BackupClient.BIG_READ_TIMEOUT );
+        BackupService.BackupOutcome backupOutcome = backupService.doFullBackup( BACKUP_HOST, backupPort,
+                backupDir.getAbsolutePath(), true, withOnlineBackupEnabled, BackupClient.BIG_READ_TIMEOUT );
 
-            backup.stop();
-            executor.shutdown();
-            executor.awaitTermination( 30, TimeUnit.SECONDS );
-        }
-        finally
-        {
-            db.shutdown();
-        }
+        backup.stop();
+        executor.shutdown();
+        executor.awaitTermination( 30, TimeUnit.SECONDS );
+
         // then
-        assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
+        assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupDir ) );
         assertTrue( backupOutcome.isConsistent() );
 
         // also verify the last committed tx id is correctly set
@@ -588,28 +581,33 @@ public class BackupServiceIT
     public void incrementalBackupShouldFailWhenTargetDirContainsDifferentStore() throws IOException
     {
         // Given
-        GraphDatabaseAPI db1 = createDb( storeDir, defaultBackupPortHostParams() );
+        defaultBackupPortHostParams();
+        Config defaultConfig = dbRule.getConfigCopy();
+        GraphDatabaseAPI db1 = dbRule.getGraphDatabaseAPI();
         createAndIndexNode( db1, 1 );
 
         new BackupService( fileSystem ).doFullBackup(
                 BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
-                false, defaultConfig(), BackupClient.BIG_READ_TIMEOUT );
-
-        db1.shutdown();
-
-        deleteAllBackedUpTransactionLogs();
-
-        fileSystem.deleteRecursively( storeDir );
-        fileSystem.mkdir( storeDir );
+                false, defaultConfig, BackupClient.BIG_READ_TIMEOUT );
 
         // When
-        GraphDatabaseAPI db2 = createDb( storeDir, defaultBackupPortHostParams() );
+        GraphDatabaseAPI db2 = dbRule.restartDatabase( new DatabaseRule.RestartAction()
+        {
+            @Override
+            public void run( FileSystemAbstraction fs, File storeDirectory ) throws IOException
+            {
+                deleteAllBackedUpTransactionLogs();
+
+                fileSystem.deleteRecursively( storeDir );
+                fileSystem.mkdir( storeDir );
+            }
+        } );
         createAndIndexNode( db2, 2 );
 
         try
         {
             new BackupService( fileSystem ).doIncrementalBackupOrFallbackToFull(
-                    BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig(),
+                    BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig,
                     BackupClient.BIG_READ_TIMEOUT );
 
             fail( "Should have thrown exception about mismatching store ids" );
@@ -620,30 +618,11 @@ public class BackupServiceIT
             assertThat( e.getMessage(), equalTo( BackupService.DIFFERENT_STORE ) );
             assertThat( e.getCause(), instanceOf( MismatchingStoreIdException.class ) );
         }
-        finally
-        {
-            db2.shutdown();
-        }
     }
 
-    private Map<String,String> defaultBackupPortHostParams()
+    private void defaultBackupPortHostParams()
     {
-        Map<String,String> params = new HashMap<>();
-        params.put( OnlineBackupSettings.online_backup_server.name(), BACKUP_HOST + ":" + backupPort );
-        return params;
-    }
-
-    private Config defaultConfig()
-    {
-        return new Config( defaultBackupPortHostParams() );
-    }
-
-    private GraphDatabaseAPI createDb( File storeDir, Map<String,String> params )
-    {
-        return database = (GraphDatabaseAPI) new GraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( storeDir.getPath() )
-                .setConfig( params )
-                .newGraphDatabase();
+        dbRule.setConfig( OnlineBackupSettings.online_backup_server, BACKUP_HOST + ":" + backupPort );
     }
 
     private void createAndIndexNode( GraphDatabaseService db, int i )

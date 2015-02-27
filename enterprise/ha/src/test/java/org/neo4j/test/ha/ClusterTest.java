@@ -19,19 +19,19 @@
  */
 package org.neo4j.test.ha;
 
-import java.net.InetAddress;
-
 import org.hamcrest.CoreMatchers;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.net.InetAddress;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.Clusters;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
+import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ha.HaSettings;
@@ -42,7 +42,6 @@ import org.neo4j.test.TargetDirectory;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.ha.ClusterManager.fromXml;
 
@@ -208,7 +207,7 @@ public class ClusterTest
         {
             String masterStoreDir =
                     TargetDirectory.forTest( getClass() ).cleanDirectory( "testConflictingClusterPortsMaster" ).getAbsolutePath();
-            first = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
+            first = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                     newHighlyAvailableDatabaseBuilder( masterStoreDir )
                     .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
                     .setConfig( ClusterSettings.cluster_server, "127.0.0.1:5001" )
@@ -220,7 +219,7 @@ public class ClusterTest
             {
                 String slaveStoreDir =
                         TargetDirectory.forTest( getClass() ).cleanDirectory( "testConflictingClusterPortsSlave" ).getAbsolutePath();
-                HighlyAvailableGraphDatabase failed = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
+                HighlyAvailableGraphDatabase failed = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                         newHighlyAvailableDatabaseBuilder( slaveStoreDir )
                         .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
                         .setConfig( ClusterSettings.cluster_server, "127.0.0.1:5001" )
@@ -252,7 +251,7 @@ public class ClusterTest
         {
             String storeDir =
                     TargetDirectory.forTest( getClass() ).cleanDirectory( "testConflictingHaPorts" ).getAbsolutePath();
-             first = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
+             first = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                     newHighlyAvailableDatabaseBuilder( storeDir )
                     .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
                     .setConfig( ClusterSettings.cluster_server, "127.0.0.1:5001" )
@@ -262,7 +261,7 @@ public class ClusterTest
 
             try
             {
-                HighlyAvailableGraphDatabase failed = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
+                HighlyAvailableGraphDatabase failed = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                         newHighlyAvailableDatabaseBuilder( storeDir )
                         .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
                         .setConfig( ClusterSettings.cluster_server, "127.0.0.1:5002" )
@@ -322,7 +321,7 @@ public class ClusterTest
     @Test
     public void givenEmptyHostListWhenClusterStartupThenFormClusterWithSingleInstance() throws Exception
     {
-        HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) new HighlyAvailableGraphDatabaseFactory().
+        HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                 newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( getClass() ).cleanDirectory(
                         "singleinstance" ).getAbsolutePath() ).
                 setConfig( ClusterSettings.server_id, "1" ).

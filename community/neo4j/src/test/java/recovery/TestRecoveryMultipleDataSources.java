@@ -19,10 +19,10 @@
  */
 package recovery;
 
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
-
-import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -30,14 +30,13 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.transaction.log.LogRotation;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.Runtime.getRuntime;
 import static java.lang.System.exit;
 import static java.lang.System.getProperty;
-
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 import static org.neo4j.test.TargetDirectory.forTest;
 
@@ -63,7 +62,7 @@ public class TestRecoveryMultipleDataSources
                 getClass().getName() } ).waitFor() );
 
         // When
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( dir );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( dir );
 
         // Then
         try(Transaction ignored = db.beginTx())

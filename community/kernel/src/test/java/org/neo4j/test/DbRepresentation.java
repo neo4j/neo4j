@@ -35,7 +35,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
@@ -43,7 +43,7 @@ import org.neo4j.tooling.GlobalGraphOperations;
 
 public class DbRepresentation implements Serializable
 {
-    private final Map<Long, NodeRep> nodes = new TreeMap<Long, NodeRep>();
+    private final Map<Long, NodeRep> nodes = new TreeMap<>();
     private long highestNodeId;
     private long highestRelationshipId;
 
@@ -54,8 +54,7 @@ public class DbRepresentation implements Serializable
     
     public static DbRepresentation of( GraphDatabaseService db, boolean includeIndexes )
     {
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction ignore = db.beginTx() )
         {
             DbRepresentation result = new DbRepresentation();
             for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
@@ -67,10 +66,6 @@ public class DbRepresentation implements Serializable
             }
             return result;
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     public static DbRepresentation of( File storeDir )
@@ -80,7 +75,9 @@ public class DbRepresentation implements Serializable
     
     public static DbRepresentation of( File storeDir, boolean includeIndexes )
     {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getPath() );
+        GraphDatabaseBuilder builder =
+                new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir.getPath() );
+        GraphDatabaseService db = builder.newGraphDatabase();
         try
         {
             return of( db, includeIndexes );
@@ -91,16 +88,6 @@ public class DbRepresentation implements Serializable
         }
     }
 
-    public long getHighestNodeId()
-    {
-        return highestNodeId;
-    }
-
-    public long getHighestRelationshipId()
-    {
-        return highestRelationshipId;
-    }
-
     @Override
     public boolean equals( Object obj )
     {
@@ -109,7 +96,7 @@ public class DbRepresentation implements Serializable
     
     public Collection<String> compareWith( DbRepresentation other )
     {
-        Collection<String> diffList = new ArrayList<String>();
+        Collection<String> diffList = new ArrayList<>();
         DiffReport diff = new CollectionDiffReport( diffList );
         for ( NodeRep node : nodes.values() )
         {
@@ -145,7 +132,7 @@ public class DbRepresentation implements Serializable
     private static class NodeRep implements Serializable
     {
         private final PropertiesRep properties;
-        private final Map<Long, PropertiesRep> outRelationships = new HashMap<Long, PropertiesRep>();
+        private final Map<Long, PropertiesRep> outRelationships = new HashMap<>();
         private final long highestRelationshipId;
         private final long id;
         private final Map<String, Map<String, Serializable>> index;
@@ -166,10 +153,10 @@ public class DbRepresentation implements Serializable
 
         private Map<String, Map<String, Serializable>> checkIndex( GraphDatabaseService db )
         {
-            Map<String, Map<String, Serializable>> result = new HashMap<String, Map<String,Serializable>>();
+            Map<String, Map<String, Serializable>> result = new HashMap<>();
             for (String indexName : db.index().nodeIndexNames())
             {
-                Map<String, Serializable> thisIndex = new HashMap<String, Serializable>();
+                Map<String, Serializable> thisIndex = new HashMap<>();
                 Index<Node> tempIndex = db.index().forNodes( indexName );
                 for (Map.Entry<String, Serializable> property : properties.props.entrySet())
                 {
@@ -201,7 +188,7 @@ public class DbRepresentation implements Serializable
         {
             if ( other.index == index )
                 return;
-            Collection<String> allIndexes = new HashSet<String>();
+            Collection<String> allIndexes = new HashSet<>();
             allIndexes.addAll( index.keySet() );
             allIndexes.addAll( other.index.keySet() );
             for ( String indexName : allIndexes )
@@ -289,7 +276,7 @@ public class DbRepresentation implements Serializable
 
     private static class PropertiesRep implements Serializable
     {
-        private final Map<String, Serializable> props = new HashMap<String, Serializable>();
+        private final Map<String, Serializable> props = new HashMap<>();
         private final String entityToString;
         private final long entityId;
 
@@ -305,7 +292,7 @@ public class DbRepresentation implements Serializable
                 {
                     if ( value.getClass().isArray() )
                     {
-                        props.put( key, new ArrayList<Object>( Arrays.asList( IoPrimitiveUtils.asArray( value ) ) ) );
+                        props.put( key, new ArrayList<>( Arrays.asList( IoPrimitiveUtils.asArray( value ) ) ) );
                     }
                     else
                     {
