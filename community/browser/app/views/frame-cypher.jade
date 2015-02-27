@@ -20,7 +20,11 @@ div(ng-controller="CypherResultCtrl", fullscreen)
         .view-result(ng-class='{error: frame.hasErrors}')
           .view-result-graph(ng-show='isActive("graph" )&& !frame.isTerminating', ng-controller="InspectorCtrl")
             article.help.no-data(ng-show='!isAvailable("graph")')
-              p No graph view available. You have to return complete nodes or relationships to view the graph.
+              p
+                | No graph view available. You have to&nbsp;
+                a(help-topic="RETURN")
+                  | RETURN
+                | nodes, relationships or paths to see a graph visualization.
             .graph-holder.result(ng-show='isAvailable("graph")')
               include partials/legend
               .graph-contents
@@ -41,13 +45,7 @@ div(ng-controller="CypherResultCtrl", fullscreen)
 
           .view-result-table.result(ng-show='isActive("table") && !frame.isTerminating')
             .table-holder
-              neo-table(table-data='frame.response.table', ng-show='frame.response.table.size')
-              article.help.no-data.has-status-bar(ng-show='!frame.response.table.size')
-                p
-                  | Nothing to show. Try and &nbsp;
-                  a(help-topic="RETURN")
-                    | RETURN
-                  | something.
+              neo-table(table-data='frame.response.table', ng-show='frame.response.table._response.columns.length')
             .status-bar
               .status
                 include partials/result-status
