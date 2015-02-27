@@ -1,5 +1,5 @@
 ###!
-Copyright (c) 2002-2015 "Neo Technology,"
+Copyright (c) 2002-2014 "Neo Technology,"
 Network Engine for Objects in Lund AB [http://neotechnology.com]
 
 This file is part of Neo4j.
@@ -18,18 +18,21 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-'use strict';
+'use strict'
 
-# Requires jQuery
-angular.module('neo4jApp.directives')
-  .directive('article', ['$rootScope', 'Editor', 'Frame', ($rootScope,Editor, Frame) ->
-    restrict: 'E'
-    link: (scope, element, attrs) ->
-      element.on 'click', '.runnable', (e) ->
-        code = e.currentTarget.textContent or e.currentTarget.innerText
-        return unless code?.length > 0
-        Editor.setContent(code.trim())
-        angular.element(e.currentTarget).addClass('clicked')
-        $rootScope.$apply() unless $rootScope.$$phase
-
-  ])
+angular.module('neo4jApp.controllers')
+  .controller 'AdLibDataController', [
+    '$scope'
+    'AuthService'
+    'Frame'
+    'Settings'
+    ($scope, Settings) ->
+      $scope.nodeLabelA = "Person"
+      $scope.propertyKeyA = "name"
+      $scope.propertyValueA = "Ann"
+      $scope.nodeLabelB = "Person"
+      $scope.propertyKeyB = "name"
+      $scope.propertyValueB = "Dan"
+      $scope.relationshipType = "KNOWS"
+      $scope.relationshipDepth = 3
+  ]

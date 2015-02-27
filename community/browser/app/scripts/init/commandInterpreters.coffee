@@ -119,7 +119,7 @@ angular.module('neo4jApp')
       exec: ['$http', ($http) ->
         step_number = 1
         (input, q) ->
-          topic = topicalize(input[('play'.length+1)..]) or 'welcome'
+          topic = topicalize(input[('play'.length+1)..]) or 'start'
           url = "content/guides/#{topic}.html"
           $http.get(url)
           .success(->q.resolve(page: url))

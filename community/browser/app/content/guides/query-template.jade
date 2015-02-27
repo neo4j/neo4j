@@ -1,0 +1,212 @@
+article.guide(ng-controller="AdLibDataController")
+  carousel.deck.container-fluid
+    slide.row-fluid
+      .col-sm-4
+        h3 Query Template - Create
+        p.lead Generate nodes and relationships
+        form
+          .node
+            .form-group
+              p.help-block From Node A
+              label Label
+              input.form-control(ng-model='nodeLabelA')
+            .form-group
+              .row
+                .col-sm-6
+                  label Property
+                  input.form-control(ng-model='propertyKeyA')
+                .col-sm-6
+                  label Value
+                  input.form-control(ng-model='propertyValueA')
+          .relationship
+            .form-group
+              p.help-block through a Relationship
+              label Type
+              input(ng-model='relationshipType')
+          .node
+            .form-group
+              p.help-block to Node B
+              label Label
+              input(ng-model='nodeLabelB')
+            .form-group
+              .row
+                .col-sm-6
+                  label Property
+                  input.form-control(ng-model='propertyKeyB')
+                .col-sm-6
+                  label Value
+                  input.form-control(ng-model='propertyValueB')
+
+      .col-sm-8 
+        table.table.table-striped.table-bordered
+          tr
+            th Using Data
+            td 
+              | From a node labeled 
+              input(ng-model="nodeLabelA", size="6")
+              |  with a property called 
+              input(ng-model="propertyKeyA", size="6")
+              |  which has value 
+              input(ng-model="propertyValueA", size="8")
+              |  , through a relationship of type 
+              input(ng-model="relationshipType", size='8')
+              |  to another node labeled {{nodeLabelB}}
+              |  with a property called 
+              input(ng-model="propertyKeyB", size="6")
+              |  which has value 
+              input(ng-model="propertyValueB", size="8")
+          tr 
+            th Create
+            td Create a &quot;{{nodeLabelA}}&quot; node 
+              |  with a property called &quot;{{propertyKeyA}}&quot;
+              |  that has value &quot;{{propertyValueA}}&quot;. (Or create Node B)
+              figure
+                pre.code.runnable.
+                  CREATE (n:{{nodeLabelA}} { {{propertyKeyA}}: '{{propertyValueA}}' }) RETURN n
+              figure
+                pre.code.runnable.
+                  CREATE (n:{{nodeLabelB}} { {{propertyKeyB}}: '{{propertyValueB}}' }) RETURN n
+          tr 
+            th Relate
+            td From a &quot;{{nodeLabelA}}&quot; node
+              |  with a &quot;{{propertyKeyA}}&quot; property
+              |  of &quot;{{propertyValueA}}&quot;
+              |  create a &quot;{{relationshipType}}&quot;
+              |  relationship to a &quot;{{nodeLabelB}}&quot; with &quot;{{propertyKeyB}}&quot; value &quot;{{propertyValueB}}&quot;.
+              figure
+                pre.code.runnable.
+                  MATCH (a:{{nodeLabelA}} { {{propertyKeyA}}: '{{propertyValueA}}' }), (b:{{nodeLabelB}} { {{propertyKeyB}}: '{{propertyValueB}}' }) 
+                  CREATE (a)-[:{{relationshipType}}]-&gt;(b)
+          tr 
+            th Merge node
+            td Find or create a &quot;{{nodeLabelA}}&quot; node
+              |  with &quot;{{propertyKeyA}}&quot; of &quot;{{propertyValueA}}&quot;.
+              figure
+                pre.code.runnable.
+                  MERGE (n:{{nodeLabelA}} { {{propertyKeyA}}: '{{propertyValueA}}' }) RETURN n
+          tr 
+            th Merge relationship
+            td Find or create a relationship from a &quot;{{nodeLabelA}} with &quot;{{propertyKeyA}}&quot; of &quot;{{propertyValueA}}&quot; 
+              |  through a &quot;{{relationshipType}}&quot; relationship
+              |  to a &quot;{{nodeLabelB}}&quot; node with &quot;{{propertyKeyB}}&quot; of &quot;{{propertyValueB}}&quot;.
+              figure
+                pre.code.runnable.
+                  MATCH (a:{{nodeLabelA}} { {{propertyKeyA}}: '{{propertyValueA}}' }), (b:{{nodeLabelB}} { {{propertyKeyB}}: '{{propertyValueB}}' }) 
+                  MERGE (a)-[:{{relationshipType}}]-&gt;(b)
+    slide.row-fluid
+      .col-sm-4
+        h3 Query Template - Find
+        p.lead Find data using common graph patterns
+        form
+          .node
+            .form-group
+              p.help-block From Node A
+              label Label
+              input.form-control(ng-model='nodeLabelA')
+            .form-group
+              .row
+                .col-sm-6
+                  label Property
+                  input.form-control(ng-model='propertyKeyA')
+                .col-sm-6
+                  label Value
+                  input.form-control(ng-model='propertyValueA')
+          .relationship
+            .form-group
+              p.help-block through a Relationship
+              label Type
+              input(ng-model='relationshipType')
+          .node
+            .form-group
+              p.help-block to Node B
+              label Label
+              input(ng-model='nodeLabelB')
+            .form-group
+              .row
+                .col-sm-6
+                  label Property
+                  input.form-control(ng-model='propertyKeyB')
+                .col-sm-6
+                  label Value
+                  input.form-control(ng-model='propertyValueB')
+
+      .col-sm-8 
+        table.table.table-striped.table-bordered
+          tr
+            th Using Data
+            td 
+              | From a node labeled 
+              input(ng-model="nodeLabelA", size="6")
+              |  with a property called 
+              input(ng-model="propertyKeyA", size="6")
+              |  which has value 
+              input(ng-model="propertyValueA", size="8")
+              |  , through a relationship of type 
+              input(ng-model="relationshipType", size='8')
+              |  to another node labeled {{nodeLabelB}}
+              |  with a property called 
+              input(ng-model="propertyKeyB", size="6")
+              |  which has value 
+              input(ng-model="propertyValueB", size="8")
+          tr 
+            th Find one
+            td Find a node labeled &quot;{{nodeLabelA}}&quot;
+              |  with a property called &quot;{{propertyKeyA}}&quot;
+              |  that has value &quot;{{propertyValueA}}&quot;.
+              figure
+                pre.code.runnable.
+                  MATCH (n:{{nodeLabelA}} { {{propertyKeyA}}: '{{propertyValueA}}' }) RETURN n      
+          tr 
+            th Find related neighbors
+            td From a &quot;{{nodeLabelA}}&quot; node
+              |  with a &quot;{{propertyKeyA}}&quot;
+              |  of &quot;{{propertyValueA}}&quot;
+              |  find neighbors related by &quot;{{relationshipType}}&quot;.
+              figure
+                pre.code.runnable.
+                  MATCH (n:{{nodeLabelA}} { {{propertyKeyA}}: '{{propertyValueA}}' })-[:{{relationshipType}}]-(neighbors) RETURN n,neighbors
+          tr 
+            th Variable length paths
+            td From a &quot;{{nodeLabelA}}&quot; node
+              |  with a &quot;{{propertyKeyA}}&quot;
+              |  of &quot;{{propertyValueA}}&quot;
+              |  follow &quot;{{relationshipType}}&quot; relationships up to {{relationshipDepth}} hops away.
+              figure
+                pre.code.runnable.
+                  MATCH (n:{{nodeLabelA}} { {{propertyKeyA}}: '{{propertyValueA}}' })-[:{{relationshipType}}*1..{{relationshipDepth}}]-(neighbors) RETURN n, collect(DISTINCT neighbors)
+          tr 
+            th Shortest path
+            td From a &quot;{{nodeLabelA}}&quot; node
+              |  with a &quot;{{propertyKeyA}}&quot;
+              |  of &quot;{{propertyValueA}}&quot;
+              |  find the shortest &quot;{{relationshipType}}&quot; path to 
+              | a &quot;{{nodeLabelB}}&quot; node with &quot;{{propertyKeyB}}&quot; of &quot;{{propertyValueB}}&quot;
+              figure
+                pre.code.runnable.
+                  MATCH p=shortestPath(
+                    (a:{{nodeLabelA}} { {{propertyKeyA}}: '{{propertyValueA}}' })-[:{{relationshipType}}]-(b:{{nodeLabelB}} { {{propertyKeyB}}: '{{propertyValueB}}'})
+                  )
+                  RETURN p
+                  
+    slide.row-fluid.header
+      .col-sm-4
+        h3 Next steps
+      .col-sm-4
+        h3 More code 
+        ul.undecorated
+          li
+            a(play-topic='northwind-graph') Northwind Graph
+            |  - from RDBMS to graph
+          li
+            a(play-topic='movie-graph') Movie Graph
+            |  - common ad-hoc queries
+          li
+            a(play-topic='cypher') Cypher
+            |  - query language fundamentals
+      .col-sm-4
+        h3 Reference
+        ul.undecorated
+          li
+            a(href='http://neo4j.com/developer') Developer resources
+          li
+            a(href='http://neo4j.com/docs/{{neo4j.version | neo4jdoc }}/') Neo4j Manual

@@ -1,0 +1,59 @@
+article.guide
+  .container-fluid
+    .row
+      .col-sm-4
+        .box-max
+          img.img-responsive(src='images/neo4j-world.png')
+          p.lead.text-center {{ neo4j.version }}
+      .col-sm-4
+        .btn.btn-default.btn-app(ng-click="whichTab = 'learn'")
+          img(src="images/learn-icon.png")
+          p.caption-cta
+            a(play-topic='concepts') Learn
+        .btn.btn-default.btn-app(ng-click="whichTab = 'code'")
+          img(src="images/code-icon.png")
+          p.caption-cta
+            a(play-topic='write-code') Code
+        //- .btn.btn-default.btn-app(ng-click="whichTab = 'explore'")
+        //-   img(src="images/data-icon.png")
+        //-   p.caption-cta
+        //-     a(play-topic='explore') Explore
+            
+      .col-sm-4(ng-switch="whichTab")
+        div(ng-switch-default)
+          h3 Learn about Neo4j
+          p.lead A graph epiphany awaits you.
+          ul
+            li What is a graph database?
+            li How can I query a graph?
+            li What do people do with Neo4j?
+          p &nbsp;
+          button.btn.btn-cta(play-topic='concepts') Start Learning (5 brief minutes)
+        div(ng-switch-when="code")
+          h3 Jump into code
+          p.lead Use Cypher, the graph query language.
+          ul
+            li Code walk-throughs
+            li RDBMS to Graph
+            li Query templates 
+          p &nbsp;
+          button.btn.btn-cta(play-topic='write-code') Write Code (10-30 solid minutes)
+        //- div(ng-switch-when="explore")
+        //-   h3 Explore current graph
+        //-   p.lead Introspective Cypher queries.
+        //-   ul
+        //-     li Nodes by label, relationships by type
+        //-     li What is related, and how
+        //-     li Count all the things
+        //-   p &nbsp;
+        //-   button.btn.btn-cta(play-topic='explore') Explore (many enjoyable minutes)
+        
+    .hero-unit
+      p(ng-class="{'motd-bang': motd.callToAction.bang}")
+        a(href="{{ motd.callToAction.u}}") {{ motd.callToAction.d }}
+          
+    footer.tight
+      p.text-muted Copyright &copy;
+        a.no-icon(href='http://neotechnology.com/')  Neo Technology
+        | &nbsp;2002–
+        span= new Date().getFullYear()

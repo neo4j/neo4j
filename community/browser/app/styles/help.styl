@@ -9,9 +9,9 @@
     padding: 30px
     margin 0
     &.no-data
-      min-height: frame-min-height
+      height: frame-result-height
       &.has-status-bar
-        min-height: (frame-min-height - middlebar-height)
+        height: (frame-result-height - middlebar-height)
     [help-topic], [play-topic], [server-topic]
       background-color: #F8F8F8
       border-radius: 3px
@@ -23,10 +23,25 @@
       margin-bottom: 5px
       margin-right: 5px
       padding: 0 4px
+    .btn-cta[help-topic], .btn-cta[play-topic], .btn-cta[server-topic]
+      padding: 1em
+      background-color: #008cc1
+      color: #fff
+    .btn-app
+      margin: .5em
+      padding: 5px
+      width: 100px
+      [help-topic], [play-topic]
+        margin: 0px
+        padding: 0
+        width: 100%
     p
       font-size: 15px
       line-height: 1.428
       color: #666
+      &.caption-cta
+        margin: 0
+        margin-top: 8px
     h1, h2, h3, h4, h5, dt
       background none
       display inline
@@ -41,7 +56,8 @@
       margin-top: 16px;
     }
     figcaption {
-      padding: 5px;
+      padding: 0px;
+      padding-bottom: 8px;
       font-size: 1em;
       font-style: italic
       font-weight: 300;
@@ -53,7 +69,7 @@
     pre.code
       background: #F3F3F3
       cursor: pointer
-      border: 1px solid #E1E1E8
+      border: 2px dashed #E1E1E8
       &:hover
         background: lighten(color-link, 80%)
         //outline: 2px solid color-link
@@ -61,6 +77,8 @@
         text-overflow: ellipsis;
         white-space: nowrap;
         overflow: hidden;
+      &.clicked
+        border-style: solid
     &.manual
       section
       h1
@@ -87,3 +105,21 @@
 
     .bg-warning
       padding: 10px
+
+    form
+      width: 100%
+      .node, .relationship
+        display: block
+        width: 100%
+        padding: 12px
+        margin-left: auto
+        margin-right: auto
+        margin-bottom: 1em
+      .node
+        background-color: #525864
+        border-radius(12px)
+      .relationship
+        background-color: #525864
+        border-radius(2px)
+      p, label, th
+        color: #EEF1F8

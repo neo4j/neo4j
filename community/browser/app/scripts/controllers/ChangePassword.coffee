@@ -59,7 +59,7 @@ angular.module('neo4jApp.controllers')
             #New user who just changed the default password.
             if not is_authenticated
               $scope.$parent.defaultPasswordChanged()
-              Frame.create({input:"#{Settings.cmdchar}play welcome"})
+              Frame.create({input:"#{Settings.initCmd}"})
 
             $scope.password_changed = true
             $scope.$parent.frame.resetError()
