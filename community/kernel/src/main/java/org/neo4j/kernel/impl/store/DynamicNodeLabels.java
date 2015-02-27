@@ -175,12 +175,6 @@ public class DynamicNodeLabels implements NodeLabels
         return firstDynamicLabelRecordId( labelField );
     }
 
-    @Override
-    public void ensureHeavy( NodeStore nodeStore )
-    {
-        nodeStore.ensureHeavy( node, firstDynamicLabelRecordId( labelField ) );
-    }
-
     public static long dynamicPointer( Collection<DynamicRecord> newRecords )
     {
         return 0x8000000000L | first( newRecords ).getId();

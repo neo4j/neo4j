@@ -46,7 +46,6 @@ import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
-import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
 /**
  * Implementation of the node store.
@@ -122,7 +121,10 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
 
     public void ensureHeavy( NodeRecord node )
     {
-        parseLabelsField( node ).ensureHeavy( this );
+        if ( NodeLabelsField.fieldPointsToDynamicRecordOfLabels( node.getLabelField() ) )
+        {
+            ensureHeavy( node, NodeLabelsField.firstDynamicLabelRecordId( node.getLabelField() ) );
+        }
     }
 
     public void ensureHeavy( NodeRecord node, long firstDynamicLabelRecord )
