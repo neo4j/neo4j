@@ -66,6 +66,7 @@ class ExpandIntoPipeTest extends CypherFunSuite {
     when(query.getRelationshipsForIds(any(), any(), Matchers.eq(Some(Seq(1,2))))).thenAnswer(new Answer[Iterator[Relationship]]{
       override def answer(invocationOnMock: InvocationOnMock): Iterator[Relationship] = Iterator(relationship1, relationship2)
     })
+    when(query.nodeGetDegree(any(), any(), any())).thenReturn(1)
 
     val pipe = ExpandIntoPipe(newMockedPipe("a", row("a"-> startNode, "b" -> endNode1)), "a", "r", "b", Direction.OUTGOING, LazyTypes(Seq("FOO", "BAR")))()
 
@@ -134,14 +135,26 @@ class ExpandIntoPipeTest extends CypherFunSuite {
     // given
     mockRelationships(relationship1)
     val left = newMockedPipe("a",
-      row("a" -> startNode, "b" -> endNode1))
+      row("a" -> null, "b" -> endNode1))
 
     // when
     val result = ExpandIntoPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
 
     // then
-    val (single :: Nil) = result
-    single.m should equal(Map("a" -> startNode, "r" -> relationship1, "b" -> endNode1))
+    result shouldBe empty
+  }
+
+  test("given a null end point, returns an empty iterator") {
+    // given
+    mockRelationships(relationship1)
+    val left = newMockedPipe("a",
+      row("a" -> startNode, "b" -> null))
+
+    // when
+    val result = ExpandIntoPipe(left, "a", "r", "b", Direction.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
+
+    // then
+    result shouldBe empty
   }
 
   private def row(values: (String, Any)*) = ExecutionContext.from(values: _*)
@@ -150,6 +163,7 @@ class ExpandIntoPipeTest extends CypherFunSuite {
     when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship]] {
       def answer(invocation: InvocationOnMock): Iterator[Relationship] = rels.iterator
     })
+    when(query.nodeGetDegree(any(), any())).thenReturn(rels.size)
   }
 
   private def newMockedNode(id: Int) = {

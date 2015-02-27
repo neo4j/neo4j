@@ -33,12 +33,14 @@ case class CardinalityCostModel(cardinality: CardinalityModel) extends CostModel
   private val CPU_BOUND:  CostPerRow = 0.1
   private val FAST_STORE: CostPerRow = 1.0
   private val SLOW_STORE: CostPerRow = 10.0
-  private val PROBE_BUILD_COST = CPU_BOUND
-  private val PROBE_SEARCH_COST = CPU_BOUND * .5
+  private val PROBE_BUILD_COST = FAST_STORE
+  private val PROBE_SEARCH_COST = PROBE_BUILD_COST * .5
 
   private def costPerRow(plan: LogicalPlan): CostPerRow = plan match {
 
-    case _: AllNodesScan |
+    case _: Expand |
+         _: VarExpand |
+         _: AllNodesScan |
          _: DirectedRelationshipByIdSeek |
          _: UndirectedRelationshipByIdSeek |
          _: ProjectEndpoints |
@@ -53,6 +55,7 @@ case class CardinalityCostModel(cardinality: CardinalityModel) extends CostModel
     => FAST_STORE
 
     case _: NodeHashJoin |
+
          _: Aggregation |
          _: AbstractLetSemiApply |
          _: Limit |
@@ -69,13 +72,11 @@ case class CardinalityCostModel(cardinality: CardinalityModel) extends CostModel
          _: UnwindCollection
     => CPU_BOUND
 
-    case _: Expand |
-         _: FindShortestPaths |
+    case _: FindShortestPaths |
          _: LegacyIndexSeek |
          _: NodeByIdSeek |
          _: NodeIndexUniqueSeek |
-         _: NodeIndexSeek |
-         _: VarExpand
+         _: NodeIndexSeek
     => SLOW_STORE
 
     case NodeIndexSeek(_, _, _, ManyQueryExpression(Collection(elements)), _)

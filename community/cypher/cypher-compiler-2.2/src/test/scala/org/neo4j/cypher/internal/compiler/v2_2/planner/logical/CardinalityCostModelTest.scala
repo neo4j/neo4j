@@ -48,6 +48,6 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
         )(PlannerQuery.empty)
 
 
-    costModel(plan, QueryGraphCardinalityInput.empty) should equal(Cost(401))
+    costModel(plan, QueryGraphCardinalityInput.empty) should equal(Cost(221))
   }
 }
