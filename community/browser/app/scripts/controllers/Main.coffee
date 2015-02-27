@@ -79,12 +79,10 @@ angular.module('neo4jApp.controllers')
               refresh()
               UDC.ping("connect")
             else
-              $scope.errorMessage = motdService.disconnected
+              $scope.errorMessage = motdService.pickRandomlyFromChoiceName('disconnected')
 
         $scope.$watch 'unauthorized', (isUnauthorized) ->
           refresh()
-          if isUnauthorized
-            AuthService.forget()
 
         $scope.$on 'auth:status_updated', () ->
           $scope.check()
@@ -93,7 +91,6 @@ angular.module('neo4jApp.controllers')
         AuthService.hasValidAuthorization().then(
           ->
             Frame.create({input:"#{Settings.cmdchar}play welcome"})
-            Frame.createOne({input:"#{Settings.cmdchar}server connect"})
           ,
           (r) ->
             if r.status is 404
