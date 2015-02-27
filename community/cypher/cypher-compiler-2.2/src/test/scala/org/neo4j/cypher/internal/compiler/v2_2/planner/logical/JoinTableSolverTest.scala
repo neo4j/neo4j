@@ -66,4 +66,30 @@ class JoinTableSolverTest extends CypherFunSuite with LogicalPlanConstructionTes
 
     joinTableSolver(qg, Set(solvable1, solvable2), table) should be(empty)
   }
+
+  test("does not join plans that overlap on non-nodes") {
+    when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b, 'x))
+    when(plan1.solved).thenReturn(PlannerQuery(QueryGraph.empty.addPatternNodes('a, 'b)))
+    when(plan2.availableSymbols).thenReturn(Set[IdName]('c, 'r2, 'd, 'x))
+    when(plan2.solved).thenReturn(PlannerQuery(QueryGraph.empty.addPatternNodes('c, 'd)))
+    when(qg.argumentIds).thenReturn(Set.empty[IdName])
+
+    table.put(Set(solvable1), plan1)
+    table.put(Set(solvable2), plan2)
+
+    joinTableSolver(qg, Set(solvable1, solvable2), table) should be(empty)
+  }
+
+  test("does not join plans that overlap on nodes that are arguments") {
+    when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b, 'x))
+    when(plan1.solved).thenReturn(PlannerQuery(QueryGraph.empty.addPatternNodes('a, 'b, 'x)))
+    when(plan2.availableSymbols).thenReturn(Set[IdName]('c, 'r2, 'd, 'x))
+    when(plan2.solved).thenReturn(PlannerQuery(QueryGraph.empty.addPatternNodes('c, 'd, 'x)))
+    when(qg.argumentIds).thenReturn(Set[IdName]('x))
+
+    table.put(Set(solvable1), plan1)
+    table.put(Set(solvable2), plan2)
+
+    joinTableSolver(qg, Set(solvable1, solvable2), table) should be(empty)
+  }
 }

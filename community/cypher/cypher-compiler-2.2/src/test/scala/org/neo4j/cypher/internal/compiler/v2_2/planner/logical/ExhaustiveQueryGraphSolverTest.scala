@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Direction
 import scala.collection.immutable
 
 class ExhaustiveQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+
   test("should plan for a single node pattern") {
     new given {
       queryGraphSolver = ExhaustiveQueryGraphSolver(solvers = Seq.empty)

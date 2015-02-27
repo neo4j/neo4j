@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{NodeHashJoin, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, NodeHashJoin, LogicalPlan}
 
 object joinTableSolver extends ExhaustiveTableSolver {
 
@@ -33,7 +33,8 @@ object joinTableSolver extends ExhaustiveTableSolver {
         lhs <- table(leftGoal);
         rightGoal = goal -- leftGoal;
         rhs <- table(rightGoal);
-        overlap = lhs.availableSymbols intersect rhs.availableSymbols if overlap.nonEmpty
+        overlap =
+        computeOverlap(qg, lhs, rhs) if overlap.nonEmpty
       ) yield {
         Iterator(
           planNodeHashJoin(overlap, lhs, rhs),
@@ -41,6 +42,12 @@ object joinTableSolver extends ExhaustiveTableSolver {
         )
       }
     result.flatten
+  }
+
+  // TODO: Simplify
+  def computeOverlap(qg: QueryGraph, lhs: LogicalPlan, rhs: LogicalPlan): Set[IdName] = {
+    val overlappingPatternNodes = lhs.solved.graph.patternNodes intersect rhs.solved.graph.patternNodes
+    overlappingPatternNodes -- qg.argumentIds
   }
 }
 
