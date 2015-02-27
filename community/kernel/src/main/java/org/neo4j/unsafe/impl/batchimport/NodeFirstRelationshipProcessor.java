@@ -52,15 +52,13 @@ public class NodeFirstRelationshipProcessor implements StoreProcessor<NodeRecord
     {
         long nodeId = node.getId();
         long firstRel = nodeRelationshipLink.getFirstRel( nodeId, this );
-        if ( firstRel == -1 )
+        if ( firstRel != -1 )
         {
-            return false;
-        }
-
-        node.setNextRel( firstRel );
-        if ( nodeRelationshipLink.isDense( nodeId ) )
-        {
-            node.setDense( true );
+            node.setNextRel( firstRel );
+            if ( nodeRelationshipLink.isDense( nodeId ) )
+            {
+                node.setDense( true );
+            }
         }
         return true;
     }

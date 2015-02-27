@@ -75,6 +75,7 @@ import org.neo4j.unsafe.impl.batchimport.store.io.Monitor;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.function.Functions.constant;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
@@ -314,7 +315,6 @@ public class ParallelBatchImporterTest
                         LockSupport.parkNanos( random.nextInt( 500 ) * 1_000_000 ); // slowness comes from here
                     }
                     delegate.write( data, position, pool );
-
                 }
             };
         }

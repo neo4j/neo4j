@@ -170,7 +170,7 @@ public class ParallelBatchImporter implements BatchImporter
 
             // Switch to reverse updating mode and release references that are no longer used so they can be collected
             writerFactory.awaitEverythingWritten();
-            neoStore.switchToUpdateMode();
+            neoStore.flush();
 
             // Remaining node processors
             nodeLabelsCache = new NodeLabelsCache( AUTO, neoStore.getLabelRepository().getHighId() );
