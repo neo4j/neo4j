@@ -121,5 +121,9 @@ angular.module('neo4jApp.services')
         pickRandomlyFrom: (fromThis) ->
           return fromThis[Math.floor(Math.random() * fromThis.length)]
 
+        pickRandomlyFromChoiceName: (choiceName) ->
+          return '' unless choices[choiceName]
+          @pickRandomlyFrom(choices[choiceName])
+
       new Motd
 ]

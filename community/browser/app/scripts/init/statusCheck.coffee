@@ -19,13 +19,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 angular.module('neo4jApp').run([
-  'ConnectionStatusService'
+  'AuthService'
   '$rootScope'
-  '$http'
   '$timeout'
   'Server'
   'Settings'
-  (ConnectionStatusService, $scope, $http, $timeout, Server, Settings) ->
+  (AuthService, $scope, $timeout, Server, Settings) ->
     timer = null
     $scope.check = ->
       $timeout.cancel(timer)
@@ -34,24 +33,32 @@ angular.module('neo4jApp').run([
       # the URL is the same. So we need a unique URL every time in order for it
       # to detect request error
       ts = (new Date()).getTime()
-      Server.status('?t='+ts).then(
-        ->
-          ConnectionStatusService.setConnected yes
+      Server.status('?t='+ts).success(
+        (r) ->
           $scope.offline = no
+          timer = $timeout($scope.check, Settings.heartbeat * 1000)
+          r
+      ).error(
+        (r) ->
+          $scope.offline = yes
           $scope.unauthorized = no
           timer = $timeout($scope.check, Settings.heartbeat * 1000)
-      ,
-        (response) ->
-          ConnectionStatusService.setConnected no
-          if response.status in [401, 403]
-            $scope.offline = no
-            $scope.unauthorized = yes
-            ConnectionStatusService.setAuthorizationRequired yes
-            timer = $timeout($scope.check, Settings.heartbeat * 1000)
-          else
-            $scope.offline = yes
-            $scope.unauthorized = no
-            timer = $timeout($scope.check, Settings.heartbeat * 1000)
+          r
+      ).then(
+        (r) ->
+          AuthService.isConnected().then(
+            ->
+              $scope.unauthorized = no
+          ,
+            (response) ->
+              if response.status in [401, 403, 429]
+                $scope.offline = no
+                $scope.unauthorized = yes
+              else
+                $scope.offline = yes
+                $scope.unauthorized = no
+          )
+          r
       )
     $scope.check()
 ])

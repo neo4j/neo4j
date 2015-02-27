@@ -81,17 +81,28 @@ angular.module('neo4jApp.services')
             q.resolve r
           ,
           (r) ->
-            p = that.makeRequest()
-            p.then(
-              (rr) ->
-                ConnectionStatusService.setConnected yes
-                q.resolve rr
+            that.isConnected().then(
+              (r) ->
+                q.resolve r
               ,
-              (rr) ->
-                if rr.status is 401
-                  clearConnectionAuthData()
-                q.reject ''
+              (r) ->
+                q.reject r
             )
+        )
+        q.promise
+
+      isConnected: ->
+        q = $q.defer()
+        p = @makeRequest()
+        p.then(
+          (rr) ->
+            ConnectionStatusService.setConnected yes
+            q.resolve rr
+        ,
+          (rr) ->
+            if rr.status is 401
+              clearConnectionAuthData()
+            q.reject rr
         )
         q.promise
 
