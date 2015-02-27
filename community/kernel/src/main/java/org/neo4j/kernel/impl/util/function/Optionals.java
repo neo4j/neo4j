@@ -90,10 +90,11 @@ public class Optionals
                 return this;
             }
 
+            @SuppressWarnings("RedundantTypeArguments")
             @Override
             public <To> Optional<To> map( Function<TYPE, ? extends To> conversion )
             {
-                return some( conversion.apply( obj ) );
+                return Optionals.<To>some( conversion.apply( obj ) );
             }
         };
     }
