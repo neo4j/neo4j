@@ -204,20 +204,20 @@ public class ParallelBatchImporter implements BatchImporter
             else
             {
                 // Stage 4 -- set node nextRel fields
-                executeStages( new NodeStoreProcessorStage( "Node --> Relationship", config,
-                        neoStore.getNodeStore(), nodeFirstRelationshipProcessor ) );
+                executeStages( new NodeFirstRelationshipStage( config, neoStore.getNodeStore(),
+                        neoStore.getRelationshipGroupStore(), nodeRelationshipLink ) );
                 // Stage 5 -- link relationship chains together
                 nodeRelationshipLink.clearRelationships();
-                executeStages( new RelationshipStoreProcessorStage( "Relationship --> Relationship", config,
-                        neoStore.getRelationshipStore(), relationshipLinkerProcessor ) );
+                executeStages( new RelationshipLinkbackStage( config, neoStore.getRelationshipStore(),
+                        nodeRelationshipLink ) );
 
                 // Release this potentially really big piece of cached data
                 nodeRelationshipLink.close();
                 nodeRelationshipLink = null;
 
                 // Stage 6 -- count nodes per label and labels per node
-                executeStages( new NodeStoreProcessorStage( "Node --> Node counts", config,
-                        neoStore.getNodeStore(), nodeCountsProcessor ) );
+                executeStages( new NodeCountsStage( config, nodeLabelsCache, neoStore.getNodeStore(),
+                        neoStore.getLabelRepository().getHighId(), countsUpdater ) );
                 // Stage 7 -- count label-[type]->label
                 executeStages( new RelationshipCountsStage( config, nodeLabelsCache, neoStore.getRelationshipStore(),
                         neoStore.getLabelRepository().getHighId(),
