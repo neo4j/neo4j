@@ -19,7 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
@@ -34,7 +33,7 @@ public class NodeFirstRelationshipStep extends ExecutorServiceStep<NodeRecord[]>
     private final NodeFirstRelationshipProcessor processor;
 
     public NodeFirstRelationshipStep( StageControl control, int workAheadSize, int movingAverageSize,
-            NodeStore nodeStore, RelationshipGroupStore relationshipGroupStore, NodeRelationshipLink cache )
+            RelationshipGroupStore relationshipGroupStore, NodeRelationshipLink cache )
     {
         super( control, "Node --> Relationship", workAheadSize, movingAverageSize, 1 );
         this.processor = new NodeFirstRelationshipProcessor( relationshipGroupStore, cache );

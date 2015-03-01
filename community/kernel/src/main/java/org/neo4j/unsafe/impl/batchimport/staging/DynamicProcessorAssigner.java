@@ -98,7 +98,7 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adpter
         Step<?> bottleNeckStep = bottleNeck.first();
         long doneBatches = batches( bottleNeckStep );
         int usedPermits = 0;
-        if ( bottleNeck.other().floatValue() > 1.0f &&
+        if ( bottleNeck.other() > 1.0f &&
              batchesPassedSinceLastChange( bottleNeckStep, doneBatches ) >= config.movingAverageSize() )
         {
             int optimalProcessorIncrement = min( max( 1, (int) bottleNeck.other().floatValue() - 1 ), permits );
@@ -118,7 +118,7 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adpter
     {
         Pair<Step<?>,Float> fastest = execution.stepsOrderedBy( Keys.avg_processing_time, true ).iterator().next();
         float threshold = 1f - (1f/fastest.first().numberOfProcessors());
-        if ( fastest.other().floatValue() < threshold )
+        if ( fastest.other() < threshold )
         {
             Step<?> fastestStep = fastest.first();
             long doneBatches = batches( fastestStep );

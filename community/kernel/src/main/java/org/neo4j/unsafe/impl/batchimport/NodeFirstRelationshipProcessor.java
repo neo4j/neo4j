@@ -33,7 +33,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink.GroupVisitor
  * This step also creates {@link RelationshipGroupRecord group records} for the dense nodes as it encounters
  * dense nodes, where it gets all relationship group information from {@link NodeRelationshipLink}.
  */
-public class NodeFirstRelationshipProcessor implements StoreProcessor<NodeRecord>, GroupVisitor
+public class NodeFirstRelationshipProcessor implements RecordProcessor<NodeRecord>, GroupVisitor
 {
     private final RelationshipGroupStore relGroupStore;
     private final NodeRelationshipLink nodeRelationshipLink;

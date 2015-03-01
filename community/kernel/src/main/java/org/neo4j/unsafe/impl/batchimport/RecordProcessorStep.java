@@ -19,46 +19,44 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.kernel.impl.api.CountsAccessor;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
+import org.neo4j.unsafe.impl.batchimport.staging.Step;
 
 /**
- * Processes node count data received from {@link ReadNodeRecordsStep} and stores the accumulated counts
- * into {@link CountsTracker}.
+ * {@link RecordProcessor} in {@link Step Step-form}.
  */
-public class ProcessNodeCountsDataStep extends ExecutorServiceStep<NodeRecord[]>
+public class RecordProcessorStep<T extends AbstractBaseRecord> extends ExecutorServiceStep<T[]>
 {
-    private final NodeCountsProcessor processor;
+    private final RecordProcessor<T> processor;
+    private final boolean endOfLine;
 
-    protected ProcessNodeCountsDataStep( StageControl control, NodeLabelsCache cache,
-            int workAheadSize, int movingAverageSize, NodeStore nodeStore,
-            int highLabelId, CountsAccessor.Updater countsUpdater )
+    public RecordProcessorStep( StageControl control, String name, int workAheadSize, int movingAverageSize,
+            RecordProcessor<T> processor, boolean endOfLine )
     {
-        super( control, "COUNT", workAheadSize, movingAverageSize, 1 );
-        this.processor = new NodeCountsProcessor( nodeStore, cache, highLabelId, countsUpdater );
+        super( control, name, workAheadSize, movingAverageSize, 1 );
+        this.processor = processor;
+        this.endOfLine = endOfLine;
     }
 
     @Override
-    protected Object process( long ticket, NodeRecord[] batch )
+    protected Object process( long ticket, T[] batch )
     {
-        for ( NodeRecord node : batch )
+        for ( T item : batch )
         {
-            if ( node != null )
+            if ( item != null )
             {
-                processor.process( node );
+                processor.process( item );
             }
         }
-        return null; // end of line
+        return endOfLine ? null : batch;
     }
 
     @Override
     protected void done()
     {
+        super.done();
         processor.done();
     }
 }

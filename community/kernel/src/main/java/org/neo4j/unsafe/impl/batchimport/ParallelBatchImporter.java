@@ -33,13 +33,9 @@ import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.unsafe.impl.batchimport.cache.AvailableMemoryCalculator;
-import org.neo4j.unsafe.impl.batchimport.cache.GatheringMemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLinkImpl;
@@ -57,6 +53,7 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
 import static java.lang.System.currentTimeMillis;
+
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Utils.idsOf;
 import static org.neo4j.unsafe.impl.batchimport.WriterFactories.parallel;
@@ -85,7 +82,6 @@ public class ParallelBatchImporter implements BatchImporter
     private final Monitors monitors;
     private final WriterFactory writerFactory;
     private final AdditionalInitialIds additionalInitialIds;
-    private final AvailableMemoryCalculator memoryCalculator;
 
     /**
      * Advanced usage of the parallel batch importer, for special and very specific cases. Please use
@@ -93,7 +89,7 @@ public class ParallelBatchImporter implements BatchImporter
      */
     public ParallelBatchImporter( String storeDir, FileSystemAbstraction fileSystem, Configuration config,
             Logging logging, ExecutionMonitor executionMonitor, Function<Configuration,WriterFactory> writerFactory,
-            AdditionalInitialIds additionalInitialIds, AvailableMemoryCalculator memoryCalculator )
+            AdditionalInitialIds additionalInitialIds )
     {
         this.storeDir = storeDir;
         this.fileSystem = fileSystem;
@@ -101,7 +97,6 @@ public class ParallelBatchImporter implements BatchImporter
         this.logging = logging;
         this.executionMonitor = executionMonitor;
         this.additionalInitialIds = additionalInitialIds;
-        this.memoryCalculator = memoryCalculator;
         this.logger = logging.getMessagesLog( getClass() );
         this.monitors = new Monitors();
         this.writeMonitor = new IoMonitor();
@@ -111,8 +106,7 @@ public class ParallelBatchImporter implements BatchImporter
     public ParallelBatchImporter( String storeDir, Configuration config, Logging logging,
             ExecutionMonitor executionMonitor )
     {
-        this( storeDir, new DefaultFileSystemAbstraction(), config, logging, executionMonitor, parallel(), EMPTY,
-                AvailableMemoryCalculator.RUNTIME );
+        this( storeDir, new DefaultFileSystemAbstraction(), config, logging, executionMonitor, parallel(), EMPTY );
     }
 
     @Override
@@ -168,61 +162,30 @@ public class ParallelBatchImporter implements BatchImporter
                     neoStore, nodeRelationshipLink, input.specificRelationshipIds() );
             executeStages( relationshipStage );
 
-            // Switch to reverse updating mode and release references that are no longer used so they can be collected
-            writerFactory.awaitEverythingWritten();
+            // Prepare for updating
             neoStore.flush();
-
-            // Remaining node processors
+            writerFactory.awaitEverythingWritten();
             nodeLabelsCache = new NodeLabelsCache( AUTO, neoStore.getLabelRepository().getHighId() );
-            StoreProcessor<NodeRecord> nodeFirstRelationshipProcessor = new NodeFirstRelationshipProcessor(
-                    neoStore.getRelationshipGroupStore(), nodeRelationshipLink );
-            StoreProcessor<NodeRecord> nodeCountsProcessor = new NodeCountsProcessor( neoStore.getNodeStore(),
-                    nodeLabelsCache, neoStore.getLabelRepository().getHighId(), countsUpdater );
 
-            // Remaining relationship processors
-            StoreProcessor<RelationshipRecord> relationshipLinkerProcessor =
-                    new RelationshipLinkbackProcessor( nodeRelationshipLink );
-            RelationshipCountsProcessor relationshipCountsProcessor = new RelationshipCountsProcessor(
-                    nodeLabelsCache, neoStore.getLabelRepository().getHighId(),
-                    neoStore.getRelationshipTypeRepository().getHighId(), countsUpdater );
+            // Stage 4 -- set node nextRel fields
+            executeStages( new NodeFirstRelationshipStage( config, neoStore.getNodeStore(),
+                    neoStore.getRelationshipGroupStore(), nodeRelationshipLink ) );
+            // Stage 5 -- link relationship chains together
+            nodeRelationshipLink.clearRelationships();
+            executeStages( new RelationshipLinkbackStage( config, neoStore.getRelationshipStore(),
+                    nodeRelationshipLink ) );
 
-            // Determine if we have enough available memory to be able to execute all remaining processors
-            // in parallel.
-            if ( disableParallelizationSinceItCausesWrongCountsComputations() &&
-                 enoughAvailableMemoryForRemainingProcessors( nodeRelationshipLink ) )
-            {
-                // Stages 4, 5, 6 and 7
-                executeStages( new NodeStoreProcessorStage( "Node --> Relationship + Node counts", config,
-                        neoStore.getNodeStore(), new StoreProcessor.Multiple<>(
-                        nodeFirstRelationshipProcessor, nodeCountsProcessor ) ) );
-                nodeRelationshipLink.clearRelationships();
-                executeStages( new RelationshipStoreProcessorStage(
-                        "Relationship --> Relationship + Relationship counts", config,
-                        neoStore.getRelationshipStore(), new StoreProcessor.Multiple<>(
-                        relationshipLinkerProcessor, relationshipCountsProcessor ) ) );
-            }
-            else
-            {
-                // Stage 4 -- set node nextRel fields
-                executeStages( new NodeFirstRelationshipStage( config, neoStore.getNodeStore(),
-                        neoStore.getRelationshipGroupStore(), nodeRelationshipLink ) );
-                // Stage 5 -- link relationship chains together
-                nodeRelationshipLink.clearRelationships();
-                executeStages( new RelationshipLinkbackStage( config, neoStore.getRelationshipStore(),
-                        nodeRelationshipLink ) );
+            // Release this potentially really big piece of cached data
+            nodeRelationshipLink.close();
+            nodeRelationshipLink = null;
 
-                // Release this potentially really big piece of cached data
-                nodeRelationshipLink.close();
-                nodeRelationshipLink = null;
-
-                // Stage 6 -- count nodes per label and labels per node
-                executeStages( new NodeCountsStage( config, nodeLabelsCache, neoStore.getNodeStore(),
-                        neoStore.getLabelRepository().getHighId(), countsUpdater ) );
-                // Stage 7 -- count label-[type]->label
-                executeStages( new RelationshipCountsStage( config, nodeLabelsCache, neoStore.getRelationshipStore(),
-                        neoStore.getLabelRepository().getHighId(),
-                        neoStore.getRelationshipTypeRepository().getHighId(), countsUpdater ) );
-            }
+            // Stage 6 -- count nodes per label and labels per node
+            executeStages( new NodeCountsStage( config, nodeLabelsCache, neoStore.getNodeStore(),
+                    neoStore.getLabelRepository().getHighId(), countsUpdater ) );
+            // Stage 7 -- count label-[type]->label
+            executeStages( new RelationshipCountsStage( config, nodeLabelsCache, neoStore.getRelationshipStore(),
+                    neoStore.getLabelRepository().getHighId(),
+                    neoStore.getRelationshipTypeRepository().getHighId(), countsUpdater ) );
 
             // We're done, do some final logging about it
             long totalTimeMillis = currentTimeMillis() - startTime;
@@ -256,22 +219,6 @@ public class ParallelBatchImporter implements BatchImporter
                 fileSystem.deleteFile( badRelationshipsFile );
             }
         }
-    }
-
-    private boolean disableParallelizationSinceItCausesWrongCountsComputations()
-    {
-        // we have seen wrongly computed node counts when this stages parallelization is allowed
-        // better being safe and disable it for now until we can fix it
-        return false;
-    }
-
-    private boolean enoughAvailableMemoryForRemainingProcessors( NodeRelationshipLink nodeRelationshipLink )
-    {
-        GatheringMemoryStatsVisitor usedMemory = new GatheringMemoryStatsVisitor();
-        nodeRelationshipLink.visit( usedMemory );
-        long used = usedMemory.getHeapUsage() + usedMemory.getOffHeapUsage();
-        long available = memoryCalculator.availableHeapMemory() + memoryCalculator.availableOffHeapMemory();
-        return available > used * 2; // to be on the safe side
     }
 
     private void executeStages( Stage... stages )

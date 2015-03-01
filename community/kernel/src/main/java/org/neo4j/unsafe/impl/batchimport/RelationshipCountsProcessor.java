@@ -27,7 +27,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 /**
  * Calculates counts as labelId --[type]--> labelId for relationships with the labels coming from its start/end nodes.
  */
-public class RelationshipCountsProcessor implements StoreProcessor<RelationshipRecord>
+public class RelationshipCountsProcessor implements RecordProcessor<RelationshipRecord>
 {
     /** Don't support these counts at the moment so don't compute them */
     private static final boolean COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS = false;
