@@ -97,7 +97,8 @@ public class BackupToolUrisTest
                     eq( port ),
                     eq( "/var/backup/graph" ),
                     eq( true ),
-                    any( Config.class )
+                    any( Config.class ),
+                    eq( false )
             );
         }
     }
@@ -199,7 +200,8 @@ public class BackupToolUrisTest
                     eq( port ),
                     eq( "/var/backup/graph" ),
                     eq( true ),
-                    any( Config.class )
+                    any( Config.class ),
+                    eq( false )
             );
         }
     }

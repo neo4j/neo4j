@@ -118,7 +118,7 @@ public class BackupServiceIT
         try
         {
             // when
-            new BackupService( fileSystem ).doFullBackup( "", 0, backupDir.getAbsolutePath(), true, new Config() );
+            new BackupService( fileSystem ).doFullBackup( "", 0, backupDir.getAbsolutePath(), true, new Config(), false );
         }
         catch ( RuntimeException ex )
         {
@@ -137,7 +137,7 @@ public class BackupServiceIT
         // when
         BackupService backupService = new BackupService( fileSystem );
         backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false,
-                new Config( defaultBackupPortHostParams() ) );
+                new Config( defaultBackupPortHostParams() ), false );
         db.shutdown();
 
         // then
@@ -160,7 +160,7 @@ public class BackupServiceIT
         // when
         BackupService backupService = new BackupService( fileSystem );
         backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false,
-                new Config( defaultBackupPortHostParams() ) );
+                new Config( defaultBackupPortHostParams() ), false );
         db.shutdown();
 
         // then
@@ -180,7 +180,7 @@ public class BackupServiceIT
         // when
         BackupService backupService = new BackupService( fileSystem );
         backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false,
-                new Config( defaultBackupPortHostParams() ) );
+                new Config( defaultBackupPortHostParams() ), false );
         db.shutdown();
 
         // then
@@ -201,7 +201,7 @@ public class BackupServiceIT
         // when
         BackupService backupService = new BackupService( fileSystem );
         backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false,
-                new Config( defaultBackupPortHostParams() ) );
+                new Config( defaultBackupPortHostParams() ), false );
         db.shutdown();
 
         // then
@@ -219,7 +219,7 @@ public class BackupServiceIT
         // when
         BackupService backupService = new BackupService( fileSystem );
         backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false,
-                new Config( defaultBackupPortHostParams() ) );
+                new Config( defaultBackupPortHostParams() ), false );
         db.shutdown();
 
         // then
@@ -240,7 +240,7 @@ public class BackupServiceIT
 
         // A full backup
         backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false,
-                new Config( defaultBackupPortHostParams() ) );
+                new Config( defaultBackupPortHostParams() ), false );
 
         // And the log the backup uses is rotated out
         createAndIndexNode( db, 2 );
@@ -283,7 +283,7 @@ public class BackupServiceIT
 
         // A full backup
         backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false,
-                new Config( defaultBackupPortHostParams() ) );
+                new Config( defaultBackupPortHostParams() ), false );
 
         // And the log the backup uses is rotated out
         createAndIndexNode( db, 2 );
@@ -295,7 +295,7 @@ public class BackupServiceIT
 
 
         // when
-        backupService.doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, new Config(defaultBackupPortHostParams()));
+        backupService.doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, new Config(defaultBackupPortHostParams()), false);
 
 
         // Then
@@ -316,7 +316,7 @@ public class BackupServiceIT
 
         // A full backup
         backupService.doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false,
-                new Config( defaultBackupPortHostParams() ) );
+                new Config( defaultBackupPortHostParams() ), false );
 
         // And the log the backup uses is rotated out
         createAndIndexNode( db, 2 );
@@ -327,7 +327,7 @@ public class BackupServiceIT
 
         // when
         backupService.doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
-                false, new Config( defaultBackupPortHostParams() ) );
+                false, new Config( defaultBackupPortHostParams() ), false );
 
         // Then
         db.shutdown();
@@ -365,7 +365,7 @@ public class BackupServiceIT
 
         // when
         backupService.doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false,
-                new Config(defaultBackupPortHostParams()));
+                new Config(defaultBackupPortHostParams()), false);
 
         // then
         db.shutdown();
@@ -502,7 +502,7 @@ public class BackupServiceIT
 
         BackupService.BackupOutcome backupOutcome = backupService.doFullBackup( BACKUP_HOST, backupPort,
                 backupDir.getAbsolutePath(), true,
-                new Config( params ) );
+                new Config( params ), false );
 
         backup.stop();
         executor.shutdown();

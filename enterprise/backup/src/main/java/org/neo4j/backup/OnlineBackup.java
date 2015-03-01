@@ -41,6 +41,7 @@ public class OnlineBackup
 {
     private final String hostNameOrIp;
     private final int port;
+    private boolean forensics;
     private BackupService.BackupOutcome outcome;
 
     /**
@@ -91,7 +92,7 @@ public class OnlineBackup
     public OnlineBackup backup( String targetDirectory )
     {
         outcome = new BackupService().doIncrementalBackupOrFallbackToFull( hostNameOrIp, port, targetDirectory, true,
-                defaultConfig() );
+                defaultConfig(), forensics );
         return this;
     }
 
@@ -114,7 +115,7 @@ public class OnlineBackup
     public OnlineBackup backup( String targetDirectory, boolean verification )
     {
         outcome = new BackupService().doIncrementalBackupOrFallbackToFull( hostNameOrIp, port, targetDirectory,
-                verification, defaultConfig() );
+                verification, defaultConfig(), forensics );
         return this;
     }
 
@@ -135,7 +136,7 @@ public class OnlineBackup
     public OnlineBackup backup( String targetDirectory, Config tuningConfiguration )
     {
         outcome = new BackupService().doIncrementalBackupOrFallbackToFull( hostNameOrIp, port, targetDirectory, true,
-                tuningConfiguration );
+                tuningConfiguration, forensics );
         return this;
     }
 
@@ -159,7 +160,7 @@ public class OnlineBackup
                                 boolean verification )
     {
         outcome = new BackupService().doIncrementalBackupOrFallbackToFull( hostNameOrIp, port, targetDirectory,
-                verification, tuningConfiguration );
+                verification, tuningConfiguration, forensics );
         return this;
     }
 
@@ -178,7 +179,7 @@ public class OnlineBackup
     @Deprecated
     public OnlineBackup full( String targetDirectory )
     {
-        outcome = new BackupService().doFullBackup( hostNameOrIp, port, targetDirectory, true, defaultConfig() );
+        outcome = new BackupService().doFullBackup( hostNameOrIp, port, targetDirectory, true, defaultConfig(), forensics );
         return this;
     }
 
@@ -199,7 +200,7 @@ public class OnlineBackup
     public OnlineBackup full( String targetDirectory, boolean verification )
     {
         outcome = new BackupService().doFullBackup( hostNameOrIp, port, targetDirectory, verification,
-                defaultConfig() );
+                defaultConfig(), forensics );
         return this;
     }
 
@@ -222,7 +223,7 @@ public class OnlineBackup
     public OnlineBackup full( String targetDirectory, boolean verification, Config tuningConfiguration )
     {
         outcome = new BackupService().doFullBackup( hostNameOrIp, port, targetDirectory, verification,
-                tuningConfiguration );
+                tuningConfiguration, forensics );
         return this;
     }
 
@@ -319,5 +320,15 @@ public class OnlineBackup
     private Config defaultConfig()
     {
         return new Config( stringMap(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+    }
+
+    /**
+     * @param forensics whether or not additional information should be backed up, for example transaction
+     * @return The same OnlineBackup instance, possible to use for a new backup operation
+     */
+    public OnlineBackup gatheringForensics( boolean forensics )
+    {
+        this.forensics = forensics;
+        return this;
     }
 }

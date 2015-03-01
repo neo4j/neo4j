@@ -63,7 +63,6 @@ import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.kernel.monitoring.StoreCopyMonitor;
 
 class BackupService
 {
@@ -108,7 +107,8 @@ class BackupService
     }
 
     BackupOutcome doFullBackup( final String sourceHostNameOrIp, final int sourcePort, String targetDirectory,
-                                boolean checkConsistency, Config tuningConfiguration )
+                                boolean checkConsistency, Config tuningConfiguration, final boolean forensics )
+
     {
         if ( directoryContainsDb( targetDirectory ) )
         {
@@ -137,7 +137,7 @@ class BackupService
                     client = new BackupClient( sourceHostNameOrIp, sourcePort, new DevNullLoggingService(),
                             new Monitors(), null );
                     client.start();
-                    return client.fullBackup( writer );
+                    return client.fullBackup( writer, forensics );
                 }
 
                 @Override
@@ -221,11 +221,11 @@ class BackupService
     }
 
     BackupOutcome doIncrementalBackupOrFallbackToFull( String sourceHostNameOrIp, int sourcePort, String targetDirectory,
-                                                       boolean verification, Config config )
+                                                       boolean verification, Config config, boolean forensics )
     {
         if(!directoryContainsDb( targetDirectory ))
         {
-            return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirectory, verification, config );
+            return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirectory, verification, config, forensics );
         }
 
         try
@@ -243,7 +243,7 @@ class BackupService
                 FileUtils.deleteRecursively( targetDirFile );
 
                 return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirFile.getAbsolutePath(),
-                        verification, config );
+                        verification, config, forensics );
             }
             catch ( Exception fullBackupFailure )
             {
