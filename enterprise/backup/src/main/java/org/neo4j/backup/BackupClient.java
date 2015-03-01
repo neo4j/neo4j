@@ -22,13 +22,17 @@ package org.neo4j.backup;
 import static org.neo4j.backup.BackupServer.FRAME_LENGTH;
 import static org.neo4j.backup.BackupServer.PROTOCOL_VERSION;
 
+import java.io.IOException;
+
 import org.jboss.netty.buffer.ChannelBuffer;
+
 import org.neo4j.com.Client;
 import org.neo4j.com.ObjectSerializer;
 import org.neo4j.com.Protocol;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Response;
+import org.neo4j.com.Serializer;
 import org.neo4j.com.StoreWriter;
 import org.neo4j.com.TargetCaller;
 import org.neo4j.com.ToNetworkStoreWriter;
@@ -45,10 +49,16 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
                 FRAME_LENGTH );
     }
 
-    public Response<Void> fullBackup( StoreWriter storeWriter )
+    public Response<Void> fullBackup( StoreWriter storeWriter, final boolean forensics )
     {
-        return sendRequest( BackupRequestType.FULL_BACKUP, RequestContext.EMPTY,
-                Protocol.EMPTY_SERIALIZER, new Protocol.FileStreamsDeserializer( storeWriter ) );
+        return sendRequest( BackupRequestType.FULL_BACKUP, RequestContext.EMPTY, new Serializer()
+        {
+            @Override
+            public void write( ChannelBuffer buffer ) throws IOException
+            {
+                buffer.writeByte( forensics ? (byte) 1 : (byte) 0 );
+            }
+        }, new Protocol.FileStreamsDeserializer( storeWriter ) );
     }
 
     public Response<Void> incrementalBackup( RequestContext context )
@@ -70,7 +80,18 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
             public Response<Void> call( TheBackupInterface master, RequestContext context,
                     ChannelBuffer input, ChannelBuffer target )
             {
-                return master.fullBackup( new ToNetworkStoreWriter( target, new Monitors() ) );
+                boolean forensics = input.readable() ? booleanOf( input.readByte() ) : false;
+                return master.fullBackup( new ToNetworkStoreWriter( target, new Monitors() ), forensics );
+            }
+
+            private boolean booleanOf( byte value )
+            {
+                switch ( value )
+                {
+                case 0: return false;
+                case 1: return true;
+                default: throw new IllegalArgumentException( "Invalid 'boolean' byte value " + value );
+                }
             }
         }, Protocol.VOID_SERIALIZER ),
         INCREMENTAL_BACKUP( new TargetCaller<TheBackupInterface, Void>()

@@ -114,7 +114,7 @@ class BackupService
     }
 
     BackupOutcome doFullBackup( String sourceHostNameOrIp, int sourcePort, String targetDirectory,
-                                boolean checkConsistency, Config tuningConfiguration )
+                                boolean checkConsistency, Config tuningConfiguration, boolean forensics )
     {
         if ( directoryContainsDb( targetDirectory ) )
         {
@@ -130,7 +130,7 @@ class BackupService
         try
         {
             Response<Void> response = client.fullBackup( decorateWithProgressIndicator(
-                    new ToFileStoreWriter( new File( targetDirectory ) ) ) );
+                    new ToFileStoreWriter( new File( targetDirectory ) ) ), forensics );
             GraphDatabaseAPI targetDb = startTemporaryDb( targetDirectory,
                     VerificationLevel.NONE /* run full check instead */ );
             try
@@ -316,11 +316,11 @@ class BackupService
     }
 
     BackupOutcome doIncrementalBackupOrFallbackToFull( String sourceHostNameOrIp, int sourcePort, String targetDirectory,
-                                                       boolean verification, Config config )
+                                                       boolean verification, Config config, boolean forensics )
     {
         if(!directoryContainsDb( targetDirectory ))
         {
-            return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirectory, verification, config );
+            return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirectory, verification, config, forensics );
         }
 
         try
@@ -338,7 +338,7 @@ class BackupService
                 FileUtils.deleteRecursively( targetDirFile );
 
                 return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirFile.getAbsolutePath(),
-                                                      verification, config );
+                                                      verification, config, forensics );
             }
             catch ( IOException fullBackupFailure )
             {

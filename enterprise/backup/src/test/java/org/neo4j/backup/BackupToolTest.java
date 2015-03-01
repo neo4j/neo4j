@@ -58,7 +58,7 @@ public class BackupToolTest
 
         // then
         verify( service ).doIncrementalBackupOrFallbackToFull( eq( "localhost" ),
-                eq( BackupServer.DEFAULT_PORT ), eq( "my_backup" ), eq( true ), any( Config.class ) );
+                eq( BackupServer.DEFAULT_PORT ), eq( "my_backup" ), eq( true ), any( Config.class ), eq( false ) );
         verify( systemOut ).println( "Performing backup from 'localhost'" );
         verify( systemOut ).println( "Done" );
     }
@@ -75,7 +75,7 @@ public class BackupToolTest
 
         // then
         verify( service ).doIncrementalBackupOrFallbackToFull( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
-                eq( "my_backup" ), eq( true ), any( Config.class ) );
+                eq( "my_backup" ), eq( true ), any( Config.class ), eq( false ) );
         verify( systemOut ).println( "Performing backup from 'localhost'" );
         verify( systemOut ).println( "Done" );
     }
@@ -93,7 +93,7 @@ public class BackupToolTest
 
         // then
         verify( service ).doIncrementalBackupOrFallbackToFull( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
-                eq( "my_backup" ), eq( true ), any(Config.class) );
+                eq( "my_backup" ), eq( true ), any(Config.class), eq( false ) );
         verify( systemOut ).println( "Performing backup from 'localhost'" );
         verify( systemOut ).println( "Done" );
     }
@@ -113,7 +113,7 @@ public class BackupToolTest
         // then
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
         verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), anyString(), anyBoolean(),
-                config.capture() );
+                config.capture(), eq( false ) );
         assertFalse( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
         assertEquals( TaskExecutionOrder.MULTI_PASS,
                 config.getValue().get( ConsistencyCheckSettings.consistency_check_execution_order ) );
@@ -144,7 +144,7 @@ public class BackupToolTest
         // then
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
         verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), anyString(), anyBoolean(),
-                config.capture() );
+                config.capture(), eq( false ) );
         assertTrue( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
     }
 
@@ -254,4 +254,19 @@ public class BackupToolTest
         verifyZeroInteractions( service );
     }
 
+    @Test
+    public void shouldMakeUseOfDebugArgument() throws Exception
+    {
+        // given
+        String[] args = new String[]{"-from", "localhost", "-to", "my_backup", "-gather-forensics"};
+        BackupService service = mock( BackupService.class );
+        PrintStream systemOut = mock( PrintStream.class );
+
+        // when
+        new BackupTool( service, systemOut ).run( args );
+
+        // then
+        verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), anyString(), anyBoolean(),
+                any( Config.class ), eq( true ) );
+    }
 }
