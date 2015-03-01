@@ -117,7 +117,8 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adpter
     private boolean removeProcessorFromPotentialIdleStep( StageExecution execution )
     {
         Pair<Step<?>,Float> fastest = execution.stepsOrderedBy( Keys.avg_processing_time, true ).iterator().next();
-        if ( fastest.other().floatValue() <= 0.5f )
+        float threshold = 1f - (1f/fastest.first().numberOfProcessors());
+        if ( fastest.other().floatValue() < threshold )
         {
             Step<?> fastestStep = fastest.first();
             long doneBatches = batches( fastestStep );

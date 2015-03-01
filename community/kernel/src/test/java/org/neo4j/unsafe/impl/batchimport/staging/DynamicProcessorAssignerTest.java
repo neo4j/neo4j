@@ -66,13 +66,13 @@ public class DynamicProcessorAssignerTest
         Configuration config = movingAverageConfig( 10 );
         // available processors = 2 is enough because it will see the fast step as only using 20% of a processor
         // and it rounds down. So there's room for assigning one more.
-        DynamicProcessorAssigner assigner = new DynamicProcessorAssigner( config, 2 );
+        DynamicProcessorAssigner assigner = new DynamicProcessorAssigner( config, 3 );
 
         ControlledStep<?> slowStep = spy( new ControlledStep<>( "slow", true ) );
         slowStep.setStat( Keys.avg_processing_time, 10 );
         slowStep.setStat( Keys.done_batches, 10 );
 
-        ControlledStep<?> fastStep = spy( new ControlledStep<>( "fast", true ) );
+        ControlledStep<?> fastStep = spy( new ControlledStep<>( "fast", true, 2 ) );
         fastStep.setStat( Keys.avg_processing_time, 2 );
         fastStep.setStat( Keys.done_batches, 10 );
 
@@ -82,15 +82,7 @@ public class DynamicProcessorAssignerTest
         // WHEN first checking
         assigner.check( execution );
         // THEN one additional processor will be added to the slow step
-        verify( slowStep, times( 1 ) ).incrementNumberOfProcessors();
-        verify( fastStep, times( 1 ) ).decrementNumberOfProcessors();
-
-        // and WHEN checking again after further "moving average" number of batches have been performed
-        slowStep.setStat( Keys.done_batches, 25 );
-        fastStep.setStat( Keys.done_batches, 25 );
-        assigner.check( execution );
-        // THEN we should try and decrement processors for the fastest step, which is way faster than the next fastest
-        verify( slowStep, times( 0 ) ).decrementNumberOfProcessors();
+        verify( fastStep, times( 0 ) ).incrementNumberOfProcessors();
         verify( fastStep, times( 1 ) ).decrementNumberOfProcessors();
     }
 
