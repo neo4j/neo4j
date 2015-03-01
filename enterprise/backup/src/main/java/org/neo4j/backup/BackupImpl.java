@@ -58,13 +58,12 @@ class BackupImpl implements TheBackupInterface
         this.storeCopyMonitor = monitors.newMonitor( StoreCopyMonitor.class, getClass() );
     }
 
-    @Override
-    public Response<Void> fullBackup( StoreWriter writer )
+    public Response<Void> fullBackup( StoreWriter writer, boolean forensics )
     {
         storeCopyMonitor.startCopyingFiles();
         RequestContext context = ServerUtil.rotateLogsAndStreamStoreFiles( spi.getStoreDir(),
                 xaDataSourceManager,
-                kpeg, logger, false, writer, new DefaultFileSystemAbstraction(), storeCopyMonitor );
+                kpeg, logger, forensics, writer, new DefaultFileSystemAbstraction(), storeCopyMonitor );
         writer.done();
         storeCopyMonitor.finishedCopyingStoreFiles();
         return packResponse( context );

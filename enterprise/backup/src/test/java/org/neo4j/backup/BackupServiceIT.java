@@ -122,7 +122,7 @@ public class BackupServiceIT
         try
         {
             // when
-            new BackupService( fileSystem ).doFullBackup( "", 0, backupDir.getAbsolutePath(), true, new Config() );
+            new BackupService( fileSystem ).doFullBackup( "", 0, backupDir.getAbsolutePath(), true, new Config(), false );
         }
         catch ( RuntimeException ex )
         {
@@ -140,7 +140,7 @@ public class BackupServiceIT
 
         // when
         BackupService backupService = new BackupService( fileSystem );
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig() );
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig(), false );
         db.shutdown();
 
         // then
@@ -162,7 +162,7 @@ public class BackupServiceIT
 
         // when
         BackupService backupService = new BackupService( fileSystem );
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig() );
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig(), false );
         db.shutdown();
 
         // then
@@ -181,7 +181,7 @@ public class BackupServiceIT
 
         // when
         BackupService backupService = new BackupService( fileSystem );
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig() );
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig(), false );
         db.shutdown();
 
         // then
@@ -202,7 +202,7 @@ public class BackupServiceIT
         // when
         BackupService backupService = new BackupService( fileSystem );
         backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false,
-                new Config( defaultBackupPortHostParams() ) );
+                new Config( defaultBackupPortHostParams() ), false );
         db.shutdown();
 
         // then
@@ -219,7 +219,7 @@ public class BackupServiceIT
 
         // when
         BackupService backupService = new BackupService( fileSystem );
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig() );
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig(), false );
         db.shutdown();
 
         // then
@@ -239,7 +239,7 @@ public class BackupServiceIT
         createAndIndexNode( db, 1 );
 
         // A full backup
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig() );
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig(), false );
 
         // And the log the backup uses is rotated out
         createAndIndexNode( db, 2 );
@@ -277,7 +277,7 @@ public class BackupServiceIT
         createAndIndexNode( db, 1 );
 
         // A full backup
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig() );
+        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig(), false );
 
         // And the log the backup uses is rotated out
         createAndIndexNode( db, 2 );
@@ -290,7 +290,7 @@ public class BackupServiceIT
 
         // when
         backupService.doIncrementalBackupOrFallbackToFull(
-                BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig() );
+                BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig(), false );
 
 
         // Then
@@ -311,7 +311,7 @@ public class BackupServiceIT
 
         // A full backup
         backupService.doIncrementalBackupOrFallbackToFull(
-                BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig() );
+                BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig(), false );
 
         // And the log the backup uses is rotated out
         createAndIndexNode( db, 2 );
@@ -322,7 +322,7 @@ public class BackupServiceIT
 
         // when
         backupService.doIncrementalBackupOrFallbackToFull(
-                BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig() );
+                BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig(), false );
 
         // Then
         db.shutdown();
@@ -360,7 +360,7 @@ public class BackupServiceIT
 
         // when
         backupService.doIncrementalBackupOrFallbackToFull(
-                BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig() );
+                BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig(), false );
 
         // then
         db.shutdown();
@@ -498,7 +498,7 @@ public class BackupServiceIT
 
         BackupService.BackupOutcome backupOutcome = backupService.doFullBackup( BACKUP_HOST, backupPort,
                 backupDir.getAbsolutePath(), true,
-                new Config( params ) );
+                new Config( params ), false );
 
         backup.stop();
         executor.shutdown();
@@ -522,7 +522,7 @@ public class BackupServiceIT
         createAndIndexNode( db1, 1 );
 
         new BackupService( fileSystem ).doFullBackup(
-                BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig() );
+                BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig(), false );
 
         db1.shutdown();
 
@@ -538,7 +538,7 @@ public class BackupServiceIT
         try
         {
             new BackupService( fileSystem ).doIncrementalBackupOrFallbackToFull(
-                    BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig() );
+                    BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false, defaultConfig(), false );
 
             fail( "Should have thrown exception about mismatching store ids" );
         }
