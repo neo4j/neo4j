@@ -74,7 +74,7 @@ angular.module('neo4jApp.services')
     ]
 
     class Selector
-      constructor: (@tag, @classes) ->
+      constructor: (@tag, @classes = []) ->
 
       toString: ->
         str = @tag
@@ -162,16 +162,17 @@ angular.module('neo4jApp.services')
         defaultColor = yes
         defaultCaption = yes
         for rule in @rules
-          if rule.matches(selector) and rule.selector.classes.length > 0
+          if rule.selector.classes.length > 0 and rule.matches(selector)
             if rule.props.hasOwnProperty('color')
               defaultColor = no
             if rule.props.hasOwnProperty('caption')
               defaultCaption = no
 
+        minimalSelector = new Selector(selector.tag, selector.classes.sort().slice(0, 1))
         if defaultColor
-          @changeForSelector(selector, @findAvailableDefaultColor())
+          @changeForSelector(minimalSelector, @findAvailableDefaultColor())
         if defaultCaption
-          @changeForSelector(selector, @getDefaultNodeCaption(item))
+          @changeForSelector(minimalSelector, @getDefaultNodeCaption(item))
 
       getDefaultNodeCaption: (item) ->
         return {caption: '<id>'} if not item or not item.propertyList?.length > 0
@@ -304,7 +305,6 @@ angular.module('neo4jApp.services')
       #
       # Misc.
       #
-      nextDefaultColor: 0
       defaultSizes: -> provider.defaultSizes
       defaultArrayWidths: -> provider.defaultArrayWidths
       defaultColors: -> angular.copy(provider.defaultColors)
