@@ -30,6 +30,8 @@ describe 'Service: GraphStyle', () ->
       'color': '#aaa'
       'border-width': '2px'
       'caption': 'Node'
+    'node.Person':
+      'caption': '{name}'
     'node.Actor':
       'color': '#fff'
     'relationship':
@@ -65,27 +67,31 @@ node {
 
   describe '#change', ->
     it 'should change node rules', ->
-      GraphStyle.change({isNode:yes}, {color: '#bbb'})
+      GraphStyle.changeForSelector(GraphStyle.newSelector('node', []), {color: '#bbb'})
       newColor = GraphStyle.forNode().get('color')
       expect(newColor).toBe '#bbb'
 
     it 'should change relationship rules', ->
-      GraphStyle.change({isRelationship:yes}, {color: '#bbb'})
+      GraphStyle.changeForSelector(GraphStyle.newSelector('relationship', []), {color: '#bbb'})
       newColor = GraphStyle.forRelationship().get('color')
       expect(newColor).toBe '#bbb'
 
 
   describe '#forNode: ', ->
-    it 'should be able to get parameters for nodes without labels', ->
+    it 'should be able to get style for nodes without labels', ->
       expect(GraphStyle.forNode().get('color')).toBe('#aaa')
       expect(GraphStyle.forNode().get('border-width')).toBe('2px')
 
-    it 'should inherit rules from base node rule', ->
+    it 'should inherit style from base node rule', ->
       expect(GraphStyle.forNode(labels: ['Actor']).get('border-width')).toBe('2px')
       expect(GraphStyle.forNode(labels: ['Movie']).get('border-width')).toBe('2px')
 
-    it 'should apply rules when specified', ->
+    it 'should apply exactly matching rules', ->
       expect(GraphStyle.forNode(labels: ['Actor']).get('color')).toBe('#fff')
+
+    it 'should apply partially matching rules when node has multiple labels', ->
+      expect(GraphStyle.forNode(labels: ['Person', 'Actor']).get('caption')).toBe('{name}')
+      expect(GraphStyle.forNode(labels: ['Person', 'Actor']).get('color')).toBe('#fff')
 
     it 'should create new rules for labels that have not been seen before', ->
       expect(GraphStyle.forNode(labels: ['Movie']).get('color')).toBe('#A5ABB6')
@@ -95,7 +101,7 @@ node {
       expect(sheet['node.Person']['color']).toBe('#68BDF6')
 
     it 'should allocate colors that are not already used by existing rules', ->
-      GraphStyle.change({isNode:yes, labels: ['Person']}, {color: '#A5ABB6'})
+      GraphStyle.changeForSelector(GraphStyle.newSelector('node', ['Person']), {color: '#A5ABB6'})
       expect(GraphStyle.forNode(labels: ['Movie']).get('color')).toBe('#68BDF6')
       sheet = GraphStyle.toSheet()
       expect(sheet['node.Person']['color']).toBe('#A5ABB6')
@@ -105,9 +111,9 @@ node {
       for i in [1..GraphStyle.defaultColors().length]
         GraphStyle.forNode(labels: ["Label #{i}"])
 
-      GraphStyle.change({isNode:yes, labels: ['Person']}, {color: '#A5ABB6'})
-      GraphStyle.change({isNode:yes, labels: ['Movie']}, {color: '#A5ABB6'})
-      GraphStyle.change({isNode:yes, labels: ['Animal']}, {color: '#A5ABB6'})
+      expect(GraphStyle.forNode(labels: ['Person']).get('color')).toBe('#A5ABB6')
+      expect(GraphStyle.forNode(labels: ['Movie']).get('color')).toBe('#A5ABB6')
+      expect(GraphStyle.forNode(labels: ['Animal']).get('color')).toBe('#A5ABB6')
 
   describe '#parse:', ->
     it 'should parse rules from grass text', ->
@@ -115,7 +121,7 @@ node {
 
   describe '#resetToDefault', ->
     it 'should reset to the default styling', ->
-      GraphStyle.change({isNode:yes}, {color: '#bbb'})
+      GraphStyle.changeForSelector(GraphStyle.newSelector('node', []), {color: '#bbb'})
       newColor = GraphStyle.forNode().get('color')
       expect(newColor).toBe '#bbb'
       GraphStyle.resetToDefault()
