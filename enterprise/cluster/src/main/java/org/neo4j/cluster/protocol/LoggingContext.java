@@ -20,8 +20,11 @@
 package org.neo4j.cluster.protocol;
 
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.ConsoleLogger;
 
 public interface LoggingContext
 {
     StringLogger getLogger( Class loggingClass );
+
+    ConsoleLogger getConsoleLogger( Class loggingClass );
 }
