@@ -613,6 +613,50 @@ public class CsvInputTest
         }
     }
 
+    @Test
+    public void shouldIgnoreNodeEntriesMarkedIgnoreUsingHeader() throws Exception
+    {
+        // GIVEN
+        Iterable<DataFactory<InputNode>> data = DataFactories.nodeData( CsvInputTest.<InputNode>data(
+                ":ID,name:IGNORE,other:int,:LABEL\n" +
+                "1,Mattias,10,Person\n" +
+                "2,Johan,111,Person\n" +
+                "3,Emil,12,Person" ) );
+        Input input = new CsvInput( data, defaultFormatNodeFileHeader(), null, null, IdType.INTEGER, COMMAS,
+                badRelationships( 0 ) );
+
+        // WHEN
+        try ( InputIterator<InputNode> nodes = input.nodes().iterator() )
+        {
+            assertNode( nodes.next(), 1L, new Object[] {"other", 10}, labels( "Person" ) );
+            assertNode( nodes.next(), 2L, new Object[] {"other", 111}, labels( "Person" ) );
+            assertNode( nodes.next(), 3L, new Object[] {"other", 12}, labels( "Person" ) );
+            assertFalse( nodes.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldIgnoreRelationshipEntriesMarkedIgnoreUsingHeader() throws Exception
+    {
+        // GIVEN
+        Iterable<DataFactory<InputRelationship>> data = DataFactories.relationshipData( CsvInputTest.<InputRelationship>data(
+                ":START_ID,:TYPE,:END_ID,prop:IGNORE,other:int\n" +
+                "1,KNOWS,2,Mattias,10\n" +
+                "2,KNOWS,3,Johan,111\n" +
+                "3,KNOWS,4,Emil,12" ) );
+        Input input = new CsvInput( null, null, data, defaultFormatRelationshipFileHeader(), IdType.INTEGER, COMMAS,
+                badRelationships( 0 ) );
+
+        // WHEN
+        try ( InputIterator<InputRelationship> relationships = input.relationships().iterator() )
+        {
+            assertRelationship( relationships.next(), 1L, 2L, "KNOWS", new Object[] {"other", 10} );
+            assertRelationship( relationships.next(), 2L, 3L, "KNOWS", new Object[] {"other", 111} );
+            assertRelationship( relationships.next(), 3L, 4L, "KNOWS", new Object[] {"other", 12} );
+            assertFalse( relationships.hasNext() );
+        }
+    }
+
     private Configuration customConfig( final char delimiter, final char arrayDelimiter, final char quote )
     {
         return new Configuration.Default()

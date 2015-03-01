@@ -68,7 +68,8 @@ public abstract class InputEntityDeserialization<ENTITY extends InputEntity> imp
         case PROPERTY:
             addProperty( entry.name(), value );
             break;
-        case IGNORE: // value ignored
+        case IGNORE: // value ignored. The call stack shouldn't have come this far, but there's no harm
+                     // having this case here, I think.
             break;
         default:
             break;
