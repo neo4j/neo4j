@@ -123,7 +123,7 @@ class BackupService
     }
 
     BackupOutcome doFullBackup( final String sourceHostNameOrIp, final int sourcePort, String targetDirectory,
-            boolean checkConsistency, Config tuningConfiguration, final long timeout )
+            boolean checkConsistency, Config tuningConfiguration, final long timeout, final boolean forensics )
     {
         if ( directoryContainsDb( targetDirectory ) )
         {
@@ -155,7 +155,7 @@ class BackupService
                             monitors.newMonitor( ByteCounterMonitor.class ),
                             monitors.newMonitor( RequestMonitor.class ) );
                     client.start();
-                    return client.fullBackup( writer );
+                    return client.fullBackup( writer, forensics );
                 }
 
                 @Override
@@ -230,11 +230,12 @@ class BackupService
     }
 
     BackupOutcome doIncrementalBackupOrFallbackToFull( String sourceHostNameOrIp, int sourcePort,
-            String targetDirectory, boolean verification, Config config, long timeout )
+            String targetDirectory, boolean verification, Config config, long timeout, boolean forensics )
     {
         if ( !directoryContainsDb( targetDirectory ) )
         {
-            return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirectory, verification, config, timeout );
+            return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirectory, verification, config, timeout,
+                    forensics );
         }
         try
         {
@@ -249,7 +250,7 @@ class BackupService
                 File targetDirFile = new File( targetDirectory );
                 FileUtils.deleteRecursively( targetDirFile );
                 return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirFile.getAbsolutePath(), verification,
-                        config, timeout );
+                        config, timeout, forensics );
             }
             catch ( Exception fullBackupFailure )
             {

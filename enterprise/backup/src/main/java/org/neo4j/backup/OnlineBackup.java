@@ -39,6 +39,7 @@ public class OnlineBackup
 {
     private final String hostNameOrIp;
     private final int port;
+    private boolean forensics;
     private BackupService.BackupOutcome outcome;
     private long timeoutMillis = BackupClient.BIG_READ_TIMEOUT;
 
@@ -90,7 +91,7 @@ public class OnlineBackup
     public OnlineBackup backup( String targetDirectory )
     {
         outcome = new BackupService().doIncrementalBackupOrFallbackToFull( hostNameOrIp, port, targetDirectory, true,
-                defaultConfig(), timeoutMillis);
+                defaultConfig(), timeoutMillis, forensics );
         return this;
     }
 
@@ -113,7 +114,7 @@ public class OnlineBackup
     public OnlineBackup backup( String targetDirectory, boolean verification )
     {
         outcome = new BackupService().doIncrementalBackupOrFallbackToFull( hostNameOrIp, port, targetDirectory,
-                verification, defaultConfig(), timeoutMillis );
+                verification, defaultConfig(), timeoutMillis, forensics );
         return this;
     }
 
@@ -134,7 +135,7 @@ public class OnlineBackup
     public OnlineBackup backup( String targetDirectory, Config tuningConfiguration )
     {
         outcome = new BackupService().doIncrementalBackupOrFallbackToFull( hostNameOrIp, port, targetDirectory, true,
-                tuningConfiguration, timeoutMillis );
+                tuningConfiguration, timeoutMillis, forensics );
         return this;
     }
 
@@ -158,15 +159,15 @@ public class OnlineBackup
                                 boolean verification )
     {
         outcome = new BackupService().doIncrementalBackupOrFallbackToFull( hostNameOrIp, port, targetDirectory,
-                verification, tuningConfiguration, timeoutMillis );
+                verification, tuningConfiguration, timeoutMillis, forensics );
         return this;
     }
-    
+
     /**
-     * Use this method to change the default timeout to keep the client waiting for each reply from the server when 
-     * doing online backup. Once the value is changed, then every time when doing online backup, the timeout will be 
+     * Use this method to change the default timeout to keep the client waiting for each reply from the server when
+     * doing online backup. Once the value is changed, then every time when doing online backup, the timeout will be
      * reused until this method is called again and a new value is assigned.
-     * 
+     *
      * @param timeoutMillis The time duration in millisecond that keeps the client waiting for each reply from the server.
      * @return The same OnlineBackup instance, possible to use for a new backup operation.
      */
@@ -192,7 +193,7 @@ public class OnlineBackup
     public OnlineBackup full( String targetDirectory )
     {
         outcome = new BackupService().doFullBackup( hostNameOrIp, port, targetDirectory, true, defaultConfig(),
-                timeoutMillis );
+                timeoutMillis, forensics );
         return this;
     }
 
@@ -213,7 +214,7 @@ public class OnlineBackup
     public OnlineBackup full( String targetDirectory, boolean verification )
     {
         outcome = new BackupService().doFullBackup( hostNameOrIp, port, targetDirectory, verification,
-                defaultConfig(), timeoutMillis );
+                defaultConfig(), timeoutMillis, forensics );
         return this;
     }
 
@@ -236,7 +237,7 @@ public class OnlineBackup
     public OnlineBackup full( String targetDirectory, boolean verification, Config tuningConfiguration )
     {
         outcome = new BackupService().doFullBackup( hostNameOrIp, port, targetDirectory, verification,
-                tuningConfiguration, timeoutMillis );
+                tuningConfiguration, timeoutMillis, forensics );
         return this;
     }
 
@@ -335,5 +336,15 @@ public class OnlineBackup
     private Config defaultConfig()
     {
         return new Config( stringMap(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+    }
+
+    /**
+     * @param forensics whether or not additional information should be backed up, for example transaction
+     * @return The same OnlineBackup instance, possible to use for a new backup operation
+     */
+    public OnlineBackup gatheringForensics( boolean forensics )
+    {
+        this.forensics = forensics;
+        return this;
     }
 }

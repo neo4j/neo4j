@@ -68,7 +68,7 @@ public class BackupToolTest
         // then
         verify( service ).doIncrementalBackupOrFallbackToFull( eq( "localhost" ),
                 eq( BackupServer.DEFAULT_PORT ), eq( "my_backup" ), eq( true ), any( Config.class ),
-                eq( BackupClient.BIG_READ_TIMEOUT) );
+                eq( BackupClient.BIG_READ_TIMEOUT ), eq( false ) );
         verify( systemOut ).println(
                 "Performing backup from '" + new HostnamePort( "localhost", BackupServer.DEFAULT_PORT ) + "'" );
         verify( systemOut ).println( "Done" );
@@ -88,7 +88,7 @@ public class BackupToolTest
 
         // then
         verify( service ).doIncrementalBackupOrFallbackToFull( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
-                eq( "my_backup" ), eq( true ), any( Config.class ), eq( expectedTimeout ) );
+                eq( "my_backup" ), eq( true ), any( Config.class ), eq( expectedTimeout ), eq( false ) );
         verify( systemOut ).println(
                 "Performing backup from '" + new HostnamePort( "localhost", BackupServer.DEFAULT_PORT ) + "'" );
         verify( systemOut ).println( "Done" );
@@ -106,7 +106,7 @@ public class BackupToolTest
 
         // then
         verify( service ).doIncrementalBackupOrFallbackToFull( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
-                eq( "my_backup" ), eq( true ), any( Config.class ), eq( BackupClient.BIG_READ_TIMEOUT) );
+                eq( "my_backup" ), eq( true ), any( Config.class ), eq( BackupClient.BIG_READ_TIMEOUT ), eq( false ) );
         verify( systemOut ).println(
                 "Performing backup from '" + new HostnamePort( "localhost", BackupServer.DEFAULT_PORT ) + "'" );
         verify( systemOut ).println( "Done" );
@@ -125,7 +125,7 @@ public class BackupToolTest
 
         // then
         verify( service ).doIncrementalBackupOrFallbackToFull( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
-                eq( "my_backup" ), eq( true ), any( Config.class ), eq( BackupClient.BIG_READ_TIMEOUT) );
+                eq( "my_backup" ), eq( true ), any( Config.class ), eq( BackupClient.BIG_READ_TIMEOUT ), eq( false ) );
         verify( systemOut ).println(
                 "Performing backup from '" + new HostnamePort( "localhost", BackupServer.DEFAULT_PORT ) + "'" );
         verify( systemOut ).println( "Done" );
@@ -145,7 +145,7 @@ public class BackupToolTest
         // then
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
         verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), anyString(), anyBoolean(),
-                config.capture(), eq( BackupClient.BIG_READ_TIMEOUT) );
+                config.capture(), eq( BackupClient.BIG_READ_TIMEOUT ), eq( false ) );
         assertFalse( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
         assertEquals( TaskExecutionOrder.MULTI_PASS,
                 config.getValue().get( ConsistencyCheckSettings.consistency_check_execution_order ) );
@@ -170,7 +170,7 @@ public class BackupToolTest
         // then
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
         verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), anyString(), anyBoolean(),
-                config.capture(), anyLong() );
+                config.capture(), anyLong(), eq( false ) );
         assertTrue( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
     }
 
@@ -311,9 +311,25 @@ public class BackupToolTest
 
         // Then
         verify( service ).doIncrementalBackupOrFallbackToFull( eq( host ), eq( BackupServer.DEFAULT_PORT ),
-                eq( targetDir ), eq( false ), any( Config.class ), eq( BackupClient.BIG_READ_TIMEOUT ) );
+                eq( targetDir ), eq( false ), any( Config.class ), eq( BackupClient.BIG_READ_TIMEOUT ), eq( false ) );
         verify( systemOut ).println(
                 "Performing backup from '" + new HostnamePort( host, BackupServer.DEFAULT_PORT ) + "'" );
         verify( systemOut ).println( "Done" );
+    }
+
+    @Test
+    public void shouldMakeUseOfDebugArgument() throws Exception
+    {
+        // given
+        String[] args = new String[]{"-from", "localhost", "-to", "my_backup", "-gather-forensics"};
+        BackupService service = mock( BackupService.class );
+        PrintStream systemOut = mock( PrintStream.class );
+
+        // when
+        new BackupTool( service, systemOut ).run( args );
+
+        // then
+        verify( service ).doIncrementalBackupOrFallbackToFull( anyString(), anyInt(), anyString(), anyBoolean(),
+                any( Config.class ), anyLong(), eq( true ) );
     }
 }

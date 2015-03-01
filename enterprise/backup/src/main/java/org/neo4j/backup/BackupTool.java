@@ -69,7 +69,9 @@ public class BackupTool
     private static final String VERIFY = "verify";
     private static final String CONFIG = "config";
 
+
     private static final String TIMEOUT = "timeout";
+    private static final String FORENSICS = "gather-forensics";
     public static final String DEFAULT_SCHEME = "single";
     static final String MISMATCHED_STORE_ID = "You tried to perform a backup from database %s, " +
             "but the target directory contained a backup from database %s. ";
@@ -148,6 +150,7 @@ public class BackupTool
         String to = args.get( TO ).trim();
         boolean verify = args.getBoolean( VERIFY, true, true );
         Config tuningConfiguration = readTuningConfiguration( TO, args );
+        boolean forensics = args.getBoolean( FORENSICS, false, true );
 
         long timeout = args.getDuration(TIMEOUT, BackupClient.BIG_READ_TIMEOUT);
 
@@ -155,7 +158,7 @@ public class BackupTool
 
         HostnamePort hostnamePort = newHostnamePort( backupURI );
 
-        return executeBackup( hostnamePort, to, verify, tuningConfiguration, timeout );
+        return executeBackup( hostnamePort, to, verify, tuningConfiguration, timeout, forensics );
     }
 
     private BackupOutcome runBackup( Args args ) throws ToolFailureException
@@ -165,6 +168,7 @@ public class BackupTool
         String to = args.get( TO ).trim();
         boolean verify = args.getBoolean( VERIFY, true, true );
         Config tuningConfiguration = readTuningConfiguration( TO, args );
+        boolean forensics = args.getBoolean( FORENSICS, false, true );
 
         if ( host.contains( ":" ) )
         {
@@ -184,16 +188,16 @@ public class BackupTool
 
         HostnamePort hostnamePort = newHostnamePort( backupURI );
 
-        return executeBackup( hostnamePort, to, verify, tuningConfiguration, timeout );
+        return executeBackup( hostnamePort, to, verify, tuningConfiguration, timeout, forensics );
     }
 
     private BackupOutcome executeBackup( HostnamePort hostnamePort, String to, boolean verify,
-                                Config tuningConfiguration, long timeout ) throws ToolFailureException
+                                Config tuningConfiguration, long timeout, boolean forensics ) throws ToolFailureException
     {
         try
         {
             systemOut.println( "Performing backup from '" + hostnamePort + "'" );
-            return doBackup( hostnamePort, to, verify, tuningConfiguration, timeout );
+            return doBackup( hostnamePort, to, verify, tuningConfiguration, timeout, forensics );
         }
         catch ( TransactionFailureException tfe )
         {
@@ -212,7 +216,7 @@ public class BackupTool
                             " - cannot continue, aborting.", e );
                 }
 
-                return doBackup( hostnamePort, to, verify, tuningConfiguration, timeout );
+                return doBackup( hostnamePort, to, verify, tuningConfiguration, timeout, forensics );
             }
             else
             {
@@ -223,7 +227,7 @@ public class BackupTool
     }
 
     private BackupOutcome doBackup( HostnamePort hostnamePort, String to, boolean checkConsistency,
-                           Config config, long timeout ) throws ToolFailureException
+                           Config config, long timeout, boolean forensics ) throws ToolFailureException
     {
         try
         {
@@ -232,7 +236,7 @@ public class BackupTool
 
             BackupOutcome outcome =
                     backupService.doIncrementalBackupOrFallbackToFull( host, port, to,
-                            checkConsistency, config, timeout );
+                            checkConsistency, config, timeout, forensics );
             systemOut.println( "Done" );
             return outcome;
         }

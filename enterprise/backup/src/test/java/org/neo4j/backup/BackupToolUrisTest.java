@@ -41,7 +41,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-import static org.neo4j.backup.BackupTool.ToolFailureException;
 
 @RunWith(Enclosed.class)
 public class BackupToolUrisTest
@@ -98,7 +97,8 @@ public class BackupToolUrisTest
                     eq( "/var/backup/graph" ),
                     eq( true ),
                     any( Config.class ),
-                    eq( BackupClient.BIG_READ_TIMEOUT )
+                    eq( BackupClient.BIG_READ_TIMEOUT ),
+                    eq( false )
             );
         }
     }
@@ -142,7 +142,7 @@ public class BackupToolUrisTest
                 newBackupTool().run( args );
                 fail( "Should exit abnormally for '" + uri + "'" );
             }
-            catch ( ToolFailureException e )
+            catch ( BackupTool.ToolFailureException e )
             {
                 // Then
                 assertThat( e.getMessage(), equalTo( BackupTool.WRONG_FROM_ADDRESS_SYNTAX ) );
@@ -201,7 +201,8 @@ public class BackupToolUrisTest
                     eq( "/var/backup/graph" ),
                     eq( true ),
                     any( Config.class ),
-                    eq( BackupClient.BIG_READ_TIMEOUT )
+                    eq( BackupClient.BIG_READ_TIMEOUT ),
+                    eq( false )
             );
         }
     }

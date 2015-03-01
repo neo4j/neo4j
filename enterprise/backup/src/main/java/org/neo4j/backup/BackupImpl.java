@@ -57,8 +57,7 @@ class BackupImpl implements TheBackupInterface
         this.incrementalResponsePacker = new ResponsePacker( logicalTransactionStore, transactionIdStore, storeId );
     }
 
-    @Override
-    public Response<Void> fullBackup( StoreWriter writer )
+    public Response<Void> fullBackup( StoreWriter writer, boolean forensics )
     {
         try ( StoreWriter storeWriter = writer )
         {
@@ -70,7 +69,6 @@ class BackupImpl implements TheBackupInterface
             long optionalTransactionId = copyStartContext.lastAppliedTransaction();
             return responsePacker.packTransactionStreamResponse( anonymous( optionalTransactionId ), null/*no response object*/ );
         }
-
     }
 
     @Override

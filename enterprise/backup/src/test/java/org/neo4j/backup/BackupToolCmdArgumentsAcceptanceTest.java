@@ -101,7 +101,8 @@ public class BackupToolCmdArgumentsAcceptanceTest
                 eq( PATH ),
                 eq( expectedVerifyStoreValue ),
                 any( Config.class ),
-                eq( BackupClient.BIG_READ_TIMEOUT )
+                eq( BackupClient.BIG_READ_TIMEOUT ),
+                eq( false )
         );
     }
 
