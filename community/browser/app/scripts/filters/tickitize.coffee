@@ -20,16 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 'use strict';
 
-# Requires jQuery
-angular.module('neo4jApp.directives')
-  .directive('article', ['$rootScope', 'Editor', 'Frame', ($rootScope,Editor, Frame) ->
-    restrict: 'E'
-    link: (scope, element, attrs) ->
-      element.on 'click', '.runnable', (e) ->
-        code = e.currentTarget.textContent or e.currentTarget.innerText
-        return unless code?.length > 0
-        Editor.setContent(code.trim())
-        angular.element(e.currentTarget).addClass('clicked')
-        $rootScope.$apply() unless $rootScope.$$phase
-
-  ])
+angular.module('neo4jApp.filters')
+.filter 'tickitize', () ->
+  (input) ->
+    return input if input.match /^[A-Za-z][A-Za-z0-9_]*$/
+    return "`#{input}`"

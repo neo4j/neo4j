@@ -2,10 +2,8 @@ article.guide
   carousel.deck.container-fluid
     slide.row-fluid
       .col-sm-3
-        h5 Mini graph app
-        br
-        h3 The Movie Graph
-        p.lead Pop-cultural connections
+        h3 Movie Graph
+        p.lead Pop-cultural connections between actors and movies
       .col-sm-9
         p
           em The Movie Graph
@@ -25,9 +23,9 @@ article.guide
         p To the right is a giant code block containing a single Cypher query statement
           | composed of multiple CREATE clauses. This will create the movie graph.
         ol
-          li Click on the code
+          li Click on the code block
           li Notice it gets copied to the editor above &uarr;
-          li Click the editor's play button to exectute
+          li Click the editor's play button to execute
           li Wait for the query to finish
         p.text-center.text-warning.bg-warning WARNING: This adds data to the current database, each time it is run!
         hr
@@ -679,25 +677,23 @@ article.guide
             MATCH (n) RETURN n
     slide.row-fluid.header
       .col-sm-4
-        h4 The Movie Graph
-        br
         h3 Next steps
       .col-sm-4
-        h3 Review getting started
+        h3 More code 
         ul.undecorated
           li
-            a(play-topic='intro') Intro
-            |  - a guided tour
+            a(play-topic='northwind-graph') Northwind Graph
+            |  - from RDBMS to graph
           li
-            a(play-topic='concepts') Concepts
-            |  - GraphDB 101
+            a(play-topic='query-template') Query Templates
+            |  - common ad-hoc queries
           li
             a(play-topic='cypher') Cypher
-            |  - query language
+            |  - query language fundamentals
       .col-sm-4
-        //- h3 Try more code
-        //- ul.undecorated
-        //-   li
-        //-     a(play-topic='network-graph') Network Management
-          //- li
-          //-   a(play-topic='product-graph') Product Recommendations
+        h3 Reference
+        ul.undecorated
+          li
+            a(href='http://neo4j.com/developer') Developer resources
+          li
+            a(href='http://neo4j.com/docs/{{neo4j.version | neo4jdoc }}/') Neo4j Manual

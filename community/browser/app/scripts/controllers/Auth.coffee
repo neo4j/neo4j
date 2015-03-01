@@ -51,7 +51,7 @@ angular.module('neo4jApp.controllers')
             $scope.static_user = $scope.connection_summary.user
             $scope.static_is_authenticated = $scope.connection_summary.is_connected
 
-            Frame.create({input:"#{Settings.cmdchar}play welcome"})
+            Frame.create({input:"#{Settings.initCmd}"})
             $scope.focusEditor()
           ,
           (r) ->

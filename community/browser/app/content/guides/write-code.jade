@@ -1,0 +1,49 @@
+article.guide
+  .container-fluid
+    .row
+      .col-sm-4
+        h3 Write Code
+        p.lead Jump right into coding with example data graphs
+      .col-sm-4
+        .btn.btn-default.btn-app(ng-click="whichTab = 'movies'")
+          img(src="images/movie-icon.png")
+          p.caption-cta
+            a(play-topic='movie-graph') Movies
+        .btn.btn-default.btn-app(ng-click="whichTab = 'northwind'")
+          img(src="images/northwind-icon.png")
+          p.caption-cta
+            a(play-topic='northwind-graph') Northwind
+        .btn.btn-default.btn-app(ng-click="whichTab = 'templates'")
+          img(src="images/template-icon.png")
+          p.caption-cta
+            a(play-topic='query-template') Templates
+              
+      .col-sm-4(ng-switch="whichTab")
+        div(ng-switch-default)
+          h3 Movie Graph
+          p.lead Actors &amp; movies in cross-referenced pop culture.
+          ul
+            li A complete example graph
+            li Demonstrates common query patterns
+            li Solves the Bacon path!
+          p &nbsp;
+          button.btn.btn-cta(play-topic='movie-graph') Create a graph (30 minutes)
+        div(ng-switch-when="northwind")
+          h3 Northwind Graph
+          p.lead From RDBMS to Neo4j, using a classic data set.
+          ul
+            li Load data from external CSV files
+            li Convert RDBMS schema to graph structure
+            li Run sample queries
+          p &nbsp;
+          button.btn.btn-cta(play-topic='northwind-graph') Convert from RDBMS (30 minutes)
+        div(ng-switch-when="templates")
+          h3 Query Templates
+          p.lead Easily generate Cypher statements.
+          ul
+            li Fill in labels, types, and property values
+            li Generate nodes and relationships 
+            li Find common graph patterns
+          p &nbsp;
+          button.btn.btn-cta(play-topic='query-template') Generate a graph (10+ minutes)
+    .row.empty
