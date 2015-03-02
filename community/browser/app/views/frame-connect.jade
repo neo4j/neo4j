@@ -9,7 +9,7 @@ div(ng-controller="AuthCtrl")
               .summary.col-sm-3
                 h3 Connect to Neo4j
                 p.lead
-                  | Data access requires an authenticated connection to the database.
+                  | Database access requires an authenticated connection.
               .details.col-sm-9(ng-hide="static_is_authenticated")
                 .form
                   .row
@@ -26,7 +26,7 @@ div(ng-controller="AuthCtrl")
                       br
                   .row.form-info
                     .col-sm-5
-                      | Default username/password:
+                      | Default username/password:&nbsp;
                       b neo4j
                       /
                       b neo4j
@@ -40,7 +40,7 @@ div(ng-controller="AuthCtrl")
                 p.lead
                   | Connected.
               .details.col-sm-9
-                p Connected to the Neo4j database (no auth required).
+                p Connected to Neo4j (no auth required).
             .section.row-fluid.summary(ng-show="static_is_authenticated && !password_change_required && static_user")
               .summary.col-sm-3
                 h3 Connected to Neo4j
