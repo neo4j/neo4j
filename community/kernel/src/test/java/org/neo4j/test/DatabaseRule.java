@@ -19,8 +19,6 @@
  */
 package org.neo4j.test;
 
-import org.junit.rules.ExternalResource;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
@@ -133,9 +131,9 @@ public abstract class DatabaseRule extends ExternalResource
     }
 
     @Override
-    protected void after()
+    protected void after( boolean success )
     {
-        shutdown();
+        shutdown( success );
     }
 
     @SuppressWarnings("deprecation")
@@ -246,6 +244,11 @@ public abstract class DatabaseRule extends ExternalResource
 
     public void shutdown()
     {
+        shutdown( true );
+    }
+
+    private void shutdown( boolean deleteResources )
+    {
         statementProvider = null;
         try
         {
@@ -256,7 +259,10 @@ public abstract class DatabaseRule extends ExternalResource
         }
         finally
         {
-            deleteResources();
+            if ( deleteResources )
+            {
+                deleteResources();
+            }
             database = null;
         }
     }

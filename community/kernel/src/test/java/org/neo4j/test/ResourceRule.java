@@ -19,11 +19,11 @@
  */
 package org.neo4j.test;
 
-import java.io.File;
-
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+
+import java.io.File;
 
 import org.neo4j.helpers.Provider;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -86,7 +86,7 @@ public abstract class ResourceRule<RESOURCE> implements TestRule, Provider<RESOU
             @Override
             protected void destroyResource( PageCache done, Throwable failure )
             {
-                pageCache.after();
+                pageCache.after( failure == null );
             }
         };
     }

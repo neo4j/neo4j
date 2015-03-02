@@ -50,7 +50,7 @@ public abstract class ExternalResource implements TestRule
                 {
                     try
                     {
-                        after();
+                        after( failure == null );
                     }
                     catch ( Throwable e )
                     {
@@ -85,7 +85,7 @@ public abstract class ExternalResource implements TestRule
     /**
      * Override to tear down your specific external resource.
      */
-    protected void after() throws Throwable
+    protected void after( boolean successful ) throws Throwable
     {
         // do nothing
     }
