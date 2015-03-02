@@ -29,11 +29,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
@@ -42,7 +42,7 @@ public class PageCacheRule extends ExternalResource
 {
     private Neo4jJobScheduler jobScheduler;
     private LifecycledPageCache pageCache;
-    private boolean automaticallyProduceInconsistentReads;
+    private final boolean automaticallyProduceInconsistentReads;
 
     public PageCacheRule()
     {
@@ -94,7 +94,7 @@ public class PageCacheRule extends ExternalResource
     }
 
     @Override
-    protected void after()
+    protected void after( boolean success )
     {
         if ( pageCache != null )
         {
