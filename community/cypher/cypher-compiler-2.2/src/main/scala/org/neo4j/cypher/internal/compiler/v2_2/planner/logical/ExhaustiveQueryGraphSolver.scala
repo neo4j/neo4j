@@ -120,7 +120,7 @@ case class ExhaustiveQueryGraphSolver(leafPlanFinder: LogicalLeafPlan.Finder = l
           )
           yield newPlan ->(oldPlans, remaining)
         ).toMap
-        val bestCartesian = pickBestPlan(cartesianProducts.keys.iterator).get
+        val bestCartesian = bestPlanFinder(cartesianProducts.keys.iterator).get
         val (oldPlans, remaining) = cartesianProducts(bestCartesian)
         val newPlans = plans.filterNot(oldPlans.contains) :+ (bestCartesian -> remaining)
         recurse(newPlans)
@@ -143,7 +143,7 @@ case class ExhaustiveQueryGraphSolver(leafPlanFinder: LogicalLeafPlan.Finder = l
     def withOptionalMatch(plan: LogicalPlan, optionalMatch: QueryGraph): Option[LogicalPlan] =
       if ((optionalMatch.argumentIds -- plan.availableSymbols).isEmpty) {
         val candidates = config.optionalSolvers.flatMap { solver => solver(optionalMatch, plan) }
-        val best = pickBestPlan(candidates.iterator)
+        val best = bestPlanFinder(candidates.iterator)
         best
       } else {
         None
