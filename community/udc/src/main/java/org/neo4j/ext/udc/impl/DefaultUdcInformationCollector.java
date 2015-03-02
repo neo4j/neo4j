@@ -199,7 +199,7 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
     {
         try
         {
-            String name = getSetting( "org.neo4j.kernel.ha.HaSettings", "cluster_name" );
+            String name = getSetting( "org.neo4j.cluster.ClusterSettings", "cluster_name" );
             return name != null ? Math.abs( name.hashCode() % Integer.MAX_VALUE ) : null;
         }
         catch ( Exception e )

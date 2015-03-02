@@ -63,6 +63,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.stub;
 
+import static org.neo4j.ext.udc.UdcConstants.CLUSTER_HASH;
 import static org.neo4j.ext.udc.UdcConstants.DATABASE_MODE;
 import static org.neo4j.ext.udc.UdcConstants.EDITION;
 import static org.neo4j.ext.udc.UdcConstants.MAC;
@@ -183,6 +184,20 @@ public class UdcExtensionImplTest
         GraphDatabaseService graphdb = createDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
         assertEquals( "SINGLE", handler.getQueryMap().get( DATABASE_MODE ) );
+
+        destroy( graphdb );
+    }
+
+    @Test
+    public void shouldRecordClusterName() throws Exception
+    {
+        setupServer();
+
+        GraphDatabaseService graphdb = createDatabase( config );
+        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+
+        String hashOfDefaultClusterName = "1108231321";
+        assertEquals( hashOfDefaultClusterName, handler.getQueryMap().get( CLUSTER_HASH ) );
 
         destroy( graphdb );
     }
@@ -571,7 +586,7 @@ public class UdcExtensionImplTest
     {
         ContainerRequest request = mock( ContainerRequest.class );
         List<String> headers = Arrays.asList( userAgent );
-        stub(request.getRequestHeader( "User-Agent" )).toReturn( headers );
+        stub( request.getRequestHeader( "User-Agent" ) ).toReturn( headers );
         return request;
     }
 }
