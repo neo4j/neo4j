@@ -114,7 +114,7 @@ angular.module('neo4jApp')
     # play handler
     FrameProvider.interpreters.push
       type: 'play'
-      templateUrl: 'views/frame-help.html'
+      templateUrl: 'views/frame-guide.html'
       matches: "#{cmdchar}play"
       exec: ['$http', ($http) ->
         step_number = 1
@@ -122,8 +122,13 @@ angular.module('neo4jApp')
           topic = topicalize(input[('play'.length+1)..]) or 'start'
           url = "content/guides/#{topic}.html"
           $http.get(url)
-          .success(->q.resolve(page: url))
-          .error(->q.reject(error("No such topic to play")))
+          .then(
+            ->
+              q.resolve(page: url)
+          ,
+            (r)->
+              q.reject(r)
+          )
           q.promise
       ]
 
@@ -137,8 +142,13 @@ angular.module('neo4jApp')
           topic = topicalize(input[('help'.length+1)..]) or 'help'
           url = "content/help/#{topic}.html"
           $http.get(url)
-          .success(->q.resolve(page: url))
-          .error(->q.reject(error("No such help topic")))
+          .then(
+            ->
+              q.resolve(page: url)
+            ,
+            (r)->
+              q.reject(r)
+          )
           q.promise
       ]
 
