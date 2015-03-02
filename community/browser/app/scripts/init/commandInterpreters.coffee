@@ -22,8 +22,7 @@ angular.module('neo4jApp')
 .config([
   'FrameProvider'
   'Settings'
-  'Timer'
-  (FrameProvider, Settings, Timer) ->
+  (FrameProvider, Settings) ->
 
     cmdchar = Settings.cmdchar
 
@@ -326,7 +325,7 @@ angular.module('neo4jApp')
         pattern = new RegExp("^[^#{cmdchar}]")
         input.match(pattern)
       templateUrl: 'views/frame-cypher.html'
-      exec: ['Cypher', 'CypherGraphModel', 'CypherParser', (Cypher, CypherGraphModel, CypherParser) ->
+      exec: ['Cypher', 'CypherGraphModel', 'CypherParser', 'Timer', (Cypher, CypherGraphModel, CypherParser, Timer) ->
         # Return the function that handles the input
         (input, q) ->
           current_transaction = Cypher.transaction()
