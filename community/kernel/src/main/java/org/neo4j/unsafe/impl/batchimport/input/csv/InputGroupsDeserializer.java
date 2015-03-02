@@ -39,7 +39,7 @@ abstract class InputGroupsDeserializer<ENTITY extends InputEntity>
     private final Header.Factory headerFactory;
     private final Configuration config;
     private final IdType idType;
-    private InputIterator<ENTITY> currentInput = new InputIterator.Adapter<>();
+    private InputEntityDeserializer<ENTITY> currentInput;
     private long previousInputsCollectivePositions;
 
     InputGroupsDeserializer( Iterator<DataFactory<ENTITY>> dataFactory, Header.Factory headerFactory,
@@ -65,7 +65,9 @@ abstract class InputGroupsDeserializer<ENTITY extends InputEntity>
         // from somewhere else, it's up to that factory.
         Header dataHeader = headerFactory.create( dataStream, config, idType );
 
-        return currentInput = entityDeserializer( dataStream, dataHeader, data.decorator() );
+        currentInput = entityDeserializer( dataStream, dataHeader, data.decorator() );
+        currentInput.initialize();
+        return currentInput;
     }
 
     private void closeCurrent()
@@ -78,7 +80,7 @@ abstract class InputGroupsDeserializer<ENTITY extends InputEntity>
         }
     }
 
-    protected abstract InputIterator<ENTITY> entityDeserializer( CharSeeker dataStream, Header dataHeader,
+    protected abstract InputEntityDeserializer<ENTITY> entityDeserializer( CharSeeker dataStream, Header dataHeader,
             Function<ENTITY,ENTITY> decorator );
 
     @Override

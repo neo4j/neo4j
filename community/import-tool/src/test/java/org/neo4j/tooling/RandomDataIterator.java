@@ -61,6 +61,8 @@ public class RandomDataIterator<T> extends PrefetchingIterator<T> implements Inp
         this.labels = new Distribution<>( tokens( "Label", labelCount ) );
         this.relationshipTypes = new Distribution<>( tokens( "TYPE", relationshipTypeCount ) );
         this.sourceDescription = getClass().getSimpleName() + ":" + header;
+
+        this.deserialization.initialize();
     }
 
     private String[] tokens( String prefix, int count )

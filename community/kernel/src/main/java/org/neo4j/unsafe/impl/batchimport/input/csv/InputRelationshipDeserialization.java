@@ -30,8 +30,11 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
  */
 public class InputRelationshipDeserialization extends InputEntityDeserialization<InputRelationship>
 {
-    private final Group startNodeGroup;
-    private final Group endNodeGroup;
+    private final Header header;
+    private final Groups groups;
+
+    private Group startNodeGroup;
+    private Group endNodeGroup;
     private String type;
     private Object startNode;
     private Object endNode;
@@ -39,6 +42,13 @@ public class InputRelationshipDeserialization extends InputEntityDeserialization
     public InputRelationshipDeserialization( SourceTraceability source, Header header, Groups groups )
     {
         super( source );
+        this.header = header;
+        this.groups = groups;
+    }
+
+    @Override
+    public void initialize()
+    {
         this.startNodeGroup = groups.getOrCreate( header.entry( Type.START_ID ).groupName() );
         this.endNodeGroup = groups.getOrCreate( header.entry( Type.END_ID ).groupName() );
     }

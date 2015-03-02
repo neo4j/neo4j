@@ -35,20 +35,29 @@ import static java.util.Arrays.copyOf;
  */
 public class InputNodeDeserialization extends InputEntityDeserialization<InputNode>
 {
-    private final Group group;
+    private final Header header;
+    private final Groups groups;
+
     private final boolean idsAreExternal;
+    private Group group;
     private Object id;
     private String[] labels = new String[10];
     private int labelsCursor;
 
-    public InputNodeDeserialization( SourceTraceability source,  Header header, Groups groups, boolean idsAreExternal )
+    public InputNodeDeserialization( SourceTraceability source, Header header, Groups groups, boolean idsAreExternal )
     {
         super( source );
+        this.header = header;
+        this.groups = groups;
+        this.idsAreExternal = idsAreExternal;
+    }
 
+    @Override
+    public void initialize()
+    {
         // ID header entry is optional
         Entry idEntry = header.entry( Type.ID );
         this.group = groups.getOrCreate( idEntry != null ? idEntry.groupName() : null );
-        this.idsAreExternal = idsAreExternal;
     }
 
     @Override
