@@ -40,8 +40,10 @@ object pickBestPlan extends CandidateSelector {
           println(s"\t\t${costs(plan, context.cardinalityInput)}")
         }
 
+        val best = sortedPlans.head
         println("- Best is:")
-        println(s"\t${sortedPlans.head.toString}")
+        println(s"\t${best.toString}")
+        println(s"\t\t${costs(best, context.cardinalityInput)}")
         println()
       }
 

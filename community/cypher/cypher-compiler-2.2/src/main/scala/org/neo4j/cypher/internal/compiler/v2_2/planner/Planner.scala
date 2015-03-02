@@ -42,11 +42,11 @@ case class Planner(monitors: Monitors,
                    maybeExecutionPlanBuilder: Option[PipeExecutionPlanBuilder] = None,
                    strategy: PlanningStrategy = new QueryPlanningStrategy,
                    acceptQuery: UnionQuery => Boolean = (_) => true,
-                   queryGraphSolver: QueryGraphSolver = ExhaustiveQueryGraphSolver()
-//                   queryGraphSolver: QueryGraphSolver = new CompositeQueryGraphSolver(
-//                     new GreedyQueryGraphSolver(expandsOrJoins),
-//                     new GreedyQueryGraphSolver(expandsOnly)
-//                   )
+//                   queryGraphSolver: QueryGraphSolver = ExhaustiveQueryGraphSolver()
+                   queryGraphSolver: QueryGraphSolver = new CompositeQueryGraphSolver(
+                     new GreedyQueryGraphSolver(expandsOrJoins),
+                     new GreedyQueryGraphSolver(expandsOnly)
+                   )
                   ) extends PipeBuilder {
 
   val executionPlanBuilder: PipeExecutionPlanBuilder =

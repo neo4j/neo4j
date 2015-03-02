@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.{applyOptio
 import scala.annotation.tailrec
 
 object ExhaustiveQueryGraphSolver {
-  val MAX_SEARCH_DEPTH = 5
+  val MAX_SEARCH_DEPTH = 9
 
   // TODO: Make sure this is tested by extracting tests from greedy expand step
   def planSinglePatternSide(qg: QueryGraph, patternRel: PatternRelationship, plan: LogicalPlan, nodeId: IdName): Option[LogicalPlan] = {
