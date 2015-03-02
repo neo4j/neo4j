@@ -21,12 +21,8 @@ package org.neo4j.desktop;
 
 public final class DesktopIdentification
 {
-    /**
-     * Register Desktop as the means by which Neo4j was launched. This information is collected by UDC.
-     * @see org.neo4j.ext.udc.UdcConstants#UDC_PROPERTY_PREFIX
-     */
     public static void register()
     {
-        System.setProperty( "neo4j.ext.udc.launcher", "desktop" );
+        System.setProperty( "neo4j.ext.udc.source", "desktop" );
     }
 }
