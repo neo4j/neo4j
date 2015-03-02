@@ -115,6 +115,18 @@ node {
       expect(GraphStyle.forNode(labels: ['Movie']).get('color')).toBe('#A5ABB6')
       expect(GraphStyle.forNode(labels: ['Animal']).get('color')).toBe('#A5ABB6')
 
+  describe '#forRelationship: ', ->
+    it 'default style should give relationships a caption', ->
+      GraphStyle.loadRules(GraphStyle.defaultStyle)
+      expect(GraphStyle.forRelationship({type: 'ACTED_IN'}).get('caption')).toBe('<type>')
+
+    it 'should override relationship caption and color', ->
+      GraphStyle.loadRules(GraphStyle.defaultStyle)
+      GraphStyle.changeForSelector(GraphStyle.newSelector('relationship', ['RATED']), {caption: '{stars}'})
+      GraphStyle.changeForSelector(GraphStyle.newSelector('relationship', ['RATED']), {color: '#00F'})
+      expect(GraphStyle.forRelationship({type: 'RATED'}).get('caption')).toBe('{stars}')
+      expect(GraphStyle.forRelationship({type: 'RATED'}).get('color')).toBe('#00F')
+
   describe '#parse:', ->
     it 'should parse rules from grass text', ->
       expect(GraphStyle.parse(grass).node).toEqual(jasmine.any(Object))
