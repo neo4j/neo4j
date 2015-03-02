@@ -39,7 +39,6 @@ import org.apache.http.localserver.LocalTestServer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
 
 import org.neo4j.ext.udc.Edition;
 import org.neo4j.ext.udc.UdcConstants;
@@ -85,9 +84,8 @@ public class UdcExtensionImplTest
     private static final String VersionPattern = "\\d\\.\\d+((\\.|\\-).*)?";
 
     @Rule
-    public TestName testName = new TestName();
+    public TargetDirectory.TestDirectory path = TargetDirectory.testDirForTest( getClass() );
 
-    private File path;
     private PingerHandler handler;
     private Map<String, String> config;
 
@@ -96,7 +94,6 @@ public class UdcExtensionImplTest
     {
         UdcTimerTask.successCounts.clear();
         UdcTimerTask.failureCounts.clear();
-        path = TargetDirectory.forTest( getClass() ).cleanDirectory( testName.getMethodName() );
     }
 
     /**
@@ -142,10 +139,8 @@ public class UdcExtensionImplTest
     @Test
     public void shouldRecordFailuresWhenThereIsNoServer() throws Exception
     {
-        File possibleDirectory = new File( path, "should-record-failures" );
-
         GraphDatabaseService graphdb = new TestGraphDatabaseFactory().
-                newEmbeddedDatabaseBuilder( possibleDirectory.getPath() ).
+                newEmbeddedDatabaseBuilder( path.directory( "should-record-failures" ).getPath() ).
                 loadPropertiesFromURL( getClass().getResource( "/org/neo4j/ext/udc/udc.properties" ) ).
                 setConfig( UdcSettings.first_delay, "100" ).
                 setConfig( UdcSettings.udc_host, "127.0.0.1:1" ).
