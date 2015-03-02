@@ -52,6 +52,7 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.Reservation;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
@@ -75,6 +76,7 @@ import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static java.lang.String.format;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -88,9 +90,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
-import static java.lang.String.format;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -454,6 +453,12 @@ public class IndexPopulationJobTest
             return new IndexUpdater()
             {
                 @Override
+                public Reservation validate( Iterable<NodePropertyUpdate> updates ) throws IOException
+                {
+                    return Reservation.EMPTY;
+                }
+
+                @Override
                 public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
                 {
                     switch ( update.getUpdateMode() )
@@ -525,6 +530,12 @@ public class IndexPopulationJobTest
         {
             return new IndexUpdater()
             {
+                @Override
+                public Reservation validate( Iterable<NodePropertyUpdate> updates ) throws IOException
+                {
+                    return Reservation.EMPTY;
+                }
+
                 @Override
                 public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
                 {

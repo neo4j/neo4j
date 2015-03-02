@@ -39,6 +39,9 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
+import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
+import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -52,10 +55,10 @@ import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static java.lang.String.format;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.openForVersion;
@@ -70,6 +73,7 @@ class RebuildFromLogs
     private final StoreAccess stores;
     private final NeoStoreDataSource dataSource;
     private final TransactionRepresentationStoreApplier storeApplier;
+    private final IndexUpdatesValidator indexUpdatesValidator;
 
     RebuildFromLogs( GraphDatabaseAPI graphdb )
     {
@@ -77,6 +81,9 @@ class RebuildFromLogs
         this.dataSource = graphdb.getDependencyResolver().resolveDependency( DataSourceManager.class ).getDataSource();
         this.storeApplier = graphdb.getDependencyResolver().resolveDependency(
                 TransactionRepresentationStoreApplier.class );
+        PropertyLoader propertyLoader = new PropertyLoader( stores.getRawNeoStore() );
+        this.indexUpdatesValidator = new IndexUpdatesValidator( stores.getRawNeoStore(), propertyLoader,
+                graphdb.getDependencyResolver().resolveDependency( IndexingService.class ) );
     }
 
     RebuildFromLogs applyTransactionsFrom( ProgressListener progress, File sourceDir ) throws IOException
@@ -92,9 +99,11 @@ class RebuildFromLogs
         {
             while (cursor.next())
             {
-                try ( LockGroup locks = new LockGroup() )
+                try ( LockGroup locks = new LockGroup();
+                      ValidatedIndexUpdates indexUpdates = indexUpdatesValidator.validate(
+                              cursor.get().getTransactionRepresentation(), TransactionApplicationMode.EXTERNAL ) )
                 {
-                    storeApplier.apply( cursor.get().getTransactionRepresentation(), locks,
+                    storeApplier.apply( cursor.get().getTransactionRepresentation(), indexUpdates, locks,
                             cursor.get().getCommitEntry().getTxId(), TransactionApplicationMode.EXTERNAL );
                 }
             }

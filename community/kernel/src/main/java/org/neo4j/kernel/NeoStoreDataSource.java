@@ -67,6 +67,7 @@ import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
+import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -135,6 +136,7 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContextSupplier;
+import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.transaction.state.RecoveryVisitor;
 import org.neo4j.kernel.impl.transaction.state.RelationshipChainLoader;
 import org.neo4j.kernel.impl.util.Dependencies;
@@ -196,6 +198,8 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
     private interface IndexingModule
     {
         IndexingService indexingService();
+
+        IndexUpdatesValidator indexUpdatesValidator();
 
         LabelScanStore labelScanStore();
 
@@ -495,14 +499,15 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
                             fs, neoStoreModule.neoStore(), cacheModule.cacheAccess(), indexingModule.indexingService(),
                             indexProviders.values() );
 
-            buildRecovery( fs, cacheModule.cacheAccess(), indexingModule.indexingService(), indexingModule
-                    .labelScanStore(), neoStoreModule.neoStore(), monitors.newMonitor( RecoveryVisitor.Monitor.class
-            ), monitors.newMonitor( Recovery.Monitor.class ), transactionLogModule.logFiles(), transactionLogModule
-                    .logRotationControl(), startupStatistics );
+            buildRecovery( fs, cacheModule.cacheAccess(), indexingModule.indexingService(),
+                    indexingModule.indexUpdatesValidator(), indexingModule.labelScanStore(), neoStoreModule.neoStore(),
+                    monitors.newMonitor( RecoveryVisitor.Monitor.class ), monitors.newMonitor( Recovery.Monitor.class ),
+                    transactionLogModule.logFiles(), transactionLogModule.logRotationControl(), startupStatistics );
 
             KernelModule kernelModule = buildKernel( indexingModule.integrityValidator(),
                     transactionLogModule.logicalTransactionStore(), neoStoreModule.neoStore(),
                     transactionLogModule.storeApplier(), indexingModule.indexingService(),
+                    indexingModule.indexUpdatesValidator(),
                     storeLayerModule.storeLayer(),
                     cacheModule.updateableSchemaState(), indexingModule.labelScanStore(),
                     cacheModule.persistenceCache(),
@@ -690,6 +695,9 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
                 indexingServiceMonitor );
         final IntegrityValidator integrityValidator = new IntegrityValidator( neoStore, indexingService );
 
+        final IndexUpdatesValidator indexUpdatesValidator = dependencies.satisfyDependency(
+                new IndexUpdatesValidator( neoStore, new PropertyLoader( neoStore ), indexingService ) );
+
         // TODO Move to constructor
         final LabelScanStore labelScanStore = dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
                 LabelScanStoreProvider.HIGHEST_PRIORITIZED ).getLabelScanStore();
@@ -703,6 +711,12 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
             public IndexingService indexingService()
             {
                 return indexingService;
+            }
+
+            @Override
+            public IndexUpdatesValidator indexUpdatesValidator()
+            {
+                return indexUpdatesValidator;
             }
 
             @Override
@@ -878,8 +892,8 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
     }
 
     private void buildRecovery( final FileSystemAbstraction fileSystemAbstraction, CacheAccessBackDoor cacheAccess,
-            IndexingService indexingService, LabelScanStore labelScanStore, final NeoStore neoStore,
-            RecoveryVisitor.Monitor recoveryVisitorMonitor, Recovery.Monitor recoveryMonitor,
+            IndexingService indexingService, IndexUpdatesValidator indexUpdatesValidator, LabelScanStore labelScanStore,
+            final NeoStore neoStore, RecoveryVisitor.Monitor recoveryVisitorMonitor, Recovery.Monitor recoveryMonitor,
             final PhysicalLogFiles logFiles, final LogRotationControl logRotationControl,
             final StartupStatisticsProvider startupStatistics )
     {
@@ -888,7 +902,8 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
                         indexingService, labelScanStore, neoStore, cacheAccess, lockService,
                         legacyIndexProviderLookup, indexConfigStore, IdOrderingQueue.BYPASS );
 
-        RecoveryVisitor recoveryVisitor = new RecoveryVisitor( neoStore, storeRecoverer, recoveryVisitorMonitor );
+        RecoveryVisitor recoveryVisitor = new RecoveryVisitor( neoStore, storeRecoverer, indexUpdatesValidator,
+                recoveryVisitorMonitor );
 
         LogEntryReader<ReadableVersionableLogChannel> logEntryReader = new LogEntryReaderFactory().versionable();
         final Visitor<LogVersionedStoreChannel,IOException> logFileRecoverer =
@@ -939,13 +954,13 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
     private KernelModule buildKernel( IntegrityValidator integrityValidator,
             LogicalTransactionStore logicalTransactionStore,
             NeoStore neoStore, TransactionRepresentationStoreApplier storeApplier,
-            IndexingService indexingService, StoreReadLayer storeLayer,
+            IndexingService indexingService, IndexUpdatesValidator indexUpdatesValidator, StoreReadLayer storeLayer,
             UpdateableSchemaState updateableSchemaState, LabelScanStore labelScanStore,
             PersistenceCache persistenceCache, SchemaIndexProviderMap schemaIndexProviderMap )
     {
         final TransactionCommitProcess transactionCommitProcess =
                 commitProcessFactory.create( logicalTransactionStore, kernelHealth, neoStore, storeApplier,
-                        new NeoStoreInjectedTransactionValidator( integrityValidator ),
+                        new NeoStoreInjectedTransactionValidator( integrityValidator ), indexUpdatesValidator,
                         TransactionApplicationMode.INTERNAL, config );
 
         /*

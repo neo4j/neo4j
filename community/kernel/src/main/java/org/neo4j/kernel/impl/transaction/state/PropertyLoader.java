@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.state;
 
 import java.util.Collection;
+import java.util.Map;
 
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStore;
@@ -57,6 +58,11 @@ public class PropertyLoader
         loadProperties( nodeRecord.getNextProp(), receiver );
     }
 
+    public void nodeLoadProperties( NodeRecord node, Map<Long,PropertyRecord> propertiesById, PropertyReceiver receiver )
+    {
+        loadProperties( node.getNextProp(), propertiesById, receiver );
+    }
+
     public void relLoadProperties( long relId, PropertyReceiver receiver )
     {
         RelationshipRecord relRecord = relationshipStore.getRecord( relId );
@@ -75,6 +81,15 @@ public class PropertyLoader
     private void loadProperties( long nextProp, PropertyReceiver receiver )
     {
         Collection<PropertyRecord> chain = propertyStore.getPropertyRecordChain( nextProp );
+        if ( chain != null )
+        {
+            loadPropertyChain( chain, receiver );
+        }
+    }
+
+    private void loadProperties( long nextProp, Map<Long,PropertyRecord> propertiesById, PropertyReceiver receiver )
+    {
+        Collection<PropertyRecord> chain = propertyStore.getPropertyRecordChain( nextProp, propertiesById );
         if ( chain != null )
         {
             loadPropertyChain( chain, receiver );

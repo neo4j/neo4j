@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.locking.LockGroup;
@@ -110,9 +111,8 @@ public class NeoTransactionStoreApplierTest
         when( neoStore.getPropertyKeyTokenStore() ).thenReturn( propertyKeyTokenStore );
         when( neoStore.getSchemaStore() ).thenReturn( schemaStore );
         when( nodeStore.getDynamicLabelStore() ).thenReturn( dynamicLabelStore );
-        when( lockService.acquireNodeLock( anyLong(), Matchers.<LockService.LockType>any() ) ).
-                                                                                                      thenReturn(
-                                                                                                              LockService.NO_LOCK );
+        when( lockService.acquireNodeLock( anyLong(), Matchers.<LockService.LockType>any() ) )
+                .thenReturn( LockService.NO_LOCK );
     }
 
     // NODE COMMAND
@@ -571,8 +571,8 @@ public class NeoTransactionStoreApplierTest
     {
         // given
         final NeoCommandHandler applier = newApplier( false );
-        final NeoCommandHandler indexApplier = new IndexTransactionApplier( indexingService, labelScanStore,
-                nodeStore, propertyStore, cacheAccess, null, transactionId, TransactionApplicationMode.INTERNAL );
+        final NeoCommandHandler indexApplier = new IndexTransactionApplier( indexingService,
+                ValidatedIndexUpdates.NONE, labelScanStore, cacheAccess );
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         record.setCreated();
         final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
@@ -759,8 +759,7 @@ public class NeoTransactionStoreApplierTest
 
     private NeoCommandHandler newIndexApplier( TransactionApplicationMode mode )
     {
-        return new IndexTransactionApplier( indexingService, labelScanStore, nodeStore, propertyStore,
-                cacheAccess, null, transactionId, mode );
+        return new IndexTransactionApplier( indexingService, ValidatedIndexUpdates.NONE, labelScanStore, cacheAccess );
     }
 
     @Test

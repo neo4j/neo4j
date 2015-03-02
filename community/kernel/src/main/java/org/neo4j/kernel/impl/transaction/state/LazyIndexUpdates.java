@@ -19,46 +19,46 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
-import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
-
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.impl.api.index.IndexUpdates;
 import org.neo4j.kernel.impl.api.index.UpdateMode;
 import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.Mode;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 
-public class LazyIndexUpdates implements IndexUpdates
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
+import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
+
+public class LazyIndexUpdates implements Iterable<NodePropertyUpdate>
 {
     private final NodeStore nodeStore;
     private final PropertyStore propertyStore;
-    private final Map<Long, List<PropertyCommand>> propCommands;
-    private final Map<Long, NodeCommand> nodeCommands;
-    private Collection<NodePropertyUpdate> updates;
     private final PropertyLoader propertyLoader;
+    private final Map<Long, NodeCommand> nodeCommands;
+    private final Map<Long, List<PropertyCommand>> propCommands;
+    private Collection<NodePropertyUpdate> updates;
 
     public LazyIndexUpdates( NodeStore nodeStore,
                              PropertyStore propertyStore,
-                             Map<Long, List<PropertyCommand>> propCommands,
+                             PropertyLoader propertyLoader,
                              Map<Long, NodeCommand> nodeCommands,
-                             PropertyLoader propertyLoader )
+                             Map<Long, List<PropertyCommand>> propCommands )
     {
         this.nodeStore = nodeStore;
         this.propertyStore = propertyStore;
@@ -75,14 +75,6 @@ public class LazyIndexUpdates implements IndexUpdates
             updates = gatherPropertyAndLabelUpdates();
         }
         return updates.iterator();
-    }
-
-    @Override
-    public Set<Long> changedNodeIds()
-    {
-        Set<Long> nodeIds = new HashSet<>( nodeCommands.keySet() );
-        nodeIds.addAll( propCommands.keySet() );
-        return nodeIds;
     }
 
     private Collection<NodePropertyUpdate> gatherPropertyAndLabelUpdates()
@@ -159,6 +151,11 @@ public class LazyIndexUpdates implements IndexUpdates
             }
 
             LabelChangeSummary summary = new LabelChangeSummary( labelsBefore, labelsAfter );
+            if ( !summary.hasAddedLabels() && !summary.hasRemovedLabels() )
+            {
+                continue;
+            }
+
             Iterator<DefinedProperty> properties = nodeFullyLoadProperties( nodeId );
             while ( properties.hasNext() )
             {
@@ -181,9 +178,32 @@ public class LazyIndexUpdates implements IndexUpdates
 
     private Iterator<DefinedProperty> nodeFullyLoadProperties( long nodeId )
     {
+        NodeCommand nodeCommand = nodeCommands.get( nodeId );
+        NodeRecord nodeRecord = (nodeCommand == null) ? nodeStore.getRecord( nodeId ) : nodeCommand.getAfter();
+
         IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
-        propertyLoader.nodeLoadProperties( nodeId, receiver );
+        Map<Long,PropertyRecord> propertiesById = propertiesFromCommandsForNode( nodeRecord.getId() );
+        propertyLoader.nodeLoadProperties( nodeRecord, propertiesById, receiver );
         return receiver;
+    }
+
+    private Map<Long,PropertyRecord> propertiesFromCommandsForNode( long nodeId )
+    {
+        List<PropertyCommand> propertyCommands = propCommands.get( nodeId );
+        if ( propertyCommands == null )
+        {
+            return Collections.emptyMap();
+        }
+        Map<Long,PropertyRecord> result = new HashMap<>( propertyCommands.size(), 1 );
+        for ( PropertyCommand command : propertyCommands )
+        {
+            PropertyRecord after = command.getAfter();
+            if ( after.inUse() && after.isNodeSet() )
+            {
+                result.put( after.getId(), after );
+            }
+        }
+        return result;
     }
 
     @Override

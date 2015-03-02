@@ -40,12 +40,14 @@ import java.util.List;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.Reservation;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
@@ -62,14 +64,14 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
     private ReferenceManager<IndexSearcher> searcherManager;
 
     DeferredConstraintVerificationUniqueLuceneIndexPopulator( LuceneDocumentStructure documentStructure,
-                                                              LuceneIndexWriterFactory indexWriterFactory,
+                                                              IndexWriterFactory<LuceneIndexWriter> writers,
                                                               SearcherManagerFactory searcherManagerFactory,
                                                               IndexWriterStatus writerStatus,
                                                               DirectoryFactory dirFactory, File dirFile,
                                                               FailureStorage failureStorage, long indexId,
                                                               IndexDescriptor descriptor )
     {
-        super( documentStructure, indexWriterFactory, writerStatus, dirFactory, dirFile, failureStorage, indexId );
+        super( documentStructure, writers, writerStatus, dirFactory, dirFile, failureStorage, indexId );
         this.descriptor = descriptor;
         this.sampler = new UniqueIndexSampler();
         this.searcherManagerFactory = searcherManagerFactory;
@@ -102,7 +104,8 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
     }
 
     @Override
-    public void add( long nodeId, Object propertyValue ) throws IndexEntryConflictException, IOException
+    public void add( long nodeId, Object propertyValue )
+            throws IndexEntryConflictException, IOException, IndexCapacityExceededException
     {
         sampler.increment( 1 );
         Fieldable encodedValue = documentStructure.encodeAsFieldable( propertyValue );
@@ -159,7 +162,14 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
             List<Object> updatedPropertyValues = new ArrayList<>();
 
             @Override
-            public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+            public Reservation validate( Iterable<NodePropertyUpdate> updates ) throws IOException
+            {
+                return Reservation.EMPTY;
+            }
+
+            @Override
+            public void process( NodePropertyUpdate update )
+                    throws IOException, IndexEntryConflictException, IndexCapacityExceededException
             {
                 long nodeId = update.getNodeId();
                 switch ( update.getUpdateMode() )
@@ -238,7 +248,7 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
     }
 
     @Override
-    public void close( boolean populationCompletedSuccessfully ) throws IOException
+    public void close( boolean populationCompletedSuccessfully ) throws IOException, IndexCapacityExceededException
     {
         try
         {

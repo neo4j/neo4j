@@ -19,20 +19,18 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.junit.Test;
-
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -52,7 +50,6 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.store.UniquenessConstraintRule.uniquenessConstraintRule;
@@ -211,8 +208,7 @@ public class SchemaRuleCommandTest
     private final NeoStoreTransactionApplier storeApplier = new NeoStoreTransactionApplier( neoStore,
             mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE, new LockGroup(), txId );
     private final IndexTransactionApplier indexApplier = new IndexTransactionApplier( indexes,
-            labelScanStore, mock( NodeStore.class ), mock( PropertyStore.class ), mock( CacheAccessBackDoor.class ),
-            mock( PropertyLoader.class ), txId, TransactionApplicationMode.INTERNAL );
+            ValidatedIndexUpdates.NONE, labelScanStore, mock( CacheAccessBackDoor.class ) );
     private final PhysicalLogNeoCommandReaderV2 reader = new PhysicalLogNeoCommandReaderV2();
     private final IndexRule rule = IndexRule.indexRule( id, labelId, propertyKey, PROVIDER_DESCRIPTOR );
 

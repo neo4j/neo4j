@@ -24,16 +24,22 @@ import org.junit.Test;
 import java.io.IOException;
 
 import org.neo4j.kernel.KernelHealth;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
+import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
+import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.locking.LockGroup;
-import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
-import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
+import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -66,8 +72,8 @@ public class TransactionRepresentationCommitProcessTest
         KernelHealth kernelHealth = mock( KernelHealth.class );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         TransactionRepresentationStoreApplier storeApplier = mock( TransactionRepresentationStoreApplier.class );
-        TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess(
-                logicalTransactionStore, kernelHealth, transactionIdStore, storeApplier, INTERNAL );
+        TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess( logicalTransactionStore,
+                kernelHealth, transactionIdStore, storeApplier, mockedIndexUpdatesValidator(), INTERNAL );
 
         // WHEN
         try ( LockGroup locks = new LockGroup() )
@@ -98,10 +104,10 @@ public class TransactionRepresentationCommitProcessTest
         KernelHealth kernelHealth = mock( KernelHealth.class );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         TransactionRepresentationStoreApplier storeApplier = mock( TransactionRepresentationStoreApplier.class );
-        doThrow( new IOException( rootCause ) ).when( storeApplier ).apply(
-                any( TransactionRepresentation.class ), any( LockGroup.class ), eq( txId ), eq( INTERNAL ) );
-        TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess(
-                logicalTransactionStore, kernelHealth, transactionIdStore, storeApplier, INTERNAL );
+        doThrow( new IOException( rootCause ) ).when( storeApplier ).apply( any( TransactionRepresentation.class ),
+                any( ValidatedIndexUpdates.class ), any( LockGroup.class ), eq( txId ), eq( INTERNAL ) );
+        TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess( logicalTransactionStore,
+                kernelHealth, transactionIdStore, storeApplier, mockedIndexUpdatesValidator(), INTERNAL );
         TransactionRepresentation transaction = mockedTransaction();
 
         // WHEN
@@ -121,10 +127,44 @@ public class TransactionRepresentationCommitProcessTest
         verifyNoMoreInteractions( transactionIdStore );
     }
 
+    @Test
+    public void shouldThrowWhenIndexUpdatesValidationFails() throws IOException
+    {
+        // Given
+        IndexUpdatesValidator indexUpdatesValidator = mock( IndexUpdatesValidator.class );
+        RuntimeException error = new UnderlyingStorageException( new IndexCapacityExceededException( 10, 10 ) );
+        when( indexUpdatesValidator.validate( any( TransactionRepresentation.class ), eq( INTERNAL ) ) )
+                .thenThrow( error );
+
+        TransactionRepresentationCommitProcess commitProcess = new TransactionRepresentationCommitProcess(
+                mock( LogicalTransactionStore.class ), mock( KernelHealth.class ), mock( TransactionIdStore.class ),
+                mock( TransactionRepresentationStoreApplier.class ), indexUpdatesValidator, INTERNAL );
+
+        try ( LockGroup lockGroup = new LockGroup() )
+        {
+            // When
+            commitProcess.commit( mock( TransactionRepresentation.class ), lockGroup, CommitEvent.NULL );
+            fail( "Should have thrown " + TransactionFailureException.class.getSimpleName() );
+        }
+        catch ( TransactionFailureException e )
+        {
+            // Then
+            assertEquals( Status.Transaction.ValidationFailed, e.status() );
+        }
+    }
+
     private TransactionRepresentation mockedTransaction()
     {
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
         when( transaction.additionalHeader() ).thenReturn( new byte[0] );
         return transaction;
+    }
+
+    private static IndexUpdatesValidator mockedIndexUpdatesValidator() throws IOException
+    {
+        IndexUpdatesValidator validator = mock( IndexUpdatesValidator.class );
+        when( validator.validate( any( TransactionRepresentation.class ), any( TransactionApplicationMode.class ) ) )
+                .thenReturn( ValidatedIndexUpdates.NONE );
+        return validator;
     }
 }

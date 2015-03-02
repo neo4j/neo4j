@@ -53,7 +53,6 @@ public class RecoveryIT
         process.destroy();
         process.waitFor();
 
-        System.out.println( path );
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( path );
         Transaction transaction = db.beginTx();
         try

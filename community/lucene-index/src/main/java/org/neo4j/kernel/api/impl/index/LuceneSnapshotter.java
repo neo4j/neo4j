@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.index.IndexCommit;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
 
 import java.io.File;
@@ -37,9 +36,9 @@ public class LuceneSnapshotter
     private static final String NO_INDEX_COMMIT_TO_SNAPSHOT = "No index commit to snapshot";
     private static final String ID = "backup";
 
-    ResourceIterator<File> snapshot( File indexDir, IndexWriter writer ) throws IOException
+    ResourceIterator<File> snapshot( File indexDir, LuceneIndexWriter writer ) throws IOException
     {
-        SnapshotDeletionPolicy deletionPolicy = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
+        SnapshotDeletionPolicy deletionPolicy = (SnapshotDeletionPolicy) writer.getIndexDeletionPolicy();
 
         try
         {

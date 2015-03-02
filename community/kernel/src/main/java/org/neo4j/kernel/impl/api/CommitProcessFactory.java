@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
@@ -29,6 +30,7 @@ public interface CommitProcessFactory
 {
     TransactionCommitProcess create( LogicalTransactionStore logicalTransactionStore, KernelHealth kernelHealth,
                                      NeoStore neoStore, TransactionRepresentationStoreApplier storeApplier,
-                                     NeoStoreInjectedTransactionValidator validator, TransactionApplicationMode mode,
+                                     NeoStoreInjectedTransactionValidator txValidator,
+                                     IndexUpdatesValidator indexUpdatesValidator, TransactionApplicationMode mode,
                                      Config config );
 }

@@ -19,12 +19,13 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-import org.junit.Test;
-
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -32,11 +33,9 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 
 import static java.util.Arrays.asList;
-
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.helpers.collection.IteratorUtil.emptyListOf;
-import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
+import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.reserving;
 
 public class UniqueLuceneIndexAccessorTest
 {
@@ -119,7 +118,7 @@ public class UniqueLuceneIndexAccessorTest
 
     private UniqueLuceneIndexAccessor createAccessor() throws IOException
     {
-        return new UniqueLuceneIndexAccessor( new LuceneDocumentStructure(), standard(), new IndexWriterStatus(),
+        return new UniqueLuceneIndexAccessor( new LuceneDocumentStructure(), reserving(), new IndexWriterStatus(),
                 directoryFactory, indexDirectory );
     }
 
@@ -144,7 +143,7 @@ public class UniqueLuceneIndexAccessorTest
     }
     
     private void updateAndCommit( IndexAccessor accessor, Iterable<NodePropertyUpdate> updates )
-            throws IOException, IndexEntryConflictException
+            throws IOException, IndexEntryConflictException, IndexCapacityExceededException
     {
         try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {

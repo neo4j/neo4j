@@ -19,13 +19,14 @@
  */
 package org.neo4j.consistency.checking;
 
-import java.io.File;
-import java.util.Collection;
-
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
+import java.io.File;
+import java.util.Collection;
+
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -44,6 +45,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
+import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -351,12 +353,15 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
         GraphDatabaseAPI database = (GraphDatabaseAPI) builder.newGraphDatabase();
         try ( LockGroup locks = new LockGroup() )
         {
+            DependencyResolver dependencyResolver = database.getDependencyResolver();
+
             TransactionRepresentationCommitProcess commitProcess =
                     new TransactionRepresentationCommitProcess(
-                            database.getDependencyResolver().resolveDependency( LogicalTransactionStore.class ),
-                            database.getDependencyResolver().resolveDependency( KernelHealth.class ),
-                            database.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate(),
-                            database.getDependencyResolver().resolveDependency( TransactionRepresentationStoreApplier.class ),
+                            dependencyResolver.resolveDependency( LogicalTransactionStore.class ),
+                            dependencyResolver.resolveDependency( KernelHealth.class ),
+                            dependencyResolver.resolveDependency( NeoStoreProvider.class ).evaluate(),
+                            dependencyResolver.resolveDependency( TransactionRepresentationStoreApplier.class ),
+                            dependencyResolver.resolveDependency( IndexUpdatesValidator.class ),
                             TransactionApplicationMode.EXTERNAL );
             TransactionIdStore transactionIdStore = database.getDependencyResolver().resolveDependency(
                     TransactionIdStore.class );

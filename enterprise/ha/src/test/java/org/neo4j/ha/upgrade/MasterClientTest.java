@@ -19,11 +19,11 @@
  */
 package org.neo4j.ha.upgrade;
 
-import java.io.IOException;
-import java.util.Random;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.Random;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
@@ -48,6 +48,8 @@ import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.com.slave.MasterClient;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
+import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
+import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -71,7 +73,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.CleanupRule;
 
 import static java.util.Arrays.asList;
-
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doReturn;
@@ -80,7 +81,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_RESPONSE_UNPACKER;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -135,6 +135,10 @@ public class MasterClientTest
         when( resolver.resolveDependency( LogFile.class ) ).thenReturn( logFile );
         when( resolver.resolveDependency( LogRotation.class ) ).thenReturn( mock(LogRotation.class) );
         when( txStore.getAppender() ).thenReturn( txAppender );
+        IndexUpdatesValidator indexUpdatesValidator = mock( IndexUpdatesValidator.class );
+        when( indexUpdatesValidator.validate( any( TransactionRepresentation.class ),
+                any( TransactionApplicationMode.class ) ) ).thenReturn( ValidatedIndexUpdates.NONE );
+        when( resolver.resolveDependency( IndexUpdatesValidator.class ) ).thenReturn( indexUpdatesValidator );
 
         ResponseUnpacker unpacker = initAndStart( new TransactionCommittingResponseUnpacker( resolver ) );
 
@@ -147,8 +151,8 @@ public class MasterClientTest
         verify( txAppender, times( TX_LOG_COUNT ) ).append( any( TransactionRepresentation.class ), anyLong() );
         // we can't verify transactionCommitted since that's part of the TransactionAppender, which we have mocked
         verify( txApplier, times( TX_LOG_COUNT ) )
-                .apply( any( TransactionRepresentation.class ), any( LockGroup.class ), anyLong(),
-                        any( TransactionApplicationMode.class ) );
+                .apply( any( TransactionRepresentation.class ), any( ValidatedIndexUpdates.class ),
+                        any( LockGroup.class ), anyLong(), any( TransactionApplicationMode.class ) );
         verify( txIdStore, times( TX_LOG_COUNT ) ).transactionClosed( anyLong() );
     }
 
