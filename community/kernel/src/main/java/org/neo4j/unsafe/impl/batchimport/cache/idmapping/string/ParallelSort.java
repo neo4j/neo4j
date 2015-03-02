@@ -20,7 +20,9 @@
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
 import java.util.Arrays;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.unsafe.impl.batchimport.Utils;
 import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
@@ -215,19 +217,19 @@ public class ParallelSort
         return partingIndex;
     }
 
-    private void recursiveQsort( int start, int end )
+    private void recursiveQsort( int start, int end, Random random )
     {
         if ( end - start < 2 )
         {
             return;
         }
-        //choose the middle value
-        int pivot = start + ((end - start) / 2);
+        // choose a random pivot between start and end
+        int pivot = start + random.nextInt( end - start );
 
         pivot = partition( start, end, pivot );
 
-        recursiveQsort( start, pivot );
-        recursiveQsort( pivot + 1, end );
+        recursiveQsort( start, pivot, random );
+        recursiveQsort( pivot + 1, end, random );
     }
 
     private class SortWorker extends Thread
@@ -238,16 +240,17 @@ public class ParallelSort
 
         SortWorker( int workerId, int startRange, int size, CountDownLatch wait, CountDownLatch done )
         {
-            start = startRange;
+            this.start = startRange;
             this.size = size;
             this.doneSignal = done;
-            waitSignal = wait;
+            this.waitSignal = wait;
             this.workerId = workerId;
         }
 
         @Override
         public void run()
         {
+            Random random = ThreadLocalRandom.current();
             this.setName( "SortWorker-" + workerId );
             try
             {
@@ -255,10 +258,9 @@ public class ParallelSort
             }
             catch ( InterruptedException e )
             {
-                e.printStackTrace();
-                //ignore
+                Thread.currentThread().interrupt();
             }
-            recursiveQsort( start, start + size );
+            recursiveQsort( start, start + size, random );
             doneSignal.countDown();
         }
     }
