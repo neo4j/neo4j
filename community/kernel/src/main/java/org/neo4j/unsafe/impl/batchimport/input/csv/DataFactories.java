@@ -311,7 +311,8 @@ public class DataFactories
                             ? extractors.string().value() : null;
                     HeaderEntrySpec spec = new HeaderEntrySpec( entryString );
 
-                    if ( spec.name == null && spec.type == null )
+                    if ( (spec.name == null && spec.type == null) ||
+                         (spec.type != null && spec.type.equals( Type.IGNORE.name() )) )
                     {
                         columns.add( new Header.Entry( null, Type.IGNORE, null, null ) );
                     }

@@ -85,10 +85,12 @@ public class InputEntityDeserializer<ENTITY extends InputEntity>
 
                 // Extract it, type according to our header
                 Header.Entry entry = entries[fieldIndex];
-                Object value = data.tryExtract( mark, entry.extractor() )
-                        ? entry.extractor().value() : null;
-
-                deserialization.handle( entry, value );
+                if ( entry.type() != Type.IGNORE )
+                {
+                    Object value = data.tryExtract( mark, entry.extractor() )
+                            ? entry.extractor().value() : null;
+                    deserialization.handle( entry, value );
+                }
 
                 if ( mark.isEndOfLine() )
                 {   // We're at the end of the line, break and return an entity with what we have.
