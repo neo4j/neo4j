@@ -83,6 +83,12 @@ public class CsvDataGeneratorInput extends CsvDataGenerator<InputNode,InputRelat
             {
                 return nodeData();
             }
+
+            @Override
+            public boolean supportsMultiplePasses()
+            {
+                return true;
+            }
         };
     }
 
@@ -95,6 +101,12 @@ public class CsvDataGeneratorInput extends CsvDataGenerator<InputNode,InputRelat
             public InputIterator<InputRelationship> iterator()
             {
                 return relationshipData();
+            }
+
+            @Override
+            public boolean supportsMultiplePasses()
+            {
+                return true;
             }
         };
     }

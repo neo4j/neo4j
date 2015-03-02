@@ -53,6 +53,12 @@ public class SimpleInputIteratorWrapper<T> extends SimpleInputIterator<T>
             {
                 return new SimpleInputIteratorWrapper<>( sourceDescription, source.iterator() );
             }
+
+            @Override
+            public boolean supportsMultiplePasses()
+            {
+                return true;
+            }
         };
     }
 }

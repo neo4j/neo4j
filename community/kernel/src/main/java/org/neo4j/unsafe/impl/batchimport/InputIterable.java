@@ -27,5 +27,11 @@ import org.neo4j.graphdb.ResourceIterable;
 public interface InputIterable<T> extends ResourceIterable<T>
 {
     @Override
-    public InputIterator<T> iterator();
+    InputIterator<T> iterator();
+
+    /**
+     * @return whether or not multiple calls to {@link #iterator()} and therefore multiple passes
+     * over its data is supported.
+     */
+    boolean supportsMultiplePasses();
 }

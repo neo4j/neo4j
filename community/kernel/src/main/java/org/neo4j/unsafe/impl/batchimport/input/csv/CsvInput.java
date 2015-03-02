@@ -121,6 +121,12 @@ public class CsvInput implements Input
                     }
                 };
             }
+
+            @Override
+            public boolean supportsMultiplePasses()
+            {
+                return true;
+            }
         };
     }
 
@@ -154,6 +160,12 @@ public class CsvInput implements Input
                                 } );
                     }
                 };
+            }
+
+            @Override
+            public boolean supportsMultiplePasses()
+            {
+                return true;
             }
         };
     }

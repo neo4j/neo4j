@@ -219,8 +219,17 @@ public abstract class ArrayUtil
      */
     public static <T> boolean contains( T[] array, T contains )
     {
-        for ( T item : array )
+        return contains( array, array.length, contains );
+    }
+
+    /**
+     * @return {@code true} if {@code contains} exists in {@code array}, otherwise {@code false}.
+     */
+    public static <T> boolean contains( T[] array, int arrayLength, T contains )
+    {
+        for ( int i = 0; i < arrayLength; i++ )
         {
+            T item = array[i];
             if ( nullSafeEquals( item, contains ) )
             {
                 return true;
