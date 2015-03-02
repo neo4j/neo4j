@@ -37,6 +37,7 @@ import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -51,6 +52,7 @@ import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.StoreCopyMonitor;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
@@ -68,6 +70,8 @@ public class StoreCopyClientTest
 {
     @Rule
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public PageCacheRule pageCacheRule = new PageCacheRule();
 
     private final DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
@@ -103,8 +107,9 @@ public class StoreCopyClientTest
             }
         };
 
+        PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreCopyClient copier =
-                new StoreCopyClient( config, loadKernelExtensions(), console, logging, fs, storeCopyMonitor );
+                new StoreCopyClient( config, loadKernelExtensions(), console, logging, fs, pageCache, storeCopyMonitor );
 
         final GraphDatabaseAPI original =
                 (GraphDatabaseAPI) startDatabase( originalDir );
@@ -182,8 +187,9 @@ public class StoreCopyClientTest
             }
         };
 
+        PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreCopyClient copier =
-                new StoreCopyClient( config, loadKernelExtensions(), console, logging, fs, storeCopyMonitor );
+                new StoreCopyClient( config, loadKernelExtensions(), console, logging, fs, pageCache, storeCopyMonitor );
 
         final GraphDatabaseAPI original =
                 (GraphDatabaseAPI) startDatabase( originalDir );

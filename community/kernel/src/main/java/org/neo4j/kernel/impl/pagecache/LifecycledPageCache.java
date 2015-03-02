@@ -62,7 +62,7 @@ public class LifecycledPageCache extends LifecycleAdapter implements PageCache
         initialisePageCache();
     }
 
-    private void initialisePageCache()
+    protected void initialisePageCache()
     {
         pageCache = new MuninnPageCache(
                 swapperFactory,
