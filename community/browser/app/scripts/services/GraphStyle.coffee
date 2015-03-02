@@ -27,7 +27,7 @@ angular.module('neo4jApp.services')
     # Default style
     @defaultStyle =
       'node':
-        'diameter': '40px'
+        'diameter': '50px'
         'color': '#A5ABB6'
         'border-color': '#9AA1AC'
         'border-width': '2px'
@@ -46,8 +46,8 @@ angular.module('neo4jApp.services')
     @defaultSizes = [
       { diameter: '10px' }
       { diameter: '20px' }
-      { diameter: '30px' }
       { diameter: '50px' }
+      { diameter: '65px' }
       { diameter: '80px' }
     ]
 
