@@ -1,5 +1,4 @@
 <project name="process-resources">
-    <include file="${project.parent.relativePath}/../../installer-debian/udc_source.xml"/>
 
     <untar src="${project.build.directory}/neo4j-${edition}-${neo4j.version}-unix.tar.gz"
            compression="gzip" dest="${project.build.directory}"/>
@@ -26,6 +25,9 @@
             match=".fileNamePattern.*"
             replace="&lt;fileNamePattern&gt;/var/log/neo4j/http.%d{yyyy-MM-dd_HH}.log&lt;/fileNamePattern&gt;"
             />
-    <udc_source name="neo4j-${edition}-${neo4j.version}" packaging="rpm" workingDir="${project.build.directory}" parentDir="lib"/>
+
+    <replace file="${project.build.directory}/neo4j-${edition}-${neo4j.version}/conf/neo4j-wrapper.conf"
+             token="neo4j.ext.udc.source=tarball"
+             value="neo4j.ext.udc.source=rpm"/>
 
 </project>

@@ -1,8 +1,4 @@
 <project default="debian">
-    <include file="udc_source.xml" />
-
-
-
     <macrodef name="package">
 
         <attribute name="name"/>
@@ -41,8 +37,9 @@
                 </fileset>
             </copy>
 
-
-            <udc_source name="@{name}" packaging="debian" workingDir="${project.build.outputDirectory}"/>
+            <replace file="${project.build.outputDirectory}/@{name}/server/conf/neo4j-wrapper.conf"
+                     token="neo4j.ext.udc.source=tarball"
+                     value="neo4j.ext.udc.source=debian"/>
 
             <chmod perm="700">
                 <fileset dir="${project.build.outputDirectory}/@{name}">
