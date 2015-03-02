@@ -2,24 +2,19 @@ article.help
   .container-fluid
     section.row-fluid.summary
       .summary.col-sm-3
-        h3 DELETE
-        p.lead Delete nodes or relationships
+        h3 REMOVE
+        p.lead Remove properties and labels
       .details.col-sm-9
         p
           | The&nbsp;
-          code DELETE
-          |  clause is used to delete nodes and relationships
-          | identified within a&nbsp;
-          code MATCH
-          |  clause, possibly qualified by a&nbsp;
-          code WHERE
-          | .
+          code REMOVE
+          |  clause is used to remove properties and labels from graph elements.
         table.table-condensed.table-help
           tr
             th Reference:
             td
               code
-                a(href='http://neo4j.com/docs/{{neo4j.version}}/query-delete.html') DELETE
+                a(href='http://neo4j.com/docs/{{neo4j.version}}/query-remove.html') REMOVE
               |  manual page
           tr
             th Related:
@@ -30,12 +25,21 @@ article.help
               | &nbsp;
               a(help-topic='return') :help RETURN
               | &nbsp;
-              a(help-topic='remove') :help REMOVE
+              a(help-topic='delete') :help DELETE
               | &nbsp;
               a(help-topic='cypher') :help Cypher
     section.row-fluid.example
       .col-sm-9.col-sm-offset-3
         figure
           pre.code.runnable.
-            MATCH (n)-[r]-() WHERE n.name = 'Soren' DELETE r
-          figcaption Remove all of Soren's friends.
+            MATCH (soren {name: 'Soren'})
+            REMOVE soren.age
+            RETURN soren
+          figcaption Remove Soren's age.
+
+        figure
+          pre.code.runnable.
+            MATCH (soren {name: 'Soren'})
+            REMOVE soren:Intern
+            RETURN soren
+          figcaption Soren is no longer an intern.

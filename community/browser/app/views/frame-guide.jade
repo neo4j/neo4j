@@ -4,7 +4,7 @@ div(fullscreen)
     .inner
       .view-result.help(ng-hide='frame.hasErrors', ng-include = 'frame.response.page')
       .view-result-error.help(ng-show='frame.hasErrors')
-        pre No such help topic.
+        pre No such topic to play.
       .status-bar(ng-class='{error: frame.hasErrors, loading: frame.isLoading}', ng-show="frame.errorText")
         .status(ng-hide='frame.isLoading')
           span(ng-show='frame.hasErrors')
