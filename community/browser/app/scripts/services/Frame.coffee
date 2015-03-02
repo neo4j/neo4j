@@ -31,9 +31,8 @@ angular.module('neo4jApp.services')
       '$q'
       'Collection'
       'Settings'
-      'Timer'
       'Utils'
-      ($injector, $q, Collection, Settings, Timer, Utils) ->
+      ($injector, $q, Collection, Settings, Utils) ->
         class Frame
           constructor: (data = {})->
             @templateUrl = null
@@ -49,7 +48,7 @@ angular.module('neo4jApp.services')
           exec: ->
             query = Utils.stripComments(@input.trim())
             return unless query
-            # Find first matching input interpretator
+            # Find first matching input interpreter
             intr = frames.interpreterFor(query)
             return unless intr
             @type = intr.type
@@ -65,8 +64,7 @@ angular.module('neo4jApp.services')
             @closeAttempts = 0
             @response  = null
             @templateUrl = intr.templateUrl
-            timer = Timer.start()
-            @startTime = timer.started()
+            @startTime = (new Date).getTime()
             intrPromise = intrFn(query, $q.defer())
             @terminate = =>
               @resetError()
@@ -92,14 +90,11 @@ angular.module('neo4jApp.services')
               (result) =>
                 @isLoading = no
                 @response = result
-                @runTime = timer.stop().time()
               ,
               (result = {}) =>
                 @isLoading = no
                 @response = null
                 @setError result
-                @runTime = timer.stop().time()
-
             )
             @
           setProperties: (intr) ->

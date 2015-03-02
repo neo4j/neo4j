@@ -22,7 +22,8 @@ angular.module('neo4jApp')
 .config([
   'FrameProvider'
   'Settings'
-  (FrameProvider, Settings) ->
+  'Timer'
+  (FrameProvider, Settings, Timer) ->
 
     cmdchar = Settings.cmdchar
 
@@ -330,11 +331,13 @@ angular.module('neo4jApp')
         (input, q) ->
           current_transaction = Cypher.transaction()
           commit_fn = () ->
+            timer = Timer.start()
             current_transaction.commit(input).then(
               (response) ->
                 if response.size > Settings.maxRows
                   response.displayedSize = Settings.maxRows
                 q.resolve(
+                  responseTime: timer.stop().time()
                   table: response
                   graph: extractGraphModel(response, CypherGraphModel)
                 )

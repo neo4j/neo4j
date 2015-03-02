@@ -84,7 +84,7 @@ angular.module('neo4jApp.controllers')
           messages.push "returned #{frame.response.table.size} #{if frame.response.table.size is 1 then 'row' else 'rows'}"
         if messages.length is 0
           messages.push "statement executed"
-        messages[messages.length - 1] += " in #{frame.runTime} ms"
+        messages[messages.length - 1] += " in #{frame.response.responseTime} ms"
         if (frame.response.table.size > frame.response.table.displayedSize)
           messages.push "displaying first #{frame.response.table.displayedSize} rows"
 
