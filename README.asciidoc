@@ -37,12 +37,7 @@ If you don't plan to build the browser (for example by using -DskipBrowser), the
 
 === With apt-get on Ubuntu ===
 
-  sudo apt-get install graphviz maven nodejs make
-
-Due to a file naming collision, the http://packages.debian.org/nodejs[nodejs] package contained within Debian and Ubuntu repositories provides an executable named `nodejs` instead of the expected `node`. Once installed, you may therefore need to create an alias for this script as follows:
-
-  cd ~/bin
-  ln -s /usr/bin/nodejs node
+  sudo apt-get install graphviz maven nodejs-legacy make
 
 On Ubuntu 14.04 it seems the nodejs package does not include npm, so you should install that too:
 
