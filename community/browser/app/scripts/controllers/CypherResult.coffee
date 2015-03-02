@@ -80,7 +80,11 @@ angular.module('neo4jApp.controllers')
         nonZeroFields.push(field) for field in fields when stats[field.field] > 0
 
         messages = ("#{field.verb} #{stats[field.field]} #{if stats[field.field] is 1 then field.singular else field.plural}" for field in nonZeroFields)
-        messages.push "returned #{frame.response.table.size} #{if frame.response.table.size is 1 then 'row' else 'rows'} in #{frame.runTime} ms"
+        if frame.response.table._response.columns.length
+          messages.push "returned #{frame.response.table.size} #{if frame.response.table.size is 1 then 'row' else 'rows'}"
+        if messages.length is 0
+          messages.push "statement executed"
+        messages[messages.length - 1] += " in #{frame.runTime} ms"
         if (frame.response.table.size > frame.response.table.displayedSize)
           messages.push "displaying first #{frame.response.table.displayedSize} rows"
 
