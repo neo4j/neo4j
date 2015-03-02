@@ -82,7 +82,7 @@ class ConservativeQueryAcceptorTest extends CypherFunSuite with LogicalPlanningT
     conservativeQueryAcceptor(query) should be(false)
   }
 
-  test("should not accept queries with simple cycles in them") {
+  test("should accept queries with simple cycles in them") {
     // MATCH a-[r1]->a
     val qg1 = QueryGraph(
       patternNodes = Set("a"),
@@ -90,10 +90,10 @@ class ConservativeQueryAcceptorTest extends CypherFunSuite with LogicalPlanningT
         Set(PatternRelationship("r", nodes = ("a", "a"),
           Direction.OUTGOING, Seq.empty, SimplePatternLength)))
 
-    shouldReject(qg1)
+    shouldAccept(qg1)
   }
 
-  test("should not accept queries with cycles in them") {
+  test("should accept queries with cycles in them") {
     // MATCH a-->b-->c-->d-->e, c-->e, d-->b
     val qg1 = QueryGraph(
       patternNodes = Set("a", "b", "c", "d", "e"),
@@ -104,10 +104,10 @@ class ConservativeQueryAcceptorTest extends CypherFunSuite with LogicalPlanningT
           PatternRelationship("r4", nodes = ("c", "e"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
           PatternRelationship("r5", nodes = ("d", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)))
 
-    shouldReject(qg1)
+    shouldAccept(qg1)
   }
 
-  test("should not accept queries with disconnected graph with cycle") {
+  test("should accept queries with disconnected graph with cycle") {
     // match a-->b-->c, d-->e-->d
     val qg1 = QueryGraph(
       patternNodes = Set("a", "b", "c", "d", "e"),
@@ -117,7 +117,7 @@ class ConservativeQueryAcceptorTest extends CypherFunSuite with LogicalPlanningT
           PatternRelationship("r3", nodes = ("d", "e"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
           PatternRelationship("r4", nodes = ("e", "d"), Direction.OUTGOING, Seq.empty, SimplePatternLength)))
 
-    shouldReject(qg1)
+    shouldAccept(qg1)
   }
 
   test("should accept queries with disconnected graph without cycle") {
@@ -133,7 +133,7 @@ class ConservativeQueryAcceptorTest extends CypherFunSuite with LogicalPlanningT
     shouldAccept(qg1)
   }
 
-  test("should not accept queries with overlap") {
+  test("should accept queries with overlap") {
     // MATCH a-[:T1]->b , a-[:T2]->b
     val qg1 = QueryGraph(
       patternNodes = Set("a", "b"),
@@ -141,7 +141,7 @@ class ConservativeQueryAcceptorTest extends CypherFunSuite with LogicalPlanningT
         Set(PatternRelationship("r1", nodes = ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
           PatternRelationship("r2", nodes = ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)))
 
-    shouldReject(qg1)
+    shouldAccept(qg1)
   }
 
   test("should accept queries that have star patterns") {
