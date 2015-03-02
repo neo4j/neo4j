@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 
 class DeMorganRewriterTest extends CypherFunSuite with PredicateTestSupport {
 
-  val rewriter: Rewriter = deMorganRewriter
+  val rewriter: Rewriter = deMorganRewriter()(mock[AstRewritingMonitor])
 
   test("not (P and Q)  iff  (not P) or (not Q)") {
     not(and(P, Q)) <=> or(not(P), not(Q))

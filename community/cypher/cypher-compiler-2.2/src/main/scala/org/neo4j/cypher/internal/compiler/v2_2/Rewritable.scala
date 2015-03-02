@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_2
 
 import java.lang.reflect.Method
 
+import org.neo4j.cypher.internal.compiler.v2_2.ast.ASTNode
+
 import scala.annotation.tailrec
 import scala.collection.mutable.{HashMap => MutableHashMap}
 
@@ -214,6 +216,42 @@ case class repeat(rewriter: Rewriter) extends Rewriter {
       t
     } else {
       apply(t)
+    }
+  }
+}
+
+/*
+This rewriter tries to limit rewriters that grow the product AST too much
+ */
+case class repeatWithSizeLimit(rewriter: Rewriter)(implicit val monitor: AstRewritingMonitor) extends Rewriter {
+
+  import Foldable._
+
+  private def astNodeSize(value: Any): Int = value.treeFold(1) {
+    case _: ASTNode => (acc, children) => children(acc+1)
+  }
+
+  final def apply(that: AnyRef): AnyRef = {
+    val initialSize = astNodeSize(that)
+    val limit = initialSize * initialSize
+
+    innerApply(that, limit)
+  }
+
+  @tailrec
+  private def innerApply(that: AnyRef, limit: Int): AnyRef = {
+    val t = rewriter.apply(that)
+    val newSize = astNodeSize(t)
+
+    if (newSize > limit) {
+      monitor.abortedRewriting(that )
+      that
+    }
+    else if (t == that) {
+      t
+    }
+    else {
+      innerApply(t, limit)
     }
   }
 }

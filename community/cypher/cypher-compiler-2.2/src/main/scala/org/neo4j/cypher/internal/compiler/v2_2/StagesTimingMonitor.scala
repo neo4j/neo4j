@@ -69,6 +69,8 @@ class StagesTimingListener(monitors: Monitors, monitor: StagesTimingMonitor) {
     def finishRewriting(query: String, statement: Statement) {
       end(query, monitor.rewritingTimeElapsed)
     }
+
+    def abortedRewriting(obj: AnyRef) {}
   }
 
   private class TimingSemanticCheckMonitor extends SemanticCheckMonitor with TimingMonitor[String] {
