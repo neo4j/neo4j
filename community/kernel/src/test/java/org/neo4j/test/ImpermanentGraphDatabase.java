@@ -33,6 +33,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SingleLoggingService;
 
@@ -149,6 +150,37 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
                 testThatDidNotCloseDb.printStackTrace();
             }
         }
+    }
+
+    @Override
+    protected DiagnosticsManager createDiagnosticsManager()
+    {
+        return new DiagnosticsManager( StringLogger.DEV_NULL )
+        {
+            @Override
+            public void init() throws Throwable
+            {
+                // Do nothing
+            }
+
+            @Override
+            public void start()
+            {
+                // Do nothing
+            }
+
+            @Override
+            public void stop() throws Throwable
+            {
+                // Do nothing
+            }
+
+            @Override
+            public void shutdown()
+            {
+                // Do nothing
+            }
+        };
     }
 
     @Override

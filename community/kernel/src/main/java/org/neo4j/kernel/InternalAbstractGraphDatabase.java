@@ -172,7 +172,10 @@ import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
+import static org.neo4j.helpers.Settings.ANY;
 import static org.neo4j.helpers.Settings.STRING;
+import static org.neo4j.helpers.Settings.illegalValueMessage;
+import static org.neo4j.helpers.Settings.matches;
 import static org.neo4j.helpers.Settings.setting;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
@@ -471,7 +474,7 @@ public abstract class InternalAbstractGraphDatabase
         kernelEventHandlers = new KernelEventHandlers( logging.getMessagesLog( KernelEventHandlers.class ) );
 
         caches = createCaches();
-        diagnosticsManager = life.add( new DiagnosticsManager( logging.getMessagesLog( DiagnosticsManager.class ) ) );
+        diagnosticsManager = life.add( createDiagnosticsManager() );
         monitors.addMonitorListener( new RollingLogMonitor()
         {
             @Override
@@ -572,6 +575,11 @@ public abstract class InternalAbstractGraphDatabase
                 queryExecutor = QueryEngineProvider.noEngine();
             }
         } );
+    }
+
+    protected DiagnosticsManager createDiagnosticsManager()
+    {
+        return new DiagnosticsManager( logging.getMessagesLog( DiagnosticsManager.class ) );
     }
 
     protected UpgradeConfiguration createUpgradeConfiguration()
@@ -1301,6 +1309,9 @@ public abstract class InternalAbstractGraphDatabase
         public static final Setting<Boolean> execution_guard_enabled = GraphDatabaseSettings.execution_guard_enabled;
         public static final Setting<String> cache_type = GraphDatabaseSettings.cache_type;
         public static final Setting<Boolean> ephemeral = setting( "ephemeral", Settings.BOOLEAN, Settings.FALSE );
+        public static final Setting<String> ephemeral_keep_logical_logs = setting("keep_logical_logs", STRING, "1 files", illegalValueMessage( "must be `true`/`false` or of format '<number><optional unit> <type>' for example `100M size` for " +
+                            "limiting logical log space on disk to 100Mb," +
+                            " or `200k txs` for limiting the number of transactions to keep to 200 000", matches(ANY)));
         public static final Setting<File> store_dir = GraphDatabaseSettings.store_dir;
         public static final Setting<File> neo_store = GraphDatabaseSettings.neo_store;
 

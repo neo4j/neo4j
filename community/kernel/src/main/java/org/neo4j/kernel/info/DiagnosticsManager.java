@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsExtractor.VisitableDiagnostics;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
-public final class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecycle
+public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecycle
 {
     private final List<DiagnosticsProvider> providers = new CopyOnWriteArrayList<DiagnosticsProvider>();
     private final StringLogger logger;
