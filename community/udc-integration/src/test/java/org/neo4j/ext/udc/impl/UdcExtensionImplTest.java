@@ -437,6 +437,33 @@ public class UdcExtensionImplTest
     }
 
     @Test
+    public void shouldReadSourceFromJar() throws Exception
+    {
+        setupServer();
+
+        GraphDatabaseService graphdb = createDatabase( config );
+        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+        String source = handler.getQueryMap().get( SOURCE );
+        assertEquals( "unit-testing", source );
+
+        destroy( graphdb );
+    }
+
+    @Test
+    public void shouldOverrideSourceWithSystemProperty() throws Exception
+    {
+        setupServer();
+
+        System.setProperty( UdcSettings.udc_source.name(), "overridden" );
+        GraphDatabaseService graphdb = createDatabase( config );
+        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+        String source = handler.getQueryMap().get( SOURCE );
+        assertEquals( "overridden", source );
+
+        destroy( graphdb );
+    }
+
+    @Test
     public void shouldMatchAllValidVersions() throws Exception
     {
         assertTrue( "1.8.M07".matches( VersionPattern ) );
@@ -482,7 +509,6 @@ public class UdcExtensionImplTest
         assertThat( DefaultUdcInformationCollector.filterVersionForUDC( "1.9" ),
                 is( equalTo( "1.9" ) ) );
     }
-
 
     private static interface Condition<T>
     {
