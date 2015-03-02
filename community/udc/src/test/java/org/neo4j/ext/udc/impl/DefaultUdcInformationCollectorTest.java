@@ -333,7 +333,8 @@ public class DefaultUdcInformationCollectorTest
 
     private static class StubIdGeneratorFactory implements IdGeneratorFactory
     {
-        private final Map<IdType,Long> idsInUse = new HashMap<>();
+        private final Map<IdType, Long> idsInUse = new HashMap<>();
+
         {
             idsInUse.put( IdType.NODE, 100l );
             idsInUse.put( IdType.RELATIONSHIP, 200l );

@@ -19,16 +19,6 @@
  */
 package org.neo4j.ext.udc.impl;
 
-import com.sun.jersey.spi.container.ContainerRequest;
-import org.apache.commons.io.FileUtils;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.localserver.LocalTestServer;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -40,6 +30,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
+import com.sun.jersey.spi.container.ContainerRequest;
+import org.apache.commons.io.FileUtils;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.localserver.LocalTestServer;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestName;
 
 import org.neo4j.ext.udc.Edition;
 import org.neo4j.ext.udc.UdcConstants;
@@ -62,6 +62,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.stub;
+
+import static org.neo4j.ext.udc.UdcConstants.DATABASE_MODE;
 import static org.neo4j.ext.udc.UdcConstants.EDITION;
 import static org.neo4j.ext.udc.UdcConstants.MAC;
 import static org.neo4j.ext.udc.UdcConstants.REGISTRATION;
@@ -169,6 +171,18 @@ public class UdcExtensionImplTest
         GraphDatabaseService graphdb = createDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
         assertEquals( "unit-testing", handler.getQueryMap().get( SOURCE ) );
+
+        destroy( graphdb );
+    }
+
+    @Test
+    public void shouldRecordDatabaseMode() throws Exception
+    {
+        setupServer();
+
+        GraphDatabaseService graphdb = createDatabase( config );
+        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+        assertEquals( "SINGLE", handler.getQueryMap().get( DATABASE_MODE ) );
 
         destroy( graphdb );
     }
