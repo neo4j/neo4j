@@ -1,12 +1,16 @@
 2.2.0-RC1
 ---------
+o New welcome frame.
+o New Northwind relational-to-graph example.
+o New query template feature.
 o Cache busting for static HTML to improve the browser experience when upgrading
   between Neo4j versions.
-o Added toggle for finding internal relationships
-o Made motd autodetect protocol for requests
-o Added config option to disable motd
-o Can now download TXT from shell frames
+o Added toggle for finding internal relationships.
+o Made MOTD autodetect protocol for requests.
+o Added config option to disable MOTD.
+o Can now download TXT from shell frames.
 o Can now download JSON from http frames (all rest calls except cypher).
+o GraSS engine cascades rules and copes with multiple labels per node.
 
 2.2.0-M04
 ---------
