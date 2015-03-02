@@ -40,6 +40,7 @@ trait SemanticCheckMonitor {
 
 trait AstRewritingMonitor {
   def startRewriting(queryText: String, statement: Statement)
+  def abortedRewriting(obj: AnyRef)
   def finishRewriting(queryText: String, statement: Statement)
 }
 

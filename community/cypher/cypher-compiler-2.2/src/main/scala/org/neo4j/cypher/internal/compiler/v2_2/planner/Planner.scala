@@ -51,7 +51,7 @@ case class Planner(monitors: Monitors,
     maybeExecutionPlanBuilder.getOrElse(new PipeExecutionPlanBuilder(clock, monitors))
 
   def producePlan(inputQuery: PreparedQuery, planContext: PlanContext): PipeInfo = {
-    Planner.rewriteStatement(inputQuery.statement, inputQuery.scopeTree, inputQuery.semanticTable, inputQuery.conditions) match {
+    Planner.rewriteStatement(inputQuery.statement, inputQuery.scopeTree, inputQuery.semanticTable, inputQuery.conditions, monitors.newMonitor[AstRewritingMonitor]()) match {
       case (ast: Query, rewrittenSemanticTable) =>
         monitor.startedPlanning(inputQuery.queryText)
         val (logicalPlan, pipeBuildContext) = produceLogicalPlan(ast, rewrittenSemanticTable)(planContext)
@@ -84,21 +84,21 @@ case class Planner(monitors: Monitors,
 object Planner {
   import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStep._
 
-  def rewriteStatement(statement: Statement, scopeTree: Scope, semanticTable: SemanticTable, preConditions: Set[RewriterCondition]): (Statement, SemanticTable) = {
+  def rewriteStatement(statement: Statement, scopeTree: Scope, semanticTable: SemanticTable, preConditions: Set[RewriterCondition], monitor: AstRewritingMonitor): (Statement, SemanticTable) = {
     val namespacer = Namespacer(statement, semanticTable, scopeTree)
-    val newStatement = rewriteStatement(namespacer, statement, preConditions)
+    val newStatement = rewriteStatement(namespacer, statement, preConditions, monitor)
     val newSemanticTable = namespacer.tableRewriter(semanticTable)
     (newStatement, newSemanticTable)
   }
 
-  def rewriteStatement(namespacer: Namespacer, statement: Statement, preConditions: Set[RewriterCondition]): Statement = {
+  private def rewriteStatement(namespacer: Namespacer, statement: Statement, preConditions: Set[RewriterCondition], monitor: AstRewritingMonitor): Statement = {
     val rewriter =
       RewriterStepSequencer
         .newDefault("Planner")
         .withPrecondition(preConditions)(
           ApplyRewriter("namespaceIdentifiers", namespacer.astRewriter),
           rewriteEqualityToInCollection,
-          CNFNormalizer,
+          CNFNormalizer()(monitor),
           collapseInCollections,
           nameUpdatingClauses /* this is actually needed as a precondition for projectedNamedPaths even though we do not handle updates in Ronja */,
           projectNamedPaths,

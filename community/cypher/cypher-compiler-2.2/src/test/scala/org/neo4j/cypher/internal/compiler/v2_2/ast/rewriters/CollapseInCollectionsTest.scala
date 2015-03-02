@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_2.AstRewritingMonitor
 import org.neo4j.cypher.internal.compiler.v2_2.planner.AstRewritingTestSupport
 
 class CollapseInCollectionsTest extends CypherFunSuite with AstRewritingTestSupport {
@@ -62,6 +63,6 @@ class CollapseInCollectionsTest extends CypherFunSuite with AstRewritingTestSupp
 
   private def parse(query: String) = {
     val parsed = parser.parse(query)
-    parsed.endoRewrite(CNFNormalizer)
+    parsed.endoRewrite(CNFNormalizer()(mock[AstRewritingMonitor]))
   }
 }

@@ -19,23 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.repeat
+import org.neo4j.cypher.internal.compiler.v2_2.{repeat, _}
 
-case object CNFNormalizer extends Rewriter {
+case class CNFNormalizer()(implicit monitor: AstRewritingMonitor) extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = instance(that)
 
   private val instance: Rewriter = inSequence(
-    deMorganRewriter,
-    distributeLawsRewriter,
+    deMorganRewriter(),
+    distributeLawsRewriter(),
     flattenBooleanOperators,
     simplifyPredicates
   )
 }
 
-object deMorganRewriter extends Rewriter {
+case class deMorganRewriter()(implicit monitor: AstRewritingMonitor) extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = instance(that)
 
@@ -48,10 +47,10 @@ object deMorganRewriter extends Rewriter {
       And(Not(exp1)(p.position), Not(exp2)(p.position))(p.position)
   }
 
-  private val instance: Rewriter = repeat(bottomUp(step))
+  private val instance: Rewriter = repeatWithSizeLimit(bottomUp(step))(monitor)
 }
 
-object distributeLawsRewriter extends Rewriter {
+case class distributeLawsRewriter()(implicit monitor: AstRewritingMonitor) extends Rewriter {
   def apply(that: AnyRef): AnyRef = instance(that)
 
   private val step = Rewriter.lift {
@@ -59,7 +58,7 @@ object distributeLawsRewriter extends Rewriter {
     case p@Or(And(exp1, exp2), exp3) => And(Or(exp1, exp3)(p.position), Or(exp2, exp3.endoRewrite(copyIdentifiers))(p.position))(p.position)
   }
 
-  private val instance: Rewriter = repeat(bottomUp(step))
+  private val instance: Rewriter = repeatWithSizeLimit(bottomUp(step))(monitor)
 }
 
 object flattenBooleanOperators extends Rewriter {

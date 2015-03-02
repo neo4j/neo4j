@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.Rewriter
+import org.neo4j.cypher.internal.compiler.v2_2.{AstRewritingMonitor, Rewriter}
 
 class DistributeLawRewriterTest extends CypherFunSuite with PredicateTestSupport {
 
-  val rewriter: Rewriter = distributeLawsRewriter
+  val rewriter: Rewriter = distributeLawsRewriter()(mock[AstRewritingMonitor])
 
   test("(P or (Q and R))  iff  (P or Q) and (P or R)") {
     or(P, and(Q, R)) <=> and(or(P, Q), or(P, R))

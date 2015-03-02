@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
+import org.mockito.Matchers._
+import org.mockito.Mockito._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.Rewriter
-
+import org.neo4j.cypher.internal.compiler.v2_2.{AstRewritingMonitor, Rewriter}
 class CNFNormalizerTest extends CypherFunSuite with PredicateTestSupport {
-  def rewriter: Rewriter = CNFNormalizer
+  def rewriter: Rewriter = CNFNormalizer()(mock[AstRewritingMonitor])
 
   test("should flatten multiple ANDs in a ANDS") {
     and(P, and(R, S)) <=> ands(P, R, S)
@@ -45,5 +46,58 @@ class CNFNormalizerTest extends CypherFunSuite with PredicateTestSupport {
       ors(P, Q, not(R), not(S)),
       ors(not(P), not(Q), not(R), not(S))
     )
+  }
+
+  test("aborts cnf-rewriting for the worst case scenarios") {
+    /* GIVEN A PATHOLOGICAL CASE FOR CNF
+    When we get predicates in certain shapes, the normalized form for the predicate is so large it becomes
+    intractable to plan on, and the better alternative is to simply give up on normalizing and let the planner
+    produces a sub-optimal plan instead.
+     */
+
+    val p1 = anExp("p1")
+    val p2 = anExp("p2")
+    val p3 = anExp("p3")
+    val p4 = anExp("p4")
+    val p5 = anExp("p5")
+    val p6 = anExp("p6")
+    val p7 = anExp("p7")
+    val p8 = anExp("p8")
+    val p9 = anExp("p9")
+    val p10 = anExp("p10")
+    val p11 = anExp("p11")
+    val p12 = anExp("p12")
+    val p13 = anExp("p13")
+    val p14 = anExp("p14")
+    val p15 = anExp("p15")
+    val p16 = anExp("p16")
+    val p17 = anExp("p17")
+    val p18 = anExp("p18")
+    val p19 = anExp("p19")
+    val p20 = anExp("p20")
+
+    val bigPredicate =
+      or(
+        or(
+          or(
+            or(
+              and(p1, p2),
+              and(p3, p4)), or(
+              and(p5, p6),
+              and(p7, p8))), or(
+            or(
+              and(p9, p10),
+              and(p11, p12)), or(
+              and(p13, p14),
+              and(p15, p16)))), or(
+          and(p17, p18),
+          and(p19, p20)))
+    val monitor = mock[AstRewritingMonitor]
+
+    // When
+    bigPredicate.rewrite(CNFNormalizer()(monitor))
+
+    // Then the rewriting was aborted
+    verify(monitor, times(1)).abortedRewriting(any())
   }
 }
