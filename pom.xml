@@ -670,11 +670,6 @@ public class ComponentVersion extends Version
         <version>1.9.13</version>
       </dependency>
       <dependency>
-        <groupId>org.mortbay.jetty</groupId>
-        <artifactId>jetty</artifactId>
-        <version>6.1.26</version>
-      </dependency>
-      <dependency>
         <groupId>org.rrd4j</groupId>
         <artifactId>rrd4j</artifactId>
         <version>2.2</version>
