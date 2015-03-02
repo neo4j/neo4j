@@ -894,7 +894,6 @@ RETURN a.name""")
     result.toSet should equal (Set(Map("a" -> b, "b" -> a), Map("b" -> b, "a" -> a)))
   }
 
-  //TODO cyclic patterns has been disabled in ronja
   test("should solve selfreferencing pattern") {
     val a = createNode()
     val b = createNode()
@@ -903,12 +902,11 @@ RETURN a.name""")
     relate(a, b)
     relate(b, c)
 
-    val result = execute("match a-->b, b-->b return b")
+    val result = executeWithNewPlanner("match a-->b, b-->b return b")
 
     result shouldBe 'isEmpty
   }
 
-  //TODO cyclic patterns has been disabled in ronja
   test("should solve self referencing pattern2") {
     val a = createNode()
     val b = createNode()
@@ -916,7 +914,7 @@ RETURN a.name""")
     val r = relate(a, a)
     relate(a, b)
 
-    val result = execute("match a-[r]->a return r")
+    val result = executeWithNewPlanner("match a-[r]->a return r")
     result.toList should equal (List(Map("r" -> r)))
   }
 
@@ -1278,7 +1276,6 @@ return b
     ))
   }
 
-  //TODO cyclic patterns has been disabled in ronja
   test("should handle cyclic patterns") {
     // given
     val a = createNode("a")
@@ -1289,7 +1286,7 @@ return b
     relate(b, c, "B")
 
     // when
-    val result = execute("match (a)-[r1:A]->(x)-[r2:B]->(a) return a.name")
+    val result = executeWithNewPlanner("match (a)-[r1:A]->(x)-[r2:B]->(a) return a.name")
 
     // then does not throw exceptions
     assert(result.toList === List(
@@ -1297,7 +1294,6 @@ return b
     ))
   }
 
-  //TODO cyclic patterns has been disabled in ronja
   test("should handle cyclic patterns (broken up into two paths)") {
     // given
     val a = createNode("a")
@@ -1308,7 +1304,7 @@ return b
     relate(b, c, "B")
 
     // when
-    val result = execute("match (a)-[:A]->(b), (b)-[:B]->(a) return a.name")
+    val result = executeWithNewPlanner("match (a)-[:A]->(b), (b)-[:B]->(a) return a.name")
 
     // then does not throw exceptions
     assert(result.toList === List(

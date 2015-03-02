@@ -33,44 +33,9 @@ object conservativeQueryAcceptor extends (UnionQuery => Boolean) {
   private def rejectQuery(pq: PlannerQuery): Boolean = {
     containsVarLength(pq.graph) ||
       pq.graph.optionalMatches.exists(containsVarLength) ||
-      containsCycles(pq.graph) ||
-      pq.graph.optionalMatches.exists(containsCycles) ||
       pq.tail.exists(rejectQuery)
   }
 
   private def containsVarLength(qg: QueryGraph): Boolean = qg.patternRelationships.exists(!_.length.isSimple)
 
-  private def containsCycles(qg: QueryGraph): Boolean = {
-    val visitedNodes = mutable.HashSet[IdName]()
-    val vistedRels = mutable.HashSet[PatternRelationship]()
-
-    //put one (node,relationship) pair on the stack
-    val toVisit = mutable.Stack[(IdName, PatternRelationship)]()
-    qg.patternRelationships.headOption.foreach(r => toVisit.push((r.left, r)))
-
-    while(toVisit.nonEmpty) {
-      //pop rel and follow it along its relationships
-      val (node, rel) = toVisit.pop()
-      visitedNodes += node
-      vistedRels += rel
-
-      val otherNode = rel.otherSide(node)
-      if (visitedNodes(otherNode)) return true
-      visitedNodes += otherNode
-
-      //dfs step, follow all relationships ending on node
-      qg.findRelationshipsEndingOn(otherNode)
-        .filterNot(vistedRels)
-        .foreach(r => toVisit.push((otherNode, r)))
-
-      //if we have exhausted subgraph, find next disconnected component
-      if (toVisit.isEmpty) {
-        val leftToVisit = qg.patternRelationships -- vistedRels
-        leftToVisit.headOption.foreach(r => toVisit.push((r.left, r)))
-        visitedNodes.clear()
-      }
-    }
-
-    false
-  }
 }

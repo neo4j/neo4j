@@ -46,11 +46,11 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       .shouldHavePlannerName(Rule)
   }
 
-  test("should use Rule for loops in 2.2") {
+  test("should use Cost for cycles in 2.2") {
     given("match (a)-[r]->(a) return a")
       .withCypherVersion(CypherVersion.v2_2)
       .shouldHaveCypherVersion(CypherVersion.v2_2)
-      .shouldHavePlannerName(Rule)
+      .shouldHavePlannerName(Cost)
   }
 
   test("should fallback to Rule for updates in 2.2") {
