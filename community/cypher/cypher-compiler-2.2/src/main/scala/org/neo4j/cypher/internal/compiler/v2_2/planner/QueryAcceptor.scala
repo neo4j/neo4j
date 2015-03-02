@@ -24,7 +24,11 @@ import org.neo4j.graphdb.{Node, Relationship}
 
 import scala.collection.mutable
 
-object conservativeQueryAcceptor extends (UnionQuery => Boolean) {
+object allQueryAcceptor extends QueryAcceptor {
+  def apply(ignored: UnionQuery) = true
+}
+
+object conservativeQueryAcceptor extends QueryAcceptor {
 
   def apply(query: UnionQuery): Boolean = {
     !query.queries.exists(query => rejectQuery (query) )

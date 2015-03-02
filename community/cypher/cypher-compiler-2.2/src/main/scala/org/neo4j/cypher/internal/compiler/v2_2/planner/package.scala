@@ -17,15 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal
+package org.neo4j.cypher.internal.compiler.v2_2
 
-sealed trait CypherOption
-
-final case class VersionOption(version: String) extends CypherOption
-case object ProfileOption extends CypherOption
-case object ExplainOption extends CypherOption
-case object CostPlannerOption extends CypherOption
-case object RulePlannerOption extends CypherOption
-case object IDPPlannerOption extends CypherOption
-
-
+package object planner {
+  type QueryAcceptor = UnionQuery => Boolean
+}

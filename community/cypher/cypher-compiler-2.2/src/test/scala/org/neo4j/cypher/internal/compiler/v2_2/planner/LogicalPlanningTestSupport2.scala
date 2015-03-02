@@ -140,7 +140,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryString, cleanedStatement, semanticState)
       val postRewriteSemanticState = semanticChecker.check(queryString, rewrittenStatement)
       val semanticTable = SemanticTable(types = postRewriteSemanticState.typeTable)
-      Planner.rewriteStatement(rewrittenStatement, postRewriteSemanticState.scopeTree, semanticTable, postConditions, mock[AstRewritingMonitor]) match {
+      CostBasedPlanner.rewriteStatement(rewrittenStatement, postRewriteSemanticState.scopeTree, semanticTable, postConditions, mock[AstRewritingMonitor]) match {
         case (ast: Query, newTable) =>
           tokenResolver.resolve(ast)(newTable, planContext)
           val unionQuery = ast.asUnionQuery
@@ -157,7 +157,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       val semanticState = semanticChecker.check(queryString, parsedStatement)
       val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryString, parsedStatement, semanticState)
 
-      Planner.rewriteStatement(rewrittenStatement, semanticState.scopeTree, semanticTable, postConditions, mock[AstRewritingMonitor]) match {
+      CostBasedPlanner.rewriteStatement(rewrittenStatement, semanticState.scopeTree, semanticTable, postConditions, mock[AstRewritingMonitor]) match {
         case (ast: Query, newTable) =>
           tokenResolver.resolve(ast)(newTable, planContext)
           val unionQuery = ast.asUnionQuery

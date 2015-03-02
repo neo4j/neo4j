@@ -43,6 +43,7 @@ case class CypherOptionParser(monitor: ParserMonitor[CypherQueryWithOptions]) ex
 
   def Planner =rule("PLANNER") (
     keyword("PLANNER COST") ~ push(CostPlannerOption)
+      | keyword("PLANNER IDP") ~ push(IDPPlannerOption)
       | keyword("PLANNER RULE") ~ push(RulePlannerOption)
   )
 

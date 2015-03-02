@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.execution
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_2.CostPlanner
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Collection, SignedDecimalIntegerLiteral, SignedIntegerLiteral}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.{True, expressions => legacy}

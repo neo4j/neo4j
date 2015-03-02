@@ -24,9 +24,11 @@ import java.util
 
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v2_2
+import org.neo4j.cypher.internal.compiler.v2_2.{CostPlanner, ConservativePlanner, IDPPlanner}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{InternalExecutionResult, ExecutionPlan => ExecutionPlan_v2_2}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.{DbHits, Planner, Rows, Version}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{allQueryAcceptor, conservativeQueryAcceptor}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.compiler.v2_2.{CypherCompilerFactory, PlannerName, CypherException => CypherException_v2_2}
 import org.neo4j.cypher.internal.spi.v2_2.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
@@ -117,7 +119,7 @@ object exceptionHandlerFor2_2 extends MapToPublicExceptions[CypherException] {
 }
 
 trait CompatibilityFor2_2 {
-  import helpers._
+  import compatibility.helpers._
 
   val graph: GraphDatabaseService
   val queryCacheSize: Int
@@ -298,8 +300,9 @@ case class CompatibilityFor2_2Conservative(graph: GraphDatabaseService,
                                            kernelMonitors: KernelMonitors,
                                            kernelAPI: KernelAPI,
                                            logger: StringLogger) extends CompatibilityFor2_2 {
-  protected val compiler = CypherCompilerFactory.conservativeCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors, logger)
+  protected val compiler = CypherCompilerFactory.costBasedCompiler(
+    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors, logger, plannerName = ConservativePlanner
+  )
 }
 
 case class CompatibilityFor2_2Cost(graph: GraphDatabaseService,
@@ -311,7 +314,21 @@ case class CompatibilityFor2_2Cost(graph: GraphDatabaseService,
                                    kernelAPI: KernelAPI,
                                    logger: StringLogger) extends CompatibilityFor2_2 {
   protected val compiler = CypherCompilerFactory.costBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors, logger)
+    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors, logger, plannerName = CostPlanner
+  )
+}
+
+case class CompatibilityFor2_2IDP(graph: GraphDatabaseService,
+                                  queryCacheSize: Int,
+                                  statsDivergenceThreshold: Double,
+                                  queryPlanTTL: Long,
+                                  clock: Clock,
+                                  kernelMonitors: KernelMonitors,
+                                  kernelAPI: KernelAPI,
+                                  logger: StringLogger) extends CompatibilityFor2_2 {
+  protected val compiler = CypherCompilerFactory.costBasedCompiler(
+    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors, logger, plannerName = IDPPlanner
+  )
 }
 
 case class CompatibilityFor2_2Rule(graph: GraphDatabaseService,
@@ -322,5 +339,6 @@ case class CompatibilityFor2_2Rule(graph: GraphDatabaseService,
                                    kernelMonitors: KernelMonitors,
                                    kernelAPI: KernelAPI) extends CompatibilityFor2_2 {
   protected val compiler = CypherCompilerFactory.ruleBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors)
+    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors
+  )
 }

@@ -22,33 +22,54 @@ package org.neo4j.cypher.internal.compiler.v2_2
 /**
  * This class defines the query planners used by cyphers.
  **/
-sealed abstract class PlannerName(val name: String)
+sealed abstract class PlannerName {
+  def name: String
+}
+
+sealed abstract class CostBasedPlannerName extends PlannerName
 
 /**
  * Rule based query planner, default in all versions below 2.2
  */
-case object Rule extends PlannerName("RULE")
+case object RulePlanner extends PlannerName {
+  def name = "RULE"
+}
 
 /**
- * Cost based query planner uses statistics from the running database to find optimal
- * query execution plans.
+ * Cost based query planner uses statistics from the running database to find good
+ * query execution plans using greedy search.
  */
-case object Cost extends PlannerName("COST")
+case object CostPlanner extends CostBasedPlannerName {
+  def name = "COST"
+}
 
+/**
+ * Cost based query planner uses statistics from the running database to find good
+ * query execution plans using limited exhaustive search based on the IDP algorithm.
+ */
+case object IDPPlanner extends CostBasedPlannerName {
+  def name = "IDP"
+}
 
 /**
  * Hybrid planner that uses the Cost based planner for most of its operations but falls back to
  * Rule based planner for classes of queries where the cost based planner might end up with suboptimal plans.
  */
-case object Conservative extends PlannerName("CONSERVATIVE")
+case object ConservativePlanner extends CostBasedPlannerName {
+  def name = "CONSERVATIVE"
+}
 
 object PlannerName {
-  val default = Conservative
+
+  val default = ConservativePlanner
+
   def apply(name: String): PlannerName = name.toUpperCase match {
-    case "RULE" => Rule
-    case "COST" => Cost
-    case "CONSERVATIVE" => Conservative
-    //Note that conservative planner is not exposed to end users.
-    case n => throw new IllegalArgumentException(s"$n is not a a valid planner, valid options are COST and RULE")
+    case "RULE" => RulePlanner
+    case "COST" => CostPlanner
+    case "IDP" => IDPPlanner
+    case "CONSERVATIVE" => ConservativePlanner
+
+    // Note that conservative planner is not exposed to end users.
+    case n => throw new IllegalArgumentException(s"$n is not a a valid planner, valid options are COST, IDP and RULE")
   }
 }

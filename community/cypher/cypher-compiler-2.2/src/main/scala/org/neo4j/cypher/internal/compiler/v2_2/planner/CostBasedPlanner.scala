@@ -34,26 +34,20 @@ import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.{ApplyRewriter,
 import org.neo4j.helpers.Clock
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
-case class Planner(monitors: Monitors,
-                   metricsFactory: MetricsFactory,
-                   monitor: PlanningMonitor,
-                   clock: Clock,
-                   tokenResolver: SimpleTokenResolver = new SimpleTokenResolver(),
-                   maybeExecutionPlanBuilder: Option[PipeExecutionPlanBuilder] = None,
-                   strategy: PlanningStrategy = new QueryPlanningStrategy,
-                   acceptQuery: UnionQuery => Boolean = (_) => true,
-//                   queryGraphSolver: QueryGraphSolver = ExhaustiveQueryGraphSolver()
-                   queryGraphSolver: QueryGraphSolver = new CompositeQueryGraphSolver(
-                     new GreedyQueryGraphSolver(expandsOrJoins),
-                     new GreedyQueryGraphSolver(expandsOnly)
-                   )
-                  ) extends PipeBuilder {
-
-  val executionPlanBuilder: PipeExecutionPlanBuilder =
-    maybeExecutionPlanBuilder.getOrElse(new PipeExecutionPlanBuilder(clock, monitors))
+case class CostBasedPlanner(monitors: Monitors,
+                            metricsFactory: MetricsFactory,
+                            monitor: PlanningMonitor,
+                            clock: Clock,
+                            tokenResolver: SimpleTokenResolver,
+                            executionPlanBuilder: PipeExecutionPlanBuilder,
+                            strategy: PlanningStrategy,
+                            acceptQuery: UnionQuery => Boolean,
+                            queryGraphSolver: QueryGraphSolver,
+                            plannerName: CostBasedPlannerName
+                           ) extends PipeBuilder {
 
   def producePlan(inputQuery: PreparedQuery, planContext: PlanContext): PipeInfo = {
-    Planner.rewriteStatement(inputQuery.statement, inputQuery.scopeTree, inputQuery.semanticTable, inputQuery.conditions, monitors.newMonitor[AstRewritingMonitor]()) match {
+    CostBasedPlanner.rewriteStatement(inputQuery.statement, inputQuery.scopeTree, inputQuery.semanticTable, inputQuery.conditions, monitors.newMonitor[AstRewritingMonitor]()) match {
       case (ast: Query, rewrittenSemanticTable) =>
         monitor.startedPlanning(inputQuery.queryText)
         val (logicalPlan, pipeBuildContext) = produceLogicalPlan(ast, rewrittenSemanticTable)(planContext)
@@ -77,13 +71,19 @@ case class Planner(monitors: Monitors,
     val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
     val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver, QueryGraphCardinalityInput.empty)
     val plan = strategy.plan(unionQuery)(context)
-    val pipeBuildContext = PipeExecutionBuilderContext(metrics.cardinality, semanticTable)
+
+    val costPlannerName = plannerName match {
+      case ConservativePlanner => CostPlanner
+      case _                   => plannerName
+    }
+
+    val pipeBuildContext = PipeExecutionBuilderContext(metrics.cardinality, semanticTable, costPlannerName)
 
     (plan, pipeBuildContext)
   }
 }
 
-object Planner {
+object CostBasedPlanner {
   import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStep._
 
   def rewriteStatement(statement: Statement, scopeTree: Scope, semanticTable: SemanticTable, preConditions: Set[RewriterCondition], monitor: AstRewritingMonitor): (Statement, SemanticTable) = {
