@@ -40,6 +40,7 @@ angular.module('neo4jApp.services')
         'padding': '3px'
         'text-color-external': '#000000'
         'text-color-internal': '#FFFFFF'
+        'caption': '<type>'
 
     # Default node sizes that user can choose from
     @defaultSizes = [
@@ -74,28 +75,27 @@ angular.module('neo4jApp.services')
     ]
 
     class Selector
-      constructor: (selector) ->
-        [@tag, @klass] = if selector.indexOf('.') > 0
-          selector.split('.')
-        else
-          [selector, undefined]
+      constructor: (@tag, @classes = []) ->
 
       toString: ->
         str = @tag
-        str += ".#{@klass}" if @klass?
+        for classs in @classes
+          if classs?
+            str += ".#{classs}"
         str
 
     class StyleRule
       constructor: (@selector, @props) ->
 
       matches: (selector) ->
-        if @selector.tag is selector.tag
-          if @selector.klass is selector.klass or not @selector.klass
-            return yes
-        return no
+        return no unless @selector.tag is selector.tag
+        for classs in @selector.classes
+          if classs? and selector.classes.indexOf(classs) is -1
+            return no
+        yes
 
       matchesExact: (selector) ->
-        @selector.tag is selector.tag and @selector.klass is selector.klass
+        @matches(selector) and @selector.classes.length is selector.classes.length
 
     class StyleElement
       constructor: (selector) ->
@@ -103,18 +103,13 @@ angular.module('neo4jApp.services')
         @props = {}
 
       applyRules: (rules) ->
-        # Two passes
-        for rule in rules when rule.matches(@selector)
-          angular.extend(@props, rule.props)
-          break
-        for rule in rules when rule.matchesExact(@selector)
-          angular.extend(@props, rule.props)
-          break
+        for rule in rules
+          if rule.matches(@selector)
+            angular.extend(@props, rule.props)
         @
 
       get: (attr) ->
         @props[attr] or ''
-
 
     class GraphStyle
       constructor: (@storage) ->
@@ -130,6 +125,9 @@ angular.module('neo4jApp.services')
         else if item.isRelationship
           @relationshipSelector(item)
 
+      newSelector: (tag, classes) ->
+        new Selector(tag, classes)
+
       #
       # Methods for calculating applied style for elements
       #
@@ -139,15 +137,14 @@ angular.module('neo4jApp.services')
       forEntity: (item) ->
         @calculateStyle(@selector(item))
 
-      forNode: (node = {}, idx = 0) ->
-        selector = @nodeSelector(node, idx)
+      forNode: (node = {}) ->
+        selector = @nodeSelector(node)
         if node.labels?.length > 0
-          @setDefaultStyling(selector, node)
+          @setDefaultNodeStyling(selector, node)
         @calculateStyle(selector)
 
       forRelationship: (rel) ->
         selector = @relationshipSelector(rel)
-        @setDefaultRelationshipStyling(selector, rel)
         @calculateStyle(selector)
 
       findAvailableDefaultColor: () ->
@@ -162,45 +159,26 @@ angular.module('neo4jApp.services')
 
         return provider.defaultColors[0]
 
-      setDefaultRelationshipStyling: (selector, relationship) ->
-        rule = @findRule(selector)
+      setDefaultNodeStyling: (selector, item) ->
+        defaultColor = yes
+        defaultCaption = yes
+        for rule in @rules
+          if rule.selector.classes.length > 0 and rule.matches(selector)
+            if rule.props.hasOwnProperty('color')
+              defaultColor = no
+            if rule.props.hasOwnProperty('caption')
+              defaultCaption = no
 
-        if not rule?
-          rule = new StyleRule(selector, angular.extend(provider.defaultStyle.relationship, @getDefaultRelationshipCaption()))
-          @rules.push(rule)
-          @persist()
-        if not rule.props.caption?
-          default_caption = @getDefaultRelationshipCaption()
-          angular.extend(rule.props, default_caption)
-          @persist()
+        minimalSelector = new Selector(selector.tag, selector.classes.sort().slice(0, 1))
+        if defaultColor
+          @changeForSelector(minimalSelector, @findAvailableDefaultColor())
+        if defaultCaption
+          @changeForSelector(minimalSelector, @getDefaultNodeCaption(item))
 
-      setDefaultStyling: (selector, item) ->
-        rule = @findRule(selector)
-
-        if not rule?
-          rule = new StyleRule(selector, angular.extend(@findAvailableDefaultColor(), @getDefaultCaption(item)))
-          @rules.push(rule)
-          @persist()
-        if not rule.props.caption?
-          default_caption = @getDefaultCaption(item)
-          angular.extend(rule.props, default_caption)
-          @rules.push(rule)
-          @persist()
-
-      getDefaultCaption: (item) ->
+      getDefaultNodeCaption: (item) ->
         return {caption: '<id>'} if not item or not item.propertyList?.length > 0
         default_caption = {caption: "{#{item.propertyList?[0].key}}"}
         default_caption
-
-      getDefaultRelationshipCaption: (item) ->
-        return {caption: '<type>'} 
-
-      #
-      # Methods for getting and modifying rules
-      #
-      change: (item, props) ->
-        selector = @selector(item)
-        @changeForSelector(selector, props)
 
       changeForSelector: (selector, props) ->
         rule = @findRule(selector)
@@ -217,24 +195,24 @@ angular.module('neo4jApp.services')
         @persist()
 
       findRule: (selector) ->
-        rule = r for r in @rules when r.matchesExact(selector)
-        rule
+        for r in @rules
+          if r.matchesExact(selector)
+            return r
+        undefined
 
-      #
-      # Selector helpers
-      #
-      # FIXME: until we support styling nodes with multiple labels separately.
-      # Provide an option to select which label to use
-      nodeSelector: (node = {}, labelIdx = 0) ->
-        selector = 'node'
-        if node.labels?.length > 0
-          selector += ".#{node.labels[labelIdx]}"
-        new Selector(selector)
+      nodeSelector: (node = {}) ->
+        classes = if node.labels?
+          node.labels
+        else
+          []
+        new Selector('node', classes)
 
       relationshipSelector: (rel = {}) ->
-        selector = 'relationship'
-        selector += ".#{rel.type}" if rel.type?
-        new Selector(selector)
+        classes = if rel.type?
+          [rel.type]
+        else
+          []
+        new Selector('relationship', classes)
 
       #
       # Import/export
@@ -248,11 +226,15 @@ angular.module('neo4jApp.services')
         catch e
           return
 
+      parseSelector = (key) ->
+        tokens = key.split('.')
+        new Selector(tokens[0], tokens.slice(1))
+
       loadRules: (data) ->
         data = provider.defaultStyle unless angular.isObject(data)
         @rules.length = 0
-        for rule, props of data
-          @rules.push(new StyleRule(new Selector(rule), angular.copy(props)))
+        for key, props of data
+          @rules.push(new StyleRule(parseSelector(key), angular.copy(props)))
         @
 
       parse: (string)->
@@ -324,7 +306,6 @@ angular.module('neo4jApp.services')
       #
       # Misc.
       #
-      nextDefaultColor: 0
       defaultSizes: -> provider.defaultSizes
       defaultArrayWidths: -> provider.defaultArrayWidths
       defaultColors: -> angular.copy(provider.defaultColors)

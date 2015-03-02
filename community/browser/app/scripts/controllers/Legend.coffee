@@ -45,15 +45,15 @@ angular.module('neo4jApp')
           label: ''
           attrs: []
           count: 0
-          style: graphStyle.forNode()
+          style: graphStyle.calculateStyle(graphStyle.newSelector('node'))
         stats.labels[''].count++
 
-        for label, idx in node.labels
+        for label, ignored in node.labels
           stats.labels[label] ?=
             label: label
             attrs: Object.keys(node.propertyMap)
             count: 0
-            style: graphStyle.forNode(node, idx)
+            style: graphStyle.calculateStyle(graphStyle.newSelector('node', [label]))
 
           stats.labels[label].count++
 
@@ -62,14 +62,14 @@ angular.module('neo4jApp')
           type: ''
           attrs: []
           count: 0
-          style: graphStyle.forRelationship()
+          style: graphStyle.calculateStyle(graphStyle.newSelector('relationship'))
         stats.types[''].count++
 
         stats.types[rel.type] ?=
           type: rel.type
           attrs: Object.keys(rel.propertyMap)
           count: 0
-          style: graphStyle.forRelationship(rel)
+          style: graphStyle.calculateStyle(graphStyle.newSelector('relationship', [rel.type]))
 
         stats.types[rel.type].count++
 
