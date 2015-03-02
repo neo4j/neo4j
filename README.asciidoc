@@ -51,6 +51,7 @@ If you don't plan to build the browser (for example by using -DskipBrowser), the
 * When building on Windows, use `-Dlicensing.skip` to avoid problems related to line endings.
 * The license header check can be skipped by appending the following to the command line: `-Dlicense.skip=true`.
 * If you are running into problems building on Windows you can try building Neo4j in a Ubuntu virtual machine.
+* You may need to increase the memory available to Maven: `export MAVEN_OPTS="-Xmx512m -XX:MaxPermSize=256m"`.
 
 == Running Neo4j ==
 
