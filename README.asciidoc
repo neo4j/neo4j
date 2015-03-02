@@ -37,11 +37,7 @@ If you don't plan to build the browser (for example by using -DskipBrowser), the
 
 === With apt-get on Ubuntu ===
 
-  sudo apt-get install graphviz maven nodejs-legacy make
-
-On Ubuntu 14.04 it seems the nodejs package does not include npm, so you should install that too:
-
-  sudo apt-get install graphviz maven nodejs npm make
+  sudo apt-get install graphviz maven nodejs-legacy npm make
 
 == Building Neo4j ==
 
