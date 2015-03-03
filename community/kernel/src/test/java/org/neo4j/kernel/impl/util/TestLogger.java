@@ -77,11 +77,13 @@ public class TestLogger extends StringLogger
         public static LogCall info(String msg)  { return new LogCall(Level.INFO,  msg, null, false); }
         public static LogCall warn(String msg)  { return new LogCall(Level.WARN,  msg, null, false); }
         public static LogCall error(String msg) { return new LogCall(Level.ERROR, msg, null, false); }
+        public static LogCall unknown(String msg) { return new LogCall(Level.UNKNOWN, msg, null, false); }
 
         public static LogCall debug(String msg, Throwable c) { return new LogCall(Level.DEBUG, msg, c, false); }
         public static LogCall info(String msg,  Throwable c) { return new LogCall(Level.INFO,  msg, c, false); }
         public static LogCall warn(String msg,  Throwable c) { return new LogCall(Level.WARN,  msg, c, false); }
         public static LogCall error(String msg, Throwable c) { return new LogCall(Level.ERROR, msg, c, false); }
+        public static LogCall unknown(String msg, Throwable c) { return new LogCall(Level.UNKNOWN, msg, c, false); }
 
         @Override
         public void accept( Visitor<LogCall,RuntimeException> visitor )

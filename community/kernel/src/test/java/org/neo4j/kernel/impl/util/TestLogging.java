@@ -62,6 +62,17 @@ public class TestLogging implements Logging
         return new ConsoleLogger( consoleLoggers.get( loggingClass ) );
     }
 
+    /**
+     * Use this to do asserts on console logging
+     *
+     * @param loggingClass
+     * @return
+     */
+    public TestLogger getDelegatedConsoleLog( Class loggingClass )
+    {
+        return consoleLoggers.get( loggingClass );
+    }
+
     @Override
     public void init() throws Throwable
     {

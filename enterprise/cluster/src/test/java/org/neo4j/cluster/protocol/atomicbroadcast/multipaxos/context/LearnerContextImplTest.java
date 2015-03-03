@@ -30,7 +30,7 @@ import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.kernel.impl.util.TestLogging;
 
 import static org.mockito.Mockito.*;
-import static org.neo4j.kernel.impl.util.TestLogger.LogCall.debug;
+import static org.neo4j.kernel.impl.util.TestLogger.LogCall.unknown;
 
 public class LearnerContextImplTest
 {
@@ -51,10 +51,16 @@ public class LearnerContextImplTest
         ctx.notifyLearnMiss( new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId( 1l ) );
 
         // Then
-        logging.getMessagesLog( LearnerState.class ).assertExactly(
-                debug( "Did not have learned value for instance 1" ),
-                debug( "Did not have learned value for instance 2" ),
-                debug( "Did not have learned value for instance 1" )
+        logging.getDelegatedConsoleLog( LearnerState.class ).assertExactly(
+                unknown( "Did not have learned value for Paxos instance 1. This generally indicates that this instance has missed too many " +
+                                            "cluster events and is failing to catch up. If this error does not resolve soon it " +
+                                            "may become necessary to restart this cluster member so normal operation can resume." ),
+                unknown( "Did not have learned value for Paxos instance 2. This generally indicates that this instance has missed too many " +
+                                                            "cluster events and is failing to catch up. If this error does not resolve soon it " +
+                                                            "may become necessary to restart this cluster member so normal operation can resume." ),
+                unknown( "Did not have learned value for Paxos instance 1. This generally indicates that this instance has missed too many " +
+                                                            "cluster events and is failing to catch up. If this error does not resolve soon it " +
+                                                            "may become necessary to restart this cluster member so normal operation can resume." )
         );
     }
 
