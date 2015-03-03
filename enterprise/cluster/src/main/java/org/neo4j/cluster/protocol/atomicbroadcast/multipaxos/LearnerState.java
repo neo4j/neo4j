@@ -209,7 +209,6 @@ public enum LearnerState
                             }
                             else
                             {
-                                context.notifyLearnMiss(instanceId);
                                 outgoing.offer( message.copyHeadersTo( Message.respond( LearnerMessage.learnFailed,
                                         message,
                                         new LearnerMessage.LearnFailedState() ), org.neo4j.cluster.protocol
@@ -221,20 +220,7 @@ public enum LearnerState
                         case learnFailed:
                         {
                             InstanceId instanceId = new InstanceId( message );
-                            PaxosInstance instance = context.getPaxosInstance( instanceId );
-                            if ( !(instance.isState( PaxosInstance.State.closed ) || instance.isState( PaxosInstance
-                                    .State.delivered )) )
-                            {
-                                List<URI> nodes = context.getMemberURIs();
-                                URI learnDeniedNode = new URI( message.getHeader( Message.FROM ) );
-                                int nextPotentialLearnerIndex = (nodes.indexOf( learnDeniedNode ) + 1) % nodes.size();
-                                URI learnerNode = nodes.get( nextPotentialLearnerIndex );
-
-                                outgoing.offer( message.copyHeadersTo( Message.to( LearnerMessage.learnRequest,
-                                        learnerNode,
-                                        new LearnerMessage.LearnRequestState() ), InstanceId.INSTANCE ) );
-                            }
-
+                            context.notifyLearnMiss( instanceId );
                             break;
                         }
 
