@@ -19,20 +19,24 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.helpers
 
-import scala.collection.mutable
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
+import org.mockito.Matchers._
+import org.mockito.Mockito._
 
-object CachedFunction {
+class CachedFunctionTest extends CypherFunSuite {
+  test("does not re-calculate stuff") {
+    val f: QueryGraph => Unit = mock[QueryGraph => Unit]
 
-  def apply[A, B](f: A => B): A => B = new (A => B) {
-    private val cache = mutable.HashMap[A, B]()
+    val cachedF = CachedFunction(f)
 
-    def apply(input: A): B =
-      cache.getOrElseUpdate(input, f(input))
+    val qg1 = QueryGraph(patternNodes = Set(IdName("a")))
+    val qg2 = QueryGraph(patternNodes = Set(IdName("a")))
+
+    cachedF(qg1)
+    cachedF(qg2)
+
+    verify(f, times(1)).apply(any())
   }
-
-  def apply[A, B, C](f: (A, B) => C): (A, B) => C =
-    Function.untupled(apply(f.tupled))
-
-  def apply[A, B, C, D](f: (A, B, C) => D): (A, B, C) => D =
-    Function.untupled(apply(f.tupled))
 }

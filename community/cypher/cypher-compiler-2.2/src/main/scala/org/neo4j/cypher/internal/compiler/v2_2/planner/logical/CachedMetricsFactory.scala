@@ -26,11 +26,11 @@ import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 
 case class CachedMetricsFactory(metricsFactory: MetricsFactory) extends MetricsFactory {
   def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel): CardinalityModel =
-    CachedFunction.byIdentity(metricsFactory.newCardinalityEstimator(queryGraphCardinalityModel))
+    CachedFunction(metricsFactory.newCardinalityEstimator(queryGraphCardinalityModel))
 
   def newCostModel(cardinality: CardinalityModel) =
-    CachedFunction.byIdentity(metricsFactory.newCostModel(cardinality))
+    CachedFunction(metricsFactory.newCostModel(cardinality))
 
   def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable) =
-    CachedFunction.byIdentity(metricsFactory.newQueryGraphCardinalityModel(statistics, semanticTable))
+    CachedFunction(metricsFactory.newQueryGraphCardinalityModel(statistics, semanticTable))
 }
