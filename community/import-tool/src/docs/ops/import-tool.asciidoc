@@ -27,7 +27,6 @@ Data cannot be imported into an existing database using this tool.
 * If you want to bulk import into an existing database see <<batchinsert>>.
 --
 
-
 [[import-tool-header-format]]
 == CSV file Header format
 
@@ -96,22 +95,21 @@ Depending on the installation type, the tool is either available globally, or us
 
 include::../man/options.adoc[]
 
-[[import-tool-examples]]
-== Import Tool Examples
-
 [[import-tool-basic-example]]
-=== Basic Import Tool Example
+== Basic Import Tool Example
 
 Let's look at an example.
 We'll use a data set containing movies, actors and roles.
+
+[TIP]
+While you'll usually want to store your node identifier as a property on the node for looking it up later, it's not mandatory.
+If you don't want the identifier to be persisted then don't specify a property name in the `:ID` field.
 
 First we'll look at the movies.
 Each movie has an id, which is used to refer to it in other data sources, a title and a year
 Along with these properties we'll also add the node labels `Movie` and `Sequel`.
 
-[TIP]
-While you'll usually want to store your node identifier as a property on the node for looking it up later, it's not mandatory.
-If you don't want the identifier to be persisted then don't specify a name in the `:ID` field.
+By default the import tool expects CSV files to be comma delimited.
 
 .movies.csv
 [source]
@@ -120,7 +118,7 @@ include::movies.csv[]
 ----
 
 Next up are the actors.
-They have an id and a name and all have the `Actor` label.
+They have an id - in this case a shorthand - and a name and all have the Actor label.
 
 .actors.csv
 [source]
@@ -151,6 +149,7 @@ Once we've got the database up and running we can add appropriate indexes. (see 
 
 [TIP]
 It is possible to import only nodes using the import tool - just don't specify a relationships file when calling `neo4j-import`.
+If you do this you'll need to create relationships later by another method - the import tool only works for initial graph population.
 
 === Customizing configuration options
 
@@ -183,7 +182,7 @@ include::custom-delimiter-quotation-command.adoc[]
 ----
 
 [[import-tool-separate-headers-example]]
-=== Using Separate Header Files
+=== Using separate header files
 
 When dealing with very large CSV files it's more convenient to have the header in a separate file.
 This makes it easier to edit the header as you avoid having to open a huge data file just to change it.
@@ -303,6 +302,9 @@ The call to `neo4j-import` would look like this:
 include::multiple-input-files.adoc[]
 ----
 
+[[import-tool-types-labels]]
+== Types and Labels
+
 [[import-tool-same-label-for-every-node]]
 === Using the same label for every node
 
@@ -382,12 +384,51 @@ The call to `neo4j-import` would look like this:
 include::same-relationship-type-everywhere.adoc[]
 ----
 
-[[import-tool-working-with-sequential-ids]]
+[[import-tool-property-types]]
+=== Property Types
+
+The type for properties specified in nodes and relationships files is defined in the header row.
+(see <<import-tool-header-format>>)
+
+The following example creates a small graph containing one actor and one movie connected by an `ACTED_IN` relationship.
+There is a `roles` property on the relationship which contains an array of the characters played by the actor in a movie.
+
+.movies10.csv
+[source]
+----
+include::movies10.csv[]
+----
+
+.actors10.csv
+[source]
+----
+include::actors10.csv[]
+----
+
+.roles10.csv
+[source]
+----
+include::roles10.csv[]
+----
+
+The arguments to `neo4j-import` would be the following:
+
+[source]
+----
+include::property-types.adoc[]
+----
+
+[[import-tool-id-handling]]
+== ID handling
+
+Each node processed by `neo4j-import` must provide a unique id.
+We use this id to find the correct nodes when creating relationships.
+
 === Working with sequential or auto incrementing identifiers
 
 The import tool makes the assumption that identifiers are unique across node files.
-This may not be the case for data sets which use sequential or auto incremented primary keys.
-For those data sets we can define an `id space` in which our identifier is unique.
+This may not be the case for data sets which use sequential, auto incremented or otherwise colliding identifiers.
+Those data sets can define id spaces where identifiers are unique within their respective id space.
 
 For example if movies and people both use sequential identifiers then we would define `Movie` and `Actor` id spaces.
 
@@ -417,4 +458,45 @@ The command line arguments would remain the same as before:
 [source]
 ----
 include::id-spaces.adoc[]
+----
+
+=== Missing nodes in relationships files
+
+The import tool has a threshold of how many relationships can contain missing nodes (a bad relationship).
+By default it will allow `1000` bad relationships before the import process fails.
+If you want the import to immediately fail when it is unable to import a relationship then set this threshold to `0`.
+
+In the following example there is a missing `emil` node referenced in the roles file.
+
+.movies9.csv
+[source]
+----
+include::movies9.csv[]
+----
+
+.actors9.csv
+[source]
+----
+include::actors9.csv[]
+----
+
+.roles9.csv
+[source]
+----
+include::roles9.csv[]
+----
+
+The command line arguments would remain the same as before:
+
+[source]
+----
+include::bad-relationships-default.adoc[]
+----
+
+Since there was only one bad relationship the import process will complete successfully and a `not-imported.bad` file will be created and populated with the failed relationships.
+
+.not-imported.bad
+[source]
+----
+include::bad-relationships-default-not-imported.bad.adoc[]
 ----

@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,10 +37,14 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.io.fs.FileUtils;
+
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.ImportTool.Options;
+import org.neo4j.unsafe.impl.batchimport.Configuration;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -80,15 +85,15 @@ public class ImportToolDocIT
         try (PrintStream out = new PrintStream( roles ))
         {
             out.println( ":START_ID,role,:END_ID,:TYPE" );
-            out.println( "keanu,\"Neo\",tt0133093,ACTS_IN" );
-            out.println( "keanu,\"Neo\",tt0234215,ACTS_IN" );
-            out.println( "keanu,\"Neo\",tt0242653,ACTS_IN" );
-            out.println( "laurence,\"Morpheus\",tt0133093,ACTS_IN" );
-            out.println( "laurence,\"Morpheus\",tt0234215,ACTS_IN" );
-            out.println( "laurence,\"Morpheus\",tt0242653,ACTS_IN" );
-            out.println( "carrieanne,\"Trinity\",tt0133093,ACTS_IN" );
-            out.println( "carrieanne,\"Trinity\",tt0234215,ACTS_IN" );
-            out.println( "carrieanne,\"Trinity\",tt0242653,ACTS_IN" );
+            out.println( "keanu,\"Neo\",tt0133093,ACTED_IN" );
+            out.println( "keanu,\"Neo\",tt0234215,ACTED_IN" );
+            out.println( "keanu,\"Neo\",tt0242653,ACTED_IN" );
+            out.println( "laurence,\"Morpheus\",tt0133093,ACTED_IN" );
+            out.println( "laurence,\"Morpheus\",tt0234215,ACTED_IN" );
+            out.println( "laurence,\"Morpheus\",tt0242653,ACTED_IN" );
+            out.println( "carrieanne,\"Trinity\",tt0133093,ACTED_IN" );
+            out.println( "carrieanne,\"Trinity\",tt0234215,ACTED_IN" );
+            out.println( "carrieanne,\"Trinity\",tt0242653,ACTED_IN" );
         }
 
         // WHEN
@@ -133,15 +138,15 @@ public class ImportToolDocIT
         try (PrintStream out = new PrintStream( roles ))
         {
             out.println( ":START_ID;role;:END_ID;:TYPE" );
-            out.println( "keanu;'Neo';tt0133093;ACTS_IN" );
-            out.println( "keanu;'Neo';tt0234215;ACTS_IN" );
-            out.println( "keanu;'Neo';tt0242653;ACTS_IN" );
-            out.println( "laurence;'Morpheus';tt0133093;ACTS_IN" );
-            out.println( "laurence;'Morpheus';tt0234215;ACTS_IN" );
-            out.println( "laurence;'Morpheus';tt0242653;ACTS_IN" );
-            out.println( "carrieanne;'Trinity';tt0133093;ACTS_IN" );
-            out.println( "carrieanne;'Trinity';tt0234215;ACTS_IN" );
-            out.println( "carrieanne;'Trinity';tt0242653;ACTS_IN" );
+            out.println( "keanu;'Neo';tt0133093;ACTED_IN" );
+            out.println( "keanu;'Neo';tt0234215;ACTED_IN" );
+            out.println( "keanu;'Neo';tt0242653;ACTED_IN" );
+            out.println( "laurence;'Morpheus';tt0133093;ACTED_IN" );
+            out.println( "laurence;'Morpheus';tt0234215;ACTED_IN" );
+            out.println( "laurence;'Morpheus';tt0242653;ACTED_IN" );
+            out.println( "carrieanne;'Trinity';tt0133093;ACTED_IN" );
+            out.println( "carrieanne;'Trinity';tt0234215;ACTED_IN" );
+            out.println( "carrieanne;'Trinity';tt0242653;ACTED_IN" );
         }
 
         // WHEN
@@ -200,15 +205,15 @@ public class ImportToolDocIT
         File roles = file( "ops", "roles3.csv" );
         try ( PrintStream out = new PrintStream( roles ) )
         {
-            out.println( "keanu,\"Neo\",tt0133093,ACTS_IN" );
-            out.println( "keanu,\"Neo\",tt0234215,ACTS_IN" );
-            out.println( "keanu,\"Neo\",tt0242653,ACTS_IN" );
-            out.println( "laurence,\"Morpheus\",tt0133093,ACTS_IN" );
-            out.println( "laurence,\"Morpheus\",tt0234215,ACTS_IN" );
-            out.println( "laurence,\"Morpheus\",tt0242653,ACTS_IN" );
-            out.println( "carrieanne,\"Trinity\",tt0133093,ACTS_IN" );
-            out.println( "carrieanne,\"Trinity\",tt0234215,ACTS_IN" );
-            out.println( "carrieanne,\"Trinity\",tt0242653,ACTS_IN" );
+            out.println( "keanu,\"Neo\",tt0133093,ACTED_IN" );
+            out.println( "keanu,\"Neo\",tt0234215,ACTED_IN" );
+            out.println( "keanu,\"Neo\",tt0242653,ACTED_IN" );
+            out.println( "laurence,\"Morpheus\",tt0133093,ACTED_IN" );
+            out.println( "laurence,\"Morpheus\",tt0234215,ACTED_IN" );
+            out.println( "laurence,\"Morpheus\",tt0242653,ACTED_IN" );
+            out.println( "carrieanne,\"Trinity\",tt0133093,ACTED_IN" );
+            out.println( "carrieanne,\"Trinity\",tt0234215,ACTED_IN" );
+            out.println( "carrieanne,\"Trinity\",tt0242653,ACTED_IN" );
         }
 
         // WHEN
@@ -271,19 +276,19 @@ public class ImportToolDocIT
         File rolesPart1 = file( "ops", "roles4-part1.csv" );
         try ( PrintStream out = new PrintStream( rolesPart1 ) )
         {
-            out.println( "keanu,\"Neo\",tt0133093,ACTS_IN" );
-            out.println( "keanu,\"Neo\",tt0234215,ACTS_IN" );
-            out.println( "keanu,\"Neo\",tt0242653,ACTS_IN" );
-            out.println( "laurence,\"Morpheus\",tt0133093,ACTS_IN" );
-            out.println( "laurence,\"Morpheus\",tt0234215,ACTS_IN" );
+            out.println( "keanu,\"Neo\",tt0133093,ACTED_IN" );
+            out.println( "keanu,\"Neo\",tt0234215,ACTED_IN" );
+            out.println( "keanu,\"Neo\",tt0242653,ACTED_IN" );
+            out.println( "laurence,\"Morpheus\",tt0133093,ACTED_IN" );
+            out.println( "laurence,\"Morpheus\",tt0234215,ACTED_IN" );
         }
         File rolesPart2 = file( "ops", "roles4-part2.csv" );
         try ( PrintStream out = new PrintStream( rolesPart2 ) )
         {
-            out.println( "laurence,\"Morpheus\",tt0242653,ACTS_IN" );
-            out.println( "carrieanne,\"Trinity\",tt0133093,ACTS_IN" );
-            out.println( "carrieanne,\"Trinity\",tt0234215,ACTS_IN" );
-            out.println( "carrieanne,\"Trinity\",tt0242653,ACTS_IN" );
+            out.println( "laurence,\"Morpheus\",tt0242653,ACTED_IN" );
+            out.println( "carrieanne,\"Trinity\",tt0133093,ACTED_IN" );
+            out.println( "carrieanne,\"Trinity\",tt0234215,ACTED_IN" );
+            out.println( "carrieanne,\"Trinity\",tt0242653,ACTED_IN" );
         }
 
         // WHEN
@@ -337,15 +342,15 @@ public class ImportToolDocIT
         try ( PrintStream out = new PrintStream( roles ) )
         {
             out.println( ":START_ID,role,:END_ID,:TYPE" );
-            out.println( "keanu,\"Neo\",tt0133093,ACTS_IN" );
-            out.println( "keanu,\"Neo\",tt0234215,ACTS_IN" );
-            out.println( "keanu,\"Neo\",tt0242653,ACTS_IN" );
-            out.println( "laurence,\"Morpheus\",tt0133093,ACTS_IN" );
-            out.println( "laurence,\"Morpheus\",tt0234215,ACTS_IN" );
-            out.println( "laurence,\"Morpheus\",tt0242653,ACTS_IN" );
-            out.println( "carrieanne,\"Trinity\",tt0133093,ACTS_IN" );
-            out.println( "carrieanne,\"Trinity\",tt0234215,ACTS_IN" );
-            out.println( "carrieanne,\"Trinity\",tt0242653,ACTS_IN" );
+            out.println( "keanu,\"Neo\",tt0133093,ACTED_IN" );
+            out.println( "keanu,\"Neo\",tt0234215,ACTED_IN" );
+            out.println( "keanu,\"Neo\",tt0242653,ACTED_IN" );
+            out.println( "laurence,\"Morpheus\",tt0133093,ACTED_IN" );
+            out.println( "laurence,\"Morpheus\",tt0234215,ACTED_IN" );
+            out.println( "laurence,\"Morpheus\",tt0242653,ACTED_IN" );
+            out.println( "carrieanne,\"Trinity\",tt0133093,ACTED_IN" );
+            out.println( "carrieanne,\"Trinity\",tt0234215,ACTED_IN" );
+            out.println( "carrieanne,\"Trinity\",tt0242653,ACTED_IN" );
         }
         // WHEN
         String[] arguments = arguments(
@@ -408,7 +413,7 @@ public class ImportToolDocIT
                 "--into", directory.absolutePath(),
                 "--nodes", movies.getAbsolutePath(),
                 "--nodes", actors.getAbsolutePath(),
-                "--relationships:" + join( new String[] { "ACTS_IN" }, ":" ), roles.getAbsolutePath());
+                "--relationships:" + join( new String[] { "ACTED_IN" }, ":" ), roles.getAbsolutePath());
         ImportTool.main( arguments );
 
         // DOCS
@@ -460,7 +465,7 @@ public class ImportToolDocIT
                 "--into", directory.absolutePath(),
                 "--nodes", movies.getAbsolutePath(),
                 "--nodes", actors.getAbsolutePath(),
-                "--relationships:" + join( new String[] { "ACTS_IN" }, ":" ), roles.getAbsolutePath());
+                "--relationships:" + join( new String[] { "ACTED_IN" }, ":" ), roles.getAbsolutePath());
         ImportTool.main( arguments );
 
         // DOCS
@@ -470,6 +475,131 @@ public class ImportToolDocIT
         // THEN
         verifyData();
     }
+
+    @Test
+    public void badRelationshipsDefault() throws IOException
+    {
+        // GIVEN
+        File movies = file( "ops", "movies9.csv" );
+        try (PrintStream out = new PrintStream( movies ))
+        {
+            out.println( "movieId:ID,title,year:int,:LABEL" );
+            out.println( "tt0133093,\"The Matrix\",1999,Movie" );
+            out.println( "tt0234215,\"The Matrix Reloaded\",2003,Movie;Sequel" );
+            out.println( "tt0242653,\"The Matrix Revolutions\",2003,Movie;Sequel" );
+        }
+
+        File actors = file( "ops", "actors9.csv" );
+        try (PrintStream out = new PrintStream( actors ))
+        {
+            out.println( "personId:ID,name,:LABEL" );
+            out.println( "keanu,\"Keanu Reeves\",Actor" );
+            out.println( "laurence,\"Laurence Fishburne\",Actor" );
+            out.println( "carrieanne,\"Carrie-Anne Moss\",Actor" );
+        }
+
+        File roles = file( "ops", "roles9.csv" );
+        try (PrintStream out = new PrintStream( roles ))
+        {
+            out.println( ":START_ID,role,:END_ID,:TYPE" );
+            out.println( "keanu,\"Neo\",tt0133093,ACTED_IN" );
+            out.println( "keanu,\"Neo\",tt0234215,ACTED_IN" );
+            out.println( "keanu,\"Neo\",tt0242653,ACTED_IN" );
+            out.println( "laurence,\"Morpheus\",tt0133093,ACTED_IN" );
+            out.println( "laurence,\"Morpheus\",tt0234215,ACTED_IN" );
+            out.println( "laurence,\"Morpheus\",tt0242653,ACTED_IN" );
+            out.println( "carrieanne,\"Trinity\",tt0133093,ACTED_IN" );
+            out.println( "carrieanne,\"Trinity\",tt0234215,ACTED_IN" );
+            out.println( "carrieanne,\"Trinity\",tt0242653,ACTED_IN" );
+            out.println( "emil,\"Emil\",tt0133093,ACTED_IN" );
+        }
+
+        // WHEN
+        String[] arguments = arguments(
+                "--into", directory.absolutePath(),
+                "--nodes", movies.getAbsolutePath(),
+                "--nodes", actors.getAbsolutePath(),
+                "--relationships", roles.getAbsolutePath() );
+        ImportTool.main( arguments );
+
+        // DOCS
+        String realDir = movies.getParentFile().getAbsolutePath();
+        printCommandToFile( arguments, realDir, "bad-relationships-default.adoc" );
+        FileUtils.copyFile(new File(new Configuration.Default().badFileName()),
+                file( "ops", "bad-relationships-default-not-imported.bad.adoc" ) );
+
+        // THEN
+        verifyData();
+
+    }
+
+    @Test
+    public void propertyTypes() throws FileNotFoundException
+    {
+        // GIVEN
+        File movies = file( "ops", "movies10.csv" );
+        try (PrintStream out = new PrintStream( movies ))
+        {
+            out.println( "movieId:ID,title,year:int,:LABEL" );
+            out.println( "tt0099892,\"Joe Versus the Volcano\",1990,Movie" );
+        }
+
+        File actors = file( "ops", "actors10.csv" );
+        try (PrintStream out = new PrintStream( actors ))
+        {
+            out.println( "personId:ID,name,:LABEL" );
+            out.println( "meg,\"Meg Ryan\",Actor" );
+        }
+
+        File roles = file( "ops", "roles10.csv" );
+        try (PrintStream out = new PrintStream( roles ))
+        {
+            out.println( ":START_ID,roles:string[],:END_ID,:TYPE" );
+            out.println( "meg,\"DeDe;Angelica Graynamore;Patricia Graynamore\",tt0099892,ACTED_IN" );
+        }
+
+        // WHEN
+        String[] arguments = arguments(
+                "--into", directory.absolutePath(),
+                "--nodes", movies.getAbsolutePath(),
+                "--nodes", actors.getAbsolutePath(),
+                "--relationships", roles.getAbsolutePath() );
+        ImportTool.main( arguments );
+
+        // DOCS
+        String realDir = movies.getParentFile().getAbsolutePath();
+        printCommandToFile( arguments, realDir, "property-types.adoc" );
+
+        // THEN
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
+        try ( Transaction tx = db.beginTx() )
+        {
+            int nodeCount = 0, relationshipCount = 0;
+            for ( Node ignored : GlobalGraphOperations.at( db ).getAllNodes() )
+            {
+                nodeCount++;
+            }
+            assertEquals( 2, nodeCount );
+
+            for ( Relationship relationship : GlobalGraphOperations.at( db ).getAllRelationships() )
+            {
+                assertTrue( relationship.hasProperty( "roles" ) );
+
+                String[] retrievedRoles = (String[]) relationship.getProperty( "roles" );
+                assertEquals(3, retrievedRoles.length);
+
+                relationshipCount++;
+            }
+            assertEquals( 1, relationshipCount );
+
+            tx.success();
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+
 
     private void verifyData()
     {
