@@ -76,6 +76,7 @@ public class ProcessRelationshipCountsDataStep extends ExecutorServiceStep<long[
     @Override
     protected void done()
     {
+        super.done();
         for ( RelationshipCountsProcessor processor : processors.values() )
         {
             processor.done();

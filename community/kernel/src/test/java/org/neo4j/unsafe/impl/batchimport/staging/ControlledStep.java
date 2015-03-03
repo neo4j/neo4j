@@ -65,8 +65,14 @@ public class ControlledStep<T> implements Step<T>, StatsProvider
 
     public ControlledStep( String name, boolean allowMultipleProcessors )
     {
+        this( name, allowMultipleProcessors, 1 );
+    }
+
+    public ControlledStep( String name, boolean allowMultipleProcessors, int initialProcessorCount )
+    {
         this.name = name;
         this.allowMultipleProcessors = allowMultipleProcessors;
+        this.numberOfProcessors = initialProcessorCount;
     }
 
     @Override

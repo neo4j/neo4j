@@ -19,23 +19,25 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-public interface StoreProcessor<T>
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+
+public interface RecordProcessor<T extends AbstractBaseRecord>
 {
     /**
      * Processes an item.
      *
-     * @return {@code true} if the store should be updated as part of processing this item.
+     * @return {@code true} if processing this item resulted in changes that should be updated back to the source.
      */
     boolean process( T item );
 
     void done();
 
-    public static class Multiple<T> implements StoreProcessor<T>
+    public static class Multiple<T extends AbstractBaseRecord> implements RecordProcessor<T>
     {
-        private final StoreProcessor<T>[] processors;
+        private final RecordProcessor<T>[] processors;
 
         @SafeVarargs
-        public Multiple( StoreProcessor<T>... processors )
+        public Multiple( RecordProcessor<T>... processors )
         {
             this.processors = processors;
         }
@@ -44,7 +46,7 @@ public interface StoreProcessor<T>
         public boolean process( T item )
         {
             boolean result = false;
-            for ( StoreProcessor<T> processor : processors )
+            for ( RecordProcessor<T> processor : processors )
             {
                 result |= processor.process( item );
             }
@@ -54,7 +56,7 @@ public interface StoreProcessor<T>
         @Override
         public void done()
         {
-            for ( StoreProcessor<T> processor : processors )
+            for ( RecordProcessor<T> processor : processors )
             {
                 processor.done();
             }

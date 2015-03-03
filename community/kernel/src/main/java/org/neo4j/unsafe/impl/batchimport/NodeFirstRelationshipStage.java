@@ -20,19 +20,23 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 
 /**
- * {@link Stage} that has just a single {@link NodeStoreProcessorStep} where a custom {@link StoreProcessor}
- * is passed in.
+ * Sets {@link NodeRecord#setNextRel(long)} in {@link ParallelBatchImporter}.
  */
-public class NodeStoreProcessorStage extends Stage
+public class NodeFirstRelationshipStage extends Stage
 {
-    public NodeStoreProcessorStage( String name, Configuration config, NodeStore store,
-            StoreProcessor<NodeRecord> processor )
+    public NodeFirstRelationshipStage( Configuration config, NodeStore nodeStore,
+            RelationshipGroupStore relationshipGroupStore, NodeRelationshipLink cache )
     {
-        super( name, config, true );
-        add( new NodeStoreProcessorStep( control(), name, config, store, processor ) );
+        super( "Node --> Relationship", config, false );
+        add( new ReadNodeRecordsStep( control(), config.batchSize(), config.movingAverageSize(), nodeStore ) );
+        add( new RecordProcessorStep<>( control(), "LINK", config.workAheadSize(), config.movingAverageSize(),
+                new NodeFirstRelationshipProcessor( relationshipGroupStore, cache ), false ) );
+        add( new UpdateRecordsStep<>( control(), config.workAheadSize(), config.movingAverageSize(), nodeStore ) );
     }
 }

@@ -21,18 +21,22 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 
 /**
- * {@link Stage} that has just a single {@link RelationshipStoreProcessorStep} where a custom {@link StoreProcessor}
- * is passed in.
+ * Sets {@link RelationshipRecord#setFirstPrevRel(long)} and {@link RelationshipRecord#setSecondPrevRel(long)}
+ * in {@link ParallelBatchImporter}.
  */
-public class RelationshipStoreProcessorStage extends Stage
+public class RelationshipLinkbackStage extends Stage
 {
-    public RelationshipStoreProcessorStage( String name, Configuration config,
-            RelationshipStore store, StoreProcessor<RelationshipRecord> processor )
+    public RelationshipLinkbackStage( Configuration config, RelationshipStore store, NodeRelationshipLink cache )
     {
-        super( name, config, true );
-        add( new RelationshipStoreProcessorStep( control(), name, config, store, processor ) );
+        super( "Relationship --> Relationship", config, false );
+        add( new ReadRelationshipRecordsBackwardsStep(
+                control(), config.batchSize(), config.movingAverageSize(), store ) );
+        add( new RecordProcessorStep<>( control(), "LINK", config.workAheadSize(),
+                config.movingAverageSize(), new RelationshipLinkbackProcessor( cache ), false ) );
+        add( new UpdateRecordsStep<>( control(), config.workAheadSize(), config.movingAverageSize(), store ) );
     }
 }

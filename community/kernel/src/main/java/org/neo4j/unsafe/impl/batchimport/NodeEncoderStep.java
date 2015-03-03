@@ -96,10 +96,10 @@ public final class NodeEncoderStep extends ExecutorServiceStep<Batch<InputNode,N
     @Override
     protected void done()
     {
+        super.done();
         // We're done adding ids to the IdMapper, prepare for other stages querying it.
         // We pass in allIds because they may be needed to sort out colliding values in case of String->long
         // encoding.
         idMapper.prepare( allIds );
-        super.done();
     }
 }

@@ -27,7 +27,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
  * Links the {@code previous} fields in {@link RelationshipRecord relationship records}. This is done after
  * a forward pass where the {@code next} fields are linked.
  */
-public class RelationshipLinkbackProcessor implements StoreProcessor<RelationshipRecord>
+public class RelationshipLinkbackProcessor implements RecordProcessor<RelationshipRecord>
 {
     private final NodeRelationshipLink nodeRelationshipLink;
 

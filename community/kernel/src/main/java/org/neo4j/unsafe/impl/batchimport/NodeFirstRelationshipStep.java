@@ -19,28 +19,24 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.kernel.impl.api.CountsAccessor;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
+import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 /**
- * Processes node count data received from {@link ReadNodeCountsDataStep} and stores the accumulated counts
- * into {@link CountsTracker}.
+ * Sets {@link NodeRecord#setNextRel(long)} in {@link ParallelBatchImporter}.
  */
-public class ProcessNodeCountsDataStep extends ExecutorServiceStep<NodeRecord[]>
+public class NodeFirstRelationshipStep extends ExecutorServiceStep<NodeRecord[]>
 {
-    private final NodeCountsProcessor processor;
+    private final NodeFirstRelationshipProcessor processor;
 
-    protected ProcessNodeCountsDataStep( StageControl control, NodeLabelsCache cache,
-            int workAheadSize, int movingAverageSize, NodeStore nodeStore,
-            int highLabelId, CountsAccessor.Updater countsUpdater )
+    public NodeFirstRelationshipStep( StageControl control, int workAheadSize, int movingAverageSize,
+            RelationshipGroupStore relationshipGroupStore, NodeRelationshipLink cache )
     {
-        super( control, "COUNT", workAheadSize, movingAverageSize, 1 );
-        this.processor = new NodeCountsProcessor( nodeStore, cache, highLabelId, countsUpdater );
+        super( control, "Node --> Relationship", workAheadSize, movingAverageSize, 1 );
+        this.processor = new NodeFirstRelationshipProcessor( relationshipGroupStore, cache );
     }
 
     @Override
@@ -53,12 +49,6 @@ public class ProcessNodeCountsDataStep extends ExecutorServiceStep<NodeRecord[]>
                 processor.process( node );
             }
         }
-        return null; // end of line
-    }
-
-    @Override
-    protected void done()
-    {
-        processor.done();
+        return batch;
     }
 }

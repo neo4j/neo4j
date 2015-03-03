@@ -36,7 +36,6 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Mode;
 import org.neo4j.unsafe.impl.batchimport.store.io.Monitor;
 
 import static org.junit.Assert.assertFalse;
@@ -77,7 +76,7 @@ public class AbstractDynamicStoreTest
     private AbstractDynamicStore newTestableDynamicStore()
     {
         return new AbstractDynamicStore( fileName, new Config(), IdType.ARRAY_BLOCK, new DefaultIdGeneratorFactory(),
-                new BatchingPageCache( fsr.get(), 1000, 1, BatchingPageCache.SYNCHRONOUS, mock( Monitor.class ), Mode.UPDATE ),
+                new BatchingPageCache( fsr.get(), 1000, 1, BatchingPageCache.SYNCHRONOUS, mock( Monitor.class ) ),
                 fsr.get(), StringLogger.DEV_NULL, StoreVersionMismatchHandler.ALLOW_OLD_VERSION, new Monitors() )
         {
             @Override

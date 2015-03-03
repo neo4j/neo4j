@@ -98,7 +98,7 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adpter
         Step<?> bottleNeckStep = bottleNeck.first();
         long doneBatches = batches( bottleNeckStep );
         int usedPermits = 0;
-        if ( bottleNeck.other().floatValue() > 1.0f &&
+        if ( bottleNeck.other() > 1.0f &&
              batchesPassedSinceLastChange( bottleNeckStep, doneBatches ) >= config.movingAverageSize() )
         {
             int optimalProcessorIncrement = min( max( 1, (int) bottleNeck.other().floatValue() - 1 ), permits );
@@ -117,7 +117,8 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adpter
     private boolean removeProcessorFromPotentialIdleStep( StageExecution execution )
     {
         Pair<Step<?>,Float> fastest = execution.stepsOrderedBy( Keys.avg_processing_time, true ).iterator().next();
-        if ( fastest.other().floatValue() <= 0.5f )
+        float threshold = 1f - (1f/fastest.first().numberOfProcessors());
+        if ( fastest.other() < threshold )
         {
             Step<?> fastestStep = fastest.first();
             long doneBatches = batches( fastestStep );

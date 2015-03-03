@@ -82,7 +82,6 @@ import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
-import org.neo4j.unsafe.impl.batchimport.cache.AvailableMemoryCalculator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
@@ -340,7 +339,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsolutePath(), fileSystem,
                 new Configuration.OverrideFromConfig( config ), logging,
                 migrationBatchImporterMonitor( legacyStore, progressMonitor ),
-                parallel(), readAdditionalIds( storeDir, lastTxId, lastTxChecksum ), AvailableMemoryCalculator.RUNTIME );
+                parallel(), readAdditionalIds( storeDir, lastTxId, lastTxChecksum ) );
         InputIterable<InputNode> nodes = legacyNodesAsInput( legacyStore );
         InputIterable<InputRelationship> relationships = legacyRelationshipsAsInput( legacyStore );
         importer.doImport( Inputs.input( nodes, relationships, IdMappers.actual(), IdGenerators.fromInput(), true ) );

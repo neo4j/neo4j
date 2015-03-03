@@ -30,7 +30,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
  * Calculates counts per label and puts data into {@link NodeLabelsCache} for use by {@link
  * RelationshipCountsProcessor}.
  */
-public class NodeCountsProcessor implements StoreProcessor<NodeRecord>
+public class NodeCountsProcessor implements RecordProcessor<NodeRecord>
 {
     private final NodeStore nodeStore;
     private final long[] labelCounts;

@@ -51,8 +51,6 @@ import static java.lang.String.valueOf;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
-import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Mode.APPEND_ONLY;
-import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Mode.UPDATE;
 
 /**
  * Creator and accessor of {@link NeoStore} with some logic to provide very batch friendly services to the
@@ -67,7 +65,7 @@ public class BatchingNeoStore implements AutoCloseable
     private final BatchingRelationshipTypeTokenRepository relationshipTypeRepository;
     private final StringLogger logger;
     private final Config neo4jConfig;
-    private final BatchingPageCache pageCacheFactory;
+    private final BatchingPageCache pageCache;
     private final NeoStore neoStore;
     private final WriterFactory writerFactory;
 
@@ -84,9 +82,9 @@ public class BatchingNeoStore implements AutoCloseable
                         GraphDatabaseSettings.class ),
                 new File( storeDir ) );
 
-        this.pageCacheFactory = new BatchingPageCache( fileSystem, config.fileChannelBufferSize(),
-                config.bigFileChannelBufferSizeMultiplier(), writerFactory, writeMonitor, APPEND_ONLY );
-        this.neoStore = newNeoStore( pageCacheFactory );
+        this.pageCache = new BatchingPageCache( fileSystem, config.fileChannelBufferSize(),
+                config.bigFileChannelBufferSizeMultiplier(), writerFactory, writeMonitor );
+        this.neoStore = newNeoStore( pageCache );
         flushNeoStoreAndAwaitEverythingWritten();
         if ( alreadyContainsData( neoStore ) )
         {
@@ -126,7 +124,7 @@ public class BatchingNeoStore implements AutoCloseable
     {
         PageCache pageCache = new BatchingPageCache( fileSystem, Configuration.DEFAULT.fileChannelBufferSize(),
                 Configuration.DEFAULT.bigFileChannelBufferSizeMultiplier(),
-                BatchingPageCache.SYNCHRONOUS, Monitor.NO_MONITOR, APPEND_ONLY );
+                BatchingPageCache.SYNCHRONOUS, Monitor.NO_MONITOR );
         StoreFactory storeFactory = new StoreFactory(
                 fileSystem, new File( storeDir ), pageCache, StringLogger.DEV_NULL, new Monitors() );
         storeFactory.createNeoStore().close();
@@ -180,11 +178,6 @@ public class BatchingNeoStore implements AutoCloseable
         return neoStore.getCounts();
     }
 
-    public void switchToUpdateMode()
-    {
-        pageCacheFactory.setMode( UPDATE );
-    }
-
     @Override
     public void close()
     {
@@ -204,5 +197,10 @@ public class BatchingNeoStore implements AutoCloseable
         // Issuing a "flush" might queue up I/O jobs to the WriterFactory given to this batching neo store.
         // That's why we have to wait for any pending I/O jobs to be written after the flush.
         writerFactory.awaitEverythingWritten();
+    }
+
+    public void flush() throws IOException
+    {
+        pageCache.flush();
     }
 }

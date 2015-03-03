@@ -19,33 +19,35 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 /**
- * Convenient step for processing all in use {@link NodeRecord records} in the {@link NodeStore node store}.
+ * Updates a batch of records to a store.
  */
-public class NodeStoreProcessorStep extends StoreProcessorStep<NodeRecord>
+public class UpdateRecordsStep<RECORD extends AbstractBaseRecord> extends ExecutorServiceStep<RECORD[]>
 {
-    private final NodeStore nodeStore;
+    private final RecordStore<RECORD> store;
 
-    protected NodeStoreProcessorStep( StageControl control, String name, Configuration config, NodeStore nodeStore,
-            StoreProcessor<NodeRecord> processor )
+    public UpdateRecordsStep( StageControl control, int workAheadSize, int movingAverageSize,
+            RecordStore<RECORD> store )
     {
-        super( control, name, config.batchSize(), config.movingAverageSize(), nodeStore, processor, false );
-        this.nodeStore = nodeStore;
+        super( control, "v", workAheadSize, movingAverageSize, 1 );
+        this.store = store;
     }
 
     @Override
-    protected NodeRecord loadRecord( long id, NodeRecord into )
+    protected Object process( long ticket, RECORD[] batch )
     {
-        return nodeStore.loadRecord( id, into );
-    }
-
-    @Override
-    protected NodeRecord createReusableRecord()
-    {
-        return new NodeRecord( -1 );
+        for ( RECORD record : batch )
+        {
+            if ( record != null )
+            {
+                store.updateRecord( record );
+            }
+        }
+        return null; // end of line
     }
 }

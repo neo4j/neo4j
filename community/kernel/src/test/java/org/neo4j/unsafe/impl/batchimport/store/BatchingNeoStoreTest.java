@@ -40,7 +40,6 @@ import static org.junit.Assert.fail;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRONOUS;
-import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Mode.APPEND_ONLY;
 import static org.neo4j.unsafe.impl.batchimport.store.io.Monitor.NO_MONITOR;
 
 public class BatchingNeoStoreTest
@@ -52,7 +51,7 @@ public class BatchingNeoStoreTest
         someDataInTheDatabase();
 
         // WHEN
-        PageCache pageCache = new BatchingPageCache( fsr.get(), 10_000, 1, SYNCHRONOUS, NO_MONITOR, APPEND_ONLY );
+        PageCache pageCache = new BatchingPageCache( fsr.get(), 10_000, 1, SYNCHRONOUS, NO_MONITOR );
         try
         {
             new BatchingNeoStore( fsr.get(), storeDir.getAbsolutePath(), DEFAULT, NO_MONITOR,

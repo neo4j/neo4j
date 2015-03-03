@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.store;
 
 import sun.misc.Cleaner;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -40,7 +41,11 @@ import org.neo4j.unsafe.impl.batchimport.Parallelizable;
 import org.neo4j.unsafe.impl.batchimport.WriterFactories;
 import org.neo4j.unsafe.impl.batchimport.store.io.Monitor;
 
+import static java.lang.Math.max;
 import static java.lang.Math.min;
+
+import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 
 /**
 * {@link PageCache} that is optimized for single threaded batched access.
@@ -48,6 +53,7 @@ import static java.lang.Math.min;
 * crossed. As part of moving the window the data in the page (residing in a {@link ByteBuffer}) is written
 * to the channel.
 */
+@SuppressWarnings( "restriction" )
 public class BatchingPageCache implements PageCache
 {
     public interface WriterFactory extends Parallelizable
@@ -107,54 +113,25 @@ public class BatchingPageCache implements PageCache
         }
     };
 
-    public static enum Mode
-    {
-        APPEND_ONLY
-        {
-            @Override
-            boolean canReadFrom( long pageId )
-            {
-                return pageId == 0;
-            }
-        },
-        UPDATE
-        {
-            @Override
-            boolean canReadFrom( long pageId )
-            {
-                return true;
-            }
-        };
-
-        abstract boolean canReadFrom( long pageId );
-    }
-
     private final int pageSize;
     private final int bigFileMultiplier;
     private final FileSystemAbstraction fs;
     private final Map<File, BatchingPagedFile> pagedFiles = new HashMap<>();
     private final WriterFactory writerFactory;
     private final Monitor monitor;
-    private Mode mode;
 
     public BatchingPageCache( FileSystemAbstraction fs, int pageSize, int bigFileMultiplier,
-            WriterFactory writerFactory, Monitor monitor, Mode mode )
+            WriterFactory writerFactory, Monitor monitor )
     {
         this.fs = fs;
         this.pageSize = pageSize;
         this.bigFileMultiplier = bigFileMultiplier;
         this.writerFactory = writerFactory;
         this.monitor = monitor;
-        this.mode = mode;
-    }
-
-    public void setMode( Mode mode )
-    {
-        this.mode = mode;
     }
 
     @Override
-    public PagedFile map( File file, int pageSize ) throws IOException
+    public PagedFile map( final File file, int pageSize ) throws IOException
     {
         StoreChannel channel = fs.open( file, "rw" );
         // This is a hack necessary to make sure that we write to disk immediately the changes to the
@@ -162,8 +139,19 @@ public class BatchingPageCache implements PageCache
         Writer writer = file.getName().contains( StoreFactory.COUNTS_STORE )
                 ? SYNCHRONOUS.create( channel, monitor )
                 : writerFactory.create( channel, monitor );
-        BatchingPagedFile pageFile = new BatchingPagedFile( file, channel, writer,
-                individualizedPageSize( file, pageSize ) );
+        BatchingPagedFile pageFile = new BatchingPagedFile(channel, writer,
+                individualizedPageSize( file, pageSize ), new Closeable()
+                {
+                    @Override
+                    public void close() throws IOException
+                    {
+                        BatchingPagedFile pageFile = pagedFiles.remove( file );
+                        if ( pageFile == null )
+                        {
+                            throw new IllegalArgumentException( file.toString() );
+                        }
+                    }
+                } );
         pagedFiles.put( file, pageFile );
         return pageFile;
     }
@@ -193,17 +181,6 @@ public class BatchingPageCache implements PageCache
     private int maxPercentageOfHeapThough( int size, float maxPercentageOfHeap )
     {
         return min( size, (int)(Runtime.getRuntime().maxMemory() * (maxPercentageOfHeap/100f)) );
-    }
-
-    void unmap( BatchingPagedFile pagedFile ) throws IOException
-    {
-        File file = pagedFile.file;
-        BatchingPagedFile pageFile = pagedFiles.remove( file );
-        if ( pageFile == null )
-        {
-            throw new IllegalArgumentException( file.toString() );
-        }
-        pageFile.closeFile();
     }
 
     @Override
@@ -237,29 +214,41 @@ public class BatchingPageCache implements PageCache
         return 1;
     }
 
-    class BatchingPagedFile implements PagedFile
+    private static final int READ_WRITE_PF_FLAGS = PF_SHARED_LOCK | PF_EXCLUSIVE_LOCK;
+
+    private static class BatchingPagedFile implements PagedFile
     {
-        private final BatchingPageCursor singleCursor;
-        private final File file;
+        private final BatchingPageCursor[] cursors = new BatchingPageCursor[READ_WRITE_PF_FLAGS];
         private final StoreChannel channel;
         private final int pageSize;
+        private final Closeable resource;
 
-        public BatchingPagedFile( File file, StoreChannel channel, Writer writer, int pageSize ) throws IOException
+        public BatchingPagedFile( StoreChannel channel, Writer writer, int pageSize, Closeable resource )
+                throws IOException
         {
-            this.file = file;
             this.channel = channel;
             this.pageSize = pageSize;
-            this.singleCursor = new BatchingPageCursor( channel, writer, pageSize );
+            this.resource = resource;
+            this.cursors[PF_SHARED_LOCK] = new ReadCursor( channel, writer, pageSize );
+            this.cursors[PF_EXCLUSIVE_LOCK] = new WriteCursor( channel, writer, pageSize );
         }
 
         @Override
         public PageCursor io( long pageId, int pf_flags ) throws IOException
         {
-            singleCursor.ensurePagePlacedOver( pageId );
+            BatchingPageCursor cursor = cursor( pf_flags );
+            cursor.ensurePagePlacedOver( pageId );
             // Do this so that the first call to next() will have the cursor "placed" there
             // and consecutive calls move the cursor forwards.
-            singleCursor.pinned = false;
-            return singleCursor;
+            cursor.pinned = false;
+            return cursor;
+        }
+
+        private BatchingPageCursor cursor( int pf_flags )
+        {
+            assert (pf_flags & READ_WRITE_PF_FLAGS) != 0 && (pf_flags & READ_WRITE_PF_FLAGS) != READ_WRITE_PF_FLAGS :
+                "Unexpected set pf flags " + pf_flags;
+            return cursors[pf_flags & READ_WRITE_PF_FLAGS];
         }
 
         @Override
@@ -271,8 +260,10 @@ public class BatchingPageCache implements PageCache
         @Override
         public void close() throws IOException
         {
-            unmap( this );
-            singleCursor.free();
+            resource.close();
+            closeFile();
+            cursors[PF_SHARED_LOCK].free();
+            cursors[PF_EXCLUSIVE_LOCK].free();
         }
 
         public void closeFile() throws IOException
@@ -284,7 +275,8 @@ public class BatchingPageCache implements PageCache
         @Override
         public void flush() throws IOException
         {
-            singleCursor.flush();
+            cursors[PF_SHARED_LOCK].flush();
+            cursors[PF_EXCLUSIVE_LOCK].flush();
         }
 
         @Override
@@ -295,29 +287,30 @@ public class BatchingPageCache implements PageCache
         @Override
         public long getLastPageId() throws IOException
         {
-            return singleCursor.highestKnownPageId();
+            return max( cursors[PF_SHARED_LOCK].highestKnownPageId(), cursors[PF_EXCLUSIVE_LOCK].highestKnownPageId );
         }
     }
 
-    class BatchingPageCursor implements PageCursor
+    private static abstract class BatchingPageCursor implements PageCursor
     {
-        private ByteBuffer currentBuffer;
+        protected ByteBuffer currentBuffer;
         private final ByteBuffer[] buffers;
-        private final SimplePool<ByteBuffer> bufferPool;
+        protected final SimplePool<ByteBuffer> bufferPool;
         private final StoreChannel channel;
-        private final Writer writer;
-        private long currentPageId = -1;
-        private final int pageSize;
+        protected final Writer writer;
+        protected long currentPageId = -1;
+        protected final int pageSize;
         private boolean pinned;
         private long highestKnownPageId;
-        private boolean changed;
+        protected boolean changed;
 
-        BatchingPageCursor( StoreChannel channel, Writer writer, final int pageSize ) throws IOException
+        BatchingPageCursor( StoreChannel channel, Writer writer, final int pageSize, int bufferCount )
+                throws IOException
         {
             this.channel = channel;
             this.writer = writer;
             this.pageSize = pageSize;
-            this.buffers = new ByteBuffer[2];
+            this.buffers = new ByteBuffer[bufferCount];
             for ( int i = 0; i < buffers.length; i++ )
             {
                 try
@@ -331,7 +324,7 @@ public class BatchingPageCache implements PageCache
             }
             this.bufferPool = new SimplePool<>( buffers );
             this.currentBuffer = bufferPool.acquire();
-            highestKnownPageId = channel.size() / pageSize;
+            this.highestKnownPageId = channel.size() / pageSize;
         }
 
         private void free()
@@ -547,20 +540,8 @@ public class BatchingPageCache implements PageCache
             }
 
             flush();
+            placeBufferAt( currentBuffer, pageId );
 
-            // If we're not in append-only mode, i.e. if we're in update mode
-            // OR if this is the first window index we read the contents.
-            // The reason for reading the first windows is that in order to play nicely with
-            // NeoStore and loading the store sometimes header information needs to be read,
-            // even if we're in append-only mode
-            if ( mode.canReadFrom( pageId ) )
-            {
-                readFromChannelIntoBuffer( pageId );
-            }
-            else
-            {
-                zeroBuffer( currentBuffer );
-            }
             // buffer position after we placed the window is irrelevant since every future access
             // will set offset explicitly before use.
             currentPageId = pageId;
@@ -568,7 +549,9 @@ public class BatchingPageCache implements PageCache
             prepared( currentBuffer );
         }
 
-        private void readFromChannelIntoBuffer( long pageId ) throws IOException
+        protected abstract void placeBufferAt( ByteBuffer buffer, long pageId ) throws IOException;
+
+        protected void readFromChannelIntoBuffer( long pageId ) throws IOException
         {
             channel.read( prepared( currentBuffer ), pageId*pageSize );
         }
@@ -579,17 +562,13 @@ public class BatchingPageCache implements PageCache
             {
                 return;
             }
-
-            if ( changed )
-            {
-                writer.write( prepared( currentBuffer ), currentPageId * pageSize, bufferPool );
-                currentBuffer = bufferPool.acquire();
-                changed = false;
-            }
+            doFlush();
             currentPageId = -1;
         }
 
-        private ByteBuffer prepared( ByteBuffer buffer )
+        protected abstract void doFlush() throws IOException;
+
+        protected ByteBuffer prepared( ByteBuffer buffer )
         {
             buffer.flip();
             buffer.limit( pageSize ); // always write the full page
@@ -599,6 +578,63 @@ public class BatchingPageCache implements PageCache
         public long highestKnownPageId()
         {
             return highestKnownPageId;
+        }
+    }
+
+    private static class ReadCursor extends BatchingPageCursor
+    {
+        ReadCursor( StoreChannel channel, Writer writer, int pageSize ) throws IOException
+        {
+            super( channel, writer, pageSize, 1 );
+        }
+
+        @Override
+        protected void placeBufferAt( ByteBuffer buffer, long pageId ) throws IOException
+        {
+            // If we're not in append-only mode, i.e. if we're in update mode
+            // OR if this is the first window index we read the contents.
+            // The reason for reading the first windows is that in order to play nicely with
+            // NeoStore and loading the store sometimes header information needs to be read,
+            // even if we're in append-only mode
+            readFromChannelIntoBuffer( pageId );
+        }
+
+        @Override
+        protected void doFlush() throws IOException
+        {   // No flushing
+            assert !changed;
+        }
+    }
+
+    private static class WriteCursor extends BatchingPageCursor
+    {
+        WriteCursor( StoreChannel channel, Writer writer, int pageSize ) throws IOException
+        {
+            super( channel, writer, pageSize, 2 /*double buffering to support asynchronous writes*/ );
+        }
+
+        @Override
+        protected void placeBufferAt( ByteBuffer buffer, long pageId ) throws IOException
+        {
+            if ( pageId == 0 )
+            {
+                readFromChannelIntoBuffer( pageId );
+            }
+            else
+            {
+                zeroBuffer( buffer );
+            }
+        }
+
+        @Override
+        protected void doFlush() throws IOException
+        {
+            if ( changed )
+            {
+                writer.write( prepared( currentBuffer ), currentPageId * pageSize, bufferPool );
+                currentBuffer = bufferPool.acquire();
+                changed = false;
+            }
         }
     }
 

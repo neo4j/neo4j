@@ -35,7 +35,6 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
-import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Mode;
 import org.neo4j.unsafe.impl.batchimport.store.io.Monitor;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -55,12 +54,12 @@ public class BatchingPageCacheTest
     {
         // GIVEN
         int numberOfRecords = 100;
-        PageCache pageCache = new BatchingPageCache( FS, numberOfRecords, 1, SYNCHRONOUS, NO_MONITOR, Mode.APPEND_ONLY );
+        PageCache pageCache = new BatchingPageCache( FS, numberOfRecords, 1, SYNCHRONOUS, NO_MONITOR );
         File file = directory.file( "store" );
         PagedFile pagedFile = pageCache.map( file, recordSize*recordsPerPage /* =90 */ );
 
         // WHEN
-        try ( PageCursor cursor = pagedFile.io( 0, 0 ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_EXCLUSIVE_LOCK ) )
         {
             cursor.next();
             for ( int i = 0; i < numberOfRecords; i++ )
@@ -79,31 +78,33 @@ public class BatchingPageCacheTest
     }
 
     @Test
-    public void shouldReadAndUpdateExistingContentsInUpdateMode() throws Exception
+    public void shouldReadAndUpdateExistingContents() throws Exception
     {
         // GIVEN
         int pageSize = 100;
         File file = directory.file( "store" );
         fillFileWithByteContents( file );
-        PageCache pageCache = new BatchingPageCache( FS, pageSize, 1, SYNCHRONOUS, NO_MONITOR, Mode.UPDATE );
+        PageCache pageCache = new BatchingPageCache( FS, pageSize, 1, SYNCHRONOUS, NO_MONITOR );
         PagedFile pagedFile = pageCache.map( file, pageSize );
 
         // WHEN
         for ( int p = 0; p <= 1; p++ )
         {
-            try ( PageCursor cursor = pagedFile.io( p, 0 ) )
+            try ( PageCursor reader = pagedFile.io( p, PagedFile.PF_SHARED_LOCK );
+                  PageCursor writer = pagedFile.io( p, PagedFile.PF_EXCLUSIVE_LOCK ) )
             {
-                cursor.next();
+                reader.next();
+                writer.next();
                 for ( int i = 0; i < pageSize; i++ )
                 {
-                    int offset = cursor.getOffset();
-                    byte value = cursor.getByte();
+                    int offset = reader.getOffset();
+                    byte value = reader.getByte();
                     if ( i%3 == 0 )
                     {
-                        cursor.setOffset( offset );
                         value++;
-                        cursor.putByte( value );
                     }
+                    writer.setOffset( offset );
+                    writer.putByte( value );
                 }
             }
         }
@@ -118,13 +119,12 @@ public class BatchingPageCacheTest
     {
         // GIVEN
         byte[] someBytes = new byte[] { 1, 2, 3, 4, 5 };
-        byte[] someOtherBytes = new byte[] { 6, 7, 8, 9, 10 };
         int pageSize = 100;
         Monitor monitor = mock( Monitor.class );
         File file = directory.file( "store" );
         fillFileWithByteContents( file );
 
-        PageCache pageCache = new BatchingPageCache( FS, pageSize, 1, SYNCHRONOUS, monitor, Mode.APPEND_ONLY );
+        PageCache pageCache = new BatchingPageCache( FS, pageSize, 1, SYNCHRONOUS, monitor );
         PagedFile pagedFile = pageCache.map( file, pageSize );
 
         // WHEN
@@ -157,7 +157,7 @@ public class BatchingPageCacheTest
         fillFileWithByteContents( file );
 
         byte[] someBytes = new byte[]{1, 2, 3, 4, 5};
-        PageCache pageCache = new BatchingPageCache( FS, pageSize, 1, SYNCHRONOUS, NO_MONITOR, Mode.APPEND_ONLY );
+        PageCache pageCache = new BatchingPageCache( FS, pageSize, 1, SYNCHRONOUS, NO_MONITOR );
         PagedFile pagedFile = pageCache.map( file, pageSize );
 
         // And Given I've used the cursor a bit
