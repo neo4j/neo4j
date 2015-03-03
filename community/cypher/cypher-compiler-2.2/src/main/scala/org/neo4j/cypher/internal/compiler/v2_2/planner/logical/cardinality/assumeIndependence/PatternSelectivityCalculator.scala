@@ -25,10 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{Selections, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
-import org.neo4j.cypher.internal.compiler.v2_2.{InternalException, LabelId, NameId, RelTypeId}
+import org.neo4j.cypher.internal.compiler.v2_2.{InternalException, LabelId, RelTypeId}
 import org.neo4j.graphdb.Direction
-
-import scala.collection.immutable.IndexedSeq
 
 trait Pattern2Selectivity {
   def apply(pattern: PatternRelationship, labels: Map[IdName, Set[LabelName]])(implicit semanticTable: SemanticTable, selections: Selections): Selectivity
@@ -40,7 +38,7 @@ object PatternSelectivityCalculator {
 
 case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: SelectivityCombiner) extends Pattern2Selectivity {
 
-  import PatternSelectivityCalculator._
+  import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeIndependence.PatternSelectivityCalculator._
 
   def apply(pattern: PatternRelationship, labels: Map[IdName, Set[LabelName]])
            (implicit semanticTable: SemanticTable, selections: Selections): Selectivity = {
@@ -134,7 +132,12 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
   private def calculateLabelSelectivity(specs: Seq[TokenSpec[LabelId]]): Selectivity = {
     val selectivities = specs map {
       case SpecifiedButUnknown() => Selectivity(0)
-      case spec: TokenSpec[LabelId] => stats.nodesWithLabelCardinality(spec.id) / stats.nodesWithLabelCardinality(None)
+      case spec: TokenSpec[LabelId] =>
+        val labelCardinality = stats.nodesWithLabelCardinality(None)
+        if (labelCardinality.amount > 0)
+          stats.nodesWithLabelCardinality(spec.id) / labelCardinality
+        else
+          Selectivity(0)
     }
 
     combiner.andTogetherSelectivities(selectivities).getOrElse(Selectivity(1))
