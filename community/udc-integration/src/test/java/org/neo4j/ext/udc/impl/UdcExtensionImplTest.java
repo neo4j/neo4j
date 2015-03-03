@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -373,26 +374,47 @@ public class UdcExtensionImplTest
     public void shouldIncludePrefixedSystemProperties() throws Exception
     {
         setupServer();
-        System.setProperty( UdcConstants.UDC_PROPERTY_PREFIX + ".test", "udc-property" );
-        System.setProperty( "os.test", "os-property" );
-        GraphDatabaseService graphdb = createDatabase( config );
-        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-        assertEquals( "udc-property", handler.getQueryMap().get( "test" ) );
-        assertEquals( "os-property", handler.getQueryMap().get( "os.test" ) );
+        withSystemProperty( UdcConstants.UDC_PROPERTY_PREFIX + ".test", "udc-property", new Callable<Void>()
+        {
+            @Override
+            public Void call() throws Exception
+            {
+                withSystemProperty( "os.test", "os-property", new Callable<Void>()
+                {
+                    @Override
+                    public Void call() throws Exception
+                    {
+                        GraphDatabaseService graphdb = createDatabase( config );
+                        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+                        assertEquals( "udc-property", handler.getQueryMap().get( "test" ) );
+                        assertEquals( "os-property", handler.getQueryMap().get( "os.test" ) );
 
-        destroy( graphdb );
+                        destroy( graphdb );
+                        return null;
+                    }
+                } );
+                return null;
+            }
+        } );
     }
 
     @Test
     public void shouldNotIncludeDistributionForWindows() throws Exception
     {
         setupServer();
-        System.setProperty( "os.name", "Windows" );
-        GraphDatabaseService graphdb = createDatabase( config );
-        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-        assertEquals( UdcConstants.UNKNOWN_DIST, handler.getQueryMap().get( "dist" ) );
+        withSystemProperty( "os.name", "Windows", new Callable<Void>()
+        {
+            @Override
+            public Void call() throws Exception
+            {
+                GraphDatabaseService graphdb = createDatabase( config );
+                assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+                assertEquals( UdcConstants.UNKNOWN_DIST, handler.getQueryMap().get( "dist" ) );
 
-        destroy( graphdb );
+                destroy( graphdb );
+                return null;
+            }
+        } );
     }
 
     @Test
@@ -415,12 +437,19 @@ public class UdcExtensionImplTest
     public void shouldNotIncludeDistributionForMacOS() throws Exception
     {
         setupServer();
-        System.setProperty( "os.name", "Mac OS X" );
-        GraphDatabaseService graphdb = createDatabase( config );
-        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-        assertEquals( UdcConstants.UNKNOWN_DIST, handler.getQueryMap().get( "dist" ) );
+        withSystemProperty( "os.name", "Mac OS X", new Callable<Void>()
+        {
+            @Override
+            public Void call() throws Exception
+            {
+                GraphDatabaseService graphdb = createDatabase( config );
+                assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+                assertEquals( UdcConstants.UNKNOWN_DIST, handler.getQueryMap().get( "dist" ) );
 
-        destroy( graphdb );
+                destroy( graphdb );
+                return null;
+            }
+        } );
     }
 
     @Test
@@ -454,13 +483,19 @@ public class UdcExtensionImplTest
     {
         setupServer();
 
-        System.setProperty( UdcSettings.udc_source.name(), "overridden" );
-        GraphDatabaseService graphdb = createDatabase( config );
-        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-        String source = handler.getQueryMap().get( SOURCE );
-        assertEquals( "overridden", source );
-
-        destroy( graphdb );
+        withSystemProperty( UdcSettings.udc_source.name(), "overridden", new Callable<Void>()
+        {
+            @Override
+            public Void call() throws Exception
+            {
+                GraphDatabaseService graphdb = createDatabase( config );
+                assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+                String source = handler.getQueryMap().get( SOURCE );
+                assertEquals( "overridden", source );
+                destroy( graphdb );
+                return null;
+            }
+        } );
     }
 
     @Test
@@ -609,5 +644,26 @@ public class UdcExtensionImplTest
         List<String> headers = Arrays.asList( userAgent );
         stub( request.getRequestHeader( "User-Agent" ) ).toReturn( headers );
         return request;
+    }
+
+    private void withSystemProperty( String name, String value, Callable<Void> block ) throws Exception
+    {
+        String original = System.getProperty( name );
+        System.setProperty( name, value );
+        try
+        {
+            block.call();
+        }
+        finally
+        {
+            if ( original == null )
+            {
+                System.clearProperty( name );
+            }
+            else
+            {
+                System.setProperty( name, original );
+            }
+        }
     }
 }
