@@ -60,6 +60,7 @@ import static org.neo4j.ext.udc.UdcConstants.PROPERTY_IDS_IN_USE;
 import static org.neo4j.ext.udc.UdcConstants.REGISTRATION;
 import static org.neo4j.ext.udc.UdcConstants.RELATIONSHIP_IDS_IN_USE;
 import static org.neo4j.ext.udc.UdcConstants.REVISION;
+import static org.neo4j.ext.udc.UdcConstants.SERVER_ID;
 import static org.neo4j.ext.udc.UdcConstants.SOURCE;
 import static org.neo4j.ext.udc.UdcConstants.TAGS;
 import static org.neo4j.ext.udc.UdcConstants.TOTAL_MEMORY;
@@ -135,6 +136,7 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         add( udcFields, REGISTRATION, config.get( UdcSettings.udc_registration_key ) );
         add( udcFields, DISTRIBUTION, determineOsDistribution() );
         add( udcFields, DATABASE_MODE, determineMode() );
+        add( udcFields, SERVER_ID, determineServerId() );
         add( udcFields, USER_AGENTS, determineUserAgents() );
 
         add( udcFields, MAC, determineMacAddress() );
@@ -168,6 +170,18 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         try
         {
             return getSetting( "org.neo4j.server.web.ServerInternalSettings", "legacy_db_mode" );
+        }
+        catch ( Exception e )
+        {
+            return null;
+        }
+    }
+
+    private String determineServerId()
+    {
+        try
+        {
+            return getSetting( "org.neo4j.cluster.ClusterSettings", "server_id" );
         }
         catch ( Exception e )
         {
