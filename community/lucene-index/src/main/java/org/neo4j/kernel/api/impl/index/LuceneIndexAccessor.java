@@ -29,9 +29,10 @@ import org.apache.lucene.store.Directory;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.TaskControl;
@@ -61,6 +62,17 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     private final File dirFile;
     private final int bufferSizeLimit;
     private final TaskCoordinator taskCoordinator = new TaskCoordinator( 10, TimeUnit.MILLISECONDS );
+
+    private final PrimitiveLongVisitor<IOException> removeFromLucene = new PrimitiveLongVisitor<IOException>()
+    {
+        @Override
+        public boolean visited( long nodeId ) throws IOException
+        {
+            LuceneIndexAccessor.this.remove( nodeId );
+            return false;
+        }
+    };
+
 
     LuceneIndexAccessor( LuceneDocumentStructure documentStructure,
                          IndexWriterFactory<ReservingLuceneIndexWriter> indexWriterFactory,
@@ -287,12 +299,9 @@ abstract class LuceneIndexAccessor implements IndexAccessor
         }
 
         @Override
-        public void remove( Collection<Long> nodeIds ) throws IOException
+        public void remove( PrimitiveLongSet nodeIds ) throws IOException
         {
-            for ( long nodeId : nodeIds )
-            {
-                LuceneIndexAccessor.this.remove( nodeId );
-            }
+            nodeIds.visitKeys( removeFromLucene );
         }
     }
 }

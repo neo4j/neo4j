@@ -21,10 +21,11 @@ package org.neo4j.kernel.impl.api.index.inmemory;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -38,6 +39,16 @@ import org.neo4j.kernel.impl.api.index.UniquePropertyIndexUpdater;
 class UniqueInMemoryIndex extends InMemoryIndex
 {
     private final int propertyKeyId;
+
+    private final PrimitiveLongVisitor<RuntimeException> removeFromIndex = new PrimitiveLongVisitor<RuntimeException>()
+    {
+        @Override
+        public boolean visited( long nodeId )
+        {
+            UniqueInMemoryIndex.this.remove( nodeId );
+            return false;
+        }
+    };
 
     public UniqueInMemoryIndex( int propertyKeyId )
     {
@@ -80,12 +91,9 @@ class UniqueInMemoryIndex extends InMemoryIndex
             }
 
             @Override
-            public void remove( Collection<Long> nodeIds )
+            public void remove( PrimitiveLongSet nodeIds )
             {
-                for ( long nodeId : nodeIds )
-                {
-                    UniqueInMemoryIndex.this.remove( nodeId );
-                }
+                nodeIds.visitKeys( removeFromIndex );
             }
         };
     }

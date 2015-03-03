@@ -24,8 +24,8 @@ import org.apache.lucene.search.IndexSearcher;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
 
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
@@ -123,7 +123,7 @@ class UniqueLuceneIndexAccessor extends LuceneIndexAccessor
         }
 
         @Override
-        public void remove( Collection<Long> nodeIds ) throws IOException
+        public void remove( PrimitiveLongSet nodeIds ) throws IOException
         {
             delegate.remove( nodeIds );
         }

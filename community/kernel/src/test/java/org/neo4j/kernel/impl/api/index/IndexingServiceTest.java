@@ -33,6 +33,8 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.ArrayIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -490,13 +492,15 @@ public class IndexingServiceTest
     public void recordingOfRecoveredNodesShouldThrowIfServiceIsStarted() throws Exception
     {
         // Given
+        PrimitiveLongSet recoveredNodeIds = PrimitiveLongCollections.setOf( 1 );
+
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
         life.start();
 
         try
         {
             // When
-            indexingService.addRecoveredNodeIds( asSet( 1L, 2L, 3L ) );
+            indexingService.addRecoveredNodeIds( recoveredNodeIds );
             fail( "Should have thrown " + IllegalStateException.class.getSimpleName() );
         }
         catch ( IllegalStateException e )
@@ -650,7 +654,7 @@ public class IndexingServiceTest
         // Given
         final long nodeId1 = 1;
         final long nodeId2 = 2;
-        final Set<Long> nodeIds = asSet( nodeId1, nodeId2 );
+        final PrimitiveLongSet nodeIds = PrimitiveLongCollections.setOf( nodeId1, nodeId2 );
 
         final NodePropertyUpdate nodeUpdate1 = add( nodeId1, "foo" );
         final NodePropertyUpdate nodeUpdate2 = add( nodeId2, "bar" );
@@ -666,7 +670,7 @@ public class IndexingServiceTest
         IndexingService.Monitor monitor = new IndexingService.MonitorAdapter()
         {
             @Override
-            public void applyingRecoveredData( Set<Long> recoveredNodeIds )
+            public void applyingRecoveredData( PrimitiveLongSet recoveredNodeIds )
             {
                 assertEquals( nodeIds, recoveredNodeIds );
                 applyingRecoveredDataCalled.set( true );

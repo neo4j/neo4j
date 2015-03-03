@@ -26,7 +26,6 @@ import org.junit.Test;
 import org.mockito.Matchers;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -34,6 +33,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -479,7 +479,7 @@ public class IndexPopulationJobTest
                 }
 
                 @Override
-                public void remove( Collection<Long> nodeIds )
+                public void remove( PrimitiveLongSet nodeIds )
                 {
                     throw new UnsupportedOperationException( "not expected" );
                 }
@@ -559,7 +559,7 @@ public class IndexPopulationJobTest
                 }
 
                 @Override
-                public void remove( Collection<Long> nodeIds )
+                public void remove( PrimitiveLongSet nodeIds )
                 {
                     throw new UnsupportedOperationException( "not expected" );
                 }

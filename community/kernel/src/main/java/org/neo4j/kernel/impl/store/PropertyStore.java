@@ -25,8 +25,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -667,7 +667,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
         return toReturn;
     }
 
-    public Collection<PropertyRecord> getPropertyRecordChain( long firstRecordId, Map<Long,PropertyRecord> propertyLookup )
+    public Collection<PropertyRecord> getPropertyRecordChain( long firstRecordId, PrimitiveLongObjectMap<PropertyRecord> propertyLookup )
     {
         long nextProp = firstRecordId;
         List<PropertyRecord> toReturn = new ArrayList<>();

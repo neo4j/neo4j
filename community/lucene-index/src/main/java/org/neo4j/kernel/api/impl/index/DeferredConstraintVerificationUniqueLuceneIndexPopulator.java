@@ -34,9 +34,9 @@ import org.apache.lucene.search.TermQuery;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -234,7 +234,7 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
             }
 
             @Override
-            public void remove( Collection<Long> nodeIds )
+            public void remove( PrimitiveLongSet nodeIds )
             {
                 throw new UnsupportedOperationException( "should not remove() from populating index" );
             }

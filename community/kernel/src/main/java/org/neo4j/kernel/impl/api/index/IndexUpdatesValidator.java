@@ -21,12 +21,12 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
@@ -82,12 +82,12 @@ public class IndexUpdatesValidator
         }
 
         Iterable<NodePropertyUpdate> updates = new LazyIndexUpdates( nodeStore, propertyStore, propertyLoader,
-                extractor.nodeCommandsById, extractor.propertyCommandsByNodeIds );
+                extractor.propertyCommandsByNodeIds, extractor.nodeCommandsById );
 
         return indexing.validate( updates );
     }
 
-    private static ValidatedIndexUpdates newValidatedRecoveredUpdates( final Set<Long> nodeIds,
+    private static ValidatedIndexUpdates newValidatedRecoveredUpdates( final PrimitiveLongSet nodeIds,
             final IndexingService indexing )
     {
         return new ValidatedIndexUpdates()
@@ -108,8 +108,8 @@ public class IndexUpdatesValidator
     private static class NodePropertyCommandsExtractor
             extends NeoCommandHandler.Adapter implements Visitor<Command,IOException>
     {
-        final Map<Long,NodeCommand> nodeCommandsById = new HashMap<>();
-        final Map<Long,List<PropertyCommand>> propertyCommandsByNodeIds = new HashMap<>();
+        final PrimitiveLongObjectMap<NodeCommand> nodeCommandsById = Primitive.longObjectMap( 16 );
+        final PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommandsByNodeIds = Primitive.longObjectMap( 16 );
 
         @Override
         public boolean visit( Command element ) throws IOException
@@ -147,12 +147,25 @@ public class IndexUpdatesValidator
             return nodeCommandsById.isEmpty() && propertyCommandsByNodeIds.isEmpty();
         }
 
-        Set<Long> changedNodeIds()
+        PrimitiveLongSet changedNodeIds()
         {
-            Set<Long> nodeIds = new HashSet<>( nodeCommandsById.size() + propertyCommandsByNodeIds.size(), 1 );
-            nodeIds.addAll( nodeCommandsById.keySet() );
-            nodeIds.addAll( propertyCommandsByNodeIds.keySet() );
+            PrimitiveLongSet nodeIds = Primitive.longSet( nodeCommandsById.size() + propertyCommandsByNodeIds.size() );
+            nodeCommandsById.visitKeys( copyTo( nodeIds ) );
+            propertyCommandsByNodeIds.visitKeys( copyTo( nodeIds ) );
             return nodeIds;
+        }
+
+        PrimitiveLongVisitor<RuntimeException> copyTo( final PrimitiveLongSet set )
+        {
+            return new PrimitiveLongVisitor<RuntimeException>()
+            {
+                @Override
+                public boolean visited( long value )
+                {
+                    set.add( value );
+                    return false;
+                }
+            };
         }
     }
 }

@@ -25,13 +25,14 @@ import java.io.IOException;
 import java.util.AbstractCollection;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
@@ -51,7 +52,6 @@ import org.neo4j.kernel.impl.transaction.state.LazyIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
@@ -63,7 +63,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.INTERNAL;
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.RECOVERY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
@@ -79,8 +78,8 @@ public class IndexUpdatesValidatorTest
     private final PropertyStore propertyStore = mock( PropertyStore.class );
     private final PropertyLoader propertyLoader = mock( PropertyLoader.class );
 
-    private final Map<Long,NodeCommand> emptyNodeCommands = Collections.emptyMap();
-    private final Map<Long,List<PropertyCommand>> emptyPropCommands = Collections.emptyMap();
+    private final PrimitiveLongObjectMap<NodeCommand> emptyNodeCommands = Primitive.longObjectMap();
+    private final PrimitiveLongObjectMap<List<PropertyCommand>> emptyPropCommands = Primitive.longObjectMap();
 
     @Test
     public void shouldValidateIndexesOnNodeCommands() throws IOException
@@ -102,7 +101,7 @@ public class IndexUpdatesValidatorTest
         assertNotSame( updates, ValidatedIndexUpdates.NONE );
 
         LazyIndexUpdates expectedUpdates = new LazyIndexUpdates( nodeStore, propertyStore, propertyLoader,
-                groupedById( command ), emptyPropCommands );
+                emptyPropCommands, groupedById( command ) );
 
         verify( indexingService ).validate( eq( expectedUpdates ) );
     }
@@ -127,7 +126,7 @@ public class IndexUpdatesValidatorTest
         assertNotSame( updates, ValidatedIndexUpdates.NONE );
 
         LazyIndexUpdates expectedUpdates = new LazyIndexUpdates( nodeStore, propertyStore, propertyLoader,
-                emptyNodeCommands, groupedByNodeId( command ) );
+                groupedByNodeId( command ), emptyNodeCommands );
 
         verify( indexingService ).validate( expectedUpdates );
     }
@@ -182,6 +181,8 @@ public class IndexUpdatesValidatorTest
         long nodeId2 = 4242;
         long nodeId3 = 424242;
 
+        PrimitiveLongSet expectedRecoveredNodeIds = PrimitiveLongCollections.setOf( nodeId1, nodeId2, nodeId3 );
+
         IndexUpdatesValidator validator = newIndexUpdatesValidatorWithMockedDependencies();
 
         TransactionRepresentation tx = new PhysicalTransactionRepresentation( asList(
@@ -196,7 +197,7 @@ public class IndexUpdatesValidatorTest
         updates.flush();
 
         // Then
-        verify( indexingService ).addRecoveredNodeIds( asSet( nodeId1, nodeId2, nodeId3 ) );
+        verify( indexingService ).addRecoveredNodeIds( expectedRecoveredNodeIds );
     }
 
     @Test
@@ -210,7 +211,7 @@ public class IndexUpdatesValidatorTest
         NodePropertyCommands commands = createNodeWithLabelAndPropertyCommands( node, label, property );
         TransactionRepresentation tx = new PhysicalTransactionRepresentation( commands );
         LazyIndexUpdates updates = new LazyIndexUpdates( nodeStore, propertyStore, propertyLoader,
-                commands.node(), commands.property() );
+                commands.property(), commands.node() );
 
         IndexCapacityExceededException error = new IndexCapacityExceededException( 100, 100 );
         doThrow( new UnderlyingStorageException( error ) ).when( indexingService ).validate( updates );
@@ -256,8 +257,8 @@ public class IndexUpdatesValidatorTest
         assertNotSame( ValidatedIndexUpdates.NONE, validatedUpdates );
 
         LazyIndexUpdates expectedUpdates = new LazyIndexUpdates( nodeStore, propertyStore, propertyLoader,
-                groupedById( createNode1, createNode2 ),
-                groupedByNodeId( addProperty1ToNode1, addProperty2ToNode1, addProperty1ToNode2 ) );
+                groupedByNodeId( addProperty1ToNode1, addProperty2ToNode1, addProperty1ToNode2 ),
+                groupedById( createNode1, createNode2 ) );
 
         verify( indexingService ).validate( expectedUpdates );
     }
@@ -281,7 +282,7 @@ public class IndexUpdatesValidatorTest
         assertNotSame( ValidatedIndexUpdates.NONE, validatedUpdates );
 
         LazyIndexUpdates expectedUpdates = new LazyIndexUpdates( nodeStore, propertyStore, propertyLoader,
-                groupedById( deleteNode1, deleteNode2 ), emptyPropCommands );
+                emptyPropCommands, groupedById( deleteNode1, deleteNode2 ) );
 
         verify( indexingService ).validate( expectedUpdates );
     }
@@ -345,9 +346,9 @@ public class IndexUpdatesValidatorTest
         return new PropertyCommand().init( before, after );
     }
 
-    private static Map<Long,NodeCommand> groupedById( NodeCommand... commands )
+    private static PrimitiveLongObjectMap<NodeCommand> groupedById( NodeCommand... commands )
     {
-        Map<Long,NodeCommand> result = new HashMap<>( commands.length, 1 );
+        PrimitiveLongObjectMap<NodeCommand> result = Primitive.longObjectMap( commands.length );
         for ( NodeCommand command : commands )
         {
             result.put( command.getAfter().getId(), command );
@@ -355,9 +356,9 @@ public class IndexUpdatesValidatorTest
         return result;
     }
 
-    private static Map<Long,List<PropertyCommand>> groupedByNodeId( PropertyCommand... commands )
+    private static PrimitiveLongObjectMap<List<PropertyCommand>> groupedByNodeId( PropertyCommand... commands )
     {
-        Map<Long,List<PropertyCommand>> result = new HashMap<>( commands.length, 1 );
+        PrimitiveLongObjectMap<List<PropertyCommand>> result = Primitive.longObjectMap( commands.length );
         for ( PropertyCommand command : commands )
         {
             List<PropertyCommand> propCommands = result.get( command.getNodeId() );
@@ -393,14 +394,14 @@ public class IndexUpdatesValidatorTest
             return IteratorUtil.count( iterator() );
         }
 
-        Map<Long,List<PropertyCommand>> property()
+        PrimitiveLongObjectMap<List<PropertyCommand>> property()
         {
-            return singletonMap( propCommand.getNodeId(), asList( propCommand ) );
+            return groupedByNodeId( propCommand );
         }
 
-        Map<Long,NodeCommand> node()
+        PrimitiveLongObjectMap<NodeCommand> node()
         {
-            return singletonMap( nodeCommand.getAfter().getId(), nodeCommand );
+            return groupedById( nodeCommand );
         }
     }
 }

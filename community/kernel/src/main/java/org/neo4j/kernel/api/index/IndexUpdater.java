@@ -20,8 +20,8 @@
 package org.neo4j.kernel.api.index;
 
 import java.io.IOException;
-import java.util.Collection;
 
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 
 public interface IndexUpdater extends AutoCloseable
@@ -34,5 +34,5 @@ public interface IndexUpdater extends AutoCloseable
     @Override
     void close() throws IOException, IndexEntryConflictException, IndexCapacityExceededException;
 
-    void remove( Collection<Long> nodeIds ) throws IOException;
+    void remove( PrimitiveLongSet nodeIds ) throws IOException;
 }

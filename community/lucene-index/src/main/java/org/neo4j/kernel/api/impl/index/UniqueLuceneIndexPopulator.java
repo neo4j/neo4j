@@ -27,10 +27,10 @@ import org.apache.lucene.search.TopDocs;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -156,7 +156,7 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
             }
 
             @Override
-            public void remove( Collection<Long> nodeIds )
+            public void remove( PrimitiveLongSet nodeIds )
             {
                 throw new UnsupportedOperationException( "should not remove() from populating index" );
             }

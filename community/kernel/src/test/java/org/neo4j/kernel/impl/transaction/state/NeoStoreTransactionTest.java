@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -116,7 +117,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -936,7 +936,7 @@ public class NeoStoreTransactionTest
         // WHEN
         // -- later recovering that tx, there should be only one update
         commit( recoverer.getAsRecovered(), TransactionApplicationMode.RECOVERY );
-        verify( mockIndexing, times( 1 ) ).addRecoveredNodeIds( eq( asSet( nodeId ) ) );
+        verify( mockIndexing, times( 1 ) ).addRecoveredNodeIds( PrimitiveLongCollections.setOf( nodeId ) );
         verify( mockIndexing, never() ).validate( any( Iterable.class ) );
     }
 

@@ -30,6 +30,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.BiConsumer;
 import org.neo4j.helpers.Pair;
@@ -94,7 +97,7 @@ public class IndexingService extends LifecycleAdapter
     private final StringLogger logger;
     private final TokenNameLookup tokenNameLookup;
     private final Monitor monitor;
-    private final Set<Long> recoveredNodeIds = new HashSet<>();
+    private final PrimitiveLongSet recoveredNodeIds = Primitive.longSet( 20 );
 
     enum State
     {
@@ -106,7 +109,7 @@ public class IndexingService extends LifecycleAdapter
 
     public interface Monitor
     {
-        void applyingRecoveredData( Set<Long> recoveredNodeIds );
+        void applyingRecoveredData( PrimitiveLongSet recoveredNodeIds );
 
         void appliedRecoveredData( Iterable<NodePropertyUpdate> updates );
 
@@ -123,7 +126,7 @@ public class IndexingService extends LifecycleAdapter
         }
 
         @Override
-        public void applyingRecoveredData( Set<Long> recoveredNodeIds )
+        public void applyingRecoveredData( PrimitiveLongSet recoveredNodeIds )
         {   // Do nothing
         }
 
@@ -382,7 +385,7 @@ public class IndexingService extends LifecycleAdapter
         indexMapRef.setIndexMap( indexMap );
     }
 
-    public void addRecoveredNodeIds( Set<Long> nodeIds )
+    public void addRecoveredNodeIds( PrimitiveLongSet nodeIds )
     {
         if ( state != State.NOT_STARTED )
         {
@@ -390,7 +393,7 @@ public class IndexingService extends LifecycleAdapter
                     "Can't queue recovered node ids " + nodeIds + " while indexing service is " + state );
         }
 
-        recoveredNodeIds.addAll( nodeIds );
+        recoveredNodeIds.addAll( nodeIds.iterator() );
     }
 
     public ValidatedIndexUpdates validate( Iterable<NodePropertyUpdate> updates )
@@ -529,11 +532,7 @@ public class IndexingService extends LifecycleAdapter
                 }
             }
 
-            List<NodePropertyUpdate> recoveredUpdates = new ArrayList<>();
-            for ( long nodeId : recoveredNodeIds )
-            {
-                Iterables.addAll( recoveredUpdates, storeView.nodeAsUpdates( nodeId ) );
-            }
+            List<NodePropertyUpdate> recoveredUpdates = readRecoveredUpdatesFromStore();
 
             try ( ValidatedIndexUpdates validatedUpdates = validate( recoveredUpdates ) )
             {
@@ -546,6 +545,23 @@ public class IndexingService extends LifecycleAdapter
             }
         }
         recoveredNodeIds.clear();
+    }
+
+    private List<NodePropertyUpdate> readRecoveredUpdatesFromStore()
+    {
+        final List<NodePropertyUpdate> recoveredUpdates = new ArrayList<>();
+
+        recoveredNodeIds.visitKeys( new PrimitiveLongVisitor<RuntimeException>()
+        {
+            @Override
+            public boolean visited( long nodeId )
+            {
+                Iterables.addAll( recoveredUpdates, storeView.nodeAsUpdates( nodeId ) );
+                return false;
+            }
+        } );
+
+        return recoveredUpdates;
     }
 
     private static Map<IndexDescriptor,List<NodePropertyUpdate>> groupUpdatesByIndexDescriptor(

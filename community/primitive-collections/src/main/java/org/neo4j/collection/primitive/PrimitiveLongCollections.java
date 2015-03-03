@@ -21,6 +21,7 @@ package org.neo4j.collection.primitive;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 import org.neo4j.collection.primitive.base.Empty;
 import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
@@ -697,6 +698,17 @@ public class PrimitiveLongCollections
         return Empty.EMPTY_PRIMITIVE_LONG_SET;
     }
 
+    public static PrimitiveLongSet setOf( long... values )
+    {
+        Objects.requireNonNull( values, "Values array is null" );
+        PrimitiveLongSet set = Primitive.longSet( values.length );
+        for ( long value : values )
+        {
+            set.add( value );
+        }
+        return set;
+    }
+
     public static <T> Iterator<T> map( final FunctionFromPrimitiveLong<T> mapFunction,
             final PrimitiveLongIterator source )
     {
@@ -732,5 +744,11 @@ public class PrimitiveLongCollections
                 return next( value );
             }
         };
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public static <T> PrimitiveLongObjectMap<T> emptyObjectMap()
+    {
+        return Empty.EMPTY_PRIMITIVE_LONG_OBJECT_MAP;
     }
 }
