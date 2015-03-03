@@ -166,7 +166,8 @@ public class IdGeneratorImpl implements IdGenerator
     {
         if ( id > max || id < 0  )
         {
-            throw new UnderlyingStorageException( "Id capacity exceeded" );
+            throw new UnderlyingStorageException(
+                    "Id capacity exceeded: " + id + " is not within bounds [0; " + max + "] for " + fileName );
         }
     }
     
