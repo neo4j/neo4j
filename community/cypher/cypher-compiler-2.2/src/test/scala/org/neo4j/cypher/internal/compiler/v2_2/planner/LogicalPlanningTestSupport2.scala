@@ -41,7 +41,7 @@ import scala.language.implicitConversions
 
 case class SemanticPlan(plan: LogicalPlan, semanticTable: SemanticTable)
 
-trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport {
+trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
   self: CypherFunSuite =>
 
   var kernelMonitors = new org.neo4j.kernel.monitoring.Monitors
@@ -140,7 +140,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryString, cleanedStatement, semanticState)
       val postRewriteSemanticState = semanticChecker.check(queryString, rewrittenStatement)
       val semanticTable = SemanticTable(types = postRewriteSemanticState.typeTable)
-      Planner.rewriteStatement(rewrittenStatement, postRewriteSemanticState.scopeTree, semanticTable, postConditions, mock[AstRewritingMonitor]) match {
+      CostBasedPlanner.rewriteStatement(rewrittenStatement, postRewriteSemanticState.scopeTree, semanticTable, postConditions, mock[AstRewritingMonitor]) match {
         case (ast: Query, newTable) =>
           tokenResolver.resolve(ast)(newTable, planContext)
           val unionQuery = ast.asUnionQuery
@@ -157,7 +157,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       val semanticState = semanticChecker.check(queryString, parsedStatement)
       val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryString, parsedStatement, semanticState)
 
-      Planner.rewriteStatement(rewrittenStatement, semanticState.scopeTree, semanticTable, postConditions, mock[AstRewritingMonitor]) match {
+      CostBasedPlanner.rewriteStatement(rewrittenStatement, semanticState.scopeTree, semanticTable, postConditions, mock[AstRewritingMonitor]) match {
         case (ast: Query, newTable) =>
           tokenResolver.resolve(ast)(newTable, planContext)
           val unionQuery = ast.asUnionQuery
@@ -194,8 +194,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
   class fromDbStructure(dbStructure: Visitable[DbStructureVisitor])
     extends DelegatingLogicalPlanningConfiguration(DbStructureLogicalPlanningConfiguration(dbStructure))
-
-  implicit def idName(name: String): IdName = IdName(name)
 
   implicit def lazyLabel(label: String)(implicit plan: SemanticPlan): LazyLabel =
     LazyLabel(LabelName(label)(_))(plan.semanticTable)

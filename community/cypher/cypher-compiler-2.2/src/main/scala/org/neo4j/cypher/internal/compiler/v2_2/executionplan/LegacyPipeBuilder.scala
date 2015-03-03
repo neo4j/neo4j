@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders.prepare.Ke
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.compiler.v2_2.{SyntaxException, Rule, Monitors, PreparedQuery}
+import org.neo4j.cypher.internal.compiler.v2_2.{SyntaxException, RulePlanner, Monitors, PreparedQuery}
 
 trait ExecutionPlanInProgressRewriter {
   def rewrite(in: ExecutionPlanInProgress)(implicit context: PipeMonitor): ExecutionPlanInProgress
@@ -65,15 +65,15 @@ class LegacyPipeBuilder(monitors: Monitors, eagernessRewriter: Pipe => Pipe = ad
   private val unionBuilder = new UnionBuilder(this)
 
   private def buildUnionQuery(union: Union, context: PlanContext)(implicit pipeMonitor: PipeMonitor): PipeInfo =
-    unionBuilder.buildUnionQuery(union, context, Rule)
+    unionBuilder.buildUnionQuery(union, context, RulePlanner)
 
-  private def buildIndexQuery(op: IndexOperation): PipeInfo = PipeInfo(new IndexOperationPipe(op), updating = true, plannerUsed = Rule )
+  private def buildIndexQuery(op: IndexOperation): PipeInfo = PipeInfo(new IndexOperationPipe(op), updating = true, plannerUsed = RulePlanner)
 
   private def buildConstraintQuery(op: UniqueConstraintOperation): PipeInfo = {
     val label = KeyToken.Unresolved(op.label, TokenType.Label)
     val propertyKey = KeyToken.Unresolved(op.propertyKey, TokenType.PropertyKey)
 
-    PipeInfo(new ConstraintOperationPipe(op, label, propertyKey), updating = true, plannerUsed = Rule )
+    PipeInfo(new ConstraintOperationPipe(op, label, propertyKey), updating = true, plannerUsed = RulePlanner)
   }
 
   def buildQuery(inputQuery: Query, context: PlanContext)(implicit pipeMonitor:PipeMonitor): PipeInfo = {
@@ -97,7 +97,7 @@ class LegacyPipeBuilder(monitors: Monitors, eagernessRewriter: Pipe => Pipe = ad
 
     val pipe = eagernessRewriter(planInProgress.pipe)
 
-    PipeInfo(pipe, planInProgress.isUpdating, plannerUsed = Rule )
+    PipeInfo(pipe, planInProgress.isUpdating, plannerUsed = RulePlanner )
   }
 
   private def produceAndThrowException(plan: ExecutionPlanInProgress) {

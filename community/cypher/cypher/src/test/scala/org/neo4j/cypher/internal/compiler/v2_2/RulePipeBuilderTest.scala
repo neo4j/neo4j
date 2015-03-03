@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.mutation.{CreateNode, DeletePrope
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.SimpleMetricsFactory
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{Planner, PlanningMonitor, SemanticTable}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{CostBasedPlannerFactory, CostBasedPlanner$, PlanningMonitor, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 import org.neo4j.cypher.internal.spi.v2_2.TransactionBoundQueryContext
@@ -50,7 +50,7 @@ class RulePipeBuilderTest
   with Timed
   with MockitoSugar {
   val ast = mock[Statement]
-  val planner = Planner(mock[Monitors], SimpleMetricsFactory, mock[PlanningMonitor], Clock.SYSTEM_CLOCK, acceptQuery = (_) => true)
+  val planner = CostBasedPlannerFactory(mock[Monitors], SimpleMetricsFactory, mock[PlanningMonitor], Clock.SYSTEM_CLOCK)
 
   class FakePreparedQuery(q: AbstractQuery)
     extends PreparedQuery(mock[Statement], "q", Map.empty)(SemanticTable(), Set.empty, Scope(Map.empty, Seq.empty)) {

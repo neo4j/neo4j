@@ -21,16 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.pickBestPlan
 
-class CompositeQueryGraphSolver(solver1: TentativeQueryGraphSolver, solver2: TentativeQueryGraphSolver)
-  extends TentativeQueryGraphSolver {
-
-  // NOTE: we assume that the PlanTable type is the same between the 2 solvers
-  def emptyPlanTable: PlanTable = solver1.emptyPlanTable
-
-  def tryPlan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]) = {
-    val availableSolutions = solver1.tryPlan(queryGraph).toSeq ++ solver2.tryPlan(queryGraph)
-    pickBestPlan(availableSolutions.iterator)
-  }
+trait ExhaustiveTableSolver {
+  def apply(qg: QueryGraph, goal: Set[Solvable], table: Set[Solvable] => Option[LogicalPlan]): Iterator[LogicalPlan]
 }

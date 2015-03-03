@@ -19,18 +19,28 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.pickBestPlan
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{SimplePatternLength, PatternRelationship, IdName}
+import org.neo4j.graphdb.Direction
 
-class CompositeQueryGraphSolver(solver1: TentativeQueryGraphSolver, solver2: TentativeQueryGraphSolver)
-  extends TentativeQueryGraphSolver {
+class SolvablesTest extends CypherFunSuite {
 
-  // NOTE: we assume that the PlanTable type is the same between the 2 solvers
-  def emptyPlanTable: PlanTable = solver1.emptyPlanTable
+  val node1Name = IdName("a")
+  val node2Name = IdName("b")
 
-  def tryPlan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]) = {
-    val availableSolutions = solver1.tryPlan(queryGraph).toSeq ++ solver2.tryPlan(queryGraph)
-    pickBestPlan(availableSolutions.iterator)
+  val relName = IdName("rel")
+  val rel = PatternRelationship(relName, (node1Name, node2Name), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+
+  test("should compute solvables from empty query graph") {
+    val qg = QueryGraph.empty
+
+    Solvables(qg) should equal(Set.empty)
+  }
+
+  test("should compute solvables from query graph with pattern relationships") {
+    val qg = QueryGraph.empty.addPatternNodes(node1Name, node2Name).addPatternRelationship(rel)
+
+    Solvables(qg) should equal(Set(SolvableRelationship(rel)))
   }
 }

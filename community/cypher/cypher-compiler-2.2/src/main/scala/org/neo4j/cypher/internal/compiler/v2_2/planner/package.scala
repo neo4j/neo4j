@@ -17,21 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.ast
+package org.neo4j.cypher.internal.compiler.v2_2
 
-import org.neo4j.cypher.internal.commons.CypherTestSupport
-import org.neo4j.cypher.internal.compiler.v2_2.{DummyPosition, InputPosition}
-
-trait AstConstructionTestSupport extends CypherTestSupport {
-  protected val pos = DummyPosition(0)
-
-  implicit def withPos[T](expr: InputPosition => T): T = expr(pos)
-
-  def ident(name: String): Identifier = Identifier(name)(pos)
-
-  def propEquality(identifier: String, propKey: String, intValue: Int) = {
-    val prop: Expression = Property(ident(identifier), PropertyKeyName(propKey)(pos))(pos)
-    val literal: Expression = SignedDecimalIntegerLiteral(intValue.toString)(pos)
-    Equals(prop, literal)(pos)
-  }
+package object planner {
+  type QueryAcceptor = UnionQuery => Boolean
 }

@@ -25,7 +25,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, Pa
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, QueryGraph, Selections}
 import org.neo4j.graphdb.Direction
 
-class QueryGraphConnectedComponentsTest extends CypherFunSuite with AstConstructionTestSupport with LogicalPlanningTestSupport {
+class QueryGraphConnectedComponentsTest
+  extends CypherFunSuite with AstConstructionTestSupport with LogicalPlanningTestSupport {
+
   private val labelA = LabelName("A")(pos)
   private val prop = ident("prop")
   private val propKeyName = PropertyKeyName(prop.name)(pos)
@@ -38,9 +40,6 @@ class QueryGraphConnectedComponentsTest extends CypherFunSuite with AstConstruct
   private val R3 = PatternRelationship(IdName("r7"), (C, X), Direction.OUTGOING, Seq.empty, SimplePatternLength)
   private val identA = ident(A.name)
   private val identB = ident(B.name)
-
-
-  import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.ExhaustiveQueryGraphSolver._
 
   test("empty query graph returns no connected querygraphs") {
     QueryGraph().connectedComponents shouldBe empty
@@ -163,7 +162,7 @@ class QueryGraphConnectedComponentsTest extends CypherFunSuite with AstConstruct
     ))
   }
 
-  test("two disconnected patternrelationships with hints on one side") {
+  test("two disconnected pattern relationships with hints on one side") {
     val graph = QueryGraph(patternNodes = Set(A, B), hints = Set(UsingScanHint(identA, labelA)(pos)))
 
     graph.connectedComponents should equal(Seq(
@@ -190,6 +189,23 @@ class QueryGraphConnectedComponentsTest extends CypherFunSuite with AstConstruct
       patternNodes = Set(A, B),
       patternRelationships = Set(R2),
       shortestPathPatterns = Set(shortestPath))
+
+    graph.connectedComponents should equal(Seq(graph))
+  }
+
+  test("two disconnected pattern relationships with arguments") {
+    val graph = QueryGraph(patternNodes = Set(A, B), argumentIds = Set(C))
+
+    graph.connectedComponents should equal(Seq(
+      QueryGraph(patternNodes = Set(A), argumentIds = Set(C)),
+      QueryGraph(patternNodes = Set(B), argumentIds = Set(C))
+    ))
+  }
+
+  test("a pattern node with a hint") {
+    val graph = QueryGraph.empty.
+      addPatternNodes("a").
+      addHints(Set(NodeByIdentifiedIndex(ident("a"), ident("index"), ident("key"), mock[Expression])(pos)))
 
     graph.connectedComponents should equal(Seq(graph))
   }

@@ -19,204 +19,201 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Hint
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.ExhaustiveQueryGraphSolver._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{LogicalPlan, _}
+import org.neo4j.cypher.internal.compiler.v2_2.InternalException
+import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.ExhaustiveQueryGraphSolver.MAX_SEARCH_DEPTH
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.solveOptionalMatches.OptionalSolver
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.{applyOptional, outerHashJoin, pickBestPlan}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{CantHandleQueryException, QueryGraph, Selections}
 
 import scala.annotation.tailrec
-import scala.collection.mutable
 
-case class ExhaustiveQueryGraphSolver(leafPlanTableGenerator: PlanTableGenerator,
-                                      planProducers: Seq[PlanProducer],
-                                      bestPlanFinder: CandidateSelector,
-                                      config: PlanningStrategyConfiguration,
-                                      optionalSolvers: Seq[OptionalSolver])
+
+/*
+ * This planner is based on the paper "Iterative Dynamic Programming: A New Class of Query Optimization Algorithms"
+ * written by Donald Kossmann and Konrad Stocker
+ *
+ * Line comments correspond to the lines in the pseudo-code in that paper for the IDP1 algorithm.
+ */
+case class ExhaustiveQueryGraphSolver(leafPlanFinder: LogicalLeafPlan.Finder = leafPlanOptions,
+                                      bestPlanFinder: CandidateSelector = pickBestPlan,
+                                      config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default,
+                                      solvers: Seq[ExhaustiveTableSolver] = Seq(joinTableSolver, expandTableSolver),
+                                      optionalSolvers: Seq[OptionalSolver] = Seq(applyOptional, outerHashJoin))
   extends QueryGraphSolver with PatternExpressionSolving {
 
-  def emptyPlanTable: PlanTable = ExhaustivePlanTable.empty
+  // TODO: For selection, for now
+  override def emptyPlanTable: PlanTable = GreedyPlanTable.empty
 
   def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = {
-    val cache = initiateCacheWithLeafPlans(queryGraph, leafPlan)
-    val plans = queryGraph.connectedComponents.map { qg =>
-      (1 to qg.size) foreach { x =>
-        qg.combinations(x).foreach {
-          subQG =>
-            val plans = planProducers.flatMap(_(subQG, cache)).map(config.applySelections(_, subQG))
-            val bestPlan = bestPlanFinder(plans)
-            bestPlan.foreach(p => cache + p)
-        }
-      }
+    implicit val kitFactory = kitFactoryWithShortestPathSupport(config.kitInContext)
+    val components = queryGraph.connectedComponents
+    val plans = if (components.isEmpty) planEmptyComponent(queryGraph) else planComponents(components)
 
-      cache.getOrElse(qg, throw new CantHandleQueryException)
-    }
-
-    val resultPlan = plans.reduceRightOption[LogicalPlan] { case (p, acc) =>
-      val result = config.applySelections(planCartesianProduct(p, acc), queryGraph)
-      cache + result
-      result
-    }
-
-    val plan = resultPlan.getOrElse(cache.getOrElse(queryGraph,
-      if (queryGraph.argumentIds.isEmpty)
-        planSingleRow()
-      else
-        planQueryArgumentRow(queryGraph)
-    ))
-
-    val optionalQGs: Seq[QueryGraph] = findQGsToSolve(plan, cache, queryGraph.optionalMatches)
-    val result = optionalQGs.foldLeft(plan) {
-      case (lhs: LogicalPlan, optionalQg: QueryGraph) =>
-        val plans = optionalSolvers.flatMap(_.apply(optionalQg, lhs))
-        assert(plans.map(_.solved).distinct.size == 1) // All plans are solving the same query
-        bestPlanFinder(plans).get
-    }
+    implicit val kit = kitFactory(queryGraph)
+    val plansWithRemainingOptionalMatches = plans.map { (plan: LogicalPlan) => (plan, queryGraph.optionalMatches) }
+    val result = connectComponents(plansWithRemainingOptionalMatches)
     result
   }
 
-  private def initiateCacheWithLeafPlans(queryGraph: QueryGraph, leafPlan: Option[LogicalPlan])
-                                        (implicit context: LogicalPlanningContext) =
-    leafPlanTableGenerator.apply(queryGraph, leafPlan).plans.foldLeft(context.strategy.emptyPlanTable)(_ + _)
-
-  private def findQGsToSolve(plan: LogicalPlan, table: PlanTable, graphs: Seq[QueryGraph]): Seq[QueryGraph] = {
-    @tailrec
-    def inner(in: Seq[QueryGraph], out: Seq[QueryGraph]): Seq[QueryGraph] = in match {
-      case hd :: tl if isSolved(table, hd)  => inner(tl, out)
-      case hd :: tl if applicable(plan, hd) => inner(tl, out :+ hd)
-      case _                                => out
-    }
-
-    inner(graphs, Seq.empty)
+  // TODO: Get rid off
+  private def kitFactoryWithShortestPathSupport(kitFactory: QueryGraph => PlanningStrategyKit) = (qg: QueryGraph) => {
+    val oldKit = kitFactory(qg)
+    oldKit.copy(
+      select = { (plan: LogicalPlan) =>
+        qg.shortestPathPatterns.foldLeft(oldKit.select(plan)) { (plan, sp) =>
+          if (sp.isFindableFrom(plan.availableSymbols))
+            oldKit.select(planShortestPaths(plan, sp))
+          else
+            plan
+        }
+      }
+    )
   }
 
-  private def isSolved(table: PlanTable, optionalQG: QueryGraph) =
-    table.plans.exists(_.solved.lastQueryGraph.optionalMatches.contains(optionalQG))
+  // TODO: Clean up
+  private def connectComponents(plans: Seq[(LogicalPlan, Seq[QueryGraph])])(implicit context: LogicalPlanningContext, kit: PlanningStrategyKit): LogicalPlan = {
+    @tailrec
+    def recurse(plans: Seq[(LogicalPlan, Seq[QueryGraph])]): LogicalPlan = {
+      if (plans.size == 1) {
+        val (resultPlan, leftOvers) = applyApplicableOptionalMatches(plans.head)
+        if (leftOvers.nonEmpty)
+          throw new InternalException(s"Failed to plan all optional matches:\n$leftOvers")
+        resultPlan
+      } else {
+        val candidates = plans.map(applyApplicableOptionalMatches)
+        val cartesianProducts: Map[LogicalPlan, (Set[(LogicalPlan, Seq[QueryGraph])], Seq[QueryGraph])] = (for (
+            lhs @ (left, leftRemaining) <- candidates.iterator;
+            rhs @ (right, rightRemaining) <- candidates.iterator if left ne right;
+            remaining = if (leftRemaining.size < rightRemaining.size) leftRemaining else rightRemaining;
+            oldPlans = Set(lhs, rhs);
+            newPlan = kit.select(planCartesianProduct(left, right))
+          )
+          yield newPlan ->(oldPlans, remaining)
+        ).toMap
+        val bestCartesian = bestPlanFinder(cartesianProducts.keys.iterator).get
+        val (oldPlans, remaining) = cartesianProducts(bestCartesian)
+        val newPlans = plans.filterNot(oldPlans.contains) :+ (bestCartesian -> remaining)
+        recurse(newPlans)
+      }
+    }
 
-  private def applicable(outerPlan: LogicalPlan, optionalQG: QueryGraph) =
-    optionalQG.argumentIds.subsetOf(outerPlan.availableSymbols)
+    @tailrec
+    def applyApplicableOptionalMatches(todo: (LogicalPlan, Seq[QueryGraph])): (/* new plan*/ LogicalPlan, /* applied */ Seq[QueryGraph]) = {
+      todo match {
+        case (plan, allRemaining @ Seq(nextOptional, nextRemaining@_*)) => withOptionalMatch(plan, nextOptional) match {
+          case Some(newPlan) => applyApplicableOptionalMatches(newPlan, nextRemaining)
+          case None          => (plan, allRemaining)
+        }
+
+        case done =>
+          done
+      }
+    }
+
+    def withOptionalMatch(plan: LogicalPlan, optionalMatch: QueryGraph): Option[LogicalPlan] =
+      if ((optionalMatch.argumentIds -- plan.availableSymbols).isEmpty) {
+        val candidates = config.optionalSolvers.flatMap { solver => solver(optionalMatch, plan) }
+        val best = bestPlanFinder(candidates.iterator)
+        best
+      } else {
+        None
+      }
+
+    recurse(plans)
+  }
+
+  private def planComponents(components: Seq[QueryGraph])(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan], kitFactory: (QueryGraph) => PlanningStrategyKit): Seq[LogicalPlan] =
+    components.map { qg => planComponent(qg, kitFactory(qg)) }
+
+  private def planEmptyComponent(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan], kitFactory: (QueryGraph) => PlanningStrategyKit): Seq[LogicalPlan] = {
+    val plan = if (queryGraph.argumentIds.isEmpty) planSingleRow() else planQueryArgumentRow(queryGraph)
+    Seq(kitFactory(queryGraph).select(plan))
+  }
+
+  private def planComponent(initialQg: QueryGraph, kit: PlanningStrategyKit)(implicit context: LogicalPlanningContext, leafPlanWeHopeToGetAwayWithIgnoring: Option[LogicalPlan]): LogicalPlan = {
+    // TODO: Investigate dropping leafPlanWeHopeToGetAwayWithIgnoring argument
+    val leaves = leafPlanFinder(config, initialQg)
+    val sharedPatterns = leaves.map(_.solved.graph.patternRelationships).reduceOption(_ intersect _).getOrElse(Set.empty)
+    val qg = initialQg.withoutPatternRelationships(sharedPatterns)
+
+    if (qg.patternRelationships.size > 0) {
+      // line 1-4
+      val table = initTable(qg, kit, leaves)
+
+      val initialToDo = Solvables(qg)
+      val solutionGenerator = newSolutionGenerator(qg, kit, table)
+      solvePatterns(qg, initialToDo, kit, table, solutionGenerator)
+
+      // TODO: Not exactly pretty
+      table.head
+    } else {
+      val solutionPlans = leaves.filter(plan => (qg.coveredIds -- plan.availableSymbols).isEmpty)
+      bestPlanFinder(solutionPlans.iterator).getOrElse(throw new InternalException("Found no leaf plan for connected component.  This must not happen."))
+    }
+  }
+
+  @tailrec
+  private def solvePatterns(qg: QueryGraph, toDo: Set[Solvable], kit: PlanningStrategyKit, table: ExhaustivePlanTable,
+                            solutionGenerator: Set[Solvable] => Iterator[LogicalPlan])
+                           (implicit context: LogicalPlanningContext): Unit = {
+    val size = toDo.size
+    if (size > 1) {
+      // line 7-16
+      val k = Math.min(size, MAX_SEARCH_DEPTH) // TODO: Inject as parameter
+      for (i <- 2 to k;
+           goal <- toDo.subsets(i) if !table.contains(goal); // If we already have an optimal plan, no need to replan
+           candidates = solutionGenerator(goal);
+           best <- bestPlanFinder(candidates)) {
+        table.put(goal, best)
+      }
+
+      // line 17
+      val blockCandidates: Map[LogicalPlan, Set[Solvable]] = table.plansOfSize(k).map(_.swap).toMap
+      val bestBlock = bestPlanFinder(blockCandidates.keys.iterator).getOrElse(throw new InternalException("Did not find a single solution for a block"))
+      val bestSolvables = blockCandidates(bestBlock)
+
+      // TODO: Test this
+      // line 18 - 21
+      val blockSolved = SolvableBlock(bestSolvables.flatMap(_.solvables))
+      table.put(Set(blockSolved), bestBlock)
+      val newToDo = toDo -- bestSolvables + blockSolved
+      bestSolvables.subsets.foreach(table.remove)
+      solvePatterns(qg, newToDo, kit, table, solutionGenerator)
+    }
+  }
+
+  def initTable(qg: QueryGraph, kit: PlanningStrategyKit, leaves: Set[LogicalPlan])(implicit context: LogicalPlanningContext): ExhaustivePlanTable = {
+    val table = new ExhaustivePlanTable
+    qg.patternRelationships.foreach { pattern =>
+      val accessPlans = planSinglePattern(qg, pattern, leaves.iterator).map(kit.select)
+      val bestAccessor = bestPlanFinder(accessPlans).getOrElse(throw new InternalException("Found no access plan for a pattern relationship in a connected component. This must not happen."))
+      table.put(Set(SolvableRelationship(pattern)), bestAccessor)
+    }
+    table
+  }
+
+  private def planSinglePattern(qg: QueryGraph, pattern: PatternRelationship, leaves: Iterator[LogicalPlan]): Iterator[LogicalPlan] = {
+
+    import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.expandTableSolver.planSinglePatternSide
+
+    leaves.collect {
+      case plan =>
+        val (start, end) = pattern.nodes
+        val leftPlan = planSinglePatternSide(qg, pattern, plan, start)
+        val rightPlan = planSinglePatternSide(qg, pattern, plan, end)
+        leftPlan.toSet ++ rightPlan.toSet
+    }.flatten
+  }
+
+  private def newSolutionGenerator(qg: QueryGraph, kit: PlanningStrategyKit, table: ExhaustivePlanTable): (Set[Solvable]) => Iterator[LogicalPlan] = {
+    val solverFunctions = solvers.map { solver => (goal: Set[Solvable]) => solver(qg, goal, table)}
+    val solutionGenerator = (goal: Set[Solvable]) => solverFunctions.iterator.flatMap { solver => solver(goal).map(kit.select) }
+    solutionGenerator
+  }
 }
 
 object ExhaustiveQueryGraphSolver {
-
-  def withDefaults(leafPlanTableGenerator: PlanTableGenerator = LeafPlanTableGenerator(PlanningStrategyConfiguration.default),
-                   planProducers: Seq[PlanProducer] = Seq(expandOptions, joinOptions),
-                   bestPlanFinder: CandidateSelector = pickBestPlan,
-                   config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default,
-                   optionalSolvers: Seq[OptionalSolver] = Seq(applyOptional, outerHashJoin)) =
-    new ExhaustiveQueryGraphSolver(leafPlanTableGenerator, planProducers, bestPlanFinder, config, optionalSolvers)
-
-  type PlanProducer = ((QueryGraph, PlanTable) => Seq[LogicalPlan])
-
-  implicit class RichQueryGraph(inner: QueryGraph) {
-    /**
-     * Returns the connected patterns of this query graph where each connected pattern is represented by a QG.
-     * Does not include optional matches, shortest paths or predicates that have dependencies across multiple of the
-     * connected query graphs.
-     */
-    def connectedComponents: Seq[QueryGraph] = {
-      val visited = mutable.Set.empty[IdName]
-      inner.patternNodes.toSeq.collect {
-        case patternNode if !visited(patternNode) =>
-          val qg = connectedComponentFor(patternNode, visited)
-          val coveredIds = qg.coveredIds
-          val predicates = inner.selections.predicates.filter(_.dependencies.subsetOf(coveredIds))
-          val arguments = inner.argumentIds.filter(coveredIds)
-          val hints = inner.hints.filter(h => coveredIds.contains(IdName(h.identifier.name)))
-          val shortestPaths = inner.shortestPathPatterns.filter {
-            p => coveredIds.contains(p.rel.nodes._1) && coveredIds.contains(p.rel.nodes._2)
-          }
-          qg.
-            withSelections(Selections(predicates)).
-            withArgumentIds(arguments).
-            addHints(hints).
-            addShortestPaths(shortestPaths.toSeq: _*)
-      }
-    }
-
-    def --(other: QueryGraph): QueryGraph = {
-      val remainingRels: Set[PatternRelationship] = inner.patternRelationships -- other.patternRelationships
-      val hints = inner.hints -- other.hints
-      createSubQueryWithRels(remainingRels, hints)
-    }
-
-    def combinations(size: Int): Seq[QueryGraph] = if (size < 0 || size > inner.patternRelationships.size )
-      throw new IndexOutOfBoundsException(s"Expected $size to be in [0,${inner.patternRelationships.size}[")
-     else if (size == 0) {
-      val nonArgs = inner.
-        patternNodes.filterNot(inner.argumentIds).
-        map(createSubQueryWithNode(_, inner.argumentIds, inner.hints)).toSeq
-
-      val args: Option[QueryGraph] = if ((inner.argumentIds intersect inner.patternNodes).isEmpty)
-        None
-      else {
-        val filteredHints = inner.hints.filter(h => inner.argumentIds.contains(IdName(h.identifier.name)))
-
-        Some(QueryGraph(
-          patternNodes = inner.patternNodes.filter(inner.argumentIds),
-          argumentIds = inner.argumentIds,
-          selections = Selections.from(inner.selections.predicatesGiven(inner.argumentIds): _*),
-          hints = filteredHints
-        ))
-      }
-
-      nonArgs ++ args
-    } else {
-      inner.
-        patternRelationships.toSeq.combinations(size).
-        map(r => createSubQueryWithRels(r.toSet, inner.hints)).toSeq
-    }
-
-    private def connectedComponentFor(startNode: IdName, visited: mutable.Set[IdName]): QueryGraph = {
-      val queue = mutable.Queue(startNode)
-      var qg = QueryGraph.empty.withArgumentIds(inner.argumentIds)
-      while (queue.nonEmpty) {
-        val node = queue.dequeue()
-        qg = if (visited(node)) {
-          qg
-        } else {
-          visited += node
-
-          val patternRelationships = inner.patternRelationships.filter { rel =>
-            rel.coveredIds.contains(node) && !qg.patternRelationships.contains(rel)
-          }
-
-          queue.enqueue(patternRelationships.toSeq.map(_.otherSide(node)): _*)
-
-          qg
-            .addPatternNodes(node)
-            .addPatternRelationships(patternRelationships.toSeq)
-        }
-      }
-      qg
-    }
-
-    private def createSubQueryWithRels(rels: Set[PatternRelationship], hints: Set[Hint]) = {
-      val nodes = rels.map(r => Seq(r.nodes._1, r.nodes._2)).flatten.toSet
-      val filteredHints = hints.filter( h => nodes(IdName(h.identifier.name)))
-
-      val qg = QueryGraph(
-        patternNodes = nodes,
-        argumentIds = inner.argumentIds,
-        patternRelationships = rels,
-        hints = filteredHints
-      )
-
-      qg.
-        withSelections(selections = Selections.from(inner.selections.predicatesGiven(qg.coveredIds): _*))
-    }
-
-    private def createSubQueryWithNode(id: IdName, argumentIds: Set[IdName], hints: Set[Hint]) = {
-      val filteredHints = hints.filter(id.name == _.identifier.name)
-
-      QueryGraph(
-        patternNodes = Set(id),
-        argumentIds = argumentIds,
-        selections = Selections.from(inner.selections.predicatesGiven(Set(id)): _*),
-        hints = filteredHints
-      )
-    }
-  }
+  val MAX_SEARCH_DEPTH = 9
 }

@@ -20,18 +20,26 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{LogicalLeafPlan, LogicalPlan}
 
 case class LeafPlanTableGenerator(config: PlanningStrategyConfiguration) extends PlanTableGenerator {
   def apply(queryGraph: QueryGraph, leafPlan: Option[LogicalPlan])(implicit context: LogicalPlanningContext): PlanTable = {
+    val bestLeafPlans = leafPlanOptions(config, queryGraph)
+    val startTable: PlanTable = leafPlan.foldLeft(context.strategy.emptyPlanTable)(_ + _)
+    bestLeafPlans.foldLeft(startTable)(_ + _)
+  }
+}
+
+object leafPlanOptions extends LogicalLeafPlan.Finder {
+
+  def apply(config: PlanningStrategyConfiguration, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Set[LogicalPlan] = {
     val select = config.applySelections.asFunctionInContext
     val pickBest = config.pickBestCandidate.asFunctionInContext
     val projectAllEndpoints = config.projectAllEndpoints.asFunctionInContext
 
     val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph, projectAllEndpoints)
     val leafPlanCandidateListsWithSelections = leafPlanCandidateLists.map(_.map(select(_, queryGraph)))
-    val bestLeafPlans: Iterable[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(pickBest(_))
-    val startTable: PlanTable = leafPlan.foldLeft(context.strategy.emptyPlanTable)(_ + _)
-    bestLeafPlans.foldLeft(startTable)(_ + _)
+    val bestLeafPlans: Iterable[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(x => pickBest(x.iterator))
+    bestLeafPlans.toSet
   }
 }

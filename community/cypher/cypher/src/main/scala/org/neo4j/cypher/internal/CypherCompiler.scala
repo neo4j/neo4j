@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compatibility._
-import org.neo4j.cypher.internal.compiler.v2_2.{Rule, Cost, Conservative, PlannerName}
+import org.neo4j.cypher.internal.compiler.v2_2.{RulePlanner, CostPlanner, IDPPlanner, ConservativePlanner, PlannerName}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.Clock
@@ -55,15 +55,10 @@ class CypherCompiler(graph: GraphDatabaseService,
   private val compatibilityFor1_9 = CompatibilityFor1_9(graph, queryCacheSize, kernelMonitors)
   private val compatibilityFor2_0 = CompatibilityFor2_0(graph, queryCacheSize, kernelMonitors)
   private val compatibilityFor2_1 = CompatibilityFor2_1(graph, queryCacheSize, kernelMonitors, kernelAPI)
-  private val compatibilityFor2_2Rule =
-    CompatibilityFor2_2Rule(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK,
-      kernelMonitors, kernelAPI)
-  private val compatibilityFor2_2Cost =
-    CompatibilityFor2_2Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK,
-      kernelMonitors, kernelAPI, logger)
-  private val compatibilityFor2_2 =
-    CompatibilityFor2_2Conservative(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK,
-      kernelMonitors, kernelAPI, logger)
+  private val compatibilityFor2_2Rule = CompatibilityFor2_2Rule(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI)
+  private val compatibilityFor2_2Cost = CompatibilityFor2_2Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger)
+  private val compatibilityFor2_2IDP = CompatibilityFor2_2IDP(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger)
+  private val compatibilityFor2_2 = CompatibilityFor2_2Conservative(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger)
 
   @throws(classOf[SyntaxException])
   def preParseQuery(queryText: String): PreParsedQuery = {
@@ -74,19 +69,19 @@ class CypherCompiler(graph: GraphDatabaseService,
 
   @throws(classOf[SyntaxException])
   def parseQuery(preParsedQuery: PreParsedQuery): ParsedQuery = {
-    val executionMode = preParsedQuery.executionMode
     val version = preParsedQuery.version
     val planner = preParsedQuery.planner
     val statementAsText = preParsedQuery.statement
 
     (version, planner) match {
-      case (CypherVersion.v2_2, Conservative) => compatibilityFor2_2.produceParsedQuery(statementAsText)
-      case (CypherVersion.v2_2, Cost) => compatibilityFor2_2Cost.produceParsedQuery(statementAsText)
-      case (CypherVersion.v2_2, Rule) => compatibilityFor2_2Rule.produceParsedQuery(statementAsText)
-      case (CypherVersion.v2_2, _)    => compatibilityFor2_2.produceParsedQuery(statementAsText)
-      case (CypherVersion.v2_1, _)    => compatibilityFor2_1.parseQuery(statementAsText)
-      case (CypherVersion.v2_0, _)    => compatibilityFor2_0.parseQuery(statementAsText)
-      case (CypherVersion.v1_9, _)    => compatibilityFor1_9.parseQuery(statementAsText)
+      case (CypherVersion.v2_2, ConservativePlanner) => compatibilityFor2_2.produceParsedQuery(statementAsText)
+      case (CypherVersion.v2_2, CostPlanner)         => compatibilityFor2_2Cost.produceParsedQuery(statementAsText)
+      case (CypherVersion.v2_2, IDPPlanner)          => compatibilityFor2_2IDP.produceParsedQuery(statementAsText)
+      case (CypherVersion.v2_2, RulePlanner)         => compatibilityFor2_2Rule.produceParsedQuery(statementAsText)
+      case (CypherVersion.v2_2, _)                   => compatibilityFor2_2.produceParsedQuery(statementAsText)
+      case (CypherVersion.v2_1, _)                   => compatibilityFor2_1.parseQuery(statementAsText)
+      case (CypherVersion.v2_0, _)                   => compatibilityFor2_0.parseQuery(statementAsText)
+      case (CypherVersion.v1_9, _)                   => compatibilityFor1_9.parseQuery(statementAsText)
     }
   }
 
@@ -124,10 +119,11 @@ class CypherCompiler(graph: GraphDatabaseService,
 
   private def calculatePlanner(options: Seq[CypherOption], version: CypherVersion) = {
     val planner = options.collect {
-      case CostPlannerOption => Cost
-      case RulePlannerOption => Rule
+      case CostPlannerOption => CostPlanner
+      case RulePlannerOption => RulePlanner
+      case IDPPlannerOption => IDPPlanner
     }.distinct
-    if (version != CypherVersion.v2_2 && !planner.isEmpty) {
+    if (version != CypherVersion.v2_2 && planner.nonEmpty) {
       throw new InvalidArgumentException("PLANNER not supported in versions older than Neo4j v2.2")
     }
 

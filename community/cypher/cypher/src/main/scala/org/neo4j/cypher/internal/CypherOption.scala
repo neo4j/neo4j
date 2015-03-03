@@ -26,6 +26,6 @@ case object ProfileOption extends CypherOption
 case object ExplainOption extends CypherOption
 case object CostPlannerOption extends CypherOption
 case object RulePlannerOption extends CypherOption
-case object SmartPlannerOption extends CypherOption
+case object IDPPlannerOption extends CypherOption
 
 

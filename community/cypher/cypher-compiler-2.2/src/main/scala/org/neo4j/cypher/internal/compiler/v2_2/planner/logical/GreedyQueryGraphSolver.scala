@@ -35,12 +35,13 @@ class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[PlanTable],
 
     val select = config.applySelections.asFunctionInContext
     val projectAllEndpoints = config.projectAllEndpoints.asFunctionInContext
-    val pickBest = config.pickBestCandidate.asFunctionInContext
+    val _pickBest = config.pickBestCandidate.asFunctionInContext
+    val pickBest = (x: Iterable[LogicalPlan]) => _pickBest(x.iterator)
 
     def generateLeafPlanTable(): PlanTable = {
       val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph, projectAllEndpoints)
-      val leafPlanCandidateListsWithSelections = leafPlanCandidateLists.map(_.map(select(_, queryGraph)))
-      val bestLeafPlans: Iterable[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(pickBest(_))
+      val leafPlanCandidateListsWithSelections = leafPlanCandidateLists.iterator.map(_.map(select(_, queryGraph)))
+      val bestLeafPlans: Iterator[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(pickBest(_))
       val startTable: PlanTable = leafPlan.foldLeft(emptyPlanTable)(_ + _)
       bestLeafPlans.foldLeft(startTable)(_ + _)
     }

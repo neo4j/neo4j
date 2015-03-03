@@ -23,6 +23,7 @@ import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.NormalMode
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.ExecutionPlan
+import org.neo4j.cypher.internal.compiler.v2_2.planner.allQueryAcceptor
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.{FrozenClock, Clock}
 import org.neo4j.kernel.impl.util.StringLogger.DEV_NULL
@@ -34,8 +35,8 @@ import scala.collection.Map
 class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
   def createCompiler(queryCacheSize: Int = 128, statsDivergenceThreshold: Double = 0.5, queryPlanTTL: Long = 1000,
                      clock: Clock = Clock.SYSTEM_CLOCK, logger: StringLogger = DEV_NULL) =
-    CypherCompilerFactory.conservativeCompiler(
-      graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors, logger)
+    CypherCompilerFactory.costBasedCompiler(
+      graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors, logger, plannerName = CostPlanner)
 
   case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0, evicted: Int = 0) {
     override def toString = s"hits = $hits, misses = $misses, flushes = $flushes, evicted = $evicted"

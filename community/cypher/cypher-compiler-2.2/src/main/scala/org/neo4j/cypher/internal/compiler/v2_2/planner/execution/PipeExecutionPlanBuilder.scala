@@ -41,7 +41,7 @@ import org.neo4j.cypher.internal.helpers.Eagerly
 import org.neo4j.graphdb.Relationship
 import org.neo4j.helpers.Clock
 
-case class PipeExecutionBuilderContext(cardinality: Metrics.CardinalityModel, semanticTable: SemanticTable)
+case class PipeExecutionBuilderContext(cardinality: Metrics.CardinalityModel, semanticTable: SemanticTable, plannerName: PlannerName)
 
 class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
 
@@ -253,6 +253,6 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
         None
     }
 
-    PipeInfo(topLevelPipe, updating, None, fingerprint, Cost)
+    PipeInfo(topLevelPipe, updating, None, fingerprint, context.plannerName)
   }
 }

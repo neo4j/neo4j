@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher
 
-/**
- * Created by pontusmelke on 13/01/15.
- */
 class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
   test("START r=rel(0) RETURN r") {

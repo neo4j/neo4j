@@ -17,25 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.planner
+package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{PatternRelationship, IdName}
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 
-import scala.collection.mutable
+import scala.collection.{Map, mutable}
 
-object conservativeQueryAcceptor extends (UnionQuery => Boolean) {
+// TODO: Make immutable
+class ExhaustivePlanTable extends (Set[Solvable] => Option[LogicalPlan]) {
+  private val table = new mutable.HashMap[Set[Solvable], LogicalPlan]()
 
-  def apply(query: UnionQuery): Boolean = {
-    !query.queries.exists(query => rejectQuery (query) )
+  def head = table.head._2
+
+  def apply(solved: Set[Solvable]): Option[LogicalPlan] = table.get(solved)
+
+  def put(solved: Set[Solvable], plan: LogicalPlan): Unit = {
+    table.put(solved, plan)
   }
 
-  private def rejectQuery(pq: PlannerQuery): Boolean = {
-    containsVarLength(pq.graph) ||
-      pq.graph.optionalMatches.exists(containsVarLength) ||
-      pq.tail.exists(rejectQuery)
+  def remove(solved: Set[Solvable]): Unit = {
+    table.remove(solved)
   }
 
-  private def containsVarLength(qg: QueryGraph): Boolean = qg.patternRelationships.exists(!_.length.isSimple)
+  def contains(solved: Set[Solvable]): Boolean = table.contains(solved)
 
+  def plansOfSize(k: Int): Map[Set[Solvable], LogicalPlan] = table.filterKeys(_.size == k)
 }

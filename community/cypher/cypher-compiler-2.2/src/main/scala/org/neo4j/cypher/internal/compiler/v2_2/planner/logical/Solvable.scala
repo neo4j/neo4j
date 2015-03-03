@@ -20,26 +20,29 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.ExhaustiveQueryGraphSolver._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.PatternRelationship
 
-case object joinOptions extends PlanProducer {
+sealed trait Solvable {
+  def solvables: Set[SolvableLeaf]
 
-  def apply(qg: QueryGraph, cache: PlanTable): Seq[LogicalPlan] =
-    (1 to qg.size - 1).flatMap {
-      size =>
-        qg.combinations(size).flatMap {
-          subQg: QueryGraph =>
-            val otherSideQG: QueryGraph = qg -- subQg
-            val overlappingNodeIds = subQg.patternNodes intersect otherSideQG.patternNodes
-
-            if (overlappingNodeIds.isEmpty)
-              None
-            else {
-              for ( lhs <- cache.get(subQg) ; rhs <- cache.get(otherSideQG) )
-                  yield planNodeHashJoin(overlappingNodeIds, lhs, rhs)
-            }
-        }
-    }
+  def solvedRelationship: Option[PatternRelationship] = None
 }
+
+sealed trait SolvableLeaf extends Solvable {
+  self =>
+
+  override def solvables: Set[SolvableLeaf] = Set(self)
+}
+
+final case class SolvableBlock(solvables: Set[SolvableLeaf]) extends Solvable
+
+final case class SolvableRelationship(relationship: PatternRelationship) extends SolvableLeaf {
+  override def solvedRelationship = Some(relationship)
+}
+
+object Solvables {
+  def apply(qg: QueryGraph): Set[Solvable] = qg.patternRelationships.map(SolvableRelationship)
+}
+
+
+

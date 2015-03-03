@@ -23,7 +23,7 @@ import java.util.{Map => JavaMap}
 
 import org.neo4j.cypher.internal.compiler.v2_2.parser.ParserMonitor
 import org.neo4j.cypher.internal.compiler.v2_2.prettifier.Prettifier
-import org.neo4j.cypher.internal.compiler.v2_2.{Cost, CypherCacheMonitor, MonitoringCacheAccessor, PlannerName}
+import org.neo4j.cypher.internal.compiler.v2_2.{CostPlanner, IDPPlanner, CypherCacheMonitor, MonitoringCacheAccessor, PlannerName}
 import org.neo4j.cypher.internal.{CypherCompiler, _}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.config.Setting
@@ -203,7 +203,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
       graph, GraphDatabaseSettings.cypher_parser_version, CypherVersion.vDefault.name))
     val planner = PlannerName(optGraphSetting[String](
       graph, GraphDatabaseSettings.query_planner_version, PlannerName.default.name))
-    if (version != CypherVersion.v2_2 && planner == Cost) {
+    if (version != CypherVersion.v2_2 && (planner == CostPlanner || planner == IDPPlanner)) {
       logger.error(s"Cannot combine configurations: ${GraphDatabaseSettings.cypher_parser_version.name}=${version.name} " +
         s"with ${GraphDatabaseSettings.query_planner_version.name} = ${planner.name}")
       throw new IllegalStateException(s"Cannot combine configurations: ${GraphDatabaseSettings.cypher_parser_version.name}=${version.name} " +
