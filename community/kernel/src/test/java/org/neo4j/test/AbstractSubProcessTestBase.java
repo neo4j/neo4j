@@ -19,15 +19,15 @@
  */
 package org.neo4j.test;
 
+import org.junit.After;
+import org.junit.Before;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-
-import org.junit.After;
-import org.junit.Before;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -175,7 +175,8 @@ public class AbstractSubProcessTestBase
         private Map<String, String> addVitalConfig( Map<String, String> dbConfiguration )
         {
             return stringMap( new HashMap<>( dbConfiguration ),
-                    GraphDatabaseSettings.keep_logical_logs.name(), Settings.TRUE );
+                    GraphDatabaseSettings.keep_logical_logs.name(), Settings.TRUE,
+                    GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         }
 
         protected GraphDatabaseService startup()

@@ -27,6 +27,7 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -41,13 +42,11 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
-import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
 
 public class TestLogPruning
@@ -148,17 +147,11 @@ public class TestLogPruning
     {
         this.rotateEveryNTransactions = rotateEveryNTransactions;
         fs = new EphemeralFileSystemAbstraction();
-        GraphDatabaseAPI db = new ImpermanentGraphDatabase( stringMap(
-                keep_logical_logs.name(), logPruning
-        ) )
-        {
-            @Override
-            protected FileSystemAbstraction createFileSystemAbstraction()
-            {
-                return fs;
-            }
-        };
-        this.db = db;
+        TestGraphDatabaseFactory gdf = new TestGraphDatabaseFactory();
+        gdf.setFileSystem( fs );
+        GraphDatabaseBuilder builder = gdf.newImpermanentDatabaseBuilder();
+        builder.setConfig( keep_logical_logs, logPruning );
+        this.db = (GraphDatabaseAPI) builder.newGraphDatabase();
         files = new PhysicalLogFiles( new File( db.getStoreDir() ), PhysicalLogFile.DEFAULT_NAME, fs );
         return db;
     }

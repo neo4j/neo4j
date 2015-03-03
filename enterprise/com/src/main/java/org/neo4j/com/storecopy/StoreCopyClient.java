@@ -24,6 +24,7 @@ import java.io.FileFilter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.com.Response;
@@ -35,9 +36,13 @@ import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
@@ -45,11 +50,11 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterv1;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
@@ -96,17 +101,19 @@ public class StoreCopyClient
     private final ConsoleLogger console;
     private final Logging logging;
     private final FileSystemAbstraction fs;
+    private final PageCache pageCache;
     private final StoreCopyMonitor storeCopyMonitor;
 
     public StoreCopyClient( Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions,
                             ConsoleLogger console, Logging logging, FileSystemAbstraction fs,
-            StoreCopyMonitor storeCopyMonitor )
+                            PageCache pageCache, StoreCopyMonitor storeCopyMonitor )
     {
         this.config = config;
         this.kernelExtensions = kernelExtensions;
         this.console = console;
         this.logging = logging;
         this.fs = fs;
+        this.pageCache = pageCache;
         this.storeCopyMonitor = storeCopyMonitor;
     }
 
@@ -210,7 +217,23 @@ public class StoreCopyClient
 
     private GraphDatabaseService newTempDatabase( File tempStore )
     {
-        return new GraphDatabaseFactory()
+        GraphDatabaseFactory factory = new GraphDatabaseFactory()
+        {
+            @Override
+            protected GraphDatabaseService newDatabase( String path, Map<String,String> config,
+                                                        InternalAbstractGraphDatabase.Dependencies dependencies )
+            {
+                return new EmbeddedGraphDatabase( path, config, dependencies )
+                {
+                    @Override
+                    protected LifecycledPageCache createPageCache()
+                    {
+                        return new ExternallyManagedLifecycledPageCache( StoreCopyClient.this.pageCache );
+                    }
+                };
+            }
+        };
+        return factory
                 .setLogging( logging )
                 .setKernelExtensions( kernelExtensions )
                 .newEmbeddedDatabaseBuilder( tempStore.getAbsolutePath() )
@@ -269,12 +292,63 @@ public class StoreCopyClient
         }
     }
 
-    public static class NoRecoveryAssertingVisitor implements Visitor<ReadableVersionableLogChannel,IOException>
+    private class ExternallyManagedLifecycledPageCache extends LifecycledPageCache
     {
-        @Override
-        public boolean visit( ReadableVersionableLogChannel element ) throws IOException
+        private final PageCache pageCache;
+
+        public ExternallyManagedLifecycledPageCache( PageCache pageCache )
         {
-            throw new UnsupportedOperationException( "There should not be any recovery needed here" );
+            super( null, null, null, null );
+            this.pageCache = pageCache;
+        }
+
+        @Override
+        protected void initialisePageCache()
+        {
+        }
+
+        @Override
+        public synchronized void start()
+        {
+        }
+
+        @Override
+        public synchronized void stop() throws IOException
+        {
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+        }
+
+        @Override
+        public void dumpConfiguration( StringLogger messagesLog )
+        {
+        }
+
+        @Override
+        public PagedFile map( File file, int pageSize ) throws IOException
+        {
+            return pageCache.map( file, pageSize );
+        }
+
+        @Override
+        public void flush() throws IOException
+        {
+            pageCache.flush();
+        }
+
+        @Override
+        public int pageSize()
+        {
+            return pageCache.pageSize();
+        }
+
+        @Override
+        public int maxCachedPages()
+        {
+            return pageCache.maxCachedPages();
         }
     }
 }

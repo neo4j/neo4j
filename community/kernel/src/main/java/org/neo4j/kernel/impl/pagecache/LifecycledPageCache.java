@@ -21,14 +21,15 @@ package org.neo4j.kernel.impl.pagecache;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.lang.reflect.Method;
 
-import org.neo4j.helpers.Settings;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.RunnablePageCache;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -61,7 +62,7 @@ public class LifecycledPageCache extends LifecycleAdapter implements PageCache
         initialisePageCache();
     }
 
-    private void initialisePageCache()
+    protected void initialisePageCache()
     {
         pageCache = new MuninnPageCache(
                 swapperFactory,
@@ -138,14 +139,31 @@ public class LifecycledPageCache extends LifecycleAdapter implements PageCache
 
     public void dumpConfiguration( StringLogger messagesLog )
     {
-        long totalPhysicalMemMb = Settings.DirectMemoryUsage.totalPhysicalMemory() / 1024 / 1024;
+        long totalPhysicalMemory = totalPhysicalMemory();
+        String totalPhysicalMemMb = totalPhysicalMemory == -1? "?" : "" + totalPhysicalMemory / 1024 / 1024;
         long maxVmUsageMb = Runtime.getRuntime().maxMemory() / 1024 / 1024;
         long pageCacheMb = (maxCachedPages() * pageSize()) / 1024 / 1024;
-        String msg = "Physical mem: " + totalPhysicalMemMb + "MB," +
-                " Heap size: " + maxVmUsageMb + "MB," +
-                " Page cache size: " + pageCacheMb + "MB.";
+        String msg = "Physical mem: " + totalPhysicalMemMb + " MiB," +
+                " Heap size: " + maxVmUsageMb + " MiB," +
+                " Page cache size: " + pageCacheMb + " MiB.";
 
         messagesLog.info( msg );
+    }
+
+    public static long totalPhysicalMemory()
+    {
+        try
+        {
+            Class<?> beanClass = Thread.currentThread().getContextClassLoader().loadClass(
+                    "com.sun.management.OperatingSystemMXBean" );
+            Method method = beanClass.getMethod( "getTotalPhysicalMemorySize" );
+            return (long) method.invoke( ManagementFactory.getOperatingSystemMXBean() );
+        }
+        catch ( Exception | LinkageError e )
+        {
+            // We tried, but at this point we actually have no idea.
+            return -1;
+        }
     }
 
     public PageCache unwrap()

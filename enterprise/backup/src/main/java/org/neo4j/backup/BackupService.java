@@ -53,6 +53,7 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigParam;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.pagecache.StandalonePageCache;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -68,6 +69,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.StoreCopyMonitor;
 
 import static org.neo4j.com.RequestContext.anonymous;
+import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 
 /**
  * Client-side convenience service for doing backups from a running database instance.
@@ -136,11 +138,11 @@ class BackupService
         long lastCommittedTx = -1;
         boolean consistent = !checkConsistency; // default to true if we're not checking consistency
         GraphDatabaseAPI targetDb = null;
-        try
+        try ( StandalonePageCache pageCache = createPageCache( fileSystem, "BackupService PageCache" ) )
         {
             StoreCopyClient storeCopier = new StoreCopyClient( tuningConfiguration, loadKernelExtensions(),
                     new ConsoleLogger( StringLogger.SYSTEM ), new DevNullLoggingService(),
-                    new DefaultFileSystemAbstraction(), new Monitors().newMonitor( StoreCopyMonitor.class, getClass() ) );
+                    new DefaultFileSystemAbstraction(), pageCache, new Monitors().newMonitor( StoreCopyMonitor.class, getClass() ) );
             storeCopier.copyStore( new StoreCopyClient.StoreCopyRequester()
 
             {

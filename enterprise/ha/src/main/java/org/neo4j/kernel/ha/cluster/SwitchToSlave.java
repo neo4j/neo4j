@@ -39,6 +39,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.StoreLockerLifecycleAdapter;
@@ -468,10 +469,11 @@ public class SwitchToSlave
                                       CancellationRequest cancellationRequest ) throws Throwable
     {
         FileSystemAbstraction fs = resolver.resolveDependency( FileSystemAbstraction.class );
+        PageCache pageCache = resolver.resolveDependency( PageCache.class );
 
         // This will move the copied db to the graphdb location
         console.log( "Copying store from master" );
-        new StoreCopyClient( config, kernelExtensions, console, logging, fs, storeCopyMonitor ).copyStore(
+        new StoreCopyClient( config, kernelExtensions, console, logging, fs, pageCache, storeCopyMonitor ).copyStore(
                 new StoreCopyClient.StoreCopyRequester()
                 {
                     @Override
