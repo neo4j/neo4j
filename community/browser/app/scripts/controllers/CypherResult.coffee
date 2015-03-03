@@ -114,7 +114,7 @@ angular.module('neo4jApp.controllers')
 
         message = "Cypher version: #{root.version}, planner: #{root.planner}."
         if collectHits(root)
-          message += " #{collectHits(root)} total db hits in #{frame.runTime} ms."
+          message += " #{collectHits(root)} total db hits in #{frame.response.responseTime} ms."
         message
 
     # Listen for export events bubbling up the controller hierarchy
