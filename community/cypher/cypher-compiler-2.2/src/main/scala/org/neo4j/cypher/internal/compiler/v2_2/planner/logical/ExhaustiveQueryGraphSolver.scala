@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.InternalException
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{AllIterablePredicate, FilterScope, Identifier}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.ExhaustiveQueryGraphSolver.MAX_SEARCH_DEPTH
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
@@ -30,46 +29,19 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.{applyOptio
 
 import scala.annotation.tailrec
 
-object ExhaustiveQueryGraphSolver {
-  val MAX_SEARCH_DEPTH = 9
 
-  // TODO: Make sure this is tested by extracting tests from greedy expand step
-  def planSinglePatternSide(qg: QueryGraph, patternRel: PatternRelationship, plan: LogicalPlan, nodeId: IdName): Option[LogicalPlan] = {
-    val availableSymbols = plan.availableSymbols
-    if (availableSymbols(nodeId)) {
-      val dir = patternRel.directionRelativeTo(nodeId)
-      val otherSide = patternRel.otherSide(nodeId)
-      val overlapping = availableSymbols.contains(otherSide)
-      val mode = if (overlapping) ExpandInto else ExpandAll
-
-      patternRel.length match {
-        case SimplePatternLength =>
-          Some(planSimpleExpand(plan, nodeId, dir, otherSide, patternRel, mode))
-
-        case length: VarPatternLength =>
-          // TODO: Move selections out here (?)
-          val availablePredicates = qg.selections.predicatesGiven(availableSymbols + patternRel.name)
-          val (predicates, allPredicates) = availablePredicates.collect {
-            case all@AllIterablePredicate(FilterScope(identifier, Some(innerPredicate)), relId@Identifier(patternRel.name.name))
-              if identifier == relId || !innerPredicate.dependencies(relId) =>
-              (identifier, innerPredicate) -> all
-          }.unzip
-          Some(planVarExpand(plan, nodeId, dir, otherSide, patternRel, predicates, allPredicates, mode))
-      }
-    } else {
-      None
-    }
-  }
-}
-
+/*
+ * This planner is based on the paper "Iterative Dynamic Programming: A New Class of Query Optimization Algorithms"
+ * written by Donald Kossmann and Konrad Stocker
+ *
+ * Line comments correspond to the lines in the pseudo-code in that paper for the IDP1 algorithm.
+ */
 case class ExhaustiveQueryGraphSolver(leafPlanFinder: LogicalLeafPlan.Finder = leafPlanOptions,
                                       bestPlanFinder: CandidateSelector = pickBestPlan,
                                       config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default,
                                       solvers: Seq[ExhaustiveTableSolver] = Seq(joinTableSolver, expandTableSolver),
                                       optionalSolvers: Seq[OptionalSolver] = Seq(applyOptional, outerHashJoin))
   extends QueryGraphSolver with PatternExpressionSolving {
-
-  import ExhaustiveQueryGraphSolver.planSinglePatternSide
 
   // TODO: For selection, for now
   override def emptyPlanTable: PlanTable = GreedyPlanTable.empty
@@ -183,7 +155,9 @@ case class ExhaustiveQueryGraphSolver(leafPlanFinder: LogicalLeafPlan.Finder = l
   }
 
   @tailrec
-  private def solvePatterns(qg: QueryGraph, toDo: Set[Solvable], kit: PlanningStrategyKit, table: ExhaustivePlanTable, solutionGenerator: Set[Solvable] => Iterator[LogicalPlan])(implicit context: LogicalPlanningContext): Unit = {
+  private def solvePatterns(qg: QueryGraph, toDo: Set[Solvable], kit: PlanningStrategyKit, table: ExhaustivePlanTable,
+                            solutionGenerator: Set[Solvable] => Iterator[LogicalPlan])
+                           (implicit context: LogicalPlanningContext): Unit = {
     val size = toDo.size
     if (size > 1) {
       // line 7-16
@@ -195,9 +169,8 @@ case class ExhaustiveQueryGraphSolver(leafPlanFinder: LogicalLeafPlan.Finder = l
         table.put(goal, best)
       }
 
-      // TODO: Get rid of map
       // line 17
-      val blockCandidates = toDo.subsets(k).flatMap( set => table(set).map(_ -> set) ).toMap
+      val blockCandidates: Map[LogicalPlan, Set[Solvable]] = table.plansOfSize(k).map(_.swap).toMap
       val bestBlock = bestPlanFinder(blockCandidates.keys.iterator).getOrElse(throw new InternalException("Did not find a single solution for a block"))
       val bestSolvables = blockCandidates(bestBlock)
 
@@ -215,30 +188,32 @@ case class ExhaustiveQueryGraphSolver(leafPlanFinder: LogicalLeafPlan.Finder = l
     val table = new ExhaustivePlanTable
     qg.patternRelationships.foreach { pattern =>
       val accessPlans = planSinglePattern(qg, pattern, leaves.iterator).map(kit.select)
-      val bestAccessor = bestPlanFinder(accessPlans).getOrElse(throw new InternalException("Found no access plan for a pattern relationship in a connected component.  This must not happen."))
+      val bestAccessor = bestPlanFinder(accessPlans).getOrElse(throw new InternalException("Found no access plan for a pattern relationship in a connected component. This must not happen."))
       table.put(Set(SolvableRelationship(pattern)), bestAccessor)
     }
     table
   }
 
-  private def planSinglePattern(qg: QueryGraph, pattern: PatternRelationship, leaves: Iterator[LogicalPlan]): Iterator[LogicalPlan] =
+  private def planSinglePattern(qg: QueryGraph, pattern: PatternRelationship, leaves: Iterator[LogicalPlan]): Iterator[LogicalPlan] = {
+
+    import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.expandTableSolver.planSinglePatternSide
+
     leaves.collect {
-      case plan => // TODO: if !plan.solved.graph.patternRelationships.contains(pattern) =>
+      case plan =>
         val (start, end) = pattern.nodes
         val leftPlan = planSinglePatternSide(qg, pattern, plan, start)
         val rightPlan = planSinglePatternSide(qg, pattern, plan, end)
-        includeOption(includeOption(Set.empty, leftPlan), rightPlan)
+        leftPlan.toSet ++ rightPlan.toSet
     }.flatten
+  }
 
   private def newSolutionGenerator(qg: QueryGraph, kit: PlanningStrategyKit, table: ExhaustivePlanTable): (Set[Solvable]) => Iterator[LogicalPlan] = {
     val solverFunctions = solvers.map { solver => (goal: Set[Solvable]) => solver(qg, goal, table)}
     val solutionGenerator = (goal: Set[Solvable]) => solverFunctions.iterator.flatMap { solver => solver(goal).map(kit.select) }
     solutionGenerator
   }
-
-  private def includeOption[T](set: Set[T], opt: Option[T]): Set[T] = opt match {
-    case Some(value) => set + value
-    case None        => set
-  }
 }
 
+object ExhaustiveQueryGraphSolver {
+  val MAX_SEARCH_DEPTH = 9
+}

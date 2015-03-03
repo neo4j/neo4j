@@ -19,11 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{PatternRelationship, IdName}
-import org.neo4j.graphdb.{Node, Relationship}
-
-import scala.collection.mutable
-
 object allQueryAcceptor extends QueryAcceptor {
   def apply(ignored: UnionQuery) = true
 }
@@ -31,7 +26,7 @@ object allQueryAcceptor extends QueryAcceptor {
 object conservativeQueryAcceptor extends QueryAcceptor {
 
   def apply(query: UnionQuery): Boolean = {
-    !query.queries.exists(query => rejectQuery (query) )
+    !query.queries.exists(query => rejectQuery(query))
   }
 
   private def rejectQuery(pq: PlannerQuery): Boolean = {

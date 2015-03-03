@@ -69,7 +69,6 @@ class CypherCompiler(graph: GraphDatabaseService,
 
   @throws(classOf[SyntaxException])
   def parseQuery(preParsedQuery: PreParsedQuery): ParsedQuery = {
-    val executionMode = preParsedQuery.executionMode
     val version = preParsedQuery.version
     val planner = preParsedQuery.planner
     val statementAsText = preParsedQuery.statement

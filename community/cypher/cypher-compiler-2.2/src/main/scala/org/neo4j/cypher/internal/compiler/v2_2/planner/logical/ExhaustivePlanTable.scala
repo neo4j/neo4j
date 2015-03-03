@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 
-import scala.collection.mutable
+import scala.collection.{Map, mutable}
 
 // TODO: Make immutable
 class ExhaustivePlanTable extends (Set[Solvable] => Option[LogicalPlan]) {
@@ -40,4 +40,6 @@ class ExhaustivePlanTable extends (Set[Solvable] => Option[LogicalPlan]) {
   }
 
   def contains(solved: Set[Solvable]): Boolean = table.contains(solved)
+
+  def plansOfSize(k: Int): Map[Set[Solvable], LogicalPlan] = table.filterKeys(_.size == k)
 }

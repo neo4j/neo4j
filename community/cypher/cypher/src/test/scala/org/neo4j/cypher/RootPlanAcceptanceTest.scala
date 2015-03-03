@@ -50,7 +50,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
     given("match (a)-[r]->(a) return a")
       .withCypherVersion(CypherVersion.v2_2)
       .shouldHaveCypherVersion(CypherVersion.v2_2)
-      .shouldHavePlannerName(RulePlanner)
+      .shouldHavePlannerName(CostPlanner)
   }
 
   test("should fallback to Rule for updates in 2.2") {
