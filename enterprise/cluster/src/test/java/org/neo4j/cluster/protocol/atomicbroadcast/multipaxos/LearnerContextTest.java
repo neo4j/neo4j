@@ -80,5 +80,4 @@ public class LearnerContextTest
         assertThat( state.getLastKnownLearnedInstanceInCluster(), equalTo( -1l ) );
         assertThat( state.getLastKnownAliveUpToDateInstance(), equalTo( new org.neo4j.cluster.InstanceId( 2 ) ));
     }
-
 }

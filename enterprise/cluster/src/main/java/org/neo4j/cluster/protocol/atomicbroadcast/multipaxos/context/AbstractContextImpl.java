@@ -31,6 +31,7 @@ import org.neo4j.cluster.protocol.TimeoutsContext;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 
 import static org.neo4j.helpers.collection.Iterables.limit;
@@ -53,10 +54,17 @@ class AbstractContextImpl
         this.logging = logging;
         this.timeouts = timeouts;
     }
+
     @Override
     public StringLogger getLogger( Class loggingClass )
     {
         return logging.getMessagesLog( loggingClass );
+    }
+
+    @Override
+    public ConsoleLogger getConsoleLogger( Class loggingClass )
+    {
+        return logging.getConsoleLog( loggingClass );
     }
 
     // TimeoutsContext
