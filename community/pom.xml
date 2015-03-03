@@ -51,7 +51,6 @@
     <module>server-examples</module>
     <module>server-plugin-test</module>
     <module>consistency-check</module>
-    <module>udc-integration</module>
     <module>neo4j-harness</module>
     <module>licensecheck-config</module>
   </modules>
