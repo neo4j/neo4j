@@ -19,30 +19,17 @@
  */
 package org.neo4j.csv.reader;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.nio.CharBuffer;
-import java.util.concurrent.locks.LockSupport;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * Like an ordinary {@link CharReadable}, it's just that the reading happens in a separate thread, so when
  * a consumer wants to {@link #read(CharBuffer)} more data it's already available, merely a memcopy away.
  */
-public class ThreadAheadReadable extends Thread implements CharReadable, Closeable
+public class ThreadAheadReadable extends ThreadAhead implements CharReadable
 {
-    // A "long" time to wait is OK since these two threads: the owner and the read-ahead thread
-    // notifies/unparks each other when it's time to continue on anyways
-    private static final long PARK_TIME = MILLISECONDS.toNanos( 100 );
-
     private final CharReadable actual;
-    private final Thread owner;
     private SectionedCharBuffer theOtherBuffer;
-    private volatile boolean hasReadAhead;
-    private volatile boolean closed;
-    private volatile boolean eof;
-    private volatile IOException ioException;
 
     private String sourceDescription;
     // the variable below is read and changed in both the ahead thread and the caller,
@@ -51,13 +38,10 @@ public class ThreadAheadReadable extends Thread implements CharReadable, Closeab
 
     private ThreadAheadReadable( CharReadable actual, int bufferSize )
     {
-        super( ThreadAheadReadable.class.getSimpleName() + " for " + actual );
-
+        super( actual );
         this.actual = actual;
-        this.owner = Thread.currentThread();
         this.theOtherBuffer = new SectionedCharBuffer( bufferSize );
         this.sourceDescription = actual.sourceDescription();
-        setDaemon( true );
         start();
     }
 
@@ -69,15 +53,7 @@ public class ThreadAheadReadable extends Thread implements CharReadable, Closeab
     @Override
     public SectionedCharBuffer read( SectionedCharBuffer buffer, int from ) throws IOException
     {
-        // are we still healthy and all that?
-        assertHealthy();
-
-        // wait until thread has made data available
-        while ( !hasReadAhead )
-        {
-            parkAWhile();
-            assertHealthy();
-        }
+        waitUntilReadAhead();
 
         // flip the buffers
         SectionedCharBuffer resultBuffer = theOtherBuffer;
@@ -91,82 +67,21 @@ public class ThreadAheadReadable extends Thread implements CharReadable, Closeab
             newSourceDescription = null;
         }
 
-        // wake up the reader... there's stuff to do, data to read
-        hasReadAhead = false;
-        LockSupport.unpark( this );
+        pokeReader();
         return resultBuffer;
     }
 
-    private void assertHealthy() throws IOException
-    {
-        if ( ioException != null )
-        {
-            throw new IOException( "Error occured in read-ahead thread", ioException );
-        }
-    }
-
-    private void parkAWhile()
-    {
-        LockSupport.parkNanos( PARK_TIME );
-    }
-
     @Override
-    public void close() throws IOException
+    protected boolean readAhead() throws IOException
     {
-        closed = true;
-        try
+        theOtherBuffer = actual.read( theOtherBuffer, theOtherBuffer.front() );
+        String sourceDescriptionAfterRead = actual.sourceDescription();
+        if ( !sourceDescription.equals( sourceDescriptionAfterRead ) )
         {
-            join();
+            newSourceDescription = sourceDescriptionAfterRead;
         }
-        catch ( InterruptedException e )
-        {
-            throw new IOException( e );
-        }
-        finally
-        {
-            actual.close();
-        }
-    }
 
-    @Override
-    public void run()
-    {
-        while ( !closed )
-        {
-            if ( hasReadAhead || eof )
-            {   // We have already read ahead, sleep a little
-                parkAWhile();
-            }
-            else
-            {   // We haven't read ahead, or the data we read ahead have been consumed
-                try
-                {
-                    theOtherBuffer = actual.read( theOtherBuffer, theOtherBuffer.front() );
-                    String sourceDescriptionAfterRead = actual.sourceDescription();
-                    if ( !sourceDescription.equals( sourceDescriptionAfterRead ) )
-                    {
-                        newSourceDescription = sourceDescriptionAfterRead;
-                    }
-
-                    if ( !theOtherBuffer.hasAvailable() )
-                    {
-                        eof = true;
-                    }
-                    hasReadAhead = true;
-                    LockSupport.unpark( owner );
-                }
-                catch ( IOException e )
-                {
-                    ioException = e;
-                    closed = true;
-                }
-                catch ( Throwable e )
-                {
-                    ioException = new IOException( e );
-                    closed = true;
-                }
-            }
-        }
+        return theOtherBuffer.hasAvailable();
     }
 
     @Override
