@@ -112,8 +112,8 @@ public class CsvInput implements Input
                         nodeHeaderFactory, config, idType )
                 {
                     @Override
-                    protected InputIterator<InputNode> entityDeserializer( CharSeeker dataStream, Header dataHeader,
-                            Function<InputNode,InputNode> decorator )
+                    protected InputEntityDeserializer<InputNode> entityDeserializer( CharSeeker dataStream,
+                            Header dataHeader, Function<InputNode,InputNode> decorator )
                     {
                         return new InputEntityDeserializer<>( dataHeader, dataStream, config.delimiter(),
                                 new InputNodeDeserialization( dataStream, dataHeader, groups, idType.idsAreExternal() ),
@@ -136,7 +136,7 @@ public class CsvInput implements Input
                         relationshipHeaderFactory, config, idType )
                 {
                     @Override
-                    protected InputIterator<InputRelationship> entityDeserializer( CharSeeker dataStream,
+                    protected InputEntityDeserializer<InputRelationship> entityDeserializer( CharSeeker dataStream,
                               Header dataHeader, Function<InputRelationship,InputRelationship> decorator )
                     {
                         return new InputEntityDeserializer<>( dataHeader, dataStream, config.delimiter(),

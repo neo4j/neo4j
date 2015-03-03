@@ -62,6 +62,11 @@ public class InputEntityDeserializer<ENTITY extends InputEntity>
         this.validator = validator;
     }
 
+    public void initialize()
+    {
+        deserialization.initialize();
+    }
+
     @Override
     protected ENTITY fetchNextOrNull()
     {

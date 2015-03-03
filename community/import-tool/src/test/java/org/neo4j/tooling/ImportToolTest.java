@@ -51,14 +51,16 @@ import org.neo4j.test.RandomRule;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 
-import static java.lang.System.currentTimeMillis;
-import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static java.lang.System.currentTimeMillis;
+import static java.util.Arrays.asList;
+
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.alwaysTrue;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.ArrayUtil.join;
@@ -276,12 +278,10 @@ public class ImportToolTest
         {
             ImportTool.main( arguments(
                     "--into",          dbRule.getStoreDir().getAbsolutePath(),
-                    "--nodes",         nodeHeader( config, "MyGroup" ) + MULTI_FILE_DELIMITER +
-                    nodeData( false, config, groupOneNodeIds, alwaysTrue() ),
-                    "--nodes",         nodeHeader( config ) + MULTI_FILE_DELIMITER +
-                    nodeData( false, config, groupTwoNodeIds, alwaysTrue() )
-
-                    ) );
+                    "--nodes",         nodeHeader( config, "MyGroup" ).getAbsolutePath() + MULTI_FILE_DELIMITER +
+                    nodeData( false, config, groupOneNodeIds, alwaysTrue() ).getAbsolutePath(),
+                    "--nodes",         nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
+                    nodeData( false, config, groupTwoNodeIds, alwaysTrue() ).getAbsolutePath() ) );
             fail( "Should have failed" );
         }
         catch ( Exception e )

@@ -42,6 +42,11 @@ class StringDeserialization implements Deserialization<String>
     }
 
     @Override
+    public void initialize()
+    {   // Do nothing
+    }
+
+    @Override
     public void handle( Entry entry, Object value )
     {
         if ( builder.length() > 0 )
