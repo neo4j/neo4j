@@ -129,7 +129,7 @@ public class LockManagerImpl implements LockManager
     {
         if ( resource == null || tx == null )
         {
-            throw new IllegalResourceException( "Null parameter" );
+            throw new IllegalResourceException( "Null parameter: resource = " + resource + ", tx = " + tx );
         }
     }
 
