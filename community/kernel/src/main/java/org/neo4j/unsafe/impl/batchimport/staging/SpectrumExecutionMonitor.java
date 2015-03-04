@@ -114,10 +114,6 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adpter
     {
         long[] values = values( execution );
         long total = total( values );
-        if ( total == 0 )
-        {
-            return false;
-        }
 
         // reduce the width with the known extra characters we know we'll print in and around the spectrum
         width -= values.length + 1/*'|' chars*/ + 4 /*progress chars*/;
@@ -133,7 +129,7 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adpter
             {
                 break; // odd though
             }
-            long stepWidth = projection.step();
+            long stepWidth = total == 0 && stepIndex == 0 ? width : projection.step();
             boolean isBottleNeck = bottleNeck.first() == step;
             String name =
                     (isBottleNeck ? "*" : "") +

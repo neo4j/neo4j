@@ -46,6 +46,7 @@ import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
+import org.neo4j.unsafe.impl.batchimport.staging.IdMapperPreparationStep;
 import org.neo4j.unsafe.impl.batchimport.staging.InputIteratorBatcherStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStore;
@@ -149,6 +150,7 @@ public class ParallelBatchImporter implements BatchImporter
                 // So we need to execute the node stage first as it fills the id mapper and prepares it in the end,
                 // before executing any stage that needs ids from the id mapper, for example calc dense node stage.
                 executeStages( nodeStage );
+                executeStages( new IdMapperPreparationStage( config, idMapper, nodes ) );
                 executeStages( calculateDenseNodesStage );
             }
             else
@@ -240,9 +242,19 @@ public class ParallelBatchImporter implements BatchImporter
             add( new PropertyEncoderStep<>( control(), config, 1, neoStore.getPropertyKeyRepository(),
                     propertyStore ) );
             add( new NodeEncoderStep( control(), config, idMapper, idGenerator,
-                    neoStore.getLabelRepository(), nodeStore, idsOf( nodes ) ) );
+                    neoStore.getLabelRepository(), nodeStore ) );
             add( new EntityStoreUpdaterStep<>( control(), config, nodeStore, propertyStore,
                     writeMonitor, writerFactory ) );
+        }
+    }
+
+    public class IdMapperPreparationStage extends Stage
+    {
+        public IdMapperPreparationStage( Configuration config, IdMapper idMapper, InputIterable<InputNode> nodeInput )
+        {
+            super( "Prepare node index", config, false );
+            add( new IdMapperPreparationStep( control(), config.batchSize(), config.movingAverageSize(),
+                    idMapper, idsOf( nodeInput ) ) );
         }
     }
 

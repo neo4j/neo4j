@@ -39,7 +39,7 @@ import static java.lang.System.currentTimeMillis;
 public abstract class AbstractStep<T> implements Step<T>
 {
     private final StageControl control;
-    private final String name;
+    private volatile String name;
     @SuppressWarnings( "rawtypes" )
     private volatile Step downstream;
     private volatile boolean endOfUpstream;
@@ -80,7 +80,7 @@ public abstract class AbstractStep<T> implements Step<T>
     public void start( boolean orderedTickets )
     {
         this.orderedTickets = orderedTickets;   // Do nothing by default
-        startTime = currentTimeMillis();
+        resetStats();
     }
 
     /**
@@ -260,5 +260,21 @@ public abstract class AbstractStep<T> implements Step<T>
     @Override
     public void close()
     {
+    }
+
+    protected void changeName( String name )
+    {
+        this.name = name;
+    }
+
+    protected void resetStats()
+    {
+        downstreamIdleTime.set( 0 );
+        upstreamIdleTime.set( 0 );
+        queuedBatches.set( 0 );
+        doneBatches.set( 0 );
+        totalProcessingTime.reset();
+        startTime = currentTimeMillis();
+        endTime = 0;
     }
 }

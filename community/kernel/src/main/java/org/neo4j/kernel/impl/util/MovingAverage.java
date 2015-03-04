@@ -60,4 +60,14 @@ public class MovingAverage
         int trackedValues = numberOfCurrentlyTrackedValues();
         return trackedValues > 0 ? total.get() / trackedValues : 0;
     }
+
+    public void reset()
+    {
+        for ( int i = 0; i < values.length(); i++ )
+        {
+            values.set( i, 0 );
+        }
+        total.set( 0 );
+        valueCursor.set( 0 );
+    }
 }

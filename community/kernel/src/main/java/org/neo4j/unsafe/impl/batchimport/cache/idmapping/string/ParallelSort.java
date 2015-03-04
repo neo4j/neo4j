@@ -24,6 +24,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.Utils;
 import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
 import org.neo4j.unsafe.impl.batchimport.cache.IntArray;
@@ -43,9 +44,11 @@ public class ParallelSort
     private final IntArray tracker;
     private final int threads;
     private long[][] sortBuckets;
+    private final ProgressListener progress;
 
-    public ParallelSort( Radix radix, LongArray dataCache, IntArray tracker, int threads )
+    public ParallelSort( Radix radix, LongArray dataCache, IntArray tracker, int threads, ProgressListener progress )
     {
+        this.progress = progress;
         this.radixIndexCount = radix.getRadixIndexCounts();
         this.radixCalculator = radix.calculator();
         this.dataCache = dataCache;
@@ -55,6 +58,7 @@ public class ParallelSort
 
     public long[][] run()
     {
+        progress.started();
         int[][] sortParams = sortRadix();
         int threadsNeeded = 0;
         for ( int i = 0; i < threads; i++ )
@@ -85,6 +89,10 @@ public class ParallelSort
         catch ( InterruptedException e )
         {
             throw new RuntimeException( e );
+        }
+        finally
+        {
+            progress.done();
         }
         return sortBuckets;
     }
@@ -184,7 +192,7 @@ public class ParallelSort
         int li = leftIndex, ri = rightIndex - 2, pi = pivotIndex;
         long pivot = clearCollision( dataCache.get( tracker.get( pi ) ) );
         //save pivot in last index
-        swapElement( tracker, pi, rightIndex - 1 );
+        tracker.swap( pi, rightIndex - 1, 1 );
         long left = 0, right = 0;
         while ( li < ri )
         {
@@ -203,7 +211,7 @@ public class ParallelSort
             else
             {
                 //if right index is greater then only swap
-                swapElement( tracker, li, ri );
+                tracker.swap( li, ri, 1 );
             }
         }
         int partingIndex = ri;
@@ -213,23 +221,28 @@ public class ParallelSort
             partingIndex++;
         }
         //restore pivot
-        swapElement( tracker, rightIndex - 1, partingIndex );
+        tracker.swap( rightIndex - 1, partingIndex, 1 );
         return partingIndex;
     }
 
-    private void recursiveQsort( int start, int end, Random random )
+    private void recursiveQsort( int start, int end, Random random, SortWorker workerProgress )
     {
-        if ( end - start < 2 )
+        int diff = end - start;
+        if ( diff < 2 )
         {
+            workerProgress.incrementProgress( diff );
             return;
         }
+
+        workerProgress.incrementProgress( 1 );
+
         // choose a random pivot between start and end
-        int pivot = start + random.nextInt( end - start );
+        int pivot = start + random.nextInt( diff );
 
         pivot = partition( start, end, pivot );
 
-        recursiveQsort( start, pivot, random );
-        recursiveQsort( pivot + 1, end, random );
+        recursiveQsort( start, pivot, random, workerProgress );
+        recursiveQsort( pivot + 1, end, random, workerProgress );
     }
 
     private class SortWorker extends Thread
@@ -237,6 +250,7 @@ public class ParallelSort
         private final int start, size;
         private final CountDownLatch doneSignal, waitSignal;
         private int workerId = -1;
+        private int threadLocalProgress;
 
         SortWorker( int workerId, int startRange, int size, CountDownLatch wait, CountDownLatch done )
         {
@@ -245,6 +259,21 @@ public class ParallelSort
             this.doneSignal = done;
             this.waitSignal = wait;
             this.workerId = workerId;
+        }
+
+        void incrementProgress( int diff )
+        {
+            threadLocalProgress += diff;
+            if ( threadLocalProgress == 10_000 /*reasonably big to dwarf passing a memory barrier*/ )
+            {   // Update the total progress
+                reportProgress();
+            }
+        }
+
+        private void reportProgress()
+        {
+            progress.add( threadLocalProgress );
+            threadLocalProgress = 0;
         }
 
         @Override
@@ -260,13 +289,9 @@ public class ParallelSort
             {
                 Thread.currentThread().interrupt();
             }
-            recursiveQsort( start, start + size, random );
+            recursiveQsort( start, start + size, random, this );
+            reportProgress();
             doneSignal.countDown();
         }
-    }
-
-    private static void swapElement( IntArray trackerCache, int left, int right )
-    {
-        trackerCache.swap( left, right, 1 );
     }
 }
