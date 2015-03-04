@@ -19,16 +19,6 @@
  */
 package org.neo4j.helpers.progress;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.io.StringWriter;
-import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -40,7 +30,17 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.io.ByteArrayOutputStream;
+import java.io.StringWriter;
+import java.nio.charset.Charset;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 import org.neo4j.helpers.ProcessFailureException;
+import org.neo4j.test.Mute;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
@@ -512,30 +512,15 @@ public class ProgressMonitorTest
         ProgressListener progressListener = builder.progressForPart( "only part", 1 );
         Completion completion = builder.build();
         Runnable callback = mock( Runnable.class );
-        doThrow( new RuntimeException()).doNothing().when( callback ).run();
+        doThrow( new RuntimeException( "on purpose" ) ).doNothing().when( callback ).run();
         completion.notify( callback );
         completion.notify( callback );
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        PrintStream sysErr = System.out;
-        try
-        {
-            System.setErr(new PrintStream(out));
-
-            // when
-            progressListener.done();
-        }
-        finally
-        {
-            System.setOut( sysErr );
-        }
+        // when
+        progressListener.done();
 
         // then
         verify( callback, times( 2 ) ).run();
-        String printedOutput = out.toString( Charset.defaultCharset().name() );
-        assertTrue( printedOutput, printedOutput.startsWith( RuntimeException.class.getName() ) );
-        assertTrue( printedOutput, printedOutput
-                .contains( "\n\tat " + getClass().getName() + "." + testName.getMethodName() ) );
     }
 
     @Test
@@ -618,6 +603,8 @@ public class ProgressMonitorTest
 
     @Rule
     public final TestName testName = new TestName();
+    @Rule
+    public Mute mute = Mute.muteAll();
     @Rule
     public final SingleIndicator factory = new SingleIndicator();
 
