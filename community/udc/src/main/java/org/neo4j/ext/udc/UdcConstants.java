@@ -19,15 +19,18 @@
  */
 package org.neo4j.ext.udc;
 
-public class UdcConstants {
+public class UdcConstants
+{
     public static final String ID = "id";
     public static final String TAGS = "tags";
     public static final String CLUSTER_HASH = "cluster";
     public static final String REGISTRATION = "reg";
     public static final String PING = "p";
     public static final String DISTRIBUTION = "dist";
-    public static final String USER_AGENTS = "ua";
+    public static final String DATABASE_MODE = "databasemode";
+    public static final String SERVER_ID = "serverid";
 
+    public static final String USER_AGENTS = "ua";
     public static final String VERSION = "v";
     public static final String REVISION = "revision";
     public static final String EDITION = "edition";

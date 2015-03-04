@@ -31,6 +31,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
+import com.sun.management.OperatingSystemMXBean;
+
 import org.neo4j.ext.udc.Edition;
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.config.Setting;
@@ -43,9 +45,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.StartupStatistics;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 
-import com.sun.management.OperatingSystemMXBean;
-
 import static org.neo4j.ext.udc.UdcConstants.CLUSTER_HASH;
+import static org.neo4j.ext.udc.UdcConstants.DATABASE_MODE;
 import static org.neo4j.ext.udc.UdcConstants.DISTRIBUTION;
 import static org.neo4j.ext.udc.UdcConstants.EDITION;
 import static org.neo4j.ext.udc.UdcConstants.HEAP_SIZE;
@@ -59,6 +60,7 @@ import static org.neo4j.ext.udc.UdcConstants.PROPERTY_IDS_IN_USE;
 import static org.neo4j.ext.udc.UdcConstants.REGISTRATION;
 import static org.neo4j.ext.udc.UdcConstants.RELATIONSHIP_IDS_IN_USE;
 import static org.neo4j.ext.udc.UdcConstants.REVISION;
+import static org.neo4j.ext.udc.UdcConstants.SERVER_ID;
 import static org.neo4j.ext.udc.UdcConstants.SOURCE;
 import static org.neo4j.ext.udc.UdcConstants.TAGS;
 import static org.neo4j.ext.udc.UdcConstants.TOTAL_MEMORY;
@@ -81,7 +83,8 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
     {
         this.config = config;
         this.kernel = kernel;
-        idGeneratorFactory = kernel.graphDatabase().getDependencyResolver().resolveDependency( IdGeneratorFactory.class );
+        idGeneratorFactory = kernel.graphDatabase().getDependencyResolver()
+                .resolveDependency( IdGeneratorFactory.class );
         final StartupStatistics startupStatistics = kernel.graphDatabase().getDependencyResolver().resolveDependency(
                 StartupStatistics.class );
 
@@ -132,6 +135,8 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         add( udcFields, SOURCE, config.get( UdcSettings.udc_source ) );
         add( udcFields, REGISTRATION, config.get( UdcSettings.udc_registration_key ) );
         add( udcFields, DISTRIBUTION, determineOsDistribution() );
+        add( udcFields, DATABASE_MODE, determineMode() );
+        add( udcFields, SERVER_ID, determineServerId() );
         add( udcFields, USER_AGENTS, determineUserAgents() );
 
         add( udcFields, MAC, determineMacAddress() );
@@ -160,6 +165,30 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         }
     }
 
+    private String determineMode()
+    {
+        try
+        {
+            return getSetting( "org.neo4j.server.web.ServerInternalSettings", "legacy_db_mode" );
+        }
+        catch ( Exception e )
+        {
+            return null;
+        }
+    }
+
+    private String determineServerId()
+    {
+        try
+        {
+            return getSetting( "org.neo4j.cluster.ClusterSettings", "server_id" );
+        }
+        catch ( Exception e )
+        {
+            return null;
+        }
+    }
+
     static String searchForPackageSystems()
     {
         try
@@ -184,16 +213,22 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
     {
         try
         {
-            Class<?> haSettings = Class.forName( "org.neo4j.kernel.ha.HaSettings" );
-            @SuppressWarnings("unchecked")
-            Setting<String> setting = (Setting<String>) haSettings.getField( "cluster_name" ).get( null );
-            String name = config.get( setting );
+            String name = getSetting( "org.neo4j.cluster.ClusterSettings", "cluster_name" );
             return name != null ? Math.abs( name.hashCode() % Integer.MAX_VALUE ) : null;
         }
         catch ( Exception e )
         {
             return null;
         }
+    }
+
+    private String getSetting( String className, String settingName )
+            throws ClassNotFoundException, IllegalAccessException, NoSuchFieldException
+    {
+        Class<?> settings = Class.forName( className );
+        @SuppressWarnings("unchecked")
+        Setting<String> setting = (Setting<String>) settings.getField( settingName ).get( null );
+        return config.get( setting );
     }
 
     private org.neo4j.ext.udc.Edition determineEdition( String classPath )

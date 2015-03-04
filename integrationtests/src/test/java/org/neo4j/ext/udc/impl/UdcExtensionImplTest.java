@@ -19,16 +19,6 @@
  */
 package org.neo4j.ext.udc.impl;
 
-import com.sun.jersey.spi.container.ContainerRequest;
-import org.apache.commons.io.FileUtils;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.localserver.LocalTestServer;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -38,8 +28,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
+import com.sun.jersey.spi.container.ContainerRequest;
+import org.apache.commons.io.FileUtils;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.localserver.LocalTestServer;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.ext.udc.Edition;
 import org.neo4j.ext.udc.UdcConstants;
@@ -62,6 +62,9 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.stub;
+
+import static org.neo4j.ext.udc.UdcConstants.CLUSTER_HASH;
+import static org.neo4j.ext.udc.UdcConstants.DATABASE_MODE;
 import static org.neo4j.ext.udc.UdcConstants.EDITION;
 import static org.neo4j.ext.udc.UdcConstants.MAC;
 import static org.neo4j.ext.udc.UdcConstants.REGISTRATION;
@@ -82,9 +85,8 @@ public class UdcExtensionImplTest
     private static final String VersionPattern = "\\d\\.\\d+((\\.|\\-).*)?";
 
     @Rule
-    public TestName testName = new TestName();
+    public TargetDirectory.TestDirectory path = TargetDirectory.testDirForTest( getClass() );
 
-    private File path;
     private PingerHandler handler;
     private Map<String, String> config;
 
@@ -93,7 +95,6 @@ public class UdcExtensionImplTest
     {
         UdcTimerTask.successCounts.clear();
         UdcTimerTask.failureCounts.clear();
-        path = TargetDirectory.forTest( getClass() ).cleanDirectory( testName.getMethodName() );
     }
 
     /**
@@ -139,10 +140,8 @@ public class UdcExtensionImplTest
     @Test
     public void shouldRecordFailuresWhenThereIsNoServer() throws Exception
     {
-        File possibleDirectory = new File( path, "should-record-failures" );
-
         GraphDatabaseService graphdb = new TestGraphDatabaseFactory().
-                newEmbeddedDatabaseBuilder( possibleDirectory.getPath() ).
+                newEmbeddedDatabaseBuilder( path.directory( "should-record-failures" ).getPath() ).
                 loadPropertiesFromURL( getClass().getResource( "/org/neo4j/ext/udc/udc.properties" ) ).
                 setConfig( UdcSettings.first_delay, "100" ).
                 setConfig( UdcSettings.udc_host, "127.0.0.1:1" ).
@@ -169,6 +168,32 @@ public class UdcExtensionImplTest
         GraphDatabaseService graphdb = createDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
         assertEquals( "unit-testing", handler.getQueryMap().get( SOURCE ) );
+
+        destroy( graphdb );
+    }
+
+    @Test
+    public void shouldRecordDatabaseMode() throws Exception
+    {
+        setupServer();
+
+        GraphDatabaseService graphdb = createDatabase( config );
+        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+        assertEquals( "SINGLE", handler.getQueryMap().get( DATABASE_MODE ) );
+
+        destroy( graphdb );
+    }
+
+    @Test
+    public void shouldRecordClusterName() throws Exception
+    {
+        setupServer();
+
+        GraphDatabaseService graphdb = createDatabase( config );
+        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+
+        String hashOfDefaultClusterName = "1108231321";
+        assertEquals( hashOfDefaultClusterName, handler.getQueryMap().get( CLUSTER_HASH ) );
 
         destroy( graphdb );
     }
@@ -276,7 +301,7 @@ public class UdcExtensionImplTest
         setupServer();
         GraphDatabaseService graphdb = createDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-        assertEquals( Edition.community.name(), handler.getQueryMap().get( EDITION ) );
+        assertEquals( Edition.enterprise.name(), handler.getQueryMap().get( EDITION ) );
 
         destroy( graphdb );
     }
@@ -349,26 +374,47 @@ public class UdcExtensionImplTest
     public void shouldIncludePrefixedSystemProperties() throws Exception
     {
         setupServer();
-        System.setProperty( UdcConstants.UDC_PROPERTY_PREFIX + ".test", "udc-property" );
-        System.setProperty( "os.test", "os-property" );
-        GraphDatabaseService graphdb = createDatabase( config );
-        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-        assertEquals( "udc-property", handler.getQueryMap().get( "test" ) );
-        assertEquals( "os-property", handler.getQueryMap().get( "os.test" ) );
+        withSystemProperty( UdcConstants.UDC_PROPERTY_PREFIX + ".test", "udc-property", new Callable<Void>()
+        {
+            @Override
+            public Void call() throws Exception
+            {
+                withSystemProperty( "os.test", "os-property", new Callable<Void>()
+                {
+                    @Override
+                    public Void call() throws Exception
+                    {
+                        GraphDatabaseService graphdb = createDatabase( config );
+                        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+                        assertEquals( "udc-property", handler.getQueryMap().get( "test" ) );
+                        assertEquals( "os-property", handler.getQueryMap().get( "os.test" ) );
 
-        destroy( graphdb );
+                        destroy( graphdb );
+                        return null;
+                    }
+                } );
+                return null;
+            }
+        } );
     }
 
     @Test
     public void shouldNotIncludeDistributionForWindows() throws Exception
     {
         setupServer();
-        System.setProperty( "os.name", "Windows" );
-        GraphDatabaseService graphdb = createDatabase( config );
-        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-        assertEquals( UdcConstants.UNKNOWN_DIST, handler.getQueryMap().get( "dist" ) );
+        withSystemProperty( "os.name", "Windows", new Callable<Void>()
+        {
+            @Override
+            public Void call() throws Exception
+            {
+                GraphDatabaseService graphdb = createDatabase( config );
+                assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+                assertEquals( UdcConstants.UNKNOWN_DIST, handler.getQueryMap().get( "dist" ) );
 
-        destroy( graphdb );
+                destroy( graphdb );
+                return null;
+            }
+        } );
     }
 
     @Test
@@ -391,12 +437,19 @@ public class UdcExtensionImplTest
     public void shouldNotIncludeDistributionForMacOS() throws Exception
     {
         setupServer();
-        System.setProperty( "os.name", "Mac OS X" );
-        GraphDatabaseService graphdb = createDatabase( config );
-        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-        assertEquals( UdcConstants.UNKNOWN_DIST, handler.getQueryMap().get( "dist" ) );
+        withSystemProperty( "os.name", "Mac OS X", new Callable<Void>()
+        {
+            @Override
+            public Void call() throws Exception
+            {
+                GraphDatabaseService graphdb = createDatabase( config );
+                assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+                assertEquals( UdcConstants.UNKNOWN_DIST, handler.getQueryMap().get( "dist" ) );
 
-        destroy( graphdb );
+                destroy( graphdb );
+                return null;
+            }
+        } );
     }
 
     @Test
@@ -410,6 +463,39 @@ public class UdcExtensionImplTest
         assertTrue( version.matches( VersionPattern ) );
 
         destroy( graphdb );
+    }
+
+    @Test
+    public void shouldReadSourceFromJar() throws Exception
+    {
+        setupServer();
+
+        GraphDatabaseService graphdb = createDatabase( config );
+        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+        String source = handler.getQueryMap().get( SOURCE );
+        assertEquals( "unit-testing", source );
+
+        destroy( graphdb );
+    }
+
+    @Test
+    public void shouldOverrideSourceWithSystemProperty() throws Exception
+    {
+        setupServer();
+
+        withSystemProperty( UdcSettings.udc_source.name(), "overridden", new Callable<Void>()
+        {
+            @Override
+            public Void call() throws Exception
+            {
+                GraphDatabaseService graphdb = createDatabase( config );
+                assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+                String source = handler.getQueryMap().get( SOURCE );
+                assertEquals( "overridden", source );
+                destroy( graphdb );
+                return null;
+            }
+        } );
     }
 
     @Test
@@ -458,7 +544,6 @@ public class UdcExtensionImplTest
         assertThat( DefaultUdcInformationCollector.filterVersionForUDC( "1.9" ),
                 is( equalTo( "1.9" ) ) );
     }
-
 
     private static interface Condition<T>
     {
@@ -557,7 +642,28 @@ public class UdcExtensionImplTest
     {
         ContainerRequest request = mock( ContainerRequest.class );
         List<String> headers = Arrays.asList( userAgent );
-        stub(request.getRequestHeader( "User-Agent" )).toReturn( headers );
+        stub( request.getRequestHeader( "User-Agent" ) ).toReturn( headers );
         return request;
+    }
+
+    private void withSystemProperty( String name, String value, Callable<Void> block ) throws Exception
+    {
+        String original = System.getProperty( name );
+        System.setProperty( name, value );
+        try
+        {
+            block.call();
+        }
+        finally
+        {
+            if ( original == null )
+            {
+                System.clearProperty( name );
+            }
+            else
+            {
+                System.setProperty( name, original );
+            }
+        }
     }
 }
