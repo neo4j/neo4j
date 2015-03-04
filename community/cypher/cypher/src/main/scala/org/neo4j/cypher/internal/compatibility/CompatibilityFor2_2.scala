@@ -266,7 +266,10 @@ case class CompatibilityPlanDescription(inner: InternalPlanDescription, version:
 
   def asJava: javacompat.PlanDescription = exceptionHandlerFor2_2.runSafely { asJava(self) }
 
-  override def toString: String = exceptionHandlerFor2_2.runSafely { s"Compiler CYPHER ${version.name}\n\nPlanner ${planner.toString.toUpperCase}\n\n$inner" }
+  override def toString: String = {
+    val NL = System.lineSeparator()
+    exceptionHandlerFor2_2.runSafely { s"Compiler CYPHER ${version.name}$NL${NL}Planner ${planner.name.toUpperCase}$NL$NL$inner" }
+  }
 
   def asJava(in: ExtendedPlanDescription): javacompat.PlanDescription = new javacompat.PlanDescription {
     def getProfilerStatistics: ProfilerStatistics = new ProfilerStatistics {

@@ -228,14 +228,14 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("reports COST planner when showing plan description") {
     val executionPlanDescription = eengine.execute("cypher 2.2 planner cost match n return n").executionPlanDescription()
-    executionPlanDescription.toString should include("Planner COST")
+    executionPlanDescription.toString should include("Planner COST" + System.lineSeparator())
   }
 
   test("reports RULE planner when showing plan description") {
     val executionPlanDescription = eengine.execute("cypher 2.2 planner cost create ()").executionPlanDescription()
 
     executionPlanDescription.toString should not include "Planner COST"
-    executionPlanDescription.toString should include("Planner RULE")
+    executionPlanDescription.toString should include("Planner RULE" + System.lineSeparator())
   }
 
   test("does not use Apply for aggregation and order by") {
