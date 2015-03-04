@@ -20,15 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v2_2
 
 import org.neo4j.cypher.GraphDatabaseTestSupport
-import org.neo4j.cypher.internal.NormalMode
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.ExecutionPlan
-import org.neo4j.cypher.internal.compiler.v2_2.planner.allQueryAcceptor
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.helpers.{FrozenClock, Clock}
+import org.neo4j.helpers.{Clock, FrozenClock}
 import org.neo4j.kernel.impl.util.StringLogger.DEV_NULL
 import org.neo4j.kernel.impl.util.TestLogger.LogCall
 import org.neo4j.kernel.impl.util.{StringLogger, TestLogger}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
 
 import scala.collection.Map
 
@@ -43,19 +42,19 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   }
 
   class CacheCounter(var counts: CacheCounts = CacheCounts()) extends AstCacheMonitor {
-    override def cacheHit(key: PreparedQuery) {
+    override def cacheHit(key: Statement) {
       counts = counts.copy(hits = counts.hits + 1)
     }
 
-    override def cacheMiss(key: PreparedQuery) {
+    override def cacheMiss(key: Statement) {
       counts = counts.copy(misses = counts.misses + 1)
     }
 
-    override def cacheFlushDetected(justBeforeKey: CacheAccessor[PreparedQuery, ExecutionPlan]) {
+    override def cacheFlushDetected(justBeforeKey: CacheAccessor[Statement, ExecutionPlan]) {
       counts = counts.copy(flushes = counts.flushes + 1)
     }
 
-    override def cacheDiscard(key: PreparedQuery): Unit = {
+    override def cacheDiscard(key: Statement): Unit = {
       counts = counts.copy(evicted = counts.evicted + 1)
     }
   }
@@ -79,6 +78,28 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
     graph.inTx { compiler.planQuery("return 42", planContext) }
     graph.inTx { compiler.planQuery("return 42", planContext) }
+
+    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1))
+  }
+
+  test("should not care about white spaces") {
+    val compiler = createCompiler()
+    val counter = new CacheCounter()
+    compiler.monitors.addMonitorListener(counter)
+
+    graph.inTx { compiler.planQuery("return 42", planContext) }
+    graph.inTx { compiler.planQuery("\treturn          42", planContext) }
+
+    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1))
+  }
+
+  test("should cache easily parametrized queries") {
+    val compiler = createCompiler()
+    val counter = new CacheCounter()
+    compiler.monitors.addMonitorListener(counter)
+
+    graph.inTx { compiler.planQuery("return 42 as result", planContext) }
+    graph.inTx { compiler.planQuery("return 43 as result", planContext) }
 
     counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1))
   }
@@ -123,6 +144,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     val compiler = createCompiler(queryPlanTTL = 0, clock = clock, logger = logger)
     compiler.monitors.addMonitorListener(counter)
     val query: String = "match (n:Person:Dog) return n"
+    val statement = compiler.prepareQuery(query).statement
 
     createLabeledNode("Dog")
     (0 until 50).foreach { _ => createLabeledNode("Person") }
@@ -133,6 +155,6 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     graph.inTx { compiler.planQuery(query, planContext) }
 
     // then
-    logger.assertExactly(LogCall.info(s"Discarded stale query from the query cache: $query"))
+    logger.assertExactly(LogCall.info(s"Discarded stale query from the query cache: ${statement}"))
   }
 }

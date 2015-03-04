@@ -65,9 +65,9 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
     val planner = CostBasedPlannerFactory(monitors, metricsFactory, planningMonitor, clock)
     val pipeBuilder = new LegacyVsNewPipeBuilder(new LegacyPipeBuilder(monitors), planner, planBuilderMonitor)
     val execPlanBuilder = new ExecutionPlanBuilder(graph, statsDivergenceThreshold, queryPlanTTL, clock, pipeBuilder)
-    val planCacheFactory = () => new LRUCache[PreparedQuery, ExecutionPlan](queryCacheSize)
+    val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](queryCacheSize)
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
-    val cache = new MonitoringCacheAccessor[PreparedQuery, ExecutionPlan](cacheMonitor)
+    val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheMonitor)
 
     val compiler = new CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheMonitor, monitors)
 
