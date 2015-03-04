@@ -169,7 +169,8 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
     {
         try
         {
-            return getSetting( "org.neo4j.server.web.ServerInternalSettings", "legacy_db_mode" );
+            String databaseType = kernel.graphDatabase().getClass().getSimpleName();
+            return "HighlyAvailableGraphDatabase".equals( databaseType ) ? "ha" : "single";
         }
         catch ( Exception e )
         {
@@ -181,7 +182,9 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
     {
         try
         {
-            return getSetting( "org.neo4j.cluster.ClusterSettings", "server_id" );
+            Class<?> settings = Class.forName( "org.neo4j.cluster.ClusterSettings" );
+            Setting setting = (Setting) settings.getField( "server_id" ).get( null );
+            return config.get( setting ).toString();
         }
         catch ( Exception e )
         {
@@ -213,22 +216,15 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
     {
         try
         {
-            String name = getSetting( "org.neo4j.cluster.ClusterSettings", "cluster_name" );
+            Class<?> settings = Class.forName( "org.neo4j.cluster.ClusterSettings" );
+            Setting setting = (Setting) settings.getField( "cluster_name" ).get( null );
+            Object name = config.get( setting );
             return name != null ? Math.abs( name.hashCode() % Integer.MAX_VALUE ) : null;
         }
         catch ( Exception e )
         {
             return null;
         }
-    }
-
-    private String getSetting( String className, String settingName )
-            throws ClassNotFoundException, IllegalAccessException, NoSuchFieldException
-    {
-        Class<?> settings = Class.forName( className );
-        @SuppressWarnings("unchecked")
-        Setting<String> setting = (Setting<String>) settings.getField( settingName ).get( null );
-        return config.get( setting );
     }
 
     private org.neo4j.ext.udc.Edition determineEdition( String classPath )

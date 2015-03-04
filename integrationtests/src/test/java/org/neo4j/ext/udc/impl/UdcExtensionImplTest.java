@@ -179,7 +179,7 @@ public class UdcExtensionImplTest
 
         GraphDatabaseService graphdb = createDatabase( config );
         assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
-        assertEquals( "SINGLE", handler.getQueryMap().get( DATABASE_MODE ) );
+        assertEquals( "single", handler.getQueryMap().get( DATABASE_MODE ) );
 
         destroy( graphdb );
     }
