@@ -31,7 +31,7 @@ sealed abstract class CostBasedPlannerName extends PlannerName
 /**
  * Rule based query planner, default in all versions below 2.2
  */
-case object RulePlanner extends PlannerName {
+case object RulePlannerName extends PlannerName {
   def name = "RULE"
 }
 
@@ -39,7 +39,7 @@ case object RulePlanner extends PlannerName {
  * Cost based query planner uses statistics from the running database to find good
  * query execution plans using greedy search.
  */
-case object CostPlanner extends CostBasedPlannerName {
+case object CostPlannerName extends CostBasedPlannerName {
   def name = "COST"
 }
 
@@ -47,7 +47,7 @@ case object CostPlanner extends CostBasedPlannerName {
  * Cost based query planner uses statistics from the running database to find good
  * query execution plans using limited exhaustive search based on the IDP algorithm.
  */
-case object IDPPlanner extends CostBasedPlannerName {
+case object IDPPlannerName extends CostBasedPlannerName {
   def name = "IDP"
 }
 
@@ -55,19 +55,19 @@ case object IDPPlanner extends CostBasedPlannerName {
  * Hybrid planner that uses the Cost based planner for most of its operations but falls back to
  * Rule based planner for classes of queries where the cost based planner might end up with suboptimal plans.
  */
-case object ConservativePlanner extends CostBasedPlannerName {
+case object ConservativePlannerName extends CostBasedPlannerName {
   def name = "CONSERVATIVE"
 }
 
 object PlannerName {
 
-  val default = ConservativePlanner
+  val default = ConservativePlannerName
 
   def apply(name: String): PlannerName = name.toUpperCase match {
-    case "RULE" => RulePlanner
-    case "COST" => CostPlanner
-    case "IDP" => IDPPlanner
-    case "CONSERVATIVE" => ConservativePlanner
+    case "RULE" => RulePlannerName
+    case "COST" => CostPlannerName
+    case "IDP" => IDPPlannerName
+    case "CONSERVATIVE" => ConservativePlannerName
 
     // Note that conservative planner is not exposed to end users.
     case n => throw new IllegalArgumentException(s"$n is not a a valid planner, valid options are COST, IDP and RULE")

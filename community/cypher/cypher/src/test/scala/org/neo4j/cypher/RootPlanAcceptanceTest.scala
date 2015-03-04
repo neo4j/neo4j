@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v2_2.{CostPlanner, PlannerName, RulePlanner}
+import org.neo4j.cypher.internal.compiler.v2_2.{CostPlannerName, PlannerName, RulePlannerName}
 
 class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -37,66 +37,66 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
   test("should use Cost if it can by default in 2.2") {
     given("match n return n")
       .shouldHaveCypherVersion(CypherVersion.v2_2)
-      .shouldHavePlannerName(CostPlanner)
+      .shouldHavePlannerName(CostPlannerName)
   }
   test("should use Rule for varlength in 2.2") {
     given("match (a)-[r:T1*]->(b) return a,r,b")
       .withCypherVersion(CypherVersion.v2_2)
       .shouldHaveCypherVersion(CypherVersion.v2_2)
-      .shouldHavePlannerName(RulePlanner)
+      .shouldHavePlannerName(RulePlannerName)
   }
 
   test("should use Cost for cycles in 2.2") {
     given("match (a)-[r]->(a) return a")
       .withCypherVersion(CypherVersion.v2_2)
       .shouldHaveCypherVersion(CypherVersion.v2_2)
-      .shouldHavePlannerName(CostPlanner)
+      .shouldHavePlannerName(CostPlannerName)
   }
 
   test("should fallback to Rule for updates in 2.2") {
     given("create() return 1")
       .withCypherVersion(CypherVersion.v2_2)
-      .withPlannerName(CostPlanner)
+      .withPlannerName(CostPlannerName)
       .shouldHaveCypherVersion(CypherVersion.v2_2)
-      .shouldHavePlannerName(RulePlanner)
+      .shouldHavePlannerName(RulePlannerName)
   }
 
   test("should use rule if we really ask for it in 2.2") {
     given("match n return n")
       .withCypherVersion(CypherVersion.v2_2)
-      .withPlannerName(RulePlanner)
+      .withPlannerName(RulePlannerName)
       .shouldHaveCypherVersion(CypherVersion.v2_2)
-      .shouldHavePlannerName(RulePlanner)
+      .shouldHavePlannerName(RulePlannerName)
   }
 
   test("should be able to switch between RULE and COST") {
     given("match n return n")
       .withCypherVersion(CypherVersion.v2_2)
-      .withPlannerName(RulePlanner)
+      .withPlannerName(RulePlannerName)
       .shouldHaveCypherVersion(CypherVersion.v2_2)
-      .shouldHavePlannerName(RulePlanner)
+      .shouldHavePlannerName(RulePlannerName)
 
     given("match n return n")
       .withCypherVersion(CypherVersion.v2_2)
-      .withPlannerName(CostPlanner)
+      .withPlannerName(CostPlannerName)
       .shouldHaveCypherVersion(CypherVersion.v2_2)
-      .shouldHavePlannerName(CostPlanner)
+      .shouldHavePlannerName(CostPlannerName)
 
   }
 
   test("should use cost if we really ask for it in 2.2") {
     given("match n return n")
       .withCypherVersion(CypherVersion.v2_2)
-      .withPlannerName(CostPlanner)
+      .withPlannerName(CostPlannerName)
       .shouldHaveCypherVersion(CypherVersion.v2_2)
-      .shouldHavePlannerName(CostPlanner)
+      .shouldHavePlannerName(CostPlannerName)
   }
 
   test("should fail when using planner together with older versions") {
     intercept[InvalidArgumentException] {
       given("match n return n")
         .withCypherVersion(CypherVersion.v2_1)
-        .withPlannerName(CostPlanner)
+        .withPlannerName(CostPlannerName)
         .planDescripton
     }
   }
@@ -106,9 +106,9 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       """MATCH p=(n:Person {first_name: 'Shawna'})-[:FRIEND_OF]-(m:Person)
         |RETURN p UNION MATCH p=(n:Person {first_name: 'Shawna'})-[:FRIEND_OF]-()-[:FRIEND_OF]-(m:Person) RETURN p""".stripMargin)
       .withCypherVersion(CypherVersion.v2_2)
-      .withPlannerName(RulePlanner)
+      .withPlannerName(RulePlannerName)
       .shouldHaveCypherVersion(CypherVersion.v2_2)
-      .shouldHavePlannerName(RulePlanner)
+      .shouldHavePlannerName(RulePlannerName)
   }
 
   test("troublesome query that should be run in cost") {
@@ -120,7 +120,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
         |LIMIT 10""".stripMargin)
       .withCypherVersion(CypherVersion.v2_2)
       .shouldHaveCypherVersion(CypherVersion.v2_2)
-      .shouldHavePlannerName(CostPlanner)
+      .shouldHavePlannerName(CostPlannerName)
   }
 
   test("another troublesome query that should be run in cost") {
@@ -130,7 +130,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
         |MATCH (db1)<-[:CONNECTED_TO]-()-[:CONNECTED_TO]-(db2) RETURN s""".stripMargin)
       .withCypherVersion(CypherVersion.v2_2)
       .shouldHaveCypherVersion(CypherVersion.v2_2)
-      .shouldHavePlannerName(CostPlanner)
+      .shouldHavePlannerName(CostPlannerName)
   }
 
   test("children should be empty") {

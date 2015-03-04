@@ -24,12 +24,12 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.Pipe
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
-import org.neo4j.cypher.internal.compiler.v2_2.{CostPlanner, EagerResultIterator, ExplainExecutionResult, PipeExecutionResult}
+import org.neo4j.cypher.internal.compiler.v2_2.{CostPlannerName, EagerResultIterator, ExplainExecutionResult, PipeExecutionResult}
 import org.neo4j.cypher.internal.{ExplainMode, NormalMode}
 import org.neo4j.graphdb.GraphDatabaseService
 
 class ExecutionWorkflowBuilderTest extends CypherFunSuite {
-  val PlannerName = CostPlanner
+  val PlannerName = CostPlannerName
 
   test("produces eager results for updating queries") {
     // GIVEN

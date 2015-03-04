@@ -26,14 +26,14 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{PlanningStrategyConfiguration, Cardinality, LogicalPlanningContext}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{QueryPlannerConfiguration, Cardinality, LogicalPlanningContext}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{FakePlan, LogicalPlanningTestSupport, PlannerQuery, QueryGraph}
 import org.neo4j.graphdb.Direction
 
 class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  private val defaultSolvers = PlanningStrategyConfiguration.default.optionalSolvers
-  private val pickBest = PlanningStrategyConfiguration.default.pickBestCandidate
+  private val defaultSolvers = QueryPlannerConfiguration.default.optionalSolvers
+  private val pickBest = QueryPlannerConfiguration.default.pickBestCandidate
 
   val patternRelAtoB = newPatternRelationship("a", "b", "r1")
   val patternRelAtoC = newPatternRelationship("a", "c", "r2")

@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.parser.{CypherParser, ParserMonit
 import org.neo4j.cypher.internal.compiler.v2_2.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.{expandsOrJoins, expandsOnly, GreedyQueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{GraphStatistics, PlanContext}
 import org.neo4j.graphdb.Direction
@@ -146,14 +147,14 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     FakePlan(ids)(PlannerQuery(qg))
   }
 
-  def newPlanner(metricsFactory: MetricsFactory): CostBasedPlanner =
-    CostBasedPlannerFactory(monitors, metricsFactory, monitors.newMonitor[PlanningMonitor](), Clock.SYSTEM_CLOCK)
+  def newPlanner(metricsFactory: MetricsFactory): CostBasedPipeBuilder =
+    CostBasedPipeBuilderFactory(monitors, metricsFactory, monitors.newMonitor[PlanningMonitor](), Clock.SYSTEM_CLOCK)
 
-  def produceLogicalPlan(queryText: String)(implicit planner: CostBasedPlanner, planContext: PlanContext): LogicalPlan = {
+  def produceLogicalPlan(queryText: String)(implicit planner: CostBasedPipeBuilder, planContext: PlanContext): LogicalPlan = {
     val parsedStatement = parser.parse(queryText)
     val semanticState = semanticChecker.check(queryText, parsedStatement)
     val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryText, parsedStatement, semanticState)
-    CostBasedPlanner.rewriteStatement(rewrittenStatement, semanticState.scopeTree, SemanticTable(types = semanticState.typeTable), postConditions, monitors.newMonitor[AstRewritingMonitor]()) match {
+    CostBasedPipeBuilder.rewriteStatement(rewrittenStatement, semanticState.scopeTree, SemanticTable(types = semanticState.typeTable), postConditions, monitors.newMonitor[AstRewritingMonitor]()) match {
       case (ast: Query, newTable)=>
         val semanticState = semanticChecker.check(queryText, ast)
         tokenResolver.resolve(ast)(newTable, planContext)

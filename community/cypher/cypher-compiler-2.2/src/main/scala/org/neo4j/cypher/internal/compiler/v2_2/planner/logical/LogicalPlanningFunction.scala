@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.PlanTable
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 
 trait LogicalPlanningFunction1[-A, +B] {
@@ -36,7 +37,6 @@ trait LogicalPlanningFunction2[-A1, -A2, +B] {
 
 // TODO: Return Iterator
 trait CandidateGenerator[T] extends LogicalPlanningFunction2[T, QueryGraph, Seq[LogicalPlan]]
-trait PlanTableGenerator extends LogicalPlanningFunction2[QueryGraph, Option[LogicalPlan], PlanTable]
 
 object CandidateGenerator {
   implicit final class RichCandidateGenerator[T](self: CandidateGenerator[T]) {
