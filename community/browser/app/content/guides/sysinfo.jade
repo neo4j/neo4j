@@ -39,6 +39,9 @@ article.help(ng-controller="SysinfoController")
             tr
               th String Store Size
               td {{sysinfo.kernel.StringStoreSize | humanReadableBytes}}
+            tr
+              th Total Store Size
+              td {{sysinfo.kernel.TotalStoreSize | humanReadableBytes}}
       .col-md-3.col-sm-4
         .panel.panel-default
           .panel-heading
@@ -63,7 +66,7 @@ article.help(ng-controller="SysinfoController")
           .panel-heading
             h4 Page Cache
           .panel-body(ng-hide="sysinfo.cache.available")
-            | Not available.
+            p Not available.
           table.table.table-condensed(ng-show="sysinfo.cache.available")
             tr
               th Faults
@@ -101,7 +104,7 @@ article.help(ng-controller="SysinfoController")
           .panel-heading
             h4 Transactions
           .panel-body(ng-hide="sysinfo.tx.available")
-            | Not available.
+            p Not available.
           table.table.table-condensed(ng-show="sysinfo.tx.available")
             tr
               th Last Tx Id
@@ -155,7 +158,7 @@ article.help(ng-controller="SysinfoController")
               th(colspan='5') Status
             tr(ng-repeat="member in sysinfo.ha.ClusterMembers", ng-class="{info: member.connected, warning: !member.available, danger: !member.alive }")
               td {{ member.instanceId }}
-              td 
+              td
                 span(ng-show='member.alive')
                   i.fa.fa-smile-o &nbsp;
                 span(ng-show='!member.alive')
@@ -168,11 +171,11 @@ article.help(ng-controller="SysinfoController")
               td
                 i.ha-master.fa(ng-class="{'fa-gavel': isMaster(member) }")
 
-            
+
   footer.tight
     small Note: some metrics only available in Neo4j Enterprise.
     .actions
-      .toggle(ng-click='toggleAutoRefresh()')
+      .toggle.toggle-footer-margin(ng-click='toggleAutoRefresh()')
         a.toggle-text Auto-refresh
         .switch
           label
@@ -182,10 +185,10 @@ article.help(ng-controller="SysinfoController")
               .handle
               span.left-text
                 | OFF
-      a.button.fa.fa-refresh(ng-click="refresh()") 
-      
+      a.button.fa.fa-refresh(ng-click="refresh()")
 
 
-          
-    
-          
+
+
+
+
