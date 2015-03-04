@@ -44,19 +44,20 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.csv.reader.Readables.multipleSources;
 import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.helpers.collection.IteratorUtil.array;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.TABS;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.data;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 
 public class DataFactoriesTest
 {
+    private static final int BUFFER_SIZE = 10_000;
+    private static final Configuration COMMAS = withBufferSize( Configuration.COMMAS, BUFFER_SIZE );
+    private static final Configuration TABS = withBufferSize( Configuration.TABS, BUFFER_SIZE );
+
     @Test
     public void shouldParseDefaultNodeFileHeaderCorrectly() throws Exception
     {
         // GIVEN
-        CharSeeker seeker = new BufferedCharSeeker( wrap( new StringReader(
-                "ID:ID,label-one:label,also-labels:LABEL,name,age:long" ) ) );
+        CharSeeker seeker = seeker( "ID:ID,label-one:label,also-labels:LABEL,name,age:long" );
         IdType idType = IdType.STRING;
         Extractors extractors = new Extractors( ',' );
 
@@ -77,8 +78,7 @@ public class DataFactoriesTest
     public void shouldParseDefaultRelationshipFileHeaderCorrectly() throws Exception
     {
         // GIVEN
-        CharSeeker seeker = new BufferedCharSeeker( wrap( new StringReader(
-                ":START_ID\t:END_ID\ttype:TYPE\tdate:long\tmore:long[]" ) ) );
+        CharSeeker seeker = seeker( ":START_ID\t:END_ID\ttype:TYPE\tdate:long\tmore:long[]" );
         IdType idType = IdType.ACTUAL;
         Extractors extractors = new Extractors( '\t' );
 
@@ -99,7 +99,7 @@ public class DataFactoriesTest
     public void shouldHaveEmptyHeadersBeInterpretedAsIgnored() throws Exception
     {
         // GIVEN
-        CharSeeker seeker = new BufferedCharSeeker( wrap( new StringReader( "one:id\ttwo\t\tdate:long" ) ) );
+        CharSeeker seeker = seeker( "one:id\ttwo\t\tdate:long" );
         IdType idType = IdType.ACTUAL;
         Extractors extractors = new Extractors( '\t' );
 
@@ -119,7 +119,7 @@ public class DataFactoriesTest
     public void shouldFailForDuplicatePropertyHeaderEntries() throws Exception
     {
         // GIVEN
-        CharSeeker seeker = new BufferedCharSeeker( wrap( new StringReader( "one:id\tname\tname:long" ) ) );
+        CharSeeker seeker = seeker( "one:id\tname\tname:long" );
         IdType idType = IdType.ACTUAL;
         Extractors extractors = new Extractors( '\t' );
 
@@ -141,7 +141,7 @@ public class DataFactoriesTest
     public void shouldFailForDuplicateIdHeaderEntries() throws Exception
     {
         // GIVEN
-        CharSeeker seeker = new BufferedCharSeeker( wrap( new StringReader( "one:id\ttwo:id" ) ) );
+        CharSeeker seeker = seeker( "one:id\ttwo:id" );
         IdType idType = IdType.ACTUAL;
         Extractors extractors = new Extractors( '\t' );
 
@@ -163,7 +163,7 @@ public class DataFactoriesTest
     public void shouldAllowMissingIdHeaderEntry() throws Exception
     {
         // GIVEN
-        CharSeeker seeker = new BufferedCharSeeker( wrap( new StringReader( "one\ttwo" ) ) );
+        CharSeeker seeker = seeker( "one\ttwo" );
         Extractors extractors = new Extractors( ';' );
 
         // WHEN
@@ -237,8 +237,7 @@ public class DataFactoriesTest
     public void shouldParseGroupName() throws Exception
     {
      // GIVEN
-        CharSeeker seeker = new BufferedCharSeeker( wrap( new StringReader(
-                ":START_ID(GroupOne)\t:END_ID(GroupTwo)\ttype:TYPE\tdate:long\tmore:long[]" ) ) );
+        CharSeeker seeker = seeker( ":START_ID(GroupOne)\t:END_ID(GroupTwo)\ttype:TYPE\tdate:long\tmore:long[]" );
         IdType idType = IdType.ACTUAL;
         Extractors extractors = new Extractors( '\t' );
 
@@ -253,6 +252,23 @@ public class DataFactoriesTest
                 entry( "date", Type.PROPERTY, extractors.long_() ),
                 entry( "more", Type.PROPERTY, extractors.longArray() ) ), header.entries() );
         seeker.close();
+    }
+
+    private CharSeeker seeker( String data )
+    {
+        return new BufferedCharSeeker( wrap( new StringReader( data ) ), BUFFER_SIZE );
+    }
+
+    private static Configuration withBufferSize( Configuration config, final int bufferSize )
+    {
+        return new Configuration.OverrideFromConfig( config )
+        {
+            @Override
+            public int bufferSize()
+            {
+                return bufferSize;
+            }
+        };
     }
 
     private Header.Entry entry( String name, Type type, Extractor<?> extractor )

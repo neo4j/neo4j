@@ -39,7 +39,6 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.FileUtils;
-
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -48,6 +47,7 @@ import org.neo4j.unsafe.impl.batchimport.Configuration;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.helpers.ArrayUtil.join;
 import static org.neo4j.tooling.ImportTool.MULTI_FILE_DELIMITER;
 
@@ -102,7 +102,7 @@ public class ImportToolDocIT
                 "--nodes", movies.getAbsolutePath(),
                 "--nodes", actors.getAbsolutePath(),
                 "--relationships", roles.getAbsolutePath() );
-        ImportTool.main( arguments );
+        importTool( arguments );
 
         // DOCS
         String realDir = movies.getParentFile().getAbsolutePath();
@@ -158,7 +158,7 @@ public class ImportToolDocIT
                 "--delimiter", ";",
                 "--array-delimiter", "|",
                 "--quote", "'");
-        ImportTool.main( arguments );
+        importTool( arguments );
 
         // DOCS
         String realDir = movies.getParentFile().getAbsolutePath();
@@ -222,7 +222,7 @@ public class ImportToolDocIT
                 "--nodes", moviesHeader.getAbsolutePath() + MULTI_FILE_DELIMITER + movies.getAbsolutePath(),
                 "--nodes", actorsHeader.getAbsolutePath() + MULTI_FILE_DELIMITER + actors.getAbsolutePath(),
                 "--relationships", rolesHeader.getAbsolutePath() + MULTI_FILE_DELIMITER + roles.getAbsolutePath());
-        ImportTool.main( arguments );
+        importTool( arguments );
 
         // DOCS
         String realDir = movies.getParentFile().getAbsolutePath();
@@ -300,7 +300,7 @@ public class ImportToolDocIT
                         MULTI_FILE_DELIMITER + actorsPart2.getAbsolutePath(),
                 "--relationships", rolesHeader.getAbsolutePath() + MULTI_FILE_DELIMITER + rolesPart1.getAbsolutePath() +
                         MULTI_FILE_DELIMITER + rolesPart2.getAbsolutePath() );
-        ImportTool.main( arguments );
+        importTool( arguments );
 
         // DOCS
         String realDir = moviesPart2.getParentFile().getAbsolutePath();
@@ -362,7 +362,7 @@ public class ImportToolDocIT
                 "--nodes:" + join( new String[] { "Actor" }, ":" ),
                     actors.getAbsolutePath(),
                 "--relationships", roles.getAbsolutePath() );
-        ImportTool.main( arguments );
+        importTool( arguments );
 
         // DOCS
         String realDir = movies.getParentFile().getAbsolutePath();
@@ -414,7 +414,7 @@ public class ImportToolDocIT
                 "--nodes", movies.getAbsolutePath(),
                 "--nodes", actors.getAbsolutePath(),
                 "--relationships:" + join( new String[] { "ACTED_IN" }, ":" ), roles.getAbsolutePath());
-        ImportTool.main( arguments );
+        importTool( arguments );
 
         // DOCS
         String realDir = movies.getParentFile().getAbsolutePath();
@@ -466,7 +466,7 @@ public class ImportToolDocIT
                 "--nodes", movies.getAbsolutePath(),
                 "--nodes", actors.getAbsolutePath(),
                 "--relationships:" + join( new String[] { "ACTED_IN" }, ":" ), roles.getAbsolutePath());
-        ImportTool.main( arguments );
+        importTool( arguments );
 
         // DOCS
         String realDir = movies.getParentFile().getAbsolutePath();
@@ -520,7 +520,7 @@ public class ImportToolDocIT
                 "--nodes", movies.getAbsolutePath(),
                 "--nodes", actors.getAbsolutePath(),
                 "--relationships", roles.getAbsolutePath() );
-        ImportTool.main( arguments );
+        importTool( arguments );
 
         // DOCS
         String realDir = movies.getParentFile().getAbsolutePath();
@@ -564,7 +564,7 @@ public class ImportToolDocIT
                 "--nodes", movies.getAbsolutePath(),
                 "--nodes", actors.getAbsolutePath(),
                 "--relationships", roles.getAbsolutePath() );
-        ImportTool.main( arguments );
+        importTool( arguments );
 
         // DOCS
         String realDir = movies.getParentFile().getAbsolutePath();
@@ -683,5 +683,10 @@ public class ImportToolDocIT
     private String[] arguments( String... arguments )
     {
         return arguments;
+    }
+
+    private void importTool( String[] arguments )
+    {
+        ImportTool.main( arguments, true );
     }
 }

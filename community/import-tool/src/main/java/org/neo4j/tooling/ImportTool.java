@@ -56,6 +56,8 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactory;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
+import static java.lang.System.out;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -67,7 +69,6 @@ import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.data;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
-import static java.lang.System.out;
 
 /**
  * User-facing command line tool around a {@link BatchImporter}.
@@ -208,7 +209,24 @@ public class ImportTool
      */
     static final String MULTI_FILE_DELIMITER = ",";
 
+    /**
+     * Runs the import tool given the supplied arguments.
+     *
+     * @param incomingArguments arguments for specifying input and configuration for the import.
+     */
     public static void main( String[] incomingArguments )
+    {
+        main( incomingArguments, false );
+    }
+
+    /**
+     * Runs the import tool given the supplied arguments.
+     *
+     * @param incomingArguments arguments for specifying input and configuration for the import.
+     * @param defaultSettingsSuitableForTests default configuration geared towards unit/integration
+     * test environments, for example lower default buffer sizes.
+     */
+    public static void main( String[] incomingArguments, boolean defaultSettingsSuitableForTests )
     {
         Args args = Args.parse( incomingArguments );
         if ( asksForUsage( args ) )
@@ -241,7 +259,8 @@ public class ImportTool
             input = new CsvInput(
                     nodeData( nodesFiles ), defaultFormatNodeFileHeader(),
                     relationshipData( relationshipsFiles ), defaultFormatRelationshipFileHeader(),
-                    idType, csvConfiguration( args ), Collectors.badRelationships( badTolerance ) );
+                    idType, csvConfiguration( args, defaultSettingsSuitableForTests ),
+                    Collectors.badRelationships( badTolerance ) );
         }
         catch ( IllegalArgumentException e )
         {
@@ -252,7 +271,8 @@ public class ImportTool
         Logging logging = life.add( new ClassicLoggingService(
                 new Config( stringMap( store_dir.name(), storeDir.getAbsolutePath() ) ) ) );
         life.start();
-        org.neo4j.unsafe.impl.batchimport.Configuration config = importConfiguration( processors, badFileName );
+        org.neo4j.unsafe.impl.batchimport.Configuration config =
+                importConfiguration( processors, badFileName, defaultSettingsSuitableForTests );
         BatchImporter importer = new ParallelBatchImporter( storeDir.getPath(),
                 config,
                 logging,
@@ -298,7 +318,7 @@ public class ImportTool
     }
 
     private static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration( final Number processors,
-            final String badFileName  )
+            final String badFileName, final boolean defaultSettingsSuitableForTests )
     {
         return new org.neo4j.unsafe.impl.batchimport.Configuration.Default()
         {
@@ -312,6 +332,12 @@ public class ImportTool
             public String badFileName()
             {
                 return badFileName != null ? badFileName : super.badFileName();
+            }
+
+            @Override
+            public int bigFileChannelBufferSizeMultiplier()
+            {
+                return defaultSettingsSuitableForTests ? 1 : super.bigFileChannelBufferSizeMultiplier();
             }
         };
     }
@@ -414,7 +440,7 @@ public class ImportTool
         return key.equals( "?" ) || key.equals( "help" );
     }
 
-    private static Configuration csvConfiguration( Args args )
+    private static Configuration csvConfiguration( Args args, final boolean defaultSettingsSuitableForTests )
     {
         final Configuration defaultConfiguration = COMMAS;
         final Character specificDelimiter =
@@ -447,6 +473,12 @@ public class ImportTool
                 return specificQuote != null
                         ? specificQuote.charValue()
                         : defaultConfiguration.quotationCharacter();
+            }
+
+            @Override
+            public int bufferSize()
+            {
+                return defaultSettingsSuitableForTests ? 10_000 : super.bufferSize();
             }
         };
     }
