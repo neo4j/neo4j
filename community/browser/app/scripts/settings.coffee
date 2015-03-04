@@ -47,6 +47,7 @@ angular.module('neo4jApp.settings', ['neo4jApp.utils'])
     acceptsReplies: false
     enableMotd: true
     initCmd: ":play start"
+    refreshInterval: 10 # in seconds
   })
 
 angular.module('neo4jApp.settings')
