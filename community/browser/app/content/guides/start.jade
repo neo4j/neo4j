@@ -14,10 +14,10 @@ article.guide
           img(src="images/code-icon.png")
           p.caption-cta
             a(play-topic='write-code') Code
-        //- .btn.btn-default.btn-app(ng-click="whichTab = 'explore'")
-        //-   img(src="images/data-icon.png")
-        //-   p.caption-cta
-        //-     a(play-topic='explore') Explore
+        .btn.btn-default.btn-app(ng-click="whichTab = 'monitor'")
+          img(src="images/health-icon.png")
+          p.caption-cta
+            a(play-topic='sysinfo') Monitor
             
       .col-sm-4(ng-switch="whichTab")
         div(ng-switch-default)
@@ -38,15 +38,15 @@ article.guide
             li Query templates 
           p &nbsp;
           button.btn.btn-cta(play-topic='write-code') Write Code (10-30 solid minutes)
-        //- div(ng-switch-when="explore")
-        //-   h3 Explore current graph
-        //-   p.lead Introspective Cypher queries.
-        //-   ul
-        //-     li Nodes by label, relationships by type
-        //-     li What is related, and how
-        //-     li Count all the things
-        //-   p &nbsp;
-        //-   button.btn.btn-cta(play-topic='explore') Explore (many enjoyable minutes)
+        div(ng-switch-when="monitor")
+          h3 Monitor the system
+          p.lead Key system health and status metrics.
+          ul
+            li Disk utilization
+            li Cache activity
+            li Cluster health and status
+          p &nbsp;
+          button.btn.btn-cta(play-topic='sysinfo') Monitor (many meaningful minutes)
         
     .hero-unit
       p(ng-class="{'motd-bang': motd.callToAction.bang}")

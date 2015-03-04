@@ -637,7 +637,7 @@ article.guide
                 a(href='http://neo4j.com/docs/{{neo4j.version | neo4jdoc }}/query-match.html#match-variable-length-relationships') variable length relationships
               li
                 a(href='http://neo4j.com/docs/{{neo4j.version | neo4jdoc }}/query-match.html#match-shortest-path') shortestPath
-      .col-sm-9
+      .col-sm-9        
         p.lead Movies and actors up to 4 "hops" away from Kevin Bacon
         figure
           pre.pre-scrollable.code.runnable.
@@ -650,6 +650,41 @@ article.guide
               (bacon:Person {name:"Kevin Bacon"})-[*]-(meg:Person {name:"Meg Ryan"})
             )
             RETURN p
+            
+    slide.row-fluid
+      .col-sm-3
+        h5 The Movie Graph
+        br
+        h3 Recommend
+        p Let's recommend new co-actors for Tom Hanks. A basic recommendation
+          | approach is to find connections past an immediate neighborhood
+          | which are themselves well connected.
+        p For Tom Hanks, that means:
+        ol
+          li Find actors that Tom Hanks hasn't yet worked with, but his co-actors have.
+          li Find someone who can introduce Tom to his potential co-actor. 
+        hr
+        p
+          small Neo4j Manual
+            ul
+              li
+                a(href='http://neo4j.com/docs/{{neo4j.version | neo4jdoc }}/query-match.html#match-variable-length-relationships') variable length relationships
+              li
+                a(href='http://neo4j.com/docs/{{neo4j.version | neo4jdoc }}/query-match.html#match-shortest-path') shortestPath
+      .col-sm-9
+        p.lead Extend Tom Hanks co-actors, to find co-co-actors who haven't work with Tom Hanks...
+        figure
+          pre.pre-scrollable.code.runnable.
+            MATCH (tom:Person {name:"Tom Hanks"})-[:ACTED_IN]->(m)<-[:ACTED_IN]-(coActors),
+                  (coActors)-[:ACTED_IN]->(m2)<-[:ACTED_IN]-(cocoActors)
+            WHERE NOT (tom)-[:ACTED_IN]->(m2)
+            RETURN cocoActors.name AS Recommended, count(*) AS Strength ORDER BY Strength DESC
+        p.lead Find someone to introduct Tom Hanks to Tom Cruise
+        figure
+          pre.pre-scrollable.code.runnable.
+            MATCH (tom:Person {name:"Tom Hanks"})-[:ACTED_IN]->(m)<-[:ACTED_IN]-(coActors),
+                  (coActors)-[:ACTED_IN]->(m2)<-[:ACTED_IN]-(cruise:Person {name:"Tom Cruise"})
+            RETURN tom, m, coActors, m2, cruise
     slide.row-fluid
       .col-sm-3
         h5 The Movie Graph

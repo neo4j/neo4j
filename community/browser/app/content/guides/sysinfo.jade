@@ -1,30 +1,194 @@
-article.help
+article.help(ng-controller="SysinfoController")
   .container-fluid
-   section.row-fluid
-      .col-sm-4.branding
-        .logo
-        h1 Neo4j Enterprise
-      .col-sm-4.stats
-        dl.dl-horizontal
-          dt Hostname:
-          dd {{host}}
-          dt Database:
-          dd {{kernel.store_dir}}
-          dt Store location:
-          dd {{kernel.StoreDirectory}}
-          dt Memory:
-          dd {{kernel.pagecache_memory}}
-      .col-sm-4
-        h2 Commands
-          span something something
-        p
-          | Donec sed odio dui. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Vestibulum id ligula porta felis euismod semper. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.
-        p
-          a.btn(href='commands.html') {{cmdchar}}help commands »
+    //- section.row
+    //-   .col-sm-12
+    //-     .panel.panel-default
+    //-       .panel-heading
+    //-         h4 Neo4j Info
+    //-       //- .panel-body
+    //-       //-   | {{foo}}
+    //-       table.table
+    //-         tr
+    //-           th Version
+    //-           td {{neo4j.version}}
+    //-           th Edition
+    //-           td {{neo4j.edition}}
+    section.row
+      .col-md-3.col-sm-4
+        .panel.panel-default
+          .panel-heading
+            h4 Store Sizes
+          //- .panel-body
+          //-   | Bodae
+          table.table.table-condensed
+            tr
+              th Array Store
+              td {{sysinfo.kernel.ArrayStoreSize | humanReadableBytes}}
+            tr
+              th Logical Log
+              td {{sysinfo.kernel.LogicalLogSize | humanReadableBytes}}
+            tr
+              th Node Store
+              td {{sysinfo.kernel.NodeStoreSize | humanReadableBytes}}
+            tr
+              th Property Store
+              td {{sysinfo.kernel.PropertyStoreSize | humanReadableBytes}}
+            tr
+              th Relationship Store
+              td {{sysinfo.kernel.RelationshipStoreSize | humanReadableBytes}}
+            tr
+              th String Store Size
+              td {{sysinfo.kernel.StringStoreSize | humanReadableBytes}}
+            tr
+              th Total Store Size
+              td {{sysinfo.kernel.TotalStoreSize | humanReadableBytes}}
+      .col-md-3.col-sm-4
+        .panel.panel-default
+          .panel-heading
+            h4 ID Allocation
+          //- .panel-body
+          //-   | Bodae
+          table.table.table-condensed
+            tr
+              th Node ID
+              td {{sysinfo.primitives.NumberOfNodeIdsInUse}}
+            tr
+              th Property ID
+              td {{sysinfo.primitives.NumberOfPropertyIdsInUse}}
+            tr
+              th Relationship ID
+              td {{sysinfo.primitives.NumberOfRelationshipIdsInUse}}
+            tr
+              th Relationship Type ID
+              td {{sysinfo.primitives.NumberOfRelationshipTypeIdsInUse}}
+      .col-lg-6.col-md-4.col-sm-12
+        .panel.panel-default
+          .panel-heading
+            h4 Page Cache
+          .panel-body(ng-hide="sysinfo.cache.available")
+            p Not available.
+          table.table.table-condensed(ng-show="sysinfo.cache.available")
+            tr
+              th Faults
+              td {{sysinfo.cache.Faults}}
+              td &nbsp;
+              th Flushes
+              td {{sysinfo.cache.Flushes}}
+            tr
+              th Evictions
+              td {{sysinfo.cache.Evictions}}
+              td &nbsp;
+              th Eviction Exceptions
+              td {{sysinfo.cache.EvictionExceptions}}
+            tr
+              th Pins
+              td {{sysinfo.cache.Pins}}
+              td &nbsp;
+              th Unpins
+              td {{sysinfo.cache.Unpins}}
+            tr
+              th File Mappings
+              td {{sysinfo.cache.FileMappings}}
+              td &nbsp;
+              th File Unmappings
+              td {{sysinfo.cache.FileUnmappings}}
+            tr
+              th Bytes Read
+              td {{sysinfo.cache.BytesRead}}
+              td &nbsp;
+              th Bytes Written
+              td {{sysinfo.cache.BytesWritten}}
+    section.row
+      .col-md-3.col-sm-4
+        .panel.panel-default
+          .panel-heading
+            h4 Transactions
+          .panel-body(ng-hide="sysinfo.tx.available")
+            p Not available.
+          table.table.table-condensed(ng-show="sysinfo.tx.available")
+            tr
+              th Last Tx Id
+              td {{sysinfo.tx.LastCommittedTxId}}
+            tr
+              th Current
+              td {{sysinfo.tx.NumberOfOpenTransactions}}
+            tr
+              th Peak
+              td {{sysinfo.tx.PeakNumberOfConcurrentTransactions}}
+            tr
+              th Opened
+              td {{sysinfo.tx.NumberOfOpenedTransactions}}
+            tr
+              th Committed
+              td {{sysinfo.tx.NumberOfCommittedTransactions}}
+      .col-md-3.col-sm-4
+        .panel.panel-default
+          .panel-heading
+            h4 High Availability
+          .panel-body(ng-hide='sysinfo.ha.clustered')
+            p Not enabled.
+          table.table.table-condensed(ng-show='sysinfo.ha.clustered')
+            tr
+              th InstanceId
+              td {{sysinfo.ha.InstanceId}}
+            tr
+              th Role
+              td {{sysinfo.ha.Role}}
+            tr
+              th Alive
+              td {{sysinfo.ha.Alive}}
+            tr
+              th Available
+              td {{sysinfo.ha.Available}}
+            tr
+              th Last Committed Tx Id
+              td {{sysinfo.ha.LastCommittedTxId}}
+            tr
+              th Last Update Time
+              td {{sysinfo.ha.LastUpdateTime}}
+      .col-md-3.col-sm-4
+        .panel.panel-default
+          .panel-heading
+            h4 Cluster
+          .panel-body(ng-hide='sysinfo.ha.clustered')
+            p No cluster.
+          table.table.table-condensed(ng-show='sysinfo.ha.clustered')
+            tr
+              th Id
+              th(colspan='5') Status
+            tr(ng-repeat="member in sysinfo.ha.ClusterMembers", ng-class="{info: member.connected, warning: !member.available, danger: !member.alive }")
+              td {{ member.instanceId }}
+              td
+                span(ng-show='member.alive')
+                  i.fa.fa-smile-o &nbsp;
+                span(ng-show='!member.alive')
+                  i.fa.fa-frown-o &nbsp;
+              td
+                span(ng-show='member.available')
+                  i.fa.fa-check-circle &nbsp;
+                span(ng-show='!member.available')
+                  i.fa.fa-exclamation-circle &nbsp;
+              td
+                i.ha-master.fa(ng-class="{'fa-gavel': isMaster(member) }")
 
-    section.row-fluid.footer
-      .license
-        | License GPLv3
-        a()  (Read more)
-        br
-        | Copyright 2013 Neo Technology
+
+  footer.tight
+    small Note: some metrics only available in Neo4j Enterprise.
+    .actions
+      .toggle.toggle-footer-margin(ng-click='toggleAutoRefresh()')
+        a.toggle-text Auto-refresh
+        .switch
+          label
+            .switch-inner(ng-class="{right: autoRefresh}")
+              span.right-text
+                | ON
+              .handle
+              span.left-text
+                | OFF
+      a.button.fa.fa-refresh(ng-click="refresh()")
+
+
+
+
+
+
