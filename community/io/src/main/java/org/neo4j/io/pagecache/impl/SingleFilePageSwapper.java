@@ -239,7 +239,24 @@ public class SingleFilePageSwapper implements PageSwapper
     @Override
     public void force() throws IOException
     {
-        channel.force( false );
+        try
+        {
+            channel.force( false );
+        }
+        catch ( ClosedChannelException e )
+        {
+            // AsynchronousCloseException is a subclass of
+            // ClosedChannelException, and ClosedByInterruptException is in
+            // turn a subclass of AsynchronousCloseException.
+            tryReopen( e );
+            boolean interrupted = Thread.interrupted();
+            // Recurse because this is hopefully a very rare occurrence.
+            force();
+            if ( interrupted )
+            {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     @Override

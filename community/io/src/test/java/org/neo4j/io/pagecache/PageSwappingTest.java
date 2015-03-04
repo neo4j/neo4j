@@ -132,6 +132,19 @@ public abstract class PageSwappingTest
     }
 
     @Test
+    public void forcingMustNotSwallowInterrupts() throws IOException
+    {
+        File file = new File( "a" );
+        fs.create( file ).close();
+
+        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize, NO_CALLBACK );
+
+        Thread.currentThread().interrupt();
+        swapper.force();
+        assertTrue( Thread.currentThread().isInterrupted() );
+    }
+
+    @Test
     public void mustReopenChannelWhenReadFailsWithAsynchronousCloseException() throws IOException
     {
         long x = ThreadLocalRandom.current().nextLong();
@@ -220,6 +233,26 @@ public abstract class PageSwappingTest
     }
 
     @Test
+    public void mustReopenChannelWhenForceFailsWithAsynchronousCloseException() throws IOException
+    {
+        File file = new File( "a" );
+        fs.create( file ).close();
+
+        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize, NO_CALLBACK );
+
+        for ( int i = 0; i < 10; i++ )
+        {
+            Thread.currentThread().interrupt();
+
+            // This must not throw
+            swapper.force();
+
+            // Clear the interrupted flag and assert that it was still raised
+            assertTrue( Thread.interrupted() );
+        }
+    }
+
+    @Test
     public void readMustNotReopenExplicitlyClosedChannel() throws IOException
     {
         File file = new File( "a" );
@@ -271,6 +304,26 @@ public abstract class PageSwappingTest
         finally
         {
             unlockWrite( page, stamp );
+        }
+    }
+
+    @Test
+    public void forceMustNotReopenExplicitlyClosedChannel() throws IOException
+    {
+        File file = new File( "a" );
+        fs.create( file ).close();
+
+        PageSwapper swapper = swapperFactory.createPageSwapper( file, cachePageSize, NO_CALLBACK );
+        swapper.close();
+
+        try
+        {
+            swapper.force();
+            fail( "Should have thrown because the channel should be closed" );
+        }
+        catch ( ClosedChannelException ignore )
+        {
+            // This is fine.
         }
     }
 }
