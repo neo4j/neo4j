@@ -36,12 +36,6 @@ import org.neo4j.kernel.monitoring.Monitors;
  */
 public class LabelTokenStore extends TokenStore<LabelTokenRecord>
 {
-    public static abstract class Configuration
-        extends TokenStore.Configuration
-    {
-
-    }
-
     public static final String TYPE_DESCRIPTOR = "LabelTokenStore";
     public static final int RECORD_SIZE = 1/*inUse*/ + 4/*nameId*/;
 

@@ -269,7 +269,7 @@ public class BatchInserterImpl implements BatchInserter
         schemaCache = new SchemaCache( neoStore.getSchemaStore() );
 
         KernelExtensions extensions = life
-                .add( new KernelExtensions( kernelExtensions, config, new DependencyResolverImpl(),
+                .add( new KernelExtensions( kernelExtensions, new DependencyResolverImpl(),
                                             UnsatisfiedDependencyStrategies.ignore() ) );
 
         SchemaIndexProvider provider = extensions.resolveDependency( SchemaIndexProvider.class,

@@ -19,13 +19,13 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import java.io.IOException;
-
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
+
+import java.io.IOException;
+
 import org.neo4j.index.lucene.ValueContext;
 
 public abstract class LuceneUtil
@@ -57,30 +57,6 @@ public abstract class LuceneUtil
             {
                 ((IndexSearcher) object).close();
             }
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    static void strictAddDocument( IndexWriter writer, Document document )
-    {
-        try
-        {
-            writer.addDocument( document );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    static void strictRemoveDocument( IndexWriter writer, Query query )
-    {
-        try
-        {
-            writer.deleteDocuments( query );
         }
         catch ( IOException e )
         {

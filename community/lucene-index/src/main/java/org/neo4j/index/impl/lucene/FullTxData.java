@@ -19,15 +19,6 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
@@ -49,10 +40,18 @@ import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import org.neo4j.index.lucene.QueryContext;
 
 import static java.util.Collections.emptyList;
-
 import static org.neo4j.index.impl.lucene.LuceneDataSource.LUCENE_VERSION;
 import static org.neo4j.index.impl.lucene.LuceneIndex.KEY_DOC_ID;
 
@@ -146,7 +145,7 @@ class FullTxData extends TxData
     {
         if ( orphans == null )
         {
-            orphans = new HashSet<String>();
+            orphans = new HashSet<>();
         }
         orphans.add( key );
     }
@@ -211,7 +210,7 @@ class FullTxData extends TxData
     {
         if ( this.directory == null )
         {
-            return Collections.<Long>emptySet();
+            return Collections.emptySet();
         }
 
         try
@@ -221,7 +220,7 @@ class FullTxData extends TxData
             IndexSearcher theSearcher = searcher( prioritizeCorrectness );
             query = includeOrphans( query );
             Hits hits = new Hits( theSearcher, query, null, sorting, prioritizeCorrectness );
-            Collection<Long> result = new ArrayList<Long>();
+            Collection<Long> result = new ArrayList<>();
             for ( int i = 0; i < hits.length(); i++ )
             {
                 result.add( Long.valueOf( hits.doc( i ).get( KEY_DOC_ID ) ) );

@@ -28,8 +28,6 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.cache.Cache;
-import org.neo4j.kernel.impl.locking.Lock;
-import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.state.RelationshipChainLoader;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -43,14 +41,12 @@ import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
  */
 public class RelationshipLoader
 {
-    private final LockService lockService;
     private final Cache<RelationshipImpl> relationshipCache;
     private final RelationshipChainLoader chainLoader;
 
-    public RelationshipLoader( LockService lockService, Cache<RelationshipImpl> relationshipCache,
+    public RelationshipLoader( Cache<RelationshipImpl> relationshipCache,
                                RelationshipChainLoader chainLoader )
     {
-        this.lockService = lockService;
         this.relationshipCache = relationshipCache;
         this.chainLoader = chainLoader;
     }
@@ -157,10 +153,5 @@ public class RelationshipLoader
     public RelationshipLoadingPosition getRelationshipChainPosition( long id )
     {
         return chainLoader.getRelationshipChainPosition( id );
-    }
-
-    public Lock lowLevelNodeReadLock( long nodeId )
-    {
-        return lockService.acquireNodeLock( nodeId, LockService.LockType.READ_LOCK );
     }
 }

@@ -19,15 +19,15 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+
 import java.io.Closeable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
 
 import org.neo4j.index.lucene.QueryContext;
 
@@ -116,7 +116,7 @@ class LuceneTransactionState implements Closeable
     {
         if ( c1 == null && c2 == null )
         {
-            return Collections.<Long>emptySet();
+            return Collections.emptySet();
         }
         else if ( c1 != null && c2 != null )
         {
@@ -137,17 +137,6 @@ class LuceneTransactionState implements Closeable
         {
             return c1 != null ? c1 : c2;
         }
-    }
-
-    Collection<Long> getAddedIds( LuceneIndex index, Query query, QueryContext contextOrNull )
-    {
-        TxDataHolder added = addedTxDataOrNull( index );
-        if ( added == null )
-        {
-            return Collections.emptySet();
-        }
-        Collection<Long> ids = added.query( query, contextOrNull );
-        return ids != null ? ids : Collections.<Long>emptySet();
     }
 
     Collection<Long> getAddedIds( LuceneIndex index, String key, Object value )

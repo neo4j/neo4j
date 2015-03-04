@@ -183,26 +183,6 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
             return key;
         }
 
-        public long expectedFirstCount()
-        {
-            return expectedFirst;
-        }
-
-        public long expectedSecondCount()
-        {
-            return expectedSecond;
-        }
-
-        public long actualFirstCount()
-        {
-            return actualFirst;
-        }
-
-        public long actualSecondCount()
-        {
-            return actualSecond;
-        }
-
         @Override
         public boolean equals( Object obj )
         {

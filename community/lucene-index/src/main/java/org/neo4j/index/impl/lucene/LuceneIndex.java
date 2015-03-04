@@ -19,16 +19,6 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.Term;
@@ -38,6 +28,16 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -62,12 +62,7 @@ public abstract class LuceneIndex implements LegacyIndex
 
     protected final IndexIdentifier identifier;
     final IndexType type;
-    private volatile boolean deleted;
 
-    // Will contain ids which were found to be missing from the graph when doing queries
-    // Write transactions can fetch from this list and add to their transactions to
-    // allow for self-healing properties.
-    final Collection<Long> abandonedIds = new CopyOnWriteArraySet<>();
     protected final LuceneTransactionState transaction;
     private final LuceneDataSource dataSource;
     protected final IndexCommandFactory commandFactory;
@@ -316,7 +311,7 @@ public abstract class LuceneIndex implements LegacyIndex
             IndexSearcher searcher = additionsSearcher == null ? searcherRef.getSearcher() :
                     new IndexSearcher( new MultiReader( searcherRef.getSearcher().getIndexReader(),
                             additionsSearcher.getIndexReader() ) );
-            IndexHits<Document> result = null;
+            IndexHits<Document> result;
             if ( additionalParametersOrNull != null && additionalParametersOrNull.getTop() > 0 )
             {
                 result = new TopDocsIterator( query, additionalParametersOrNull, searcher );
@@ -349,16 +344,6 @@ public abstract class LuceneIndex implements LegacyIndex
             String idString = iterator.next().getField( KEY_DOC_ID ).stringValue();
             removed.remove( Long.valueOf( idString ) );
         }
-    }
-
-    public void setCacheCapacity( String key, int capacity )
-    {
-        dataSource.setCacheCapacity( identifier, key, capacity );
-    }
-
-    public Integer getCacheCapacity( String key )
-    {
-        return dataSource.getCacheCapacity( identifier, key );
     }
 
     IndexIdentifier getIdentifier()

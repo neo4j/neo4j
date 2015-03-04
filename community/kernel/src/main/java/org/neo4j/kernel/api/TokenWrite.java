@@ -43,7 +43,7 @@ public interface TokenWrite
 
     void propertyKeyCreateForName( String propertyKeyName, int id) throws IllegalTokenNameException;
 
-    public void relationshipTypeCreateForName( String relationshipTypeName,
+    void relationshipTypeCreateForName( String relationshipTypeName,
                                                int id ) throws
             IllegalTokenNameException;
 }
