@@ -302,19 +302,42 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     }
   }
 
-  test("should produce no plans for expand and join when the considered sub-query are not solved") {
-    // keep, practical for investigating performance
+  test("should plan big star pattern") {
+    // keep around, practical for investigating performance
+    val numberOfPatternRelationships = 10
 
     new given {
       queryGraphSolver = IDPQueryGraphSolver()
-      qg = QueryGraph(patternNodes = Set("corp", "a1", "a2", "c", "v"),
-        patternRelationships = Set(
-          PatternRelationship("r1", ("corp", "a1"), Direction.INCOMING, Seq.empty, SimplePatternLength),
-          PatternRelationship("r2", ("a1", "c"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
-          PatternRelationship("r3", ("c", "v"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
-          PatternRelationship("r4", ("corp", "a2"), Direction.INCOMING, Seq.empty, SimplePatternLength),
-          PatternRelationship("r5", ("a2", "c"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
-        ))
+      val patternRels = for (i <- 1 to numberOfPatternRelationships) yield {
+        PatternRelationship("r" + i, ("n" + i, "x"), Direction.INCOMING, Seq.empty, SimplePatternLength)
+      }
+
+      val patternNodes = for (i <- 1 to numberOfPatternRelationships) yield {
+        IdName("n" + i)
+      }
+
+      qg = QueryGraph(patternNodes = patternNodes.toSet + IdName("x"), patternRelationships = patternRels.toSet)
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
+      queryGraphSolver.plan(cfg.qg) // should not throw
+    }
+  }
+
+  test("should plan big chain pattern") {
+    // keep around, practical for investigating performance
+    val numberOfPatternRelationships = 10
+
+    new given {
+      val patternRels = for (i <- 1 to numberOfPatternRelationships-1) yield {
+        PatternRelationship("r" + i, ("n" + i, "n" + (i+1)), Direction.INCOMING, Seq.empty, SimplePatternLength)
+      }
+
+      val patternNodes = for (i <- 1 to numberOfPatternRelationships) yield {
+        IdName("n" + i)
+      }
+
+      queryGraphSolver = IDPQueryGraphSolver()
+      qg = QueryGraph(patternNodes = patternNodes.toSet, patternRelationships = patternRels.toSet)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       implicit val x = ctx
       queryGraphSolver.plan(cfg.qg) // should not throw
@@ -445,7 +468,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         patternNodes = Set.empty,
         argumentIds = Set.empty,
         optionalMatches = Seq(QueryGraph(
-          patternNodes = Set("a","b"),
+          patternNodes = Set("a", "b"),
           argumentIds = Set.empty,
           patternRelationships = Set(PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)))
         )
@@ -458,7 +481,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
           SingleRow(),
           Optional(
             Expand(
-              AllNodesScan("b",Set.empty)(null),
+              AllNodesScan("b", Set.empty)(null),
               "b", Direction.INCOMING, Seq.empty, "a", "r", ExpandAll
             )(null)
           )(null)

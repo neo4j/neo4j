@@ -37,7 +37,7 @@ import scala.annotation.tailrec
  *
  * Line comments correspond to the lines in the pseudo-code in that paper for the IDP1 algorithm.
  */
-case class IDPQueryGraphSolver(maxDepth: Int = 9,
+case class IDPQueryGraphSolver(maxDepth: Int = 5,
                                leafPlanFinder: LogicalLeafPlan.Finder = leafPlanOptions,
                                bestPlanFinder: CandidateSelector = pickBestPlan,
                                config: QueryPlannerConfiguration = QueryPlannerConfiguration.default,
@@ -149,8 +149,7 @@ case class IDPQueryGraphSolver(maxDepth: Int = 9,
       val solutionGenerator = newSolutionGenerator(qg, kit, table)
       solvePatterns(qg, initialToDo, kit, table, solutionGenerator)
 
-      // TODO: Not exactly pretty
-      table.head
+      table.singleRemainingPlan
     } else {
       val solutionPlans = leaves.filter(plan => (qg.coveredIds -- plan.availableSymbols).isEmpty)
       bestPlanFinder(solutionPlans).getOrElse(throw new InternalException("Found no leaf plan for connected component.  This must not happen."))
@@ -181,7 +180,7 @@ case class IDPQueryGraphSolver(maxDepth: Int = 9,
       val blockSolved = SolvableBlock(bestSolvables.flatMap(_.solvables))
       table.put(Set(blockSolved), bestBlock)
       val newToDo = toDo -- bestSolvables + blockSolved
-      bestSolvables.subsets.foreach(table.remove)
+      table.removeAllTracesOf(bestSolvables)
       solvePatterns(qg, newToDo, kit, table, solutionGenerator)
     }
   }
@@ -218,4 +217,3 @@ case class IDPQueryGraphSolver(maxDepth: Int = 9,
     solutionGenerator
   }
 }
-
