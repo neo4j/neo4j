@@ -63,22 +63,25 @@ public class ConsistencyCheckTasks
     public List<StoppableRunnable> createTasks(
             StoreAccess nativeStores, LabelScanStore labelScanStore, IndexAccessors indexes,
             MultiPassStore.Factory multiPass, ConsistencyReporter reporter,
-            boolean checkLabelScanStore, boolean checkIndexes )
+            boolean checkLabelScanStore, boolean checkIndexes, boolean checkGraph )
     {
         List<StoppableRunnable> tasks = new ArrayList<>();
 
-        tasks.add( create( nativeStores.getNodeStore(),
-                multiPass.processors( PROPERTIES, RELATIONSHIPS ) ) );
+        if ( checkGraph )
+        {
+            tasks.add( create( nativeStores.getNodeStore(),
+                    multiPass.processors( PROPERTIES, RELATIONSHIPS ) ) );
 
-        tasks.add( create( nativeStores.getRelationshipStore(),
-                multiPass.processors(  NODES, PROPERTIES, RELATIONSHIPS  ) ) );
+            tasks.add( create( nativeStores.getRelationshipStore(),
+                    multiPass.processors( NODES, PROPERTIES, RELATIONSHIPS ) ) );
 
-        tasks.add( create( nativeStores.getPropertyStore(),
-                multiPass.processors(  PROPERTIES, STRINGS, ARRAYS  ) ) );
+            tasks.add( create( nativeStores.getPropertyStore(),
+                    multiPass.processors( PROPERTIES, STRINGS, ARRAYS ) ) );
 
-        tasks.add( create( nativeStores.getStringStore(), multiPass.processors( STRINGS ) ) );
+            tasks.add( create( nativeStores.getStringStore(), multiPass.processors( STRINGS ) ) );
 
-        tasks.add( create( nativeStores.getArrayStore(), multiPass.processors( ARRAYS ) ) );
+            tasks.add( create( nativeStores.getArrayStore(), multiPass.processors( ARRAYS ) ) );
+        }
 
         // The schema store is verified in multiple passes that share state since it fits into memory
         // and we care about the consistency of back references (cf. SemanticCheck)
@@ -97,13 +100,16 @@ public class ConsistencyCheckTasks
                 nativeStores.getSchemaStore(), "check_obligations", schemaCheck.forObligationChecking(), progress, order,
                 processor, processor ) );
 
-        tasks.add( create( nativeStores.getRelationshipTypeTokenStore() ) );
-        tasks.add( create( nativeStores.getPropertyKeyTokenStore() ) );
-        tasks.add( create( nativeStores.getLabelTokenStore() ) );
-        tasks.add( create( nativeStores.getRelationshipTypeNameStore() ) );
-        tasks.add( create( nativeStores.getPropertyKeyNameStore() ) );
-        tasks.add( create( nativeStores.getLabelNameStore() ) );
-        tasks.add( create( nativeStores.getNodeDynamicLabelStore() ) );
+        if ( checkGraph )
+        {
+            tasks.add( create( nativeStores.getRelationshipTypeTokenStore() ) );
+            tasks.add( create( nativeStores.getPropertyKeyTokenStore() ) );
+            tasks.add( create( nativeStores.getLabelTokenStore() ) );
+            tasks.add( create( nativeStores.getRelationshipTypeNameStore() ) );
+            tasks.add( create( nativeStores.getPropertyKeyNameStore() ) );
+            tasks.add( create( nativeStores.getLabelNameStore() ) );
+            tasks.add( create( nativeStores.getNodeDynamicLabelStore() ) );
+        }
 
         if ( checkLabelScanStore )
         {
