@@ -33,6 +33,7 @@ class QueryPlanningStrategyTest extends CypherFunSuite with LogicalPlanningTestS
     // given
     val expectedPlan = mock[LogicalPlan]
     val solver = new TentativeQueryGraphSolver {
+      override def config = ???
       override def tryPlan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): Option[LogicalPlan] = ???
       override def emptyPlanTable: PlanTable = ???
       override def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = expectedPlan
