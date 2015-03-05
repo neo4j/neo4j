@@ -21,33 +21,15 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.projectEndpoints
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{ProjectEndpoints, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.solveOptionalMatches.OptionalSolver
 
-case class QueryPlannerConfiguration(
-    leafPlanners: LeafPlannerList,
-    applySelections: PlanTransformer[QueryGraph],
-    projectAllEndpoints: PlanTransformer[QueryGraph],
-    optionalSolvers: Seq[OptionalSolver],
-    pickBestCandidate: CandidateSelector
-  ) {
-
-  val optionalMatchesSolver = solveOptionalMatches(optionalSolvers, pickBestCandidate)
-
-  def kitInContext(implicit context: LogicalPlanningContext) = (qg: QueryGraph) =>
-    QueryPlannerKit(
-      select = plan => applySelections(plan, qg)
-    )
-}
-
-case class QueryPlannerKit(select: LogicalPlan => LogicalPlan)
-
 object QueryPlannerConfiguration {
   val default = QueryPlannerConfiguration(
-    pickBestCandidate = pickBestPlan,
-    applySelections = selectPatternPredicates(selectCovered, pickBestPlan),
-    projectAllEndpoints = projectEndpoints.all,
+    pickBestCandidate = pickBestPlanUsingHintsAndCost,
+    applySelections = selectPatternPredicates(selectCovered, pickBestPlanUsingHintsAndCost),
+    projectEndpoints = projectEndpoints.all,
     optionalSolvers = Seq(
       applyOptional,
       outerHashJoin
@@ -76,4 +58,22 @@ object QueryPlannerConfiguration {
   )
 }
 
+case class QueryPlannerConfiguration(leafPlanners: LeafPlannerList,
+                                     applySelections: PlanTransformer[QueryGraph],
+                                     projectEndpoints: PlanTransformer[QueryGraph],
+                                     optionalSolvers: Seq[OptionalSolver],
+                                     pickBestCandidate: LogicalPlanningFunction0[CandidateSelector]) {
 
+  def toKit(qg: QueryGraph)(implicit context: LogicalPlanningContext): QueryPlannerKit =
+    QueryPlannerKit(
+      qg = qg,
+      select = plan => applySelections(plan, qg),
+      projectEndpoints = (plan: LogicalPlan, qg: QueryGraph) => projectEndpoints(plan, qg),
+      pickBest = pickBestCandidate(context)
+    )
+}
+
+case class QueryPlannerKit(qg: QueryGraph,
+                           select: LogicalPlan => LogicalPlan,
+                           projectEndpoints: (LogicalPlan, QueryGraph) => LogicalPlan,
+                           pickBest: CandidateSelector)

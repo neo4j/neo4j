@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.solveOptionalMatches
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 
 class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[GreedyPlanTable],
@@ -29,17 +30,16 @@ class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[GreedyPlanTable],
   extends TentativeQueryGraphSolver {
 
   def tryPlan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None) = {
-  import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.CandidateGenerator._
 
-    val select = config.applySelections.asFunctionInContext
-    val projectAllEndpoints = config.projectAllEndpoints.asFunctionInContext
-    val optionalMatchesSolver = config.optionalMatchesSolver
-    val pickBest = (x: Iterable[LogicalPlan]) => config.pickBestCandidate(x)(context)
+    import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.CandidateGenerator._
+
+    val kit = config.toKit(queryGraph)
+    val optionalMatchesSolver = solveOptionalMatches(config.optionalSolvers, kit.pickBest)
 
     def generateLeafPlanTable(): GreedyPlanTable = {
-      val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph, projectAllEndpoints)
-      val leafPlanCandidateListsWithSelections = leafPlanCandidateLists.iterator.map(_.map(select(_, queryGraph)))
-      val bestLeafPlans: Iterator[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(pickBest(_))
+      val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph, kit.projectEndpoints)
+      val leafPlanCandidateListsWithSelections = leafPlanCandidateLists.iterator.map(_.map(kit.select))
+      val bestLeafPlans: Iterator[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(kit.pickBest(_))
       val startTable: GreedyPlanTable = leafPlan.foldLeft(GreedyPlanTable.empty)(_ + _)
       bestLeafPlans.foldLeft(startTable)(_ + _)
     }
@@ -50,7 +50,7 @@ class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[GreedyPlanTable],
         val generated: Seq[LogicalPlan] = step(planTable, queryGraph)
 
         if (generated.nonEmpty) {
-          val selected: Seq[LogicalPlan] = generated.map(select(_, queryGraph))
+          val selected: Seq[LogicalPlan] = generated.map(kit.select)
           //          println("Building on top of " + planTable.plans.map(_.availableSymbols).mkString(" | "))
           //          println("Produced: " + selected.map(_.availableSymbols).mkString(" | "))
 
@@ -63,7 +63,7 @@ class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[GreedyPlanTable],
                 acc + (ids -> candidates)
             }
 
-          val best: Iterable[LogicalPlan] = candidatesPerIds.values.map(pickBest).flatten
+          val best: Iterable[LogicalPlan] = candidatesPerIds.values.map(kit.pickBest(_)).flatten
 
           //          println(s"best: ${best.map(_.availableSymbols)}")
           val result = best.foldLeft(planTable)(_ + _)

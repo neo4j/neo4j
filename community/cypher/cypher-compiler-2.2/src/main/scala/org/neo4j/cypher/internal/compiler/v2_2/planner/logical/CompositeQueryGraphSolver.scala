@@ -34,7 +34,7 @@ class CompositeQueryGraphSolver(solver1: TentativeQueryGraphSolver, solver2: Ten
   def emptyPlanTable: GreedyPlanTable = GreedyPlanTable.empty
 
   def tryPlan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]) = {
-    val pickBest = config.pickBestCandidate
+    val pickBest = config.pickBestCandidate(context)
     val availableSolutions = solver1.tryPlan(queryGraph).toSeq ++ solver2.tryPlan(queryGraph)
 
     pickBest(availableSolutions)

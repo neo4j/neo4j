@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlan
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 import org.neo4j.helpers.ThisShouldNotHappenError
 
-case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph], pickBest: CandidateSelector) extends PlanTransformer[QueryGraph] {
+case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph], pickBestFactory: LogicalPlanningFunction0[CandidateSelector]) extends PlanTransformer[QueryGraph] {
   private object candidatesProducer extends CandidateGenerator[GreedyPlanTable] {
     def apply(planTable: GreedyPlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
       for (
@@ -124,6 +124,7 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph],
 
   def apply(input: LogicalPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan = {
     val plan = simpleSelection(input, queryGraph)
+    val pickBest = pickBestFactory(context)
 
     def findBestPlanForPatternPredicates(plan: LogicalPlan): LogicalPlan = {
       val secretPlanTable = GreedyPlanTable.empty + plan
