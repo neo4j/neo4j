@@ -19,18 +19,21 @@
  */
 package org.neo4j.kernel.ha;
 
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.com.NetworkReceiver;
+import org.neo4j.cluster.member.ClusterMemberEvents;
+import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
@@ -41,6 +44,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
@@ -55,8 +59,10 @@ import org.neo4j.test.ha.ClusterRule;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+
 import static org.neo4j.cluster.protocol.cluster.ClusterConfiguration.COORDINATOR;
 import static org.neo4j.helpers.Predicates.not;
 import static org.neo4j.test.ReflectionUtil.getPrivateField;
@@ -148,14 +154,38 @@ public class ClusterTopologyChangesIT
         slave1RepairKit.repair();
         slave2RepairKit.repair();
 
-        // whole cluster looks fine, but slaves have stale value of the epoch
+        // whole cluster looks fine, but slaves have stale value of the epoch if they rejoin the cluster in SLAVE state
         cluster.await( allSeesAllAsAvailable() );
         HighlyAvailableGraphDatabase newMaster = cluster.getMaster();
-        HighlyAvailableGraphDatabase newSlave1 = cluster.getAnySlave();
-        HighlyAvailableGraphDatabase newSlave2 = cluster.getAnySlave( newSlave1 );
+
+        final HighlyAvailableGraphDatabase newSlave1 = cluster.getAnySlave();
+        final HighlyAvailableGraphDatabase newSlave2 = cluster.getAnySlave( newSlave1 );
+
+        // now adding another failing listener and wait for the failure due to stale epoch
+        final CountDownLatch slave1Unavailable = new CountDownLatch( 1 );
+        final CountDownLatch slave2Unavailable = new CountDownLatch( 1 );
+        ClusterMemberEvents clusterEvents = ((GraphDatabaseAPI) newMaster).getDependencyResolver().resolveDependency(
+                ClusterMemberEvents.class );
+        clusterEvents.addClusterMemberListener( new ClusterMemberListener.Adapter()
+        {
+            @Override
+            public void memberIsUnavailable( String role, InstanceId unavailableId )
+            {
+                if ( instanceIdOf( newSlave1 ).equals( unavailableId ) )
+                {
+                    slave1Unavailable.countDown();
+                }
+                else if ( instanceIdOf( newSlave2 ).equals( unavailableId ) )
+                {
+                    slave2Unavailable.countDown();
+                }
+            }
+        } );
 
         // attempt to perform transactions on both slaves throws, election is triggered
         attemptTransactions( newSlave1, newSlave2 );
+        slave1Unavailable.await( 60, TimeUnit.SECONDS ); // set a timeout in case the instance does not have stale epoch
+        slave2Unavailable.await( 60, TimeUnit.SECONDS );
 
         // THEN: done with election, cluster feels good and able to serve transactions
         cluster.await( allSeesAllAsAvailable() );
