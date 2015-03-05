@@ -17,18 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.pipes
+package org.neo4j.graphdb.notification;
 
-import org.neo4j.cypher.internal.compiler.v2_2.{devNullLogger, ExecutionContext}
-import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
 
-object QueryStateHelper {
-  def empty: QueryState = emptyWith()
+/**
+ * Notification codes are status codes identifying the type of notification.
+ */
+public enum NotificationCode
+{
+    CARTESIAN_PRODUCT("Neo.ClientNotification.Statement.CartesianProduct");
 
-  def emptyWith(db: GraphDatabaseService = null, query: QueryContext = null, resources: ExternalResource = null,
-                params: Map[String, Any] = Map.empty, decorator: PipeDecorator = NullPipeDecorator,
-                initialContext: Option[ExecutionContext] = None) =
-    QueryState(db = db, query = query, resources = resources, params = params, decorator = decorator,
-      initialContext = initialContext)
+    private String description;
+    private NotificationCode( String description ) {
+        this.description = description;
+    }
+
+    public String getDescription()
+    {
+        return description;
+    }
+
 }

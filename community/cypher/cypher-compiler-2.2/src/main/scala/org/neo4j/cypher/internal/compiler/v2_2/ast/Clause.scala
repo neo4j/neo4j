@@ -19,9 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
+import org.neo4j.cypher.internal.CartesianProductNotification
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.StringHelper.RichString
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
+
+import scala.annotation.tailrec
 
 sealed trait Clause extends ASTNode with ASTPhrase with SemanticCheckable {
   def name: String
@@ -70,7 +73,8 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
     hints.semanticCheck chain
     uniqueHints chain
     where.semanticCheck chain
-    checkHints
+    checkHints chain
+    checkForCartesianProducts
 
   private def uniqueHints: SemanticCheck = {
     val errors = hints.groupBy(_.identifier).collect {
@@ -79,6 +83,30 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
     }.toVector
 
     (state: SemanticState) => SemanticCheckResult(state, errors)
+  }
+
+  private def checkForCartesianProducts: SemanticCheck = (state: SemanticState) => {
+    val nodes = pattern.patternParts.map(_.fold(Set.empty[Identifier]) {
+      case NodePattern(Some(id), _, _, _) => list => list + id
+    })
+
+    def pickFirst(a: Identifier, b: Identifier) = if (a.position.offset < b.position.offset) a else b
+
+    @tailrec
+    def loop(compare: Set[Identifier], rest: Seq[Set[Identifier]]) {
+      val shouldWarn = rest.exists( o => (compare intersect o).isEmpty)
+
+      if (shouldWarn) {
+        val notification = CartesianProductNotification(compare.reduce(pickFirst).position)
+        state.notificationLogger.log(notification)
+      }
+
+      if (rest.nonEmpty) loop(rest.head, rest.tail)
+    }
+
+    if (nodes.nonEmpty) loop(nodes.head, nodes.tail)
+
+    SemanticCheckResult(state, Seq.empty)
   }
 
   private def checkHints: SemanticCheck = {

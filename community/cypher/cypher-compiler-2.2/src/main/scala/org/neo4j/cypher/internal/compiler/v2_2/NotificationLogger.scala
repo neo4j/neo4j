@@ -17,13 +17,37 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.internal.compiler.v2_2
 
-import org.neo4j.graphdb.QueryExecutionType
 import org.neo4j.graphdb.notification.Notification
 
-trait ExtendedExecutionResult extends ExecutionResult {
-  def planDescriptionRequested: Boolean
-  def executionType: QueryExecutionType
-  def notifications: Iterable[Notification]
+import scala.collection.mutable.ArrayBuffer
+
+/**
+ * A NotificationLogger records notifications.
+ */
+sealed trait NotificationLogger {
+  def log(notification: Notification )
+
+  def notifications: Seq[Notification ]
 }
+
+/**
+ * A null implementation that discards all notifications.
+ */
+case object devNullLogger extends NotificationLogger {
+  override def log(notification: Notification ) {}
+
+  override def notifications: Seq[Notification ] = Seq.empty
+}
+
+/**
+ * NotificationLogger that records all notifications for later retrieval.
+ */
+class RecordingNotificationLogger extends NotificationLogger {
+  private val _notifications = ArrayBuffer.empty[Notification ]
+
+  def log(notification: Notification ) = _notifications.append(notification)
+  def notifications = _notifications
+}
+

@@ -23,6 +23,7 @@ import java.io.PrintWriter
 
 import org.neo4j.cypher.internal.compiler.v2_2.InternalQueryStatistics
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
+import org.neo4j.graphdb.notification.Notification
 import org.neo4j.graphdb.{QueryExecutionType, ResourceIterator}
 
 trait InternalExecutionResult extends Iterator[Map[String, Any]] {
@@ -38,4 +39,5 @@ trait InternalExecutionResult extends Iterator[Map[String, Any]] {
   def close()
   def planDescriptionRequested: Boolean
   def executionType: QueryExecutionType
+  def notifications: Iterable[Notification]
 }

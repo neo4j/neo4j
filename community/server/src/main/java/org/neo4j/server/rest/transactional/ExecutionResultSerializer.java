@@ -31,10 +31,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.notification.InputPosition;
+import org.neo4j.graphdb.notification.Notification;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.rest.repr.util.RFC1123;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
@@ -125,6 +128,67 @@ public class ExecutionResultSerializer
             throw loggedIOException( e );
         }
     }
+
+    public void notifications( Iterable<Notification> notifications ) throws IOException
+    {
+        //don't add anything if notifications are empty
+        if ( !notifications.iterator().hasNext() ) return;
+
+        try
+        {
+            ensureResultsFieldClosed();
+
+            out.writeArrayFieldStart( "notifications" );
+            try
+            {
+                for ( Notification notification : notifications )
+                {
+                    out.writeStartObject();
+                    try
+                    {
+                        out.writeStringField( "code", notification.getCode().getDescription() );
+                        out.writeStringField( "severity", notification.getSeverity().toString() );
+                        out.writeStringField( "title", notification.getTitle() );
+                        out.writeStringField( "description", notification.getDescription() );
+                        writePosition( notification.getPosition() );
+
+                    }
+                    finally
+                    {
+                        out.writeEndObject();
+                    }
+                }
+
+            }
+            finally
+            {
+                out.writeEndArray();
+            }
+        }
+        catch ( IOException e )
+        {
+            throw loggedIOException( e );
+        }
+    }
+
+    private void writePosition( InputPosition position ) throws IOException
+    {
+        //do not add position if empty
+        if ( position == InputPosition.empty ) return;
+
+        out.writeObjectFieldStart( "position" );
+        try
+        {
+            out.writeNumberField( "offset", position.getOffset() );
+            out.writeNumberField( "line", position.getLine() );
+            out.writeNumberField( "column", position.getColumn() );
+        }
+        finally
+        {
+            out.writeEndObject();
+        }
+    }
+
 
     private void writeStats( QueryStatistics stats ) throws IOException
     {
