@@ -46,14 +46,17 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics,
     cardinalities.max
   }
 
-  private def findQueryGraphCombinations(queryGraph: QueryGraph, semanticTable: SemanticTable): Seq[QueryGraph] = {
-    (0 to queryGraph.optionalMatches.length)
-      .map(queryGraph.optionalMatches.combinations)
-      .flatten
-      .map(_.map(_.withoutArguments()))
-      .map(_.foldLeft(QueryGraph.empty)(_.withOptionalMatches(Seq.empty) ++ _.withOptionalMatches(Seq.empty)))
-      .map(queryGraph.withOptionalMatches(Seq.empty) ++ _)
-  }
+  private def findQueryGraphCombinations(queryGraph: QueryGraph, semanticTable: SemanticTable): Seq[QueryGraph] =
+    if (queryGraph.optionalMatches.isEmpty)
+      Seq(queryGraph)
+    else {
+      (0 to queryGraph.optionalMatches.length)
+        .map(queryGraph.optionalMatches.combinations)
+        .flatten
+        .map(_.map(_.withoutArguments()))
+        .map(_.foldLeft(QueryGraph.empty)(_.withOptionalMatches(Seq.empty) ++ _.withOptionalMatches(Seq.empty)))
+        .map(queryGraph.withOptionalMatches(Seq.empty) ++ _)
+    }
 
   private def calculcateNumberOfPatternNodes(qg: QueryGraph) = {
     val intermediateNodes = qg.patternRelationships.map(_.length match {
