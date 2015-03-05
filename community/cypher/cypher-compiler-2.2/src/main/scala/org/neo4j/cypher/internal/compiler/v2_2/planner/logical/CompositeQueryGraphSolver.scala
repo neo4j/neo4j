@@ -36,6 +36,6 @@ class CompositeQueryGraphSolver(solver1: TentativeQueryGraphSolver, solver2: Ten
     val pickBest = config.pickBestCandidate.asFunctionInContext
     val availableSolutions = solver1.tryPlan(queryGraph).toSeq ++ solver2.tryPlan(queryGraph)
 
-    pickBest(availableSolutions.iterator)
+    pickBest(availableSolutions)
   }
 }

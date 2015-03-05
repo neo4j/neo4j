@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CandidateSelecto
 object pickBestPlan extends CandidateSelector {
   private final val VERBOSE = false
 
-  def apply(plans: Iterator[LogicalPlan])(implicit context: LogicalPlanningContext): Option[LogicalPlan] = {
+  def apply(plans: Iterable[LogicalPlan])(implicit context: LogicalPlanningContext): Option[LogicalPlan] = {
     val costs = context.cost
     val comparePlans = (c: LogicalPlan) =>
       (-c.solved.numHints, costs(c, context.cardinalityInput), -c.availableSymbols.size)

@@ -57,6 +57,6 @@ object CandidateGenerator {
 trait PlanTransformer[-T] extends LogicalPlanningFunction2[LogicalPlan, T, LogicalPlan]
 trait PlanTableTransformer[-T] extends LogicalPlanningFunction2[PlanTable, T, PlanTable]
 
-trait CandidateSelector extends LogicalPlanningFunction1[Iterator[LogicalPlan], Option[LogicalPlan]]
+trait CandidateSelector extends LogicalPlanningFunction1[Iterable[LogicalPlan], Option[LogicalPlan]]
 
 trait LeafPlanner  extends LogicalPlanningFunction1[QueryGraph, Seq[LogicalPlan]]

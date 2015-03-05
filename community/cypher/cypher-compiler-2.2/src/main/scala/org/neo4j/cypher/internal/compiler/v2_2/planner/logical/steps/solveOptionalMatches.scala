@@ -46,7 +46,7 @@ case class solveOptionalMatches(solvers: Seq[OptionalSolver], pickBest: Candidat
           case (lhs: LogicalPlan, optionalQg: QueryGraph) =>
             val plans = solvers.flatMap(_.apply(optionalQg, lhs))
             assert(plans.map(_.solved).distinct.size == 1) // All plans are solving the same query
-            pickBest(plans.iterator).get
+            pickBest(plans).get
         }
         table + newPlan
     }
