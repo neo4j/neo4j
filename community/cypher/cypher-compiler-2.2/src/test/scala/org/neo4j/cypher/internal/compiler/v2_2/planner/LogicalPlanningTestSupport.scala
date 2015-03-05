@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.parser.{CypherParser, ParserMonit
 import org.neo4j.cypher.internal.compiler.v2_2.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.{expandsOrJoins, expandsOnly, GreedyQueryGraphSolver}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.{GreedyPlanTable, expandsOrJoins, expandsOnly, GreedyQueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{GraphStatistics, PlanContext}
 import org.neo4j.graphdb.Direction
@@ -171,8 +171,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     HasLabels(Identifier(name)_, Seq(labelNameObj))_
   }
 
-  def planTableWith(plans: LogicalPlan*)(implicit ctx: LogicalPlanningContext) =
-    plans.foldLeft(ctx.strategy.emptyPlanTable)(_ + _)
+  def greedyPlanTableWith(plans: LogicalPlan*)(implicit ctx: LogicalPlanningContext) =
+    plans.foldLeft(GreedyPlanTable.empty)(_ + _)
 }
 
 case class FakePlan(availableSymbols: Set[IdName])(val solved: PlannerQuery) extends LogicalPlan with LogicalPlanWithoutExpressions {

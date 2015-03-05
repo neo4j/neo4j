@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.QueryGraphCardinalityModel
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.{expandsOrJoins, expandsOnly, GreedyQueryGraphSolver}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.{GreedyPlanTable, expandsOrJoins, expandsOnly, GreedyQueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter.unnestApply
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{GraphStatistics, PlanContext}
@@ -188,8 +188,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
   def planFor(queryString: String): SemanticPlan = new given().planFor(queryString)
 
-  def planTableWith(plans: LogicalPlan*)(implicit ctx: LogicalPlanningContext) =
-    plans.foldLeft(ctx.strategy.emptyPlanTable)(_ + _)
+  def greedyPlanTableWith(plans: LogicalPlan*)(implicit ctx: LogicalPlanningContext) =
+    plans.foldLeft(GreedyPlanTable.empty)(_ + _)
 
   class given extends StubbedLogicalPlanningConfiguration(realConfig)
 

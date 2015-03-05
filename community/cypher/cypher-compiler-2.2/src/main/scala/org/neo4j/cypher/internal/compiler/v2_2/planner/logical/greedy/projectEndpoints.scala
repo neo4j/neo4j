@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{LogicalPla
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CandidateGenerator, LogicalPlanningContext, PlanTransformer}
 
-object projectEndpoints extends CandidateGenerator[PlanTable] {
+object projectEndpoints extends CandidateGenerator[GreedyPlanTable] {
 
-  def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
+  def apply(planTable: GreedyPlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
     for {
       plan <- planTable.plans
       patternRel <- queryGraph.patternRelationships

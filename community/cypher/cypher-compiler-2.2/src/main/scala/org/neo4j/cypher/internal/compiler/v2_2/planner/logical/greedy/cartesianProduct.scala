@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{CartesianP
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 
-object cartesianProduct extends CandidateGenerator[PlanTable] {
-  def apply(planTable: PlanTable, ignored: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
+object cartesianProduct extends CandidateGenerator[GreedyPlanTable] {
+  def apply(planTable: GreedyPlanTable, ignored: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
     val usablePlans = iterateUntilConverged { usablePlans: Set[LogicalPlan] =>
       val cartesianProducts = for (planA <- usablePlans; planB <- usablePlans if planA != planB) yield planCartesianProduct(planA, planB)
       if (cartesianProducts.isEmpty) {

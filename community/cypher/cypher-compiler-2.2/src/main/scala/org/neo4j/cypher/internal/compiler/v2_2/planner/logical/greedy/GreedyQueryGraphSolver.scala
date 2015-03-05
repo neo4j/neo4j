@@ -24,11 +24,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalPlan}
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 
-class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[PlanTable],
+class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[GreedyPlanTable],
                              val config: QueryPlannerConfiguration = QueryPlannerConfiguration.default)
   extends TentativeQueryGraphSolver {
-
-  def emptyPlanTable: PlanTable = GreedyPlanTable.empty
 
   def tryPlan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None) = {
   import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.CandidateGenerator._
@@ -38,17 +36,17 @@ class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[PlanTable],
     val optionalMatchesSolver = config.optionalMatchesSolver
     val pickBest = (x: Iterable[LogicalPlan]) => config.pickBestCandidate(x)(context)
 
-    def generateLeafPlanTable(): PlanTable = {
+    def generateLeafPlanTable(): GreedyPlanTable = {
       val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph, projectAllEndpoints)
       val leafPlanCandidateListsWithSelections = leafPlanCandidateLists.iterator.map(_.map(select(_, queryGraph)))
       val bestLeafPlans: Iterator[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(pickBest(_))
-      val startTable: PlanTable = leafPlan.foldLeft(emptyPlanTable)(_ + _)
+      val startTable: GreedyPlanTable = leafPlan.foldLeft(GreedyPlanTable.empty)(_ + _)
       bestLeafPlans.foldLeft(startTable)(_ + _)
     }
 
-    def findBestPlan(planGenerator: CandidateGenerator[PlanTable]): PlanTable => PlanTable = {
-      (planTable: PlanTable) =>
-        val step: CandidateGenerator[PlanTable] = planGenerator +||+ findShortestPaths
+    def findBestPlan(planGenerator: CandidateGenerator[GreedyPlanTable]): GreedyPlanTable => GreedyPlanTable = {
+      (planTable: GreedyPlanTable) =>
+        val step: CandidateGenerator[GreedyPlanTable] = planGenerator +||+ findShortestPaths
         val generated: Seq[LogicalPlan] = step(planTable, queryGraph)
 
         if (generated.nonEmpty) {
@@ -77,12 +75,12 @@ class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[PlanTable],
         } else planTable
     }
 
-    def solveOptionalAndCartesianProducts: PlanTable => PlanTable = { incoming: PlanTable =>
+    def solveOptionalAndCartesianProducts: GreedyPlanTable => GreedyPlanTable = { incoming: GreedyPlanTable =>
       val solvedOptionalMatches = optionalMatchesSolver(incoming, queryGraph)
       findBestPlan(cartesianProduct)(solvedOptionalMatches)
     }
 
-    val leaves: PlanTable = generateLeafPlanTable()
+    val leaves: GreedyPlanTable = generateLeafPlanTable()
     val afterCombiningPlans = iterateUntilConverged(findBestPlan(planCombiner))(leaves)
 
     if (stillHasOverlappingPlans(afterCombiningPlans, leafPlan.map(_.availableSymbols).getOrElse(Set.empty)))
@@ -93,7 +91,7 @@ class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[PlanTable],
     }
   }
 
-  private def stillHasOverlappingPlans(afterCombiningPlans: PlanTable, arguments: Set[IdName]): Boolean =
+  private def stillHasOverlappingPlans(afterCombiningPlans: GreedyPlanTable, arguments: Set[IdName]): Boolean =
     afterCombiningPlans.plans.exists {
       p1 => afterCombiningPlans.plans.exists {
         p2 =>

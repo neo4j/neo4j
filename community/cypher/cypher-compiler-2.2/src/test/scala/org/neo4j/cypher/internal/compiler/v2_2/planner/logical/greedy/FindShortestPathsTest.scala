@@ -42,7 +42,7 @@ class FindShortestPathsTest extends CypherFunSuite with LogicalPlanningTestSuppo
     }.withLogicalPlanningContext { (cfg, ctx) =>
       implicit val _ = ctx
       val left = planCartesianProduct(planAllNodesScan("a", Set.empty), planAllNodesScan("b", Set.empty))
-      val candidates = findShortestPaths(planTableWith(left), cfg.qg)
+      val candidates = findShortestPaths(greedyPlanTableWith(left), cfg.qg)
       candidates should equal(Seq(
         planShortestPaths(left, shortestPath)
       ))
@@ -64,7 +64,7 @@ class FindShortestPathsTest extends CypherFunSuite with LogicalPlanningTestSuppo
     }.withLogicalPlanningContext { (cfg, ctx) =>
       implicit val _ = ctx
       val left = planCartesianProduct(planAllNodesScan("a", Set.empty), planAllNodesScan("b", Set.empty))
-      val candidates = findShortestPaths(planTableWith(left), cfg.qg)
+      val candidates = findShortestPaths(greedyPlanTableWith(left), cfg.qg)
       candidates should equal(Seq(
         planShortestPaths(left, shortestPath)
       ))
@@ -87,7 +87,7 @@ class FindShortestPathsTest extends CypherFunSuite with LogicalPlanningTestSuppo
     }.withLogicalPlanningContext { (cfg, ctx) =>
       implicit val _ = ctx
       val left = planCartesianProduct(planAllNodesScan("a", Set.empty), planAllNodesScan("b", Set.empty))
-      val candidates = findShortestPaths(planTableWith(left), cfg.qg)
+      val candidates = findShortestPaths(greedyPlanTableWith(left), cfg.qg)
       candidates should equal(Seq(
         planShortestPaths(left, shortestPath)
       ))

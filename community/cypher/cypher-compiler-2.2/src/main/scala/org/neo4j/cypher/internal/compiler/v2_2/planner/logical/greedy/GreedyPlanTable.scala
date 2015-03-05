@@ -19,17 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy
 
+import org.neo4j.cypher.internal.compiler.v2_2.InternalException
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 
 import scala.collection.immutable
 
 object GreedyPlanTable {
-   def empty: PlanTable = new GreedyPlanTable()
-   def apply(plans: LogicalPlan*): PlanTable = plans.foldLeft(empty)(_ + _)
+   def apply(plans: LogicalPlan*): GreedyPlanTable = plans.foldLeft(empty)(_ + _)
 
-   private case class GreedyPlanTable(m: immutable.Map[QueryGraph, LogicalPlan] = immutable.Map.empty) extends PlanTable {
-     override def +(newPlan: LogicalPlan): PlanTable = {
+   def empty: GreedyPlanTable = DefaultGreedyPlanTable()
+
+   private case class DefaultGreedyPlanTable(m: immutable.Map[QueryGraph, LogicalPlan] = immutable.Map.empty) extends GreedyPlanTable {
+     override def +(newPlan: LogicalPlan): GreedyPlanTable = {
        val newSolved = newPlan.solved
        val newPlanCoveredByOldPlan = m.values.exists { p =>
          val solved = p.solved
@@ -46,10 +49,33 @@ object GreedyPlanTable {
              !(newSolved.graph.covers(solved.graph) &&
                solved.isCoveredByHints(newSolved))
          }
-         new GreedyPlanTable(oldPlansNotCoveredByNewPlan + (newPlan.solved.lastQueryGraph -> newPlan))
+         DefaultGreedyPlanTable(oldPlansNotCoveredByNewPlan + (newPlan.solved.lastQueryGraph -> newPlan))
        }
      }
 
      override def toString(): String = s"PlanTable:\n${m.toString()}"
    }
  }
+
+trait GreedyPlanTable extends ((QueryGraph) => LogicalPlan) {
+  def uniquePlan: LogicalPlan = {
+    val allPlans = plans.toList
+
+    if (allPlans.size > 1)
+      throw new InternalException(s"Expected the final plan table to have 0 or 1 plan (got ${allPlans.size})")
+
+    allPlans.headOption.getOrElse(planSingleRow())
+  }
+
+  def size: Int = m.size
+  def isEmpty: Boolean = m.isEmpty
+  def plans: Seq[LogicalPlan] = m.values.toSeq
+  def get(queryGraph: QueryGraph): Option[LogicalPlan] = m.get(queryGraph)
+  def getOrElse(queryGraph: QueryGraph, default: => LogicalPlan): LogicalPlan = m.getOrElse(queryGraph, default)
+  def apply(queryGraph: QueryGraph): LogicalPlan = m(queryGraph)
+  override def toString() = m.toString()
+
+  def +(plan: LogicalPlan): GreedyPlanTable
+  def m: Map[QueryGraph, LogicalPlan]
+}
+

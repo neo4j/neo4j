@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.PlanTable
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.GreedyPlanTable
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 
 class CompositeQueryGraphSolver(solver1: TentativeQueryGraphSolver, solver2: TentativeQueryGraphSolver,
@@ -31,7 +31,7 @@ class CompositeQueryGraphSolver(solver1: TentativeQueryGraphSolver, solver2: Ten
   assert(solver1.config == solver2.config)
 
   // NOTE: we assume that the PlanTable type is the same between the 2 solvers
-  def emptyPlanTable: PlanTable = solver1.emptyPlanTable
+  def emptyPlanTable: GreedyPlanTable = GreedyPlanTable.empty
 
   def tryPlan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]) = {
     val pickBest = config.pickBestCandidate

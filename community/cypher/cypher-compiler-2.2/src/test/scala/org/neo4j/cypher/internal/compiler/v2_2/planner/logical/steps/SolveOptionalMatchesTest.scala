@@ -73,7 +73,7 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
       planContext = newMockedPlanContext,
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
-    val planTable = planTableWith(lhs)
+    val planTable = greedyPlanTableWith(lhs)
 
     // When
     val resultingPlanTable = solveOptionalMatches(defaultSolvers, pickBest)(planTable, qg)
@@ -95,7 +95,7 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
     implicit val context = createLogicalPlanContext()
     val planForA = newMockedLogicalPlan("a")
     val planForB = newMockedLogicalPlan("b")
-    val planTable = planTableWith(planForA, planForB)
+    val planTable = greedyPlanTableWith(planForA, planForB)
 
     // When
     val resultingPlanTable = solveOptionalMatches(defaultSolvers, pickBest)(planTable, qg)
@@ -113,7 +113,7 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
       Set("a", "b"),
       PlannerQuery.empty.withGraph(qg))
 
-    val planTable = planTableWith(inputPlan)
+    val planTable = greedyPlanTableWith(inputPlan)
 
     // When
     val resultingPlanTable = solveOptionalMatches(defaultSolvers, pickBest)(planTable, qg)
@@ -134,7 +134,7 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
       Set("a", "b"),
       PlannerQuery.empty.withGraph(qgWithFirstOptionalMatch))
 
-    val planTable = planTableWith(inputPlan)
+    val planTable = greedyPlanTableWith(inputPlan)
 
 
     // when
@@ -153,7 +153,7 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
     // OPTIONAL MATCH a
     val qg = QueryGraph.empty.withOptionalMatches(Seq(QueryGraph(patternNodes = Set(IdName("a")))))
     implicit val context = createLogicalPlanContext()
-    val planTable = planTableWith()
+    val planTable = greedyPlanTableWith()
 
     // When
     val resultingPlanTable = solveOptionalMatches(defaultSolvers, pickBest)(planTable, qg)
@@ -181,7 +181,7 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
 
     val planForC = newMockedLogicalPlan("c")
 
-    val planTable = planTableWith(lhs,planForC)
+    val planTable = greedyPlanTableWith(lhs,planForC)
 
     // When
     val resultingPlanTable = solveOptionalMatches(defaultSolvers, pickBest)(planTable, qg)
@@ -204,7 +204,7 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
 
     val planForC = newMockedLogicalPlan("c")
 
-    val planTable = planTableWith(lhs,planForC)
+    val planTable = greedyPlanTableWith(lhs,planForC)
 
 
     // When
@@ -221,7 +221,7 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
     val planForA = newMockedLogicalPlan("a")
     val planForC = newMockedLogicalPlan("c")
 
-    val planTable = planTableWith(planForC, planForA)
+    val planTable = greedyPlanTableWith(planForC, planForA)
 
     // when
     // Using a simpler strategy to avoid costs
@@ -244,7 +244,7 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
     val planForA = newMockedLogicalPlan("a")
     val planForC = newMockedLogicalPlan("c")
 
-    val planTable = planTableWith(planForC, planForA)
+    val planTable = greedyPlanTableWith(planForC, planForA)
 
     // when
     // Using a simpler strategy to avoid costs
@@ -281,7 +281,7 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
     val lhs = newMockedLogicalPlan("a")
-    val planTable = planTableWith(lhs)
+    val planTable = greedyPlanTableWith(lhs)
 
     // when
     // Using a simpler strategy to avoid costs

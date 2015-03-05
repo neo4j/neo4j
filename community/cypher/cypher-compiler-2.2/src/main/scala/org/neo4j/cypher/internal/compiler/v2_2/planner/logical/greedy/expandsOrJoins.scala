@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CandidateGenerator, LogicalPlanningContext}
 
-object expandsOrJoins extends CandidateGenerator[PlanTable] {
-  def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
+object expandsOrJoins extends CandidateGenerator[GreedyPlanTable] {
+  def apply(planTable: GreedyPlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
     val projectedEndpoints = projectEndpoints(planTable, queryGraph)
     val expansions = expand(planTable, queryGraph)
     val joins = join(planTable, queryGraph)

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.PlanTable
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.GreedyPlanTable
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 
 trait LogicalPlanningFunction1[-A, +B] {
@@ -55,7 +55,6 @@ object CandidateGenerator {
 }
 
 trait PlanTransformer[-T] extends LogicalPlanningFunction2[LogicalPlan, T, LogicalPlan]
-trait PlanTableTransformer[-T] extends LogicalPlanningFunction2[PlanTable, T, PlanTable]
 
 trait CandidateSelector {
 

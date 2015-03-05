@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CandidateGenerat
 
 import scala.collection.mutable.ArrayBuffer
 
-object join extends CandidateGenerator[PlanTable] {
-  def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
+object join extends CandidateGenerator[GreedyPlanTable] {
+  def apply(planTable: GreedyPlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
 
     def isApplicable(id: IdName): Boolean =  queryGraph.patternNodes(id) && !queryGraph.argumentIds(id)
 

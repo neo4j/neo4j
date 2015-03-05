@@ -65,7 +65,7 @@ class CartesianProductTest extends CypherFunSuite with LogicalPlanningTestSuppor
       metrics = factory.newMetrics(HardcodedGraphStatistics, newMockedSemanticTable)
     )
 
-    val table = planTableWith(plans:_*)
+    val table = greedyPlanTableWith(plans:_*)
 
     (table, context)
   }

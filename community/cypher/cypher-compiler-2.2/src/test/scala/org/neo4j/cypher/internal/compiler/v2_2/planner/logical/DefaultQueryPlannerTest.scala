@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.InputPosition
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.PlanTable
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.GreedyPlanTable
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport2, QueryGraph, SemanticTable}
 
@@ -36,7 +36,6 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     val solver = new TentativeQueryGraphSolver {
       override def config = ???
       override def tryPlan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): Option[LogicalPlan] = ???
-      override def emptyPlanTable: PlanTable = ???
       override def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = expectedPlan
     }
 
@@ -58,7 +57,6 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     // given
     val expectedPlan = mock[LogicalPlan]
     val solver = new QueryGraphSolver with PatternExpressionSolving {
-      override def emptyPlanTable: PlanTable = ???
       override def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = {
         val table = context.semanticTable
         table.isNode(Identifier("  UNNAMED50")(InputPosition(49, 1, 50))) should be(true)

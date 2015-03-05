@@ -21,13 +21,12 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.InternalException
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{RelationshipChain, NodePattern, PatternExpression}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.PlanTable
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.GreedyPlanTable
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, UnionQuery}
 
 trait QueryGraphSolver {
-  def emptyPlanTable: PlanTable
   def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan
   def planPatternExpression(planArguments: Set[IdName], expr: PatternExpression)(implicit context: LogicalPlanningContext): (LogicalPlan, PatternExpression)
 }

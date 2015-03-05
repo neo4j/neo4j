@@ -23,5 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 
 package object greedy {
-  trait PlanTableGenerator extends LogicalPlanningFunction2[QueryGraph, Option[LogicalPlan], PlanTable]
+  type GreedyPlanTableTransformer[-T] = LogicalPlanningFunction2[GreedyPlanTable, T, GreedyPlanTable]
+  type GreedyPlanTableGenerator = LogicalPlanningFunction2[QueryGraph, Option[LogicalPlan], GreedyPlanTable]
 }
+

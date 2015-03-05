@@ -39,7 +39,7 @@ class ProjectEndpointsTest
   test("project single simple outgoing relationship") {
     implicit val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
     val inputPlan = planArgumentRow(patternNodes = Set.empty, patternRels = Set.empty, other = Set(rName))
-    val planTable = planTableWith(inputPlan)
+    val planTable = greedyPlanTableWith(inputPlan)
 
     val patternRel = PatternRelationship(rName, (aName, bName), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph.empty.addPatternRelationship(patternRel)
@@ -52,7 +52,7 @@ class ProjectEndpointsTest
   test("project single simple outgoing relationship and verifies it's type") {
     implicit val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
     val inputPlan = planArgumentRow(patternNodes = Set.empty, patternRels = Set.empty, other = Set(rName))
-    val planTable = planTableWith(inputPlan)
+    val planTable = greedyPlanTableWith(inputPlan)
 
     val patternRel = PatternRelationship(rName, (aName, bName), Direction.OUTGOING, Seq(RelTypeName("X")_), SimplePatternLength)
     val qg = QueryGraph.empty.addPatternRelationship(patternRel)
@@ -65,7 +65,7 @@ class ProjectEndpointsTest
   test("project single simple incoming relationship") {
     implicit val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
     val inputPlan = planArgumentRow(patternNodes = Set.empty, patternRels = Set.empty, other = Set(rName))
-    val planTable = planTableWith(inputPlan)
+    val planTable = greedyPlanTableWith(inputPlan)
 
     val patternRel = PatternRelationship(rName, (aName, bName), Direction.INCOMING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph.empty.addPatternRelationship(patternRel)
@@ -78,7 +78,7 @@ class ProjectEndpointsTest
   test("project single simple outgoing relationship where start node is bound") {
     implicit val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
     val inputPlan = planArgumentRow(patternNodes = Set.empty, patternRels = Set.empty, other = Set(aName, rName))
-    val planTable = planTableWith(inputPlan)
+    val planTable = greedyPlanTableWith(inputPlan)
 
     val patternRel = PatternRelationship(rName, (aName, bName), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph.empty.addPatternRelationship(patternRel)
@@ -91,7 +91,7 @@ class ProjectEndpointsTest
   test("project single simple outgoing relationship where end node is bound") {
     implicit val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
     val inputPlan = planArgumentRow(patternNodes = Set.empty, patternRels = Set.empty, other = Set(bName, rName))
-    val planTable = planTableWith(inputPlan)
+    val planTable = greedyPlanTableWith(inputPlan)
 
     val patternRel = PatternRelationship(rName, (aName, bName), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph.empty.addPatternRelationship(patternRel)
@@ -104,7 +104,7 @@ class ProjectEndpointsTest
   test("project single simple outgoing relationship where both nodes are bound") {
     implicit val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
     val inputPlan = planArgumentRow(patternNodes = Set.empty, patternRels = Set.empty, other = Set(aName, bName, rName))
-    val planTable = planTableWith(inputPlan)
+    val planTable = greedyPlanTableWith(inputPlan)
 
     val patternRel = PatternRelationship(rName, (aName, bName), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph.empty.addPatternRelationship(patternRel)

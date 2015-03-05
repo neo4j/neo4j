@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.idp
 import org.neo4j.cypher.internal.compiler.v2_2.InternalException
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.{GreedyPlanTable, PlanTable}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.GreedyPlanTable
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.solveOptionalMatches.OptionalSolver
@@ -44,9 +44,6 @@ case class IDPQueryGraphSolver(maxDepth: Int = 5,
                                solvers: Seq[IDPTableSolver] = Seq(joinTableSolver, expandTableSolver),
                                optionalSolvers: Seq[OptionalSolver] = Seq(applyOptional, outerHashJoin))
   extends QueryGraphSolver with PatternExpressionSolving {
-
-  // TODO: For selection, for now
-  override def emptyPlanTable: PlanTable = GreedyPlanTable.empty
 
   def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = {
     implicit val kitFactory = kitFactoryWithShortestPathSupport(config.kitInContext)

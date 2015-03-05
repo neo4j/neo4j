@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{AllNodesScan, NodeByLabelScan, Selection}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, QueryPlannerConfiguration}
 
-class LeafPlanTableGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
-  private val solver = LeafPlanTableGenerator(QueryPlannerConfiguration.default)
+class GreedyLeafPlanTableGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+  private val solver = GreedyLeafPlanTableGenerator(QueryPlannerConfiguration.default)
 
   test("single pattern node") {
     new given {
@@ -39,7 +39,7 @@ class LeafPlanTableGeneratorTest extends CypherFunSuite with LogicalPlanningTest
       val solved = PlannerQuery.empty.withGraph(cfg.qg)
 
       // then
-      result should equal(planTableWith(AllNodesScan("n", Set.empty)(solved)))
+      result should equal(greedyPlanTableWith(AllNodesScan("n", Set.empty)(solved)))
     }
 
   }
@@ -66,7 +66,7 @@ class LeafPlanTableGeneratorTest extends CypherFunSuite with LogicalPlanningTest
       val result = solver.apply(qg, None)
 
       // then
-      result should equal(planTableWith(
+      result should equal(greedyPlanTableWith(
         NodeByLabelScan("a", LazyLabel(label), Set.empty)(solvedA),
         AllNodesScan("b", Set.empty)(solvedB)
       ))
@@ -102,7 +102,7 @@ class LeafPlanTableGeneratorTest extends CypherFunSuite with LogicalPlanningTest
       val result = solver.apply(qg, None)
 
       // then
-      result should equal(planTableWith(
+      result should equal(greedyPlanTableWith(
         Selection(Seq(hasLabels1), NodeByLabelScan("a", LazyLabel(label2), Set.empty)(solvedA))(solvedAWithLabels1),
         AllNodesScan("b", Set.empty)(solvedB)
       ))

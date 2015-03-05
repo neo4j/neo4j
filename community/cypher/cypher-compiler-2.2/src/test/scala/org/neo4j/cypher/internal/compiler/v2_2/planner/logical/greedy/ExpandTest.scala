@@ -44,7 +44,7 @@ class ExpandTest
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
-    val plan = planTableWith(planAllNodesScan(aNode, Set.empty))
+    val plan = greedyPlanTableWith(planAllNodesScan(aNode, Set.empty))
 
     val qg = createQuery()
 
@@ -56,7 +56,7 @@ class ExpandTest
       planContext = newMockedPlanContext
     )
     val planA = newMockedLogicalPlan("a")
-    val plan = planTableWith(planA)
+    val plan = greedyPlanTableWith(planA)
 
     val qg = createQuery(rRel)
 
@@ -71,7 +71,7 @@ class ExpandTest
     )
     val planA = newMockedLogicalPlan("a")
     val planB = newMockedLogicalPlan("b")
-    val plan = planTableWith(planA, planB)
+    val plan = greedyPlanTableWith(planA, planB)
 
     val qg = createQuery(rRel)
 
@@ -86,7 +86,7 @@ class ExpandTest
       planContext = newMockedPlanContext
     )
     val aAndB = newMockedLogicalPlanWithPatterns(Set("a", "b"), Seq(rRel))
-    val plan = planTableWith(aAndB)
+    val plan = greedyPlanTableWith(aAndB)
 
     val qg = createQuery()
 
@@ -98,7 +98,7 @@ class ExpandTest
       planContext = newMockedPlanContext
     )
     val planA = newMockedLogicalPlan("a")
-    val plan = planTableWith(planA)
+    val plan = greedyPlanTableWith(planA)
 
     val qg = createQuery(rSelfRel)
 
@@ -112,7 +112,7 @@ class ExpandTest
       planContext = newMockedPlanContext
     )
     val aAndB = newMockedLogicalPlan("a", "b")
-    val plan = planTableWith(aAndB)
+    val plan = greedyPlanTableWith(aAndB)
 
     val qg = createQuery(rRel)
 
@@ -127,7 +127,7 @@ class ExpandTest
       planContext = newMockedPlanContext
     )
     val planA = newMockedLogicalPlan("a")
-    val plan = planTableWith(planA)
+    val plan = greedyPlanTableWith(planA)
 
     val qg = createQuery(rVarRel)
 
@@ -141,7 +141,7 @@ class ExpandTest
       planContext = newMockedPlanContext
     )
     val planA = newMockedLogicalPlan("a")
-    val plan = planTableWith(planA)
+    val plan = greedyPlanTableWith(planA)
 
     val relIdentifier: Identifier = Identifier(rName.name)_
     val innerPredicate: Expression = Equals(Property(Identifier("foo")_, PropertyKeyName("prop")_)_, SignedDecimalIntegerLiteral("20")_)_
