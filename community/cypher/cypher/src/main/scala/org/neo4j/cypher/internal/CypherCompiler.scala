@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.CypherVersion._
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compatibility._
-import org.neo4j.cypher.internal.compiler.v2_3.{RulePlannerName, CostPlannerName, IDPPlannerName, ConservativePlannerName, PlannerName}
+import org.neo4j.cypher.internal.compiler.v2_3.{RulePlannerName, CostPlannerName, IDPPlannerName, ConservativePlannerName, PlannerName, InternalNotificationLogger, RecordingNotificationLogger, devNullLogger}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.Clock
@@ -36,11 +36,17 @@ object CypherCompiler {
   val DEFAULT_QUERY_PLAN_TTL: Long = 1000 // 1 second
   val CLOCK = Clock.SYSTEM_CLOCK
   val STATISTICS_DIVERGENCE_THRESHOLD = 0.5
+
+  def notificationLoggerBuilder(executionMode: ExecutionMode): InternalNotificationLogger = executionMode  match {
+      case ExplainMode => new RecordingNotificationLogger()
+      case _ => devNullLogger
+    }
 }
 
 case class PreParsedQuery(statement: String, version: CypherVersion, executionMode: ExecutionMode, planner: PlannerName) {
   val statementWithVersionAndPlanner = s"CYPHER ${version.name} PLANNER ${planner.name} $statement"
 }
+
 
 class CypherCompiler(graph: GraphDatabaseService,
                      kernelAPI: KernelAPI,
@@ -49,7 +55,7 @@ class CypherCompiler(graph: GraphDatabaseService,
                      defaultPlanner: PlannerName,
                      optionParser: CypherOptionParser,
                      logger: StringLogger) {
-  import CypherCompiler._
+  import org.neo4j.cypher.internal.CypherCompiler._
 
   private val queryCacheSize: Int = getQueryCacheSize
   private val queryPlanTTL: Long = getMinimumTimeBeforeReplanning
@@ -60,12 +66,13 @@ class CypherCompiler(graph: GraphDatabaseService,
   private val compatibilityFor2_2Cost = CompatibilityFor2_2Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger)
   private val compatibilityFor2_2IDP = CompatibilityFor2_2IDP(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger)
   private val compatibilityFor2_2 = CompatibilityFor2_2Conservative(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger)
-  private val compatibilityFor2_3Rule = CompatibilityFor2_3Rule(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI)
-  private val compatibilityFor2_3Cost = CompatibilityFor2_3Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger)
-  private val compatibilityFor2_3IDP = CompatibilityFor2_3IDP(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger)
-  private val compatibilityFor2_3 = CompatibilityFor2_3Conservative(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger)
+  private val compatibilityFor2_3Rule = CompatibilityFor2_3Rule(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, notificationLoggerBuilder)
+  private val compatibilityFor2_3Cost = CompatibilityFor2_3Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, notificationLoggerBuilder)
+  private val compatibilityFor2_3IDP = CompatibilityFor2_3IDP(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger,notificationLoggerBuilder)
+  private val compatibilityFor2_3 = CompatibilityFor2_3Conservative(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, notificationLoggerBuilder)
 
   private final val LEGACY_VERSION: Set[CypherVersion] = Set(v1_9, v2_0, v2_1)
+
 
   @throws(classOf[SyntaxException])
   def preParseQuery(queryText: String): PreParsedQuery = {
@@ -78,21 +85,20 @@ class CypherCompiler(graph: GraphDatabaseService,
   def parseQuery(preParsedQuery: PreParsedQuery): ParsedQuery = {
     val version = preParsedQuery.version
     val planner = preParsedQuery.planner
-    val statementAsText = preParsedQuery.statement
 
     (version, planner) match {
-      case (CypherVersion.v2_3, ConservativePlannerName) => compatibilityFor2_3.produceParsedQuery(statementAsText)
-      case (CypherVersion.v2_3, CostPlannerName)         => compatibilityFor2_3Cost.produceParsedQuery(statementAsText)
-      case (CypherVersion.v2_3, IDPPlannerName)          => compatibilityFor2_3IDP.produceParsedQuery(statementAsText)
-      case (CypherVersion.v2_3, RulePlannerName)         => compatibilityFor2_3Rule.produceParsedQuery(statementAsText)
-      case (CypherVersion.v2_2, ConservativePlannerName) => compatibilityFor2_2.produceParsedQuery(statementAsText)
-      case (CypherVersion.v2_2, CostPlannerName)         => compatibilityFor2_2Cost.produceParsedQuery(statementAsText)
-      case (CypherVersion.v2_2, IDPPlannerName)          => compatibilityFor2_2IDP.produceParsedQuery(statementAsText)
-      case (CypherVersion.v2_2, RulePlannerName)         => compatibilityFor2_2Rule.produceParsedQuery(statementAsText)
-      case (CypherVersion.v2_2, _)                   => compatibilityFor2_2.produceParsedQuery(statementAsText)
-      case (CypherVersion.v2_1, _)                   => compatibilityFor2_1.parseQuery(statementAsText)
-      case (CypherVersion.v2_0, _)                   => compatibilityFor2_0.parseQuery(statementAsText)
-      case (CypherVersion.v1_9, _)                   => compatibilityFor1_9.parseQuery(statementAsText)
+      case (CypherVersion.v2_3, ConservativePlannerName) => compatibilityFor2_3.produceParsedQuery(preParsedQuery)
+      case (CypherVersion.v2_3, CostPlannerName)         => compatibilityFor2_3Cost.produceParsedQuery(preParsedQuery)
+      case (CypherVersion.v2_3, IDPPlannerName)          => compatibilityFor2_3IDP.produceParsedQuery(preParsedQuery)
+      case (CypherVersion.v2_3, RulePlannerName)         => compatibilityFor2_3Rule.produceParsedQuery(preParsedQuery)
+      case (CypherVersion.v2_2, ConservativePlannerName) => compatibilityFor2_2.produceParsedQuery(preParsedQuery.statement)
+      case (CypherVersion.v2_2, CostPlannerName)         => compatibilityFor2_2Cost.produceParsedQuery(preParsedQuery.statement)
+      case (CypherVersion.v2_2, IDPPlannerName)          => compatibilityFor2_2IDP.produceParsedQuery(preParsedQuery.statement)
+      case (CypherVersion.v2_2, RulePlannerName)         => compatibilityFor2_2Rule.produceParsedQuery(preParsedQuery.statement)
+      case (CypherVersion.v2_2, _)                   => compatibilityFor2_2.produceParsedQuery(preParsedQuery.statement)
+      case (CypherVersion.v2_1, _)                   => compatibilityFor2_1.parseQuery(preParsedQuery.statement)
+      case (CypherVersion.v2_0, _)                   => compatibilityFor2_0.parseQuery(preParsedQuery.statement)
+      case (CypherVersion.v1_9, _)                   => compatibilityFor1_9.parseQuery(preParsedQuery.statement)
     }
   }
 

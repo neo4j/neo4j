@@ -27,7 +27,10 @@ import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterConditi
 
 case class PreparedQuery(statement: Statement,
                          queryText: String,
-                         extractedParams: Map[String, Any])(val semanticTable: SemanticTable, val conditions: Set[RewriterCondition], val scopeTree: Scope) {
+                         extractedParams: Map[String, Any])(val semanticTable: SemanticTable,
+                                                            val conditions: Set[RewriterCondition],
+                                                            val scopeTree: Scope,
+                                                            val notificationLogger: InternalNotificationLogger) {
 
   def abstractQuery: AbstractQuery = statement.asQuery.setQueryText(queryText)
 
@@ -37,5 +40,5 @@ case class PreparedQuery(statement: Statement,
   }
 
   def rewrite(rewriter: Rewriter): PreparedQuery =
-    copy(statement = statement.endoRewrite(rewriter))(semanticTable, conditions, scopeTree)
+    copy(statement = statement.endoRewrite(rewriter))(semanticTable, conditions, scopeTree, notificationLogger)
 }

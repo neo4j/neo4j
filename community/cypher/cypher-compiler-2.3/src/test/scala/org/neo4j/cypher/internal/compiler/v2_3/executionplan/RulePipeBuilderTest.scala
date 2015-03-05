@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.parser.{CypherParser, ParserMonit
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_3.{Scope, Monitors, PreparedQuery}
+import org.neo4j.cypher.internal.compiler.v2_3.{devNullLogger, Scope, Monitors, PreparedQuery}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 class RulePipeBuilderTest extends CypherFunSuite {
@@ -108,7 +108,7 @@ class RulePipeBuilderTest extends CypherFunSuite {
 
   private def buildExecutionPipe(q: String): Pipe = {
     val statement = parser.parse(q)
-    val parsedQ = PreparedQuery(statement, q, Map.empty)(mock[SemanticTable], Set.empty, mock[Scope])
+    val parsedQ = PreparedQuery(statement, q, Map.empty)(mock[SemanticTable], Set.empty, mock[Scope], devNullLogger)
     planBuilder.producePlan(parsedQ, planContext).pipe
   }
 }

@@ -61,7 +61,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
 
     val columns = getQueryResultColumns(abstractQuery, pipe.symbols)
     val resultBuilderFactory = new DefaultExecutionResultBuilderFactory(pipeInfo, columns)
-    val func = getExecutionPlanFunction(periodicCommitInfo, abstractQuery.getQueryText, updating, resultBuilderFactory)
+    val func = getExecutionPlanFunction(periodicCommitInfo, abstractQuery.getQueryText, updating, resultBuilderFactory, inputQuery.notificationLogger)
 
     new ExecutionPlan {
       private val fingerprint = PlanFingerprintReference(clock, queryPlanTTL, statsDivergenceThreshold, fp)
@@ -101,7 +101,8 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
   private def getExecutionPlanFunction(periodicCommit: Option[PeriodicCommitInfo],
                                        queryId: AnyRef,
                                        updating: Boolean,
-                                       resultBuilderFactory: ExecutionResultBuilderFactory):
+                                       resultBuilderFactory: ExecutionResultBuilderFactory,
+                                       notificationLogger: InternalNotificationLogger):
   (QueryContext, ExecutionMode, Map[String, Any]) => InternalExecutionResult =
     (queryContext: QueryContext, planType: ExecutionMode, params: Map[String, Any]) => {
       val builder = resultBuilderFactory.create()
@@ -119,6 +120,6 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
       if (profiling)
         builder.setPipeDecorator(new Profiler())
 
-      builder.build(graph, queryId, planType, params)
+      builder.build(graph, queryId, planType, params, notificationLogger)
     }
 }

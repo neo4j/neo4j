@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
-import org.neo4j.cypher.internal.LRUCache
+import org.neo4j.cypher.internal.{ExecutionMode, LRUCache}
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan._
@@ -61,11 +61,13 @@ trait CypherCacheMonitor[T, E] extends CypherCacheHitMonitor[T] with CypherCache
 trait AstCacheMonitor extends CypherCacheMonitor[Statement, CacheAccessor[Statement, ExecutionPlan]]
 
 object CypherCompilerFactory {
-  val monitorTag = "cypher2.2"
+  val monitorTag = "cypher2.3"
 
   def costBasedCompiler(graph: GraphDatabaseService, queryCacheSize: Int, statsDivergenceThreshold: Double,
                         queryPlanTTL: Long, clock: Clock, monitors: Monitors,
-                        logger: InfoLogger, plannerName: CostBasedPlannerName): CypherCompiler = {
+                        logger: InfoLogger,
+                        notificationLoggerBuilder: (ExecutionMode => InternalNotificationLogger),
+                        plannerName: CostBasedPlannerName): CypherCompiler = {
     val parser = new CypherParser(monitors.newMonitor[ParserMonitor[Statement]](monitorTag))
     val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
     val rewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag))
@@ -80,11 +82,11 @@ object CypherCompilerFactory {
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
     val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheMonitor)
 
-    new CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheMonitor, monitors)
+    new CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheMonitor, monitors, notificationLoggerBuilder)
   }
 
   def ruleBasedCompiler(graph: GraphDatabaseService, queryCacheSize: Int, statsDivergenceThreshold: Double,
-                        queryPlanTTL: Long, clock: Clock, monitors: Monitors): CypherCompiler = {
+                        queryPlanTTL: Long, clock: Clock, monitors: Monitors, notificationLoggerBuilder: (ExecutionMode => InternalNotificationLogger)): CypherCompiler = {
     val parser = new CypherParser(monitors.newMonitor[ParserMonitor[ast.Statement]](monitorTag))
     val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
     val rewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag))
@@ -95,7 +97,7 @@ object CypherCompilerFactory {
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
     val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheMonitor)
 
-    new CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheMonitor, monitors)
+    new CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheMonitor, monitors, notificationLoggerBuilder)
   }
 
   private def logStalePlanRemovalMonitor(log: InfoLogger) = new AstCacheMonitor {
@@ -112,22 +114,25 @@ case class CypherCompiler(parser: CypherParser,
                           cacheAccessor: CacheAccessor[Statement, ExecutionPlan],
                           planCacheFactory: () => LRUCache[Statement, ExecutionPlan],
                           cacheMonitor: CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan]],
-                          monitors: Monitors) {
+                          monitors: Monitors,
+                          notificationLoggerBuilder: (ExecutionMode => InternalNotificationLogger)) {
 
-  def planQuery(queryText: String, context: PlanContext): (ExecutionPlan, Map[String, Any]) =
-    planPreparedQuery(prepareQuery(queryText), context)
+  def planQuery(queryText: String, context: PlanContext, executionMode: ExecutionMode): (ExecutionPlan, Map[String, Any]) =
+    planPreparedQuery(prepareQuery(queryText, executionMode), context)
 
-  def prepareQuery(queryText: String): PreparedQuery = {
+  def prepareQuery(queryText: String, executionMode: ExecutionMode): PreparedQuery = {
+
+    val notificationLogger = notificationLoggerBuilder(executionMode)
     val parsedStatement = parser.parse(queryText)
 
     val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
-    val originalSemanticState = semanticChecker.check(queryText, cleanedStatement)
+    val originalSemanticState = semanticChecker.check(queryText, cleanedStatement, notificationLogger)
 
     val (rewrittenStatement, extractedParams, postConditions) = astRewriter.rewrite(queryText, cleanedStatement, originalSemanticState)
     val postRewriteSemanticState = semanticChecker.check(queryText, rewrittenStatement)
 
     val table = SemanticTable(types = postRewriteSemanticState.typeTable, recordedScopes = postRewriteSemanticState.recordedScopes)
-    PreparedQuery(rewrittenStatement, queryText, extractedParams)(table, postConditions, postRewriteSemanticState.scopeTree)
+    PreparedQuery(rewrittenStatement, queryText, extractedParams)(table, postConditions, postRewriteSemanticState.scopeTree, notificationLogger)
   }
 
   def planPreparedQuery(parsedQuery: PreparedQuery, context: PlanContext): (ExecutionPlan, Map[String, Any]) = {

@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
 import org.neo4j.cypher.internal.{ExplainMode, ExecutionMode, ProfileMode}
+import org.neo4j.cypher.internal.compiler.v2_3.notification.InternalNotification
 import org.neo4j.graphdb.QueryExecutionType.{QueryType, profiled, query}
 import org.neo4j.graphdb.ResourceIterator
 
@@ -101,5 +102,8 @@ class PipeExecutionResult(val result: ResultIterator,
   }
 
   def executionType = if (executionMode == ProfileMode) profiled(queryType) else query(queryType)
+
+  //notifications only present for EXPLAIN
+  override val notifications = Iterable.empty[InternalNotification]
 }
 

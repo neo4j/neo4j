@@ -30,7 +30,10 @@ import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.Notification;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+
+import scala.collection.JavaConversions;
 
 /**
  * Holds Cypher query result sets, in tabular form. Each row of the result is a map
@@ -58,7 +61,7 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
      * create an ExecutionResult directly, but instead use the result
      * returned from calling {@link ExecutionEngine#execute(String)}.
      */
-    public ExecutionResult( org.neo4j.cypher.ExtendedExecutionResult projection )
+    public ExecutionResult( org.neo4j.cypher.ExtendedExecutionResult projection)
     {
         inner = projection;
         iter = inner.javaIterator();
@@ -275,6 +278,12 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     public void remove()
     {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Iterable<Notification> getNotifications()
+    {
+        return JavaConversions.asJavaIterable(inner.notifications());
     }
 
     private static class ExceptionConversion<T> implements ResourceIterator<T>

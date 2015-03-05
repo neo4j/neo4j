@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_3
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
 
 class SemanticChecker(semanticCheckMonitor: SemanticCheckMonitor) {
-  def check(queryText: String, statement: Statement): SemanticState = {
+  def check(queryText: String, statement: Statement, notificationLogger: InternalNotificationLogger = devNullLogger): SemanticState = {
     semanticCheckMonitor.startSemanticCheck(queryText)
-    val SemanticCheckResult(semanticState, semanticErrors) = statement.semanticCheck(SemanticState.clean)
+    val SemanticCheckResult(semanticState, semanticErrors) = statement.semanticCheck(SemanticState.clean.withNotificationLogger(notificationLogger))
 
     val scopeTreeIssues = ScopeTreeVerifier.verify(semanticState.scopeTree)
     if (scopeTreeIssues.nonEmpty)

@@ -99,6 +99,11 @@ case class LegacyExecutionResultWrapper(inner: ExecutionResult, planDescriptionR
 
   def executionType = if (planDescriptionRequested) profiled(queryType) else query(queryType)
 
+  def notifications = inner match {
+    case extended: ExtendedExecutionResult => extended.notifications
+    case _ => Iterable.empty
+  }
+
   // since we can't introspect the query result returned by the legacy planners, this is the best we can do
   private def queryType = if (schemaQuery(queryStatistics()))
     QueryType.SCHEMA_WRITE
