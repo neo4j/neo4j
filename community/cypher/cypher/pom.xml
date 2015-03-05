@@ -177,7 +177,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-compiler-2.1</artifactId>
-      <version>2.1.6</version>
+      <version>2.1.7</version>
       <exclusions>
         <exclusion>
           <groupId>org.neo4j</groupId>
@@ -292,7 +292,7 @@
     <dependency>
         <groupId>com.novus</groupId>
         <artifactId>salat-core_2.10</artifactId>
-        <version>1.9.8</version>
+        <version>1.9.9</version>
         <exclusions>
             <exclusion>
                 <groupId>org.scala-lang</groupId>
