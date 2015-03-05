@@ -28,9 +28,11 @@ case class PlanningStrategyConfiguration(
     leafPlanners: LeafPlannerList,
     applySelections: PlanTransformer[QueryGraph],
     projectAllEndpoints: PlanTransformer[QueryGraph],
-    optionalSolvers: Set[OptionalSolver],
+    optionalSolvers: Seq[OptionalSolver],
     pickBestCandidate: CandidateSelector
   ) {
+
+  val optionalMatchesSolver = solveOptionalMatches(optionalSolvers, pickBestCandidate)
 
   def kitInContext(implicit context: LogicalPlanningContext) = (qg: QueryGraph) =>
     PlanningStrategyKit(
@@ -43,9 +45,9 @@ case class PlanningStrategyKit(select: LogicalPlan => LogicalPlan)
 object PlanningStrategyConfiguration {
   val default = PlanningStrategyConfiguration(
     pickBestCandidate = pickBestPlan,
-    applySelections = selectPatternPredicates(selectCovered),
+    applySelections = selectPatternPredicates(selectCovered, pickBestPlan),
     projectAllEndpoints = projectEndpoints.all,
-    optionalSolvers = Set(
+    optionalSolvers = Seq(
       applyOptional,
       outerHashJoin
     ),

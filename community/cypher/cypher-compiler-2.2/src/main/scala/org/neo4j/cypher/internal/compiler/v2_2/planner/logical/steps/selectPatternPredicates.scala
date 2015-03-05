@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlan
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 import org.neo4j.helpers.ThisShouldNotHappenError
 
-case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph]) extends PlanTransformer[QueryGraph] {
+case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph], pickBest: CandidateSelector) extends PlanTransformer[QueryGraph] {
   private object candidatesProducer extends CandidateGenerator[PlanTable] {
     def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
       for (
@@ -49,8 +49,8 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph])
               case Not(_: PatternExpression) => true
               case _ => false
             }
-            val (outerMostPlan, solvedPredicates) = planPredicates(lhs, patternExpressions, expressions, None)
-            solvePredicate(outerMostPlan, onePredicate(solvedPredicates))
+            val (plan, solvedPredicates) = planPredicates(lhs, patternExpressions, expressions, None)
+            solvePredicate(plan, onePredicate(solvedPredicates))
         }
       }
     }
@@ -86,7 +86,7 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph])
     }
 
     private def createLetSemiApply(lhs: LogicalPlan, rhs: LogicalPlan, patternExpression: PatternExpression, expressions: Set[Expression], letExpression: Option[Expression]) = {
-      val (idName, ident) = freshIdForLet(patternExpression)
+      val (idName, ident) = freshId(patternExpression)
       if (expressions.isEmpty && letExpression.isEmpty)
         (planLetSemiApply(lhs, rhs, idName), ident)
       else
@@ -94,17 +94,15 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph])
     }
 
     private def createLetAntiSemiApply(lhs: LogicalPlan, rhs: LogicalPlan, patternExpression: PatternExpression, predicate: Expression, expressions: Set[Expression], letExpression: Option[Expression]) = {
-      val (idName, ident) = freshIdForLet(patternExpression)
+      val (idName, ident) = freshId(patternExpression)
       if (expressions.isEmpty && letExpression.isEmpty)
         (planLetAntiSemiApply(lhs, rhs, idName), ident)
       else
         (planLetSelectOrAntiSemiApply(lhs, rhs, idName, onePredicate(expressions ++ letExpression.toSet)), ident)
     }
 
-    private def rhsPlan(planArguments: Set[IdName], pattern: PatternExpression)(implicit context: LogicalPlanningContext): LogicalPlan = {
-      val (plan, _) = context.strategy.planPatternExpression(planArguments, pattern)
-      plan
-    }
+    private def rhsPlan(planArguments: Set[IdName], pattern: PatternExpression)(implicit context: LogicalPlanningContext) =
+      context.strategy.planPatternExpression(planArguments, pattern)._1
 
     private def onePredicate(expressions: Set[Expression]): Expression = if (expressions.size == 1)
       expressions.head
@@ -118,7 +116,7 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph])
     }
   }
 
-  def freshIdForLet(patternExpression: PatternExpression) = {
+  private def freshId(patternExpression: PatternExpression) = {
     val name = FreshIdNameGenerator.name(patternExpression.position)
     (IdName(name), Identifier(name)(patternExpression.position))
   }
@@ -129,7 +127,7 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph])
     def findBestPlanForPatternPredicates(plan: LogicalPlan): LogicalPlan = {
       val secretPlanTable = context.strategy.emptyPlanTable + plan
       val result = candidatesProducer(secretPlanTable, queryGraph)
-      pickBestPlan(result.iterator).getOrElse(plan)
+      pickBest(result.iterator).getOrElse(plan)
     }
 
     iterateUntilConverged(findBestPlanForPatternPredicates)(plan)

@@ -19,16 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{logical, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.solveOptionalMatches.OptionalSolver
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{LogicalPlanningContext, LogicalPlanningFunction2, PlanTable}
 
 import scala.annotation.tailrec
 
-case class solveOptionalMatches(solvers: Seq[OptionalSolver]) {
-  def apply(planTable: PlanTable, qg: QueryGraph)(implicit context: LogicalPlanningContext): PlanTable = {
+object solveOptionalMatches {
+  type OptionalSolver = LogicalPlanningFunction2[QueryGraph, LogicalPlan, Option[LogicalPlan]]
+}
+
+case class solveOptionalMatches(solvers: Seq[OptionalSolver], pickBest: CandidateSelector) extends PlanTableTransformer[QueryGraph] {
+  override def apply(planTable: PlanTable, qg: QueryGraph)(implicit context: LogicalPlanningContext): PlanTable = {
 
     val p = if (planTable.isEmpty)
       context.strategy.emptyPlanTable + planSingleRow()
@@ -42,7 +46,7 @@ case class solveOptionalMatches(solvers: Seq[OptionalSolver]) {
           case (lhs: LogicalPlan, optionalQg: QueryGraph) =>
             val plans = solvers.flatMap(_.apply(optionalQg, lhs))
             assert(plans.map(_.solved).distinct.size == 1) // All plans are solving the same query
-            pickBestPlan(plans.iterator).get
+            pickBest(plans.iterator).get
         }
         table + newPlan
     }
@@ -74,20 +78,6 @@ case class solveOptionalMatches(solvers: Seq[OptionalSolver]) {
     optionalQG.argumentIds.subsetOf(outerPlan.availableSymbols)
 }
 
-object solveOptionalMatches extends logical.LogicalPlanningFunction2[PlanTable, QueryGraph, PlanTable] {
-
-  type OptionalSolver = LogicalPlanningFunction2[QueryGraph, LogicalPlan, Option[LogicalPlan]]
-
-  private val optionalStrategies: Seq[OptionalSolver] = Seq(
-    applyOptional,
-    outerHashJoin
-  )
-
-  private val instance = new solveOptionalMatches(optionalStrategies)
-
-  def apply(pt: PlanTable, qg: QueryGraph)(implicit context: LogicalPlanningContext) =
-    instance.apply(pt, qg)
-}
 
 case object applyOptional extends OptionalSolver {
   def apply(optionalQg: QueryGraph, lhs: LogicalPlan)(implicit context: LogicalPlanningContext) =

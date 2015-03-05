@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalPlan}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.{cartesianProduct, solveOptionalMatches}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.cartesianProduct
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 
 class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[PlanTable],
-                             config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default)
+                             val config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default)
   extends TentativeQueryGraphSolver {
 
   def emptyPlanTable: PlanTable = GreedyPlanTable.empty
@@ -35,6 +35,7 @@ class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[PlanTable],
 
     val select = config.applySelections.asFunctionInContext
     val projectAllEndpoints = config.projectAllEndpoints.asFunctionInContext
+    val optionalMatchesSolver = config.optionalMatchesSolver
     val _pickBest = config.pickBestCandidate.asFunctionInContext
     val pickBest = (x: Iterable[LogicalPlan]) => _pickBest(x.iterator)
 
@@ -78,7 +79,7 @@ class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[PlanTable],
     }
 
     def solveOptionalAndCartesianProducts: PlanTable => PlanTable = { incoming: PlanTable =>
-      val solvedOptionalMatches = solveOptionalMatches(incoming, queryGraph)
+      val solvedOptionalMatches = optionalMatchesSolver(incoming, queryGraph)
       findBestPlan(cartesianProduct)(solvedOptionalMatches)
     }
 

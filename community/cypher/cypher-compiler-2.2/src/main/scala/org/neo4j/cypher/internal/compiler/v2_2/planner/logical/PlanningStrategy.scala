@@ -57,6 +57,7 @@ trait PatternExpressionSolving {
 }
 
 trait TentativeQueryGraphSolver extends QueryGraphSolver with PatternExpressionSolving {
+  def config: PlanningStrategyConfiguration
   def tryPlan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): Option[LogicalPlan]
   def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan =
     tryPlan(queryGraph).getOrElse(throw new InternalException("Failed to create a plan for the given QueryGraph " + queryGraph))
