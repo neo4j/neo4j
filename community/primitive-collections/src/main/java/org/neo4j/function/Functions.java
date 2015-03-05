@@ -177,7 +177,7 @@ public class Functions
     @SuppressWarnings( "unchecked" )
     public static <TYPE> Consumer<TYPE> swallow( @SuppressWarnings( "UnusedParameters" ) Class<TYPE> type )
     {
-        return (Consumer<TYPE>) SWALLOWER;
+        return SWALLOWER;
     }
 
     private static Consumer SWALLOWER = new Consumer()
@@ -188,4 +188,16 @@ public class Functions
             // yum, yum
         }
     };
+
+    public static <T> Factory<T> constantly( final T item )
+    {
+        return new Factory<T>()
+        {
+            @Override
+            public T newInstance()
+            {
+                return item;
+            }
+        };
+    }
 }

@@ -39,8 +39,9 @@ abstract class InputGroupsDeserializer<ENTITY extends InputEntity>
     private final Header.Factory headerFactory;
     private final Configuration config;
     private final IdType idType;
-    private InputEntityDeserializer<ENTITY> currentInput;
+    private InputIterator<ENTITY> currentInput = new InputIterator.Adapter<>();
     private long previousInputsCollectivePositions;
+    private boolean currentInputOpen;
 
     InputGroupsDeserializer( Iterator<DataFactory<ENTITY>> dataFactory, Header.Factory headerFactory,
                              Configuration config, IdType idType )
@@ -65,18 +66,22 @@ abstract class InputGroupsDeserializer<ENTITY extends InputEntity>
         // from somewhere else, it's up to that factory.
         Header dataHeader = headerFactory.create( dataStream, config, idType );
 
-        currentInput = entityDeserializer( dataStream, dataHeader, data.decorator() );
-        currentInput.initialize();
+        InputEntityDeserializer<ENTITY> input = entityDeserializer( dataStream, dataHeader, data.decorator() );
+        // It's important that we assign currentInput before calling initialize(), so that if something
+        // goes wrong in initialize() and our close() is called we close it properly.
+        currentInput = input;
+        currentInputOpen = true;
+        input.initialize();
         return currentInput;
     }
 
     private void closeCurrent()
     {
-        if ( currentInput != null )
+        if ( currentInputOpen )
         {
             previousInputsCollectivePositions += currentInput.position();
             currentInput.close();
-            currentInput = null;
+            currentInputOpen = false;
         }
     }
 
