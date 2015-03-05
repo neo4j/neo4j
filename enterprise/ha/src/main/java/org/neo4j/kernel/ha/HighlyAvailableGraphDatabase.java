@@ -143,6 +143,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     private long stateSwitchTimeoutMillis;
     private TransactionCommittingResponseUnpacker responseUnpacker;
     private Provider<KernelAPI> kernelProvider;
+    private InvalidEpochExceptionHandler invalidEpochHandler;
 
     public HighlyAvailableGraphDatabase( String storeDir, Map<String,String> params,
                                          Iterable<KernelExtensionFactory<?>> kernelExtensions,
@@ -199,7 +200,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         UpdatePuller updatePuller = dependencies.satisfyDependency( life.add(
                 new UpdatePuller( memberStateMachine, requestContextFactory, master, lastUpdateTime,
-                        logging, serverId ) ) );
+                        logging, serverId, invalidEpochHandler ) ) );
         dependencies.satisfyDependency( life.add( new UpdatePullerClient( config.get( HaSettings.pull_interval ),
                 jobScheduler, logging, updatePuller, availabilityGuard ) ) );
         dependencies.satisfyDependency( life.add( new UpdatePullingTransactionObligationFulfiller(
@@ -473,7 +474,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         ConsoleLogger consoleLog = logging.getConsoleLog( HighAvailabilityModeSwitcher.class );
 
-        InvalidEpochExceptionHandler invalidEpochHandler = new InvalidEpochExceptionHandler()
+        invalidEpochHandler = new InvalidEpochExceptionHandler()
         {
             @Override
             public void handle()

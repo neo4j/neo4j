@@ -163,6 +163,22 @@ public class AvailabilityGuard
         }
     }
 
+    private static enum Availability
+    {
+        AVAILABLE( true, true ),
+        TEMPORARILY_UNAVAILABLE( false, true ),
+        UNAVAILABLE( false, false );
+
+        private final boolean available;
+        private final boolean temporarily;
+
+        private Availability( boolean available, boolean temporarily )
+        {
+            this.available = available;
+            this.temporarily = temporarily;
+        }
+    }
+
     /**
      * Determines if the database is available for transactions to use.
      *
@@ -171,14 +187,19 @@ public class AvailabilityGuard
      */
     public boolean isAvailable( long millis )
     {
+        return availability( millis ).available;
+    }
+
+    private Availability availability( long millis )
+    {
         int val = available.get();
         if ( val == 0 )
         {
-            return true;
+            return Availability.AVAILABLE;
         }
         else if ( val == -1 )
         {
-            return false;
+            return Availability.UNAVAILABLE;
         }
         else
         {
@@ -189,11 +210,11 @@ public class AvailabilityGuard
                 val = available.get();
                 if ( val == 0 )
                 {
-                    return true;
+                    return Availability.AVAILABLE;
                 }
                 else if ( val == -1 )
                 {
-                    return false;
+                    return Availability.UNAVAILABLE;
                 }
 
                 try
@@ -208,21 +229,24 @@ public class AvailabilityGuard
                 Thread.yield();
             }
 
-            return false;
+            return Availability.TEMPORARILY_UNAVAILABLE;
         }
     }
-    
+
     public <EXCEPTION extends Throwable> void checkAvailability( long millis, Class<EXCEPTION> cls )
             throws EXCEPTION
     {
-        if ( !isAvailable( millis ) )
+        Availability availability = availability( millis );
+        if ( !availability.available )
         {
             EXCEPTION exception;
             try
             {
-                exception = cls.getConstructor( String.class ).newInstance(
-                        "Timeout waiting for database to become available and allow new transactions. Waited " +
-                                Format.duration( millis ) + ". " + describeWhoIsBlocking() );
+                String description = availability.temporarily
+                        ? "Timeout waiting for database to become available and allow new transactions. Waited " +
+                                Format.duration( millis ) + ". " + describeWhoIsBlocking()
+                        : "Database not available because it's shutting down";
+                exception = cls.getConstructor( String.class ).newInstance( description );
             }
             catch ( NoSuchMethodException e )
             {

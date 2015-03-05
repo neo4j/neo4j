@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,11 +26,16 @@ import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.com.RequestContext;
+import org.neo4j.com.Response;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.UpdatePuller.Condition;
@@ -45,24 +46,33 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
+import org.neo4j.kernel.ha.com.master.InvalidEpochException;
 import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.ha.com.slave.InvalidEpochExceptionHandler;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.logging.BufferingLogger;
+import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.OnDemandJobScheduler;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+
+import static org.neo4j.kernel.ha.UpdatePuller.NEXT_TICKET;
 
 public class UpdatePullerTest
 {
@@ -75,10 +85,11 @@ public class UpdatePullerTest
     private final AvailabilityGuard availabilityGuard = mock( AvailabilityGuard.class );
     private final LastUpdateTime lastUpdateTime = mock( LastUpdateTime.class );
     private final Master master = mock( Master.class );
-    private final Logging logging = new DevNullLoggingService();
+    private final ErrorTrackingLogging logging = new ErrorTrackingLogging();
     private final RequestContextFactory requestContextFactory = mock( RequestContextFactory.class );
+    private final InvalidEpochExceptionHandler invalidEpochHandler = mock( InvalidEpochExceptionHandler.class );
     private final UpdatePuller updatePuller = new UpdatePuller( stateMachine, requestContextFactory,
-            master, lastUpdateTime, logging, myId );
+            master, lastUpdateTime, logging, myId, invalidEpochHandler );
 
     public final @Rule CleanupRule cleanup = new CleanupRule();
 
@@ -355,6 +366,40 @@ public class UpdatePullerTest
         }
     }
 
+    @Test
+    public void shouldHandleInvalidEpochByNotifyingItsHandler() throws Exception
+    {
+        // GIVEN
+        doThrow( InvalidEpochException.class ).when( master ).pullUpdates( any( RequestContext.class ) );
+        updatePuller.unpause();
+
+        // WHEN
+        updatePuller.await( NEXT_TICKET, true );
+
+        // THEN
+        verify( invalidEpochHandler ).handle();
+    }
+
+    @SuppressWarnings( "unchecked" )
+    @Test
+    public void shouldCopeWithHardExceptionsLikeOutOfMemory() throws Exception
+    {
+        // GIVEN
+        when( master.pullUpdates( any( RequestContext.class ) ) )
+                .thenThrow( OutOfMemoryError.class )
+                .thenReturn( Response.EMPTY );
+        updatePuller.unpause();
+
+        // WHEN making the first pull
+        updatePuller.await( NEXT_TICKET, true );
+
+        // THEN the OOM should be caught and logged
+        assertTrue( logging.hasSeenError( OutOfMemoryError.class ) );
+
+        // WHEN that has passed THEN we should still be making pull attempts.
+        updatePuller.await( NEXT_TICKET, true );
+    }
+
     private static class CapturingHighAvailabilityMemberStateMachine extends HighAvailabilityMemberStateMachine
     {
         private final InstanceId myId;
@@ -383,6 +428,60 @@ public class UpdatePullerTest
                 listener.masterIsElected( new HighAvailabilityMemberChangeEvent(
                         HighAvailabilityMemberState.PENDING, HighAvailabilityMemberState.TO_MASTER, myId, uri ) );
             }
+        }
+    }
+
+    private static class ErrorTrackingLogging extends LifecycleAdapter implements Logging
+    {
+        private final List<Throwable> errors = new ArrayList<>();
+        private final StringLogger logger = new ErrorTrackingLogger( errors );
+
+        @Override
+        public StringLogger getMessagesLog( Class loggingClass )
+        {
+            return logger;
+        }
+
+        @Override
+        public ConsoleLogger getConsoleLog( Class loggingClass )
+        {
+            throw new UnsupportedOperationException( "Shouldn't be required" );
+        }
+
+        boolean hasSeenError( Class<?> cls )
+        {
+            for ( Throwable throwable : errors )
+            {
+                if ( throwable.getClass().equals( cls ) )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    private static class ErrorTrackingLogger extends BufferingLogger
+    {
+        private final List<Throwable> errors;
+
+        public ErrorTrackingLogger( List<Throwable> errors )
+        {
+            this.errors = errors;
+        }
+
+        @Override
+        public synchronized void logMessage( String msg, Throwable cause )
+        {
+            errors.add( cause );
+            super.logMessage( msg, cause );
+        }
+
+        @Override
+        public synchronized void logMessage( String msg, Throwable cause, boolean flush )
+        {
+            errors.add( cause );
+            super.logMessage( msg, cause, flush );
         }
     }
 }
