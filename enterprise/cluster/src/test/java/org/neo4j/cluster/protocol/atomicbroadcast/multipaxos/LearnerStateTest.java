@@ -23,27 +23,22 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
 import org.junit.Test;
 import org.mockito.Matchers;
-import org.mockito.cglib.core.CollectionUtils;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.protocol.omega.MessageArgumentMatcher;
 import org.neo4j.cluster.statemachine.State;
-import org.neo4j.test.AbstractSubProcessTestBase;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 public class LearnerStateTest

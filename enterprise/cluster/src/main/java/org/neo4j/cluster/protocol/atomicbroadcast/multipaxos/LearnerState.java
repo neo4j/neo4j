@@ -21,8 +21,6 @@ package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.List;
-
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
