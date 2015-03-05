@@ -27,7 +27,7 @@ object leafPlanOptions extends LogicalLeafPlan.Finder {
 
   def apply(config: QueryPlannerConfiguration, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Set[LogicalPlan] = {
     val select = config.applySelections.asFunctionInContext
-    val pickBest = config.pickBestCandidate.asFunctionInContext
+    val pickBest = (x: Iterable[LogicalPlan]) => config.pickBestCandidate(x)(context)
     val projectAllEndpoints = config.projectAllEndpoints.asFunctionInContext
 
     val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph, projectAllEndpoints)

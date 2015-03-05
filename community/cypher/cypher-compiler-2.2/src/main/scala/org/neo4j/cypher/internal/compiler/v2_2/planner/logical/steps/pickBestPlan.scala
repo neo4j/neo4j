@@ -25,13 +25,13 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CandidateSelecto
 object pickBestPlan extends CandidateSelector {
   private final val VERBOSE = false
 
-  def apply(plans: Iterable[LogicalPlan])(implicit context: LogicalPlanningContext): Option[LogicalPlan] = {
+  override def apply[X](projector: (X) => LogicalPlan, input: Iterable[X])(implicit context: LogicalPlanningContext): Option[X] = {
     val costs = context.cost
-    val comparePlans = (c: LogicalPlan) =>
-      (-c.solved.numHints, costs(c, context.cardinalityInput), -c.availableSymbols.size)
+    val comparePlans = (plan: LogicalPlan) => (-plan.solved.numHints, costs(plan, context.cardinalityInput), -plan.availableSymbols.size)
+    val compareInput = projector andThen comparePlans
 
     if (VERBOSE) {
-      val sortedPlans = plans.toSeq.sortBy(comparePlans)
+      val sortedPlans = input.map(projector).toSeq.sortBy(comparePlans)
 
       if (sortedPlans.size > 1) {
         println("- Get best of:")
@@ -46,10 +46,8 @@ object pickBestPlan extends CandidateSelector {
         println(s"\t\t${costs(best, context.cardinalityInput)}")
         println()
       }
-
-      sortedPlans.headOption
-    } else {
-      if (plans.isEmpty) None else Some(plans.minBy(comparePlans))
     }
+
+    if (input.isEmpty) None else Some(input.minBy(compareInput))
   }
 }

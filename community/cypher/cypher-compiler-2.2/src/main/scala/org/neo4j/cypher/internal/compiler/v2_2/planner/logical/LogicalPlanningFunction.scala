@@ -57,6 +57,12 @@ object CandidateGenerator {
 trait PlanTransformer[-T] extends LogicalPlanningFunction2[LogicalPlan, T, LogicalPlan]
 trait PlanTableTransformer[-T] extends LogicalPlanningFunction2[PlanTable, T, PlanTable]
 
-trait CandidateSelector extends LogicalPlanningFunction1[Iterable[LogicalPlan], Option[LogicalPlan]]
+trait CandidateSelector {
+
+  def apply(plans: Iterable[LogicalPlan])(implicit context: LogicalPlanningContext): Option[LogicalPlan] =
+    apply[LogicalPlan](identity, plans)
+
+  def apply[X](projector: X => LogicalPlan, input: Iterable[X])(implicit context: LogicalPlanningContext): Option[X]
+}
 
 trait LeafPlanner  extends LogicalPlanningFunction1[QueryGraph, Seq[LogicalPlan]]

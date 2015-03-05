@@ -173,9 +173,8 @@ case class IDPQueryGraphSolver(maxDepth: Int = 9,
       }
 
       // line 17
-      val blockCandidates: Map[LogicalPlan, Set[Solvable]] = table.plansOfSize(k).map(_.swap).toMap
-      val bestBlock = bestPlanFinder(blockCandidates.keys).getOrElse(throw new InternalException("Did not find a single solution for a block"))
-      val bestSolvables = blockCandidates(bestBlock)
+      val blockCandidates = table.plansOfSize(k)
+      val (bestSolvables, bestBlock) = pickSolution(blockCandidates).getOrElse(throw new InternalException("Did not find a single solution for a block"))
 
       // TODO: Test this
       // line 18 - 21
@@ -196,6 +195,9 @@ case class IDPQueryGraphSolver(maxDepth: Int = 9,
     }
     table
   }
+
+  private def pickSolution(input: Iterable[(Set[Solvable], LogicalPlan)])(implicit context: LogicalPlanningContext): Option[(Set[Solvable], LogicalPlan)] =
+    bestPlanFinder[(Set[Solvable], LogicalPlan)](_._2, input)
 
   private def planSinglePattern(qg: QueryGraph, pattern: PatternRelationship, leaves: Iterable[LogicalPlan]): Iterable[LogicalPlan] = {
 
