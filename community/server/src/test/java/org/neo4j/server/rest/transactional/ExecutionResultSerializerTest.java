@@ -30,16 +30,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.*;
 
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Node;
@@ -47,6 +38,10 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.notification.InputPosition;
+import org.neo4j.graphdb.notification.Notification;
+import org.neo4j.graphdb.notification.NotificationCode;
+import org.neo4j.graphdb.notification.NotificationSeverityLevel;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.TestLogger;
@@ -794,6 +789,91 @@ public class ExecutionResultSerializerTest
         verifyNoMoreInteractions(result);
     }
 
+    @Test
+    public void shouldReturnNotifications() throws IOException
+    {
+        // given
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+
+        Notification notification = mockNotification( new InputPosition( 1, 2, 3 ) );
+        List<Notification> notifications = Arrays.asList( notification );
+        Result executionResult = mockExecutionResult( null, notifications, map(
+                "column1", "value1",
+                "column2", "value2" ) );
+
+        // when
+        serializer.transactionCommitUri( URI.create( "commit/uri/1" ) );
+        serializer.statementResult( executionResult, false );
+        serializer.notifications( notifications );
+        serializer.finish();
+
+        // then
+        String result = output.toString( "UTF-8" );
+
+        assertEquals(
+                "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
+                        "\"data\":[{\"row\":[\"value1\",\"value2\"]}]}],\"notifications\":[{\"code\":\"Neo" +
+                        ".ClientNotification.Statement.CartesianProduct\",\"severity\":\"INFO\",\"title\":\"title of " +
+                        "notification\",\"description\":\"describing notification\",\"position\":{\"offset\":1," +
+                        "\"line\":2,\"column\":3}}],\"errors\":[]}", result );
+    }
+
+    @Test
+    public void shouldNotReturnNotificationsWhenEmptyNotifications() throws IOException
+    {
+        // given
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+
+        List<Notification> notifications = Collections.emptyList();
+        Result executionResult = mockExecutionResult( null, notifications, map(
+                "column1", "value1",
+                "column2", "value2" ) );
+
+        // when
+        serializer.transactionCommitUri( URI.create( "commit/uri/1" ) );
+        serializer.statementResult( executionResult, false );
+        serializer.notifications( notifications );
+        serializer.finish();
+
+        // then
+        String result = output.toString( "UTF-8" );
+
+        assertEquals(
+                "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
+                        "\"data\":[{\"row\":[\"value1\",\"value2\"]}]}],\"errors\":[]}", result );
+    }
+
+    @Test
+    public void shouldNotReturnPositionWhenEmptyPosition() throws IOException
+    {
+        // given
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+
+        Notification notification = mockNotification( InputPosition.empty );
+        List<Notification> notifications = Arrays.asList( notification );
+        Result executionResult = mockExecutionResult( null, notifications, map(
+                "column1", "value1",
+                "column2", "value2" ) );
+
+        // when
+        serializer.transactionCommitUri( URI.create( "commit/uri/1" ) );
+        serializer.statementResult( executionResult, false );
+        serializer.notifications( notifications );
+        serializer.finish();
+
+        // then
+        String result = output.toString( "UTF-8" );
+
+        assertEquals(
+                "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
+                        "\"data\":[{\"row\":[\"value1\",\"value2\"]}]}],\"notifications\":[{\"code\":\"Neo" +
+                        ".ClientNotification.Statement.CartesianProduct\",\"severity\":\"INFO\",\"title\":\"title of " +
+                        "notification\",\"description\":\"describing notification\"}],\"errors\":[]}", result );
+    }
+
     @SafeVarargs
     private static Result mockExecutionResult( Map<String, Object>... rows )
     {
@@ -801,7 +881,13 @@ public class ExecutionResultSerializerTest
     }
 
     @SafeVarargs
-    private static Result mockExecutionResult( ExecutionPlanDescription planDescription, Map<String, Object>... rows )
+    private static Result mockExecutionResult(ExecutionPlanDescription planDescription, Map<String, Object>... rows )
+    {
+        return mockExecutionResult( planDescription, Collections.<Notification>emptyList(), rows );
+    }
+
+    @SafeVarargs
+    private static Result mockExecutionResult( ExecutionPlanDescription planDescription, Iterable<Notification> notifications, Map<String, Object>... rows )
     {
         Set<String> keys = new TreeSet<>();
         for ( Map<String, Object> row : rows )
@@ -839,7 +925,21 @@ public class ExecutionResultSerializerTest
             when( executionResult.getExecutionPlanDescription() ).thenReturn( planDescription );
         }
 
+        when(executionResult.getNotifications()).thenReturn( notifications );
+
         return executionResult;
+    }
+
+    private static Notification mockNotification(InputPosition position)
+    {
+        Notification notification = mock( Notification.class );
+        when(notification.getCode()).thenReturn( NotificationCode.CARTESIAN_PRODUCT );
+        when(notification.getSeverity()).thenReturn( NotificationSeverityLevel.INFO );
+        when(notification.getDescription()).thenReturn( "describing notification" );
+        when(notification.getTitle()).thenReturn( "title of notification" );
+        when(notification.getPosition()).thenReturn( position);
+
+        return notification;
     }
 
     private static Path mockPath( Map<String, Object> startNodeProperties, Map<String, Object> relationshipProperties,

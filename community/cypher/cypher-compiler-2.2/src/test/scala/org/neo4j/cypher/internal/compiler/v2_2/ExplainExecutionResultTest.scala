@@ -28,7 +28,7 @@ class ExplainExecutionResultTest extends CypherFunSuite {
 
   private val closer = mock[TaskCloser]
   private val result =
-    new ExplainExecutionResult(closer, List.empty, mock[InternalPlanDescription], QueryType.READ_ONLY)
+    ExplainExecutionResult(closer, List.empty, mock[InternalPlanDescription], QueryType.READ_ONLY, Seq.empty)
 
   test("should call taskCloser close on close") {
     result.close()

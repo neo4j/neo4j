@@ -27,9 +27,11 @@ import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionRe
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription
 import org.neo4j.graphdb.QueryExecutionType.{QueryType, explained}
 import org.neo4j.graphdb.ResourceIterator
+import org.neo4j.graphdb.notification.Notification
 
 case class ExplainExecutionResult(closer: TaskCloser, columns: List[String],
-                                  executionPlanDescription: InternalPlanDescription, queryType: QueryType)
+                                  executionPlanDescription: InternalPlanDescription, queryType: QueryType,
+                                  notifications: Seq[Notification])
   extends InternalExecutionResult {
 
   def javaIterator: ResourceIterator[util.Map[String, Any]] = new EmptyResourceIterator(close)

@@ -24,16 +24,14 @@ import java.util
 
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v2_2
-import org.neo4j.cypher.internal.compiler.v2_2.{CostPlannerName, ConservativePlannerName, IDPPlannerName}
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{InternalExecutionResult, ExecutionPlan => ExecutionPlan_v2_2}
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ExecutionPlan => ExecutionPlan_v2_2, InternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.{DbHits, Planner, Rows, Version}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{allQueryAcceptor, conservativeQueryAcceptor}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.MapToPublicExceptions
-import org.neo4j.cypher.internal.compiler.v2_2.{CypherCompilerFactory, PlannerName, CypherException => CypherException_v2_2}
+import org.neo4j.cypher.internal.compiler.v2_2.{ConservativePlannerName, CostPlannerName, CypherException => CypherException_v2_2, IDPPlannerName, _}
 import org.neo4j.cypher.internal.spi.v2_2.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
-import org.neo4j.cypher.{ArithmeticException, CypherTypeException, EntityNotFoundException, FailedIndexException, IncomparableValuesException, IndexHintException, InternalException, InvalidArgumentException, InvalidSemanticsException, LoadCsvStatusWrapCypherException, LoadExternalResourceException, MergeConstraintConflictException, NodeStillHasRelationshipsException, ParameterNotFoundException, ParameterWrongTypeException, PatternException, PeriodicCommitInOpenTransactionException, ProfilerStatisticsNotReadyException, SyntaxException, UniquePathNotUniqueException, UnknownLabelException, _}
+import org.neo4j.cypher.{ArithmeticException, CypherTypeException, EntityNotFoundException, FailedIndexException, IncomparableValuesException, IndexHintException, InternalException, InvalidArgumentException, InvalidSemanticsException, LabelScanHintException, LoadCsvStatusWrapCypherException, LoadExternalResourceException, MergeConstraintConflictException, NodeStillHasRelationshipsException, ParameterNotFoundException, ParameterWrongTypeException, PatternException, PeriodicCommitInOpenTransactionException, ProfilerStatisticsNotReadyException, SyntaxException, UniquePathNotUniqueException, UnknownLabelException, _}
 import org.neo4j.graphdb.{GraphDatabaseService, QueryExecutionType, ResourceIterator}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseAPI
@@ -119,7 +117,7 @@ object exceptionHandlerFor2_2 extends MapToPublicExceptions[CypherException] {
 }
 
 trait CompatibilityFor2_2 {
-  import compatibility.helpers._
+  import org.neo4j.cypher.internal.compatibility.helpers._
 
   val graph: GraphDatabaseService
   val queryCacheSize: Int
@@ -129,8 +127,9 @@ trait CompatibilityFor2_2 {
   protected val compiler: v2_2.CypherCompiler
   implicit val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
-  def produceParsedQuery(statementAsText: String) = new ParsedQuery {
-    val preparedQueryForV_2_2 = Try(compiler.prepareQuery(statementAsText))
+  def produceParsedQuery(preParsedQuery: PreParsedQuery) = new ParsedQuery {
+
+    val preparedQueryForV_2_2 = Try(compiler.prepareQuery(preParsedQuery.statement, preParsedQuery.executionMode))
 
     def isPeriodicCommit = preparedQueryForV_2_2.map(_.isPeriodicCommit).getOrElse(false)
 
@@ -193,9 +192,14 @@ case class ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, planner:
       }
       def remove() =  exceptionHandlerFor2_2.runSafely{innerJavaIterator.remove}
     }
+
   }
 
-  def columnAs[T](column: String) = exceptionHandlerFor2_2.runSafely{inner.columnAs[T](column)}
+  def notifications = inner.notifications
+
+  def columnAs[T](column: String) = exceptionHandlerFor2_2.runSafely {
+    inner.columnAs[T](column)
+  }
 
   def columns = exceptionHandlerFor2_2.runSafely{inner.columns}
 
@@ -302,9 +306,10 @@ case class CompatibilityFor2_2Conservative(graph: GraphDatabaseService,
                                            clock: Clock,
                                            kernelMonitors: KernelMonitors,
                                            kernelAPI: KernelAPI,
-                                           logger: StringLogger) extends CompatibilityFor2_2 {
+                                           logger: StringLogger,
+                                           notificationLoggerBuilder: (ExecutionMode => NotificationLogger)) extends CompatibilityFor2_2 {
   protected val compiler = CypherCompilerFactory.costBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors, logger, plannerName = ConservativePlannerName
+    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors, logger, notificationLoggerBuilder, plannerName = ConservativePlannerName
   )
 }
 
@@ -315,9 +320,10 @@ case class CompatibilityFor2_2Cost(graph: GraphDatabaseService,
                                    clock: Clock,
                                    kernelMonitors: KernelMonitors,
                                    kernelAPI: KernelAPI,
-                                   logger: StringLogger) extends CompatibilityFor2_2 {
+                                   logger: StringLogger,
+                                   notificationLoggerBuilder: (ExecutionMode => NotificationLogger)) extends CompatibilityFor2_2 {
   protected val compiler = CypherCompilerFactory.costBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors, logger, plannerName = CostPlannerName
+    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors, logger, notificationLoggerBuilder, plannerName = CostPlannerName
   )
 }
 
@@ -328,9 +334,10 @@ case class CompatibilityFor2_2IDP(graph: GraphDatabaseService,
                                   clock: Clock,
                                   kernelMonitors: KernelMonitors,
                                   kernelAPI: KernelAPI,
-                                  logger: StringLogger) extends CompatibilityFor2_2 {
+                                  logger: StringLogger,
+                                  notificationLoggerBuilder: (ExecutionMode => NotificationLogger)) extends CompatibilityFor2_2 {
   protected val compiler = CypherCompilerFactory.costBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors, logger, plannerName = IDPPlannerName
+    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors, logger, notificationLoggerBuilder,  plannerName = IDPPlannerName
   )
 }
 
@@ -340,8 +347,9 @@ case class CompatibilityFor2_2Rule(graph: GraphDatabaseService,
                                    queryPlanTTL: Long,
                                    clock: Clock,
                                    kernelMonitors: KernelMonitors,
-                                   kernelAPI: KernelAPI) extends CompatibilityFor2_2 {
+                                   kernelAPI: KernelAPI,
+                                   notificationLoggerBuilder: (ExecutionMode => NotificationLogger)) extends CompatibilityFor2_2 {
   protected val compiler = CypherCompilerFactory.ruleBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors
+    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors, notificationLoggerBuilder
   )
 }

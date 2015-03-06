@@ -170,7 +170,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.SemanticState.ScopeLocation
 
 case class SemanticState(currentScope: ScopeLocation,
                          typeTable: ASTAnnotationMap[ast.Expression, ExpressionTypeInfo],
-                         recordedScopes: ASTAnnotationMap[ast.ASTNode, Scope]) {
+                         recordedScopes: ASTAnnotationMap[ast.ASTNode, Scope],
+                         notificationLogger: NotificationLogger = devNullLogger) {
   def scopeTree = currentScope.rootScope
 
   def newChildScope = copy(currentScope = currentScope.newChildScope)
@@ -189,6 +190,8 @@ case class SemanticState(currentScope: ScopeLocation,
       case Some(symbol) =>
         Left(SemanticError(s"${identifier.name} already declared", identifier.position, symbol.positions.toSeq: _*))
     }
+
+  def withNotificationLogger(notificationLogger: NotificationLogger) = copy(notificationLogger = notificationLogger)
 
   def implicitIdentifier(identifier: ast.Identifier, possibleTypes: TypeSpec): Either[SemanticError, SemanticState] =
     this.symbol(identifier.name) match {

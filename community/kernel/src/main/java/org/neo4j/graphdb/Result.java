@@ -23,6 +23,8 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.graphdb.notification.Notification;
+
 /**
  * Represents the result of {@link GraphDatabaseService#execute(String, java.util.Map) executing} a query.
  * <p/>
@@ -178,4 +180,14 @@ public interface Result extends ResourceIterator<Map<String, Object>>
 
     /** Removing rows from the result is not supported. */
     void remove();
+
+    /**
+     * Provides notifications about the query producing this result.
+     *
+     * Notifications can be warnings about problematic queries or other valuable information that can be
+     * presented in a client.
+     *
+     * @return an iterable of all notifications created when running the query.
+     */
+    Iterable<Notification> getNotifications();
 }

@@ -68,5 +68,7 @@ case class CompatibilityFor1_9(graph: GraphDatabaseService, queryCacheSize: Int,
     def isPeriodicCommit = false
 
     def isStale(lastTxId: () => Long, statement: Statement): Boolean = false
+
+    def notifications = Iterable.empty
   }
 }

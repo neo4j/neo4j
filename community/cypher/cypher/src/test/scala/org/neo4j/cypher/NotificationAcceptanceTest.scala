@@ -17,18 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.pipes
+package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v2_2.{devNullLogger, ExecutionContext}
-import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
+import org.neo4j.cypher.internal.CartesianProductNotification
+import org.neo4j.cypher.internal.compiler.v2_2.InputPosition
 
-object QueryStateHelper {
-  def empty: QueryState = emptyWith()
+class NotificationAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
-  def emptyWith(db: GraphDatabaseService = null, query: QueryContext = null, resources: ExternalResource = null,
-                params: Map[String, Any] = Map.empty, decorator: PipeDecorator = NullPipeDecorator,
-                initialContext: Option[ExecutionContext] = None) =
-    QueryState(db = db, query = query, resources = resources, params = params, decorator = decorator,
-      initialContext = initialContext)
+  test("Warn for cartesian product") {
+    val result = executeWithNewPlanner("explain match (a)-->(b), (c)-->(d) return *")
+
+    result.notifications.toList should equal(List(CartesianProductNotification(InputPosition(7, 1, 8))))
+  }
+
+  test("Don't warn for cartesian product when not using explain") {
+    val result = executeWithNewPlanner("match (a)-->(b), (c)-->(d) return *")
+
+    result.notifications shouldBe empty
+  }
 }
