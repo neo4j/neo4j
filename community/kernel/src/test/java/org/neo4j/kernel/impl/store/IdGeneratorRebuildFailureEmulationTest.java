@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -27,10 +31,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
-
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -54,8 +54,11 @@ import org.neo4j.test.subprocess.BreakpointTrigger;
 import org.neo4j.test.subprocess.EnabledBreakpoints;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
 
 @RunWith(Suite.class)
@@ -89,7 +92,7 @@ public class IdGeneratorRebuildFailureEmulationTest
         }
         catch ( UnderlyingStorageException expected )
         {
-            assertEquals( "Id capacity exceeded", expected.getMessage() );
+            assertThat( expected.getMessage(), startsWith( "Id capacity exceeded" ) );
         }
         finally
         {

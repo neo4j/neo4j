@@ -56,12 +56,14 @@ public class FullCheck
     private final ProgressMonitorFactory progressFactory;
     private final Long totalMappedMemory;
     private final IndexSamplingConfig samplingConfig;
+    private final boolean checkGraph;
 
     public FullCheck( Config tuningConfiguration, ProgressMonitorFactory progressFactory )
     {
         this.checkPropertyOwners = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_property_owners );
         this.checkLabelScanStore = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_label_scan_store );
         this.checkIndexes = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_indexes );
+        this.checkGraph = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_graph );
         this.order = tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_execution_order );
         this.totalMappedMemory = tuningConfiguration.get( GraphDatabaseSettings.pagecache_memory );
         this.samplingConfig = new IndexSamplingConfig( tuningConfiguration );
@@ -125,7 +127,8 @@ public class FullCheck
                     multiPass,
                     reporter,
                     checkLabelScanStore,
-                    checkIndexes
+                    checkIndexes,
+                    checkGraph
             );
 
             order.execute( tasks, progress.build() );
