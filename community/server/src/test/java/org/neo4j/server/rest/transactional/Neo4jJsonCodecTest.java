@@ -19,16 +19,17 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-
 import org.codehaus.jackson.JsonGenerator;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
@@ -162,4 +163,17 @@ public class Neo4jJsonCodecTest
         verify( jsonGenerator, times( 1 ) ).writeEndObject();
     }
 
+    @Test
+    public void shouldWriteAMapContainingNullAsKeysAndValues() throws IOException
+    {
+        // given
+        Map<String,String> map = new HashMap<>();
+        map.put( null, null );
+
+        // when
+        jsonCodec.writeValue( jsonGenerator, map );
+
+        // then
+        verify( jsonGenerator, times( 1 ) ).writeFieldName( (String) null );
+    }
 }
