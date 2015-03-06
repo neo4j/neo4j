@@ -27,17 +27,17 @@ package org.neo4j.helpers.progress;
  *
  * @author Tobias Lindaaker <tobias.lindaaker@neotechnology.com>
  */
-public abstract class ProgressListener
+public interface ProgressListener
 {
-    public abstract void started();
+    void started();
 
-    public abstract void set( long progress );
+    void set( long progress );
 
-    public abstract void add( long progress );
+    void add( long progress );
 
-    public abstract void done();
+    void done();
 
-    public abstract void failed( Throwable e );
+    void failed( Throwable e );
 
     public static final ProgressListener NONE = new ProgressListener()
     {
@@ -72,7 +72,7 @@ public abstract class ProgressListener
         }
     };
 
-    static class SinglePartProgressListener extends ProgressListener
+    static class SinglePartProgressListener implements ProgressListener
     {
         final Indicator indicator;
         private final long totalCount;
@@ -161,7 +161,7 @@ public abstract class ProgressListener
         }
     }
 
-    static final class MultiPartProgressListener extends ProgressListener
+    static final class MultiPartProgressListener implements ProgressListener
     {
         private final Aggregator aggregator;
         final String part;
@@ -226,10 +226,4 @@ public abstract class ProgressListener
             INIT, LIVE
         }
     }
-
-    private ProgressListener()
-    {
-        // only internal implementations
-    }
-
 }

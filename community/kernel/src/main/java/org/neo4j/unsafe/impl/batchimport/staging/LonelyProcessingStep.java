@@ -66,14 +66,24 @@ public abstract class LonelyProcessingStep extends AbstractStep<Void>
         return 0;
     }
 
+    /**
+     * Called once and signals the start of this step. Responsible for calling {@link #progress(int)}
+     * at least now and then.
+     */
     protected abstract void process();
 
-    protected void itemProcessed()
+    /**
+     * Called from {@link #process()}, reports progress so that statistics are updated appropriately.
+     * @param amount number of items processed since last call to this method.
+     */
+    protected void progress( long amount )
     {
-        if ( ++batch == batchSize )
+        batch += amount;
+        if ( batch >= batchSize )
         {
-            doneBatches.incrementAndGet();
-            batch = 0;
+            int batches = batch / batchSize;
+            batch %= batchSize;
+            doneBatches.addAndGet( batches );
             long time = currentTimeMillis();
             totalProcessingTime.add( time - lastProcessingTimestamp );
             lastProcessingTimestamp = time;

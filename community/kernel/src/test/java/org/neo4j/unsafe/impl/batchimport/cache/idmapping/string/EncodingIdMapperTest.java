@@ -32,6 +32,7 @@ import java.util.Set;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.test.RepeatRule;
 import org.neo4j.test.RepeatRule.Repeat;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
@@ -53,10 +54,13 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import static java.lang.System.currentTimeMillis;
 
+import static org.neo4j.helpers.progress.ProgressListener.NONE;
 import static org.neo4j.unsafe.impl.batchimport.input.Group.GLOBAL;
 import static org.neo4j.unsafe.impl.batchimport.input.SimpleInputIteratorWrapper.wrap;
 
@@ -97,7 +101,7 @@ public class EncodingIdMapperTest
         {
             idMapper.put( id, index++, GLOBAL );
         }
-        idMapper.prepare( ids );
+        idMapper.prepare( ids, NONE );
         MemoryStatsVisitor memoryStats = new GatheringMemoryStatsVisitor();
         idMapper.visitMemoryStats( memoryStats );
 
@@ -117,13 +121,30 @@ public class EncodingIdMapperTest
     {
         // GIVEN
         IdMapper idMapper = IdMappers.strings( NumberArrayFactory.AUTO );
-        idMapper.prepare( null );
+        idMapper.prepare( null, NONE );
 
         // WHEN
         long id = idMapper.get( "123", GLOBAL );
 
         // THEN
         assertEquals( -1L, id );
+    }
+
+    @Test
+    public void shouldReportyProgressForSortAndDetect() throws Exception
+    {
+        // GIVEN
+        IdMapper idMapper = IdMappers.strings( NumberArrayFactory.AUTO );
+        ProgressListener progress = mock( ProgressListener.class );
+        idMapper.prepare( null, progress );
+
+        // WHEN
+        long id = idMapper.get( "123", GLOBAL );
+
+        // THEN
+        assertEquals( -1L, id );
+        verify( progress, times( 2 ) ).started();
+        verify( progress, times( 2 ) ).done();
     }
 
     @Test
@@ -135,7 +156,7 @@ public class EncodingIdMapperTest
         // WHEN
         mapper.put( "123", 0, GLOBAL );
         mapper.put( "456", 1, GLOBAL );
-        mapper.prepare( null );
+        mapper.prepare( null, NONE );
 
         // THEN
         assertEquals( 1L, mapper.get( "456", GLOBAL ) );
@@ -165,7 +186,7 @@ public class EncodingIdMapperTest
 
         try
         {
-            mapper.prepare( values );
+            mapper.prepare( values, NONE );
 
             // THEN
             int id = 0;
@@ -199,7 +220,7 @@ public class EncodingIdMapperTest
         // WHEN
         try
         {
-            mapper.prepare( ids );
+            mapper.prepare( ids, NONE );
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )
@@ -227,7 +248,7 @@ public class EncodingIdMapperTest
         // WHEN
         try
         {
-            mapper.prepare( ids );
+            mapper.prepare( ids, NONE );
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )
@@ -256,11 +277,15 @@ public class EncodingIdMapperTest
         }
 
         // WHEN
-        mapper.prepare( ids );
+        ProgressListener progress = mock( ProgressListener.class );
+        mapper.prepare( ids, progress );
 
         // THEN
         assertEquals( 0L, mapper.get( "10", GLOBAL ) );
         assertEquals( 1L, mapper.get( "9", GLOBAL ) );
+        // 3 times since SORT+DETECT+RESOLVE
+        verify( progress, times( 3 ) ).started();
+        verify( progress, times( 3 ) ).done();
     }
 
     @Test
@@ -280,7 +305,7 @@ public class EncodingIdMapperTest
             // group 1
             mapper.put( iterator.next(), id++, secondGroup );
         }
-        mapper.prepare( ids );
+        mapper.prepare( ids, NONE );
 
         // WHEN/THEN
         assertEquals( 0L, mapper.get( "10", firstGroup ) );
@@ -305,7 +330,7 @@ public class EncodingIdMapperTest
             // group 1
             mapper.put( iterator.next(), id++, secondGroup );
         }
-        mapper.prepare( ids );
+        mapper.prepare( ids, NONE );
 
         // WHEN/THEN
         try
@@ -334,7 +359,7 @@ public class EncodingIdMapperTest
             mapper.put( iterator.next(), id++, secondGroup = groups.getOrCreate( "second" ) );
             mapper.put( iterator.next(), id++, thirdGroup = groups.getOrCreate( "third" ) );
         }
-        mapper.prepare( ids );
+        mapper.prepare( ids, NONE );
 
         // WHEN/THEN
         assertEquals( 0L, mapper.get( "8", firstGroup ) );
@@ -362,7 +387,7 @@ public class EncodingIdMapperTest
         {
             mapper.put( i, i, new Group.Adapter( i, "" + i ) );
         }
-        mapper.prepare( null ); // this test should have been set up to not run into collisions
+        mapper.prepare( null, NONE ); // this test should have been set up to not run into collisions
 
         // THEN
         for ( int i = 0; i < size; i++ )

@@ -28,6 +28,7 @@ import java.util.Map;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.function.primitive.PrimitiveIntPredicate;
+import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
@@ -40,6 +41,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 
 import static java.lang.Math.max;
+import static java.lang.Math.min;
 
 import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToInt;
 import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedCompare;
@@ -175,21 +177,30 @@ public class EncodingIdMapper implements IdMapper
         return true;
     }
 
+    /**
+     * There's an assumption that the progress listener supplied here can support multiple calls
+     * to started/done, and that it knows about what stages the processor preparing goes through, namely:
+     * <ol>
+     * <li>Sorting</li>
+     * <li>Collision detection</li>
+     * <li>(potentially) Collision resolving</li>
+     * </ol>
+     */
     @Override
-    public void prepare( InputIterable<Object> ids )
+    public void prepare( InputIterable<Object> ids, ProgressListener progress )
     {
         endPreviousGroup();
         synchronized ( this )
         {
             // Synchronized since there's this concern that a couple of other threads are changing trackerCache
             // and it's nice to go through a memory barrier afterwards to ensure this CPU see correct data.
-            sortBuckets = new ParallelSort( radix, dataCache, trackerCache, processorsForSorting ).run();
+            sortBuckets = new ParallelSort( radix, dataCache, trackerCache, processorsForSorting, progress ).run();
         }
-        if ( detectAndMarkCollisions() > 0 )
+        if ( detectAndMarkCollisions( progress ) > 0 )
         {
             try ( InputIterator<Object> idIterator = ids.iterator() )
             {
-                buildCollisionInfo( idIterator );
+                buildCollisionInfo( idIterator, progress );
             }
         }
         readyForUse = true;
@@ -242,89 +253,91 @@ public class EncodingIdMapper implements IdMapper
         return COLLISION_BIT.get( value, 1 ) != 0;
     }
 
-    private int detectAndMarkCollisions()
+    private int detectAndMarkCollisions( ProgressListener progress )
     {
+        progress.started();
         int numCollisions = 0;
-        for ( int i = 0; i < trackerCache.size() - 1; i++ )
+        long max = trackerCache.size() - 1;
+        for ( int i = 0; i < max; i++ )
         {
-            if ( compareDataCache( dataCache, trackerCache, i, i + 1, CompareType.GE ) )
+            int batch = (int) min( max-i, 10_000 );
+            for ( int j = 0; j < batch; j++, i++ )
             {
-                if ( !compareDataCache( dataCache, trackerCache, i, i + 1, CompareType.EQ ) )
+                if ( compareDataCache( dataCache, trackerCache, i, i + 1, CompareType.GE ) )
                 {
-                    throw new IllegalStateException( "Failure:[" + i + "] " +
-                            Long.toHexString( dataCache.get( trackerCache.get( i ) ) ) + ":" +
-                            Long.toHexString( dataCache.get( trackerCache.get( i + 1 ) ) ) + " | " +
-                            radixOf( dataCache.get( trackerCache.get( i ) ) ) + ":" +
-                            radixOf( dataCache.get( trackerCache.get( i + 1 ) ) ) );
-                }
+                    if ( !compareDataCache( dataCache, trackerCache, i, i + 1, CompareType.EQ ) )
+                    {
+                        throw new IllegalStateException( "Failure:[" + i + "] " +
+                                Long.toHexString( dataCache.get( trackerCache.get( i ) ) ) + ":" +
+                                Long.toHexString( dataCache.get( trackerCache.get( i + 1 ) ) ) + " | " +
+                                radixOf( dataCache.get( trackerCache.get( i ) ) ) + ":" +
+                                radixOf( dataCache.get( trackerCache.get( i + 1 ) ) ) );
+                    }
 
-                if ( trackerCache.get( i ) > trackerCache.get( i + 1 ) )
-                {   // swap
-                    trackerCache.swap( i, i+1, 1 );
+                    if ( trackerCache.get( i ) > trackerCache.get( i + 1 ) )
+                    {   // swap
+                        trackerCache.swap( i, i+1, 1 );
+                    }
+                    long value = dataCache.get( trackerCache.get( i ) );
+                    value = setCollision( value );
+                    dataCache.set( trackerCache.get( i ), value );
+                    value = dataCache.get( trackerCache.get( i + 1 ) );
+                    value = setCollision( value );
+                    dataCache.set( trackerCache.get( i + 1 ), value );
+                    numCollisions++;
                 }
-                long value = dataCache.get( trackerCache.get( i ) );
-                value = setCollision( value );
-                dataCache.set( trackerCache.get( i ), value );
-                value = dataCache.get( trackerCache.get( i + 1 ) );
-                value = setCollision( value );
-                dataCache.set( trackerCache.get( i + 1 ), value );
-                numCollisions++;
             }
+            progress.add( batch );
         }
+        progress.done();
         return numCollisions;
     }
 
-    private static class CollisionPoint
-    {
-        private final long dataIndex;
-        private final String sourceLocation;
-
-        CollisionPoint( long dataIndex, String sourceLocation )
-        {
-            this.dataIndex = dataIndex;
-            this.sourceLocation = sourceLocation;
-        }
-    }
-
-    private void buildCollisionInfo( InputIterator<Object> ids )
+    private void buildCollisionInfo( InputIterator<Object> ids, ProgressListener progress )
     {
         // This is currently the only way of discovering duplicate input ids, checked per group.
         // groupId --> inputId --> CollisionPoint(dataIndex,sourceLocation)
-        PrimitiveIntObjectMap<Map<Object,CollisionPoint>> collidedIds = Primitive.intObjectMap();
-
+        PrimitiveIntObjectMap<Map<Object,String>> collidedIds = Primitive.intObjectMap();
+        progress.started();
         for ( long i = 0; ids.hasNext(); i++ )
         {
-            Object id = ids.next();
-            long value = dataCache.get( i );
-            if ( isCollision( value ) )
+            long j = 0;
+            for ( ; j < 10_000 && ids.hasNext(); j++, i++ )
             {
-                // Get hold of the group and duplicate detector for that group
-                IdGroup group = groupOf( i );
-                Map<Object,CollisionPoint> collisionsForGroup = collidedIds.get( group.id() );
-                if ( collisionsForGroup == null )
+                Object id = ids.next();
+                long value = dataCache.get( i );
+                if ( isCollision( value ) )
                 {
-                    collidedIds.put( group.id(), collisionsForGroup = new HashMap<>() );
-                }
+                    // Get hold of the group and duplicate detector for that group
+                    IdGroup group = groupOf( i );
+                    Map<Object,String> collisionsForGroup = collidedIds.get( group.id() );
+                    if ( collisionsForGroup == null )
+                    {
+                        collidedIds.put( group.id(), collisionsForGroup = new HashMap<>() );
+                    }
 
-                // Check for duplicates in this group
-                CollisionPoint existing = collisionsForGroup.get( id );
-                if ( existing != null )
-                {
-                    throw new IllegalStateException( "Id '" + id + "' is defined more than once in " +
-                            group.name() + ", at least at " +
-                            existing.sourceLocation + " and " +
-                            sourceLocation( ids ) );
-                }
-                collisionsForGroup.put( id, new CollisionPoint( i, sourceLocation( ids ) ) );
+                    // Check for duplicates in this group
+                    String existing = collisionsForGroup.get( id );
+                    if ( existing != null )
+                    {
+                        throw new IllegalStateException( "Id '" + id + "' is defined more than once in " +
+                                group.name() + ", at least at " +
+                                existing + " and " +
+                                sourceLocation( ids ) );
+                    }
+                    collisionsForGroup.put( id, sourceLocation( ids ) );
 
-                // Store this collision input id for matching later in get()
-                long val = encoder.encode( id );
-                assert val == clearCollision( value );
-                int collisionIndex = collisionValues.size();
-                collisionValues.add( id );
-                collisionCache.set( collisionIndex, i );
+                    // Store this collision input id for matching later in get()
+                    long val = encoder.encode( id );
+                    assert val == clearCollision( value );
+                    int collisionIndex = collisionValues.size();
+                    collisionValues.add( id );
+                    collisionCache.set( collisionIndex, i );
+                }
             }
+            progress.add( j );
         }
+        progress.done();
     }
 
     private String sourceLocation( InputIterator<?> iterator )
