@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 
 import scala.collection.{mutable, GenTraversableOnce}
 
+
 case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty,
                       patternNodes: Set[IdName] = Set.empty,
                       argumentIds: Set[IdName] = Set.empty,

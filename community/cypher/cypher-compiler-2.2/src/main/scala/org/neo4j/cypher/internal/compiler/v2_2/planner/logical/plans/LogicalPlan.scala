@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.Rewritable._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Identifier, Expression}
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, PlannerQuery}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{PlanningStrategyConfiguration, LogicalPlanningFunction2}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{QueryPlannerConfiguration, LogicalPlanningFunction2}
 import org.neo4j.cypher.internal.compiler.v2_2.{InternalException, Rewritable}
 
 /*
@@ -101,7 +101,7 @@ abstract class LogicalLeafPlan extends LogicalPlan {
 }
 
 object LogicalLeafPlan {
-  type Finder = LogicalPlanningFunction2[PlanningStrategyConfiguration, QueryGraph, Set[LogicalPlan]]
+  type Finder = LogicalPlanningFunction2[QueryPlannerConfiguration, QueryGraph, Set[LogicalPlan]]
 }
 
 final case class IdName(name: String) extends PageDocFormatting // with ToPrettyString[IdName] {

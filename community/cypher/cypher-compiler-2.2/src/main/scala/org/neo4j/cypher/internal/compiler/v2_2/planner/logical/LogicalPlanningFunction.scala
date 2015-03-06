@@ -20,23 +20,23 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.GreedyPlanTable
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
+
+trait LogicalPlanningFunction0[+B] {
+  def apply(implicit context: LogicalPlanningContext): B
+}
 
 trait LogicalPlanningFunction1[-A, +B] {
   def apply(input: A)(implicit context: LogicalPlanningContext): B
-
-  def asFunctionInContext(implicit context: LogicalPlanningContext): A => B = apply
 }
 
 trait LogicalPlanningFunction2[-A1, -A2, +B] {
   def apply(input1: A1, input2: A2)(implicit context: LogicalPlanningContext): B
-
-  def asFunctionInContext(implicit context: LogicalPlanningContext): (A1, A2) => B = apply
 }
 
 // TODO: Return Iterator
 trait CandidateGenerator[T] extends LogicalPlanningFunction2[T, QueryGraph, Seq[LogicalPlan]]
-trait PlanTableGenerator extends LogicalPlanningFunction2[QueryGraph, Option[LogicalPlan], PlanTable]
 
 object CandidateGenerator {
   implicit final class RichCandidateGenerator[T](self: CandidateGenerator[T]) {
@@ -55,8 +55,10 @@ object CandidateGenerator {
 }
 
 trait PlanTransformer[-T] extends LogicalPlanningFunction2[LogicalPlan, T, LogicalPlan]
-trait PlanTableTransformer[-T] extends LogicalPlanningFunction2[PlanTable, T, PlanTable]
 
-trait CandidateSelector extends LogicalPlanningFunction1[Iterable[LogicalPlan], Option[LogicalPlan]]
+trait CandidateSelector {
+  def apply(plans: Iterable[LogicalPlan]): Option[LogicalPlan] = apply[LogicalPlan](identity, plans)
+  def apply[X](projector: X => LogicalPlan, input: Iterable[X]): Option[X]
+}
 
-trait LeafPlanner  extends LogicalPlanningFunction1[QueryGraph, Seq[LogicalPlan]]
+trait LeafPlanner extends LogicalPlanningFunction1[QueryGraph, Seq[LogicalPlan]]

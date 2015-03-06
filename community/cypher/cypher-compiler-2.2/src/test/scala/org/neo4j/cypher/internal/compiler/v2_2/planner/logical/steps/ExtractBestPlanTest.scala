@@ -39,7 +39,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
     implicit val logicalPlanContext = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext)
     val plan = newMockedLogicalPlan("b")
-    val planTable = planTableWith(plan)
+    val planTable = greedyPlanTableWith(plan)
 
     evaluating {
       verifyBestPlan(planTable.uniquePlan, query)
@@ -58,7 +58,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
       planContext= newMockedPlanContext
     )
     val plan = newMockedLogicalPlan("b")
-    val planTable = planTableWith(plan)
+    val planTable = greedyPlanTableWith(plan)
 
     evaluating {
       verifyBestPlan(planTable.uniquePlan, query)
