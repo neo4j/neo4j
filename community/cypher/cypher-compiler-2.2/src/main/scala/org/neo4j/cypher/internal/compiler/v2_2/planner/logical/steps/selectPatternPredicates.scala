@@ -23,14 +23,15 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.FreshIdNameGenerator
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.GreedyPlanTable
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 import org.neo4j.helpers.ThisShouldNotHappenError
 
-case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph], pickBest: CandidateSelector) extends PlanTransformer[QueryGraph] {
-  private object candidatesProducer extends CandidateGenerator[PlanTable] {
-    def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
+case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph], pickBestFactory: LogicalPlanningFunction0[CandidateSelector]) extends PlanTransformer[QueryGraph] {
+  private object candidatesProducer extends CandidateGenerator[GreedyPlanTable] {
+    def apply(planTable: GreedyPlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
       for (
         lhs <- planTable.plans;
         pattern <- queryGraph.selections.patternPredicatesGiven(lhs.availableSymbols)
@@ -123,9 +124,10 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph],
 
   def apply(input: LogicalPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan = {
     val plan = simpleSelection(input, queryGraph)
+    val pickBest = pickBestFactory(context)
 
     def findBestPlanForPatternPredicates(plan: LogicalPlan): LogicalPlan = {
-      val secretPlanTable = context.strategy.emptyPlanTable + plan
+      val secretPlanTable = GreedyPlanTable.empty + plan
       val result = candidatesProducer(secretPlanTable, queryGraph)
       pickBest(result).getOrElse(plan)
     }

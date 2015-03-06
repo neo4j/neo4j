@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compatibility._
-import org.neo4j.cypher.internal.compiler.v2_2.{RulePlanner, CostPlanner, IDPPlanner, ConservativePlanner, PlannerName}
+import org.neo4j.cypher.internal.compiler.v2_2.{RulePlannerName, CostPlannerName, IDPPlannerName, ConservativePlannerName, PlannerName}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.Clock
@@ -74,10 +74,10 @@ class CypherCompiler(graph: GraphDatabaseService,
     val statementAsText = preParsedQuery.statement
 
     (version, planner) match {
-      case (CypherVersion.v2_2, ConservativePlanner) => compatibilityFor2_2.produceParsedQuery(statementAsText)
-      case (CypherVersion.v2_2, CostPlanner)         => compatibilityFor2_2Cost.produceParsedQuery(statementAsText)
-      case (CypherVersion.v2_2, IDPPlanner)          => compatibilityFor2_2IDP.produceParsedQuery(statementAsText)
-      case (CypherVersion.v2_2, RulePlanner)         => compatibilityFor2_2Rule.produceParsedQuery(statementAsText)
+      case (CypherVersion.v2_2, ConservativePlannerName) => compatibilityFor2_2.produceParsedQuery(statementAsText)
+      case (CypherVersion.v2_2, CostPlannerName)         => compatibilityFor2_2Cost.produceParsedQuery(statementAsText)
+      case (CypherVersion.v2_2, IDPPlannerName)          => compatibilityFor2_2IDP.produceParsedQuery(statementAsText)
+      case (CypherVersion.v2_2, RulePlannerName)         => compatibilityFor2_2Rule.produceParsedQuery(statementAsText)
       case (CypherVersion.v2_2, _)                   => compatibilityFor2_2.produceParsedQuery(statementAsText)
       case (CypherVersion.v2_1, _)                   => compatibilityFor2_1.parseQuery(statementAsText)
       case (CypherVersion.v2_0, _)                   => compatibilityFor2_0.parseQuery(statementAsText)
@@ -119,9 +119,9 @@ class CypherCompiler(graph: GraphDatabaseService,
 
   private def calculatePlanner(options: Seq[CypherOption], version: CypherVersion) = {
     val planner = options.collect {
-      case CostPlannerOption => CostPlanner
-      case RulePlannerOption => RulePlanner
-      case IDPPlannerOption => IDPPlanner
+      case CostPlannerOption => CostPlannerName
+      case RulePlannerOption => RulePlannerName
+      case IDPPlannerOption => IDPPlannerName
     }.distinct
     if (version != CypherVersion.v2_2 && planner.nonEmpty) {
       throw new InvalidArgumentException("PLANNER not supported in versions older than Neo4j v2.2")

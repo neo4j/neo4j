@@ -24,7 +24,7 @@ import java.util
 
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v2_2
-import org.neo4j.cypher.internal.compiler.v2_2.{CostPlanner, ConservativePlanner, IDPPlanner}
+import org.neo4j.cypher.internal.compiler.v2_2.{CostPlannerName, ConservativePlannerName, IDPPlannerName}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{InternalExecutionResult, ExecutionPlan => ExecutionPlan_v2_2}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.{DbHits, Planner, Rows, Version}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
@@ -304,7 +304,7 @@ case class CompatibilityFor2_2Conservative(graph: GraphDatabaseService,
                                            kernelAPI: KernelAPI,
                                            logger: StringLogger) extends CompatibilityFor2_2 {
   protected val compiler = CypherCompilerFactory.costBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors, logger, plannerName = ConservativePlanner
+    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors, logger, plannerName = ConservativePlannerName
   )
 }
 
@@ -317,7 +317,7 @@ case class CompatibilityFor2_2Cost(graph: GraphDatabaseService,
                                    kernelAPI: KernelAPI,
                                    logger: StringLogger) extends CompatibilityFor2_2 {
   protected val compiler = CypherCompilerFactory.costBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors, logger, plannerName = CostPlanner
+    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors, logger, plannerName = CostPlannerName
   )
 }
 
@@ -330,7 +330,7 @@ case class CompatibilityFor2_2IDP(graph: GraphDatabaseService,
                                   kernelAPI: KernelAPI,
                                   logger: StringLogger) extends CompatibilityFor2_2 {
   protected val compiler = CypherCompilerFactory.costBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors, logger, plannerName = IDPPlanner
+    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors, logger, plannerName = IDPPlannerName
   )
 }
 

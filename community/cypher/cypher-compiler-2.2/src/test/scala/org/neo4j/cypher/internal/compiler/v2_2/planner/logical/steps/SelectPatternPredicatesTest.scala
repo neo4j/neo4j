@@ -32,7 +32,7 @@ import org.mockito.Matchers._
 
 class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  private val pickBest = PlanningStrategyConfiguration.default.pickBestCandidate
+  private val pickBest = QueryPlannerConfiguration.default.pickBestCandidate
 
   val dir = Direction.OUTGOING
   val types = Seq.empty[RelTypeName]
