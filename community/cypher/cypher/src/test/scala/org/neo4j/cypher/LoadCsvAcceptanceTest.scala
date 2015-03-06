@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher
 
-import java.io.{PrintWriter, File}
+import java.io.{File, PrintWriter}
+
 import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.StringHelper.RichString
-import org.neo4j.test.TestGraphDatabaseFactory
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.test.TestGraphDatabaseFactory
 import org.scalatest.BeforeAndAfterAll
 
 class LoadCsvAcceptanceTest
@@ -51,7 +52,7 @@ class LoadCsvAcceptanceTest
     }).cypherEscape
 
     val result =
-      execute(s"LOAD CSV FROM '${url}' AS line CREATE (a {number: line[0]}) RETURN a.number")
+      execute(s"LOAD CSV FROM '$url' AS line CREATE (a {number: line[0]}) RETURN a.number")
     assertStats(result, nodesCreated = 3, propertiesSet = 3)
 
     result.columnAs[Long]("a.number").toList === List("")
@@ -65,7 +66,7 @@ class LoadCsvAcceptanceTest
         writer.println("3, 'Cash'")
     }).cypherEscape
 
-    val result = execute(s"LOAD CSV FROM '${url}' AS line CREATE (a {name: line[0]}) RETURN a.name")
+    val result = execute(s"LOAD CSV FROM '$url' AS line CREATE (a {name: line[0]}) RETURN a.name")
     assertStats(result, nodesCreated = 3, propertiesSet = 3)
   }
 
@@ -79,7 +80,7 @@ class LoadCsvAcceptanceTest
     }).cypherEscape
 
     val result = execute(
-      s"LOAD CSV WITH HEADERS FROM '${url}' AS line CREATE (a {id: line.id, name: line.name}) RETURN a.name"
+      s"LOAD CSV WITH HEADERS FROM '$url' AS line CREATE (a {id: line.id, name: line.name}) RETURN a.name"
     )
 
     assertStats(result, nodesCreated = 3, propertiesSet = 6)
@@ -96,7 +97,7 @@ class LoadCsvAcceptanceTest
         writer.println("5,'Emerald',")
     }).cypherEscape
 
-    val result = execute(s"LOAD CSV WITH HEADERS FROM '${url}' AS line RETURN line.x")
+    val result = execute(s"LOAD CSV WITH HEADERS FROM '$url' AS line RETURN line.x")
     assert(result.toList === List(
       Map("line.x" -> "0"),
       Map("line.x" -> null),
@@ -115,7 +116,7 @@ class LoadCsvAcceptanceTest
         writer.println(""""String with ""quotes"" in it"""")
     }).cypherEscape
 
-    val result = execute(s"LOAD CSV FROM '${url}' AS line RETURN line as string").toList
+    val result = execute(s"LOAD CSV FROM '$url' AS line RETURN line as string").toList
     assert(result === List(
       Map("string" -> Seq("String without quotes")),
       Map("string" -> Seq("'String", " with single quotes'")),
@@ -131,7 +132,7 @@ class LoadCsvAcceptanceTest
         writer.print("3,'Cash',1\r\n")
     }).cypherEscape
 
-    val result = execute(s"LOAD CSV FROM '${url}' AS line RETURN line")
+    val result = execute(s"LOAD CSV FROM '$url' AS line RETURN line")
     assert(result.toList === List(Map("line" -> Seq("1","'Aadvark'","0")), Map("line" -> Seq("2","'Babs'")), Map("line" -> Seq("3","'Cash'","1"))))
   }
 
@@ -143,7 +144,7 @@ class LoadCsvAcceptanceTest
         writer.print("3,'Cash',1\n")
     }).cypherEscape
 
-    val result = execute(s"LOAD CSV FROM '${url}' AS line RETURN line")
+    val result = execute(s"LOAD CSV FROM '$url' AS line RETURN line")
     assert(result.toList === List(Map("line" -> Seq("1","'Aadvark'","0")), Map("line" -> Seq("2","'Babs'")), Map("line" -> Seq("3","'Cash'","1"))))
   }
 
@@ -155,7 +156,7 @@ class LoadCsvAcceptanceTest
         writer.print("3,'Cash',1\r")
     }).cypherEscape
 
-    val result = execute(s"LOAD CSV FROM '${url}' AS line RETURN line")
+    val result = execute(s"LOAD CSV FROM '$url' AS line RETURN line")
     assert(result.toList === List(Map("line" -> Seq("1","'Aadvark'","0")), Map("line" -> Seq("2","'Babs'")), Map("line" -> Seq("3","'Cash'","1"))))
   }
 
@@ -167,7 +168,7 @@ class LoadCsvAcceptanceTest
         writer.println("3;'Cash';1")
     }).cypherEscape
 
-    val result = execute(s"LOAD CSV FROM '${url}' AS line FIELDTERMINATOR ';' RETURN line")
+    val result = execute(s"LOAD CSV FROM '$url' AS line FIELDTERMINATOR ';' RETURN line")
     assert(result.toList === List(Map("line" -> Seq("1","'Aadvark'","0")), Map("line" -> Seq("2","'Babs'")), Map("line" -> Seq("3","'Cash'","1"))))
   }
 
@@ -189,35 +190,52 @@ class LoadCsvAcceptanceTest
         writer.println("something")
     })
 
-    val result = execute(s"LOAD CSV FROM '${url}' AS line RETURN line as string").toList
+    val result = execute(s"LOAD CSV FROM '$url' AS line RETURN line as string").toList
     assert(result === List(Map("string" -> Seq("something"))))
   }
 
   test("empty file does not create anything") {
     val url = createCSVTempFileURL(writer => {}).cypherEscape
 
-    val result = execute(s"LOAD CSV FROM '${url}' AS line CREATE (a {name: line[0]}) RETURN a.name")
+    val result = execute(s"LOAD CSV FROM '$url' AS line CREATE (a {name: line[0]}) RETURN a.name")
     assertStats(result, nodesCreated = 0)
   }
 
   test("should be able to open relative paths with dot") {
     val url = createCSVTempFileURL(filename = "cypher", dir = "./")(
-      writer =>
-        writer.println("something")
+        writer =>
+            writer.println("something")
     ).cypherEscape
 
-    val result = execute(s"LOAD CSV FROM '${url}' AS line CREATE (a {name: line[0]}) RETURN a.name")
+    val result = execute(s"LOAD CSV FROM '$url' AS line CREATE (a {name: line[0]}) RETURN a.name")
     assertStats(result, nodesCreated = 1, propertiesSet = 1)
   }
 
   test("should be able to open relative paths with dotdot") {
     val url = createCSVTempFileURL(filename = "cypher", dir = "../")(
-      writer =>
-        writer.println("something")
+        writer =>
+            writer.println("something")
     ).cypherEscape
 
-    val result = execute(s"LOAD CSV FROM '${url}' AS line CREATE (a {name: line[0]}) RETURN a.name")
+    val result = execute(s"LOAD CSV FROM '$url' AS line CREATE (a {name: line[0]}) RETURN a.name")
     assertStats(result, nodesCreated = 1, propertiesSet = 1)
+  }
+
+  test("should handle null keys in maps as result value") {
+    val url = createCSVTempFileURL ({
+      writer =>
+        writer.println("DEPARTMENT ID;DEPARTMENT NAME;")
+        writer.println("010-1010;MFG Supplies;")
+        writer.println("010-1011;Corporate Procurement;")
+        writer.println("010-1015;MFG - Engineering HQ;")
+    }).cypherEscape
+
+    val result = execute(s"LOAD CSV WITH HEADERS FROM '$url' AS line FIELDTERMINATOR ';' RETURN *").toList
+    assert(result === List(
+      Map("line" -> Map("DEPARTMENT ID" -> "010-1010", "DEPARTMENT NAME" -> "MFG Supplies", null.asInstanceOf[String] -> null)),
+      Map("line" -> Map("DEPARTMENT ID" -> "010-1011", "DEPARTMENT NAME" -> "Corporate Procurement", null.asInstanceOf[String] -> null)),
+      Map("line" -> Map("DEPARTMENT ID" -> "010-1015", "DEPARTMENT NAME" -> "MFG - Engineering HQ", null.asInstanceOf[String] -> null))
+    ))
   }
 
   test("should fail gracefully when loading missing file") {
@@ -227,17 +245,17 @@ class LoadCsvAcceptanceTest
   }
 
   test("should be able to download data from the web") {
-      val url = s"http://127.0.0.1:${port}/test.csv".cypherEscape
+    val url = s"http://127.0.0.1:${port}/test.csv".cypherEscape
 
-      val result = executeScalar[Long](s"LOAD CSV FROM '${url}' AS line RETURN count(line)")
-      result should equal(3)
+    val result = executeScalar[Long](s"LOAD CSV FROM '${url}' AS line RETURN count(line)")
+    result should equal(3)
   }
 
   test("should be able to download from a website when redirected and cookies are set") {
-      val url = s"http://127.0.0.1:${port}/redirect_test.csv".cypherEscape
+    val url = s"http://127.0.0.1:${port}/redirect_test.csv".cypherEscape
 
-      val result = executeScalar[Long](s"LOAD CSV FROM '${url}' AS line RETURN count(line)")
-      result should equal(3)
+    val result = executeScalar[Long](s"LOAD CSV FROM '${url}' AS line RETURN count(line)")
+    result should equal(3)
   }
 
   test("should fail gracefully when getting 404") {
