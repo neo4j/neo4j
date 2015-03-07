@@ -19,15 +19,15 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import org.codehaus.jackson.JsonGenerator;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.SerializationConfig;
+
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.map.ObjectMapper;
-
-import org.codehaus.jackson.map.SerializationConfig;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 
@@ -38,7 +38,7 @@ public class Neo4jJsonCodec extends ObjectMapper
     {
         getSerializationConfig().without( SerializationConfig.Feature.FLUSH_AFTER_WRITE_VALUE );
     }
-    
+
     @Override
     public void writeValue( JsonGenerator out, Object value ) throws IOException
     {
@@ -76,7 +76,8 @@ public class Neo4jJsonCodec extends ObjectMapper
             Set<Map.Entry> set = value.entrySet();
             for ( Map.Entry e : set )
             {
-                out.writeFieldName( e.getKey().toString() );
+                Object key = e.getKey();
+                out.writeFieldName( key == null ? null : key.toString() );
                 writeValue( out, e.getValue() );
             }
         }
