@@ -1136,9 +1136,9 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
         return kernelModule.kernelAPI();
     }
 
-    public ResourceIterator<File> listStoreFiles() throws IOException
+    public ResourceIterator<File> listStoreFiles( boolean includeLogs ) throws IOException
     {
-        return kernelModule.fileListing().listStoreFiles();
+        return kernelModule.fileListing().listStoreFiles( includeLogs );
     }
 
     public void registerDiagnosticsWith( DiagnosticsManager manager )

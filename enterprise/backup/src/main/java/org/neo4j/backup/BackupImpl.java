@@ -62,7 +62,7 @@ class BackupImpl implements TheBackupInterface
         try ( StoreWriter storeWriter = writer )
         {
             storeCopyMonitor.startCopyingFiles();
-            RequestContext copyStartContext = storeCopyServer.flushStoresAndStreamStoreFiles( storeWriter );
+            RequestContext copyStartContext = storeCopyServer.flushStoresAndStreamStoreFiles( storeWriter, forensics );
             ResponsePacker responsePacker = new StoreCopyResponsePacker( logicalTransactionStore,
                     transactionIdStore, logFileInformation, storeId,
                     copyStartContext.lastAppliedTransaction() + 1 ); // mandatory transaction id
