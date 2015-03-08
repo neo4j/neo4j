@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
+import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingLabelTokenRepository;
@@ -39,7 +39,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 /**
  * Creates {@link NodeRecord nodes} with labels from input.
  */
-public final class NodeEncoderStep extends ExecutorServiceStep<Batch<InputNode,NodeRecord>>
+public final class NodeEncoderStep extends ProcessorStep<Batch<InputNode,NodeRecord>>
 {
     private final IdMapper idMapper;
     private final IdGenerator idGenerator;

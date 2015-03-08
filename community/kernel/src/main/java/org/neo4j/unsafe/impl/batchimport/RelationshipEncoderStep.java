@@ -24,7 +24,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
-import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
+import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository;
 
@@ -38,7 +38,7 @@ import static org.neo4j.graphdb.Direction.OUTGOING;
  * relationship ids are kept in {@link NodeRelationshipLink node cache}, which is a point of scalability issues,
  * although mitigated using multi-pass techniques.
  */
-public class RelationshipEncoderStep extends ExecutorServiceStep<Batch<InputRelationship,RelationshipRecord>>
+public class RelationshipEncoderStep extends ProcessorStep<Batch<InputRelationship,RelationshipRecord>>
 {
     private final BatchingTokenRepository<?> relationshipTypeRepository;
     private final RelationshipStore relationshipStore;
