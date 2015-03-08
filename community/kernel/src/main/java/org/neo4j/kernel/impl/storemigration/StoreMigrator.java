@@ -337,7 +337,7 @@ public class StoreMigrator implements StoreMigrationParticipant
                 throw new IllegalStateException( "Unknown version to upgrade from: " + versionToUpgradeFrom( storeDir ) );
         }
 
-        Configuration importConfig = new Configuration.OverrideFromConfig( config );
+        Configuration importConfig = new Configuration.Overridden( config );
         BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsolutePath(), fileSystem,
                 importConfig, logging, withDynamicProcessorAssignment( migrationBatchImporterMonitor(
                         legacyStore, progressMonitor ), importConfig ),

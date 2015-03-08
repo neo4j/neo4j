@@ -56,7 +56,7 @@ import static java.lang.System.currentTimeMillis;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.WriterFactories.parallel;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
-import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseExecution;
+import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 
 /**
@@ -235,6 +235,6 @@ public class ParallelBatchImporter implements BatchImporter
 
     private void executeStages( Stage... stages )
     {
-        superviseExecution( executionMonitor, config, stages );
+        superviseDynamicExecution( executionMonitor, config, stages );
     }
 }

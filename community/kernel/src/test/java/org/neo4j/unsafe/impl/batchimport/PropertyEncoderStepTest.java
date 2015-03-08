@@ -79,7 +79,7 @@ public class PropertyEncoderStepTest
         BatchingPropertyKeyTokenRepository tokens =
                 new BatchingPropertyKeyTokenRepository( neoStore.getPropertyKeyTokenStore(), 0 );
         Step<Batch<InputNode,NodeRecord>> step =
-                new PropertyEncoderStep<>( control, DEFAULT, 1, tokens, neoStore.getPropertyStore() );
+                new PropertyEncoderStep<>( control, DEFAULT, tokens, neoStore.getPropertyStore() );
         @SuppressWarnings( "rawtypes" )
         Step downstream = mock( Step.class );
         step.setDownstream( downstream );

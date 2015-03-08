@@ -26,7 +26,6 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.InputCache;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
-import org.neo4j.unsafe.impl.batchimport.staging.InputIteratorBatcherStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 
 /**
@@ -42,12 +41,10 @@ public class CalculateDenseNodesStage extends Stage
             InputCache inputCache ) throws IOException
     {
         super( "Calculate dense nodes", config, false );
-        add( new InputIteratorBatcherStep<>( control(), config.batchSize(), config.movingAverageSize(),
-                relationships.iterator(), InputRelationship.class ) );
+        add( new InputIteratorBatcherStep<>( control(), config, relationships.iterator(), InputRelationship.class ) );
         if ( !relationships.supportsMultiplePasses() )
         {
-            add( new InputEntityCacherStep<>( control(), config.workAheadSize(), config.movingAverageSize(),
-                    inputCache.cacheRelationships() ) );
+            add( new InputEntityCacherStep<>( control(), config, inputCache.cacheRelationships() ) );
         }
         add( new RelationshipPreparationStep( control(), config, idMapper ) );
         add( new CalculateDenseNodesStep( control(), config, nodeRelationshipLink, badRelationshipsCollector ) );

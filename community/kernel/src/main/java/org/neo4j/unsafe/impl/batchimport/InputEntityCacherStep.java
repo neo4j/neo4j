@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.Receiver;
+import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
@@ -35,18 +36,17 @@ public class InputEntityCacherStep<INPUT extends InputEntity>
 {
     private final Receiver<INPUT[],IOException> cacher;
 
-    public InputEntityCacherStep( StageControl control, int workAheadSize, int movingAverageSize,
-            Receiver<INPUT[],IOException> cacher )
+    public InputEntityCacherStep( StageControl control, Configuration config, Receiver<INPUT[],IOException> cacher )
     {
-        super( control, "CACHE", workAheadSize, movingAverageSize, 1 );
+        super( control, "CACHE", config, false );
         this.cacher = cacher;
     }
 
     @Override
-    protected Object process( long ticket, Batch<INPUT,? extends PrimitiveRecord> batch ) throws IOException
+    protected void process( Batch<INPUT,? extends PrimitiveRecord> batch, BatchSender sender ) throws IOException
     {
         cacher.receive( batch.input );
-        return batch;
+        sender.send( batch );
     }
 
     @Override

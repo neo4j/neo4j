@@ -45,12 +45,13 @@ public class WriteQueueTest
         // THEN
         assertTrue( jobMonitor.hasActiveJobs() );
         verify( executor, times( 1 ) ).submit( queue );
-        queue.call(); // call it manually after verification
+        queue.run( null ); // call it manually after verification
         verify( JOB1, times( 1 ) ).execute();
 
         assertFalse( jobMonitor.hasActiveJobs() );
     }
 
+    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldSubmitToExecutorOnlyIfTheQueueWasEmpty() throws Exception
     {
@@ -82,7 +83,7 @@ public class WriteQueueTest
         // THEN
         assertTrue( jobMonitor.hasActiveJobs() );
         verify( executor, times( 1 ) ).submit( queue );
-        queue.call(); // call it manually after verification
+        queue.run( null ); // call it manually after verification
         verify( JOB1, times( 1 ) ).execute();
         verify( JOB2, times( 1 ) ).execute();
         verify( JOB3, never() ).execute();
@@ -97,7 +98,7 @@ public class WriteQueueTest
         // THEN
         assertTrue( jobMonitor.hasActiveJobs() );
         verify( executor, times( 1 ) ).submit( queue );
-        queue.call(); // call it manually after verification
+        queue.run( null ); // call it manually after verification
         verify( JOB1, never() ).execute();
         verify( JOB2, never() ).execute();
         verify( JOB3, times( 1 ) ).execute();
@@ -105,7 +106,8 @@ public class WriteQueueTest
         assertFalse( jobMonitor.hasActiveJobs() );
     }
 
-    private final TaskExecutor executor = mock( TaskExecutor.class );
+    @SuppressWarnings( "unchecked" )
+    private final TaskExecutor<Void> executor = mock( TaskExecutor.class );
     private final JobMonitor jobMonitor = new JobMonitor();
     private final WriteQueue queue = new WriteQueue( executor, jobMonitor );
 

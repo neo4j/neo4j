@@ -22,7 +22,6 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.InputCache;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.staging.IdMapperPreparationStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
@@ -38,7 +37,7 @@ public class IdMapperPreparationStage extends Stage
             InputCache inputCache, StatsProvider memoryUsageStats )
     {
         super( "Prepare node index", config, false );
-        add( new IdMapperPreparationStep( control(), config.batchSize(), config.movingAverageSize(),
+        add( new IdMapperPreparationStep( control(), config,
                 idMapper, idsOf( nodes.supportsMultiplePasses() ? nodes : inputCache.nodes() ), memoryUsageStats ) );
     }
 }
