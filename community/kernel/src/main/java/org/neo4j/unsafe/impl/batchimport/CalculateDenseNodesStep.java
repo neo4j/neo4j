@@ -23,13 +23,13 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
-import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
+import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 /**
  * Runs through relationship input and counts relationships per node so that dense nodes can be designated.
  */
-public class CalculateDenseNodesStep extends ExecutorServiceStep<Batch<InputRelationship,RelationshipRecord>>
+public class CalculateDenseNodesStep extends ProcessorStep<Batch<InputRelationship,RelationshipRecord>>
 {
     private final NodeRelationshipLink nodeRelationshipLink;
     private final Collector<InputRelationship> badRelationshipsCollector;

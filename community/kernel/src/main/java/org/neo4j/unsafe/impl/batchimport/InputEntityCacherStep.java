@@ -24,14 +24,14 @@ import java.io.IOException;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.Receiver;
-import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
+import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 /**
  * Caches the incoming {@link InputEntity} to disk, for later use.
  */
 public class InputEntityCacherStep<INPUT extends InputEntity>
-        extends ExecutorServiceStep<Batch<INPUT,? extends PrimitiveRecord>>
+        extends ProcessorStep<Batch<INPUT,? extends PrimitiveRecord>>
 {
     private final Receiver<INPUT[],IOException> cacher;
 
