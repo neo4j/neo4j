@@ -23,6 +23,7 @@ import java.util.Collection;
 
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.stats.Key;
@@ -41,16 +42,15 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
     private final int recordSize;
     private int recordsUpdated;
 
-    public UpdateRecordsStep( StageControl control, int workAheadSize, int movingAverageSize,
-            RecordStore<RECORD> store )
+    public UpdateRecordsStep( StageControl control, Configuration config, RecordStore<RECORD> store )
     {
-        super( control, "v", workAheadSize, movingAverageSize, 1 );
+        super( control, "v", config, false );
         this.store = store;
         this.recordSize = store.getRecordSize();
     }
 
     @Override
-    protected Object process( long ticket, RECORD[] batch )
+    protected void process( RECORD[] batch, BatchSender sender )
     {
         for ( RECORD record : batch )
         {
@@ -60,7 +60,6 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
             }
         }
         recordsUpdated += batch.length;
-        return null; // end of line
     }
 
     @Override

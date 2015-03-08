@@ -23,6 +23,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
@@ -37,13 +38,13 @@ public class CalculateDenseNodesStep extends ProcessorStep<Batch<InputRelationsh
     public CalculateDenseNodesStep( StageControl control, Configuration config,
             NodeRelationshipLink nodeRelationshipLink, Collector<InputRelationship> badRelationshipsCollector )
     {
-        super( control, "CALCULATOR", config.workAheadSize(), config.movingAverageSize(), 1 );
+        super( control, "CALCULATOR", config, false );
         this.nodeRelationshipLink = nodeRelationshipLink;
         this.badRelationshipsCollector = badRelationshipsCollector;
     }
 
     @Override
-    protected Object process( long ticket, Batch<InputRelationship,RelationshipRecord> batch )
+    protected void process( Batch<InputRelationship,RelationshipRecord> batch, BatchSender sender )
     {
         InputRelationship[] input = batch.input;
         long[] ids = batch.ids;
@@ -59,7 +60,6 @@ public class CalculateDenseNodesStep extends ProcessorStep<Batch<InputRelationsh
                 incrementCount( rel, endNode, rel.endNode() );
             }
         }
-        return null; // end of the line
     }
 
     private void incrementCount( InputRelationship relationship, long nodeId, Object inputNodeId )

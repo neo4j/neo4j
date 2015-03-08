@@ -25,14 +25,14 @@ import static java.lang.System.currentTimeMillis;
  * Step that generally sits first in a {@link Stage} and produces batches that will flow downstream
  * to other {@link Step steps}.
  */
-public abstract class ProducerStep<BATCH> extends AbstractStep<Void>
+public abstract class ProducerStep extends AbstractStep<Void>
 {
     protected final int batchSize;
 
-    public ProducerStep( StageControl control, String name, int batchSize, int movingAverageSize )
+    public ProducerStep( StageControl control, String name, Configuration config )
     {
-        super( control, name, movingAverageSize );
-        this.batchSize = batchSize;
+        super( control, name, config );
+        this.batchSize = config.batchSize();
     }
 
     /**
@@ -66,14 +66,15 @@ public abstract class ProducerStep<BATCH> extends AbstractStep<Void>
     /**
      * Forms batches out of some sort of data stream and sends these batches downstream.
      */
+    @SuppressWarnings( "unchecked" )
     protected void process()
     {
         Object batch = null;
         long startTime = currentTimeMillis();
-        while ( (batch = nextBatchOrNull( batchSize )) != null )
+        while ( (batch = nextBatchOrNull( doneBatches.get(), batchSize )) != null )
         {
             totalProcessingTime.add( currentTimeMillis()-startTime );
-            sendDownstream( doneBatches.incrementAndGet(), batch );
+            downstreamIdleTime.addAndGet( downstream.receive( doneBatches.getAndIncrement(), batch ) );
             assertHealthy();
             startTime = currentTimeMillis();
         }
@@ -84,5 +85,5 @@ public abstract class ProducerStep<BATCH> extends AbstractStep<Void>
      * @param batchSize number of items to grab from its data stream (whatever a subclass defines as a data stream).
      * @return the batch object to send downstream, or null if the data stream came to an end.
      */
-    protected abstract Object nextBatchOrNull( int batchSize );
+    protected abstract Object nextBatchOrNull( long ticket, int batchSize );
 }

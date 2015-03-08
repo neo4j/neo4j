@@ -239,18 +239,15 @@ public class ParallelBatchImporter implements BatchImporter
                 BatchingNeoStore neoStore, InputCache inputCache, StatsProvider memoryUsage ) throws IOException
         {
             super( "Nodes", config, idGenerator.dependsOnInput() );
-            add( new InputIteratorBatcherStep<>( control(), config.batchSize(), config.movingAverageSize(),
-                    nodes.iterator(), InputNode.class ) );
+            add( new InputIteratorBatcherStep<>( control(), config, nodes.iterator(), InputNode.class ) );
             if ( !nodes.supportsMultiplePasses() )
             {
-                add( new InputEntityCacherStep<>( control(), config.workAheadSize(), config.movingAverageSize(),
-                        inputCache.cacheNodes() ) );
+                add( new InputEntityCacherStep<>( control(), config, inputCache.cacheNodes() ) );
             }
 
             NodeStore nodeStore = neoStore.getNodeStore();
             PropertyStore propertyStore = neoStore.getPropertyStore();
-            add( new PropertyEncoderStep<>( control(), config, 1, neoStore.getPropertyKeyRepository(),
-                    propertyStore ) );
+            add( new PropertyEncoderStep<>( control(), config, neoStore.getPropertyKeyRepository(), propertyStore ) );
             add( new NodeEncoderStep( control(), config, idMapper, idGenerator,
                     neoStore.getLabelRepository(), nodeStore, memoryUsage ) );
             add( new EntityStoreUpdaterStep<>( control(), config, nodeStore, propertyStore,
@@ -264,7 +261,7 @@ public class ParallelBatchImporter implements BatchImporter
                 InputCache inputCache, StatsProvider memoryUsageStats )
         {
             super( "Prepare node index", config, false );
-            add( new IdMapperPreparationStep( control(), config.batchSize(), config.movingAverageSize(),
+            add( new IdMapperPreparationStep( control(), config,
                     idMapper, idsOf( nodes.supportsMultiplePasses() ? nodes : inputCache.nodes() ), memoryUsageStats ) );
         }
     }
@@ -277,12 +274,11 @@ public class ParallelBatchImporter implements BatchImporter
                 InputCache inputCache ) throws IOException
         {
             super( "Calculate dense nodes", config, false );
-            add( new InputIteratorBatcherStep<>( control(), config.batchSize(), config.movingAverageSize(),
+            add( new InputIteratorBatcherStep<>( control(), config,
                     relationships.iterator(), InputRelationship.class ) );
             if ( !relationships.supportsMultiplePasses() )
             {
-                add( new InputEntityCacherStep<>( control(), config.workAheadSize(), config.movingAverageSize(),
-                        inputCache.cacheRelationships() ) );
+                add( new InputEntityCacherStep<>( control(), config, inputCache.cacheRelationships() ) );
             }
             add( new RelationshipPreparationStep( control(), config, idMapper ) );
             add( new CalculateDenseNodesStep( control(), config, nodeRelationshipLink, badRelationshipsCollector ) );
@@ -294,15 +290,14 @@ public class ParallelBatchImporter implements BatchImporter
         public RelationshipStage( InputIterable<InputRelationship> relationships, IdMapper idMapper,
                 BatchingNeoStore neoStore, NodeRelationshipLink nodeRelationshipLink, boolean specificIds )
         {
-            super( "Relationships", config, false );
-            add( new InputIteratorBatcherStep<>( control(), config.batchSize(), config.movingAverageSize(),
+            super( "Relationships", config, specificIds );
+            add( new InputIteratorBatcherStep<>( control(), config,
                     relationships.iterator(), InputRelationship.class ) );
 
             RelationshipStore relationshipStore = neoStore.getRelationshipStore();
             PropertyStore propertyStore = neoStore.getPropertyStore();
             add( new RelationshipPreparationStep( control(), config, idMapper ) );
-            add( new PropertyEncoderStep<>( control(), config, 1, neoStore.getPropertyKeyRepository(),
-                    propertyStore ) );
+            add( new PropertyEncoderStep<>( control(), config, neoStore.getPropertyKeyRepository(), propertyStore ) );
             add( new RelationshipEncoderStep( control(), config,
                     neoStore.getRelationshipTypeRepository(), relationshipStore, nodeRelationshipLink, specificIds ) );
             add( new EntityStoreUpdaterStep<>( control(), config,

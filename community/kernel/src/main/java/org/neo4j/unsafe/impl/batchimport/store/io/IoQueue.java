@@ -33,18 +33,18 @@ import static java.util.concurrent.TimeUnit.MINUTES;
  */
 public class IoQueue implements WriterFactory
 {
-    private final TaskExecutor executor;
+    private final TaskExecutor<Void> executor;
     private final JobMonitor jobMonitor = new JobMonitor();
     private final WriterFactory delegateFactory;
     private final int maxProcessors;
 
     public IoQueue( int initialProcessorCount, int maxProcessors, int queueSize, WriterFactory delegateFactory )
     {
-        this( new DynamicTaskExecutor( initialProcessorCount, queueSize,
+        this( new DynamicTaskExecutor<Void>( initialProcessorCount, queueSize,
                 DynamicTaskExecutor.DEFAULT_PARK_STRATEGY, "IoQueue I/O thread" ), maxProcessors, delegateFactory );
     }
 
-    IoQueue( TaskExecutor executor, int maxProcessors, WriterFactory delegateFactory )
+    IoQueue( TaskExecutor<Void> executor, int maxProcessors, WriterFactory delegateFactory )
     {
         this.executor = executor;
         this.delegateFactory = delegateFactory;

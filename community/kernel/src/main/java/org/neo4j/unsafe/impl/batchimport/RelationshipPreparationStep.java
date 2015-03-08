@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
@@ -36,12 +37,12 @@ public class RelationshipPreparationStep extends ProcessorStep<Batch<InputRelati
 
     public RelationshipPreparationStep( StageControl control, Configuration config, IdMapper idMapper )
     {
-        super( control, "PREPARE", config.workAheadSize(), config.movingAverageSize(), 1, true );
+        super( control, "PREPARE", config, true );
         this.idMapper = idMapper;
     }
 
     @Override
-    protected Object process( long ticket, Batch<InputRelationship,RelationshipRecord> batch )
+    protected void process( Batch<InputRelationship,RelationshipRecord> batch, BatchSender sender )
     {
         InputRelationship[] input = batch.input;
         long[] ids = batch.ids = new long[input.length*2];
@@ -51,6 +52,6 @@ public class RelationshipPreparationStep extends ProcessorStep<Batch<InputRelati
             ids[i*2] = idMapper.get( batchRelationship.startNode(), batchRelationship.startNodeGroup() );
             ids[i*2+1] = idMapper.get( batchRelationship.endNode(), batchRelationship.endNodeGroup() );
         }
-        return batch;
+        sender.send( batch );
     }
 }

@@ -34,9 +34,9 @@ public class NodeFirstRelationshipStage extends Stage
             RelationshipGroupStore relationshipGroupStore, NodeRelationshipLink cache )
     {
         super( "Node --> Relationship", config, false );
-        add( new ReadNodeRecordsStep( control(), config.batchSize(), config.movingAverageSize(), nodeStore ) );
-        add( new RecordProcessorStep<>( control(), "LINK", config.workAheadSize(), config.movingAverageSize(),
+        add( new ReadNodeRecordsStep( control(), config, nodeStore ) );
+        add( new RecordProcessorStep<>( control(), "LINK", config,
                 new NodeFirstRelationshipProcessor( relationshipGroupStore, cache ), false ) );
-        add( new UpdateRecordsStep<>( control(), config.workAheadSize(), config.movingAverageSize(), nodeStore ) );
+        add( new UpdateRecordsStep<>( control(), config, nodeStore ) );
     }
 }

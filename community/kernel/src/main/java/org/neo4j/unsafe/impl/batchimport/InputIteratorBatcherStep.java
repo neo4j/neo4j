@@ -28,17 +28,17 @@ import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
  */
 public class InputIteratorBatcherStep<T> extends IteratorBatcherStep<T>
 {
-    public InputIteratorBatcherStep( StageControl control, int batchSize, int movingAverageSize,
+    public InputIteratorBatcherStep( StageControl control, Configuration config,
             InputIterator<T> data, Class<T> itemClass )
     {
-        super( control, batchSize, movingAverageSize, data, itemClass );
+        super( control, config, data, itemClass );
     }
 
     @SuppressWarnings( { "unchecked", "rawtypes" } )
     @Override
-    protected Object nextBatchOrNull( int batchSize )
+    protected Object nextBatchOrNull( long ticket, int batchSize )
     {
-        Object batch = super.nextBatchOrNull( batchSize );
+        Object batch = super.nextBatchOrNull( ticket, batchSize );
         return batch != null ? new Batch( (Object[]) batch ) : null;
     }
 }

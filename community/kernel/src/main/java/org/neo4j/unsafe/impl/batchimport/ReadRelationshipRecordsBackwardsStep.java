@@ -20,7 +20,6 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.staging.IoProducerStep;
@@ -32,22 +31,22 @@ import static java.lang.Math.min;
  * Reads from {@link RelationshipStore} backwards and produces batches of {@link RelationshipRecord} for others
  * to process.
  */
-public class ReadRelationshipRecordsBackwardsStep extends IoProducerStep<NodeRecord[]>
+public class ReadRelationshipRecordsBackwardsStep extends IoProducerStep
 {
     private final RelationshipStore store;
     private final long highId;
     private long id;
 
-    public ReadRelationshipRecordsBackwardsStep( StageControl control, int batchSize, int movingAverageSize,
+    public ReadRelationshipRecordsBackwardsStep( StageControl control, Configuration config,
             RelationshipStore store )
     {
-        super( control, batchSize, movingAverageSize );
+        super( control, config );
         this.store = store;
         this.highId = this.id = store.getHighId();
     }
 
     @Override
-    protected Object nextBatchOrNull( int batchSize )
+    protected Object nextBatchOrNull( long ticket, int batchSize )
     {
         int size = (int) min( batchSize, id );
         RelationshipRecord[] batch = new RelationshipRecord[size];

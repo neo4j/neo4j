@@ -19,16 +19,16 @@
  */
 package org.neo4j.unsafe.impl.batchimport.store.io;
 
-import java.nio.ByteBuffer;
-import java.util.concurrent.Callable;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.nio.ByteBuffer;
+
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.util.SimplePool;
 import org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor;
+import org.neo4j.unsafe.impl.batchimport.executor.Task;
 import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Writer;
 
@@ -46,7 +46,7 @@ import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRON
 
 public class IoQueueTest
 {
-    private TaskExecutor executor;
+    private TaskExecutor<Void> executor;
     private IoQueue queue;
     private final Monitor monitor = mock( Monitor.class );
     private final ByteBuffer buffer = ByteBuffer.allocate( 10 );
@@ -67,7 +67,7 @@ public class IoQueueTest
         executor.shutdown( true );
 
         // THEN
-        verify( executor, times( 1 ) ).submit( any( Callable.class ) );
+        verify( executor, times( 1 ) ).submit( any( Task.class ) );
         verify( channel ).write( buffer, 100 );
         verifyNoMoreInteractions( channel );
     }
@@ -98,8 +98,8 @@ public class IoQueueTest
         // THEN
 
         // Depending on race between executor and the job offers, it should be 2-3 invocations
-        verify( executor, atLeast( 2 ) ).submit( any( Callable.class ) );
-        verify( executor, atMost( 3 ) ).submit( any( Callable.class ) );
+        verify( executor, atLeast( 2 ) ).submit( any( Task.class ) );
+        verify( executor, atMost( 3 ) ).submit( any( Task.class ) );
 
         // THEN
         executor.shutdown( true );
@@ -114,7 +114,7 @@ public class IoQueueTest
     @Before
     public void before()
     {
-        executor = spy( new DynamicTaskExecutor( 3, 20, DEFAULT_PARK_STRATEGY, getClass().getSimpleName() ) );
+        executor = spy( new DynamicTaskExecutor<Void>( 3, 20, DEFAULT_PARK_STRATEGY, getClass().getSimpleName() ) );
         queue = new IoQueue( executor, 3, SYNCHRONOUS );
     }
 
