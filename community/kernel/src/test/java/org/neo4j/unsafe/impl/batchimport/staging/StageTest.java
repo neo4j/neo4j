@@ -79,7 +79,7 @@ public class StageTest
         stage.close();
     }
 
-    private static class ReceiveOrderAssertingStep extends ExecutorServiceStep<Object>
+    private static class ReceiveOrderAssertingStep extends ProcessorStep<Object>
     {
         private final AtomicLong lastTicket = new AtomicLong();
         private final long processingTime;

@@ -20,14 +20,14 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
+import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.staging.Step;
 
 /**
  * {@link RecordProcessor} in {@link Step Step-form}.
  */
-public class RecordProcessorStep<T extends AbstractBaseRecord> extends ExecutorServiceStep<T[]>
+public class RecordProcessorStep<T extends AbstractBaseRecord> extends ProcessorStep<T[]>
 {
     private final RecordProcessor<T> processor;
     private final boolean endOfLine;

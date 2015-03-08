@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
 import org.neo4j.kernel.impl.util.MovingAverage;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
-import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
+import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
@@ -38,7 +38,7 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingP
  * since property encoding is potentially the most costly step in this {@link Stage}.
  */
 public class PropertyEncoderStep<RECORD extends PrimitiveRecord,INPUT extends InputEntity>
-        extends ExecutorServiceStep<Batch<INPUT,RECORD>>
+        extends ProcessorStep<Batch<INPUT,RECORD>>
 {
     private final BatchingPropertyKeyTokenRepository propertyKeyHolder;
     private final int arrayDataSize;

@@ -24,14 +24,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
-import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
+import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 /**
  * Processes relationship count data received from {@link ReadRelationshipCountsDataStep} and keeps
  * the accumulated counts per thread. Aggregated when {@link #done()}.
  */
-public class ProcessRelationshipCountsDataStep extends ExecutorServiceStep<long[]>
+public class ProcessRelationshipCountsDataStep extends ProcessorStep<long[]>
 {
     private final NodeLabelsCache cache;
     private final Map<Thread,RelationshipCountsProcessor> processors = new ConcurrentHashMap<>();

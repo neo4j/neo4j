@@ -34,7 +34,7 @@ import static org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor.DEF
  * {@link Step} that uses {@link TaskExecutor} as a queue and execution mechanism.
  * Supports an arbitrary number of threads to execute batches in parallel.
  */
-public abstract class ExecutorServiceStep<T> extends AbstractStep<T>
+public abstract class ProcessorStep<T> extends AbstractStep<T>
 {
     private TaskExecutor executor;
     private final int workAheadSize;
@@ -53,7 +53,7 @@ public abstract class ExecutorServiceStep<T> extends AbstractStep<T>
     // Useful for tracking how much time we spend waiting for batches from upstream.
     private final AtomicLong lastBatchEndTime = new AtomicLong();
 
-    protected ExecutorServiceStep( StageControl control, String name, int workAheadSize, int movingAverageSize,
+    protected ProcessorStep( StageControl control, String name, int workAheadSize, int movingAverageSize,
             int initialProcessorCount, boolean allowMultipleProcessors )
     {
         super( control, name, movingAverageSize );
@@ -62,7 +62,7 @@ public abstract class ExecutorServiceStep<T> extends AbstractStep<T>
         this.allowMultipleProcessors = allowMultipleProcessors;
     }
 
-    protected ExecutorServiceStep( StageControl control, String name, int workAheadSize, int movingAverageSize,
+    protected ProcessorStep( StageControl control, String name, int workAheadSize, int movingAverageSize,
             int initialProcessorCount )
     {
         this( control, name, workAheadSize, movingAverageSize, initialProcessorCount, initialProcessorCount > 1 );

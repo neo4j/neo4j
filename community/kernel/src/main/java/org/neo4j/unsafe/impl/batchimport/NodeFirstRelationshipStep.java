@@ -22,13 +22,13 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
-import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
+import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 /**
  * Sets {@link NodeRecord#setNextRel(long)} in {@link ParallelBatchImporter}.
  */
-public class NodeFirstRelationshipStep extends ExecutorServiceStep<NodeRecord[]>
+public class NodeFirstRelationshipStep extends ProcessorStep<NodeRecord[]>
 {
     private final NodeFirstRelationshipProcessor processor;
 

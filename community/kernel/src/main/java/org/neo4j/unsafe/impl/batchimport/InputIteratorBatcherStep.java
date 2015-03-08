@@ -17,11 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.staging;
+package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.unsafe.impl.batchimport.Batch;
-import org.neo4j.unsafe.impl.batchimport.BatchImporter;
-import org.neo4j.unsafe.impl.batchimport.InputIterator;
+import org.neo4j.unsafe.impl.batchimport.staging.IteratorBatcherStep;
+import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 /**
  * {@link IteratorBatcherStep} that is tailored to the {@link BatchImporter} as it produces {@link Batch}
