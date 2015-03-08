@@ -26,7 +26,7 @@ public class Batch<INPUT,RECORD extends PrimitiveRecord>
 {
     public final INPUT[] input;
     public RECORD[] records;
-    public final int[] propertyBlocksLengths;
+    public int[] propertyBlocksLengths;
     // This is a special succer. All property blocks for ALL records in this batch sits in this
     // single array. The number of property blocks for a given record sits in propertyBlocksLengths
     // using the same index as the record. So it's a collective size suitable for complete looping
@@ -38,6 +38,5 @@ public class Batch<INPUT,RECORD extends PrimitiveRecord>
     public Batch( INPUT[] input )
     {
         this.input = input;
-        this.propertyBlocksLengths = new int[input.length];
     }
 }

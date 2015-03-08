@@ -41,12 +41,14 @@ public class CalculateDenseNodesStage extends Stage
             InputCache inputCache ) throws IOException
     {
         super( "Calculate dense nodes", config, false );
-        add( new InputIteratorBatcherStep<>( control(), config, relationships.iterator(), InputRelationship.class ) );
+        add( new InputIteratorBatcherStep<>( control(), config,
+                relationships.iterator(), InputRelationship.class ) );
         if ( !relationships.supportsMultiplePasses() )
         {
             add( new InputEntityCacherStep<>( control(), config, inputCache.cacheRelationships() ) );
         }
         add( new RelationshipPreparationStep( control(), config, idMapper ) );
-        add( new CalculateDenseNodesStep( control(), config, nodeRelationshipLink, badRelationshipsCollector ) );
+        add( new CalculateDenseNodePrepareStep( control(), config, badRelationshipsCollector ) );
+        add( new CalculateDenseNodesStep( control(), config, nodeRelationshipLink ) );
     }
 }

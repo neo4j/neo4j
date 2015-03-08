@@ -69,6 +69,7 @@ public class PropertyEncoderStep<RECORD extends PrimitiveRecord,INPUT extends In
                 ? batch.input.length
                 : blockCountGuess + batch.input.length / 20 /*some upper margin*/];
         int blockCursor = 0;
+        int[] lengths = new int[batch.input.length];
 
         for ( int i = 0; i < batch.input.length; i++ )
         {
@@ -86,11 +87,12 @@ public class PropertyEncoderStep<RECORD extends PrimitiveRecord,INPUT extends In
                 }
                 propertyKeyHolder.propertyKeysAndValues( propertyBlocks, blockCursor,
                         input.properties(), propertyCreator );
-                batch.propertyBlocksLengths[i] = count;
+                lengths[i] = count;
                 blockCursor += count;
             }
         }
         batch.propertyBlocks = propertyBlocks;
+        batch.propertyBlocksLengths = lengths;
         averageBlocksPerBatch.add( blockCursor );
         sender.send( batch );
     }
