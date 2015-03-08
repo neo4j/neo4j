@@ -116,12 +116,14 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adpter
         long total = total( values );
 
         // reduce the width with the known extra characters we know we'll print in and around the spectrum
-        width -= values.length + 1/*'|' chars*/ + 4 /*progress chars*/;
+        width -= 2/*'[]' chars*/ + 4/*progress chars*/;
 
         Pair<Step<?>,Float> bottleNeck = execution.stepsOrderedBy( Keys.avg_processing_time, false ).iterator().next();
         QuantizedProjection projection = new QuantizedProjection( total, width );
         long lastDoneBatches = 0;
         int stepIndex = 0;
+        boolean hasProgressed = false;
+        builder.append( '[' );
         for ( Step<?> step : execution.steps() )
         {
             StepStats stats = step.stats();
@@ -130,23 +132,31 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adpter
                 break; // odd though
             }
             long stepWidth = total == 0 && stepIndex == 0 ? width : projection.step();
-            boolean isBottleNeck = bottleNeck.first() == step;
-            String name =
-                    (isBottleNeck ? "*" : "") +
-                    stats.toString( DetailLevel.IMPORTANT ) + (step.numberOfProcessors() > 1
-                    ? "(" + step.numberOfProcessors() + ")"
-                    : "");
-            builder.append( stepIndex++ == 0 ? '[' : '|' );
-            int charIndex = 0; // negative value "delays" the text, i.e. pushes it to the right
-            char backgroundChar = step.numberOfProcessors() > 1 ? '=' : '-';
-            for ( int i = 0; i < stepWidth; i++, charIndex++ )
+            if ( stepWidth > 0 )
             {
-                char ch = backgroundChar;
-                if ( charIndex >= 0 && charIndex < name.length() && charIndex < stepWidth )
+                if ( hasProgressed )
                 {
-                    ch = name.charAt( charIndex );
+                    stepWidth--;
+                    builder.append( '|' );
                 }
-                builder.append( ch );
+                boolean isBottleNeck = bottleNeck.first() == step;
+                String name =
+                        (isBottleNeck ? "*" : "") +
+                        stats.toString( DetailLevel.IMPORTANT ) + (step.numberOfProcessors() > 1
+                        ? "(" + step.numberOfProcessors() + ")"
+                        : "");
+                int charIndex = 0; // negative value "delays" the text, i.e. pushes it to the right
+                char backgroundChar = step.numberOfProcessors() > 1 ? '=' : '-';
+                for ( int i = 0; i < stepWidth; i++, charIndex++ )
+                {
+                    char ch = backgroundChar;
+                    if ( charIndex >= 0 && charIndex < name.length() && charIndex < stepWidth )
+                    {
+                        ch = name.charAt( charIndex );
+                    }
+                    builder.append( ch );
+                }
+                hasProgressed = true;
             }
             lastDoneBatches = stats.stat( Keys.done_batches ).asLong();
         }
