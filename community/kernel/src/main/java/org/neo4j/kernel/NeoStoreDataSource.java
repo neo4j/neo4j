@@ -1073,8 +1073,12 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
     }
 
     @Override
-    public void stop()
+    public synchronized void stop()
     {
+        if ( !life.isRunning() )
+        {
+            return;
+        }
         transactionLogModule.logRotationControl().awaitAllTransactionsClosed();
         transactionLogModule.logRotationControl().forceEverything();
         /*
