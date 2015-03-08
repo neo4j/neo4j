@@ -35,10 +35,10 @@ public class IdMapperPreparationStep extends LonelyProcessingStep
     private final IdMapper idMapper;
     private final InputIterable<Object> allIds;
 
-    public IdMapperPreparationStep( StageControl control, int batchSize, int movingAverageSize,
+    public IdMapperPreparationStep( StageControl control, Configuration config,
             IdMapper idMapper, InputIterable<Object> allIds )
     {
-        super( control, "" /*named later in the progress listener*/, batchSize, movingAverageSize );
+        super( control, "" /*named later in the progress listener*/, config );
         this.idMapper = idMapper;
         this.allIds = allIds;
     }

@@ -21,9 +21,9 @@ package org.neo4j.unsafe.impl.batchimport.store.io;
 
 import java.io.IOException;
 import java.util.LinkedList;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 
+import org.neo4j.unsafe.impl.batchimport.executor.Task;
 import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Writer;
 
@@ -33,13 +33,13 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Writer;
  * managed by this queue. If there have been multiple jobs offered before the task is executed
  * then all of them will be {@link #drain() collected} and executed in the same task.
  */
-class WriteQueue implements Callable<Void>
+class WriteQueue implements Task<Void>
 {
     private final LinkedList<WriteJob> queue = new LinkedList<>();
-    private final TaskExecutor executor;
+    private final TaskExecutor<Void> executor;
     private final JobMonitor jobMonitor;
 
-    public WriteQueue( TaskExecutor executor, JobMonitor jobMonitor )
+    public WriteQueue( TaskExecutor<Void> executor, JobMonitor jobMonitor )
     {
         this.executor = executor;
         this.jobMonitor = jobMonitor;
@@ -57,7 +57,7 @@ class WriteQueue implements Callable<Void>
     }
 
     @Override
-    public Void call() throws IOException
+    public void run( Void nothing ) throws IOException
     {
         try
         {
@@ -65,7 +65,6 @@ class WriteQueue implements Callable<Void>
             {
                 job.execute();
             }
-            return null;
         }
         finally
         {

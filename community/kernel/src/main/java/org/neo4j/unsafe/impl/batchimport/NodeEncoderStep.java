@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
+import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingLabelTokenRepository;
@@ -50,7 +51,7 @@ public final class NodeEncoderStep extends ProcessorStep<Batch<InputNode,NodeRec
             BatchingLabelTokenRepository labelHolder,
             NodeStore nodeStore )
     {
-        super( control, "NODE", config.workAheadSize(), config.movingAverageSize(), 1 );
+        super( control, "NODE", config );
         this.idMapper = idMapper;
         this.idGenerator = idGenerator;
         this.nodeStore = nodeStore;
@@ -58,7 +59,7 @@ public final class NodeEncoderStep extends ProcessorStep<Batch<InputNode,NodeRec
     }
 
     @Override
-    protected Object process( long ticket, Batch<InputNode,NodeRecord> batch )
+    protected void process( Batch<InputNode,NodeRecord> batch, BatchSender sender )
     {
         InputNode[] input = batch.input;
         batch.records = new NodeRecord[input.length];
@@ -87,6 +88,6 @@ public final class NodeEncoderStep extends ProcessorStep<Batch<InputNode,NodeRec
                 InlineNodeLabels.putSorted( nodeRecord, labels, null, nodeStore.getDynamicLabelStore() );
             }
         }
-        return batch;
+        sender.send( batch );
     }
 }

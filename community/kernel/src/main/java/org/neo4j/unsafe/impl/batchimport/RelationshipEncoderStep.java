@@ -24,6 +24,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository;
@@ -59,7 +60,7 @@ public class RelationshipEncoderStep extends ProcessorStep<Batch<InputRelationsh
             NodeRelationshipLink nodeRelationshipLink,
             boolean specificIds )
     {
-        super( control, "RELATIONSHIP", config.workAheadSize(), config.movingAverageSize(), 1 );
+        super( control, "RELATIONSHIP", config );
         this.relationshipTypeRepository = relationshipTypeRepository;
         this.relationshipStore = relationshipStore;
         this.nodeRelationshipLink = nodeRelationshipLink;
@@ -67,7 +68,7 @@ public class RelationshipEncoderStep extends ProcessorStep<Batch<InputRelationsh
     }
 
     @Override
-    protected Object process( long ticket, Batch<InputRelationship,RelationshipRecord> batch )
+    protected void process( Batch<InputRelationship,RelationshipRecord> batch, BatchSender sender )
     {
         InputRelationship[] input = batch.input;
         batch.records = new RelationshipRecord[input.length];
@@ -120,6 +121,6 @@ public class RelationshipEncoderStep extends ProcessorStep<Batch<InputRelationsh
             relationshipRecord.setFirstPrevRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
             relationshipRecord.setSecondPrevRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
         }
-        return batch;
+        sender.send( batch );
     }
 }

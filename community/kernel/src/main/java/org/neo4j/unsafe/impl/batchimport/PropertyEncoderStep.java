@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
 import org.neo4j.kernel.impl.util.MovingAverage;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
+import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
@@ -45,11 +46,10 @@ public class PropertyEncoderStep<RECORD extends PrimitiveRecord,INPUT extends In
     private final int stringDataSize;
     private final MovingAverage averageBlocksPerBatch;
 
-    protected PropertyEncoderStep( StageControl control, Configuration config, int numberOfExecutors,
-            BatchingPropertyKeyTokenRepository propertyKeyHolder,
-            PropertyStore propertyStore )
+    protected PropertyEncoderStep( StageControl control, Configuration config,
+            BatchingPropertyKeyTokenRepository propertyKeyHolder, PropertyStore propertyStore )
     {
-        super( control, "PROPERTIES", config.workAheadSize(), config.movingAverageSize(), numberOfExecutors, true );
+        super( control, "PROPERTIES", config, true );
         this.propertyKeyHolder = propertyKeyHolder;
         this.arrayDataSize = propertyStore.getArrayStore().dataSize();
         this.stringDataSize = propertyStore.getStringStore().dataSize();
@@ -57,7 +57,7 @@ public class PropertyEncoderStep<RECORD extends PrimitiveRecord,INPUT extends In
     }
 
     @Override
-    protected Object process( long ticket, Batch<INPUT,RECORD> batch )
+    protected void process( Batch<INPUT,RECORD> batch, BatchSender sender )
     {
         RelativeIdRecordAllocator stringAllocator = new RelativeIdRecordAllocator( stringDataSize );
         RelativeIdRecordAllocator arrayAllocator = new RelativeIdRecordAllocator( arrayDataSize );
@@ -91,6 +91,6 @@ public class PropertyEncoderStep<RECORD extends PrimitiveRecord,INPUT extends In
         }
         batch.propertyBlocks = propertyBlocks;
         averageBlocksPerBatch.add( blockCursor );
-        return batch;
+        sender.send( batch );
     }
 }

@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.staging.Step;
@@ -32,16 +33,16 @@ public class RecordProcessorStep<T extends AbstractBaseRecord> extends Processor
     private final RecordProcessor<T> processor;
     private final boolean endOfLine;
 
-    public RecordProcessorStep( StageControl control, String name, int workAheadSize, int movingAverageSize,
+    public RecordProcessorStep( StageControl control, String name, Configuration config,
             RecordProcessor<T> processor, boolean endOfLine )
     {
-        super( control, name, workAheadSize, movingAverageSize, 1 );
+        super( control, name, config );
         this.processor = processor;
         this.endOfLine = endOfLine;
     }
 
     @Override
-    protected Object process( long ticket, T[] batch )
+    protected void process( T[] batch, BatchSender sender )
     {
         for ( T item : batch )
         {
@@ -50,7 +51,13 @@ public class RecordProcessorStep<T extends AbstractBaseRecord> extends Processor
                 processor.process( item );
             }
         }
-        return endOfLine ? null : batch;
+
+        // This step can be used in different stage settings, possible as the last step,
+        // where nothing should be emitted
+        if ( !endOfLine )
+        {
+            sender.send( batch );
+        }
     }
 
     @Override

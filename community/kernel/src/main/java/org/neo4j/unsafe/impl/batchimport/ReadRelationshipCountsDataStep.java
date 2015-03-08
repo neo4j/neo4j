@@ -31,23 +31,23 @@ import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
  * Reads from {@link RelationshipStore} and produces batches of startNode,type,endNode values for
  * others to process. The result is one long[] with all values in.
  */
-public class ReadRelationshipCountsDataStep extends IoProducerStep<long[]>
+public class ReadRelationshipCountsDataStep extends IoProducerStep
 {
     private final RelationshipStore store;
     private final RelationshipRecord record = new RelationshipRecord( -1 );
     private final long highestId;
     private long id = -1;
 
-    public ReadRelationshipCountsDataStep( StageControl control, int batchSize, int movingAverageSize,
+    public ReadRelationshipCountsDataStep( StageControl control, Configuration config,
             RelationshipStore store )
     {
-        super( control, batchSize, movingAverageSize );
+        super( control, config );
         this.store = store;
         this.highestId = store.getHighestPossibleIdInUse();
     }
 
     @Override
-    protected long[] nextBatchOrNull( int batchSize )
+    protected long[] nextBatchOrNull( long ticket, int batchSize )
     {
         if ( id >= highestId )
         {

@@ -30,11 +30,11 @@ import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 /**
  * {@link ProducerStep} that has built-in support for I/O stats.
  */
-public abstract class IoProducerStep<BATCH> extends ProducerStep<BATCH> implements StatsProvider
+public abstract class IoProducerStep extends ProducerStep implements StatsProvider
 {
-    public IoProducerStep( StageControl control, int batchSize, int movingAverageSize )
+    public IoProducerStep( StageControl control, Configuration config )
     {
-        super( control, ">", batchSize, movingAverageSize );
+        super( control, ">", config );
     }
 
     @Override

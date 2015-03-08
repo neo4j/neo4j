@@ -19,11 +19,12 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.function.Factory;
 import org.neo4j.function.primitive.PrimitiveLongPredicate;
 import org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor;
+import org.neo4j.unsafe.impl.batchimport.executor.Task;
 import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor;
 
 import static java.lang.System.currentTimeMillis;
@@ -33,12 +34,14 @@ import static org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor.DEF
 /**
  * {@link Step} that uses {@link TaskExecutor} as a queue and execution mechanism.
  * Supports an arbitrary number of threads to execute batches in parallel.
+ * Subclasses implement {@link #process(Object, BatchSender)} receiving the batch to process
+ * and an {@link BatchSender} for sending the modified batch, or other batches downstream.
  */
 public abstract class ProcessorStep<T> extends AbstractStep<T>
 {
-    private TaskExecutor executor;
+    private TaskExecutor<Sender> executor;
     private final int workAheadSize;
-    private final int initialProcessorCount;
+    private final int initialProcessorCount = 1;
     private final boolean allowMultipleProcessors;
     private final PrimitiveLongPredicate catchUp = new PrimitiveLongPredicate()
     {
@@ -53,26 +56,31 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     // Useful for tracking how much time we spend waiting for batches from upstream.
     private final AtomicLong lastBatchEndTime = new AtomicLong();
 
-    protected ProcessorStep( StageControl control, String name, int workAheadSize, int movingAverageSize,
-            int initialProcessorCount, boolean allowMultipleProcessors )
+    protected ProcessorStep( StageControl control, String name, Configuration config, boolean allowMultipleProcessors )
     {
-        super( control, name, movingAverageSize );
-        this.workAheadSize = workAheadSize;
-        this.initialProcessorCount = initialProcessorCount;
+        super( control, name, config );
+        this.workAheadSize = config.workAheadSize();
         this.allowMultipleProcessors = allowMultipleProcessors;
     }
 
-    protected ProcessorStep( StageControl control, String name, int workAheadSize, int movingAverageSize,
-            int initialProcessorCount )
+    protected ProcessorStep( StageControl control, String name, Configuration config )
     {
-        this( control, name, workAheadSize, movingAverageSize, initialProcessorCount, initialProcessorCount > 1 );
+        this( control, name, config, false );
     }
 
     @Override
     public void start( boolean orderedTickets )
     {
         super.start( orderedTickets );
-        this.executor = new DynamicTaskExecutor( initialProcessorCount, workAheadSize, DEFAULT_PARK_STRATEGY, name() );
+        this.executor = new DynamicTaskExecutor<>( initialProcessorCount, workAheadSize,
+                DEFAULT_PARK_STRATEGY, name(), new Factory<Sender>()
+                {
+                    @Override
+                    public ProcessorStep<T>.Sender newInstance()
+                    {
+                        return new Sender();
+                    }
+                } );
     }
 
     @Override
@@ -80,52 +88,54 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     {
         // Don't go too far ahead
         long idleTime = await( catchUp, workAheadSize );
+        incrementQueue();
 
-        receivedBatch();
-
-        executor.submit( new Callable<Void>()
+        executor.submit( new Task<Sender>()
         {
             @Override
-            public Void call()
+            public void run( Sender sender )
             {
                 assertHealthy();
-
+                sender.initialize( ticket );
                 long startTime = currentTimeMillis();
                 try
                 {
-                    Object result = process( ticket, batch );
-                    totalProcessingTime.add( currentTimeMillis()-startTime );
-
-                    if ( orderedTickets )
+                    process( batch, sender );
+                    if ( downstream == null )
                     {
-                        await( rightTicket, ticket );
+                        // No batches were emmitted so we couldn't track done batches in that way.
+                        // We can see that we're the last step so increment here instead
+                        doneBatches.incrementAndGet();
                     }
-                    sendDownstream( ticket, result );
-
-                    long expectedTicket = doneBatches.incrementAndGet();
-                    assert !orderedTickets || expectedTicket == ticket :
-                            "Unexpected ticket " + ticket + ", expected " + expectedTicket;
-
-                    int queueSizeAfterThisJobDone = queuedBatches.decrementAndGet();
-                    assert queueSizeAfterThisJobDone >= 0 : "Negative queue size " + queueSizeAfterThisJobDone;
-                    if ( queueSizeAfterThisJobDone == 0 )
-                    {
-                        lastBatchEndTime.set( currentTimeMillis() );
-                    }
+                    totalProcessingTime.add( currentTimeMillis()-startTime-sender.sendTime );
+                    decrementQueue();
                     checkNotifyEndDownstream();
                 }
                 catch ( Throwable e )
                 {
                     issuePanic( e );
                 }
-                return null;
             }
         } );
 
         return idleTime;
     }
 
-    private void receivedBatch()
+    private void decrementQueue()
+    {
+        // Even though queuedBatches is built into AbstractStep, in that number of received batches
+        // is number of done + queued batches, this is the only implementation changing queuedBatches
+        // since it's the only implementation capable of such. That's why this code is here
+        // and not in AbstractStep.
+        int queueSizeAfterThisJobDone = queuedBatches.decrementAndGet();
+        assert queueSizeAfterThisJobDone >= 0 : "Negative queue size " + queueSizeAfterThisJobDone;
+        if ( queueSizeAfterThisJobDone == 0 )
+        {
+            lastBatchEndTime.set( currentTimeMillis() );
+        }
+    }
+
+    private void incrementQueue()
     {
         if ( queuedBatches.getAndIncrement() == 0 )
         {   // This is the first batch after we last drained the queue.
@@ -138,9 +148,17 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     }
 
     /**
-     * @return the batch object to send downstream, {@code null} for nothing to send.
+     * Processes a {@link #receive(long, Object) received} batch. Any batch that should be sent downstream
+     * as part of processing the supplied batch should be done so using {@link BatchSender#send(Object)}.
+     *
+     * The most typical implementation of this method is to process the received batch, either by
+     * creating a new batch object containing some derivative of the received batch, or the batch
+     * object itself with some modifications and {@link BatchSender#send(Object) emit} that in the end of the method.
+     *
+     * @param batch batch to process.
+     * @param sender {@link BatchSender} for sending zero or more batches downstream.
      */
-    protected abstract Object process( long ticket, T batch ) throws Throwable;
+    protected abstract void process( T batch, BatchSender sender ) throws Throwable;
 
     @Override
     public void close()
@@ -165,5 +183,53 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     public boolean decrementNumberOfProcessors()
     {
         return executor.decrementNumberOfProcessors();
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private void sendDownstream( long ticket, Object batch )
+    {
+        if ( orderedTickets )
+        {
+            await( rightTicket, ticket );
+        }
+        downstreamIdleTime.addAndGet( downstream.receive( ticket, batch ) );
+        doneBatches.incrementAndGet();
+    }
+
+    @Override
+    protected void done()
+    {
+        lastCallForEmittingOutstandingBatches( new Sender() );
+        super.done();
+    }
+
+    protected void lastCallForEmittingOutstandingBatches( BatchSender sender )
+    {   // Nothing to emit, subclasses might have though
+    }
+
+    private class Sender implements BatchSender
+    {
+        private long sendTime;
+        private long ticket;
+
+        @Override
+        public void send( Object batch )
+        {
+            long time = currentTimeMillis();
+            try
+            {
+                sendDownstream( ticket, batch );
+            }
+            finally
+            {
+                sendTime += (currentTimeMillis()-time);
+            }
+        }
+
+        public void initialize( long ticket )
+        {
+            this.ticket = ticket;
+            this.sendTime = 0;
+        }
     }
 }

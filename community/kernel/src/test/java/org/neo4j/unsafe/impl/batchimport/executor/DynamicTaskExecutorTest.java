@@ -22,7 +22,6 @@ package org.neo4j.unsafe.impl.batchimport.executor;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 
 import org.neo4j.helpers.Exceptions;
@@ -40,9 +39,10 @@ public class DynamicTaskExecutorTest
     public void shouldExecuteTasksInParallel() throws Exception
     {
         // GIVEN
-        TaskExecutor executor = new DynamicTaskExecutor( 2, 5, new ParkStrategy.Park( 1 ), getClass().getSimpleName() );
+        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 5, new ParkStrategy.Park( 1 ),
+                getClass().getSimpleName() );
         ControlledTask task1 = new ControlledTask();
-        Task task2 = new Task();
+        TestTask task2 = new TestTask();
 
         // WHEN
         executor.submit( task1 );
@@ -66,9 +66,10 @@ public class DynamicTaskExecutorTest
     public void shouldIncrementNumberOfProcessorsWhenRunning() throws Exception
     {
         // GIVEN
-        TaskExecutor executor = new DynamicTaskExecutor( 1, 5, new ParkStrategy.Park( 1 ), getClass().getSimpleName() );
+        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 1, 5, new ParkStrategy.Park( 1 ),
+                getClass().getSimpleName() );
         ControlledTask task1 = new ControlledTask();
-        Task task2 = new Task();
+        TestTask task2 = new TestTask();
 
         // WHEN
         executor.submit( task1 );
@@ -93,11 +94,12 @@ public class DynamicTaskExecutorTest
     public void shouldDecrementNumberOfProcessorsWhenRunning() throws Exception
     {
         // GIVEN
-        TaskExecutor executor = new DynamicTaskExecutor( 2, 5, new ParkStrategy.Park( 1 ), getClass().getSimpleName() );
+        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 5, new ParkStrategy.Park( 1 ),
+                getClass().getSimpleName() );
         ControlledTask task1 = new ControlledTask();
         ControlledTask task2 = new ControlledTask();
         ControlledTask task3 = new ControlledTask();
-        Task task4 = new Task();
+        TestTask task4 = new TestTask();
 
         // WHEN
         executor.submit( task1 );
@@ -126,7 +128,8 @@ public class DynamicTaskExecutorTest
     public void shouldExecuteMultipleTasks() throws Exception
     {
         // GIVEN
-        TaskExecutor executor = new DynamicTaskExecutor( 30, 5, new ParkStrategy.Park( 1 ), getClass().getSimpleName() );
+        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 30, 5, new ParkStrategy.Park( 1 ),
+                getClass().getSimpleName() );
         ExpensiveTask[] tasks = new ExpensiveTask[1000];
 
         // WHEN
@@ -147,7 +150,8 @@ public class DynamicTaskExecutorTest
     public void shouldShutDownOnTaskFailure() throws Exception
     {
         // GIVEN
-        TaskExecutor executor = new DynamicTaskExecutor( 30, 5, new ParkStrategy.Park( 1 ), getClass().getSimpleName() );
+        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 30, 5, new ParkStrategy.Park( 1 ),
+                getClass().getSimpleName() );
 
         // WHEN
         IOException exception = new IOException( "Test message" );
@@ -163,7 +167,8 @@ public class DynamicTaskExecutorTest
     public void shouldShutDownOnTaskFailureEvenIfOtherTasksArePending() throws Exception
     {
         // GIVEN
-        TaskExecutor executor = new DynamicTaskExecutor( 2, 10, new ParkStrategy.Park( 1 ), getClass().getSimpleName() );
+        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 10, new ParkStrategy.Park( 1 ),
+                getClass().getSimpleName() );
         IOException exception = new IOException( "Test message" );
         ControlledTask firstBlockingTask = new ControlledTask();
         ControlledTask secondBlockingTask = new ControlledTask();
@@ -191,7 +196,8 @@ public class DynamicTaskExecutorTest
     public void shouldSurfaceTaskErrorInAssertHealthy() throws Exception
     {
         // GIVEN
-        TaskExecutor executor = new DynamicTaskExecutor( 2, 10, new ParkStrategy.Park( 1 ), getClass().getSimpleName() );
+        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 10, new ParkStrategy.Park( 1 ),
+                getClass().getSimpleName() );
         IOException exception = new IOException( "Failure" );
 
         // WHEN
@@ -217,7 +223,7 @@ public class DynamicTaskExecutorTest
         fail( "Should not be considered healthy after failing task" );
     }
 
-    private void assertExceptionOnSubmit( TaskExecutor executor, IOException exception )
+    private void assertExceptionOnSubmit( TaskExecutor<Void> executor, IOException exception )
     {
         Exception submitException = null;
         for ( int i = 0; i < 5 && submitException == null; i++ )
@@ -236,28 +242,26 @@ public class DynamicTaskExecutorTest
         assertEquals( exception, submitException.getCause() );
     }
 
-    private static class Task implements Callable<Void>
+    private static class TestTask implements Task<Void>
     {
         protected volatile int executed;
 
         @Override
-        public Void call()
+        public void run( Void nothing )
         {
             executed++;
-            return null;
         }
     }
 
-    private static class EmptyTask implements Callable<Void>
+    private static class EmptyTask implements Task<Void>
     {
         @Override
-        public Void call() throws Exception
-        {
-            return null;
+        public void run( Void nothing ) throws Exception
+        {   // Do nothing
         }
     }
 
-    private static class FailingTask implements Callable<Void>
+    private static class FailingTask implements Task<Void>
     {
         private final Exception exception;
         private final CountDownLatch latch = new CountDownLatch( 1 );
@@ -268,7 +272,7 @@ public class DynamicTaskExecutorTest
         }
 
         @Override
-        public Void call() throws Exception
+        public void run( Void nothing ) throws Exception
         {
             try
             {
@@ -281,7 +285,7 @@ public class DynamicTaskExecutorTest
         }
     }
 
-    private static class ExpensiveTask extends Task
+    private static class ExpensiveTask extends TestTask
     {
         private final int millis;
 
@@ -291,7 +295,7 @@ public class DynamicTaskExecutorTest
         }
 
         @Override
-        public Void call()
+        public void run( Void nothing )
         {
             try
             {
@@ -301,19 +305,19 @@ public class DynamicTaskExecutorTest
             {
                 throw new RuntimeException( e );
             }
-            return super.call();
+            super.run( nothing );
         }
     }
 
-    private static class ControlledTask extends Task
+    private static class ControlledTask extends TestTask
     {
         private final DoubleLatch latch = new DoubleLatch();
 
         @Override
-        public Void call()
+        public void run( Void nothing )
         {
             latch.startAndAwaitFinish();
-            return super.call();
+            super.run( nothing );
         }
     }
 }
