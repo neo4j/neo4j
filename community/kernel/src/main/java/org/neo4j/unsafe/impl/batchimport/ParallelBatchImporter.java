@@ -281,7 +281,8 @@ public class ParallelBatchImporter implements BatchImporter
                 add( new InputEntityCacherStep<>( control(), config, inputCache.cacheRelationships() ) );
             }
             add( new RelationshipPreparationStep( control(), config, idMapper ) );
-            add( new CalculateDenseNodesStep( control(), config, nodeRelationshipLink, badRelationshipsCollector ) );
+            add( new CalculateDenseNodePrepareStep( control(), config, badRelationshipsCollector ) );
+            add( new CalculateDenseNodesStep( control(), config, nodeRelationshipLink ) );
         }
     }
 
