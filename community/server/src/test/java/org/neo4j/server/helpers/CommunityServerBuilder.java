@@ -218,7 +218,7 @@ public class CommunityServerBuilder
         }
 
         properties.put( ServerSettings.auth_enabled.name(), "false" );
-        properties.put( ServerInternalSettings.authorization_store.name(), "neo4j-home/data/dbms/authorization" );
+        properties.put( ServerInternalSettings.auth_store.name(), "neo4j-home/data/dbms/authorization" );
 
         for ( Object key : arbitraryProperties.keySet() )
         {

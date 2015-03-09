@@ -20,6 +20,7 @@
 package org.neo4j.server.rest.dbms;
 
 import java.io.IOException;
+import java.security.Principal;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
@@ -63,7 +64,8 @@ public class UserService
     @Path("/{username}")
     public Response getUser( @PathParam("username") String username, @Context HttpServletRequest req )
     {
-        if ( !req.getUserPrincipal().getName().equals( username ) )
+        Principal principal = req.getUserPrincipal();
+        if ( principal == null || !principal.getName().equals( username ) )
         {
             return output.notFound();
         }
@@ -80,7 +82,8 @@ public class UserService
     @Path("/{username}/password")
     public Response setPassword( @PathParam("username") String username, @Context HttpServletRequest req, String payload )
     {
-        if ( !req.getUserPrincipal().getName().equals( username ) )
+        Principal principal = req.getUserPrincipal();
+        if ( principal == null || !principal.getName().equals( username ) )
         {
             return output.notFound();
         }
@@ -107,6 +110,11 @@ public class UserService
                     new Neo4jError( Status.Request.InvalidFormat, String.format( "Expected '%s' to be a string.", PASSWORD ) ) ) );
         }
         String newPassword = (String) o;
+        if ( newPassword.length() == 0 )
+        {
+            return output.response( UNPROCESSABLE, new ExceptionRepresentation(
+                    new Neo4jError( Status.Request.Invalid, "Password cannot be empty." ) ) );
+        }
 
         final User currentUser = authManager.getUser( username );
         if (currentUser == null)
