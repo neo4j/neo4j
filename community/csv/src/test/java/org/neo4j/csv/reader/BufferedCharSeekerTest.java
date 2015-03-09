@@ -431,6 +431,20 @@ public class BufferedCharSeekerTest
     }
 
     @Test
+    public void shouldEscapeBackslashesInQuotes() throws Exception
+    {
+        // GIVEN
+        //                4,    "\\\"",   "f\oo"
+        seeker = seeker( "4,\"\\\\\\\"\",\"f\\oo\"" );
+
+        // WHEN/THEN
+        assertNextValue( seeker, mark, COMMA, "4" );
+        assertNextValue( seeker, mark, COMMA, "\\\"" );
+        assertNextValue( seeker, mark, COMMA, "f\\oo" );
+        assertFalse( seeker.seek( mark, COMMA ) );
+    }
+
+    @Test
     public void shouldNotFindAnyValuesForEmptySource() throws Exception
     {
         // GIVEN
