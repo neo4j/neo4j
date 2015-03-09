@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Random;
 
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.ServerControls;
 import org.neo4j.harness.TestServerBuilder;
 import org.neo4j.kernel.GraphDatabaseDependencies;
@@ -58,6 +59,7 @@ public class InProcessServerBuilder implements TestServerBuilder
     {
         setDirectory( workingDir );
         withConfig( ServerSettings.auth_enabled, "false" );
+        withConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
         withConfig( WEBSERVER_PORT_PROPERTY_KEY, Integer.toString( freePort() ) );
     }
 
