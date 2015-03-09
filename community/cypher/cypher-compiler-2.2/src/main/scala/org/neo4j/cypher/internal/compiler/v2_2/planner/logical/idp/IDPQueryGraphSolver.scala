@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.solveOptionalMatches.OptionalSolver
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.{applyOptional, outerHashJoin, pickBestPlanUsingHintsAndCost}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.{applyOptional, outerHashJoin}
 
 import scala.annotation.tailrec
 
@@ -74,11 +74,9 @@ case class IDPQueryGraphSolver(maxDepth: Int = 5,
     Seq(kitFactory(queryGraph).select(plan))
   }
 
-  private def planComponent(initialQg: QueryGraph)(implicit context: LogicalPlanningContext, kit: QueryPlannerKit, leafPlanWeHopeToGetAwayWithIgnoring: Option[LogicalPlan]): LogicalPlan = {
+  private def planComponent(qg: QueryGraph)(implicit context: LogicalPlanningContext, kit: QueryPlannerKit, leafPlanWeHopeToGetAwayWithIgnoring: Option[LogicalPlan]): LogicalPlan = {
     // TODO: Investigate dropping leafPlanWeHopeToGetAwayWithIgnoring argument
-    val leaves = leafPlanFinder(config, initialQg)
-    val sharedPatterns = leaves.map(_.solved.graph.patternRelationships).reduceOption(_ intersect _).getOrElse(Set.empty)
-    val qg = initialQg.withoutPatternRelationships(sharedPatterns)
+    val leaves = leafPlanFinder(config, qg)
 
     if (qg.patternRelationships.size > 0) {
       // line 1-4
@@ -141,6 +139,8 @@ case class IDPQueryGraphSolver(maxDepth: Int = 5,
     import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.idp.expandTableSolver.planSinglePatternSide
 
     leaves.collect {
+      case plan if plan.solved.lastQueryGraph.patternRelationships.contains(pattern) =>
+        Set(plan)
       case plan =>
         val (start, end) = pattern.nodes
         val leftPlan = planSinglePatternSide(qg, pattern, plan, start)

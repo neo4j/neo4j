@@ -61,7 +61,6 @@ import org.neo4j.test.RandomRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
-import org.neo4j.unsafe.impl.batchimport.cache.AvailableMemoryCalculator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
@@ -112,24 +111,28 @@ public class ParallelBatchImporterTest
     private final InputIdGenerator inputIdGenerator;
     private final IdMapper idMapper;
     private final IdGenerator idGenerator;
+    private final boolean multiPassIterators;
 
     @Parameterized.Parameters(name = "{0},{1},{2},{4}")
     public static Collection<Object[]> data()
     {
         return Arrays.<Object[]>asList(
                 // synchronous I/O, actual node id input
-                new Object[]{SYNCHRONOUS, new LongInputIdGenerator(), actual(), fromInput()},
+                new Object[]{SYNCHRONOUS, new LongInputIdGenerator(), actual(), fromInput(), true},
                 // synchronous I/O, string id input
-                new Object[]{SYNCHRONOUS, new StringInputIdGenerator(), strings( AUTO ), startingFromTheBeginning()},
+                new Object[]{SYNCHRONOUS, new StringInputIdGenerator(), strings( AUTO ), startingFromTheBeginning(), true},
+                // synchronous I/O, string id input
+                new Object[]{SYNCHRONOUS, new StringInputIdGenerator(), strings( AUTO ), startingFromTheBeginning(), false},
                 // extra slow parallel I/O, actual node id input
                 new Object[]{new IoQueue( 4, 4, 30, synchronousSlowWriterFactory ),
-                        new LongInputIdGenerator(), actual(), fromInput()}
+                        new LongInputIdGenerator(), actual(), fromInput(), false}
         );
     }
 
     public ParallelBatchImporterTest( WriterFactory writerFactory, InputIdGenerator inputIdGenerator,
-            IdMapper idMapper, IdGenerator idGenerator )
+            IdMapper idMapper, IdGenerator idGenerator, boolean multiPassIterators )
     {
+        this.multiPassIterators = multiPassIterators;
         this.writerFactory = constant( writerFactory );
         this.inputIdGenerator = inputIdGenerator;
         this.idMapper = idMapper;
@@ -149,8 +152,10 @@ public class ParallelBatchImporterTest
         try
         {
             // WHEN
-            inserter.doImport( Inputs.input( nodes( NODE_COUNT, inputIdGenerator ),
-                    relationships( relationshipCount, inputIdGenerator ), idMapper, idGenerator, false ) );
+            inserter.doImport( Inputs.input(
+                    nodes( NODE_COUNT, inputIdGenerator ),
+                    relationships( relationshipCount, inputIdGenerator ),
+                    idMapper, idGenerator, false ) );
             // THEN
             GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
             try ( Transaction tx = db.beginTx() )
@@ -329,9 +334,17 @@ public class ParallelBatchImporterTest
     {
         return new InputIterable<InputRelationship>()
         {
+            private int calls;
+
             @Override
             public InputIterator<InputRelationship> iterator()
             {
+                calls++;
+                assertTrue( "Unexpected use of input iterator " + multiPassIterators + ", " + calls,
+                        multiPassIterators || (!multiPassIterators && calls == 1) );
+
+                // we still do the reset, even if tell the batch importer to not use use this iterable multiple times,
+                // since we use it to compare the imported data against after the import has been completed.
                 random.reset();
                 return new SimpleInputIterator<InputRelationship>( "test relationships" )
                 {
@@ -369,16 +382,28 @@ public class ParallelBatchImporterTest
                     }
                 };
             }
+
+            @Override
+            public boolean supportsMultiplePasses()
+            {
+                return multiPassIterators;
+            }
         };
     }
 
-    private static InputIterable<InputNode> nodes( final long count, final InputIdGenerator inputIdGenerator )
+    private InputIterable<InputNode> nodes( final long count, final InputIdGenerator inputIdGenerator )
     {
         return new InputIterable<InputNode>()
         {
+            private int calls;
+
             @Override
             public InputIterator<InputNode> iterator()
             {
+                calls++;
+                assertTrue( "Unexpected use of input iterator " + multiPassIterators + ", " + calls,
+                        multiPassIterators || (!multiPassIterators && calls == 1) );
+
                 return new SimpleInputIterator<InputNode>( "test nodes" )
                 {
                     private int cursor;
@@ -410,29 +435,14 @@ public class ParallelBatchImporterTest
                     }
                 };
             }
+
+            @Override
+            public boolean supportsMultiplePasses()
+            {
+                return multiPassIterators;
+            }
         };
     }
-
-    private static final AvailableMemoryCalculator LOW_MEMORY = new AvailableMemoryCalculator()
-    {
-        @Override
-        public long availableOffHeapMemory()
-        {
-            return 0;
-        }
-
-        @Override
-        public long availableHeapMemory()
-        {
-            return 0;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "low memory";
-        }
-    };
 
     public static final @ClassRule RandomRule random = new RandomRule();
 }

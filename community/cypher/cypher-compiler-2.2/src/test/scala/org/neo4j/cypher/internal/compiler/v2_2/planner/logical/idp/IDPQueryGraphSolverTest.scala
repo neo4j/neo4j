@@ -489,4 +489,21 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       )
     }
   }
+
+  test("should handle relationship by id") {
+    new given {
+      queryGraphSolver = IDPQueryGraphSolver(solvers = Seq.empty)
+      qg = QueryGraph( // MATCH (a)-[r]->(b) WHERE id(r) = 42 RETURN *
+        patternNodes = Set("a", "b"),
+        patternRelationships = Set(PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)),
+        selections = Selections.from(In(FunctionInvocation(FunctionName("id")(pos), ident("r"))(pos), Collection(Seq(SignedDecimalIntegerLiteral("42")(pos)))(pos))(pos))
+      )
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
+
+      queryGraphSolver.plan(cfg.qg) should equal(
+        DirectedRelationshipByIdSeek("r", EntityByIdExprs(Seq(SignedDecimalIntegerLiteral("42")(pos))), "a", "b", Set.empty)(null)
+      )
+    }
+  }
 }

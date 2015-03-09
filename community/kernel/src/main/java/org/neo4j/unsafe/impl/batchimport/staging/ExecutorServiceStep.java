@@ -140,7 +140,7 @@ public abstract class ExecutorServiceStep<T> extends AbstractStep<T>
     /**
      * @return the batch object to send downstream, {@code null} for nothing to send.
      */
-    protected abstract Object process( long ticket, T batch );
+    protected abstract Object process( long ticket, T batch ) throws Throwable;
 
     @Override
     public void close()

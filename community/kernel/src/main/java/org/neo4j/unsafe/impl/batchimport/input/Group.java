@@ -91,16 +91,7 @@ public interface Group extends PrimitiveIntPredicate
         @Override
         public boolean equals( Object obj )
         {
-            if ( this == obj )
-                return true;
-            if ( obj == null )
-                return false;
-            if ( getClass() != obj.getClass() )
-                return false;
-            Adapter other = (Adapter) obj;
-            if ( id != other.id )
-                return false;
-            return true;
+            return obj instanceof Group && ((Group)obj).id() == id;
         }
     }
 

@@ -27,7 +27,7 @@ import java.util.Map;
  */
 public class Groups
 {
-    private final Map<String,Group> groups = new HashMap<>();
+    private final Map<String,Group> byName = new HashMap<>();
     private int nextId = 0;
     private Boolean globalMode;
 
@@ -60,10 +60,10 @@ public class Groups
             return Group.GLOBAL;
         }
 
-        Group group = groups.get( name );
+        Group group = byName.get( name );
         if ( group == null )
         {
-            groups.put( name, group = new Group.Adapter( nextId++, name ) );
+            byName.put( name, group = new Group.Adapter( nextId++, name ) );
         }
         return group;
     }

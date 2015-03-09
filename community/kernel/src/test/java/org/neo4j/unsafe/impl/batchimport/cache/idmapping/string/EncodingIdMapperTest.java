@@ -93,6 +93,12 @@ public class EncodingIdMapperTest
                     }
                 };
             }
+
+            @Override
+            public boolean supportsMultiplePasses()
+            {
+                return false;
+            }
         };
 
         // WHEN
@@ -439,6 +445,12 @@ public class EncodingIdMapperTest
                     return null;
                 }
             };
+        }
+
+        @Override
+        public boolean supportsMultiplePasses()
+        {
+            return false;
         }
     }
 

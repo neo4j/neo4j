@@ -603,6 +603,12 @@ public class StoreMigrator implements StoreMigrationParticipant
                     }
                 };
             }
+
+            @Override
+            public boolean supportsMultiplePasses()
+            {
+                return true;
+            }
         };
     }
 
@@ -649,6 +655,12 @@ public class StoreMigrator implements StoreMigrationParticipant
                     {
                     }
                 };
+            }
+
+            @Override
+            public boolean supportsMultiplePasses()
+            {
+                return true;
             }
         };
     }

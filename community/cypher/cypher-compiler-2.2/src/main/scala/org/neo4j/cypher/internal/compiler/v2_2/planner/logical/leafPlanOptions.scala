@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.{GreedyPlanTableGenerator, GreedyPlanTable}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{LogicalLeafPlan, LogicalPlan}
 
 object leafPlanOptions extends LogicalLeafPlan.Finder {
