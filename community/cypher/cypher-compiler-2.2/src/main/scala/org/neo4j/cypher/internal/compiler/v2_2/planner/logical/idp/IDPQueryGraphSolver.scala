@@ -98,7 +98,7 @@ case class IDPQueryGraphSolver(maxDepth: Int = 5,
                             toDo: Set[Solvable],
                             table: IDPPlanTable,
                             solutionGenerator: Set[Solvable] => Iterable[LogicalPlan])
-                           (implicit context: LogicalPlanningContext, kit: QueryPlannerKit): Unit = {
+                           (implicit context: LogicalPlanningContext, kit: QueryPlannerKit) {
     val size = toDo.size
     if (size > 1) {
       // line 7-16
@@ -136,11 +136,13 @@ case class IDPQueryGraphSolver(maxDepth: Int = 5,
 
   private def planSinglePattern(qg: QueryGraph, pattern: PatternRelationship, leaves: Iterable[LogicalPlan]): Iterable[LogicalPlan] = {
 
-    import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.idp.expandTableSolver.planSinglePatternSide
+    import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.idp.expandTableSolver.{planSinglePatternSide, planSingleProjectEndpoints}
 
     leaves.collect {
       case plan if plan.solved.lastQueryGraph.patternRelationships.contains(pattern) =>
         Set(plan)
+      case plan if plan.solved.lastQueryGraph.allCoveredIds.contains(pattern.name) =>
+        Set(planSingleProjectEndpoints(pattern, plan))
       case plan =>
         val (start, end) = pattern.nodes
         val leftPlan = planSinglePatternSide(qg, pattern, plan, start)

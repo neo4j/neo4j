@@ -37,7 +37,7 @@ class GreedyQueryGraphSolver(planCombiner: CandidateGenerator[GreedyPlanTable],
     val optionalMatchesSolver = solveOptionalMatches(config.optionalSolvers, kit.pickBest)
 
     def generateLeafPlanTable(): GreedyPlanTable = {
-      val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph, kit.projectEndpoints)
+      val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph, kit.projectAllEndpoints)
       val leafPlanCandidateListsWithSelections = leafPlanCandidateLists.iterator.map(_.map(kit.select))
       val bestLeafPlans: Iterator[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(kit.pickBest(_))
       val startTable: GreedyPlanTable = leafPlan.foldLeft(GreedyPlanTable.empty)(_ + _)

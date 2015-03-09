@@ -506,4 +506,53 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       )
     }
   }
+
+  test("should handle multiple project end points on arguments when creating leaf plans") {
+    new given {
+      queryGraphSolver = IDPQueryGraphSolver()
+      qg = QueryGraph(
+        patternNodes = Set("a", "b", "c"),
+        patternRelationships = Set(
+          PatternRelationship("r1", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
+          PatternRelationship("r2", ("b", "c"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+        ),
+        argumentIds = Set("r1", "r2")
+      )
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
+
+      queryGraphSolver.plan(cfg.qg) should equal(
+        ProjectEndpoints(
+          ProjectEndpoints(
+            Argument(Set("r1", "r2"))(null)(),
+            "r2", "b", startInScope = false, "c", endInScope = false, None, directed = true, SimplePatternLength)(null),
+          "r1", "a", startInScope = false, "b", endInScope = true, None, directed = true, SimplePatternLength)(null))
+    }
+  }
+
+  test("should handle passing multiple projectible relationships as arguments") {
+    new given {
+      queryGraphSolver = IDPQueryGraphSolver(solvers = Seq(expandTableSolver))
+      qg = QueryGraph(
+        patternNodes = Set("a", "b", "c", "d"),
+        patternRelationships = Set(
+          PatternRelationship("r1", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
+          PatternRelationship("r2", ("c", "d"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
+          PatternRelationship("r3", ("a", "d"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+        ),
+        argumentIds = Set("a", "b", "c", "d", "r1", "r2")
+      )
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
+
+      queryGraphSolver.plan(cfg.qg) should equal(
+        ProjectEndpoints(
+          Expand(
+            ProjectEndpoints(
+              Argument(Set("a", "b", "c", "d", "r1", "r2"))(null)(),
+              "r2", "c", startInScope = true, "d", endInScope = true, None, directed = true, SimplePatternLength)(null),
+            "a", Direction.OUTGOING, Seq.empty, "d", "r3", ExpandInto)(null),
+          "r1", "a", startInScope = true, "b", endInScope = true, None, directed = true, SimplePatternLength)(null))
+    }
+  }
 }
