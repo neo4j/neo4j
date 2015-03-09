@@ -150,6 +150,8 @@ public class AuthorizationFilterTest
         // Then
         verifyNoMoreInteractions( filterChain );
         verify( servletResponse ).setStatus( 401 );
+        verify( servletResponse ).addHeader( HttpHeaders.WWW_AUTHENTICATE, "None" );
+        verify( servletResponse ).addHeader( HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8" );
         assertThat( outputStream.toString( Charsets.UTF_8.name() ), containsString( "\"code\" : \"Neo.ClientError.Security.AuthorizationFailed\"" ) );
         assertThat( outputStream.toString( Charsets.UTF_8.name() ), containsString( "\"message\" : \"No authorization header supplied.\"" ) );
     }
@@ -168,6 +170,7 @@ public class AuthorizationFilterTest
         // Then
         verifyNoMoreInteractions( filterChain );
         verify( servletResponse ).setStatus( 400 );
+        verify( servletResponse ).addHeader( HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8" );
         assertThat( outputStream.toString( Charsets.UTF_8.name() ), containsString( "\"code\" : \"Neo.ClientError.Request.InvalidFormat\"" ) );
         assertThat( outputStream.toString( Charsets.UTF_8.name() ), containsString( "\"message\" : \"Invalid Authorization header.\"" ) );
     }
@@ -190,6 +193,7 @@ public class AuthorizationFilterTest
         verifyNoMoreInteractions( filterChain );
         verify( logger ).warn( "Failed authentication attempt for '%s' from %s", "foo", "remote_ip_address" );
         verify( servletResponse ).setStatus( 401 );
+        verify( servletResponse ).addHeader( HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8" );
         assertThat( outputStream.toString( Charsets.UTF_8.name() ), containsString( "\"code\" : \"Neo.ClientError.Security.AuthorizationFailed\"" ) );
         assertThat( outputStream.toString( Charsets.UTF_8.name() ), containsString( "\"message\" : \"Invalid username or password.\"" ) );
     }
@@ -229,6 +233,7 @@ public class AuthorizationFilterTest
         // Then
         verifyNoMoreInteractions( filterChain );
         verify( servletResponse ).setStatus( 403 );
+        verify( servletResponse ).addHeader( HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8" );
         assertThat( outputStream.toString( Charsets.UTF_8.name() ), containsString( "\"password_change\" : \"http://bar.baz:7474/user/foo/password\"" ) );
         assertThat( outputStream.toString( Charsets.UTF_8.name() ), containsString( "\"code\" : \"Neo.ClientError.Security.AuthorizationFailed\"" ) );
         assertThat( outputStream.toString( Charsets.UTF_8.name() ), containsString( "\"message\" : \"User is required to change their password.\"" ) );
@@ -250,6 +255,7 @@ public class AuthorizationFilterTest
         // Then
         verifyNoMoreInteractions( filterChain );
         verify( servletResponse ).setStatus( 429 );
+        verify( servletResponse ).addHeader( HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8" );
         assertThat( outputStream.toString( Charsets.UTF_8.name() ), containsString( "\"code\" : \"Neo.ClientError.Security.AuthenticationRateLimit\"" ) );
         assertThat( outputStream.toString( Charsets.UTF_8.name() ), containsString( "\"message\" : \"Too many failed authentication requests. Please wait 5 seconds and try again.\"" ) );
     }
