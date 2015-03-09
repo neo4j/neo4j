@@ -44,6 +44,7 @@ import org.neo4j.server.preflight.PerformUpgradeIfNecessary;
 import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.rest.management.JmxService;
+import org.neo4j.server.rest.management.MonitorService;
 import org.neo4j.server.rest.management.console.ConsoleService;
 import org.neo4j.server.web.Jetty9WebServer;
 import org.neo4j.server.web.WebServer;
@@ -127,6 +128,7 @@ public class CommunityNeoServer extends AbstractNeoServer
         List<AdvertisableService> toReturn = new ArrayList<>( 3 );
         toReturn.add( new ConsoleService( null, null, dependencies.logging(), null ) );
         toReturn.add( new JmxService( null, null ) );
+        toReturn.add( new MonitorService( null, null ) );
 
         return toReturn;
     }

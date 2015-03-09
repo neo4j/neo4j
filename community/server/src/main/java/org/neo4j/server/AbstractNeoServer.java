@@ -19,16 +19,18 @@
  */
 package org.neo4j.server;
 
+import org.apache.commons.configuration.Configuration;
+
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.servlet.Filter;
 
-import org.apache.commons.configuration.Configuration;
+import javax.servlet.Filter;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -60,6 +62,7 @@ import org.neo4j.server.database.DatabaseProvider;
 import org.neo4j.server.database.ExecutionEngineProvider;
 import org.neo4j.server.database.GraphDatabaseServiceProvider;
 import org.neo4j.server.database.InjectableProvider;
+import org.neo4j.server.database.RrdDbWrapper;
 import org.neo4j.server.guard.GuardingRequestFilter;
 import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.ServerModule;
@@ -77,6 +80,8 @@ import org.neo4j.server.rest.transactional.TransactionHandleRegistry;
 import org.neo4j.server.rest.transactional.TransactionRegistry;
 import org.neo4j.server.rest.transactional.TransitionalPeriodTransactionMessContainer;
 import org.neo4j.server.rest.web.DatabaseActions;
+import org.neo4j.server.rrd.RrdDbProvider;
+import org.neo4j.server.rrd.RrdFactory;
 import org.neo4j.server.security.auth.AuthManager;
 import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.server.security.ssl.KeyStoreFactory;
@@ -131,6 +136,9 @@ public abstract class AbstractNeoServer implements NeoServer
     private DatabaseActions databaseActions;
     protected final ConsoleLogger log;
 
+    private RoundRobinJobScheduler rrdDbScheduler;
+    private RrdDbWrapper rrdDbWrapper;
+
     private TransactionFacade transactionFacade;
     private TransactionHandleRegistry transactionRegistry;
 
@@ -158,7 +166,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
         this.database = life.add( dependencyResolver.satisfyDependency(dbFactory.newDatabase( dbConfig, dependencies)) );
 
-        FileUserRepository users = life.add( new FileUserRepository( configurator.configuration().get( ServerInternalSettings.authorization_store ).toPath(), dependencies.logging() ) );
+        FileUserRepository users = life.add( new FileUserRepository( configurator.configuration().get( ServerInternalSettings.auth_store ).toPath(), dependencies.logging() ) );
 
         this.authManager = life.add(new AuthManager( Clock.SYSTEM_CLOCK, users ));
         this.preFlight = dependencyResolver.satisfyDependency(createPreflightTasks());
@@ -201,6 +209,11 @@ public abstract class AbstractNeoServer implements NeoServer
 
                 databaseActions = createDatabaseActions();
 
+                // TODO: RrdDb is not needed once we remove the old webadmin
+                rrdDbScheduler = new RoundRobinJobScheduler( dependencies.logging() );
+                rrdDbWrapper = new RrdFactory( configurator.configuration(), dependencies.logging() )
+                        .createRrdDbAndSampler( database, rrdDbScheduler );
+
                 transactionFacade = createTransactionalActions();
 
                 cypherExecutor = new CypherExecutor( database );
@@ -227,6 +240,9 @@ public abstract class AbstractNeoServer implements NeoServer
             Thread.interrupted();
             if ( interruptStartupTimer.wasTriggered() )
             {
+                // Make sure we don't leak rrd db files
+                stopRrdDb();
+
                 // If the database has been started, attempt to cleanly shut it down to avoid unclean shutdowns.
                 life.shutdown();
 
@@ -578,6 +594,13 @@ public abstract class AbstractNeoServer implements NeoServer
                 @Override
                 public void run()
                 {
+                    stopRrdDb();
+                }
+            },
+            new Runnable() {
+                @Override
+                public void run()
+                {
                     life.stop();
                 }
             }
@@ -585,6 +608,26 @@ public abstract class AbstractNeoServer implements NeoServer
 
         //noinspection deprecation
         log.log( "Successfully shutdown database." );
+    }
+
+    private void stopRrdDb()
+    {
+        try
+        {
+            if( rrdDbScheduler != null)
+            {
+                rrdDbScheduler.stopJobs();
+            }
+            if( rrdDbWrapper != null )
+            {
+                rrdDbWrapper.close();
+            }
+            log.log( "Successfully shutdown Neo4j Server." );
+        } catch(IOException e)
+        {
+            // If we fail on shutdown, we can't really recover from it. Log the issue and carry on.
+            log.error( "Unable to cleanly shut down statistics database.", e );
+        }
     }
 
     private void stopWebServer()
@@ -660,6 +703,8 @@ public abstract class AbstractNeoServer implements NeoServer
         singletons.add( new NeoServerProvider( this ) );
         singletons.add( providerForSingleton( new ConfigWrappingConfiguration( getConfig() ), Configuration.class ) );
         singletons.add( providerForSingleton( getConfig(), Config.class ) );
+
+        singletons.add( new RrdDbProvider( rrdDbWrapper ) );
 
         singletons.add( new WebServerProvider( getWebServer() ) );
 

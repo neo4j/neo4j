@@ -150,6 +150,7 @@ public class AuthorizationFilter implements Filter
         void writeResponse( HttpServletResponse response ) throws IOException
         {
             response.setStatus( statusCode );
+            response.addHeader( HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8" );
             addHeaders( response );
             response.getOutputStream().write( JsonHelper.createJsonFrom( body() ).getBytes( Charsets.UTF_8 ) );
         }

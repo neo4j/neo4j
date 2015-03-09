@@ -1,0 +1,36 @@
+.pad
+  %table.info-table(cellspacing=0)
+    %tbody
+      :if primitives.isDataAvailable()
+        %tr
+          %td
+            .box
+              .value= htmlEscape(fancyNumber(primitives.get("primitives").NumberOfNodeIdsInUse))
+              .title nodes
+          %td
+            .box
+              .value= htmlEscape(fancyNumber(primitives.get("primitives").NumberOfPropertyIdsInUse))
+              .title properties
+          %td 
+            .box
+              .value= htmlEscape(fancyNumber(primitives.get("primitives").NumberOfRelationshipIdsInUse))
+              .title relationships
+          %td
+            .box
+              .value= htmlEscape(fancyNumber(primitives.get("primitives").NumberOfRelationshipTypeIdsInUse))
+              .title relationship types
+
+      :if diskUsage.isDataAvailable()
+        %tr
+          %td
+          %td
+            .box
+              .value= htmlEscape(fancyNumber(Math.round( diskUsage.getDatabaseSize() / (1024 * 1024))) + " MB")
+              .title database disk usage
+          %td
+            .box
+              .value= htmlEscape(fancyNumber(Math.round( diskUsage.getLogicalLogSize() / (1024 * 1024))) + " MB")
+              .title logical log disk usage
+          %td
+  .break
+

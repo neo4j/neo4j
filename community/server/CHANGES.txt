@@ -1,6 +1,14 @@
+2.2.0-RC02
+---------
+
+o Disallow empty passwords for Auth
+o Return 404 for requests to user service when auth is disabled
+o Return correct content type with auth errors
+
 2.2.0-M04
 ---------
-o Authentication now applies to all REST endpoints, if enabled
+o Auth now applies to all REST endpoints, if enabled
+o Auth no longer uses tokens, relying only on username and password.
 o Returned paths ends with '/' in response to "GET /". This avoids an unnecessary redirect,
   for drivers that (properly) follow hyperlinks.
 o A couple of bugs regarding handling of labels in BatchInserter fixed.
