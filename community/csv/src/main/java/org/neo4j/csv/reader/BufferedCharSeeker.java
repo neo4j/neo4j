@@ -160,7 +160,7 @@ public class BufferedCharSeeker implements CharSeeker, SourceTraceability
                 else if ( ch == BACK_SLASH )
                 {   // Legacy concern, support java style quote encoding
                     int nextCh = peekChar();
-                    if ( nextCh == quoteChar )
+                    if ( nextCh == quoteChar || nextCh == BACK_SLASH )
                     {   // Found a slash encoded quote
                         repositionChar( bufferPos++, ++skippedChars );
                     }
