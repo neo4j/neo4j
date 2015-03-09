@@ -51,7 +51,7 @@ public class RelationshipGroupFormatComplianceTest
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     @Rule
-    public PageCacheRule pageCacheRule = new PageCacheRule( false ); // TODO that we have to set this to false is indicative of bugs in this code!
+    public PageCacheRule pageCacheRule = new PageCacheRule();
 
     private StoreFactory storeFactory;
     private final File storeDir = new File( "dir" ).getAbsoluteFile();

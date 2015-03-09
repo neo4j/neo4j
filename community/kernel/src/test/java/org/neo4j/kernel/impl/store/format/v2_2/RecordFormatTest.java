@@ -45,7 +45,7 @@ public abstract class RecordFormatTest<FORMAT extends StoreFormat<RECORD, CURSOR
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     @Rule
-    public PageCacheRule pageCacheRule = new PageCacheRule( false ); // TODO that we have to set this to false is indicative of bugs in this code!
+    public PageCacheRule pageCacheRule = new PageCacheRule();
 
     protected StubPageCursor pageCursor;
     protected final FORMAT format;

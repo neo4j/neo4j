@@ -49,7 +49,7 @@ public class StandardStoreTest
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     @Rule
-    public PageCacheRule pageCacheRule = new PageCacheRule( false ); // TODO that we have to set this to false is indicative of bugs in this code!
+    public PageCacheRule pageCacheRule = new PageCacheRule();
 
     private LifeSupport life;
     private PageCache pageCache;
@@ -106,13 +106,13 @@ public class StandardStoreTest
 
         long recordId = store.allocate();
 
-        store.write( new TestRecord( recordId, 1338) );
+        store.write( new TestRecord( recordId, 1338 ) );
 
         // When
         TestRecord secondRecord = store.read( recordId );
 
         // Then
-        assertThat(secondRecord.value, equalTo(1338l));
+        assertThat( secondRecord.value, equalTo( 1338l ) );
 
         // And when I restart the store
         life.shutdown();

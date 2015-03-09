@@ -55,8 +55,18 @@ public class RelationshipFormatTest extends RecordFormatTest<RelationshipStoreFo
         cursor.position( 12 );
 
         // Then
-        assertThat(cursor.recordId(),          equalTo(12l));
-        assertThat(cursor.inUse(),             equalTo(true));
-        assertThat(cursor.reusedRecord().toString(), equalTo( record.toString() ) );
+        long recordId;
+        boolean inUse;
+        String reuseToString;
+        do
+        {
+            recordId = cursor.recordId();
+            inUse = cursor.inUse();
+            reuseToString = cursor.reusedRecord().toString();
+        }
+        while ( cursor.shouldRetry() );
+        assertThat( recordId,          equalTo(12l));
+        assertThat( inUse,             equalTo(true));
+        assertThat( reuseToString, equalTo( record.toString() ) );
     }
 }

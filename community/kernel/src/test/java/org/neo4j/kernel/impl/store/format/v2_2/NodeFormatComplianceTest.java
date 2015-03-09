@@ -57,7 +57,7 @@ public class NodeFormatComplianceTest
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     @Rule
-    public PageCacheRule pageCacheRule = new PageCacheRule( false ); // TODO that we have to set this to false is indicative of bugs in this code!
+    public PageCacheRule pageCacheRule = new PageCacheRule();
     private PageCache pageCache;
     private StoreFactory storeFactory;
     private final File storeDir = new File( "dir" ).getAbsoluteFile();
@@ -99,7 +99,7 @@ public class NodeFormatComplianceTest
     public void writesRecords() throws Throwable
     {
         // Given
-        storeFactory.createNeoStore().close(); // NodeStore wont start unless it's child stores exist, so creat those
+        storeFactory.createNeoStore().close(); // NodeStore wont start unless it's child stores exist, so create those
 
         StandardStore<NodeRecord, NodeRecordCursor> store = new
                 StandardStore<>( new NodeStoreFormat_v2_2(), new File( storeDir, DEFAULT_NAME + NODE_STORE_NAME ),
@@ -140,10 +140,16 @@ public class NodeFormatComplianceTest
 
         // Given I have a cursor positioned at the record I want
         NodeRecordCursor cursor = store.cursor( Store.SF_NO_FLAGS );
-        cursor.position( record.getId() );
 
         // When
-        long firstRelId = cursor.firstRelationship();
+        cursor.position( record.getId() );
+        long firstRelId;
+        do
+        {
+            firstRelId = cursor.firstRelationship();
+        }
+        while ( cursor.shouldRetry() );
+
         store.stop();
         store.shutdown();
 
