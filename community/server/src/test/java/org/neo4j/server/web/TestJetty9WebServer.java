@@ -22,11 +22,6 @@ package org.neo4j.server.web;
 import org.junit.Rule;
 import org.junit.Test;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.server.WrappingNeoServer;
@@ -40,17 +35,8 @@ import org.neo4j.test.Mute;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.Mute.muteAll;
 
-@Path("/")
 public class TestJetty9WebServer
 {
-
-	@GET
-	public Response index()
-	{
-		return Response.status( Status.NO_CONTENT )
-                .build();
-	}
-
 	@Test
 	public void shouldBeAbleToRestart() throws Throwable
 	{
