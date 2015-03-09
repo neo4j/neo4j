@@ -141,7 +141,6 @@ public class BufferedCharSeeker implements CharSeeker, SourceTraceability
                     if ( nextCh == quoteChar )
                     {   // Found a double quote, skip it and we're going down one more quote depth (quote-in-quote)
                         repositionChar( bufferPos++, ++skippedChars );
-                        quoteDepth = quoteDepth == 1 ? 2 : 1; // toggle between quote and quote-in-quote
                     }
                     else
                     {   // Found an ending quote, skip it and switch mode
@@ -160,7 +159,7 @@ public class BufferedCharSeeker implements CharSeeker, SourceTraceability
                 else if ( ch == BACK_SLASH )
                 {   // Legacy concern, support java style quote encoding
                     int nextCh = peekChar();
-                    if ( nextCh == quoteChar )
+                    if ( nextCh == quoteChar || nextCh == BACK_SLASH )
                     {   // Found a slash encoded quote
                         repositionChar( bufferPos++, ++skippedChars );
                     }
