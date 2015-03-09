@@ -31,19 +31,21 @@ import org.neo4j.unsafe.impl.batchimport.stats.Stat;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 
+import static org.junit.Assert.assertTrue;
+
 /**
  * A bit like a mocked {@link Step}, but easier to work with.
  */
 public class ControlledStep<T> implements Step<T>, StatsProvider
 {
-    public static Step<?> stepWithAverageOf( long avg )
+    public static ControlledStep<?> stepWithAverageOf( long avg )
     {
         ControlledStep<?> step = new ControlledStep<>( "test", true );
         step.setStat( Keys.avg_processing_time, avg );
         return step;
     }
 
-    public static Step<?> stepWithStats( Map<Key,Long> statistics )
+    public static ControlledStep<?> stepWithStats( Map<Key,Long> statistics )
     {
         ControlledStep<?> step = new ControlledStep<>( "test", true );
         for ( Map.Entry<Key,Long> statistic : statistics.entrySet() )
@@ -53,7 +55,7 @@ public class ControlledStep<T> implements Step<T>, StatsProvider
         return step;
     }
 
-    public static Step<?> stepWithStats( Object... statisticsAltKeyAndValue )
+    public static ControlledStep<?> stepWithStats( Object... statisticsAltKeyAndValue )
     {
         return stepWithStats( MapUtil.<Key,Long>genericMap( statisticsAltKeyAndValue ) );
     }
@@ -79,6 +81,13 @@ public class ControlledStep<T> implements Step<T>, StatsProvider
     public int numberOfProcessors()
     {
         return numberOfProcessors;
+    }
+
+    public ControlledStep<T> setNumberOfProcessors( int numberOfProcessors )
+    {
+        assertTrue( allowMultipleProcessors );
+        this.numberOfProcessors = numberOfProcessors;
+        return this;
     }
 
     @Override

@@ -31,6 +31,10 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import static org.neo4j.unsafe.impl.batchimport.staging.ControlledStep.stepWithStats;
+import static org.neo4j.unsafe.impl.batchimport.stats.Keys.avg_processing_time;
+import static org.neo4j.unsafe.impl.batchimport.stats.Keys.done_batches;
+
 public class DynamicProcessorAssignerTest
 {
     @Test
@@ -110,6 +114,30 @@ public class DynamicProcessorAssignerTest
         // THEN
         assertEquals( 1, aStep.numberOfProcessors() );
         assertEquals( 1, anotherStep.numberOfProcessors() );
+    }
+
+    @Test
+    public void shouldRemoveCPUsFromTooFastStepEvenIfThereIsAWayFaster() throws Exception
+    {
+        // The point is that not only the fastest step is subject to have processors removed,
+        // it's the relationship between all pairs of steps. This is important since the DPA has got
+        // a max permit count of processors to assign, so reclaiming unnecessary assignments can
+        // have those be assigned to a more appropriate step instead, where it will benefit the Stage more.
+
+        // GIVEN
+        Configuration config = movingAverageConfig( 10 );
+        DynamicProcessorAssigner assigner = new DynamicProcessorAssigner( config, 5 );
+        Step<?> wayFastest = stepWithStats( avg_processing_time, 0L, done_batches, 20L );
+        Step<?> fast =  spy( stepWithStats( avg_processing_time, 100L, done_batches, 20L ).setNumberOfProcessors( 3 ) );
+        Step<?> slow = stepWithStats( avg_processing_time, 200L, done_batches, 20L );
+        StageExecution[] execution = executionOf( config, slow, wayFastest, fast );
+        assigner.start( execution );
+
+        // WHEN
+        assigner.check( execution );
+
+        // THEN
+        verify( fast ).decrementNumberOfProcessors();
     }
 
     private Configuration movingAverageConfig( final int movingAverage )
