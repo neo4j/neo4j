@@ -29,9 +29,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 
 /**
  * Visits commands targeted towards the {@link NeoStore} and update corresponding stores.
@@ -49,7 +47,6 @@ public class NeoStoreTransactionApplier extends NeoCommandHandler.Adapter
     private final LockService lockService;
     private final LockGroup lockGroup;
     private final long transactionId;
-    private RelationshipHoles relationshipHoles;
 
     public NeoStoreTransactionApplier( NeoStore store, CacheAccessBackDoor cacheAccess,
                                        LockService lockService, LockGroup lockGroup, long transactionId )
@@ -73,12 +70,6 @@ public class NeoStoreTransactionApplier extends NeoCommandHandler.Adapter
         // getDynamicLabelRecords will contain even deleted records
         nodeStore.updateDynamicLabelRecords( command.getAfter().getDynamicLabelRecords() );
 
-        // Ideally we don't any cache invalidation in this "normal" transaction case, but upgraded dense
-        // nodes must me evicted here as well.
-        if ( nodeHasBeenUpgradedToDense( command ) )
-        {
-            cacheAccess.removeNodeFromCache( command.getKey() );
-        }
         return false;
     }
 
@@ -87,25 +78,6 @@ public class NeoStoreTransactionApplier extends NeoCommandHandler.Adapter
     {
         RelationshipRecord record = command.getRecord();
         neoStore.getRelationshipStore().updateRecord( record );
-
-        /*
-         * The pointers in record are like they were before this command was executed UNLESS this is the second
-         * time this command is executed (think recovery), where it might have been actually written out to disk
-         * so the fields are already -1. So we still need to check.
-         * We don't check for !inUse() though because that is implicit in the call of this method.
-         * The above is a hand waiving proof that the conditions that lead to the patchDeletedRelationshipNodes()
-         * in the if below are the same as in RelationshipCommand.execute() so it should be safe.
-         */
-        boolean relationshipHasBeenDeletedButNotPreviouslyAppliedToStore =
-                !record.inUse() && (record.getFirstNode() != -1 || record.getSecondNode() != -1);
-        if ( relationshipHasBeenDeletedButNotPreviouslyAppliedToStore )
-        {   // ... then we can use the fields in that record to patch the cache
-            if ( relationshipHoles == null )
-            {
-                relationshipHoles = new RelationshipHoles();
-            }
-            relationshipHoles.deleted( record );
-        }
         return false;
     }
 
@@ -203,23 +175,5 @@ public class NeoStoreTransactionApplier extends NeoCommandHandler.Adapter
     {
         neoStore.setGraphNextProp( command.getRecord().getNextProp() );
         return false;
-    }
-
-    @Override
-    public void apply()
-    {
-        if ( relationshipHoles != null )
-        {
-            relationshipHoles.apply( cacheAccess );
-        }
-    }
-
-    private boolean nodeHasBeenUpgradedToDense( NodeCommand command )
-    {
-        final NodeRecord before = command.getBefore();
-        final NodeRecord after = command.getAfter();
-
-        return before.inUse() && !before.isDense() &&
-               after.inUse() && after.isDense();
     }
 }

@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.util.TestLogger;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.warn;
@@ -76,19 +77,6 @@ public class TestGraphDatabaseConfigurationMigrator
                 equalTo( stringMap( "remote_shell_enabled", "false" ) ) );
         assertThat( migrator.apply( stringMap( "enable_remote_shell", "port=1234" ), StringLogger.DEV_NULL  ),
                 equalTo( stringMap( "remote_shell_enabled", "true","remote_shell_port","1234","remote_shell_read_only","false","remote_shell_name","shell" ) ) );
-    }
-
-    @Test
-    public void testGCRRenamedToHPC()
-    {
-        ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator(  );
-        TestLogger log = new TestLogger();
-
-        // When & Then
-        assertThat( migrator.apply( stringMap( "cache_type", "gcr" ), log ),
-                equalTo( stringMap( "cache_type", "hpc" ) ) );
-
-        log.assertAtLeastOnce( warn( "'gcr' cache type has been renamed to 'hpc', High Performance Cache." ) );
     }
 
     @Test

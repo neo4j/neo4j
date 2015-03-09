@@ -38,6 +38,7 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+
 import javax.management.Descriptor;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
@@ -67,7 +68,7 @@ public class JmxDocTest
     private static final String BEAN_NAME = "name";
     private static final List<String> QUERIES = Arrays.asList( new String[]{"org.neo4j:*"} );
     private static final String JAVADOC_URL = "link:javadocs/";
-    private static final int EXPECTED_NUMBER_OF_BEANS = 14;
+    private static final int EXPECTED_NUMBER_OF_BEANS = 12;
     private static final Set<String> EXCLUDES = new HashSet<String>()
     {
         {

@@ -66,6 +66,6 @@ class WithTest extends DocumentingTestBase {
       text = "You can match paths, limit to a certain number, and then match again using those paths as a base As well as any number of similar limited searches.",
       queryText = """match (n {name: "Anders"})--(m) with m order by m.name desc limit 1 match (m)--(o) return o.name""",
       optionalResultExplanation = """Starting at Anders, find all matching nodes, order by name descending and get the top result, then find all the nodes connected to that top result, and return their names.""",
-      assertions = (p) => assertEquals(List("Anders", "Bossman"), p.columnAs[String]("o.name").toList))
+      assertions = (p) => assertEquals(List("Bossman", "Anders"), p.columnAs[String]("o.name").toList))
   }
 }

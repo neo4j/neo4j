@@ -37,7 +37,6 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -52,6 +51,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
 import static org.neo4j.graphdb.Neo4jMatchers.getPropertyKeys;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
@@ -124,17 +124,11 @@ public class TestGraphProperties
         {
             assertThat( properties( db ), inTx( db, hasProperty( "key" + i ).withValue( values[i % values.length] ) ) );
         }
-        clearCache( db );
         for ( int i = 0; i < count; i++ )
         {
             assertThat( properties( db ), inTx( db, hasProperty( "key" + i ).withValue( values[i % values.length] ) ) );
         }
         db.shutdown();
-    }
-
-    private static void clearCache( GraphDatabaseAPI db )
-    {
-        db.getDependencyResolver().resolveDependency( Caches.class ).clear();;
     }
 
     @Test
@@ -154,7 +148,6 @@ public class TestGraphProperties
         tx.finish();
 
         assertThat( properties( db ), inTx( db, hasProperty( key ).withValue( array ) ) );
-        clearCache( db );
         assertThat( properties( db ), inTx( db, hasProperty( key ).withValue( array ) ) );
         db.shutdown();
     }

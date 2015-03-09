@@ -17,30 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.core;
+package org.neo4j.kernel.impl.api.store;
 
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.cache.Cache;
-import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.function.primitive.PrimitiveIntPredicate;
 
-/**
- * A class for holding cache objects so that reuse between sessions is possible
- * if the configuration stays the same. This helps when there's a cache which is
- * very expensive to create.
- *
- * @author Mattias Persson
- */
-public interface Caches
+public class SortedTypesPredicate implements PrimitiveIntPredicate
 {
-    void configure( CacheProvider cacheProvider, Config config );
+    private final int[] relTypes;
+    private int cursor;
 
-    Cache<NodeImpl> node();
+    public SortedTypesPredicate( int[] relTypes )
+    {
+        this.relTypes = relTypes;
+    }
 
-    Cache<RelationshipImpl> relationship();
-
-    void invalidate();
-
-    void clear();
-
-    CacheProvider getProvider();
+    @Override
+    public boolean accept( int value )
+    {
+        if ( cursor < relTypes.length && relTypes[cursor] == value )
+        {
+            cursor++;
+            return true;
+        }
+        return false;
+    }
 }

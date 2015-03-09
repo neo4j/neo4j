@@ -39,8 +39,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension;
-import org.neo4j.kernel.impl.cache.CacheProvider;
-import org.neo4j.kernel.impl.cache.SoftCacheProvider;
 import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.test.TargetDirectory;
 
@@ -205,7 +203,6 @@ public class PartialTransactionFailureIT
             state.addKernelExtensions( Arrays.asList(
                     new InMemoryIndexProviderFactory(),
                     new InMemoryLabelScanStoreExtension() ) );
-            state.setCacheProviders( Arrays.<CacheProvider>asList( new SoftCacheProvider() ) );
             return state.databaseDependencies();
         }
     }

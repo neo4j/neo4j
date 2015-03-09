@@ -19,11 +19,8 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
-
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -32,6 +29,10 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 
 public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
 {
@@ -139,7 +140,6 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         tx.close();
         tx = getGraphDb().beginTx();
         node1.delete();
-        clearCache();
         try
         {
             node1.createRelationshipTo( node2, MyRelTypes.TEST );
@@ -445,7 +445,6 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         catch ( IllegalStateException e )
         { // good
         }
-        clearCache();
         try
         {
             node1.getProperty( "key1" );
@@ -504,7 +503,6 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         catch ( IllegalStateException e )
         { // good
         }
-        clearCache();
         try
         {
             rel1.getProperty( "key1" );
@@ -537,7 +535,6 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         catch ( IllegalStateException e )
         { // good
         }
-        clearCache();
         try
         {
             node2.createRelationshipTo( node1, MyRelTypes.TEST );
@@ -549,18 +546,14 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
 
         assertEquals( rel2, node1.getSingleRelationship( MyRelTypes.TEST,
                 Direction.OUTGOING ) );
-        clearCache();
         assertEquals( rel2, node2.getSingleRelationship( MyRelTypes.TEST,
                 Direction.INCOMING ) );
 
-        clearCache();
         assertEquals( node1, rel1.getStartNode() );
-        clearCache();
         assertEquals( node2, rel2.getEndNode() );
         Node[] nodes = rel1.getNodes();
         assertEquals( node1, nodes[0] );
         assertEquals( node2, nodes[1] );
-        clearCache();
         assertEquals( node2, rel1.getOtherNode( node1 ) );
         rel2.delete();
         // will be marked for rollback so commit will throw exception

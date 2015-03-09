@@ -9,7 +9,6 @@ For additional configuration settings, see:
 
 * <<server-configuration>>
 * <<config-org.neo4j.shell.ShellSettings>>
-* <<config-org.neo4j.kernel.impl.cache.HighPerformanceCacheSettings>>
 * <<config-org.neo4j.kernel.ha.HaSettings>>
 * <<config-org.neo4j.cluster.ClusterSettings>>
 * <<config-org.neo4j.backup.OnlineBackupSettings>>

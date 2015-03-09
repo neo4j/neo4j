@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -39,10 +39,10 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
-import static java.lang.String.format;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+
+import static java.lang.String.format;
 
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
@@ -97,7 +97,6 @@ public class TestConcurrentModificationOfRelationshipChains
 
             tx.success();
         }
-        clearCaches();
         try ( Transaction tx = graphDb.beginTx() )
         {// make sure the first batch of relationships are loaded
             Iterator<Relationship> relationships = node1.getRelationships().iterator();
@@ -271,8 +270,6 @@ public class TestConcurrentModificationOfRelationshipChains
 
             tx.success();
         }
-        clearCaches();
-        // make sure the node is in cache, but some relationships not loaded
         try ( Transaction tx = graphDb.beginTx() )
         {
             for ( Relationship one : node.getRelationships( TYPE, Direction.OUTGOING ) )
@@ -320,11 +317,6 @@ public class TestConcurrentModificationOfRelationshipChains
         Thread t = new Thread( deleter );
         t.start();
         t.join();
-    }
-
-    private void clearCaches()
-    {
-        db.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( Caches.class ).clear();
     }
 
     private static List<String> stringsOf( Iterator<Relationship> rels )

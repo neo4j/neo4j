@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import org.junit.After;
 import org.junit.Before;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.KernelAPI;
@@ -39,7 +39,6 @@ import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.test.TestGraphDatabaseBuilder;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
 public abstract class KernelIntegrationTest
 {
@@ -130,7 +129,7 @@ public abstract class KernelIntegrationTest
         TestGraphDatabaseBuilder graphDatabaseFactory = (TestGraphDatabaseBuilder) new TestGraphDatabaseFactory().setFileSystem(fs).newImpermanentDatabaseBuilder();
 
         //noinspection deprecation
-        db = (GraphDatabaseAPI) graphDatabaseFactory.setConfig(GraphDatabaseSettings.cache_type,cacheType).newGraphDatabase();
+        db = (GraphDatabaseAPI) graphDatabaseFactory.newGraphDatabase();
         kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
         indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
         statementContextProvider = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );

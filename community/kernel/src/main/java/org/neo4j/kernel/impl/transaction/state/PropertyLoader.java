@@ -47,36 +47,45 @@ public class PropertyLoader
         this.propertyStore = neoStore.getPropertyStore();
     }
 
-    public void nodeLoadProperties( long nodeId, PropertyReceiver receiver )
+    public <RECEIVER extends PropertyReceiver> RECEIVER nodeLoadProperties( long nodeId, RECEIVER receiver )
     {
         NodeRecord nodeRecord = nodeStore.getRecord( nodeId );
         loadProperties( nodeRecord.getNextProp(), receiver );
+        return receiver;
     }
 
-    public void nodeLoadProperties( NodeRecord node, PrimitiveLongObjectMap<PropertyRecord> propertiesById, PropertyReceiver receiver )
+    public <RECEIVER extends PropertyReceiver> RECEIVER nodeLoadProperties( NodeRecord node,
+            PrimitiveLongObjectMap<PropertyRecord> propertiesById, RECEIVER receiver )
     {
-        Collection<PropertyRecord> chain = propertyStore.getPropertyRecordChain( node.getNextProp(), propertiesById );
-        receivePropertyChain( receiver, chain );
+        return loadProperties( node.getNextProp(), propertiesById, receiver );
     }
 
-    public void relLoadProperties( long relId, PropertyReceiver receiver )
+    public <RECEIVER extends PropertyReceiver> RECEIVER relLoadProperties( long relId, RECEIVER receiver )
     {
         RelationshipRecord relRecord = relationshipStore.getRecord( relId );
-        loadProperties( relRecord.getNextProp(), receiver );
+        return loadProperties( relRecord.getNextProp(), receiver );
     }
 
-    public void graphLoadProperties( PropertyReceiver records )
+    public <RECEIVER extends PropertyReceiver> RECEIVER graphLoadProperties( RECEIVER records )
     {
-        loadProperties( neoStore.asRecord().getNextProp(), records );
+        return loadProperties( neoStore.asRecord().getNextProp(), records );
     }
 
-    private void loadProperties( long nextProp, PropertyReceiver receiver )
+    private <RECEIVER extends PropertyReceiver> RECEIVER loadProperties( long nextProp, RECEIVER receiver )
     {
         Collection<PropertyRecord> chain = propertyStore.getPropertyRecordChain( nextProp );
-        receivePropertyChain( receiver, chain );
+        return receivePropertyChain( receiver, chain );
     }
 
-    private void receivePropertyChain( PropertyReceiver receiver, Collection<PropertyRecord> chain )
+    private <RECEIVER extends PropertyReceiver> RECEIVER loadProperties( long nextProp,
+            PrimitiveLongObjectMap<PropertyRecord> propertiesById, RECEIVER receiver )
+    {
+        Collection<PropertyRecord> chain = propertyStore.getPropertyRecordChain( nextProp, propertiesById );
+        return receivePropertyChain( receiver, chain );
+    }
+
+    private <RECEIVER extends PropertyReceiver> RECEIVER receivePropertyChain( RECEIVER receiver,
+            Collection<PropertyRecord> chain )
     {
         if ( chain != null )
         {
@@ -88,5 +97,6 @@ public class PropertyLoader
                 }
             }
         }
+        return receiver;
     }
 }

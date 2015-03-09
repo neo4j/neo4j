@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.util.Collection;
-import java.util.HashSet;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.util.Collection;
+import java.util.HashSet;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
@@ -35,10 +35,10 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static java.lang.String.valueOf;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+
+import static java.lang.String.valueOf;
 
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
@@ -79,11 +79,6 @@ public class TestRelationshipGrabSize
         tx.close();
     }
 
-    private void clearCache()
-    {
-        db.getDependencyResolver().resolveDependency( Caches.class ).clear();
-    }
-
     @Test
     public void deleteRelationshipFromNotFullyLoadedNode() throws Exception
     {
@@ -103,7 +98,6 @@ public class TestRelationshipGrabSize
         }
         finishTx( true );
 
-        clearCache();
 
         /*
          * Here node1 has grabSize+1 relationships. The first grabSize to be loaded will be
@@ -150,8 +144,6 @@ public class TestRelationshipGrabSize
         tx.success();
         tx.finish();
 
-        clearCache();
-
         tx = db.beginTx();
 
         node1.getRelationships().iterator().next().delete();
@@ -188,7 +180,6 @@ public class TestRelationshipGrabSize
         }
         finishTx( true );
         beginTx();
-        clearCache();
         for ( int i = 0; i < 50; i++ )
         {
             node1.createRelationshipTo( node2, TEST );
@@ -235,7 +226,6 @@ public class TestRelationshipGrabSize
             RelationshipType createType, RelationshipType deleteType, int expectedCount )
     {
         Transaction tx = db.beginTx();
-        clearCache();
 
         node1.createRelationshipTo( node2, createType );
         node1.getRelationships( deleteType ).iterator().next().delete();

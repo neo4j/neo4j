@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -29,11 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -41,11 +41,8 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
-import org.neo4j.kernel.impl.core.Caches;
-import org.neo4j.kernel.impl.store.StoreFailureException;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -677,7 +674,6 @@ public class TestIdGenerator
         tx.finish();
 
         // Verify by loading everything from scratch
-        ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( Caches.class ).clear();
         tx = db.beginTx();
         for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
         {

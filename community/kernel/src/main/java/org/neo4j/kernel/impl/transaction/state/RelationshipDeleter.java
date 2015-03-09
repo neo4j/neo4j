@@ -27,7 +27,9 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.RelIdArray;
+import org.neo4j.kernel.impl.util.DirectionWrapper;
+
+import static org.neo4j.kernel.impl.transaction.state.RelationshipCreator.relCount;
 
 public class RelationshipDeleter
 {
@@ -130,7 +132,7 @@ public class RelationshipDeleter
                             recordChanges.getRelGroupRecords() ).group();
             assert groupChange != null : "Relationship group " + rel.getType() + " should have existed here";
             RelationshipGroupRecord group = groupChange.forReadingData();
-            RelIdArray.DirectionWrapper dir = DirectionIdentifier.wrapDirection( rel, startNode );
+            DirectionWrapper dir = DirectionIdentifier.wrapDirection( rel, startNode );
             if ( rel.isFirstInFirstChain() )
             {
                 group = groupChange.forChangingData();
@@ -162,7 +164,7 @@ public class RelationshipDeleter
             RecordProxy<Long, RelationshipGroupRecord, Integer> groupChange =
                     relGroupGetter.getRelationshipGroup( endNode, rel.getType(),
                             recordChanges.getRelGroupRecords() ).group();
-            RelIdArray.DirectionWrapper dir = DirectionIdentifier.wrapDirection( rel, endNode );
+            DirectionWrapper dir = DirectionIdentifier.wrapDirection( rel, endNode );
             assert groupChange != null || loop : "Group has been deleted";
             if ( groupChange != null )
             {
@@ -201,14 +203,14 @@ public class RelationshipDeleter
         if ( nodeId == firstRel.getFirstNode() )
         {
             firstRel.setFirstPrevRel( firstInChain ?
-                    RelationshipChainLoader.relCount( nodeId, rel )-1 : RelationshipChainLoader.relCount( nodeId, firstRel ) - 1 );
+                    relCount( nodeId, rel )-1 : relCount( nodeId, firstRel ) - 1 );
             firstRel.setFirstInFirstChain( true );
         }
         if ( nodeId == firstRel.getSecondNode() )
         {
             firstRel.setSecondPrevRel( firstInChain ?
-                    RelationshipChainLoader.relCount( nodeId, rel )-1 :
-                    RelationshipChainLoader.relCount( nodeId, firstRel )-1 );
+                    relCount( nodeId, rel )-1 :
+                    relCount( nodeId, firstRel )-1 );
             firstRel.setFirstInSecondChain( true );
         }
         return false;

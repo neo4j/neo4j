@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.lang.reflect.Field;
-
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.lang.reflect.Field;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -56,7 +56,6 @@ public class TestShortStringProperties extends TestShortString
     public void commit()
     {
         tx.success();
-        graphdb.clearCache();
     }
 
     public void newTx()
@@ -208,7 +207,6 @@ public class TestShortStringProperties extends TestShortString
         {
             assertTrue( recordCount < dynamicRecordsInUse() );
         }
-        graphdb.clearCache();
         assertEquals( string, node.getProperty( "key" ) );
     }
 

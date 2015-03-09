@@ -21,10 +21,6 @@ package org.neo4j.kernel.api.properties;
 
 import java.util.Arrays;
 
-import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOfArray;
-import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
-import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
-
 class BooleanArrayProperty extends DefinedProperty
 {
     private final boolean[] value;
@@ -89,11 +85,5 @@ class BooleanArrayProperty extends DefinedProperty
     boolean hasEqualValue( DefinedProperty that )
     {
         return that instanceof BooleanArrayProperty && Arrays.equals( this.value, ((BooleanArrayProperty) that).value );
-    }
-
-    @Override
-    public int sizeOfObjectInBytesIncludingOverhead()
-    {
-        return withObjectOverhead( withReference( sizeOfArray( value ) ) );
     }
 }

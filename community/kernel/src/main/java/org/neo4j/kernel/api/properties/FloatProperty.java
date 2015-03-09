@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
-
 final class FloatProperty extends FloatingPointNumberProperty
 {
     private final float value;
@@ -41,11 +39,5 @@ final class FloatProperty extends FloatingPointNumberProperty
     public Float value()
     {
         return value;
-    }
-
-    @Override
-    public int sizeOfObjectInBytesIncludingOverhead()
-    {
-        return withObjectOverhead( 8 );
     }
 }

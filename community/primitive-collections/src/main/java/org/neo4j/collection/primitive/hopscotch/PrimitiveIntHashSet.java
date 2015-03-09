@@ -90,7 +90,7 @@ public class PrimitiveIntHashSet extends AbstractIntHopScotchCollection<Object> 
 
     private static class IntKeyEquality implements PrimitiveIntVisitor<RuntimeException>
     {
-        private PrimitiveIntHashSet other;
+        private final PrimitiveIntHashSet other;
         private boolean equal = true;
 
         public IntKeyEquality( PrimitiveIntHashSet that )
@@ -135,5 +135,26 @@ public class PrimitiveIntHashSet extends AbstractIntHopScotchCollection<Object> 
         {
             return hash;
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        final StringBuilder builder = new StringBuilder( "{" );
+        visitKeys( new PrimitiveIntVisitor<RuntimeException>()
+        {
+            private int count;
+            @Override
+            public boolean visited( int value ) throws RuntimeException
+            {
+                if ( count++ > 0 )
+                {
+                    builder.append( "," );
+                }
+                builder.append( value );
+                return false;
+            }
+        } );
+        return builder.append( "}" ).toString();
     }
 }

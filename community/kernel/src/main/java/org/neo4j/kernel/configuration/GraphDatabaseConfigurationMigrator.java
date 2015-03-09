@@ -156,9 +156,6 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
             }
         } );
 
-        add( new ConfigValueChanged( "cache_type", "gcr", "hpc",
-                "'gcr' cache type has been renamed to 'hpc', High Performance Cache." ));
-
         add( new SpecificPropertyMigration("neostore.nodestore.db.mapped_memory",
                 "The neostore.*.db.mapped_memory settings have been replaced by the single '" +
                 PAGECACHE_MEMORY + "'. The sum of the old configuration will be used as the" +

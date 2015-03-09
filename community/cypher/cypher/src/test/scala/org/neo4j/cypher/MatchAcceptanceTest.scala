@@ -247,7 +247,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       "match (n)-[r]->(x) where type(r) = 'KNOWS' OR type(r) = 'HATES' return r"
     )
 
-    result.columnAs("r").toList should equal(List(r1, r2))
+    result.columnAs("r").toList should equal(List(r2, r1))
   }
 
   test("should handle OR in the WHERE clause") {

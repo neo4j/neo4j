@@ -50,7 +50,6 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.api.store.PersistenceCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.LockGroup;
@@ -132,12 +131,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     // State
     private final TransactionRecordState recordState;
     private final CountsRecordState counts = new CountsRecordState();
-    private final RecordStateForCacheAccessor recordStateForCache;
     // For committing
     private final TransactionHeaderInformationFactory headerInformationFactory;
     private final TransactionCommitProcess commitProcess;
     private final TransactionMonitor transactionMonitor;
-    private final PersistenceCache persistenceCache;
     private final StoreReadLayer storeLayer;
     private final Clock clock;
     private final TransactionToRecordStateVisitor txStateToRecordStateVisitor = new TransactionToRecordStateVisitor();
@@ -165,14 +162,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             IndexingService indexService,
                                             UpdateableSchemaState schemaState,
                                             TransactionRecordState recordState,
-                                            RecordStateForCacheAccessor recordStateForCache,
                                             SchemaIndexProviderMap providerMap, NeoStore neoStore,
                                             Locks.Client locks, TransactionHooks hooks,
                                             ConstraintIndexCreator constraintIndexCreator,
                                             TransactionHeaderInformationFactory headerInformationFactory,
                                             TransactionCommitProcess commitProcess,
                                             TransactionMonitor transactionMonitor,
-                                            PersistenceCache persistenceCache,
                                             StoreReadLayer storeLayer,
                                             LegacyIndexTransactionState legacyIndexTransactionState,
                                             Pool<KernelTransactionImplementation> pool,
@@ -184,7 +179,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.labelScanStore = labelScanStore;
         this.indexService = indexService;
         this.recordState = recordState;
-        this.recordStateForCache = recordStateForCache;
         this.providerMap = providerMap;
         this.schemaState = schemaState;
         this.hooks = hooks;
@@ -193,7 +187,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.headerInformationFactory = headerInformationFactory;
         this.commitProcess = commitProcess;
         this.transactionMonitor = transactionMonitor;
-        this.persistenceCache = persistenceCache;
         this.storeLayer = storeLayer;
         this.legacyIndexTransactionState = new CachingLegacyIndexTransactionState( legacyIndexTransactionState );
         this.pool = pool;
@@ -500,11 +493,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         // Commit the transaction
                         commitProcess.commit( transactionRepresentation, lockGroup, commitEvent );
                     }
-
-                    if ( hasTxStateWithChanges() )
-                    {
-                        persistenceCache.apply( txState, recordStateForCache );
-                    }
                 }
             }
             success = true;
@@ -553,11 +541,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         storeLayer.releaseRelationship( id );
                     }
                 } );
-            }
-
-            if ( hasTxStateWithChanges() )
-            {
-                persistenceCache.invalidate( txState );
             }
         }
         finally

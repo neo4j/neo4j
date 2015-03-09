@@ -50,8 +50,6 @@ public class GraphTransactionRule
     protected void after()
     {
         success();
-
-        database.clearCache();
     }
 
     public Transaction current()

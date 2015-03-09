@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.properties;
 
 import org.neo4j.helpers.ObjectUtil;
-import org.neo4j.kernel.impl.cache.SizeOfObject;
 
 /**
  * Base class for properties that have a value.
@@ -40,7 +39,7 @@ import org.neo4j.kernel.impl.cache.SizeOfObject;
  * the (unused) area. Added members after that will be appended after that. The total space of the object
  * will be aligned to whole 8 bytes.
  */
-public abstract class DefinedProperty extends Property implements SizeOfObject
+public abstract class DefinedProperty extends Property
 {
     @Override
     public boolean isDefined()
@@ -120,9 +119,9 @@ public abstract class DefinedProperty extends Property implements SizeOfObject
             {
                 if ( (NON_DOUBLE_LONG & in) == NON_DOUBLE_LONG ) // the high order bits are only sign bits
                 { // no loss of precision if converting the long to a double, so it's safe to compare as double
-                    return fpn == (double) in;
+                    return fpn == in;
                 }
-                else if ( fpn < (double) Long.MIN_VALUE )
+                else if ( fpn < Long.MIN_VALUE )
                 { // the double is too big to fit in a long, they cannot be equal
                     return false;
                 }
@@ -138,9 +137,9 @@ public abstract class DefinedProperty extends Property implements SizeOfObject
             {
                 if ( (NON_DOUBLE_LONG & in) == 0 ) // the high order bits are only sign bits
                 { // no loss of precision if converting the long to a double, so it's safe to compare as double
-                    return fpn == (double) in;
+                    return fpn == in;
                 }
-                else if ( fpn > (double) Long.MAX_VALUE )
+                else if ( fpn > Long.MAX_VALUE )
                 { // the double is too big to fit in a long, they cannot be equal
                     return false;
                 }

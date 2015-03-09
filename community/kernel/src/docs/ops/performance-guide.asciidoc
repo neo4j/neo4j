@@ -8,10 +8,8 @@ This is the Neo4j performance guide. It will attempt to give you guidance on how
 == Try this first ==
 
 The first thing is to make sure the JVM is running well and not spending too much 
-time in garbage collection. Monitoring heap usage of an application that uses Neo4j 
-can be a bit confusing since Neo4j will increase the size of caches if there is 
-available memory and decrease if the heap is getting full. The goal is to have a 
-large enough heap so heavy/peak load will not result in so called GC trashing 
+time in garbage collection. The goal is to have a large enough heap so heavy/peak
+load will not result in so called GC trashing 
 (performance can drop as much as two orders of a magnitude when this happens).
 
 Start the JVM with +-server+ flag and +-Xmx<good sized heap>+ 
@@ -37,11 +35,6 @@ contain an array larger than a few elements or a long string such values are loa
 on demand when requesting them individually. Similarly, relationships of a node will
 only be loaded the first time they are requested for that node.
 
-Nodes and relationships are cached using LRU caches. If you (for some strange reason) 
-only work with nodes the relationship cache will become smaller and smaller while the 
-node cache is allowed to grow (if needed). Working with many relationships and few nodes 
-results in a bigger relationship cache and smaller node cache. 
-
 The Neo4j API specification does not say anything about order regarding 
 relationships so invoking `Node.getRelationships()` 
 may return the relationships in a different order than the previous invocation. 
@@ -65,10 +58,10 @@ persistence media used. Better disks equals better performance.
 If you have multiple disks or persistence media available it may be a 
 good idea to split the store files and transaction logs across those disks. 
 Having the store files running on disks with low seek time can do wonders for 
-non-cached read operations. Today a typical mechanical drive has an average 
+read operations. Today a typical mechanical drive has an average 
 seek time of about 5ms, this can cause a query or traversal to be very slow 
-when the available amount of RAM is too small or the configuration for caches and memory mapping
-is bad. A new good SATA enabled SSD has an average seek time of <100 microseconds 
+when the amount of RAM assigned to the page cache is too small.
+A new good SATA enabled SSD has an average seek time of <100 microseconds 
 meaning those scenarios will execute at least 50 times faster. 
 
 To avoid hitting disk you need more RAM. On a standard mechanical drive you 
@@ -80,8 +73,8 @@ invest in a good SSD you will be able to handle much larger graphs on less RAM.
 Use tools like +vmstat+ or 
 equivalent to gather information when your application is running. If you have high I/O 
 waits and not that many blocks going out/in to disks when running write/read 
-transactions it's a sign that you need to tweak your Java heap, Neo4j cache 
-and memory mapping settings (maybe even get more RAM or better disks).
+transactions it's a sign that you need to tweak your Java heap or amount of RAM assigned to the page cache,
+maybe even get more RAM or better disks.
 
 === Write performance ===
 
@@ -125,9 +118,7 @@ Make sure to read <<linux-performance-guide>> as well for more specific informat
 
 While normally building applications and ``always assume the graph is in memory'', 
 sometimes it is necessary to optimize certain performance critical sections. 
-Neo4j adds a small overhead even if the node, relationship or property in question 
-is cached compared to in-memory data structures. If this becomes an 
-issue, use a profiler to find these hot spots and then add your own second-level 
+If this becomes an issue, use a profiler to find these hot spots and then add your own second-level 
 caching. We believe second-level caching should be avoided to greatest extent 
 possible since it will force you to take care of invalidation which sometimes 
 can be hard. But when everything else fails you have to use it so here is an 

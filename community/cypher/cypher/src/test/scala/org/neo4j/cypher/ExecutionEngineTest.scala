@@ -229,7 +229,7 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     val result = execute("match n-[r]->x where id(n) = 0 return type(r)")
 
-    result.columnAs[String]("type(r)").toList should equal(List("KNOWS", "HATES"))
+    result.columnAs[String]("type(r)").toList should equal(List("HATES", "KNOWS"))
   }
 
   test("shouldReturnPathLength") {

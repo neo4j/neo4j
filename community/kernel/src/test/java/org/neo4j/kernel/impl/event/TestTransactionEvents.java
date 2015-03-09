@@ -43,10 +43,8 @@ import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
@@ -58,9 +56,9 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cache_type;
 
 public class TestTransactionEvents
 {
@@ -382,11 +380,9 @@ public class TestTransactionEvents
         try ( Transaction tx = db.beginTx() )
         {
             GraphDatabaseAPI dbApi = dbRule.getGraphDatabaseAPI();
-            dbApi.getDependencyResolver().resolveDependency( Caches.class ).clear();
             rel.delete();
             node1.delete();
             node2.delete();
-            dbApi.getDependencyResolver().resolveDependency( Caches.class ).clear();
             tx.success();
         }
         assertEquals( "stringvalue", handler.nodeProps.get( "test1" ) );
@@ -925,12 +921,5 @@ public class TestTransactionEvents
     }
 
     @Rule
-    public final DatabaseRule dbRule = new ImpermanentDatabaseRule()
-    {
-        @Override
-        protected void configure( GraphDatabaseBuilder builder )
-        {
-            builder.setConfig( cache_type, "none" );
-        }
-    };
+    public final DatabaseRule dbRule = new ImpermanentDatabaseRule();
 }

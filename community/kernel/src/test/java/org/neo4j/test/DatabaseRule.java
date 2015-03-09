@@ -38,7 +38,6 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Provider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -275,15 +274,6 @@ public abstract class DatabaseRule extends ExternalResource
             database = null;
             statementProvider = null;
         }
-    }
-
-    public void clearCache()
-    {
-        NeoStoreDataSource dataSource =
-                getGraphDatabaseAPI().getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
-
-        dataSource.getNodeCache().clear();
-        dataSource.getRelationshipCache().clear();
     }
 
     public <T> T resolveDependency( Class<T> type )

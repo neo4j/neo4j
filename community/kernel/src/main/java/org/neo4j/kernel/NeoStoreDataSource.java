@@ -75,20 +75,13 @@ import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.store.CacheLayer;
 import org.neo4j.kernel.impl.api.store.DiskLayer;
-import org.neo4j.kernel.impl.api.store.PersistenceCache;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
-import org.neo4j.kernel.impl.cache.AutoLoadingCache;
 import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
-import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
-import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
-import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
-import org.neo4j.kernel.impl.core.RelationshipImpl;
-import org.neo4j.kernel.impl.core.RelationshipLoader;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
@@ -138,7 +131,6 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContextSupplier;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.transaction.state.RecoveryVisitor;
-import org.neo4j.kernel.impl.transaction.state.RelationshipChainLoader;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -156,8 +148,6 @@ import org.neo4j.kernel.monitoring.tracing.Tracers;
 
 import static org.neo4j.helpers.collection.Iterables.toList;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.state.CacheLoaders.nodeLoader;
-import static org.neo4j.kernel.impl.transaction.state.CacheLoaders.relationshipLoader;
 
 public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexProviders
 {
@@ -184,15 +174,9 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
     {
         UpdateableSchemaState updateableSchemaState();
 
-        PersistenceCache persistenceCache();
-
         CacheAccessBackDoor cacheAccess();
 
         SchemaCache schemaCache();
-
-        Cache<NodeImpl> nodeCache();
-
-        Cache<RelationshipImpl> relationshipCache();
     }
 
     private interface IndexingModule
@@ -319,7 +303,6 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
     private final PhysicalLogFile.Monitor physicalLogMonitor;
     private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
     private final StartupStatisticsProvider startupStatistics;
-    private final Caches cacheProvider;
     private final NodeManager nodeManager;
     private final CommitProcessFactory commitProcessFactory;
     private final PageCache pageCache;
@@ -372,7 +355,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
             KernelHealth kernelHealth, PhysicalLogFile.Monitor physicalLogMonitor,
             TransactionHeaderInformationFactory transactionHeaderInformationFactory,
             StartupStatisticsProvider startupStatistics,
-            Caches cacheProvider, NodeManager nodeManager, Guard guard,
+            NodeManager nodeManager, Guard guard,
             IndexConfigStore indexConfigStore, CommitProcessFactory commitProcessFactory,
             PageCache pageCache,
             Monitors monitors,
@@ -397,7 +380,6 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
         this.physicalLogMonitor = physicalLogMonitor;
         this.transactionHeaderInformationFactory = transactionHeaderInformationFactory;
         this.startupStatistics = startupStatistics;
-        this.cacheProvider = cacheProvider;
         this.nodeManager = nodeManager;
         this.guard = guard;
         this.indexConfigStore = indexConfigStore;
@@ -483,7 +465,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
                     neoStoreModule; // TODO The only reason this is here is because of the provider-stuff for
                     // DiskLayer. Remove when possible
 
-            CacheModule cacheModule = buildCaches( neoStoreModule.neoStore(), cacheProvider, nodeManager,
+            CacheModule cacheModule = buildCaches( neoStoreModule.neoStore(), nodeManager,
                     labelTokens, relationshipTypeTokens, propertyKeyTokenHolder );
 
             IndexingModule indexingModule = buildIndexing( config, scheduler, indexProvider, lockService,
@@ -491,7 +473,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
                     logging, indexingServiceMonitor, neoStoreModule.neoStore(), cacheModule.updateableSchemaState() );
 
             StoreLayerModule storeLayerModule = buildStoreLayer( config, neoStoreModule.neoStore(),
-                    cacheModule.persistenceCache(), propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
+                    propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
                     indexingModule.indexingService(), cacheModule.schemaCache() );
 
             TransactionLogModule transactionLogModule =
@@ -510,7 +492,6 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
                     indexingModule.indexUpdatesValidator(),
                     storeLayerModule.storeLayer(),
                     cacheModule.updateableSchemaState(), indexingModule.labelScanStore(),
-                    cacheModule.persistenceCache(),
                     indexingModule.schemaIndexProviderMap() );
 
 
@@ -604,9 +585,8 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
         };
     }
 
-    private CacheModule buildCaches( final NeoStore neoStore, Caches cacheProvider, NodeManager nodeManager,
-            LabelTokenHolder
-                    labelTokens, RelationshipTypeTokenHolder relationshipTypeTokens,
+    private CacheModule buildCaches( final NeoStore neoStore, NodeManager nodeManager,
+            LabelTokenHolder labelTokens, RelationshipTypeTokenHolder relationshipTypeTokens,
             PropertyKeyTokenHolder propertyKeyTokenHolder )
     {
         final UpdateableSchemaState updateableSchemaState = new KernelSchemaStateStore( logging.getMessagesLog(
@@ -614,17 +594,8 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
 
         final SchemaCache schemaCache = new SchemaCache( Collections.<SchemaRule>emptyList() );
 
-        final AutoLoadingCache<NodeImpl> nodeCache = new AutoLoadingCache<>( cacheProvider.node(),
-                nodeLoader( neoStore.getNodeStore() ) );
-        final AutoLoadingCache<RelationshipImpl> relationshipCache =
-                new AutoLoadingCache<>( cacheProvider.relationship(),
-                        relationshipLoader( neoStore.getRelationshipStore() ) );
-        RelationshipLoader relationshipLoader = new RelationshipLoader(
-                lockService, relationshipCache, new RelationshipChainLoader( neoStore ) );
-        final PersistenceCache persistenceCache = new PersistenceCache( nodeCache, relationshipCache, nodeManager,
-                relationshipLoader, propertyKeyTokenHolder, relationshipTypeTokens, labelTokens );
         final CacheAccessBackDoor cacheAccess = new BridgingCacheAccess( schemaCache, updateableSchemaState,
-                persistenceCache );
+                propertyKeyTokenHolder, relationshipTypeTokens, labelTokens );
 
         life.add( new LifecycleAdapter()
         {
@@ -637,7 +608,6 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
             @Override
             public void stop() throws Throwable
             {
-
             }
         } );
 
@@ -656,27 +626,9 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
             }
 
             @Override
-            public PersistenceCache persistenceCache()
-            {
-                return persistenceCache;
-            }
-
-            @Override
             public CacheAccessBackDoor cacheAccess()
             {
                 return cacheAccess;
-            }
-
-            @Override
-            public Cache<NodeImpl> nodeCache()
-            {
-                return nodeCache;
-            }
-
-            @Override
-            public Cache<RelationshipImpl> relationshipCache()
-            {
-                return relationshipCache;
             }
         };
     }
@@ -739,7 +691,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
         };
     }
 
-    private StoreLayerModule buildStoreLayer( Config config, final NeoStore neoStore, PersistenceCache persistenceCache,
+    private StoreLayerModule buildStoreLayer( Config config, final NeoStore neoStore,
             PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokens,
             RelationshipTypeTokenHolder relationshipTypeTokens,
             IndexingService indexingService,
@@ -755,18 +707,9 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
         };
 
         final StoreReadLayer storeLayer;
-        if ( config.get( GraphDatabaseSettings.cache_type ).equals( CacheLayer.EXPERIMENTAL_OFF ) )
-        {
-            storeLayer = new DiskLayer( propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
-                    new SchemaStorage( neoStore.getSchemaStore() ), neoStoreProvider, indexingService );
-        }
-        else
-        {
-            storeLayer = new CacheLayer( new DiskLayer( propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
-                    new SchemaStorage( neoStore.getSchemaStore() ), neoStoreProvider, indexingService ),
-                    persistenceCache, indexingService, schemaCache
-            );
-        }
+        storeLayer = new CacheLayer( new DiskLayer( propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
+                new SchemaStorage( neoStore.getSchemaStore() ), neoStoreProvider, indexingService ),
+                indexingService, schemaCache );
 
         return new StoreLayerModule()
         {
@@ -956,7 +899,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
             NeoStore neoStore, TransactionRepresentationStoreApplier storeApplier,
             IndexingService indexingService, IndexUpdatesValidator indexUpdatesValidator, StoreReadLayer storeLayer,
             UpdateableSchemaState updateableSchemaState, LabelScanStore labelScanStore,
-            PersistenceCache persistenceCache, SchemaIndexProviderMap schemaIndexProviderMap )
+            SchemaIndexProviderMap schemaIndexProviderMap )
     {
         final TransactionCommitProcess transactionCommitProcess =
                 commitProcessFactory.create( logicalTransactionStore, kernelHealth, neoStore, storeApplier,
@@ -995,7 +938,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
                 life.add( new KernelTransactions( neoStoreTransactionContextSupplier,
                         neoStore, locks, integrityValidator, constraintIndexCreator, indexingService, labelScanStore,
                         statementOperations, updateableSchemaState, schemaWriteGuard, schemaIndexProviderMap,
-                        transactionHeaderInformationFactory, persistenceCache, storeLayer, transactionCommitProcess,
+                        transactionHeaderInformationFactory, storeLayer, transactionCommitProcess,
                         indexConfigStore,
                         legacyIndexProviderLookup, hooks, transactionMonitor, life, tracers ) );
 
@@ -1178,16 +1121,6 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
         {
             LockSupport.parkNanos( 1_000_000 ); // 1 ms
         }
-    }
-
-    public Cache<NodeImpl> getNodeCache()
-    {
-        return cacheModule.nodeCache();
-    }
-
-    public Cache<RelationshipImpl> getRelationshipCache()
-    {
-        return cacheModule.relationshipCache();
     }
 
     public DependencyResolver getDependencyResolver()

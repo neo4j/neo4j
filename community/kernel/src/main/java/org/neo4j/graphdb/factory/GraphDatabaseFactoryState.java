@@ -23,10 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -36,7 +34,6 @@ public class GraphDatabaseFactoryState
 {
     private final List<Class<?>> settingsClasses;
     private final List<KernelExtensionFactory<?>> kernelExtensions;
-    private final List<CacheProvider> cacheProviders;
     private Logging logging;
     private Monitors monitors;
 
@@ -48,14 +45,12 @@ public class GraphDatabaseFactoryState
         {
             kernelExtensions.add( factory );
         }
-        cacheProviders = Iterables.toList( Service.load( CacheProvider.class ) );
     }
 
     public GraphDatabaseFactoryState( GraphDatabaseFactoryState previous )
     {
         settingsClasses = new ArrayList<>( previous.settingsClasses );
         kernelExtensions = new ArrayList<>( previous.kernelExtensions );
-        cacheProviders = new ArrayList<>( previous.cacheProviders );
         monitors = previous.monitors;
         logging = previous.logging;
         monitors = previous.monitors;
@@ -80,20 +75,6 @@ public class GraphDatabaseFactoryState
         }
     }
 
-    public List<CacheProvider> getCacheProviders()
-    {
-        return cacheProviders;
-    }
-
-    public void setCacheProviders( Iterable<CacheProvider> newCacheProviders )
-    {
-        cacheProviders.clear();
-        for ( CacheProvider newCacheProvider : newCacheProviders )
-        {
-            cacheProviders.add( newCacheProvider );
-        }
-    }
-
     public void setLogging( Logging logging )
     {
         this.logging = logging;
@@ -110,7 +91,6 @@ public class GraphDatabaseFactoryState
                 monitors(monitors).
                 logging(logging).
                 settingsClasses(settingsClasses).
-                kernelExtensions(kernelExtensions).
-                cacheProviders(cacheProviders);
+                kernelExtensions(kernelExtensions);
     }
 }

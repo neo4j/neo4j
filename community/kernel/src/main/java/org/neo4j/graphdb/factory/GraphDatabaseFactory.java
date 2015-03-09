@@ -26,7 +26,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -140,26 +139,6 @@ public class GraphDatabaseFactory
     public GraphDatabaseFactory setKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
     {
         getCurrentState().setKernelExtensions( newKernelExtensions );
-        return this;
-    }
-
-
-    /**
-     * @deprecated Manipulating cache providers is deprecated and will be moved to internal components.
-     */
-    @Deprecated
-    public List<CacheProvider> getCacheProviders()
-    {
-        return getCurrentState().getCacheProviders();
-    }
-
-    /**
-     * @deprecated Manipulating cache providers is deprecated and will be moved to internal components.
-     */
-    @Deprecated
-    public GraphDatabaseFactory setCacheProviders( Iterable<CacheProvider> newCacheProviders )
-    {
-        getCurrentState().setCacheProviders( newCacheProviders );
         return this;
     }
 
