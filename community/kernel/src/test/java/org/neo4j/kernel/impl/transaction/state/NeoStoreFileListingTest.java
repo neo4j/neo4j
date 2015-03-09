@@ -114,7 +114,7 @@ public class NeoStoreFileListingTest
         NeoStoreFileListing fileListing = newFileListing();
 
         // When
-        ResourceIterator<File> result = fileListing.listStoreFiles();
+        ResourceIterator<File> result = fileListing.listStoreFiles( false );
 
         // Then
         assertThat( asSetOfPaths( result ), equalTo( asSet(
@@ -146,7 +146,7 @@ public class NeoStoreFileListingTest
         NeoStoreFileListing fileListing = newFileListing();
 
         // When
-        ResourceIterator<File> result = fileListing.listStoreFiles();
+        ResourceIterator<File> result = fileListing.listStoreFiles( true );
 
         // Then
         Set<String> pathSet = asSetOfPaths( result );
@@ -166,7 +166,11 @@ public class NeoStoreFileListingTest
                 "neostore.relationshiptypestore.db",
                 "neostore.relationshiptypestore.db.names",
                 "neostore.schemastore.db",
-                "neostore" ) ) );
+                "neostore",
+                PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "0",
+                PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "1",
+                PhysicalLogFile.DEFAULT_NAME + PhysicalLogFile.DEFAULT_VERSION_SUFFIX + "2"
+        ) ) );
     }
 
     @Test
@@ -179,7 +183,7 @@ public class NeoStoreFileListingTest
         NeoStoreFileListing fileListing = newFileListing();
 
         // When
-        ResourceIterator<File> result = fileListing.listStoreFiles();
+        ResourceIterator<File> result = fileListing.listStoreFiles( false );
 
         // Then
         Set<String> pathSet = asSetOfPaths( result );
@@ -212,7 +216,7 @@ public class NeoStoreFileListingTest
         NeoStoreFileListing fileListing = newFileListing();
 
         // When
-        ResourceIterator<File> result = fileListing.listStoreFiles();
+        ResourceIterator<File> result = fileListing.listStoreFiles( false );
 
         // Then
         assertThat( asSetOfPaths( result ), equalTo( asSet(
@@ -247,7 +251,7 @@ public class NeoStoreFileListingTest
         ResourceIterator<File> indexSnapshot = indexFilesAre( new String[]{"schema/index/my.index"} );
         NeoStoreFileListing fileListing = newFileListing();
 
-        ResourceIterator<File> result = fileListing.listStoreFiles();
+        ResourceIterator<File> result = fileListing.listStoreFiles( false );
 
         // When
         result.close();

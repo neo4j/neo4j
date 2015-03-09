@@ -55,10 +55,10 @@ public class NeoStoreFileListing
         this.legacyIndexProviders = legacyIndexProviders;
     }
 
-    public ResourceIterator<File> listStoreFiles() throws IOException
+    public ResourceIterator<File> listStoreFiles( boolean includeLogs ) throws IOException
     {
         Collection<File> files = new ArrayList<>();
-        gatherNeoStoreFiles( files );
+        gatherNeoStoreFiles( files, includeLogs );
         Resource labelScanStoreSnapshot = gatherLabelScanStoreFiles( files );
         Resource schemaIndexSnapshots = gatherSchemaIndexFiles( files );
         Resource legacyIndexSnapshots = gatherLegacyIndexFiles( files );
@@ -99,7 +99,7 @@ public class NeoStoreFileListing
         return snapshot;
     }
 
-    private void gatherNeoStoreFiles( final Collection<File> targetFiles )
+    private void gatherNeoStoreFiles( final Collection<File> targetFiles, boolean includeTransactionLogs )
     {
         File neostoreFile = null;
         for ( File dbFile : nonNull( storeDir.listFiles() ) )
@@ -112,6 +112,10 @@ public class NeoStoreFileListing
                     neostoreFile = dbFile;
                 }
                 else if ( neoStoreFile( name ) )
+                {
+                    targetFiles.add( dbFile );
+                }
+                else if ( includeTransactionLogs && transactionLogFile( name ) )
                 {
                     targetFiles.add( dbFile );
                 }
@@ -134,6 +138,11 @@ public class NeoStoreFileListing
 
         return name.startsWith( NeoStore.DEFAULT_NAME ) &&
                 !name.startsWith( NeoStore.DEFAULT_NAME + ".transaction" );
+    }
+
+    private boolean transactionLogFile( String name )
+    {
+        return name.startsWith( NeoStore.DEFAULT_NAME + ".transaction" ) && !name.endsWith( ".active" );
     }
 
     private static final class MultiResource implements Resource

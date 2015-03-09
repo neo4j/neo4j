@@ -1073,8 +1073,12 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
     }
 
     @Override
-    public void stop()
+    public synchronized void stop()
     {
+        if ( !life.isRunning() )
+        {
+            return;
+        }
         transactionLogModule.logRotationControl().awaitAllTransactionsClosed();
         transactionLogModule.logRotationControl().forceEverything();
         /*
@@ -1132,9 +1136,9 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
         return kernelModule.kernelAPI();
     }
 
-    public ResourceIterator<File> listStoreFiles() throws IOException
+    public ResourceIterator<File> listStoreFiles( boolean includeLogs ) throws IOException
     {
-        return kernelModule.fileListing().listStoreFiles();
+        return kernelModule.fileListing().listStoreFiles( includeLogs );
     }
 
     public void registerDiagnosticsWith( DiagnosticsManager manager )

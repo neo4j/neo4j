@@ -66,7 +66,7 @@ public class StoreCopyServer
     /**
      * @return a {@link RequestContext} specifying at which point the store copy started.
      */
-    public RequestContext flushStoresAndStreamStoreFiles( StoreWriter writer )
+    public RequestContext flushStoresAndStreamStoreFiles( StoreWriter writer, boolean includeLogs )
     {
         try
         {
@@ -75,7 +75,7 @@ public class StoreCopyServer
             ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( 1024 * 1024 );
 
             // Copy the store files
-            try ( ResourceIterator<File> files = dataSource.listStoreFiles() )
+            try ( ResourceIterator<File> files = dataSource.listStoreFiles( includeLogs ) )
             {
                 while ( files.hasNext() )
                 {
