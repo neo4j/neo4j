@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
-import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.StringHelper
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.StringHelper
 
 class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
 
@@ -349,7 +349,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
 
   test("should give nice error when setting a property to a illegal value") {
     expectError(
-      "CREATE (a) SET a.foo = [{x: 1}]",
+      "CYPHER 2.3 CREATE (a) SET a.foo = [{x: 1}]",
       "Property values can only be of primitive types or arrays thereof")
   }
 

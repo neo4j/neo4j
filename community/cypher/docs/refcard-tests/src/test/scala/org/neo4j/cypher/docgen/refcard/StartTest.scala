@@ -21,7 +21,7 @@ package org.neo4j.cypher.docgen.refcard
 
 import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.docgen.RefcardTest
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 
 class StartTest extends RefcardTest with QueryStatisticsTestSupport {
   val graphDescription = List("ROOT LINK A", "A LINK B", "B LINK C", "C LINK ROOT")
@@ -98,7 +98,7 @@ START n=node:nodeIndexName({query})
 
 RETURN n###
 
-Query the index using a full Lucene query. 
+Query the index using a full Lucene query.
 A query can look like this: "name:Bob"
 
 */

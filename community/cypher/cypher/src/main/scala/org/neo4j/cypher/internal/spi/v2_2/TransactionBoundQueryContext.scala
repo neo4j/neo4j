@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.spi.v2_2
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compiler.v2_2.{EntityNotFoundException, FailedIndexException}
 import org.neo4j.cypher.internal.compiler.v2_2.spi._
-import org.neo4j.cypher.internal.helpers.JavaConversionSupport
-import org.neo4j.cypher.internal.helpers.JavaConversionSupport._
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport
+import JavaConversionSupport._
 import org.neo4j.graphdb.DynamicRelationshipType._
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseSettings

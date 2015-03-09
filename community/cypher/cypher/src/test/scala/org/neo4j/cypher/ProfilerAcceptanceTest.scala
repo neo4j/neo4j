@@ -20,11 +20,11 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
-import org.neo4j.cypher.internal.compiler.v2_2
-import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.StringHelper.RichString
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.Argument
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
+import org.neo4j.cypher.internal.compiler.v2_3
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.StringHelper.RichString
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Argument
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
 import org.neo4j.cypher.internal.helpers.TxCounts
 
 class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFileTestSupport with NewPlannerTestSupport {
@@ -34,7 +34,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     relate( createNode(), createNode(), "FOO")
 
     //WHEN
-    val result = profile("cypher 2.2 planner cost match n where n-[:FOO]->() return *")
+    val result = profile("cypher 2.3 planner cost match n where n-[:FOO]->() return *")
 
     //THEN
     assertRows(1)(result)("SemiApply")
@@ -54,7 +54,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     result.executionPlanDescription().toString should include("_db_hits")
   }
 
-  test("EXPLAIN for Cypher 2.2") {
+  test("EXPLAIN for Cypher 2.3") {
     val result = eengine.execute("explain match n return n")
     result.toList
     assert(result.planDescriptionRequested, "result not marked with planDescriptionRequested")
@@ -67,7 +67,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     relate( createNode(), createNode(), "FOO")
 
     //WHEN
-    val result = profile("cypher 2.2 planner cost match n where not n-[:FOO]->() return *")
+    val result = profile("cypher 2.3 planner cost match n where not n-[:FOO]->() return *")
 
     //THEN
     assertRows(1)(result)("AntiSemiApply")
@@ -151,7 +151,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("allows optional match to start a query") {
     //GIVEN
-    val result = profile("cypher 2.2 planner cost optional match (n) return n")
+    val result = profile("cypher 2.3 planner cost optional match (n) return n")
 
     //WHEN THEN
     assertRows(1)(result)("Optional")
@@ -220,7 +220,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   }
 
   test("should not have a problem profiling empty results") {
-    val result = super.profile("CYPHER 2.2 PLANNER COST MATCH n WHERE (n)-->() RETURN n")
+    val result = super.profile("CYPHER 2.3 PLANNER COST MATCH n WHERE (n)-->() RETURN n")
 
     result shouldBe empty
     result.executionPlanDescription().toString should include("AllNodes")
@@ -291,7 +291,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   def profileWithPlanner(planner: Planner, q: String, params: (String, Any)*): InternalExecutionResult = {
     val result = planner("profile " + q, params)
     assert(result.planDescriptionRequested, "result not marked with planDescriptionRequested")
-    val planDescription: v2_2.planDescription.InternalPlanDescription = result.executionPlanDescription()
+    val planDescription: v2_3.planDescription.InternalPlanDescription = result.executionPlanDescription()
     planDescription.flatten.foreach {
       p =>
         if (!p.arguments.exists(_.isInstanceOf[DbHits])) {
@@ -308,11 +308,11 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
 
 
-  private def getArgument[A <: Argument](plan: v2_2.planDescription.InternalPlanDescription)(implicit manifest: Manifest[A]): A = plan.arguments.collectFirst {
+  private def getArgument[A <: Argument](plan: v2_3.planDescription.InternalPlanDescription)(implicit manifest: Manifest[A]): A = plan.arguments.collectFirst {
     case x: A => x
   }.getOrElse(fail(s"Failed to find plan description argument where expected. Wanted ${manifest.toString} but only found ${plan.arguments}"))
 
-  private def getPlanDescriptions(result: InternalExecutionResult, names: Seq[String]): Seq[v2_2.planDescription.InternalPlanDescription] = {
+  private def getPlanDescriptions(result: InternalExecutionResult, names: Seq[String]): Seq[v2_3.planDescription.InternalPlanDescription] = {
     result.toList
     val description = result.executionPlanDescription()
     if (names.isEmpty)

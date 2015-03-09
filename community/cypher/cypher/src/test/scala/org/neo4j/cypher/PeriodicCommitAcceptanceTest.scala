@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.helpers.TxCounts
 import org.neo4j.graphdb.Node
 import java.io.PrintWriter
 import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
-import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.StringHelper.RichString
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.StringHelper.RichString
 
 class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
   with TxCountsTrackingTestSupport with QueryStatisticsTestSupport

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.compiler.v2_2.parser._
+import org.neo4j.cypher.internal.compiler.v2_3.parser._
 import org.parboiled.scala._
 
 final case class CypherQueryWithOptions(statement: String, options: Seq[CypherOption] = Seq.empty)

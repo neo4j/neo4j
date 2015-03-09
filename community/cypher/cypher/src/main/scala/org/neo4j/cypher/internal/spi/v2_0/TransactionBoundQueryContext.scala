@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.spi.v2_0
 
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport
 import org.neo4j.graphdb._
 import org.neo4j.kernel.GraphDatabaseAPI
 import collection.JavaConverters._
 import collection.mutable
 import scala.collection.Iterator
 import org.neo4j.graphdb.DynamicRelationshipType._
-import org.neo4j.cypher.internal.helpers.JavaConversionSupport
-import org.neo4j.cypher.internal.helpers.JavaConversionSupport._
+import JavaConversionSupport._
 import org.neo4j.kernel.api._
 import org.neo4j.cypher.{FailedIndexException, EntityNotFoundException}
 import org.neo4j.tooling.GlobalGraphOperations

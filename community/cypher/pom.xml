@@ -33,7 +33,7 @@
   </scm>
 
   <modules>
-    <module>cypher-compiler-2.2</module>
+    <module>cypher-compiler-2.3</module>
     <module>cypher</module>
     <module>docs/cypher-docs</module>
     <module>docs/graphgist</module>
@@ -158,7 +158,7 @@
                       <rules>
                           <requireFilesDontExist>
                               <files>
-                                  <file>cypher-compiler-2.1</file>
+                                  <file>cypher-compiler-2.2</file>
                               </files>
                           </requireFilesDontExist>
                       </rules>

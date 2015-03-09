@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.parser.ParserMonitor
+import org.neo4j.cypher.internal.compiler.v2_3.parser.ParserMonitor
 
 class CypherOptionParserTest extends CypherFunSuite {
 

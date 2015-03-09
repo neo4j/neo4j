@@ -81,7 +81,7 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-compiler-2.2</artifactId>
+      <artifactId>neo4j-cypher-compiler-2.3</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>

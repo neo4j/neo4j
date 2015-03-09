@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.docgen.refcard
 
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 import org.neo4j.cypher.{ ExecutionResult, QueryStatisticsTestSupport }
 import org.neo4j.cypher.docgen.RefcardTest
 
@@ -84,7 +84,7 @@ RETURN NODES(path),
 count(DISTINCT identifier)
 ###
 
-All aggregation functions also take the `DISTINCT` modifier, 
+All aggregation functions also take the `DISTINCT` modifier,
 which removes duplicates from the values.
 
 ###assertion=returns-one

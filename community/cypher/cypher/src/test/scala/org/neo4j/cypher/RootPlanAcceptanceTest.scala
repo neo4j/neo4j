@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v2_2.{CostPlannerName, PlannerName, RulePlannerName}
+import org.neo4j.cypher.internal.compiler.v2_3.{CostPlannerName, PlannerName, RulePlannerName}
 
 class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should include version information in root plan description for queries of each legacy version") {
 
-    //v2.2 must be handled separately since the resulting compiler is dependent on query
-    val versions = CypherVersion.allVersions.filter(!_.name.startsWith(CypherVersion.v2_2.name))
+    //v2.2 and v2.3 must be handled separately since the resulting compiler is dependent on query
+    val versions = CypherVersion.allVersions.filter(v => !v.name.startsWith(CypherVersion.v2_3.name) && !v.name.startsWith(CypherVersion.v2_2.name))
     versions.foreach { v =>
       given("create() return 1")
         .withCypherVersion(v)
@@ -34,61 +34,61 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
     }
   }
 
-  test("should use Cost if it can by default in 2.2") {
+  test("should use Cost if it can by default in 2.3") {
     given("match n return n")
-      .shouldHaveCypherVersion(CypherVersion.v2_2)
+      .shouldHaveCypherVersion(CypherVersion.v2_3)
       .shouldHavePlannerName(CostPlannerName)
   }
-  test("should use Rule for varlength in 2.2") {
+  test("should use Rule for varlength in 2.3") {
     given("match (a)-[r:T1*]->(b) return a,r,b")
-      .withCypherVersion(CypherVersion.v2_2)
-      .shouldHaveCypherVersion(CypherVersion.v2_2)
+      .withCypherVersion(CypherVersion.v2_3)
+      .shouldHaveCypherVersion(CypherVersion.v2_3)
       .shouldHavePlannerName(RulePlannerName)
   }
 
-  test("should use Cost for cycles in 2.2") {
+  test("should use Cost for cycles in 2.3") {
     given("match (a)-[r]->(a) return a")
-      .withCypherVersion(CypherVersion.v2_2)
-      .shouldHaveCypherVersion(CypherVersion.v2_2)
+      .withCypherVersion(CypherVersion.v2_3)
+      .shouldHaveCypherVersion(CypherVersion.v2_3)
       .shouldHavePlannerName(CostPlannerName)
   }
 
-  test("should fallback to Rule for updates in 2.2") {
+  test("should fallback to Rule for updates in 2.3") {
     given("create() return 1")
-      .withCypherVersion(CypherVersion.v2_2)
+      .withCypherVersion(CypherVersion.v2_3)
       .withPlannerName(CostPlannerName)
-      .shouldHaveCypherVersion(CypherVersion.v2_2)
+      .shouldHaveCypherVersion(CypherVersion.v2_3)
       .shouldHavePlannerName(RulePlannerName)
   }
 
-  test("should use rule if we really ask for it in 2.2") {
+  test("should use rule if we really ask for it in 2.3") {
     given("match n return n")
-      .withCypherVersion(CypherVersion.v2_2)
+      .withCypherVersion(CypherVersion.v2_3)
       .withPlannerName(RulePlannerName)
-      .shouldHaveCypherVersion(CypherVersion.v2_2)
+      .shouldHaveCypherVersion(CypherVersion.v2_3)
       .shouldHavePlannerName(RulePlannerName)
   }
 
   test("should be able to switch between RULE and COST") {
     given("match n return n")
-      .withCypherVersion(CypherVersion.v2_2)
+      .withCypherVersion(CypherVersion.v2_3)
       .withPlannerName(RulePlannerName)
-      .shouldHaveCypherVersion(CypherVersion.v2_2)
+      .shouldHaveCypherVersion(CypherVersion.v2_3)
       .shouldHavePlannerName(RulePlannerName)
 
     given("match n return n")
-      .withCypherVersion(CypherVersion.v2_2)
+      .withCypherVersion(CypherVersion.v2_3)
       .withPlannerName(CostPlannerName)
-      .shouldHaveCypherVersion(CypherVersion.v2_2)
+      .shouldHaveCypherVersion(CypherVersion.v2_3)
       .shouldHavePlannerName(CostPlannerName)
 
   }
 
   test("should use cost if we really ask for it in 2.2") {
     given("match n return n")
-      .withCypherVersion(CypherVersion.v2_2)
+      .withCypherVersion(CypherVersion.v2_3)
       .withPlannerName(CostPlannerName)
-      .shouldHaveCypherVersion(CypherVersion.v2_2)
+      .shouldHaveCypherVersion(CypherVersion.v2_3)
       .shouldHavePlannerName(CostPlannerName)
   }
 
@@ -105,9 +105,9 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
     given(
       """MATCH p=(n:Person {first_name: 'Shawna'})-[:FRIEND_OF]-(m:Person)
         |RETURN p UNION MATCH p=(n:Person {first_name: 'Shawna'})-[:FRIEND_OF]-()-[:FRIEND_OF]-(m:Person) RETURN p""".stripMargin)
-      .withCypherVersion(CypherVersion.v2_2)
+      .withCypherVersion(CypherVersion.v2_3)
       .withPlannerName(RulePlannerName)
-      .shouldHaveCypherVersion(CypherVersion.v2_2)
+      .shouldHaveCypherVersion(CypherVersion.v2_3)
       .shouldHavePlannerName(RulePlannerName)
   }
 
@@ -118,8 +118,8 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
         |RETURN coc, COUNT(*) AS times
         |ORDER BY times DESC
         |LIMIT 10""".stripMargin)
-      .withCypherVersion(CypherVersion.v2_2)
-      .shouldHaveCypherVersion(CypherVersion.v2_2)
+      .withCypherVersion(CypherVersion.v2_3)
+      .shouldHaveCypherVersion(CypherVersion.v2_3)
       .shouldHavePlannerName(CostPlannerName)
   }
 
@@ -128,8 +128,8 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       """MATCH (s:Location {name:'DeliverySegment-257227'}), (e:Location {name:'DeliverySegment-476821'})
         |MATCH (s)<-[:DELIVERY_ROUTE]-(db1) MATCH (db2)-[:DELIVERY_ROUTE]->(e)
         |MATCH (db1)<-[:CONNECTED_TO]-()-[:CONNECTED_TO]-(db2) RETURN s""".stripMargin)
-      .withCypherVersion(CypherVersion.v2_2)
-      .shouldHaveCypherVersion(CypherVersion.v2_2)
+      .withCypherVersion(CypherVersion.v2_3)
+      .shouldHaveCypherVersion(CypherVersion.v2_3)
       .shouldHavePlannerName(CostPlannerName)
   }
 
