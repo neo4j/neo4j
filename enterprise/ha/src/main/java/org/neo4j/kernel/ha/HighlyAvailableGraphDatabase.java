@@ -93,6 +93,7 @@ import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
+import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
@@ -441,22 +442,23 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             public TransactionCommitProcess create( LogicalTransactionStore logicalTransactionStore,
                                                     KernelHealth kernelHealth, NeoStore neoStore,
                                                     TransactionRepresentationStoreApplier storeApplier,
-                                                    NeoStoreInjectedTransactionValidator validator,
+                                                    NeoStoreInjectedTransactionValidator txValidator,
+                                                    IndexUpdatesValidator indexUpdatesValidator,
                                                     TransactionApplicationMode mode, Config config )
             {
                 if ( config.get( GraphDatabaseSettings.read_only ) )
                 {
                     return defaultCommitProcessFactory.create( logicalTransactionStore, kernelHealth, neoStore,
-                            storeApplier, validator, mode, config );
+                            storeApplier, txValidator, indexUpdatesValidator, mode, config );
                 }
                 else
                 {
 
                     TransactionCommitProcess inner =
                             defaultCommitProcessFactory.create( logicalTransactionStore, kernelHealth, neoStore,
-                                    storeApplier, validator, mode, config );
+                                    storeApplier, txValidator, indexUpdatesValidator, mode, config );
                     new CommitProcessSwitcher( pusher, master, commitProcessDelegate, requestContextFactory,
-                            memberStateMachine, validator, inner );
+                            memberStateMachine, txValidator, inner );
 
                     return (TransactionCommitProcess) Proxy
                             .newProxyInstance( TransactionCommitProcess.class.getClassLoader(),

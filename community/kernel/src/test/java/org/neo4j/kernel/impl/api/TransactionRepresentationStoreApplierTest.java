@@ -19,17 +19,18 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.junit.Test;
+import org.mockito.Matchers;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
-
-import org.junit.Test;
-import org.mockito.Matchers;
 
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
@@ -51,7 +52,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.util.function.Optionals.some;
 
 public class TransactionRepresentationStoreApplierTest
@@ -84,7 +84,7 @@ public class TransactionRepresentationStoreApplierTest
 
         try ( LockGroup locks = new LockGroup() )
         {
-            applier.apply( transaction, locks, transactionId, TransactionApplicationMode.INTERNAL );
+            applier.apply( transaction, ValidatedIndexUpdates.NONE, locks, transactionId, TransactionApplicationMode.INTERNAL );
         }
 
         verify( transaction, times( 1 ) ).accept( Matchers.<Visitor<Command, IOException>>any() );
@@ -104,7 +104,7 @@ public class TransactionRepresentationStoreApplierTest
         // WHEN
         try ( LockGroup locks = new LockGroup() )
         {
-            applier.apply( transaction, locks, transactionId, TransactionApplicationMode.EXTERNAL );
+            applier.apply( transaction, ValidatedIndexUpdates.NONE, locks, transactionId, TransactionApplicationMode.EXTERNAL );
         }
         verify( nodeStore, times( 1 ) ).setHighestPossibleIdInUse( nodeId );
     }
@@ -136,7 +136,7 @@ public class TransactionRepresentationStoreApplierTest
         // WHEN
         try ( LockGroup locks = new LockGroup() )
         {
-            applier.apply( transaction, locks, transactionId, TransactionApplicationMode.INTERNAL );
+            applier.apply( transaction, ValidatedIndexUpdates.NONE, locks, transactionId, TransactionApplicationMode.INTERNAL );
         }
 
         // THEN

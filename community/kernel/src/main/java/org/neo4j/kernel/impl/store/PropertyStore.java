@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -661,6 +662,23 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
         {
             PropertyRecord propRecord = getLightRecord( nextProp );
             toReturn.add(propRecord);
+            nextProp = propRecord.getNextProp();
+        }
+        return toReturn;
+    }
+
+    public Collection<PropertyRecord> getPropertyRecordChain( long firstRecordId, PrimitiveLongObjectMap<PropertyRecord> propertyLookup )
+    {
+        long nextProp = firstRecordId;
+        List<PropertyRecord> toReturn = new ArrayList<>();
+        while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
+        {
+            PropertyRecord propRecord = propertyLookup.get( nextProp );
+            if ( propRecord == null )
+            {
+                propRecord = getLightRecord( nextProp );
+            }
+            toReturn.add( propRecord );
             nextProp = propRecord.getNextProp();
         }
         return toReturn;

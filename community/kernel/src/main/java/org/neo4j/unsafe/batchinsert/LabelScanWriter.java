@@ -22,6 +22,7 @@ package org.neo4j.unsafe.batchinsert;
 import java.io.Closeable;
 import java.io.IOException;
 
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 
 public interface LabelScanWriter extends Closeable
@@ -29,7 +30,7 @@ public interface LabelScanWriter extends Closeable
     /**
      * Store a {@link NodeLabelUpdate}. Calls to this method MUST be ordered by ascending node id.
      */
-    void write( NodeLabelUpdate update ) throws IOException;
+    void write( NodeLabelUpdate update ) throws IOException, IndexCapacityExceededException;
 
     /**
      * Close this writer and flush pending changes to the store.

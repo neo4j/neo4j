@@ -29,17 +29,21 @@ import org.neo4j.com.storecopy.TransactionQueue.TransactionVisitor;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.KernelHealth;
-import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
+import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
+import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.locking.LockGroup;
-import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+
+import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
 
 /**
  * Receives and unpacks {@link Response responses}.
@@ -72,12 +76,13 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
         public void visit( CommittedTransactionRepresentation transaction, TxHandler handler ) throws IOException
         {
             long transactionId = transaction.getCommitEntry().getTxId();
+            TransactionRepresentation representation = transaction.getTransactionRepresentation();
             try
             {
-                try ( LockGroup locks = new LockGroup() )
+                try ( LockGroup locks = new LockGroup();
+                      ValidatedIndexUpdates indexUpdates = indexUpdatesValidator.validate( representation, EXTERNAL ) )
                 {
-                    storeApplier.apply( transaction.getTransactionRepresentation(), locks,
-                            transactionId, TransactionApplicationMode.EXTERNAL );
+                    storeApplier.apply( representation, indexUpdates, locks, transactionId, EXTERNAL );
                     handler.accept( transaction );
                 }
             }
@@ -89,6 +94,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
     };
     private TransactionAppender appender;
     private TransactionRepresentationStoreApplier storeApplier;
+    private IndexUpdatesValidator indexUpdatesValidator;
     private TransactionIdStore transactionIdStore;
     private TransactionObligationFulfiller obligationFulfiller;
     private LogFile logFile;
@@ -191,6 +197,7 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
     {
         this.appender = resolver.resolveDependency( LogicalTransactionStore.class ).getAppender();
         this.storeApplier = resolver.resolveDependency( TransactionRepresentationStoreApplier.class );
+        this.indexUpdatesValidator = resolver.resolveDependency( IndexUpdatesValidator.class );
         this.transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
         this.obligationFulfiller = resolveTransactionObligationFulfiller( resolver );
         this.logFile = resolver.resolveDependency( LogFile.class );

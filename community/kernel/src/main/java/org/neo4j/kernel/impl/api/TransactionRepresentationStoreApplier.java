@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.LegacyIndexApplier.ProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockGroup;
@@ -35,7 +36,6 @@ import org.neo4j.kernel.impl.transaction.command.HighIdTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.IndexTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.command.NeoStoreTransactionApplier;
-import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.function.Optional;
 
@@ -53,7 +53,6 @@ public class TransactionRepresentationStoreApplier
     private final LabelScanStore labelScanStore;
     private final IndexConfigStore indexConfigStore;
     private final ProviderLookup legacyIndexProviderLookup;
-    private final PropertyLoader propertyLoader;
     private final IdOrderingQueue legacyIndexTransactionOrdering;
 
     public TransactionRepresentationStoreApplier(
@@ -69,10 +68,9 @@ public class TransactionRepresentationStoreApplier
         this.legacyIndexProviderLookup = legacyIndexProviderLookup;
         this.indexConfigStore = indexConfigStore;
         this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
-        this.propertyLoader = new PropertyLoader( neoStore );
     }
 
-    public void apply( TransactionRepresentation representation, LockGroup locks,
+    public void apply( TransactionRepresentation representation, ValidatedIndexUpdates indexUpdates, LockGroup locks,
                        long transactionId, TransactionApplicationMode mode )
             throws IOException
     {
@@ -89,9 +87,8 @@ public class TransactionRepresentationStoreApplier
         }
 
         // Schema index application
-        IndexTransactionApplier indexApplier = new IndexTransactionApplier( indexingService,
-                labelScanStore, neoStore.getNodeStore(), neoStore.getPropertyStore(), cacheAccess,
-                propertyLoader, transactionId, mode );
+        IndexTransactionApplier indexApplier = new IndexTransactionApplier( indexingService, indexUpdates,
+                labelScanStore, cacheAccess );
 
         // Legacy index application
         LegacyIndexApplier legacyIndexApplier = new LegacyIndexApplier( indexConfigStore,

@@ -22,6 +22,7 @@ package org.neo4j.index.lucene;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.impl.index.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.IndexWriterFactories;
 import org.neo4j.kernel.api.impl.index.LuceneLabelScanStore;
@@ -73,7 +74,7 @@ public class LuceneLabelScanStoreBuilder
                     DirectoryFactory.PERSISTENT,
                     // <db>/schema/label/lucene
                     new File( new File( new File( storeDir, "schema" ), "label" ), "lucene" ),
-                    fileSystem, IndexWriterFactories.standard(),
+                    fileSystem, IndexWriterFactories.tracking(),
                     fullStoreLabelUpdateStream( neoStoreProvider ),
                     LuceneLabelScanStore.loggerMonitor( logger ) );
 
@@ -82,7 +83,7 @@ public class LuceneLabelScanStoreBuilder
                 labelScanStore.init();
                 labelScanStore.start();
             }
-            catch ( IOException e )
+            catch ( IOException | IndexCapacityExceededException e )
             {
                 // Throw better exception
                 throw new RuntimeException( e );

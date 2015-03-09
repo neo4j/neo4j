@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ReferenceManager;
 
@@ -27,5 +26,5 @@ import java.io.IOException;
 
 public interface SearcherManagerFactory
 {
-    ReferenceManager<IndexSearcher> create( IndexWriter indexWriter ) throws IOException;
+    ReferenceManager<IndexSearcher> create( LuceneIndexWriter indexWriter ) throws IOException;
 }

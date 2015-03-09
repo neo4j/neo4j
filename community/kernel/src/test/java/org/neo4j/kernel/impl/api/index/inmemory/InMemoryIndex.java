@@ -22,9 +22,10 @@ package org.neo4j.kernel.impl.api.index.inmemory;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collection;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -36,6 +37,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.Reservation;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
@@ -46,6 +48,16 @@ class InMemoryIndex
     protected final InMemoryIndexImplementation indexData;
     private InternalIndexState state = InternalIndexState.POPULATING;
     String failure;
+
+    private final PrimitiveLongVisitor<RuntimeException> removeFromIndex = new PrimitiveLongVisitor<RuntimeException>()
+    {
+        @Override
+        public boolean visited( long nodeId ) throws RuntimeException
+        {
+            indexData.remove( nodeId );
+            return false;
+        }
+    };
 
     InMemoryIndex()
     {
@@ -234,6 +246,12 @@ class InMemoryIndex
         }
 
         @Override
+        public Reservation validate( Iterable<NodePropertyUpdate> updates ) throws IOException
+        {
+            return Reservation.EMPTY;
+        }
+
+        @Override
         public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
         {
             switch ( update.getUpdateMode() )
@@ -259,12 +277,9 @@ class InMemoryIndex
         }
 
         @Override
-        public void remove( Collection<Long> nodeIds )
+        public void remove( PrimitiveLongSet nodeIds )
         {
-            for ( Long nodeId : nodeIds )
-            {
-                indexData.remove( nodeId );
-            }
+            nodeIds.visitKeys( removeFromIndex );
         }
     }
 

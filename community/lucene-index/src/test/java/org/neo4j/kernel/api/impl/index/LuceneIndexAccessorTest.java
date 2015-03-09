@@ -35,6 +35,7 @@ import java.util.concurrent.Future;
 
 import org.neo4j.function.RawFunction;
 import org.neo4j.helpers.TaskCoordinator;
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -51,7 +52,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
-import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
+import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.reserving;
 import static org.neo4j.test.ThreadingRule.stackTracePredicate;
 
 @RunWith( Parameterized.class )
@@ -195,9 +196,8 @@ public class LuceneIndexAccessorTest
                     public LuceneIndexAccessor apply( DirectoryFactory dirFactory )
                             throws IOException
                     {
-                        return new NonUniqueLuceneIndexAccessor( documentLogic, standard(), writerLogic, dirFactory,
-                                dir,
-                                100_000 );
+                        return new NonUniqueLuceneIndexAccessor( documentLogic, reserving(), writerLogic, dirFactory,
+                                dir, 100_000 );
                     }
 
                     @Override
@@ -212,7 +212,7 @@ public class LuceneIndexAccessorTest
                     public LuceneIndexAccessor apply( DirectoryFactory dirFactory )
                             throws IOException
                     {
-                        return new UniqueLuceneIndexAccessor( documentLogic, standard(), writerLogic, dirFactory, dir );
+                        return new UniqueLuceneIndexAccessor( documentLogic, reserving(), writerLogic, dirFactory, dir );
                     }
 
                     @Override
@@ -259,7 +259,7 @@ public class LuceneIndexAccessorTest
     }
 
     private void updateAndCommit( List<NodePropertyUpdate> nodePropertyUpdates )
-            throws IOException, IndexEntryConflictException
+            throws IOException, IndexEntryConflictException, IndexCapacityExceededException
     {
         try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {

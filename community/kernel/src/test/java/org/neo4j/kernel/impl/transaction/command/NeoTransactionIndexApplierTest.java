@@ -20,90 +20,55 @@
 package org.neo4j.kernel.impl.transaction.command;
 
 import org.junit.Test;
-import org.mockito.Matchers;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.transaction.state.LazyIndexUpdates;
-import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
+import static java.util.Collections.singleton;
 import static org.junit.Assert.assertFalse;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
+import static org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
+import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
+import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
 
 public class NeoTransactionIndexApplierTest
 {
+    private final static Descriptor INDEX_DESCRIPTOR = new Descriptor( "in-memory", "1.0" );
+
     private final IndexingService indexingService = mock( IndexingService.class );
     private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
-    private final NodeStore nodeStore = mock( NodeStore.class );
-    private final PropertyStore propertyStore = mock( PropertyStore.class );
     private final CacheAccessBackDoor cacheAccess = mock( CacheAccessBackDoor.class );
-    private final PropertyLoader propertyLoader = mock( PropertyLoader.class );
 
-    private final Map<Long,Command.NodeCommand> emptyNodeCommands = Collections.emptyMap();
-    private final Map<Long,List<Command.PropertyCommand>> emptyPropCommands = Collections.emptyMap();
-
-    private final long transactionId = 42;
+    private final Collection<DynamicRecord> emptyDynamicRecords = Collections.emptySet();
 
     @Test
-    public void shouldUpdateIndexesOnNodeCommands() throws IOException
+    public void shouldUpdateLabelStoreScanOnNodeCommands() throws Exception
     {
         // given
-        final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService, labelScanStore,
-                nodeStore, propertyStore, cacheAccess, propertyLoader, transactionId, EXTERNAL );
+        final ValidatedIndexUpdates indexUpdates = mock( ValidatedIndexUpdates.class );
+        final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService, indexUpdates,
+                labelScanStore, cacheAccess );
 
         final NodeRecord before = new NodeRecord( 11 );
+        before.setLabelField( 17, emptyDynamicRecords );
         final NodeRecord after = new NodeRecord( 12 );
-        final Command.NodeCommand command = new Command.NodeCommand().init( before, after );
-
-        // when
-        final boolean result = applier.visitNodeCommand( command );
-        applier.apply();
-
-        // then
-        assertFalse( result );
-
-        final Map<Long,Command.NodeCommand> nodeCommands = Collections.singletonMap( command.getKey(), command );
-
-        final LazyIndexUpdates expectedUpdates = new LazyIndexUpdates(
-                nodeStore, propertyStore, emptyPropCommands, nodeCommands, propertyLoader );
-
-        verify( indexingService, times( 1 ) ).updateIndexes( eq( expectedUpdates ), eq( transactionId ), eq( false ) );
-    }
-
-    @Test
-    public void shouldUpdateLabelStoreScanOnNodeCommands() throws IOException
-    {
-        // given
-        final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService, labelScanStore,
-                nodeStore, propertyStore, cacheAccess, propertyLoader, transactionId, EXTERNAL );
-
-        final NodeRecord before = new NodeRecord( 11 );
-        before.setLabelField( 17, Collections.<DynamicRecord>emptySet() );
-        final NodeRecord after = new NodeRecord( 12 );
-        after.setLabelField( 18, Collections.<DynamicRecord>emptySet() );
+        after.setLabelField( 18, emptyDynamicRecords );
         final Command.NodeCommand command = new Command.NodeCommand().init( before, after );
 
         when( labelScanStore.newWriter() ).thenReturn( mock( LabelScanWriter.class ) );
@@ -120,60 +85,55 @@ public class NeoTransactionIndexApplierTest
 
         verify( cacheAccess, times( 1 ) ).applyLabelUpdates( eq( labelUpdates ) );
 
-        final Map<Long,Command.NodeCommand> nodeCommands = Collections.singletonMap( command.getKey(), command );
-
-        final LazyIndexUpdates expectedUpdates = new LazyIndexUpdates(
-                nodeStore, propertyStore, emptyPropCommands, nodeCommands, propertyLoader );
-
-        verify( indexingService, times( 1 ) ).updateIndexes( eq( expectedUpdates ), eq( transactionId ), eq( false ) );
+        verify( indexUpdates, times( 1 ) ).flush();
     }
 
     @Test
-    public void shouldUpdateIndexesOnPropertyCommandsWhenThePropertyIsOnANode() throws IOException
+    public void shouldCreateIndexGivenCreateSchemaRuleCommand() throws IOException
     {
-        // given
-        final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService, labelScanStore,
-                nodeStore, propertyStore, cacheAccess, propertyLoader, transactionId, EXTERNAL );
+        // Given
+        final IndexRule indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );
 
-        final PropertyRecord before = new PropertyRecord( 11 );
-        final PropertyRecord after = new PropertyRecord( 12 );
-        after.setNodeId( 42 );
-        final Command.PropertyCommand command = new Command.PropertyCommand().init( before, after );
+        final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService,
+                ValidatedIndexUpdates.NONE, labelScanStore, cacheAccess );
 
-        // when
-        final boolean result = applier.visitPropertyCommand( command );
+        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand();
+        command.init( emptyDynamicRecords, singleton( createdDynamicRecord( 1 ) ), indexRule );
+
+        // When
+        final boolean result = applier.visitSchemaRuleCommand( command );
         applier.apply();
 
-        // then
+        // Then
         assertFalse( result );
-
-
-        Map<Long,List<Command.PropertyCommand>> propCommands =
-                Collections.singletonMap( command.getNodeId(), Arrays.asList( command ) );
-
-        final LazyIndexUpdates expectedUpdates = new LazyIndexUpdates(
-                nodeStore, propertyStore, propCommands, emptyNodeCommands, propertyLoader );
-
-        verify( indexingService, times( 1 ) ).updateIndexes( eq( expectedUpdates ), eq( transactionId ), eq( false ) );
+        verify( indexingService ).createIndex( indexRule );
     }
 
     @Test
-    public void shouldNotUpdateIndexesOnPropertyCommandsWhenThePropertyIsNotOnANode() throws IOException
+    public void shouldDropIndexGivenDropSchemaRuleCommand() throws IOException
     {
-        // given
-        final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService, labelScanStore,
-                nodeStore, propertyStore, cacheAccess, propertyLoader, transactionId, EXTERNAL );
+        // Given
+        final IndexRule indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );
 
-        final PropertyRecord before = new PropertyRecord( 11 );
-        final PropertyRecord after = new PropertyRecord( 12 );
-        final Command.PropertyCommand command = new Command.PropertyCommand().init( before, after );
+        final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService,
+                ValidatedIndexUpdates.NONE, labelScanStore, cacheAccess );
 
-        // when
-        final boolean result = applier.visitPropertyCommand( command );
+        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand();
+        command.init( singleton( createdDynamicRecord( 1 ) ), singleton( dynamicRecord( 1, false ) ), indexRule );
+
+        // When
+        final boolean result = applier.visitSchemaRuleCommand( command );
         applier.apply();
 
-        // then
+        // Then
         assertFalse( result );
-        verify( indexingService, never() ).updateIndexes( Matchers.<LazyIndexUpdates>any(), anyLong(), anyBoolean() );
+        verify( indexingService ).dropIndex( indexRule );
+    }
+
+    private static DynamicRecord createdDynamicRecord( long id )
+    {
+        DynamicRecord record = dynamicRecord( id, true );
+        record.setCreated();
+        return record;
     }
 }
