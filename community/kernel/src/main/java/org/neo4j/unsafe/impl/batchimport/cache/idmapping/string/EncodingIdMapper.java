@@ -42,6 +42,7 @@ import org.neo4j.unsafe.impl.batchimport.input.Group;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static java.lang.String.format;
 
 import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToInt;
 import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedCompare;
@@ -258,7 +259,7 @@ public class EncodingIdMapper implements IdMapper
         progress.started();
         int numCollisions = 0;
         long max = trackerCache.size() - 1;
-        for ( int i = 0; i < max; i++ )
+        for ( int i = 0; i < max; )
         {
             int batch = (int) min( max-i, 10_000 );
             for ( int j = 0; j < batch; j++, i++ )
@@ -278,12 +279,9 @@ public class EncodingIdMapper implements IdMapper
                     {   // swap
                         trackerCache.swap( i, i+1, 1 );
                     }
-                    long value = dataCache.get( trackerCache.get( i ) );
-                    value = setCollision( value );
-                    dataCache.set( trackerCache.get( i ), value );
-                    value = dataCache.get( trackerCache.get( i + 1 ) );
-                    value = setCollision( value );
-                    dataCache.set( trackerCache.get( i + 1 ), value );
+
+                    markAsCollision( i );
+                    markAsCollision( i+1 );
                     numCollisions++;
                 }
             }
@@ -293,13 +291,19 @@ public class EncodingIdMapper implements IdMapper
         return numCollisions;
     }
 
+    private void markAsCollision( int trackerIndex )
+    {
+        int index = trackerCache.get( trackerIndex );
+        dataCache.set( index, setCollision( dataCache.get( index ) ) );
+    }
+
     private void buildCollisionInfo( InputIterator<Object> ids, ProgressListener progress )
     {
         // This is currently the only way of discovering duplicate input ids, checked per group.
         // groupId --> inputId --> CollisionPoint(dataIndex,sourceLocation)
         PrimitiveIntObjectMap<Map<Object,String>> collidedIds = Primitive.intObjectMap();
         progress.started();
-        for ( long i = 0; ids.hasNext(); i++ )
+        for ( long i = 0; ids.hasNext(); )
         {
             long j = 0;
             for ( ; j < 10_000 && ids.hasNext(); j++, i++ )
@@ -329,7 +333,10 @@ public class EncodingIdMapper implements IdMapper
 
                     // Store this collision input id for matching later in get()
                     long val = encoder.encode( id );
-                    assert val == clearCollision( value );
+                    assert val == clearCollision( value ) : format( "Encoding mismatch during building of " +
+                            "collision info. input id %s (a %s) marked as collision where this id was encoded into " +
+                            "%d when put, but was now encoded into %d",
+                            id, id.getClass().getSimpleName(), clearCollision( value ), val );
                     int collisionIndex = collisionValues.size();
                     collisionValues.add( id );
                     collisionCache.set( collisionIndex, i );
