@@ -17,32 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
+package org.neo4j.cypher.internal.compiler.v2_2.helpers
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.PatternRelationship
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-sealed trait Solvable {
-  def solvables: Set[SolvableLeaf]
+class LazyIterableTest extends CypherFunSuite {
 
-  def solvedRelationship: Option[PatternRelationship] = None
+  test("iterates") {
+    LazyIterable(Seq(1, 2, 3).iterator).toSeq should equal(Seq(1, 2, 3))
+  }
+
+  test("iterates lazily") {
+    var start = 10
+    val iterable = LazyIterable {
+      Seq(start, start + 1, start + 2).iterator
+    }
+
+    iterable.toSeq should equal (Seq(10, 11, 12))
+
+    start = 20
+
+    iterable.toSeq should equal (Seq(20, 21, 22))
+  }
 }
-
-sealed trait SolvableLeaf extends Solvable {
-  self =>
-
-  override def solvables: Set[SolvableLeaf] = Set(self)
-}
-
-final case class SolvableBlock(solvables: Set[SolvableLeaf]) extends Solvable
-
-final case class SolvableRelationship(relationship: PatternRelationship) extends SolvableLeaf {
-  override def solvedRelationship = Some(relationship)
-}
-
-object Solvables {
-  def apply(qg: QueryGraph): Set[Solvable] = qg.patternRelationships.map(SolvableRelationship)
-}
-
-
-

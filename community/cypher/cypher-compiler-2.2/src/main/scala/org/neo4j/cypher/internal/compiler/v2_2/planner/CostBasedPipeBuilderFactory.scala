@@ -59,6 +59,7 @@ object CostBasedPipeBuilderFactory {
         IDPQueryGraphSolver()
 
       case _ =>
+//        IDPQueryGraphSolver()
         new CompositeQueryGraphSolver(
           new GreedyQueryGraphSolver(expandsOrJoins),
           new GreedyQueryGraphSolver(expandsOnly)

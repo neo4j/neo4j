@@ -21,21 +21,21 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{AllIterablePredicate, FilterScope, Identifier}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Solvable
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 
-object expandTableSolver extends IDPTableSolver {
+case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelationship, LogicalPlan] {
 
-  override def apply(qg: QueryGraph, goal: Set[Solvable], table: (Set[Solvable]) => Option[LogicalPlan]): Iterator[LogicalPlan] = {
-    val result =
-      for (solvable <- goal.iterator;
-           pattern <- solvable.solvedRelationship;
-           solved = goal - solvable;
-           plan <- table(solved)
+  import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.idp.expandSolverStep._
+
+  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan]): Iterator[LogicalPlan] = {
+    val result: Iterator[Iterator[LogicalPlan]] =
+      for (patternId <- goal.iterator;
+           pattern <- registry.lookup(patternId);
+           plan <- table(goal - patternId)
       ) yield {
         if (plan.availableSymbols.contains(pattern.name))
-          Iterator(
+          Iterator.apply(
             planSingleProjectEndpoints(pattern, plan)
           )
         else
@@ -45,8 +45,12 @@ object expandTableSolver extends IDPTableSolver {
           ).flatten
       }
 
+    // This should be (and is) lazy
     result.flatten
   }
+}
+
+object expandSolverStep {
 
   def planSingleProjectEndpoints(patternRel: PatternRelationship, plan: LogicalPlan): LogicalPlan = {
     val (start, end) = patternRel.inOrder
