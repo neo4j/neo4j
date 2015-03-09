@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.junit.Test;
+
 import java.io.IOException;
 import java.util.Collections;
 
-import org.junit.Test;
-
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
+import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
+import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -35,17 +37,16 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
-import org.neo4j.kernel.impl.transaction.state.RecoveryVisitor.Monitor;
 
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.RECOVERY;
 
 public class RecoveryVisitorTest
@@ -53,6 +54,8 @@ public class RecoveryVisitorTest
     private final TransactionIdStore store = mock( TransactionIdStore.class );
     private final TransactionRepresentationStoreApplier storeApplier =
             mock( TransactionRepresentationStoreApplier.class );
+    private final IndexUpdatesValidator indexUpdatesValidator = mock( IndexUpdatesValidator.class, RETURNS_MOCKS );
+    private final RecoveryVisitor.Monitor monitor = mock( RecoveryVisitor.Monitor.class );
 
     private final LogEntryStart startEntry = new LogEntryStart( 1, 2, 123, 456, "tx".getBytes(),
             new LogPosition( 1, 198 ) );
@@ -61,8 +64,7 @@ public class RecoveryVisitorTest
     @Test
     public void shouldNotSetLastCommittedAndClosedTransactionIdWhenNoRecoveryHappened() throws IOException
     {
-        final RecoveryVisitor visitor =
-                new RecoveryVisitor( store, storeApplier, mock( RecoveryVisitor.Monitor.class ) );
+        final RecoveryVisitor visitor = new RecoveryVisitor( store, storeApplier, indexUpdatesValidator, monitor );
 
         visitor.close();
 
@@ -72,8 +74,7 @@ public class RecoveryVisitorTest
     @Test
     public void shouldApplyVisitedTransactionToTheStoreAndSetLastCommittedAndClosedTransactionId() throws IOException
     {
-        Monitor monitor = mock( RecoveryVisitor.Monitor.class );
-        final RecoveryVisitor visitor = new RecoveryVisitor( store, storeApplier, monitor );
+        final RecoveryVisitor visitor = new RecoveryVisitor( store, storeApplier, indexUpdatesValidator, monitor );
 
         final TransactionRepresentation representation =
                 new PhysicalTransactionRepresentation( Collections.<Command>emptySet() );
@@ -84,8 +85,8 @@ public class RecoveryVisitorTest
         final boolean result = visitor.visit( transaction );
 
         assertFalse( result );
-        verify( storeApplier, times( 1 ) ).apply( eq( representation ), any( LockGroup.class ),
-                eq( commitEntry.getTxId() ), eq( RECOVERY ) );
+        verify( storeApplier, times( 1 ) ).apply( eq( representation ), any( ValidatedIndexUpdates.class ),
+                any( LockGroup.class ), eq( commitEntry.getTxId() ), eq( RECOVERY ) );
         verify( monitor ).transactionRecovered( commitEntry.getTxId() );
 
         visitor.close();

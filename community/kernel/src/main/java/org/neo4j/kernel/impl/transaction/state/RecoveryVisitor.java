@@ -22,12 +22,16 @@ package org.neo4j.kernel.impl.transaction.state;
 import java.io.IOException;
 
 import org.neo4j.helpers.collection.CloseableVisitor;
-import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
+import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
+import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
+
+import static org.neo4j.kernel.impl.api.TransactionApplicationMode.RECOVERY;
 
 public class RecoveryVisitor implements CloseableVisitor<CommittedTransactionRepresentation,IOException>
 {
@@ -38,15 +42,19 @@ public class RecoveryVisitor implements CloseableVisitor<CommittedTransactionRep
 
     private final TransactionIdStore store;
     private final TransactionRepresentationStoreApplier storeApplier;
+    private final IndexUpdatesValidator indexUpdatesValidator;
     private final Monitor monitor;
     private long lastTransactionIdApplied = -1;
     private long lastTransactionChecksum;
 
     public RecoveryVisitor( TransactionIdStore store,
-                            TransactionRepresentationStoreApplier storeApplier, Monitor monitor )
+                            TransactionRepresentationStoreApplier storeApplier,
+                            IndexUpdatesValidator indexUpdatesValidator,
+                            Monitor monitor )
     {
         this.store = store;
         this.storeApplier = storeApplier;
+        this.indexUpdatesValidator = indexUpdatesValidator;
         this.monitor = monitor;
     }
 
@@ -54,11 +62,14 @@ public class RecoveryVisitor implements CloseableVisitor<CommittedTransactionRep
     public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
     {
         long txId = transaction.getCommitEntry().getTxId();
-        try ( LockGroup locks = new LockGroup() )
+        TransactionRepresentation txRepresentation = transaction.getTransactionRepresentation();
+
+        try ( LockGroup locks = new LockGroup();
+              ValidatedIndexUpdates indexUpdates = prepareIndexUpdates( txRepresentation ) )
         {
-            storeApplier.apply( transaction.getTransactionRepresentation(), locks, txId,
-                    TransactionApplicationMode.RECOVERY );
+            storeApplier.apply( txRepresentation, indexUpdates, locks, txId, RECOVERY );
         }
+
         lastTransactionIdApplied = txId;
         lastTransactionChecksum = LogEntryStart.checksum( transaction.getStartEntry() );
         monitor.transactionRecovered( txId );
@@ -72,5 +83,17 @@ public class RecoveryVisitor implements CloseableVisitor<CommittedTransactionRep
         {
             store.setLastCommittedAndClosedTransactionId( lastTransactionIdApplied, lastTransactionChecksum );
         }
+    }
+
+    /**
+     * Recovery operates under a condition that all index updates are valid because otherwise they have no chance to
+     * appear in write ahead log.
+     * This step is still needed though, because it is not only about validation of index sizes but also about
+     * inferring {@link org.neo4j.kernel.api.index.NodePropertyUpdate}s from commands in transaction state and
+     * grouping those by {@link org.neo4j.kernel.api.index.IndexUpdater}s.
+     */
+    private ValidatedIndexUpdates prepareIndexUpdates( TransactionRepresentation txRepresentation ) throws IOException
+    {
+        return indexUpdatesValidator.validate( txRepresentation, RECOVERY );
     }
 }

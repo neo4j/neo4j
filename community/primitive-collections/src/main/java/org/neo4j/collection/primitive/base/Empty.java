@@ -28,6 +28,8 @@ import org.neo4j.collection.primitive.PrimitiveIntVisitor;
 import org.neo4j.collection.primitive.PrimitiveLongCollection;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.neo4j.collection.primitive.PrimitiveLongObjectVisitor;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 
@@ -157,4 +159,50 @@ public class Empty
     }
 
     public static final PrimitiveIntSet EMPTY_PRIMITIVE_INT_SET = new EmptyPrimitiveIntSet();
+
+    public static class EmptyPrimitiveLongObjectMap<T> extends EmptyPrimitiveCollection implements PrimitiveLongObjectMap<T>
+    {
+        @Override
+        public T put( long key, T t )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean containsKey( long key )
+        {
+            return false;
+        }
+
+        @Override
+        public T get( long key )
+        {
+            return null;
+        }
+
+        @Override
+        public T remove( long key )
+        {
+            return null;
+        }
+
+        @Override
+        public <E extends Exception> void visitEntries( PrimitiveLongObjectVisitor<T,E> visitor ) throws E
+        {   // No entries to visit
+        }
+
+        @Override
+        public <E extends Exception> void visitKeys( PrimitiveLongVisitor<E> visitor ) throws E
+        {   // No keys to visit
+        }
+
+        @Override
+        public PrimitiveLongIterator iterator()
+        {
+            return PrimitiveLongCollections.emptyIterator();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static final PrimitiveLongObjectMap EMPTY_PRIMITIVE_LONG_OBJECT_MAP = new EmptyPrimitiveLongObjectMap<>();
 }

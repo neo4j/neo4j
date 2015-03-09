@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.test.DoubleLatch;
@@ -111,7 +112,7 @@ public class ContractCheckingIndexProxyTest
 
 
     @Test(expected = IllegalStateException.class)
-    public void shouldNotUpdateBeforeCreate() throws IOException, IndexEntryConflictException
+    public void shouldNotUpdateBeforeCreate() throws Exception
     {
         // GIVEN
         IndexProxy inner = mockIndexProxy();
@@ -125,7 +126,7 @@ public class ContractCheckingIndexProxyTest
     }
 
     @Test(expected = IllegalStateException.class)
-    public void shouldNotUpdateAfterClose() throws IOException, IndexEntryConflictException
+    public void shouldNotUpdateAfterClose() throws Exception
     {
         // GIVEN
         IndexProxy inner = mockIndexProxy();
@@ -264,7 +265,7 @@ public class ContractCheckingIndexProxyTest
                     updater.process( null );
                     latch.startAndAwaitFinish();
                 }
-                catch ( IndexEntryConflictException e )
+                catch ( IndexEntryConflictException | IndexCapacityExceededException e )
                 {
                     throw new RuntimeException( e );
                 }

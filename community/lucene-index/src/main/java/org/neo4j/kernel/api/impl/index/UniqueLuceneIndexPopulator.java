@@ -22,21 +22,22 @@ package org.neo4j.kernel.api.impl.index;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.search.TopDocs;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.Reservation;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.register.Register;
 
@@ -52,7 +53,7 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
     private Map<Object, Long> currentBatch = newBatchMap();
 
     UniqueLuceneIndexPopulator( int batchSize, LuceneDocumentStructure documentStructure,
-                                LuceneIndexWriterFactory indexWriterFactory,
+                                IndexWriterFactory<LuceneIndexWriter> indexWriterFactory,
                                 IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile,
                                 FailureStorage failureStorage, long indexId )
     {
@@ -69,7 +70,7 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
     public void create() throws IOException
     {
         super.create();
-        searcherManager = new SearcherManager( writer, true, new SearcherFactory() );
+        searcherManager = writer.createSearcherManager();
     }
 
     @Override
@@ -85,7 +86,8 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
     }
 
     @Override
-    public void add( long nodeId, Object propertyValue ) throws IndexEntryConflictException, IOException
+    public void add( long nodeId, Object propertyValue )
+            throws IndexEntryConflictException, IOException, IndexCapacityExceededException
     {
         Long previousEntry = currentBatch.get( propertyValue );
         if ( previousEntry == null )
@@ -136,7 +138,14 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
         return new IndexUpdater()
         {
             @Override
-            public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+            public Reservation validate( Iterable<NodePropertyUpdate> updates ) throws IOException
+            {
+                return Reservation.EMPTY;
+            }
+
+            @Override
+            public void process( NodePropertyUpdate update )
+                    throws IOException, IndexEntryConflictException, IndexCapacityExceededException
             {
                 add( update.getNodeId(), update.getValueAfter() );
             }
@@ -147,7 +156,7 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
             }
 
             @Override
-            public void remove( Collection<Long> nodeIds )
+            public void remove( PrimitiveLongSet nodeIds )
             {
                 throw new UnsupportedOperationException( "should not remove() from populating index" );
             }

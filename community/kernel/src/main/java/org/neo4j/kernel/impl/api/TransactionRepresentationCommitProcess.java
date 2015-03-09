@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.api;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
+import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -30,48 +32,58 @@ import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.StoreApplyEvent;
 
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.CouldNotCommit;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.ValidationFailed;
+
 public class TransactionRepresentationCommitProcess implements TransactionCommitProcess
 {
     private final LogicalTransactionStore logicalTransactionStore;
     private final KernelHealth kernelHealth;
     private final TransactionIdStore transactionIdStore;
     private final TransactionRepresentationStoreApplier storeApplier;
+    private final IndexUpdatesValidator indexUpdatesValidator;
     private final TransactionApplicationMode mode;
 
     public TransactionRepresentationCommitProcess( LogicalTransactionStore logicalTransactionStore,
             KernelHealth kernelHealth, TransactionIdStore transactionIdStore,
-            TransactionRepresentationStoreApplier storeApplier, TransactionApplicationMode mode )
+            TransactionRepresentationStoreApplier storeApplier, IndexUpdatesValidator indexUpdatesValidator,
+            TransactionApplicationMode mode )
     {
         this.logicalTransactionStore = logicalTransactionStore;
         this.transactionIdStore = transactionIdStore;
         this.kernelHealth = kernelHealth;
         this.storeApplier = storeApplier;
+        this.indexUpdatesValidator = indexUpdatesValidator;
         this.mode = mode;
     }
 
     @Override
     public long commit( TransactionRepresentation transaction, LockGroup locks, CommitEvent commitEvent ) throws TransactionFailureException
     {
-        // serialise commands to the log
-        long transactionId = commitTransaction( transaction, commitEvent );
-        commitEvent.setTransactionId( transactionId );
+        try ( ValidatedIndexUpdates indexUpdates = validateIndexUpdates( transaction ) )
+        {
+            // serialise commands to the log
+            long transactionId = commitTransaction( transaction, commitEvent );
+            commitEvent.setTransactionId( transactionId );
 
-        // apply changes to the store
-        try ( StoreApplyEvent storeApplyEvent = commitEvent.beginStoreApply() )
-        {
-            storeApplier.apply( transaction, locks, transactionId, mode );
+            // apply changes to the store
+            try ( StoreApplyEvent storeApplyEvent = commitEvent.beginStoreApply() )
+            {
+                storeApplier.apply( transaction, indexUpdates, locks, transactionId, mode );
+            }
+            // TODO catch different types of exceptions here, some which are OK
+            catch ( Throwable e )
+            {
+                throw exception( CouldNotCommit, e,
+                        "Could not apply the transaction to the store after written to log" );
+            }
+            finally
+            {
+                transactionIdStore.transactionClosed( transactionId );
+            }
+
+            return transactionId;
         }
-        // TODO catch different types of exceptions here, some which are OK
-        catch ( Throwable e )
-        {
-            throw exception( Status.Transaction.CouldNotCommit, e,
-                    "Could not apply the transaction to the store after written to log" );
-        }
-        finally
-        {
-            transactionIdStore.transactionClosed( transactionId );
-        }
-        return transactionId;
     }
 
     private TransactionFailureException exception( Status status, Throwable cause, String message )
@@ -90,6 +102,19 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
         {
             throw exception( Status.Transaction.CouldNotWriteToLog, e,
                     "Could not append transaction representation to log" );
+        }
+    }
+
+    private ValidatedIndexUpdates validateIndexUpdates( TransactionRepresentation transaction )
+            throws TransactionFailureException
+    {
+        try
+        {
+            return indexUpdatesValidator.validate( transaction, mode );
+        }
+        catch ( Throwable e )
+        {
+            throw new TransactionFailureException( ValidationFailed, e, "Validation of index updates failed" );
         }
     }
 }

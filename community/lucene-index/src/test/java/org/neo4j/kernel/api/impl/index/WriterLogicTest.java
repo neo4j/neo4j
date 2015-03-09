@@ -23,7 +23,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Version;
@@ -35,7 +34,6 @@ import java.io.File;
 import java.io.IOException;
 
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.index.impl.lucene.LuceneDataSource.KEYWORD_ANALYZER;
 
 public class WriterLogicTest
@@ -45,7 +43,7 @@ public class WriterLogicTest
     public void forceShouldSetOnlineStatus() throws Exception
     {
         // GIVEN
-        IndexWriter writer = newWriter();
+        LuceneIndexWriter writer = newWriter();
         writer.addDocument( newDocument() );
         logic.commitAsOnline( writer );
 
@@ -60,7 +58,7 @@ public class WriterLogicTest
     public void forceShouldKeepOnlineStatus() throws Exception
     {
         // GIVEN
-        IndexWriter writer = newWriter();
+        LuceneIndexWriter writer = newWriter();
         logic.commitAsOnline( writer );
 
         // WHEN
@@ -76,7 +74,7 @@ public class WriterLogicTest
     public void otherWriterSessionShouldKeepOnlineStatusEvenIfNotForcingBeforeClosing() throws Exception
     {
         // GIVEN
-        IndexWriter writer = newWriter();
+        LuceneIndexWriter writer = newWriter();
         logic.commitAsOnline( writer );
         writer.close( true );
 
@@ -106,9 +104,9 @@ public class WriterLogicTest
         dirFactory.close();
     }
 
-    private IndexWriter newWriter() throws IOException
+    private LuceneIndexWriter newWriter() throws IOException
     {
-        return new IndexWriter( directory, new IndexWriterConfig( Version.LUCENE_35, KEYWORD_ANALYZER ) );
+        return new LuceneIndexWriter( directory, new IndexWriterConfig( Version.LUCENE_36, KEYWORD_ANALYZER ) );
     }
 
     private Document newDocument()

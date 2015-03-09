@@ -26,12 +26,12 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -247,7 +247,7 @@ public class IndexCRUDIT
                 }
 
                 @Override
-                public void remove( Collection<Long> nodeIds ) throws IOException
+                public void remove( PrimitiveLongSet nodeIds ) throws IOException
                 {
                     throw new UnsupportedOperationException( "not expected" );
                 }

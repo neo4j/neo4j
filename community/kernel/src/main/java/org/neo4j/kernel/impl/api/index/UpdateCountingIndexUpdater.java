@@ -20,12 +20,14 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
-import java.util.Collection;
 
+import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.Reservation;
 
 public class UpdateCountingIndexUpdater implements IndexUpdater
 {
@@ -43,21 +45,29 @@ public class UpdateCountingIndexUpdater implements IndexUpdater
     }
 
     @Override
-    public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+    public Reservation validate( Iterable<NodePropertyUpdate> updates )
+            throws IOException, IndexCapacityExceededException
+    {
+        return delegate.validate( updates );
+    }
+
+    @Override
+    public void process( NodePropertyUpdate update )
+            throws IOException, IndexEntryConflictException, IndexCapacityExceededException
     {
         delegate.process( update );
         updates++;
     }
 
     @Override
-    public void close() throws IOException, IndexEntryConflictException
+    public void close() throws IOException, IndexEntryConflictException, IndexCapacityExceededException
     {
         delegate.close();
         storeView.incrementIndexUpdates( descriptor, updates );
     }
 
     @Override
-    public void remove( Collection<Long> nodeIds ) throws IOException
+    public void remove( PrimitiveLongSet nodeIds ) throws IOException
     {
         delegate.remove( nodeIds );
         updates += nodeIds.size();

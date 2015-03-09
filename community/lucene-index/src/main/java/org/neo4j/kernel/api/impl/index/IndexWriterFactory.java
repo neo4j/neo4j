@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.api.impl.index;
 
-import java.util.Set;
+import org.apache.lucene.store.Directory;
 
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import java.io.IOException;
 
-public interface IndexUpdates extends Iterable<NodePropertyUpdate>
+public interface IndexWriterFactory<W extends LuceneIndexWriter>
 {
-    Set<Long> changedNodeIds();
+    W create( Directory directory ) throws IOException;
 }

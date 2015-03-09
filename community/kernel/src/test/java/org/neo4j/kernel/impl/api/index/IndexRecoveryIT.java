@@ -28,7 +28,6 @@ import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -36,6 +35,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -404,12 +405,17 @@ public class IndexRecoveryIT
                 }
 
                 @Override
-                public void remove( Collection<Long> nodeIds ) throws IOException
+                public void remove( PrimitiveLongSet nodeIds ) throws IOException
                 {
-                    for ( Long nodeId : nodeIds )
+                    nodeIds.visitKeys( new PrimitiveLongVisitor<RuntimeException>()
                     {
-                        recoveredNodes.add( nodeId );
-                    }
+                        @Override
+                        public boolean visited( long nodeId ) throws RuntimeException
+                        {
+                            recoveredNodes.add( nodeId );
+                            return false;
+                        }
+                    } );
                 }
             };
         }

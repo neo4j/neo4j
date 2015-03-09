@@ -19,17 +19,6 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import java.io.IOException;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -41,6 +30,19 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 import org.junit.runners.model.Statement;
 
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
@@ -52,6 +54,7 @@ import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -89,10 +92,8 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static java.util.Arrays.asList;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
 import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
 import static org.neo4j.consistency.checking.full.ExecutionOrderIntegrationTest.config;
@@ -314,7 +315,8 @@ public class FullCheckIntegrationTest
                    .andThatsAllFolks();
     }
 
-    private void write( LabelScanStore labelScanStore, Iterable<NodeLabelUpdate> nodeLabelUpdates ) throws IOException
+    private void write( LabelScanStore labelScanStore, Iterable<NodeLabelUpdate> nodeLabelUpdates )
+            throws IOException, IndexCapacityExceededException
     {
         try ( LabelScanWriter writer = labelScanStore.newWriter() )
         {
@@ -422,7 +424,7 @@ public class FullCheckIntegrationTest
                    .andThatsAllFolks();
     }
 
-    private long[] asArray( List<Integer> in )
+    private long[] asArray( List<? extends Number> in )
     {
         long[] longs = new long[in.size()];
         for ( int i = 0; i < in.size(); i++ )
@@ -430,6 +432,11 @@ public class FullCheckIntegrationTest
             longs[i] = in.get( i ).longValue();
         }
         return longs;
+    }
+
+    private PrimitiveLongSet asPrimitiveLongSet( List<? extends Number> in )
+    {
+        return PrimitiveLongCollections.setOf( asArray( in ) );
     }
 
     @Test
@@ -469,7 +476,7 @@ public class FullCheckIntegrationTest
             IndexAccessor accessor = fixture.directStoreAccess().indexes().getOnlineAccessor(
                     indexRule.getId(), new IndexConfiguration( indexRule.isConstraintIndex() ), samplingConfig );
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
-            updater.remove( indexedNodes );
+            updater.remove( asPrimitiveLongSet( indexedNodes ) );
             updater.close();
             accessor.close();
         }

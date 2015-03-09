@@ -28,6 +28,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -58,7 +59,8 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
                 return new DelegatingIndexUpdater( target.accessor.newUpdater( mode ) )
                 {
                     @Override
-                    public void process( NodePropertyUpdate update ) throws IOException, IndexEntryConflictException
+                    public void process( NodePropertyUpdate update )
+                            throws IOException, IndexEntryConflictException, IndexCapacityExceededException
                     {
                         try
                         {
@@ -71,7 +73,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
                     }
 
                     @Override
-                    public void close() throws IOException, IndexEntryConflictException
+                    public void close() throws IOException, IndexEntryConflictException, IndexCapacityExceededException
                     {
                         try
                         {

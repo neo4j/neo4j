@@ -21,12 +21,13 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.concurrent.Future;
 
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexConfiguration;
@@ -37,6 +38,7 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.Reservation;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -208,12 +210,19 @@ public class PopulatingIndexProxy implements IndexProxy
     private abstract class PopulatingIndexUpdater implements IndexUpdater
     {
         @Override
+        public Reservation validate( Iterable<NodePropertyUpdate> updates )
+                throws IOException, IndexCapacityExceededException
+        {
+            return Reservation.EMPTY;
+        }
+
+        @Override
         public void close() throws IOException, IndexEntryConflictException
         {
         }
 
         @Override
-        public void remove( Collection<Long> nodeIds )
+        public void remove( PrimitiveLongSet nodeIds )
         {
             throw new UnsupportedOperationException( "Should not remove() from populating index." );
         }

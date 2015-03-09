@@ -19,23 +19,25 @@
  */
 package org.neo4j.kernel.api.index;
 
-import static java.util.Arrays.asList;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+
+import static java.util.Arrays.asList;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertThat;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
@@ -72,7 +74,7 @@ public class UniqueIndexAccessorCompatibility extends IndexProviderCompatibility
     }
 
     @Before
-    public void before() throws IOException
+    public void before() throws Exception
     {
         IndexConfiguration indexConfig = new IndexConfiguration( true );
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( new Config() );
@@ -103,7 +105,8 @@ public class UniqueIndexAccessorCompatibility extends IndexProviderCompatibility
         }
     }
 
-    private void updateAndCommit( List<NodePropertyUpdate> updates ) throws IOException, IndexEntryConflictException
+    private void updateAndCommit( List<NodePropertyUpdate> updates )
+            throws IOException, IndexEntryConflictException, IndexCapacityExceededException
     {
         try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {

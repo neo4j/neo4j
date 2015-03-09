@@ -88,6 +88,7 @@ import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
+import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
@@ -224,7 +225,8 @@ public abstract class InternalAbstractGraphDatabase
         public TransactionCommitProcess create( LogicalTransactionStore logicalTransactionStore,
                                                 KernelHealth kernelHealth, NeoStore neoStore,
                                                 TransactionRepresentationStoreApplier storeApplier,
-                                                NeoStoreInjectedTransactionValidator validator,
+                                                NeoStoreInjectedTransactionValidator txValidator,
+                                                IndexUpdatesValidator indexUpdatesValidator,
                                                 TransactionApplicationMode mode, Config config )
         {
             if ( config.get( GraphDatabaseSettings.read_only ) )
@@ -234,7 +236,7 @@ public abstract class InternalAbstractGraphDatabase
             else
             {
                 return new TransactionRepresentationCommitProcess( logicalTransactionStore, kernelHealth,
-                        neoStore, storeApplier, mode );
+                        neoStore, storeApplier, indexUpdatesValidator, mode );
             }
         }
     };

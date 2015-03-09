@@ -23,30 +23,24 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
+import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.store.NodeLabels;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
-import org.neo4j.kernel.impl.transaction.state.LazyIndexUpdates;
-import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
@@ -66,31 +60,20 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
         }
     };
 
-    private final Map<Long,NodeCommand> nodeCommands = new HashMap<>();
-    private final Map<Long,List<PropertyCommand>> propertyCommands = new HashMap<>();
+    private final ValidatedIndexUpdates indexUpdates;
     private final List<NodeLabelUpdate> labelUpdates = new ArrayList<>();
 
     private final IndexingService indexingService;
-    private final NodeStore nodeStore;
-    private final PropertyStore propertyStore;
     private final LabelScanStore labelScanStore;
     private final CacheAccessBackDoor cacheAccess;
-    private final PropertyLoader propertyLoader;
-    private final long transactionId;
-    private final TransactionApplicationMode mode;
 
-    public IndexTransactionApplier( IndexingService indexingService, LabelScanStore labelScanStore,
-                                    NodeStore nodeStore, PropertyStore propertyStore, CacheAccessBackDoor cacheAccess,
-                                    PropertyLoader propertyLoader, long transactionId, TransactionApplicationMode mode )
+    public IndexTransactionApplier( IndexingService indexingService, ValidatedIndexUpdates indexUpdates,
+            LabelScanStore labelScanStore, CacheAccessBackDoor cacheAccess )
     {
         this.indexingService = indexingService;
+        this.indexUpdates = indexUpdates;
         this.labelScanStore = labelScanStore;
-        this.nodeStore = nodeStore;
-        this.propertyStore = propertyStore;
         this.cacheAccess = cacheAccess;
-        this.propertyLoader = propertyLoader;
-        this.transactionId = transactionId;
-        this.mode = mode;
     }
 
     @Override
@@ -102,21 +85,22 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
             cacheAccess.applyLabelUpdates( labelUpdates );
         }
 
-        if ( !nodeCommands.isEmpty() || !propertyCommands.isEmpty() )
-        {
-            updateIndexes();
-        }
+        updateIndexes();
     }
 
     private void updateIndexes()
     {
-        LazyIndexUpdates updates = new LazyIndexUpdates(
-                nodeStore, propertyStore, propertyCommands, nodeCommands, propertyLoader );
-
         // We only allow a single writer at the time to update the schema index stores
         synchronized ( indexingService )
         {
-            indexingService.updateIndexes( updates, transactionId, mode.needsIdempotencyChecks() );
+            try
+            {
+                indexUpdates.flush();
+            }
+            catch ( IOException | IndexCapacityExceededException | IndexEntryConflictException e )
+            {
+                throw new UnderlyingStorageException( e );
+            }
         }
     }
 
@@ -134,7 +118,7 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
                     writer.write( update );
                 }
             }
-            catch ( IOException e )
+            catch ( IOException | IndexCapacityExceededException e )
             {
                 throw new UnderlyingStorageException( e );
             }
@@ -144,13 +128,10 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
     @Override
     public boolean visitNodeCommand( NodeCommand command ) throws IOException
     {
-        // for index updates
-        nodeCommands.put( command.getKey(), command );
-
+        // for label store updates
         NodeRecord before = command.getBefore();
         NodeRecord after = command.getAfter();
 
-        // for label store updates
         NodeLabels labelFieldBefore = parseLabelsField( before );
         NodeLabels labelFieldAfter = parseLabelsField( after );
         if ( !(labelFieldBefore.isInlined() && labelFieldAfter.isInlined()
@@ -164,23 +145,6 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
             }
         }
 
-        return false;
-    }
-
-    @Override
-    public boolean visitPropertyCommand( PropertyCommand command ) throws IOException
-    {
-        PropertyRecord record = command.getAfter();
-        if ( record.isNodeSet() )
-        {
-            long nodeId = command.getAfter().getNodeId();
-            List<PropertyCommand> group = propertyCommands.get( nodeId );
-            if ( group == null )
-            {
-                propertyCommands.put( nodeId, group = new ArrayList<>() );
-            }
-            group.add( command );
-        }
         return false;
     }
 

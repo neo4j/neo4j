@@ -19,6 +19,24 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.apache.lucene.search.IndexSearcher;
+import org.junit.Rule;
+import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Collections;
+
+import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
+import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.util.FailureStorage;
+import org.neo4j.test.CleanupRule;
+import org.neo4j.test.OtherThreadExecutor;
+import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
+
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
@@ -32,24 +50,6 @@ import static org.neo4j.kernel.api.impl.index.AllNodesCollector.getAllNodes;
 import static org.neo4j.kernel.api.properties.Property.intProperty;
 import static org.neo4j.kernel.api.properties.Property.longProperty;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.Collections;
-
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.search.IndexSearcher;
-import org.junit.Rule;
-import org.junit.Test;
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
-import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.util.FailureStorage;
-import org.neo4j.test.CleanupRule;
-import org.neo4j.test.OtherThreadExecutor;
-import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 
 public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
 {
@@ -458,7 +458,7 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
         // Given
         SearcherManagerFactory searcherManagerFactory = mock( SearcherManagerFactory.class );
         SearcherManagerStub searcherManager = spy( new SearcherManagerStub( mock( IndexSearcher.class ) ) );
-        when( searcherManagerFactory.create( any( IndexWriter.class ) ) ).thenReturn( searcherManager );
+        when( searcherManagerFactory.create( any( LuceneIndexWriter.class ) ) ).thenReturn( searcherManager );
 
         DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = newPopulator( searcherManagerFactory );
 
@@ -471,12 +471,12 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void shouldCloseSearcherWhenPopulatorIsClosed() throws IOException
+    public void shouldCloseSearcherWhenPopulatorIsClosed() throws Exception
     {
         // Given
         SearcherManagerFactory searcherManagerFactory = mock( SearcherManagerFactory.class );
         SearcherManagerStub searcherManager = spy( new SearcherManagerStub( mock( IndexSearcher.class ) ) );
-        when( searcherManagerFactory.create( any( IndexWriter.class ) ) ).thenReturn( searcherManager );
+        when( searcherManagerFactory.create( any( LuceneIndexWriter.class ) ) ).thenReturn( searcherManager );
 
         DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = newPopulator( searcherManagerFactory );
 
@@ -509,7 +509,7 @@ public class DeferredConstraintVerificationUniqueLuceneIndexPopulatorTest
     {
         DeferredConstraintVerificationUniqueLuceneIndexPopulator populator = new
                 DeferredConstraintVerificationUniqueLuceneIndexPopulator( new LuceneDocumentStructure(),
-                IndexWriterFactories.standard(), searcherManagerFactory, new IndexWriterStatus(), directoryFactory,
+                IndexWriterFactories.tracking(), searcherManagerFactory, new IndexWriterStatus(), directoryFactory,
                 indexDirectory, failureStorage, INDEX_ID, descriptor );
 
         populator.create();
