@@ -24,16 +24,14 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.pagecache.PageSwapperFactory;
+import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.RunnablePageCache;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.PageSwapperFactory;
-import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.RunnablePageCache;
-import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 
 /**
@@ -139,7 +137,7 @@ public class MuninnPageCache implements RunnablePageCache
     // or has another FreePageWaiter at the head.
     // This contraption basically gives us a "transfer stack" with some space
     // optimisations for the initial bulk of contents.
-    // This field is accessed via Unsafe.
+    @SuppressWarnings( "unused" ) // This field is accessed via Unsafe.
     private volatile Object freelist;
 
     // Linked list of mappings - guarded by synchronized(this)
@@ -152,15 +150,6 @@ public class MuninnPageCache implements RunnablePageCache
 
     // Flag for when page cache is closed - writes guarded by synchronized(this), reads can be unsynchronized
     private volatile boolean closed;
-
-    public MuninnPageCache(
-            FileSystemAbstraction fs,
-            int maxPages,
-            int pageSize,
-            PageCacheTracer monitor )
-    {
-        this( new SingleFilePageSwapperFactory( fs ), maxPages, pageSize, monitor );
-    }
 
     public MuninnPageCache(
             PageSwapperFactory swapperFactory,

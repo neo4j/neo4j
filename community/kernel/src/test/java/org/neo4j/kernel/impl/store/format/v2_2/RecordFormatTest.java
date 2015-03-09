@@ -19,21 +19,22 @@
  */
 package org.neo4j.kernel.impl.store.format.v2_2;
 
-import java.io.File;
-import java.io.IOException;
-
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import java.io.File;
+import java.io.IOException;
+
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.StubPageCursor;
-import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.kernel.impl.store.format.Store;
 import org.neo4j.kernel.impl.store.standard.StoreFormat;
 import org.neo4j.kernel.impl.store.standard.StoreToolkit;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.PageCacheRule;
 
 import static org.junit.Assert.assertEquals;
 
@@ -43,12 +44,14 @@ public abstract class RecordFormatTest<FORMAT extends StoreFormat<RECORD, CURSOR
 {
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    @Rule
+    public PageCacheRule pageCacheRule = new PageCacheRule( false ); // TODO that we have to set this to false is indicative of bugs in this code!
 
     protected StubPageCursor pageCursor;
     protected final FORMAT format;
     protected StoreFormat.RecordFormat<RECORD> recordFormat;
     protected StoreToolkit storeToolkit;
-    protected MuninnPageCache pageCache;
+    protected PageCache pageCache;
     protected PagedFile pagedFile;
 
     public RecordFormatTest( FORMAT format )
@@ -62,9 +65,15 @@ public abstract class RecordFormatTest<FORMAT extends StoreFormat<RECORD, CURSOR
     {
         int pageSize = 1024;
         pageCursor = new StubPageCursor( 0l, pageSize );
-        pageCache = new MuninnPageCache( fsRule.get(), 1024, 1024, PageCacheTracer.NULL );
+        pageCache = pageCacheRule.getPageCache( fsRule.get() );
         pagedFile = pageCache.map( new File("store"), 1024 );
         storeToolkit = new StoreToolkit( format.recordSize( null ), pageSize, 0, null, null );
+    }
+
+    @After
+    public void tearDown() throws IOException
+    {
+        pagedFile.close();
     }
 
     //

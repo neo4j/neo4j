@@ -19,15 +19,13 @@
  */
 package org.neo4j.kernel.impl.store.format.v2_2;
 
-import java.io.File;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
+
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStore;
@@ -39,12 +37,11 @@ import org.neo4j.kernel.impl.store.standard.StandardStore;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.PageCacheRule;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.kernel.impl.store.NeoStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.StoreFactory.RELATIONSHIP_STORE_NAME;
 import static org.neo4j.kernel.impl.store.impl.StoreMatchers.records;
@@ -57,6 +54,8 @@ public class RelationshipFormatComplianceTest
 {
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    @Rule
+    public PageCacheRule pageCacheRule = new PageCacheRule( false ); // TODO that we have to set this to false is indicative of bugs in this code!
     private PageCache pageCache;
     private StoreFactory storeFactory;
     private final File storeDir = new File( "dir" ).getAbsoluteFile();
@@ -64,7 +63,7 @@ public class RelationshipFormatComplianceTest
     @Before
     public void setup()
     {
-        pageCache = new MuninnPageCache( fsRule.get(), 1024, 1024, PageCacheTracer.NULL );
+        pageCache = pageCacheRule.getPageCache( fsRule.get() );
         storeFactory = new StoreFactory( StoreFactory.configForStoreDir( new Config(), storeDir ), new DefaultIdGeneratorFactory(), pageCache, fsRule.get(), StringLogger.DEV_NULL, new Monitors() );
     }
 
@@ -81,15 +80,18 @@ public class RelationshipFormatComplianceTest
         neoStore.close();
 
         // When
-        StandardStore<RelationshipRecord, RelationshipStoreFormat_v2_2.RelationshipRecordCursor> store = new
-                StandardStore<>( new RelationshipStoreFormat_v2_2(), new File( storeDir, DEFAULT_NAME + RELATIONSHIP_STORE_NAME ),
-                new TestStoreIdGenerator(), new MuninnPageCache( fsRule.get(), 1024, 1024, PageCacheTracer.NULL ), fsRule.get(),
-                StringLogger.DEV_NULL );
+        RelationshipStoreFormat_v2_2 format = new RelationshipStoreFormat_v2_2();
+        File fileName = new File( storeDir, DEFAULT_NAME + RELATIONSHIP_STORE_NAME );
+        TestStoreIdGenerator idGenerator = new TestStoreIdGenerator();
+        StandardStore<RelationshipRecord, RelationshipStoreFormat_v2_2.RelationshipRecordCursor> store =
+                new StandardStore<>( format, fileName, idGenerator, pageCache, fsRule.get(), StringLogger.DEV_NULL );
         store.init();
         store.start();
 
         // Then
         assertThat( records( store ), equalTo( asList( expectedRecord ) ) );
+        store.stop();
+        store.shutdown();
     }
 
     @Test
@@ -98,10 +100,11 @@ public class RelationshipFormatComplianceTest
         // Given
         storeFactory.createNeoStore().close(); // NodeStore wont start unless it's child stores exist, so create those
 
-        StandardStore<RelationshipRecord, RelationshipStoreFormat_v2_2.RelationshipRecordCursor> store = new
-                StandardStore<>( new RelationshipStoreFormat_v2_2(), new File( storeDir, DEFAULT_NAME + RELATIONSHIP_STORE_NAME ),
-                new TestStoreIdGenerator(), new MuninnPageCache( fsRule.get(), 1024, 1024, PageCacheTracer.NULL ), fsRule.get(),
-                StringLogger.DEV_NULL );
+        RelationshipStoreFormat_v2_2 format = new RelationshipStoreFormat_v2_2();
+        File fileName = new File( storeDir, DEFAULT_NAME + RELATIONSHIP_STORE_NAME );
+        TestStoreIdGenerator idGenerator = new TestStoreIdGenerator();
+        StandardStore<RelationshipRecord, RelationshipStoreFormat_v2_2.RelationshipRecordCursor> store =
+                new StandardStore<>( format, fileName, idGenerator, pageCache, fsRule.get(), StringLogger.DEV_NULL );
         store.init();
         store.start();
 
@@ -117,5 +120,6 @@ public class RelationshipFormatComplianceTest
         RelationshipStore relStore = storeFactory.newRelationshipStore();
         RelationshipRecord record = relStore.getRecord( expectedRecord.getId() );
         assertThat( record, equalTo( expectedRecord ) );
+        relStore.close();
     }
 }

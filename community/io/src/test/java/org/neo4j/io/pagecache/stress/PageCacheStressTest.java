@@ -23,10 +23,12 @@ import java.io.File;
 import java.nio.file.Files;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.RunnablePageCache;
+import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 import static java.lang.System.getProperty;
 import static java.nio.file.Paths.get;
@@ -34,8 +36,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.io.pagecache.stress.StressTestRecord.SizeOfCounter;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 /**
  * A stress test for page cache(s).
@@ -85,12 +87,12 @@ public class PageCacheStressTest
 
     public void run() throws Exception
     {
+        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs );
         RunnablePageCache pageCacheUnderTest = new MuninnPageCache(
-                new DefaultFileSystemAbstraction(),
-                numberOfCachePages, cachePageSize, tracer );
+                swapperFactory, numberOfCachePages, cachePageSize, tracer );
         RunnablePageCache pageCacheKeepingCount = new MuninnPageCache(
-                new DefaultFileSystemAbstraction(),
-                numberOfCachePages, cachePageSize, tracer );
+                swapperFactory, numberOfCachePages, cachePageSize, tracer );
 
         Thread thread1 = new Thread( pageCacheUnderTest );
         Thread thread2 = new Thread( pageCacheKeepingCount );
