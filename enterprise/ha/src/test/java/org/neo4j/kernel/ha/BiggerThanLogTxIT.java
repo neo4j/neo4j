@@ -129,6 +129,35 @@ public class BiggerThanLogTxIT
     {
         for ( GraphDatabaseService db : cluster.getAllMembers() )
         {
+            // Try again with sync, it will clear up...
+            if ( expectedNodeCount != nodeCount( db ) )
+            {
+                for ( int i = 0; i < 100; i++ )
+                {
+                    try
+                    {
+                        Thread.sleep(1000);
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        throw new RuntimeException( e );
+                    }
+
+                    int count = nodeCount( db );
+                    if (expectedNodeCount == count)
+                        break;
+
+                    try
+                    {
+                        cluster.sync(  );
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        throw new RuntimeException( e );
+                    }
+                }
+            }
+
             assertEquals( expectedNodeCount, nodeCount( db ) );
         }
     }
