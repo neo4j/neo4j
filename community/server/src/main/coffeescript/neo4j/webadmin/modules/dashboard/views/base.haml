@@ -1,0 +1,41 @@
+.sidebar
+  %h1.pad 
+  %ul.info_list
+    %li
+      %h3 Server url
+      %p= server.url
+    %li
+      %h3 Kernel version
+      %p= server.version
+
+  %p.pad For more information, help and examples, please visit <a href="http://neo4j.org">neo4j.org</a>.
+
+  .foldout
+    %h2
+      %a.foldout_trigger(href="#") More about Charts
+    .foldout_content.pad
+        %p To the right are charts that show the total number of primitive entities in the database over time.
+        %p You can select the timespan to show with the links in the top right corner of the chart.
+        %p To get specific info of some point in any chart, simply hover the mouse over the chart line.
+        %p The charts are automatically updated every three seconds.
+
+  .foldout
+    %h2
+      %a.foldout_trigger(href="#") More about KPIs
+    .foldout_content.pad
+      %p Above the charts are one to three boxes showing different sets of Key Point of Interests (KPIs). These are updated every three seconds.
+      %p Depending on what neo4j distribution you are running, the number of KPIs available will differ. 
+      %h3 A note on primitive counts
+      %p The number of nodes, properties and relations are estimates based on file sizes. Actually counting the nodes is not done for performance reasons. These are usually very accurate, but in certain cases if you have experienced a database crash and subsequent recovery, they may be very wrong.
+      %p How wrong the numbers are is entirely based on the operations you were doing right before the crash. There is currently no automated way to remedy this problem.
+      %h3 A note on disk size
+      %p Disk size KPIs are only available in neo4j enterprise edition.
+      %p Because of the way neo4j stores data, the different storage files (nodestore, relationshipstore etc.) will sometimes be very small before the server has recieved any requests.
+      %p It may be surprising to see the storage files grow rapidly when server first recieves requests, but the measurements will actually be correctly reflecting the disk size of the storage files.
+      %p This is only occurs if you are working on a relatively small graph.
+
+.workarea.with-sidebar
+  #dashboard-info.pad
+  .break
+  #dashboard-charts
+
