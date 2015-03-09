@@ -163,7 +163,7 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
         StoreCopyServer streamer = new StoreCopyServer( transactionIdStore, dataSource, graphDb.getDependencyResolver
                 ().resolveDependency( LogRotationControl.class ), fileSystem,
                 storeDir );
-        return streamer.flushStoresAndStreamStoreFiles( writer );
+        return streamer.flushStoresAndStreamStoreFiles( writer, false );
     }
 
     @Override

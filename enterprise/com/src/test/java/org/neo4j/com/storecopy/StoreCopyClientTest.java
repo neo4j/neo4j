@@ -251,7 +251,7 @@ public class StoreCopyClientTest
 
                     RequestContext requestContext = new StoreCopyServer(transactionIdStore, neoStoreDataSource,
                             logRotationControl, fs, new File(originalDir))
-                            .flushStoresAndStreamStoreFiles( writer );
+                            .flushStoresAndStreamStoreFiles( writer, false );
 
                     final StoreId storeId = original.getDependencyResolver().resolveDependency( StoreId.class );
 
