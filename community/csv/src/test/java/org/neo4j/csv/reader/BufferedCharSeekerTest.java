@@ -373,23 +373,6 @@ public class BufferedCharSeekerTest
     }
 
     @Test
-    public void shouldHandleSlashEncodedQuotes() throws Exception
-    {
-        // GIVEN
-        seeker = seeker( "\"value \\\"one\\\"\"\t\"\\\"value\\\" two\"\t\"va\\\"lue\\\" three\"" );
-
-        // WHEN/THEN
-        assertTrue( seeker.seek( mark, TAB ) );
-        assertEquals( "value \"one\"", seeker.extract( mark, extractors.string() ).value() );
-
-        assertTrue( seeker.seek( mark, TAB ) );
-        assertEquals( "\"value\" two", seeker.extract( mark, extractors.string() ).value() );
-
-        assertTrue( seeker.seek( mark, TAB ) );
-        assertEquals( "va\"lue\" three", seeker.extract( mark, extractors.string() ).value() );
-    }
-
-    @Test
     public void shouldRecognizeStrayQuoteCharacters() throws Exception
     {
         // GIVEN
