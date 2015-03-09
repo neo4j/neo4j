@@ -43,6 +43,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
+import org.neo4j.unsafe.impl.batchimport.input.InputCache;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
@@ -128,21 +129,22 @@ public class ParallelBatchImporter implements BatchImporter
                       fileSystem.openAsOutputStream( badRelationshipsFile, false ) );
               Collector<InputRelationship> badRelationships =
                       input.badRelationshipsCollector( badRelationshipsOutput );
-              CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset() )
+              CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset();
+              InputCache inputCache = new InputCache( fileSystem, new File( storeDir ) ) )
         {
             // Some temporary caches and indexes in the import
             IdMapper idMapper = input.idMapper();
             IdGenerator idGenerator = input.idGenerator();
             nodeRelationshipLink = new NodeRelationshipLinkImpl( AUTO, config.denseNodeThreshold() );
-            final InputIterable<InputNode> nodes = input.nodes();
-            final InputIterable<InputRelationship> relationships = input.relationships();
+            InputIterable<InputNode> nodes = input.nodes();
+            InputIterable<InputRelationship> relationships = input.relationships();
 
             // Stage 1 -- nodes, properties, labels
-            final NodeStage nodeStage = new NodeStage( nodes, idMapper, idGenerator, neoStore );
+            final NodeStage nodeStage = new NodeStage( nodes, idMapper, idGenerator, neoStore, inputCache );
 
             // Stage 2 -- calculate dense node threshold
             final CalculateDenseNodesStage calculateDenseNodesStage = new CalculateDenseNodesStage( relationships,
-                    nodeRelationshipLink, idMapper, badRelationships );
+                    nodeRelationshipLink, idMapper, badRelationships, inputCache );
 
             // Execute stages 1 and 2 in parallel or sequentially?
             if ( idMapper.needsPreparation() )
@@ -150,7 +152,7 @@ public class ParallelBatchImporter implements BatchImporter
                 // So we need to execute the node stage first as it fills the id mapper and prepares it in the end,
                 // before executing any stage that needs ids from the id mapper, for example calc dense node stage.
                 executeStages( nodeStage );
-                executeStages( new IdMapperPreparationStage( config, idMapper, nodes ) );
+                executeStages( new IdMapperPreparationStage( config, idMapper, nodes, inputCache ) );
                 executeStages( calculateDenseNodesStage );
             }
             else
@@ -160,8 +162,9 @@ public class ParallelBatchImporter implements BatchImporter
             }
 
             // Stage 3 -- relationships, properties
-            final RelationshipStage relationshipStage = new RelationshipStage( relationships, idMapper,
-                    neoStore, nodeRelationshipLink, input.specificRelationshipIds() );
+            final RelationshipStage relationshipStage = new RelationshipStage(
+                    relationships.supportsMultiplePasses() ? relationships : inputCache.relationships(),
+                    idMapper, neoStore, nodeRelationshipLink, input.specificRelationshipIds() );
             executeStages( relationshipStage );
 
             // Prepare for updating
@@ -231,11 +234,16 @@ public class ParallelBatchImporter implements BatchImporter
     public class NodeStage extends Stage
     {
         public NodeStage( InputIterable<InputNode> nodes, IdMapper idMapper, IdGenerator idGenerator,
-                BatchingNeoStore neoStore )
+                          BatchingNeoStore neoStore, InputCache inputCache ) throws IOException
         {
             super( "Nodes", config, idGenerator.dependsOnInput() );
             add( new InputIteratorBatcherStep<>( control(), config.batchSize(), config.movingAverageSize(),
                     nodes.iterator(), InputNode.class ) );
+            if ( !nodes.supportsMultiplePasses() )
+            {
+                add( new InputEntityCacherStep<>( control(), config.workAheadSize(), config.movingAverageSize(),
+                        inputCache.cacheNodes() ) );
+            }
 
             NodeStore nodeStore = neoStore.getNodeStore();
             PropertyStore propertyStore = neoStore.getPropertyStore();
@@ -250,11 +258,12 @@ public class ParallelBatchImporter implements BatchImporter
 
     public class IdMapperPreparationStage extends Stage
     {
-        public IdMapperPreparationStage( Configuration config, IdMapper idMapper, InputIterable<InputNode> nodeInput )
+        public IdMapperPreparationStage( Configuration config, IdMapper idMapper, InputIterable<InputNode> nodes,
+                InputCache inputCache )
         {
             super( "Prepare node index", config, false );
             add( new IdMapperPreparationStep( control(), config.batchSize(), config.movingAverageSize(),
-                    idMapper, idsOf( nodeInput ) ) );
+                    idMapper, idsOf( nodes.supportsMultiplePasses() ? nodes : inputCache.nodes() ) ) );
         }
     }
 
@@ -262,12 +271,17 @@ public class ParallelBatchImporter implements BatchImporter
     {
         public CalculateDenseNodesStage( InputIterable<InputRelationship> relationships,
                 NodeRelationshipLink nodeRelationshipLink, IdMapper idMapper,
-                Collector<InputRelationship> badRelationshipsCollector )
+                Collector<InputRelationship> badRelationshipsCollector,
+                InputCache inputCache ) throws IOException
         {
             super( "Calculate dense nodes", config, false );
             add( new InputIteratorBatcherStep<>( control(), config.batchSize(), config.movingAverageSize(),
                     relationships.iterator(), InputRelationship.class ) );
-
+            if ( !relationships.supportsMultiplePasses() )
+            {
+                add( new InputEntityCacherStep<>( control(), config.workAheadSize(), config.movingAverageSize(),
+                        inputCache.cacheRelationships() ) );
+            }
             add( new RelationshipPreparationStep( control(), config, idMapper ) );
             add( new CalculateDenseNodesStep( control(), config, nodeRelationshipLink, badRelationshipsCollector ) );
         }

@@ -29,11 +29,17 @@ import static org.neo4j.helpers.Format.KB;
 public class PhysicalWritableLogChannel implements WritableLogChannel
 {
     private LogVersionedStoreChannel channel;
-    private final ByteBuffer buffer = ByteBuffer.allocate( 512*KB );
+    private final ByteBuffer buffer;
 
     public PhysicalWritableLogChannel( LogVersionedStoreChannel channel )
     {
+        this( channel, 512*KB );
+    }
+
+    public PhysicalWritableLogChannel( LogVersionedStoreChannel channel, int bufferSize )
+    {
         this.channel = channel;
+        this.buffer = ByteBuffer.allocate( bufferSize );
     }
 
     @Override

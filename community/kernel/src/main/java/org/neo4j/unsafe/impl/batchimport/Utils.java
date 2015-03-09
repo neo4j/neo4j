@@ -109,6 +109,12 @@ public class Utils
                     }
                 };
             }
+
+            @Override
+            public boolean supportsMultiplePasses()
+            {
+                return false;
+            }
         };
     }
 

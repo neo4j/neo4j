@@ -64,9 +64,10 @@ public class InputRelationship extends InputEntity
         this.typeId = typeId;
     }
 
-    public void setSpecificId( long id )
+    public InputRelationship setSpecificId( long id )
     {
         this.id = id;
+        return this;
     }
 
     public boolean hasSpecificId()

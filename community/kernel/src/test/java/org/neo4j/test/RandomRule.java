@@ -126,4 +126,9 @@ public class RandomRule implements TestRule
     {
         return seed;
     }
+
+    public Random random()
+    {
+        return random;
+    }
 }

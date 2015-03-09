@@ -24,6 +24,7 @@ import java.util.Random;
 import org.neo4j.csv.reader.SourceTraceability;
 import org.neo4j.function.Function;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.test.Randoms;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Deserialization;
@@ -40,6 +41,7 @@ public class RandomDataIterator<T> extends PrefetchingIterator<T> implements Inp
     private final Header header;
     private final long limit;
     private final Random random;
+    private final Randoms randoms;
     private final Deserialization<T> deserialization;
     private final long nodeCount;
     private final Distribution<String> labels;
@@ -56,6 +58,7 @@ public class RandomDataIterator<T> extends PrefetchingIterator<T> implements Inp
         this.header = header;
         this.limit = limit;
         this.random = random;
+        this.randoms = new Randoms( random, Randoms.DEFAULT );
         this.deserialization = deserialization.apply( this );
         this.nodeCount = nodeCount;
         this.labels = new Distribution<>( tokens( "Label", labelCount ) );
@@ -149,7 +152,7 @@ public class RandomDataIterator<T> extends PrefetchingIterator<T> implements Inp
         String type = entry.extractor().toString();
         if ( type.equals( "String" ) )
         {
-            return randomString( random );
+            return randoms.string( 5, 20, Randoms.CSA_LETTERS_AND_DIGITS );
         }
         else if ( type.equals( "long" ) )
         {
@@ -182,17 +185,6 @@ public class RandomDataIterator<T> extends PrefetchingIterator<T> implements Inp
         }
         position += length * 6;
         return result;
-    }
-
-    private String randomString( Random random )
-    {
-        char[] chars = new char[random.nextInt( 10 )+5];
-        for ( int i = 0; i < chars.length; i++ )
-        {
-            chars[i] = (char) ('a' + random.nextInt( 20 ));
-        }
-        position += chars.length;
-        return String.valueOf( chars );
     }
 
     @Override

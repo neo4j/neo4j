@@ -17,41 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.unsafe.impl.batchimport.input;
 
 /**
- * Mutable marker that can create immutable {@link LogPosition} objects when requested to.
+ * A {@link Listener} which is designed to receive one or more items, to then finally be closed
+ * when all items have been received.
  */
-public class LogPositionMarker
+public interface Receiver<T,EXCEPTION extends Exception> extends AutoCloseable
 {
-    private long logVersion;
-    private long byteOffset;
-    private boolean specified;
+    void receive( T item ) throws EXCEPTION;
 
-    public void mark( long logVersion, long byteOffset )
-    {
-        this.logVersion = logVersion;
-        this.byteOffset = byteOffset;
-        this.specified = true;
-    }
-
-    public void unspecified()
-    {
-        specified = false;
-    }
-
-    public LogPosition newPosition()
-    {
-        return specified ? new LogPosition( logVersion, byteOffset ) : LogPosition.UNSPECIFIED;
-    }
-
-    public long getLogVersion()
-    {
-        return logVersion;
-    }
-
-    public long getByteOffset()
-    {
-        return byteOffset;
-    }
+    @Override
+    void close() throws EXCEPTION;
 }
