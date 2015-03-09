@@ -39,7 +39,6 @@ public class BufferedCharSeeker implements CharSeeker, SourceTraceability
     private static final char EOL_CHAR = '\n';
     private static final char EOL_CHAR_2 = '\r';
     private static final char EOF_CHAR = (char) -1;
-    private static final char BACK_SLASH = '\\';
 
     private final CharReadable reader;
     private char[] buffer;
@@ -156,14 +155,6 @@ public class BufferedCharSeeker implements CharSeeker, SourceTraceability
                         lineNumber++;
                     }
                     nextChar( skippedChars );
-                }
-                else if ( ch == BACK_SLASH )
-                {   // Legacy concern, support java style quote encoding
-                    int nextCh = peekChar();
-                    if ( nextCh == quoteChar )
-                    {   // Found a slash encoded quote
-                        repositionChar( bufferPos++, ++skippedChars );
-                    }
                 }
             }
         }
