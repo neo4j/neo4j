@@ -508,6 +508,7 @@ public class Jetty9WebServer implements WebServer
             staticContext.setServer( getJetty() );
             staticContext.setContextPath( mountPoint );
             staticContext.setSessionHandler( sessionHandler );
+            staticContext.setInitParameter( "org.eclipse.jetty.servlet.Default.dirAllowed", "false" );
             URL resourceLoc = getClass().getClassLoader()
                     .getResource( contentLocation );
             if ( resourceLoc != null )

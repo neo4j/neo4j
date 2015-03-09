@@ -19,6 +19,9 @@
  */
 package org.neo4j.server.web;
 
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -31,6 +34,8 @@ import org.neo4j.server.configuration.ServerConfigurator;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.Mute;
+
+import static org.junit.Assert.assertEquals;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.Mute.muteAll;
@@ -96,6 +101,39 @@ public class TestJetty9WebServer
     public void shouldStopCleanlyEvenWhenItHasntBeenStarted()
     {
         new Jetty9WebServer( DevNullLoggingService.DEV_NULL ).stop();
+    }
+
+    /*
+     * The default jetty behaviour serves an index page for static resources. The 'directories' exposed through this
+     * behaviour are not file system directories, but only a list of resources present on the classpath, so there is no
+     * security vulnerability. However, it might seem like a vulnerability to somebody without the context of how the
+     * whole stack works, so to avoid confusion we disable the jetty behaviour.
+     */
+    @Test
+    public void shouldDisallowDirectoryListings() throws Exception
+    {
+        @SuppressWarnings("deprecation")
+        ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( "path", stringMap(),
+                GraphDatabaseDependencies.newDependencies())
+        {
+        };
+
+        ServerConfigurator config = new ServerConfigurator( db );
+        config.configuration().setProperty( Configurator.WEBSERVER_PORT_PROPERTY_KEY, "7477" );
+        WrappingNeoServerBootstrapper testBootstrapper = new WrappingNeoServerBootstrapper( db, config );
+
+        testBootstrapper.start();
+
+        try ( CloseableHttpClient httpClient = HttpClientBuilder.create().build() ) {
+            // Depends on specific resources exposed by the browser module; if this test starts to fail,
+            // check whether the structure of the browser module has changed and adjust accordingly.
+            assertEquals( 200, httpClient.execute( new HttpGet(
+                    "http://localhost:7477/browser/content/help/create.html" ) ).getStatusLine().getStatusCode() );
+            assertEquals( 403, httpClient.execute( new HttpGet(
+                    "http://localhost:7477/browser/content/help/" ) ).getStatusLine().getStatusCode() );
+        }
+
+        testBootstrapper.stop();
     }
 
     @Rule
