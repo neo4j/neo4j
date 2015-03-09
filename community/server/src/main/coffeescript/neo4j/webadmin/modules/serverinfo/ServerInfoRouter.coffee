@@ -27,6 +27,7 @@ define(
     
     class ServerInfoRouter extends Router
       routes : 
+        "" : "redirect",
         "/info/" : "base",
         "/info/:domain/:name/" : "bean",
 
@@ -39,6 +40,8 @@ define(
 
         @serverInfo = new ServerInfo { server : @appState.get "server" } 
         @server = @appState.get "server"
+
+      redirect : => location.hash = "/info/"
 
       base : =>
         @saveLocation()

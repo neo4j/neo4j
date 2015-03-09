@@ -23,13 +23,12 @@ import java.net.URI;
 import java.util.List;
 
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.server.web.ServerInternalSettings;
-import org.neo4j.server.web.WebServer;
 import org.neo4j.server.rest.management.JmxService;
-import org.neo4j.server.rest.management.MonitorService;
 import org.neo4j.server.rest.management.RootService;
 import org.neo4j.server.rest.management.VersionAndEditionService;
 import org.neo4j.server.rest.management.console.ConsoleService;
+import org.neo4j.server.web.ServerInternalSettings;
+import org.neo4j.server.web.WebServer;
 
 import static org.neo4j.server.JAXRSHelper.listFrom;
 
@@ -55,7 +54,6 @@ public class ManagementApiModule implements ServerModule
     {
         return listFrom(
                 JmxService.class.getName(),
-                MonitorService.class.getName(),
                 RootService.class.getName(),
                 ConsoleService.class.getName(),
                 VersionAndEditionService.class.getName() );
