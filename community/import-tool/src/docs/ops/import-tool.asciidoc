@@ -460,12 +460,17 @@ The command line arguments would remain the same as before:
 include::id-spaces.adoc[]
 ----
 
-=== Missing nodes in relationships files
+== Bad input data
 
-The import tool has a threshold of how many relationships can contain missing nodes (a bad relationship).
-By default it will allow `1000` bad relationships before the import process fails.
-If you want the import to immediately fail when it is unable to import a relationship then set this threshold to `0`.
+The import tool has a threshold of how many bad entities (nodes/relationships) to tolerate and skip before failing the import.
+By default `1000` bad entities are tolerated. A bad tolerance of `0` will as an example fail the import on the first bad entity.
+There are different types of bad input.
 
+=== Relationships referring to missing nodes
+
+Relationships that refer to missing node ids, either for `:START_ID` or `:END_ID` are considered bad relationships. 
+Whether or not such relationships are skipped is controlled with `--skip-bad-relationships` flag which can have values `{true,false}` or no value, which means `true`.
+Specifying `false` means that any bad relationship is considered an error and will fail the import.
 In the following example there is a missing `emil` node referenced in the roles file.
 
 .movies9.csv
@@ -493,10 +498,36 @@ The command line arguments would remain the same as before:
 include::bad-relationships-default.adoc[]
 ----
 
-Since there was only one bad relationship the import process will complete successfully and a `not-imported.bad` file will be created and populated with the failed relationships.
+Since there was only one bad relationship the import process will complete successfully and a `not-imported.bad` file will be created and populated with the bad relationships.
 
 .not-imported.bad
 [source]
 ----
 include::bad-relationships-default-not-imported.bad.adoc[]
+----
+
+=== Multiple nodes with same id within same id space
+
+Nodes that specify `:ID` which has already been specified within the id space are considered bad nodes.
+Whether or not such nodes are skipped is controlled with `--skip-duplicate-nodes` flag which can have values `{true,false}` or no value, which means `true`.
+Specifying `false` means that any duplicate node is considered an error and will fail the import.
+In the following example there is a node id that is specified twice within the same id space.
+
+.actors10.csv
+[source]
+----
+include::actors10.csv[]
+----
+
+[source]
+----
+include::bad-duplicate-nodes-default.adoc[]
+----
+
+Since there was only one bad node the import process will complete successfully and a `not-imported.bad` file will be created and populated with the bad node.
+
+.not-imported.bad
+[source]
+----
+include::bad-duplicate-nodes-default-not-imported.bad.adoc[]
 ----
