@@ -174,6 +174,6 @@ public class Neo4jJsonCodecTest
         jsonCodec.writeValue( jsonGenerator, map );
 
         // then
-        verify( jsonGenerator, times( 1 ) ).writeFieldName( (String) null );
+        verify( jsonGenerator, times( 1 ) ).writeFieldName( "null" );
     }
 }
