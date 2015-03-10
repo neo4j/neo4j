@@ -32,14 +32,14 @@ import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 public class CalculateDenseNodesStep extends ExecutorServiceStep<Batch<InputRelationship,RelationshipRecord>>
 {
     private final NodeRelationshipLink nodeRelationshipLink;
-    private final Collector<InputRelationship> badRelationshipsCollector;
+    private final Collector badCollector;
 
     public CalculateDenseNodesStep( StageControl control, Configuration config,
-            NodeRelationshipLink nodeRelationshipLink, Collector<InputRelationship> badRelationshipsCollector )
+            NodeRelationshipLink nodeRelationshipLink, Collector badCollector )
     {
         super( control, "CALCULATOR", config.workAheadSize(), config.movingAverageSize(), 1 );
         this.nodeRelationshipLink = nodeRelationshipLink;
-        this.badRelationshipsCollector = badRelationshipsCollector;
+        this.badCollector = badCollector;
     }
 
     @Override
@@ -76,6 +76,6 @@ public class CalculateDenseNodesStep extends ExecutorServiceStep<Batch<InputRela
             }
         }
 
-        badRelationshipsCollector.collect( relationship, inputNodeId );
+        badCollector.collectBadRelationship( relationship, inputNodeId );
     }
 }

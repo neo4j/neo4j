@@ -19,34 +19,48 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.Predicates;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 /**
- * Updates a batch of records to a store.
+ * Updates a batch of records to a store. Can be given a {@link Predicate} that can choose to not
+ * {@link Predicate#accept(Object) accept} a record, which will have that record be written as unused instead.
  */
 public class UpdateRecordsStep<RECORD extends AbstractBaseRecord> extends ExecutorServiceStep<RECORD[]>
 {
     private final RecordStore<RECORD> store;
+    private final Predicate<RECORD> updatePredicate;
 
     public UpdateRecordsStep( StageControl control, int workAheadSize, int movingAverageSize,
             RecordStore<RECORD> store )
     {
-        super( control, "v", workAheadSize, movingAverageSize, 1 );
-        this.store = store;
+        this( control, workAheadSize, movingAverageSize, store, Predicates.<RECORD>TRUE() );
     }
 
+    public UpdateRecordsStep( StageControl control, int workAheadSize, int movingAverageSize,
+            RecordStore<RECORD> store, Predicate<RECORD> updatePredicate )
+    {
+        super( control, "v", workAheadSize, movingAverageSize, 1 );
+        this.store = store;
+        this.updatePredicate = updatePredicate;
+    }
+
+    @SuppressWarnings( "unchecked" )
     @Override
     protected Object process( long ticket, RECORD[] batch )
     {
         for ( RECORD record : batch )
         {
-            if ( record != null )
+            if ( record.inUse() && !updatePredicate.accept( record ) )
             {
-                store.updateRecord( record );
+                record = (RECORD) record.clone();
+                record.setInUse( false );
             }
+            store.updateRecord( record );
         }
         return null; // end of line
     }

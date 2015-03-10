@@ -27,6 +27,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.LongEncoder;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Radix;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.StringEncoder;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
@@ -50,7 +51,7 @@ public class IdMappers
         }
 
         @Override
-        public void prepare( InputIterable<Object> nodeData, ProgressListener progress )
+        public void prepare( InputIterable<Object> nodeData, Collector collector, ProgressListener progress )
         {   // No need to prepare anything
         }
 

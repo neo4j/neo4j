@@ -45,7 +45,7 @@ public class RecordProcessorStep<T extends AbstractBaseRecord> extends ExecutorS
     {
         for ( T item : batch )
         {
-            if ( item != null )
+            if ( item.inUse() )
             {
                 processor.process( item );
             }

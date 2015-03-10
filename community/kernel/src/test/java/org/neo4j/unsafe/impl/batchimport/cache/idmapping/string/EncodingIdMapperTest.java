@@ -42,20 +42,19 @@ import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.SimpleInputIterator;
 import org.neo4j.unsafe.impl.batchimport.input.SimpleInputIteratorWrapper;
 
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import static java.lang.System.currentTimeMillis;
@@ -107,7 +106,7 @@ public class EncodingIdMapperTest
         {
             idMapper.put( id, index++, GLOBAL );
         }
-        idMapper.prepare( ids, NONE );
+        idMapper.prepare( ids, mock( Collector.class ), NONE );
         MemoryStatsVisitor memoryStats = new GatheringMemoryStatsVisitor();
         idMapper.visitMemoryStats( memoryStats );
 
@@ -127,7 +126,7 @@ public class EncodingIdMapperTest
     {
         // GIVEN
         IdMapper idMapper = IdMappers.strings( NumberArrayFactory.AUTO );
-        idMapper.prepare( null, NONE );
+        idMapper.prepare( null, mock( Collector.class ), NONE );
 
         // WHEN
         long id = idMapper.get( "123", GLOBAL );
@@ -142,7 +141,7 @@ public class EncodingIdMapperTest
         // GIVEN
         IdMapper idMapper = IdMappers.strings( NumberArrayFactory.AUTO );
         ProgressListener progress = mock( ProgressListener.class );
-        idMapper.prepare( null, progress );
+        idMapper.prepare( null, mock( Collector.class ), progress );
 
         // WHEN
         long id = idMapper.get( "123", GLOBAL );
@@ -162,7 +161,7 @@ public class EncodingIdMapperTest
         // WHEN
         mapper.put( "123", 0, GLOBAL );
         mapper.put( "456", 1, GLOBAL );
-        mapper.prepare( null, NONE );
+        mapper.prepare( null, mock( Collector.class ), NONE );
 
         // THEN
         assertEquals( 1L, mapper.get( "456", GLOBAL ) );
@@ -192,7 +191,7 @@ public class EncodingIdMapperTest
 
         try
         {
-            mapper.prepare( values, NONE );
+            mapper.prepare( values, mock( Collector.class ), NONE );
 
             // THEN
             int id = 0;
@@ -209,40 +208,11 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldRefuseCollisionsBasedOnSameInputId() throws Exception
+    public void shouldReportCollisionsForSameInputId() throws Exception
     {
         // GIVEN
         IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), new Radix.String() );
         InputIterable<Object> ids = wrap( "source", Arrays.<Object>asList( "10", "9", "10" ) );
-        Group group = new Group.Adapter( GLOBAL.id(), "global" );
-        try ( ResourceIterator<Object> iterator = ids.iterator() )
-        {
-            for ( int i = 0; iterator.hasNext(); i++ )
-            {
-                mapper.put( iterator.next(), i, group );
-            }
-        }
-
-        // WHEN
-        try
-        {
-            mapper.prepare( ids, NONE );
-            fail( "Should have failed" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // THEN
-            assertTrue( e.getMessage().contains( "10" ) );
-        }
-    }
-
-    @Test
-    public void shouldIncludeSourceLocationsOfCollisions() throws Exception
-    {
-        // GIVEN
-        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), new Radix.String() );
-        final List<Object> idList = Arrays.<Object>asList( "10", "9", "10" );
-        InputIterable<Object> ids = wrap( "source", idList );
         try ( ResourceIterator<Object> iterator = ids.iterator() )
         {
             for ( int i = 0; iterator.hasNext(); i++ )
@@ -252,18 +222,12 @@ public class EncodingIdMapperTest
         }
 
         // WHEN
-        try
-        {
-            mapper.prepare( ids, NONE );
-            fail( "Should have failed" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // THEN
-            assertThat( e.getMessage(), containsString( "10" ) );
-            assertThat( e.getMessage(), containsString( "source:1" ) );
-            assertThat( e.getMessage(), containsString( "source:3" ) );
-        }
+        Collector collector = mock( Collector.class );
+        mapper.prepare( ids, collector, NONE );
+
+        // THEN
+        verify( collector, times( 1 ) ).collectDuplicateNode( "10", 2, GLOBAL.name(), "source:1", "source:3" );
+        verifyNoMoreInteractions( collector );
     }
 
     @Test
@@ -284,9 +248,11 @@ public class EncodingIdMapperTest
 
         // WHEN
         ProgressListener progress = mock( ProgressListener.class );
-        mapper.prepare( ids, progress );
+        Collector collector = mock( Collector.class );
+        mapper.prepare( ids, collector, progress );
 
         // THEN
+        verifyNoMoreInteractions( collector );
         assertEquals( 0L, mapper.get( "10", GLOBAL ) );
         assertEquals( 1L, mapper.get( "9", GLOBAL ) );
         // 3 times since SORT+DETECT+RESOLVE
@@ -311,43 +277,14 @@ public class EncodingIdMapperTest
             // group 1
             mapper.put( iterator.next(), id++, secondGroup );
         }
-        mapper.prepare( ids, NONE );
+        Collector collector = mock( Collector.class );
+        mapper.prepare( ids, collector, NONE );
 
         // WHEN/THEN
+        verifyNoMoreInteractions( collector );
         assertEquals( 0L, mapper.get( "10", firstGroup ) );
         assertEquals( 1L, mapper.get( "9", firstGroup ) );
         assertEquals( 2L, mapper.get( "10", secondGroup ) );
-    }
-
-    @Test
-    public void shouldPreventCollisionGetFromManyGroups() throws Exception
-    {
-        // GIVEN
-        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), new Radix.String() );
-        InputIterable<Object> ids = wrap( "source", Arrays.<Object>asList( "9", "10", "10" ) );
-        Groups groups = new Groups();
-        Group firstGroup = groups.getOrCreate( "first" ), secondGroup = groups.getOrCreate( "second" );
-        try ( ResourceIterator<Object> iterator = ids.iterator() )
-        {
-            int id = 0;
-            // group 0
-            mapper.put( iterator.next(), id++, firstGroup );
-            mapper.put( iterator.next(), id++, firstGroup );
-            // group 1
-            mapper.put( iterator.next(), id++, secondGroup );
-        }
-        mapper.prepare( ids, NONE );
-
-        // WHEN/THEN
-        try
-        {
-            mapper.get( "10", GLOBAL );
-            fail( "Should fail" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // Good
-        }
     }
 
     @Test
@@ -365,7 +302,7 @@ public class EncodingIdMapperTest
             mapper.put( iterator.next(), id++, secondGroup = groups.getOrCreate( "second" ) );
             mapper.put( iterator.next(), id++, thirdGroup = groups.getOrCreate( "third" ) );
         }
-        mapper.prepare( ids, NONE );
+        mapper.prepare( ids, mock( Collector.class ), NONE );
 
         // WHEN/THEN
         assertEquals( 0L, mapper.get( "8", firstGroup ) );
@@ -393,7 +330,8 @@ public class EncodingIdMapperTest
         {
             mapper.put( i, i, new Group.Adapter( i, "" + i ) );
         }
-        mapper.prepare( null, NONE ); // this test should have been set up to not run into collisions
+        // null since this test should have been set up to not run into collisions
+        mapper.prepare( null, mock( Collector.class ), NONE );
 
         // THEN
         for ( int i = 0; i < size; i++ )

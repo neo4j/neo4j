@@ -591,11 +591,6 @@ public class BatchingPageCache implements PageCache
         @Override
         protected void placeBufferAt( ByteBuffer buffer, long pageId ) throws IOException
         {
-            // If we're not in append-only mode, i.e. if we're in update mode
-            // OR if this is the first window index we read the contents.
-            // The reason for reading the first windows is that in order to play nicely with
-            // NeoStore and loading the store sometimes header information needs to be read,
-            // even if we're in append-only mode
             readFromChannelIntoBuffer( pageId );
         }
 

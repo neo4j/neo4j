@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
 
 /**
  * Preparation of an {@link IdMapper}, {@link IdMapper#prepare(InputIterable, ProgressListener)}
@@ -32,19 +33,21 @@ public class IdMapperPreparationStep extends LonelyProcessingStep
 {
     private final IdMapper idMapper;
     private final InputIterable<Object> allIds;
+    private final Collector collector;
 
     public IdMapperPreparationStep( StageControl control, int batchSize, int movingAverageSize,
-            IdMapper idMapper, InputIterable<Object> allIds )
+            IdMapper idMapper, InputIterable<Object> allIds, Collector collector )
     {
         super( control, "" /*named later in the progress listener*/, batchSize, movingAverageSize );
         this.idMapper = idMapper;
         this.allIds = allIds;
+        this.collector = collector;
     }
 
     @Override
     protected void process()
     {
-        idMapper.prepare( allIds, new ProgressListener()
+        idMapper.prepare( allIds, collector, new ProgressListener()
         {
             private final String[] stages = {"SORT", "DETECT", "RESOLVE"};
             private volatile int stage = 0;
