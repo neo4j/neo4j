@@ -19,19 +19,19 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.Future;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.Future;
 
 import org.neo4j.function.IOFunction;
 import org.neo4j.helpers.TaskCoordinator;
@@ -45,11 +45,11 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.register.Registers;
 import org.neo4j.test.ThreadingRule;
 
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
@@ -81,12 +81,14 @@ public class LuceneIndexAccessorTest
         // WHEN
         updateAndCommit( asList( add( nodeId, value ) ) );
         IndexReader firstReader = accessor.newReader();
-        updateAndCommit( asList( add( nodeId2, value ) ) );
+        updateAndCommit( asList( add( nodeId2, value2 ) ) );
         IndexReader secondReader = accessor.newReader();
 
         // THEN
         assertEquals( asSet( nodeId ), asUniqueSet( firstReader.lookup( value ) ) );
-        assertEquals( asSet( nodeId, nodeId2 ), asUniqueSet( secondReader.lookup( value ) ) );
+        assertEquals( asSet(  ), asUniqueSet( firstReader.lookup( value2 ) ) );
+        assertEquals( asSet( nodeId ), asUniqueSet( secondReader.lookup( value ) ) );
+        assertEquals( asSet( nodeId2 ), asUniqueSet( secondReader.lookup( value2 ) ) );
         firstReader.close();
         secondReader.close();
     }
@@ -127,14 +129,15 @@ public class LuceneIndexAccessorTest
         // GIVEN
         updateAndCommit( asList(
                 add( nodeId, value ),
-                add( nodeId2, value ) ) );
+                add( nodeId2, value2 ) ) );
 
         // WHEN
         updateAndCommit( asList( remove( nodeId, value ) ) );
         IndexReader reader = accessor.newReader();
 
         // THEN
-        assertEquals( asSet( nodeId2 ), asUniqueSet( reader.lookup( value ) ) );
+        assertEquals( asSet( nodeId2 ), asUniqueSet( reader.lookup( value2 ) ) );
+        assertEquals( asSet(  ), asUniqueSet( reader.lookup( value ) ) );
         reader.close();
     }
 
