@@ -42,6 +42,8 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.CloneableInPublic;
 import org.neo4j.helpers.Function;
+import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.Predicates;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 
@@ -522,6 +524,11 @@ public abstract class IteratorUtil
         return loop( iterator );
     }
 
+    public static <T> int count( Iterator<T> iterator )
+    {
+        return count( iterator, Predicates.<T>TRUE() );
+    }
+
     /**
      * Counts the number of items in the {@code iterator} by looping
      * through it.
@@ -529,15 +536,22 @@ public abstract class IteratorUtil
      * @param iterator the {@link Iterator} to count items in.
      * @return the number of found in {@code iterator}.
      */
-    public static <T> int count( Iterator<T> iterator )
+    public static <T> int count( Iterator<T> iterator, Predicate<T> filter )
     {
         int result = 0;
         while ( iterator.hasNext() )
         {
-            iterator.next();
-            result++;
+            if ( filter.accept( iterator.next() ) )
+            {
+                result++;
+            }
         }
         return result;
+    }
+
+    public static <T> int count( Iterable<T> iterable )
+    {
+        return count( iterable, Predicates.<T>TRUE() );
     }
 
     /**
@@ -547,9 +561,9 @@ public abstract class IteratorUtil
      * @param iterable the {@link Iterable} to count items in.
      * @return the number of found in {@code iterator}.
      */
-    public static <T> int count( Iterable<T> iterable )
+    public static <T> int count( Iterable<T> iterable, Predicate<T> filter )
     {
-        return count( iterable.iterator() );
+        return count( iterable.iterator(), filter );
     }
 
     /**
