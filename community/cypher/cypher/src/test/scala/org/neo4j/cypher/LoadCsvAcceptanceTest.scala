@@ -22,7 +22,7 @@ package org.neo4j.cypher
 import java.io.{File, PrintWriter}
 
 import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
-import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.StringHelper.RichString
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.StringHelper.RichString
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.scalatest.BeforeAndAfterAll

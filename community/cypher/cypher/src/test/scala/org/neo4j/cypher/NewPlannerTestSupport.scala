@@ -20,13 +20,13 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.RewindableExecutionResult
-import org.neo4j.cypher.internal.compatibility.ExecutionResultWrapperFor2_2
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{NewLogicalPlanSuccessRateMonitor, InternalExecutionResult}
-import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement
+import org.neo4j.cypher.internal.compatibility.ExecutionResultWrapperFor2_3
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{NewLogicalPlanSuccessRateMonitor, InternalExecutionResult}
+import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
 import org.neo4j.cypher.internal.commons.CypherTestSupport
 import org.neo4j.cypher.NewPlannerMonitor.{NewQuerySeen, UnableToHandleQuery, NewPlannerMonitorCall}
 import java.io.{PrintWriter, StringWriter}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.CantHandleQueryException
+import org.neo4j.cypher.internal.compiler.v2_3.planner.CantHandleQueryException
 
 import scala.util.Try
 
@@ -65,7 +65,7 @@ class NewPlannerMonitor extends NewLogicalPlanSuccessRateMonitor {
 trait NewPlannerTestSupport extends CypherTestSupport {
   self: ExecutionEngineFunSuite =>
 
-  override def databaseConfig(): Map[String,String] = Map("cypher_parser_version" -> CypherVersion.v2_2.name)
+  override def databaseConfig(): Map[String,String] = Map("cypher_parser_version" -> CypherVersion.v2_3.name)
 
   val newPlannerMonitor = new NewPlannerMonitor
 
@@ -90,7 +90,7 @@ trait NewPlannerTestSupport extends CypherTestSupport {
 
   protected def innerExecute(queryText: String, params: (String, Any)*): InternalExecutionResult =
     eengine.execute(queryText, params.toMap) match {
-      case ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, _) => RewindableExecutionResult(inner)
+      case ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, _) => RewindableExecutionResult(inner)
     }
 
   def executeWithOlderPlanner(queryText: String, params: (String, Any)*): ExecutionResult =

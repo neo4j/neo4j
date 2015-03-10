@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.compatibility.{ExecutionResultWrapperFor2_2, exceptionHandlerFor2_2}
-import org.neo4j.cypher.internal.compiler.v2_2.PipeExecutionResult
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compatibility.{ExecutionResultWrapperFor2_3, exceptionHandlerFor2_3}
+import org.neo4j.cypher.internal.compiler.v2_3.PipeExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 import org.neo4j.cypher.{ExecutionResult, InternalException}
 import org.neo4j.graphdb.QueryExecutionType.QueryType
 
@@ -29,7 +29,7 @@ object RewindableExecutionResult {
   self =>
   def apply(inner: InternalExecutionResult): InternalExecutionResult = inner match {
     case other: PipeExecutionResult  =>
-      exceptionHandlerFor2_2.runSafely {
+      exceptionHandlerFor2_3.runSafely {
         new PipeExecutionResult(other.result.toEager, other.columns, other.state, other.executionPlanBuilder, other.executionMode, QueryType.READ_WRITE)
       }
     case _ =>
@@ -37,7 +37,7 @@ object RewindableExecutionResult {
   }
 
   def apply(in: ExecutionResult): InternalExecutionResult = in match {
-    case ExecutionResultWrapperFor2_2(inner, _) => exceptionHandlerFor2_2.runSafely(apply(inner))
+    case ExecutionResultWrapperFor2_3(inner, _) => exceptionHandlerFor2_3.runSafely(apply(inner))
 
     case _                                      => throw new InternalException("Can't get the internal execution result of an older compiler")
   }

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal
 
 import java.util
 
-import org.neo4j.cypher.internal.compiler.v2_2.PlannerName
+import org.neo4j.cypher.internal.compiler.v2_3.PlannerName
 import org.neo4j.cypher.{ExtendedPlanDescription, CypherVersion, PlanDescription}
 import org.neo4j.cypher.javacompat.{PlanDescription => JPlanDescription}
 

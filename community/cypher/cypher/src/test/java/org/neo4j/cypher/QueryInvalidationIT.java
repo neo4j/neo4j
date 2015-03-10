@@ -27,8 +27,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.cypher.internal.compiler.v2_2.CypherCacheHitMonitor;
-import org.neo4j.cypher.internal.compiler.v2_2.PreparedQuery;
+import org.neo4j.cypher.internal.compiler.v2_3.CypherCacheHitMonitor;
+import org.neo4j.cypher.internal.compiler.v2_3.PreparedQuery;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Result;
 import org.neo4j.helpers.Pair;

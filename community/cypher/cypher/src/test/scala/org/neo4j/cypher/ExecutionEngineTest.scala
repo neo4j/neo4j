@@ -24,9 +24,9 @@ import java.util.concurrent.TimeUnit
 
 import org.neo4j.cypher.internal.PathImpl
 import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.PipeInfo
-import org.neo4j.cypher.internal.compiler.v2_2.planner.PlanningMonitor
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.PipeInfo
+import org.neo4j.cypher.internal.compiler.v2_3.planner.PlanningMonitor
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.io.fs.FileUtils

@@ -97,7 +97,7 @@ public abstract class GraphDatabaseSettings
     @Description( "Set this to specify the default parser." )
     public static final Setting<String> cypher_parser_version = setting(
             "cypher_parser_version",
-            options( "1.9", "2.0", "2.1", "2.2"), NO_DEFAULT );
+            options( "1.9", "2.0", "2.1", "2.2", "2.3"), NO_DEFAULT );
 
     @Description( "Set this to specify the default planner." )
     public static final Setting<String> query_planner_version = setting(

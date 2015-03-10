@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.CypherCompiler.{CLOCK, DEFAULT_QUERY_PLAN_TTL, STATISTICS_DIVERGENCE_THRESHOLD}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.allQueryAcceptor
-import org.neo4j.cypher.internal.compiler.v2_2.{PlannerName, CostPlannerName, CypherCompilerFactory}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.allQueryAcceptor
+import org.neo4j.cypher.internal.compiler.v2_3.{PlannerName, CostPlannerName, CypherCompilerFactory}
 import org.neo4j.kernel.impl.util.StringLogger
 
 class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {

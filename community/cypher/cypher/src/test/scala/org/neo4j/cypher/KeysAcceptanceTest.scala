@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import internal.helpers.CollectionSupport
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.CollectionSupport
 import org.scalatest.Assertions
 import org.neo4j.graphdb.{Relationship, Node}
 import org.scalautils.LegacyTripleEquals
