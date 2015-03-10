@@ -25,23 +25,16 @@ import java.security.Principal;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Response;
 
-import org.junit.Ignore;
 import org.junit.Test;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.security.auth.AuthManager;
 import org.neo4j.server.security.auth.Credential;
 import org.neo4j.server.security.auth.User;
-import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.test.server.EntityOutputFormat;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 

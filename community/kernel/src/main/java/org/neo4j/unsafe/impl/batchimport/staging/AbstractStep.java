@@ -31,6 +31,7 @@ import org.neo4j.unsafe.impl.batchimport.stats.ProcessingStats;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 
+import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 
 /**
@@ -276,5 +277,11 @@ public abstract class AbstractStep<T> implements Step<T>
         totalProcessingTime.reset();
         startTime = currentTimeMillis();
         endTime = 0;
+    }
+
+    @Override
+    public String toString()
+    {
+        return format( "Step[%s, processors:%d, batches:%d", name, numberOfProcessors(), doneBatches.get() );
     }
 }
