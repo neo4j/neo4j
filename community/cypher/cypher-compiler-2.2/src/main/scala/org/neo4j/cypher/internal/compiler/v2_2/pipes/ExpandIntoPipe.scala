@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
-import org.neo4j.cypher.internal.LRUCache
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.ExpandExpression
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
@@ -29,6 +28,7 @@ import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.helpers.collection.PrefetchingIterator
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -148,9 +148,14 @@ case class ExpandIntoPipe(source: Pipe,
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
   private final class RelationshipsCache(capacity: Int) {
-    private val table = new LRUCache[(Node, Node), Seq[Relationship]](capacity)
-
-    def put(node1: Node, node2: Node, rels: Seq[Relationship]) = table.put(key(node1, node2), rels)
+    private var _size = 0
+    private val table = new mutable.OpenHashMap[(Node, Node), Seq[Relationship]]()
+    def put(node1: Node, node2: Node, rels: Seq[Relationship]) = {
+      if (_size < capacity) {
+        table.put(key(node1, node2), rels)
+        _size += 1
+      }
+    }
 
     def get(node1: Node, node2: Node) = table.get(key(node1, node2))
 
