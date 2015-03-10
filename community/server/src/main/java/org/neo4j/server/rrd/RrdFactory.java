@@ -26,11 +26,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.rrd4j.ConsolFun;
+import org.rrd4j.core.DsDef;
+import org.rrd4j.core.RrdDb;
+import org.rrd4j.core.RrdDef;
+import org.rrd4j.core.RrdToolkit;
+
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
@@ -40,12 +45,6 @@ import org.neo4j.server.database.RrdDbWrapper;
 import org.neo4j.server.rrd.sampler.NodeIdsInUseSampleable;
 import org.neo4j.server.rrd.sampler.PropertyCountSampleable;
 import org.neo4j.server.rrd.sampler.RelationshipCountSampleable;
-
-import org.rrd4j.ConsolFun;
-import org.rrd4j.core.DsDef;
-import org.rrd4j.core.RrdDb;
-import org.rrd4j.core.RrdDef;
-import org.rrd4j.core.RrdToolkit;
 
 import static java.lang.Double.NaN;
 import static java.util.Arrays.asList;
@@ -74,7 +73,7 @@ public class RrdFactory
 
     public org.neo4j.server.database.RrdDbWrapper createRrdDbAndSampler( final Database db, JobScheduler scheduler ) throws IOException
     {
-        NeoStore neoStore = db.getGraph().getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate();
+        NeoStoreProvider neoStore = db.getGraph().getDependencyResolver().resolveDependency( NeoStoreProvider.class );
 
         Sampleable[] primitives = {
                 new NodeIdsInUseSampleable( neoStore ),

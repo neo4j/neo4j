@@ -20,13 +20,11 @@
 package org.neo4j.server.rrd;
 
 import java.io.IOException;
-
 import javax.management.MalformedObjectNameException;
 
 import org.junit.Test;
 
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.server.rrd.sampler.DatabasePrimitivesSampleableBase;
 import org.neo4j.server.rrd.sampler.NodeIdsInUseSampleable;
@@ -60,8 +58,8 @@ public class DatabasePrimitivesSampleableBaseDocTest
         db.shutdown();
     }
 
-    private NeoStore neoStore( GraphDatabaseAPI db )
+    private NeoStoreProvider neoStore( GraphDatabaseAPI db )
     {
-        return db.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate();
+        return db.getDependencyResolver().resolveDependency( NeoStoreProvider.class );
     }
 }

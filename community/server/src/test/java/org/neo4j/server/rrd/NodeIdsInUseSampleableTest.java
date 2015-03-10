@@ -68,7 +68,7 @@ public class NodeIdsInUseSampleableTest
     {
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
         DependencyResolver dependencyResolver = db.getDependencyResolver();
-        sampleable = new NodeIdsInUseSampleable( dependencyResolver.resolveDependency( NeoStoreProvider.class ).evaluate() );
+        sampleable = new NodeIdsInUseSampleable( dependencyResolver.resolveDependency( NeoStoreProvider.class ) );
     }
 
     @After
