@@ -97,6 +97,9 @@ angular.module('neo4jApp.services')
           if not (Settings.shouldReportUdc?)
             @pingLater(event)
             return false
+          if not @hasRequiredData()
+            @pingLater(event)
+            return false
           if Settings.shouldReportUdc
             pingTime = new Date(@data.pingTime || 0)
             today = new Date()
@@ -110,7 +113,8 @@ angular.module('neo4jApp.services')
           else
             return false
 
-
+        hasRequiredData: ->
+          return @data.store_id and @data.neo4j_version
 
 
       new UsageDataCollectionService()
