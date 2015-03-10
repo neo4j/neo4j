@@ -88,6 +88,7 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
         for ( int i = 0; i < records.length; i++ )
         {
             RECORD record = records[i];
+
             int propertyBlockCount = batch.propertyBlocksLengths[i];
             if ( record != null )
             {

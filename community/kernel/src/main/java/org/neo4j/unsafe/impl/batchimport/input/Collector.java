@@ -19,34 +19,30 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 
 /**
  * Collects items and is {@link #close() closed} after any and all items have been collected.
  * The {@link Collector} is responsible for closing whatever closeable resource received from the importer.
  */
-public interface Collector<T> extends AutoCloseable
+public interface Collector extends AutoCloseable
 {
-    void collect( T item, Object specificValue );
+    void collectBadRelationship( InputRelationship relationship, Object specificValue );
+
+    void collectDuplicateNode( Object id, long actualId, String group, String firstSource, String otherSource );
 
     int badEntries();
+
+    /**
+     * @return iterator of node ids that were found to be duplicates of already imported nodes.
+     * Returned node ids was imported, but never used to connect any relationship to, and should
+     * be deleted. Must be returned sorted in ascending id order.
+     */
+    PrimitiveLongIterator leftOverDuplicateNodesIds();
 
     /**
      * Flushes whatever changes to the underlying resource supplied from the importer.
      */
     @Override
     void close();
-
-    public static abstract class Adapter<T> implements Collector<T>
-    {
-        @Override
-        public void close()
-        {   // Nothing to close
-        }
-
-        @Override
-        public int badEntries()
-        {
-            return 0;
-        }
-    }
 }
