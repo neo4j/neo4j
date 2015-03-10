@@ -33,7 +33,6 @@ import org.neo4j.graphdb.PropertyContainer;
 
 public class Neo4jJsonCodec extends ObjectMapper
 {
-
     public Neo4jJsonCodec()
     {
         getSerializationConfig().without( SerializationConfig.Feature.FLUSH_AFTER_WRITE_VALUE );
@@ -77,7 +76,7 @@ public class Neo4jJsonCodec extends ObjectMapper
             for ( Map.Entry e : set )
             {
                 Object key = e.getKey();
-                out.writeFieldName( key == null ? null : key.toString() );
+                out.writeFieldName( key == null ? "null" : key.toString() );
                 writeValue( out, e.getValue() );
             }
         }

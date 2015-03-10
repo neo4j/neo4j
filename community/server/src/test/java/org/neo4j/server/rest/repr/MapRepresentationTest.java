@@ -19,11 +19,12 @@
  */
 package org.neo4j.server.rest.repr;
 
+import org.junit.Test;
+
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Test;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 
@@ -32,6 +33,9 @@ import static java.lang.Boolean.TRUE;
 import static java.util.Arrays.asList;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.nullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
@@ -130,5 +134,42 @@ public class MapRepresentationTest
         assertThat( (String) ((Map) ((List) map.get( "a list with a map in it" )).get( 0 )).get( "foo" ), is( "bar" ) );
         assertThat( (Boolean) ((Map) ((List) map.get( "a list with a map in it" )).get( 0 )).get( "baz" ),
                 is( false ) );
+    }
+
+    @Test
+    public void shouldSerializeMapsWithNullKeys() throws Exception
+    {
+        Object[] values = {null,
+                "string",
+                42,
+                true,
+                new String[]{"a string", "another string"},
+                new int[]{42, 87},
+                new boolean[]{true, false},
+                asList( true, false, true ),
+                map( "numbers", 42, null, "something" ),
+                map( "a list", asList( 42, 87 ), null, asList( "a", "b" ) ),
+                asList( map( "foo", "bar", null, false ) )};
+
+        for ( Object value : values )
+        {
+            MapRepresentation rep = new MapRepresentation( map( (Object) null, value ) );
+            OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ), null );
+
+            String serializedMap = format.assemble( rep );
+
+            Map<String,Object> map = JsonHelper.jsonToMap( serializedMap );
+
+            assertEquals( 1, map.size() );
+            Object actual = map.get( "null" );
+            if ( value == null )
+            {
+                assertNull( actual );
+            }
+            else
+            {
+                assertNotNull( actual );
+            }
+        }
     }
 }
