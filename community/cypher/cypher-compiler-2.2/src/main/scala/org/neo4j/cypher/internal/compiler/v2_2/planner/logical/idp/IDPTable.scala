@@ -44,6 +44,8 @@ import collection.mutable
 //
 class IDPTable[P](private val map: mutable.Map[Goal, P] = mutable.Map.empty[Goal, P]) extends IDPCache[P] {
 
+  def size = map.size
+
   def put(goal: Goal, product: P): Unit = {
     map.put(goal, product)
   }
@@ -60,14 +62,16 @@ class IDPTable[P](private val map: mutable.Map[Goal, P] = mutable.Map.empty[Goal
     val toDrop = map.keysIterator.filter(entry => (entry & goal).nonEmpty)
     toDrop.foreach(map.remove)
   }
+
+  override def toString(): String = s"IDPPlanTable(numberOfPlans=$size, largestSolved=${map.keySet.map(_.size).max})"
 }
 
 object IDPTable {
-  def apply[X, P](projector: X => Goal, seed: Iterable[(X, P)]) = {
+  def apply[X, P](registry: IdRegistry[X], seed: Seed[X, P]) = {
     val builder = mutable.Map.newBuilder[Goal, P]
     if (seed.hasDefiniteSize)
       builder.sizeHint(seed.size)
-    seed.foreach { case (goal, product) => builder += projector(goal) -> product }
+    seed.foreach { case (goal, product) => builder += registry.registerAll(goal) -> product }
     new IDPTable[P](builder.result())
   }
 }
