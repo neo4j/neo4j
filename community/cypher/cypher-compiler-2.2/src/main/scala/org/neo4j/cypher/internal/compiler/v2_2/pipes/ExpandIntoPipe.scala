@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
-import org.neo4j.cypher.internal.LRUCache
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.ExpandExpression
 import org.neo4j.cypher.internal.compiler.v2_2.spi.QueryContext
@@ -45,11 +44,7 @@ case class ExpandIntoPipe(source: Pipe,
   extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
   self =>
 
-  private final val CACHE_SIZE = 100000
-
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    //cache of known connected nodes
-    val relCache = new RelationshipsCache(CACHE_SIZE)
 
     input.flatMap {
       row =>
@@ -60,8 +55,7 @@ case class ExpandIntoPipe(source: Pipe,
 
             if (toNode == null) Iterator.empty
             else {
-              val relationships = relCache.get(fromNode, toNode)
-                .getOrElse(findRelationships(state.query, fromNode, toNode, relCache))
+              val relationships = findRelationships(state.query, fromNode, toNode)
 
               if (relationships.isEmpty) Iterator.empty
               else relationships.map(row.newWith2(relName, _, toName, toNode))
@@ -76,7 +70,7 @@ case class ExpandIntoPipe(source: Pipe,
   /**
    * Finds all relationships connecting fromNode and toNode.
    */
-  private def findRelationships(query: QueryContext, fromNode: Node, toNode: Node, relCache: RelationshipsCache) = {
+  private def findRelationships(query: QueryContext, fromNode: Node, toNode: Node) = {
     //check degree and iterate from the node with smaller degree
     val relTypes = types.types(query)
     val fromDegree = getDegree(fromNode, relTypes, dir, query)
@@ -88,7 +82,6 @@ case class ExpandIntoPipe(source: Pipe,
       (toNode, fromNode, query.getRelationshipsForIds(toNode, dir.reverse(), relTypes))
 
     if (math.min(fromDegree, toDegree) == 0) {
-      relCache.put(start, end, Seq.empty)
       Iterator.empty
     } else {
     new PrefetchingIterator[Relationship] {
@@ -104,7 +97,6 @@ case class ExpandIntoPipe(source: Pipe,
             return rel
           }
         }
-        relCache.put(start, end, connectedRelationships)
         null
       }
     }
@@ -146,16 +138,4 @@ case class ExpandIntoPipe(source: Pipe,
   }
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
-
-  private final class RelationshipsCache(capacity: Int) {
-    private val table = new LRUCache[(Node, Node), Seq[Relationship]](capacity)
-
-    def put(node1: Node, node2: Node, rels: Seq[Relationship]) = table.put(key(node1, node2), rels)
-
-    def get(node1: Node, node2: Node) = table.get(key(node1, node2))
-
-    @inline
-    private def key(node1: Node, node2: Node) =
-      if (node1.getId < node2.getId) (node1, node2) else (node2, node1)
-  }
 }
