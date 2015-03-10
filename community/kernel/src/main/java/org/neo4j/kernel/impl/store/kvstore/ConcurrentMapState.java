@@ -68,7 +68,8 @@ class ConcurrentMapState<Key> extends ActiveState<Key>
     {
         if ( version <= previousVersion )
         {
-            return EntryUpdater.noUpdates();
+            throw new IllegalStateException( "Cannot apply update with given version " + version +
+                                             " when base version is " + previousVersion );
         }
         update( highestAppliedVersion, version );
         return new Updater<>( lock, store, changes, appliedChanges );

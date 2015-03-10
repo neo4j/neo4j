@@ -69,23 +69,4 @@ public abstract class EntryUpdater<Key> implements AutoCloseable
             throw new IllegalStateException( "The updater is not available." );
         }
     }
-
-    @SuppressWarnings("unchecked")
-    static <Key> EntryUpdater<Key> noUpdates()
-    {
-        return NO_UPDATES;
-    }
-
-    private static final EntryUpdater NO_UPDATES = new EntryUpdater( null )
-    {
-        @Override
-        public void apply( Object o, ValueUpdate update )
-        {
-        }
-
-        @Override
-        public void close()
-        {
-        }
-    };
 }
