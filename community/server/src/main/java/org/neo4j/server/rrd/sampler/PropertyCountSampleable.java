@@ -19,11 +19,11 @@
  */
 package org.neo4j.server.rrd.sampler;
 
-import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 
 public class PropertyCountSampleable extends DatabasePrimitivesSampleableBase
 {
-    public PropertyCountSampleable( NeoStore neoStore )
+    public PropertyCountSampleable( NeoStoreProvider neoStore )
     {
         super( neoStore );
     }

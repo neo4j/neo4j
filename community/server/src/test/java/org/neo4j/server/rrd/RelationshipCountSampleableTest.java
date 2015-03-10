@@ -68,7 +68,7 @@ public class RelationshipCountSampleableTest
     public void setUp() throws Exception
     {
         db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
-        sampleable = new RelationshipCountSampleable( db.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate() );
+        sampleable = new RelationshipCountSampleable( db.getDependencyResolver().resolveDependency( NeoStoreProvider.class ) );
     }
 
     @After

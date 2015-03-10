@@ -50,7 +50,7 @@ public class PropertyCountSampleableTest
     {
         db = new WrappedDatabase( (InternalAbstractGraphDatabase) new TestGraphDatabaseFactory().newImpermanentDatabase() );
         DependencyResolver dependencyResolver = db.getGraph().getDependencyResolver();
-        sampleable = new PropertyCountSampleable( dependencyResolver.resolveDependency( NeoStoreProvider.class ).evaluate() );
+        sampleable = new PropertyCountSampleable( dependencyResolver.resolveDependency( NeoStoreProvider.class ) );
 
         Transaction tx = db.getGraph().beginTx();
         referenceNodeId = db.getGraph().createNode().getId();
