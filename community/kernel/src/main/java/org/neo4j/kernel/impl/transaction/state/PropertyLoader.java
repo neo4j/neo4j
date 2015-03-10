@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.state;
 import java.util.Collection;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -51,25 +50,18 @@ public class PropertyLoader
     public void nodeLoadProperties( long nodeId, PropertyReceiver receiver )
     {
         NodeRecord nodeRecord = nodeStore.getRecord( nodeId );
-        if ( !nodeRecord.inUse() )
-        {
-            throw new IllegalStateException( "Node[" + nodeId + "] has been deleted in this tx" );
-        }
         loadProperties( nodeRecord.getNextProp(), receiver );
     }
 
     public void nodeLoadProperties( NodeRecord node, PrimitiveLongObjectMap<PropertyRecord> propertiesById, PropertyReceiver receiver )
     {
-        loadProperties( node.getNextProp(), propertiesById, receiver );
+        Collection<PropertyRecord> chain = propertyStore.getPropertyRecordChain( node.getNextProp(), propertiesById );
+        receivePropertyChain( receiver, chain );
     }
 
     public void relLoadProperties( long relId, PropertyReceiver receiver )
     {
         RelationshipRecord relRecord = relationshipStore.getRecord( relId );
-        if ( !relRecord.inUse() )
-        {
-            throw new InvalidRecordException( "Relationship[" + relId + "] not in use" );
-        }
         loadProperties( relRecord.getNextProp(), receiver );
     }
 
@@ -81,22 +73,10 @@ public class PropertyLoader
     private void loadProperties( long nextProp, PropertyReceiver receiver )
     {
         Collection<PropertyRecord> chain = propertyStore.getPropertyRecordChain( nextProp );
-        if ( chain != null )
-        {
-            loadPropertyChain( chain, receiver );
-        }
+        receivePropertyChain( receiver, chain );
     }
 
-    private void loadProperties( long nextProp, PrimitiveLongObjectMap<PropertyRecord> propertiesById, PropertyReceiver receiver )
-    {
-        Collection<PropertyRecord> chain = propertyStore.getPropertyRecordChain( nextProp, propertiesById );
-        if ( chain != null )
-        {
-            loadPropertyChain( chain, receiver );
-        }
-    }
-
-    private void loadPropertyChain( Collection<PropertyRecord> chain, PropertyReceiver receiver )
+    private void receivePropertyChain( PropertyReceiver receiver, Collection<PropertyRecord> chain )
     {
         if ( chain != null )
         {
