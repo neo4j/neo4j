@@ -29,10 +29,12 @@ import java.nio.channels.ReadableByteChannel;
 public class ToFileStoreWriter implements StoreWriter
 {
     private final File basePath;
+    private final StoreCopyClient.Monitor monitor;
 
-    public ToFileStoreWriter( File graphDbStoreDir )
+    public ToFileStoreWriter( File graphDbStoreDir, StoreCopyClient.Monitor monitor )
     {
         this.basePath = graphDbStoreDir;
+        this.monitor = monitor;
     }
 
     @Override
@@ -45,6 +47,7 @@ public class ToFileStoreWriter implements StoreWriter
             File file = new File( basePath, path );
 
             file.getParentFile().mkdirs();
+            monitor.startReceivingStoreFile( file );
             try ( RandomAccessFile randomAccessFile = new RandomAccessFile( file, "rw" ) )
             {
                 long totalWritten = 0;
@@ -60,6 +63,10 @@ public class ToFileStoreWriter implements StoreWriter
                     }
                 }
                 return totalWritten;
+            }
+            finally
+            {
+                monitor.finishReceivingStoreFile( file );
             }
         }
         catch ( Throwable t )

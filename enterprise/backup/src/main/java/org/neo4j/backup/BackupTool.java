@@ -19,6 +19,8 @@
  */
 package org.neo4j.backup;
 
+import ch.qos.logback.classic.LoggerContext;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -50,12 +52,10 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SystemOutLogging;
 import org.neo4j.kernel.monitoring.Monitors;
 
-import ch.qos.logback.classic.LoggerContext;
+import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
-
-import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
 
 public class BackupTool
 {
@@ -89,7 +89,7 @@ public class BackupTool
 
     public static void main( String[] args )
     {
-        BackupTool tool = new BackupTool( new BackupService( new DefaultFileSystemAbstraction() ), System.out );
+        BackupTool tool = new BackupTool( new BackupService(), System.out );
         try
         {
             BackupOutcome backupOutcome = tool.run( args );

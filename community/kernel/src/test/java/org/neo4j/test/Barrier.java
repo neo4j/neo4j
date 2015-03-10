@@ -21,6 +21,17 @@ package org.neo4j.test;
 
 import java.util.concurrent.CountDownLatch;
 
+/**
+ * Controls two threads that would otherwise race and produce non-deterministic outcome.
+ * (ascii-art looks odd in source but lines up in fixed-size generated javadoc).
+ * <pre>
+ *          {@link Control#await() T1 await()}                   {@link Control#release() T1 release()}
+ *               |                              |
+ * -T1/T2--------|-T2-----------|-T1------------|-T1/T2------------------>
+ *                              |
+ *                        {@link #reached() T2 reached()}
+ * </pre>
+ */
 public interface Barrier
 {
     Barrier NONE = new Barrier()
@@ -37,6 +48,7 @@ public interface Barrier
     {
         private final CountDownLatch reached = new CountDownLatch( 1 ), released = new CountDownLatch( 1 );
 
+        @Override
         public void reached()
         {
             try
@@ -53,6 +65,33 @@ public interface Barrier
         public void await() throws InterruptedException
         {
             reached.await();
+        }
+
+        public void awaitUninterruptibly()
+        {
+            boolean interrupted = false;
+            try
+            {
+                while ( true )
+                {
+                    try
+                    {
+                        await();
+                        return;
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        interrupted = true;
+                    }
+                }
+            }
+            finally
+            {
+                if ( interrupted )
+                {
+                    Thread.currentThread().interrupt();
+                }
+            }
         }
 
         public void release()

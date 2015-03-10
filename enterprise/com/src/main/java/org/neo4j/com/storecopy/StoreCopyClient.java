@@ -59,9 +59,11 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.kernel.monitoring.StoreCopyMonitor;
+
+import static java.lang.Math.max;
 
 import static org.neo4j.helpers.Format.bytes;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
 
 /**
@@ -74,6 +76,68 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeL
  */
 public class StoreCopyClient
 {
+    public interface Monitor
+    {
+        void startReceivingStoreFiles();
+
+        void finishReceivingStoreFiles();
+
+        void startReceivingStoreFile( File file );
+
+        void finishReceivingStoreFile( File file );
+
+        void startReceivingTransactions( long startTxId );
+
+        void finishReceivingTransactions( long endTxId );
+
+        void startRecoveringStore();
+
+        void finishRecoveringStore();
+
+        class Adapter implements Monitor
+        {
+            @Override
+            public void startReceivingStoreFiles()
+            {   // empty
+            }
+
+            @Override
+            public void finishReceivingStoreFiles()
+            {   // empty
+            }
+
+            @Override
+            public void startReceivingStoreFile( File file )
+            {   // empty
+            }
+
+            @Override
+            public void finishReceivingStoreFile( File file )
+            {   // empty
+            }
+
+            @Override
+            public void startReceivingTransactions( long startTxId )
+            {   // empty
+            }
+
+            @Override
+            public void finishReceivingTransactions( long endTxId )
+            {   // empty
+            }
+
+            @Override
+            public void startRecoveringStore()
+            {   // empty
+            }
+
+            @Override
+            public void finishRecoveringStore()
+            {   // empty
+            }
+        }
+    }
+
     /**
      * This is built as a pluggable interface to allow backup and HA to use this code independently of each other,
      * each implements it's own version of how to copy a store from a remote location.
@@ -102,11 +166,11 @@ public class StoreCopyClient
     private final Logging logging;
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
-    private final StoreCopyMonitor storeCopyMonitor;
+    private final Monitor monitor;
 
     public StoreCopyClient( Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions,
                             ConsoleLogger console, Logging logging, FileSystemAbstraction fs,
-                            PageCache pageCache, StoreCopyMonitor storeCopyMonitor )
+                            PageCache pageCache, Monitor monitor )
     {
         this.config = config;
         this.kernelExtensions = kernelExtensions;
@@ -114,7 +178,7 @@ public class StoreCopyClient
         this.logging = logging;
         this.fs = fs;
         this.pageCache = pageCache;
-        this.storeCopyMonitor = storeCopyMonitor;
+        this.monitor = monitor;
     }
 
     public void copyStore( StoreCopyRequester requester, CancellationRequest cancellationRequest )
@@ -126,9 +190,11 @@ public class StoreCopyClient
         cleanDirectory( tempStore );
 
         // Request store files and transactions that will need recovery
+        monitor.startReceivingStoreFiles();
         try ( Response<?> response = requester.copyStore( decorateWithProgressIndicator(
-                new ToFileStoreWriter( tempStore ) ) ) )
+                new ToFileStoreWriter( tempStore, monitor ) ) ) )
         {
+            monitor.finishReceivingStoreFiles();
             // Update highest archived log id
             // Write transactions that happened during the copy to the currently active logical log
             writeTransactionsToActiveLogFile( tempStore, response );
@@ -137,15 +203,15 @@ public class StoreCopyClient
         {
             requester.done();
         }
-        storeCopyMonitor.finishedCopyingStoreFiles();
 
         // This is a good place to check if the switch has been cancelled
         checkCancellation( cancellationRequest, tempStore );
 
         // Run recovery, so that the transactions we just wrote into the active log will be applied.
+        monitor.startRecoveringStore();
         GraphDatabaseService graphDatabaseService = newTempDatabase( tempStore );
         graphDatabaseService.shutdown();
-        storeCopyMonitor.recoveredStore();
+        monitor.finishRecoveringStore();
 
         // All is well, move the streamed files to the real store directory
         for ( File candidate : tempStore.listFiles( STORE_FILE_FILTER ) )
@@ -176,7 +242,7 @@ public class StoreCopyClient
             WritableLogChannel channel = logFile.getWriter();
             final TransactionLogWriter writer = new TransactionLogWriter(
                     new LogEntryWriterv1( channel, new CommandWriter( channel ) ) );
-            final AtomicLong firstTxId = new AtomicLong( -1 );
+            final AtomicLong firstTxId = new AtomicLong( BASE_TX_ID );
 
             response.accept( new Response.Handler()
             {
@@ -195,19 +261,28 @@ public class StoreCopyClient
                         public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
                         {
                             long txId = transaction.getCommitEntry().getTxId();
+                            if ( firstTxId.compareAndSet( BASE_TX_ID, txId ) )
+                            {
+                                monitor.startReceivingTransactions( txId );
+                            }
                             writer.append( transaction.getTransactionRepresentation(), txId );
-                            firstTxId.compareAndSet( -1, txId );
                             return false;
                         }
                     };
                 }
             } );
 
+            long endTxId = firstTxId.get();
+            if ( endTxId != BASE_TX_ID )
+            {
+                monitor.finishReceivingTransactions( endTxId );
+            }
+
             // And since we write this manually we need to set the correct transaction id in the
             // header of the log that we just wrote.
             writeLogHeader( fs,
                     logFiles.getLogFileForVersion( logVersionRepository.getCurrentLogVersion() ),
-                    logVersionRepository.getCurrentLogVersion(), firstTxId.get() != -1 ? firstTxId.get() - 1 : 0 );
+                    logVersionRepository.getCurrentLogVersion(), max( BASE_TX_ID, endTxId-1 ) );
         }
         finally
         {

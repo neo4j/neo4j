@@ -51,7 +51,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.monitoring.StoreCopyMonitor;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -63,6 +63,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 
@@ -97,10 +98,10 @@ public class StoreCopyClientTest
             }
         };
 
-        StoreCopyMonitor.Adaptor storeCopyMonitor = new StoreCopyMonitor.Adaptor()
+        StoreCopyClient.Monitor storeCopyMonitor = new StoreCopyClient.Monitor.Adapter()
         {
             @Override
-            public void recoveredStore()
+            public void finishRecoveringStore()
             {
                 // simulate a cancellation request
                 cancelStoreCopy.set( true );
@@ -177,10 +178,10 @@ public class StoreCopyClientTest
             }
         };
 
-        StoreCopyMonitor.Adaptor storeCopyMonitor = new StoreCopyMonitor.Adaptor()
+        StoreCopyClient.Monitor storeCopyMonitor = new StoreCopyClient.Monitor.Adapter()
         {
             @Override
-            public void finishedCopyingStoreFiles()
+            public void finishReceivingStoreFiles()
             {
                 // simulate a cancellation request
                 cancelStoreCopy.set( true );
@@ -250,7 +251,7 @@ public class StoreCopyClientTest
                             LogRotationControl.class );
 
                     RequestContext requestContext = new StoreCopyServer(transactionIdStore, neoStoreDataSource,
-                            logRotationControl, fs, new File(originalDir))
+                            logRotationControl, fs, new File(originalDir), new Monitors().newMonitor( StoreCopyServer.Monitor.class ) )
                             .flushStoresAndStreamStoreFiles( writer, false );
 
                     final StoreId storeId = original.getDependencyResolver().resolveDependency( StoreId.class );

@@ -40,6 +40,7 @@ import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.com.monitor.RequestMonitor;
+import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DependencyResolver;
@@ -113,7 +114,6 @@ import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.kernel.monitoring.StoreCopyMonitor;
 
 import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
 import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
@@ -499,7 +499,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 monitors.newMonitor( ByteCounterMonitor.class, SlaveServer.class ),
                 monitors.newMonitor( RequestMonitor.class, SlaveServer.class ),
                 monitors.newMonitor( SwitchToSlave.Monitor.class ),
-                monitors.newMonitor( StoreCopyMonitor.class ) );
+                monitors.newMonitor( StoreCopyClient.Monitor.class ) );
 
         SwitchToMaster switchToMasterInstance = new SwitchToMaster( logging, consoleLog, this,
                 (HaIdGeneratorFactory) idGeneratorFactory, config, dependencies.provideDependency( SlaveFactory.class ),

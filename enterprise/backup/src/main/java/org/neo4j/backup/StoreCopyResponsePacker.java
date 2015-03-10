@@ -27,6 +27,8 @@ import org.neo4j.com.Response;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.com.storecopy.ResponsePacker;
+import org.neo4j.com.storecopy.StoreCopyServer;
+import org.neo4j.com.storecopy.StoreCopyServer.Monitor;
 import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -49,15 +51,17 @@ public class StoreCopyResponsePacker extends ResponsePacker
     private final long mandatoryStartTransactionId;
     private final LogFileInformation logFileInformation;
     private final TransactionIdStore transactionIdStore;
+    private final Monitor monitor;
 
     public StoreCopyResponsePacker( LogicalTransactionStore transactionStore,
             TransactionIdStore transactionIdStore, LogFileInformation logFileInformation,
-            Provider<StoreId> storeId, long mandatoryStartTransactionId )
+            Provider<StoreId> storeId, long mandatoryStartTransactionId, StoreCopyServer.Monitor monitor )
     {
         super( transactionStore, transactionIdStore, storeId );
         this.transactionIdStore = transactionIdStore;
         this.mandatoryStartTransactionId = mandatoryStartTransactionId;
         this.logFileInformation = logFileInformation;
+        this.monitor = monitor;
     }
 
     @Override
@@ -73,7 +77,9 @@ public class StoreCopyResponsePacker extends ResponsePacker
                 // Check so that it's even worth thinking about extracting any transactions at all
                 if ( toStartFrom > BASE_TX_ID && toStartFrom <= toEndAt )
                 {
+                    monitor.startStreamingTransactions( toStartFrom );
                     extractTransactions( toStartFrom, filterVisitor( visitor, toEndAt ) );
+                    monitor.finishStreamingTransactions( toEndAt );
                 }
             }
         };
