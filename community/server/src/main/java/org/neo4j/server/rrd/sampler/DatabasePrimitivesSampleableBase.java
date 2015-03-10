@@ -19,20 +19,21 @@
  */
 package org.neo4j.server.rrd.sampler;
 
-import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.server.rrd.Sampleable;
-
 import org.rrd4j.DsType;
+
+import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.server.rrd.Sampleable;
 
 public abstract class DatabasePrimitivesSampleableBase implements Sampleable
 {
-    private final NeoStore neoStore;
+    private final NeoStoreProvider neoStore;
 
-    public DatabasePrimitivesSampleableBase( NeoStore neoStore )
+    public DatabasePrimitivesSampleableBase( NeoStoreProvider neoStore )
     {
         if( neoStore == null )
         {
-            throw new RuntimeException( "Database sampler needs a node manager to work, was given null." );
+            throw new RuntimeException( "Database sampler needs a NeoStore to work, was given null." );
         }
         this.neoStore = neoStore;
 
@@ -40,7 +41,7 @@ public abstract class DatabasePrimitivesSampleableBase implements Sampleable
 
     protected NeoStore getNeoStore()
     {
-        return neoStore;
+        return neoStore.evaluate();
     }
 
     @Override
