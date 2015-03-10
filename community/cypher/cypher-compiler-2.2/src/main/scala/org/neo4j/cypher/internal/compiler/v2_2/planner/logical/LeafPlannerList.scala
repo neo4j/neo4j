@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.{IndexHintException, LabelScanHintException}
 
 case class LeafPlannerList(leafPlanners: LeafPlanner*) {
-  def candidates(qg: QueryGraph, f: (LogicalPlan, QueryGraph) => LogicalPlan)(implicit context: LogicalPlanningContext): Iterable[Seq[LogicalPlan]] = {
+  def candidates(qg: QueryGraph, f: (LogicalPlan, QueryGraph) => LogicalPlan = (plan, _) => plan )(implicit context: LogicalPlanningContext): Iterable[Seq[LogicalPlan]] = {
     val logicalPlans = leafPlanners.flatMap(_(qg)).map(f(_,qg))
     //check so that we respect the provided hints
     assertHints(qg, logicalPlans)

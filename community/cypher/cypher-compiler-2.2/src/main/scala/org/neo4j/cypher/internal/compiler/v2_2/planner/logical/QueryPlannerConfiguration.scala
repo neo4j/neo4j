@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.projectEndpoints
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{ProjectEndpoints, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.solveOptionalMatches.OptionalSolver
 
@@ -29,7 +29,7 @@ object QueryPlannerConfiguration {
   val default = QueryPlannerConfiguration(
     pickBestCandidate = pickBestPlanUsingHintsAndCost,
     applySelections = selectPatternPredicates(selectCovered, pickBestPlanUsingHintsAndCost),
-    projectEndpoints = projectEndpoints.all,
+    projectAllEndpoints = projectEndpoints.all,
     optionalSolvers = Seq(
       applyOptional,
       outerHashJoin
@@ -60,7 +60,7 @@ object QueryPlannerConfiguration {
 
 case class QueryPlannerConfiguration(leafPlanners: LeafPlannerList,
                                      applySelections: PlanTransformer[QueryGraph],
-                                     projectEndpoints: PlanTransformer[QueryGraph],
+                                     projectAllEndpoints: PlanTransformer[QueryGraph],
                                      optionalSolvers: Seq[OptionalSolver],
                                      pickBestCandidate: LogicalPlanningFunction0[CandidateSelector]) {
 
@@ -68,12 +68,12 @@ case class QueryPlannerConfiguration(leafPlanners: LeafPlannerList,
     QueryPlannerKit(
       qg = qg,
       select = plan => applySelections(plan, qg),
-      projectEndpoints = (plan: LogicalPlan, qg: QueryGraph) => projectEndpoints(plan, qg),
+      projectAllEndpoints = (plan: LogicalPlan, qg: QueryGraph) => projectAllEndpoints(plan, qg),
       pickBest = pickBestCandidate(context)
     )
 }
 
 case class QueryPlannerKit(qg: QueryGraph,
                            select: LogicalPlan => LogicalPlan,
-                           projectEndpoints: (LogicalPlan, QueryGraph) => LogicalPlan,
+                           projectAllEndpoints: (LogicalPlan, QueryGraph) => LogicalPlan,
                            pickBest: CandidateSelector)
