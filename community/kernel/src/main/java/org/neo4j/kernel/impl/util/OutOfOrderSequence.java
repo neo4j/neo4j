@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.util;
 
 /**
  * The thinking behind an out-of-order sequence is that, to the outside, there's one "last number"
- * which will will never be decremented between times of looking at it. It can move in bigger strides
- * than 1 though. That is because multiple threads can {@link #offer(long) tell} it that a certain number is "done",
+ * which will never be decremented between times of looking at it. It can move in bigger strides
+ * than 1 though. That is because multiple threads can {@link #offer(long, long) tell} it that a certain number is "done",
  * a number that not necessarily is the previously last one plus one. So if a gap is observed then the number
  * that is the logical next one, whenever that arrives, will move the externally visible number to
  * the highest gap-free number set.
@@ -47,6 +47,11 @@ public interface OutOfOrderSequence
      * @return the highest gap-free number, without its meta data.
      */
     long getHighestGapFreeNumber();
+
+    /**
+     * @return true if the pair number/meta data has been offered
+     */
+    boolean seen( long number, long meta );
 
     /**
      * Used in recovery. I don't like the visibility of this method at all.
