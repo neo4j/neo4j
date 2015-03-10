@@ -21,13 +21,13 @@ package org.neo4j.server.rest.repr;
 
 import java.util.Map;
 
-import static java.lang.reflect.Array.get;
-import static java.lang.reflect.Array.getLength;
-import static java.util.Arrays.asList;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+
+import static java.lang.reflect.Array.get;
+import static java.lang.reflect.Array.getLength;
+import static java.util.Arrays.asList;
 
 public class MapRepresentation extends MappingRepresentation
 {
@@ -46,47 +46,48 @@ public class MapRepresentation extends MappingRepresentation
         for ( Object key : value.keySet() )
         {
             Object val = value.get( key );
+            String keyString = key == null ? "null" : key.toString();
             if ( val instanceof Number )
             {
-                serializer.putNumber( key.toString(), (Number) val );
+                serializer.putNumber( keyString, (Number) val );
             }
             else if ( val instanceof Boolean )
             {
-                serializer.putBoolean( key.toString(), (Boolean) val );
+                serializer.putBoolean( keyString, (Boolean) val );
             }
             else if ( val instanceof String )
             {
-                serializer.putString( key.toString(), (String) val );
+                serializer.putString( keyString, (String) val );
             }
             else if (val instanceof Path )
             {
                 PathRepresentation<Path> representation = new PathRepresentation<>( (Path) val );
-                serializer.putMapping( key.toString(), representation );
+                serializer.putMapping( keyString, representation );
             }
             else if ( val instanceof Iterable )
             {
-                serializer.putList( key.toString(), ObjectToRepresentationConverter.getListRepresentation( (Iterable)
+                serializer.putList( keyString, ObjectToRepresentationConverter.getListRepresentation( (Iterable)
                         val ) );
             }
             else if ( val instanceof Map )
             {
-                serializer.putMapping( key.toString(), ObjectToRepresentationConverter.getMapRepresentation( (Map)
+                serializer.putMapping( keyString, ObjectToRepresentationConverter.getMapRepresentation( (Map)
                         val ) );
             }
             else if (val == null)
             {
-                serializer.putString( key.toString(), null );
+                serializer.putString( keyString, null );
             }
             else if (val.getClass().isArray())
             {
                 Object[] objects = toArray( val );
 
-                serializer.putList( key.toString(), ObjectToRepresentationConverter.getListRepresentation( asList(objects) ) );
+                serializer.putList( keyString, ObjectToRepresentationConverter.getListRepresentation( asList(objects) ) );
             }
             else if (val instanceof Node || val instanceof Relationship )
             {
                 Representation representation = ObjectToRepresentationConverter.getSingleRepresentation( val );
-                serializer.putMapping( key.toString(), (MappingRepresentation) representation );
+                serializer.putMapping( keyString, (MappingRepresentation) representation );
             }
             else
             {
