@@ -123,15 +123,13 @@ public class ParallelBatchImporter implements BatchImporter
         NodeRelationshipCache nodeRelationshipCache = null;
         NodeLabelsCache nodeLabelsCache = null;
         long startTime = currentTimeMillis();
-        boolean hasBadRelationships = false;
+        boolean hasBadEntries = false;
         File badFile = new File( storeDir, Configuration.BAD_FILE_NAME );
         try ( BatchingNeoStore neoStore = new BatchingNeoStore( fileSystem, storeDir, config,
                 writeMonitor, logging, monitors, writerFactory, additionalInitialIds );
-              OutputStream badRelationshipsOutput = new BufferedOutputStream(
-                      fileSystem.openAsOutputStream( badFile, false ) );
-              Collector<InputRelationship> badRelationships =
-                      input.badRelationshipsCollector( badRelationshipsOutput );
-              CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset(
+              OutputStream badOutput = new BufferedOutputStream( fileSystem.openAsOutputStream( badFile, false ) );
+              Collector badCollector = input.badCollector( badOutput );
+                CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset(
                       neoStore.getLastCommittedTransactionId() );
               InputCache inputCache = new InputCache( fileSystem, storeDir ) )
         {
@@ -149,7 +147,7 @@ public class ParallelBatchImporter implements BatchImporter
 
             // Stage 2 -- calculate dense node threshold
             CalculateDenseNodesStage calculateDenseNodesStage = new CalculateDenseNodesStage( config, relationships,
-                    nodeRelationshipCache, idMapper, badRelationships, inputCache );
+                    nodeRelationshipCache, idMapper, badCollector, inputCache );
 
             // Execute stages 1 and 2 in parallel or sequentially?
             if ( idMapper.needsPreparation() )
@@ -157,7 +155,8 @@ public class ParallelBatchImporter implements BatchImporter
                 // So we need to execute the node stage first as it fills the id mapper and prepares it in the end,
                 // before executing any stage that needs ids from the id mapper, for example calc dense node stage.
                 executeStages( nodeStage );
-                executeStages( new IdMapperPreparationStage( config, idMapper, nodes, inputCache, memoryUsageStats ) );
+                executeStages( new IdMapperPreparationStage( config, idMapper, nodes, inputCache,
+                        badCollector, memoryUsageStats ) );
                 executeStages( calculateDenseNodesStage );
             }
             else
@@ -180,7 +179,7 @@ public class ParallelBatchImporter implements BatchImporter
 
             // Stage 4 -- set node nextRel fields
             executeStages( new NodeFirstRelationshipStage( config, neoStore.getNodeStore(),
-                    neoStore.getRelationshipGroupStore(), nodeRelationshipCache ) );
+                    neoStore.getRelationshipGroupStore(), nodeRelationshipCache, badCollector ) );
             // Stage 5 -- link relationship chains together
             nodeRelationshipCache.clearRelationships();
             executeStages( new RelationshipLinkbackStage( config, neoStore.getRelationshipStore(),
@@ -204,10 +203,10 @@ public class ParallelBatchImporter implements BatchImporter
             long totalTimeMillis = currentTimeMillis() - startTime;
             executionMonitor.done( totalTimeMillis );
             logger.info( "Import completed, took " + Format.duration( totalTimeMillis ) );
-            hasBadRelationships = badRelationships.badEntries() > 0;
-            if ( hasBadRelationships )
+            hasBadEntries = badCollector.badEntries() > 0;
+            if ( hasBadEntries )
             {
-                logger.warn( "There were " + badRelationships.badEntries() + " bad relationships which were skipped " +
+                logger.warn( "There were " + badCollector.badEntries() + " bad entries which were skipped " +
                              "and logged into " + badFile.getAbsolutePath() );
             }
         }
@@ -227,7 +226,7 @@ public class ParallelBatchImporter implements BatchImporter
             {
                 nodeLabelsCache.close();
             }
-            if ( !hasBadRelationships )
+            if ( !hasBadEntries )
             {
                 fileSystem.deleteFile( badFile );
             }

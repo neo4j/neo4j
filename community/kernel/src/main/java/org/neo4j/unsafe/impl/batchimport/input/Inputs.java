@@ -79,9 +79,9 @@ public class Inputs
             }
 
             @Override
-            public Collector<InputRelationship> badRelationshipsCollector( OutputStream out )
+            public Collector badCollector( OutputStream out )
             {
-                return Collectors.badRelationshipsCollector( out, badTolerance );
+                return Collectors.badCollector( out, badTolerance );
             }
         };
     }
@@ -93,6 +93,6 @@ public class Inputs
                 nodeData( data( NO_NODE_DECORATOR, defaultCharset(), nodes ) ), defaultFormatNodeFileHeader(),
                 relationshipData( data( NO_RELATIONSHIP_DECORATOR, defaultCharset(), relationships ) ),
                 defaultFormatRelationshipFileHeader(), idType, configuration,
-                Collectors.badRelationships( 0 ) );
+                Collectors.badCollector( 0 ) );
     }
 }

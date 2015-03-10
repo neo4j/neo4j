@@ -50,15 +50,10 @@ public class ReadRelationshipRecordsBackwardsStep extends IoProducerStep
     {
         int size = (int) min( batchSize, id );
         RelationshipRecord[] batch = new RelationshipRecord[size];
-        RelationshipRecord next = new RelationshipRecord( -1 );
         for ( int i = 0; i < size; i++ )
         {
-            // null record is fine since our processor, i.e. consumer of these batches, will filter those out.
-            if ( store.fillRecord( --id, next, RecordLoad.CHECK ) )
-            {
-                batch[i] = next;
-                next = new RelationshipRecord( -1 );
-            }
+            batch[i] = new RelationshipRecord( --id );
+            store.fillRecord( batch[i].getId(), batch[i], RecordLoad.CHECK );
         }
         return size > 0 ? batch : null;
     }

@@ -21,6 +21,8 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.util.Collection;
 
+import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.Predicates;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
@@ -32,7 +34,8 @@ import org.neo4j.unsafe.impl.batchimport.stats.Stat;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 /**
- * Updates a batch of records to a store.
+ * Updates a batch of records to a store. Can be given a {@link Predicate} that can choose to not
+ * {@link Predicate#accept(Object) accept} a record, which will have that record be written as unused instead.
  */
 public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
         extends ProcessorStep<RECORD[]>
@@ -41,23 +44,34 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
     private final RecordStore<RECORD> store;
     private final int recordSize;
     private int recordsUpdated;
+    private final Predicate<RECORD> updatePredicate;
 
     public UpdateRecordsStep( StageControl control, Configuration config, RecordStore<RECORD> store )
+    {
+        this( control, config, store, Predicates.<RECORD>TRUE() );
+    }
+
+    public UpdateRecordsStep( StageControl control, Configuration config,
+            RecordStore<RECORD> store, Predicate<RECORD> updatePredicate )
     {
         super( control, "v", config, 1 );
         this.store = store;
         this.recordSize = store.getRecordSize();
+        this.updatePredicate = updatePredicate;
     }
 
+    @SuppressWarnings( "unchecked" )
     @Override
     protected void process( RECORD[] batch, BatchSender sender )
     {
         for ( RECORD record : batch )
         {
-            if ( record != null )
+            if ( record.inUse() && !updatePredicate.accept( record ) )
             {
-                store.updateRecord( record );
+                record = (RECORD) record.clone();
+                record.setInUse( false );
             }
+            store.updateRecord( record );
         }
         recordsUpdated += batch.length;
     }

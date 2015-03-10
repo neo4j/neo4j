@@ -36,6 +36,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.ParallelSort.Comparator;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 
 import static java.lang.Math.max;
@@ -237,7 +238,7 @@ public class EncodingIdMapper implements IdMapper
      * </ol>
      */
     @Override
-    public void prepare( InputIterable<Object> ids, ProgressListener progress )
+    public void prepare( InputIterable<Object> ids, Collector collector, ProgressListener progress )
     {
         endPreviousGroup();
         synchronized ( this )
@@ -256,7 +257,7 @@ public class EncodingIdMapper implements IdMapper
                 {
                     try ( InputIterator<Object> idIterator = ids.iterator() )
                     {
-                        buildCollisionInfo( idIterator, progress );
+                        buildCollisionInfo( idIterator, collector, progress );
                     }
                 }
             }
@@ -396,7 +397,8 @@ public class EncodingIdMapper implements IdMapper
         dataCache.set( dataIndex, setCollision( dataCache.get( dataIndex ) ) );
     }
 
-    private void buildCollisionInfo( InputIterator<Object> ids, ProgressListener progress ) throws InterruptedException
+    private void buildCollisionInfo( InputIterator<Object> ids, Collector collector, ProgressListener progress )
+            throws InterruptedException
     {
         progress.started( "RESOLVE" );
         Radix radix = radixFactory.newInstance();
@@ -440,7 +442,7 @@ public class EncodingIdMapper implements IdMapper
 
         // Detect input id duplicates within the same group, with source information, line number and the works
         collisionTrackerCache = cacheFactory.newIntArray( collisionDataCacheStats.highestIndex()+1, -1 );
-        detectDuplicateInputIds( radix, collisionDataCacheStats, sourceDescriptions );
+        detectDuplicateInputIds( radix, collisionDataCacheStats, sourceDescriptions, collector );
 
         // We won't be needing these anymore
         collisionSourceDataCache = null;
@@ -448,7 +450,7 @@ public class EncodingIdMapper implements IdMapper
     }
 
     private void detectDuplicateInputIds( Radix radix, NumberArrayStats collisionDataCacheStats,
-            List<String> sourceDescriptions ) throws InterruptedException
+            List<String> sourceDescriptions, Collector collector ) throws InterruptedException
     {
         // We do this collision sort using ParallelSort which has the data cache and the tracker cache,
         // the tracker cache gets sorted, data cache stays intact. In the collision data case we actually
@@ -517,7 +519,7 @@ public class EncodingIdMapper implements IdMapper
                 {   // Duplicate
                     String firstDataPoint = detector.sourceInformation( detectorIndex ).describe( sourceDescriptions );
                     String otherDataPoint = source.describe( sourceDescriptions );
-                    throw new DuplicateInputIdException( inputId, group.name(), firstDataPoint, otherDataPoint );
+                    collector.collectDuplicateNode( inputId, dataIndex, group.name(), firstDataPoint, otherDataPoint );
                 }
             }
             else

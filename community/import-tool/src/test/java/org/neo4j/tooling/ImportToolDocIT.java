@@ -29,7 +29,10 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -48,7 +51,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.helpers.ArrayUtil.join;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.io.fs.FileUtils.copyFile;
+import static org.neo4j.tooling.GlobalGraphOperations.at;
 import static org.neo4j.tooling.ImportTool.MULTI_FILE_DELIMITER;
 
 public class ImportToolDocIT
@@ -532,7 +538,44 @@ public class ImportToolDocIT
 
         // THEN
         verifyData();
+    }
 
+    @Test
+    public void badDuplicateNodesDefault() throws IOException
+    {
+        // GIVEN
+        File actors = file( "ops", "actors10.csv" );
+        try ( PrintStream out = new PrintStream( actors ) )
+        {
+            out.println( "personId:ID,name,:LABEL" );
+            out.println( "keanu,\"Keanu Reeves\",Actor" );
+            out.println( "laurence,\"Laurence Fishburne\",Actor" );
+            out.println( "carrieanne,\"Carrie-Anne Moss\",Actor" );
+            out.println( "laurence,\"Laurence Harvey\",Actor" );
+        }
+
+        // WHEN
+        File badFile = new File( directory.directory(), Configuration.BAD_FILE_NAME );
+        String[] arguments = arguments(
+                "--into", directory.absolutePath(),
+                "--nodes", actors.getAbsolutePath(),
+                "--skip-duplicate-nodes" );
+        importTool( arguments );
+        assertTrue( badFile.exists() );
+        copyFile( badFile, file( "ops", "bad-duplicate-nodes-default-not-imported.bad.adoc" ) );
+
+        // DOCS
+        String realDir = actors.getParentFile().getAbsolutePath();
+        printCommandToFile( arguments, realDir, "bad-duplicate-nodes-default.adoc" );
+
+        // THEN
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
+        try ( Transaction tx = db.beginTx();
+              ResourceIterator<Node> nodes = db.findNodes( DynamicLabel.label( "Actor" ) ) )
+        {
+            assertEquals( asSet( "Keanu Reeves", "Laurence Fishburne", "Carrie-Anne Moss" ), namesOf( nodes ) );
+            tx.success();
+        }
     }
 
     @Test
@@ -576,11 +619,7 @@ public class ImportToolDocIT
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
         try ( Transaction tx = db.beginTx() )
         {
-            int nodeCount = 0, relationshipCount = 0;
-            for ( Node ignored : GlobalGraphOperations.at( db ).getAllNodes() )
-            {
-                nodeCount++;
-            }
+            int nodeCount = count( at( db ).getAllNodes() ), relationshipCount = 0;
             assertEquals( 2, nodeCount );
 
             for ( Relationship relationship : GlobalGraphOperations.at( db ).getAllRelationships() )
@@ -602,17 +641,22 @@ public class ImportToolDocIT
         }
     }
 
+    private Set<String> namesOf( Iterator<Node> nodes )
+    {
+        Set<String> names = new HashSet<>();
+        while ( nodes.hasNext() )
+        {
+            names.add( (String) nodes.next().getProperty( "name" ) );
+        }
+        return names;
+    }
 
     private void verifyData()
     {
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
         try ( Transaction tx = db.beginTx() )
         {
-            int nodeCount = 0, relationshipCount = 0, sequelCount = 0;
-            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
-            {
-                nodeCount++;
-            }
+            int nodeCount = count( at( db ).getAllNodes() ), relationshipCount = 0, sequelCount = 0;
             assertEquals( NODE_COUNT, nodeCount );
             for ( Relationship relationship : GlobalGraphOperations.at( db ).getAllRelationships() )
             {

@@ -37,8 +37,7 @@ public class CalculateDenseNodesStage extends Stage
 {
     public CalculateDenseNodesStage( Configuration config, InputIterable<InputRelationship> relationships,
             NodeRelationshipCache cache, IdMapper idMapper,
-            Collector<InputRelationship> badRelationshipsCollector,
-            InputCache inputCache ) throws IOException
+            Collector badCollector, InputCache inputCache ) throws IOException
     {
         super( "Calculate dense nodes", config );
         add( new InputIteratorBatcherStep<>( control(), config,
@@ -48,7 +47,7 @@ public class CalculateDenseNodesStage extends Stage
             add( new InputEntityCacherStep<>( control(), config, inputCache.cacheRelationships() ) );
         }
         add( new RelationshipPreparationStep( control(), config, idMapper ) );
-        add( new CalculateDenseNodePrepareStep( control(), config, badRelationshipsCollector ) );
+        add( new CalculateDenseNodePrepareStep( control(), config, badCollector ) );
         add( new CalculateDenseNodesStep( control(), config, cache ) );
     }
 }

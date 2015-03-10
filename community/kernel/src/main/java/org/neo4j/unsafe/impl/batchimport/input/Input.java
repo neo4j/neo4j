@@ -68,8 +68,8 @@ public interface Input
     boolean specificRelationshipIds();
 
     /**
-     * @return a {@link Collector} capable of writing {@link InputRelationship bad relationships} to
-     * an output stream for later handling.
+     * @return a {@link Collector} capable of writing {@link InputRelationship bad relationships}
+     * and {@link InputNode duplicate nodes} to an output stream for later handling.
      */
-    Collector<InputRelationship> badRelationshipsCollector( OutputStream out );
+    Collector badCollector( OutputStream out );
 }

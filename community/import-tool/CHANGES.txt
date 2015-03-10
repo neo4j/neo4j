@@ -1,3 +1,9 @@
+2.2.2
+-----
+o Ability to skip duplicate nodes (nodes w/ duplicate input ids within the same id space).
+  For this --skip-duplication-nodes as well as --skip-bad-relationships have been added.
+  Number of bad entries to tolerate collectively is still controlled using --bad-tolerance
+
 2.2.1
 -----
 o Ability to specify input encoding (using --input-encoding)
