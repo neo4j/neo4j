@@ -34,12 +34,25 @@ object expandTableSolver extends IDPTableSolver {
            solved = goal - solvable;
            plan <- table(solved)
       ) yield {
-        Iterator(
-          planSinglePatternSide(qg, pattern, plan, pattern.left),
-          planSinglePatternSide(qg, pattern, plan, pattern.right)
-        ).flatten
+        if (plan.availableSymbols.contains(pattern.name))
+          Iterator(
+            planSingleProjectEndpoints(pattern, plan)
+          )
+        else
+          Iterator(
+            planSinglePatternSide(qg, pattern, plan, pattern.left),
+            planSinglePatternSide(qg, pattern, plan, pattern.right)
+          ).flatten
       }
-      result.flatten
+
+    result.flatten
+  }
+
+  def planSingleProjectEndpoints(patternRel: PatternRelationship, plan: LogicalPlan): LogicalPlan = {
+    val (start, end) = patternRel.inOrder
+    val isStartInScope = plan.availableSymbols(start)
+    val isEndInScope = plan.availableSymbols(end)
+    planEndpointProjection(plan, start, isStartInScope, end, isEndInScope, patternRel)
   }
 
   def planSinglePatternSide(qg: QueryGraph, patternRel: PatternRelationship, plan: LogicalPlan, nodeId: IdName): Option[LogicalPlan] = {
@@ -67,5 +80,4 @@ object expandTableSolver extends IDPTableSolver {
       None
     }
   }
-
 }
