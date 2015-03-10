@@ -95,8 +95,14 @@ abstract class DynamicNumberArray<N extends NumberArray> implements NumberArray
     {
         while ( index >= length() )
         {
-            chunks = Arrays.copyOf( chunks, chunks.length+1 );
-            chunks[chunks.length-1] = addChunk( chunkSize );
+            synchronized ( this )
+            {
+                if ( index >= length() )
+                {
+                    chunks = Arrays.copyOf( chunks, chunks.length+1 );
+                    chunks[chunks.length-1] = addChunk( chunkSize );
+                }
+            }
         }
         return (N) chunks[chunkIndex( index )];
     }

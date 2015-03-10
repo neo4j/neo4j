@@ -19,7 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport.executor;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 
 import org.neo4j.unsafe.impl.batchimport.Parallelizable;
@@ -27,8 +26,11 @@ import org.neo4j.unsafe.impl.batchimport.Parallelizable;
 /**
  * Like an {@link ExecutorService} with additional absolute control of the current processor count,
  * i.e. the number of threads executing the tasks in parallel.
+ *
+ * @param <LOCAL> object/state local to each thread, that submitted {@link Task tasks} can get access to
+ * when {@link Task#run(Object) running}.
  */
-public interface TaskExecutor extends Parallelizable
+public interface TaskExecutor<LOCAL> extends Parallelizable
 {
     /**
      * Sets the processor count for this executor, i.e. number of threads executing tasks in parallel.
@@ -43,7 +45,7 @@ public interface TaskExecutor extends Parallelizable
      *
      * @param task a {@link Runnable} defining the task to be executed.
      */
-    void submit( Callable<?> task );
+    void submit( Task<LOCAL> task );
 
     /**
      * Shuts down this {@link TaskExecutor}, disallowing new tasks to be {@link #submit(Runnable) submitted}.

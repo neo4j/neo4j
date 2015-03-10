@@ -17,11 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.staging;
+package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.helpers.progress.ProgressListener;
-import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.unsafe.impl.batchimport.staging.LonelyProcessingStep;
+import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
+import org.neo4j.unsafe.impl.batchimport.staging.Step;
 
 /**
  * Preparation of an {@link IdMapper}, {@link IdMapper#prepare(InputIterable, ProgressListener)}
@@ -33,10 +35,10 @@ public class IdMapperPreparationStep extends LonelyProcessingStep
     private final IdMapper idMapper;
     private final InputIterable<Object> allIds;
 
-    public IdMapperPreparationStep( StageControl control, int batchSize, int movingAverageSize,
+    public IdMapperPreparationStep( StageControl control, Configuration config,
             IdMapper idMapper, InputIterable<Object> allIds )
     {
-        super( control, "" /*named later in the progress listener*/, batchSize, movingAverageSize );
+        super( control, "" /*named later in the progress listener*/, config );
         this.idMapper = idMapper;
         this.allIds = allIds;
     }

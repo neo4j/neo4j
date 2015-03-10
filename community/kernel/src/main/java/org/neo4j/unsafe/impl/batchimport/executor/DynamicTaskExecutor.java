@@ -20,11 +20,13 @@
 package org.neo4j.unsafe.impl.batchimport.executor;
 
 import java.lang.Thread.UncaughtExceptionHandler;
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
 
+import org.neo4j.function.Factory;
+import org.neo4j.function.Functions;
 import org.neo4j.kernel.impl.transaction.log.ParkStrategy;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
@@ -33,22 +35,32 @@ import static org.neo4j.helpers.Exceptions.launderedException;
  * Implementation of {@link TaskExecutor} with a maximum queue size and where each processor is a dedicated
  * {@link Thread} pulling queued tasks and executing them.
  */
-public class DynamicTaskExecutor implements TaskExecutor
+public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
 {
     public static final ParkStrategy DEFAULT_PARK_STRATEGY = new ParkStrategy.Park( 10 );
 
-    private final BlockingQueue<Callable<?>> queue;
+    private final BlockingQueue<Task<LOCAL>> queue;
     private final ParkStrategy parkStrategy;
     private final String processorThreadNamePrefix;
-    private volatile Processor[] processors = new Processor[0];
+    @SuppressWarnings( "unchecked" )
+    private volatile Processor[] processors = (Processor[]) Array.newInstance( Processor.class, 0 );
     private volatile boolean shutDown;
     private volatile Throwable shutDownCause;
+    private final Factory<LOCAL> initialLocalState;
 
     public DynamicTaskExecutor( int initialProcessorCount, int maxQueueSize, ParkStrategy parkStrategy,
             String processorThreadNamePrefix )
     {
+        this( initialProcessorCount, maxQueueSize, parkStrategy, processorThreadNamePrefix,
+                Functions.<LOCAL>constantly( null ) );
+    }
+
+    public DynamicTaskExecutor( int initialProcessorCount, int maxQueueSize, ParkStrategy parkStrategy,
+            String processorThreadNamePrefix, Factory<LOCAL> initialLocalState )
+    {
         this.parkStrategy = parkStrategy;
         this.processorThreadNamePrefix = processorThreadNamePrefix;
+        this.initialLocalState = initialLocalState;
         this.queue = new ArrayBlockingQueue<>( maxQueueSize );
         setNumberOfProcessors( initialProcessorCount );
     }
@@ -108,7 +120,7 @@ public class DynamicTaskExecutor implements TaskExecutor
     }
 
     @Override
-    public void submit( Callable<?> task )
+    public void submit( Task<LOCAL> task )
     {
         assertHealthy();
         while ( !queue.offer( task ) )
@@ -196,6 +208,7 @@ public class DynamicTaskExecutor implements TaskExecutor
     private class Processor extends Thread
     {
         private volatile boolean shutDown;
+        private final LOCAL threadLocalState = initialLocalState.newInstance();
 
         Processor( String name )
         {
@@ -209,12 +222,12 @@ public class DynamicTaskExecutor implements TaskExecutor
         {
             while ( !shutDown )
             {
-                Callable<?> task = queue.poll();
+                Task<LOCAL> task = queue.poll();
                 if ( task != null )
                 {
                     try
                     {
-                        task.call();
+                        task.run( threadLocalState );
                     }
                     catch ( Throwable e )
                     {

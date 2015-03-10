@@ -337,7 +337,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         }
 
         BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsolutePath(), fileSystem,
-                new Configuration.OverrideFromConfig( config ), logging,
+                new Configuration.Overridden( config ), logging,
                 migrationBatchImporterMonitor( legacyStore, progressMonitor ),
                 parallel(), readAdditionalIds( storeDir, lastTxId, lastTxChecksum ) );
         InputIterable<InputNode> nodes = legacyNodesAsInput( legacyStore );

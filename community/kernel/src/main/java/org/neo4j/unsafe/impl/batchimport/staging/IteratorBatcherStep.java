@@ -27,21 +27,20 @@ import org.neo4j.unsafe.impl.batchimport.InputIterator;
 /**
  * Takes an Iterator and chops it up into array batches downstream.
  */
-public class IteratorBatcherStep<T> extends IoProducerStep<T[]>
+public class IteratorBatcherStep<T> extends IoProducerStep
 {
     private final InputIterator<T> data;
     private final Class<T> itemClass;
 
-    public IteratorBatcherStep( StageControl control, int batchSize, int movingAverageSize,
-            InputIterator<T> data, Class<T> itemClass )
+    public IteratorBatcherStep( StageControl control, Configuration config, InputIterator<T> data, Class<T> itemClass )
     {
-        super( control, batchSize, movingAverageSize );
+        super( control, config );
         this.data = data;
         this.itemClass = itemClass;
     }
 
     @Override
-    protected Object nextBatchOrNull( int batchSize )
+    protected Object nextBatchOrNull( long ticket, int batchSize )
     {
         if ( !data.hasNext() )
         {

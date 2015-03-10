@@ -30,10 +30,10 @@ public abstract class LonelyProcessingStep extends AbstractStep<Void>
     private int batch;
     private long lastProcessingTimestamp;
 
-    public LonelyProcessingStep( StageControl control, String name, int batchSize, int movingAverageSize )
+    public LonelyProcessingStep( StageControl control, String name, Configuration config )
     {
-        super( control, name, movingAverageSize );
-        this.batchSize = batchSize;
+        super( control, name, config );
+        this.batchSize = config.batchSize();
     }
 
     @Override

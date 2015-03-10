@@ -22,25 +22,26 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
-import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
+import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
+import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 /**
  * Sets {@link NodeRecord#setNextRel(long)} in {@link ParallelBatchImporter}.
  */
-public class NodeFirstRelationshipStep extends ExecutorServiceStep<NodeRecord[]>
+public class NodeFirstRelationshipStep extends ProcessorStep<NodeRecord[]>
 {
     private final NodeFirstRelationshipProcessor processor;
 
-    public NodeFirstRelationshipStep( StageControl control, int workAheadSize, int movingAverageSize,
+    public NodeFirstRelationshipStep( StageControl control, Configuration config,
             RelationshipGroupStore relationshipGroupStore, NodeRelationshipLink cache )
     {
-        super( control, "Node --> Relationship", workAheadSize, movingAverageSize, 1 );
+        super( control, "Node --> Relationship", config );
         this.processor = new NodeFirstRelationshipProcessor( relationshipGroupStore, cache );
     }
 
     @Override
-    protected Object process( long ticket, NodeRecord[] batch )
+    protected void process( NodeRecord[] batch, BatchSender sender )
     {
         for ( NodeRecord node : batch )
         {
@@ -49,6 +50,6 @@ public class NodeFirstRelationshipStep extends ExecutorServiceStep<NodeRecord[]>
                 processor.process( node );
             }
         }
-        return batch;
+        sender.send( batch );
     }
 }

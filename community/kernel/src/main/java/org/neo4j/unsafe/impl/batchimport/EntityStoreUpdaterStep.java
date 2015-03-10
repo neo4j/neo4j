@@ -33,7 +33,8 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
 import org.neo4j.kernel.impl.util.ReusableIteratorCostume;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
-import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
+import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
+import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
@@ -51,7 +52,7 @@ import static java.lang.Math.max;
  * @param <INPUT> type of input.
  */
 public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends InputEntity>
-        extends ExecutorServiceStep<Batch<INPUT,RECORD>>
+        extends ProcessorStep<Batch<INPUT,RECORD>>
 {
     private final AbstractRecordStore<RECORD> entityStore;
     private final PropertyStore propertyStore;
@@ -67,7 +68,7 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
             AbstractRecordStore<RECORD> entityStore,
             PropertyStore propertyStore, IoMonitor monitor, WriterFactory writerFactory )
     {
-        super( control, "v", 1, config.movingAverageSize(), 1 ); // work-ahead doesn't matter, we're the last one
+        super( control, "v", config );
         this.entityStore = entityStore;
         this.propertyStore = propertyStore;
         this.writerFactory = writerFactory;
@@ -77,7 +78,7 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
     }
 
     @Override
-    protected Object process( long ticket, Batch<INPUT,RECORD> batch )
+    protected void process( Batch<INPUT,RECORD> batch, BatchSender sender )
     {
         // Clear reused data structures
         propertyRecords.close();
@@ -123,7 +124,6 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
         {
             propertyStore.updateRecord( propertyRecord );
         }
-        return null; // end of the line
     }
 
     private void reassignDynamicRecordIds( PropertyBlock[] blocks, int offset, int length )

@@ -35,8 +35,8 @@ public class NodeCountsStage extends Stage
             int highLabelId, CountsAccessor.Updater countsUpdater )
     {
         super( "Node counts", config, false );
-        add( new ReadNodeRecordsStep( control(), config.batchSize(), config.movingAverageSize(), nodeStore ) );
-        add( new RecordProcessorStep<>( control(), "COUNT", config.workAheadSize(), config.movingAverageSize(),
+        add( new ReadNodeRecordsStep( control(), config, nodeStore ) );
+        add( new RecordProcessorStep<>( control(), "COUNT", config,
                 new NodeCountsProcessor( nodeStore, cache, highLabelId, countsUpdater ), true ) );
     }
 }
