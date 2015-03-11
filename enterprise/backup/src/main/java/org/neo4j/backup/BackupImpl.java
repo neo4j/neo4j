@@ -29,14 +29,11 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.kernel.monitoring.StoreCopyMonitor;
 
 import static org.neo4j.com.RequestContext.anonymous;
 
 class BackupImpl implements TheBackupInterface
 {
-    private final StoreCopyMonitor storeCopyMonitor;
     private final StoreCopyServer storeCopyServer;
     private final ResponsePacker incrementalResponsePacker;
     private final LogicalTransactionStore logicalTransactionStore;
@@ -44,16 +41,15 @@ class BackupImpl implements TheBackupInterface
     private final TransactionIdStore transactionIdStore;
     private final LogFileInformation logFileInformation;
 
-    public BackupImpl( StoreCopyServer storeCopyServer, Monitors monitors,
-                       LogicalTransactionStore logicalTransactionStore, TransactionIdStore transactionIdStore,
-                       LogFileInformation logFileInformation, Provider<StoreId> storeId )
+    public BackupImpl( StoreCopyServer storeCopyServer, LogicalTransactionStore logicalTransactionStore,
+                       TransactionIdStore transactionIdStore, LogFileInformation logFileInformation,
+                       Provider<StoreId> storeId )
     {
         this.storeCopyServer = storeCopyServer;
         this.logicalTransactionStore = logicalTransactionStore;
         this.transactionIdStore = transactionIdStore;
         this.logFileInformation = logFileInformation;
         this.storeId = storeId;
-        this.storeCopyMonitor = monitors.newMonitor( StoreCopyMonitor.class, getClass() );
         this.incrementalResponsePacker = new ResponsePacker( logicalTransactionStore, transactionIdStore, storeId );
     }
 
@@ -61,13 +57,11 @@ class BackupImpl implements TheBackupInterface
     {
         try ( StoreWriter storeWriter = writer )
         {
-            storeCopyMonitor.startCopyingFiles();
             RequestContext copyStartContext = storeCopyServer.flushStoresAndStreamStoreFiles( storeWriter, forensics );
-            ResponsePacker responsePacker = new StoreCopyResponsePacker( logicalTransactionStore,
-                    transactionIdStore, logFileInformation, storeId,
-                    copyStartContext.lastAppliedTransaction() + 1 ); // mandatory transaction id
-            long optionalTransactionId = copyStartContext.lastAppliedTransaction();
-            return responsePacker.packTransactionStreamResponse( anonymous( optionalTransactionId ), null/*no response object*/ );
+            long lastAppliedTxId = copyStartContext.lastAppliedTransaction();
+            ResponsePacker responsePacker = new StoreCopyResponsePacker( logicalTransactionStore, transactionIdStore,
+                    logFileInformation, storeId, lastAppliedTxId + 1, storeCopyServer.monitor() );
+            return responsePacker.packTransactionStreamResponse( anonymous( lastAppliedTxId ), null/*no response object*/ );
         }
     }
 

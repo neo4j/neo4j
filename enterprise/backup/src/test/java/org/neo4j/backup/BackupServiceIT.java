@@ -28,8 +28,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -61,7 +59,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.kernel.monitoring.StoreCopyMonitor;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.EmbeddedDatabaseRule;
@@ -80,71 +77,7 @@ import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 public class BackupServiceIT
 {
-    private static final class StoreSnoopingMonitor extends StoreCopyMonitor.Adaptor
-    {
-        private final CountDownLatch firstStoreFinishedStreaming;
-        private final CountDownLatch transactionCommitted;
-        private final List<String> storesThatHaveBeenStreamed;
-
-        private StoreSnoopingMonitor( CountDownLatch firstStoreFinishedStreaming, CountDownLatch transactionCommitted,
-                List<String> storesThatHaveBeenStreamed )
-        {
-            this.firstStoreFinishedStreaming = firstStoreFinishedStreaming;
-            this.transactionCommitted = transactionCommitted;
-            this.storesThatHaveBeenStreamed = storesThatHaveBeenStreamed;
-        }
-
-        @Override
-        public void streamedFile( File storefile )
-        {
-            if ( neitherStoreHasBeenStreamed() )
-            {
-                if ( storefile.getAbsolutePath().contains( NODE_STORE ) )
-                {
-                    storesThatHaveBeenStreamed.add( NODE_STORE );
-                    firstStoreFinishedStreaming.countDown();
-                }
-                else if ( storefile.getAbsolutePath().contains( RELATIONSHIP_STORE ) )
-                {
-                    storesThatHaveBeenStreamed.add( RELATIONSHIP_STORE );
-                    firstStoreFinishedStreaming.countDown();
-                }
-            }
-        }
-
-        private boolean neitherStoreHasBeenStreamed()
-        {
-            return storesThatHaveBeenStreamed.isEmpty();
-        }
-
-        @Override
-        public void streamingFile( File storefile )
-        {
-            if ( storefile.getAbsolutePath().contains( RELATIONSHIP_STORE ) )
-            {
-                if ( streamedFirst( NODE_STORE ) )
-                {
-                    awaitLatch( transactionCommitted );
-                }
-            }
-            else if ( storefile.getAbsolutePath().contains( NODE_STORE ) )
-            {
-                if ( streamedFirst( RELATIONSHIP_STORE ) )
-                {
-                    awaitLatch( transactionCommitted );
-                }
-            }
-        }
-
-        private boolean streamedFirst( String store )
-        {
-            return !storesThatHaveBeenStreamed.isEmpty() && storesThatHaveBeenStreamed.get( 0 ).equals( store );
-        }
-    }
-
     private static final TargetDirectory target = TargetDirectory.forTest( BackupServiceIT.class );
-    private static final String NODE_STORE = "neostore.nodestore.db";
-    private static final String RELATIONSHIP_STORE = "neostore.relationshipstore.db";
     private static final String BACKUP_HOST = "localhost";
 
     private FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
@@ -519,7 +452,6 @@ public class BackupServiceIT
         dbRule.setConfig( OnlineBackupSettings.online_backup_enabled, "false" );
         Config withOnlineBackupEnabled = dbRule.getConfigCopy();
 
-        final List<String> storesThatHaveBeenStreamed = new ArrayList<>();
         final CountDownLatch firstStoreFinishedStreaming = new CountDownLatch( 1 );
         final CountDownLatch transactionCommitted = new CountDownLatch( 1 );
 
@@ -531,8 +463,6 @@ public class BackupServiceIT
         long expectedLastTxId = ds.getNeoStore().getLastCommittedTransactionId();
 
         Monitors monitors = new Monitors();
-        monitors.addMonitorListener( new StoreSnoopingMonitor( firstStoreFinishedStreaming, transactionCommitted,
-                storesThatHaveBeenStreamed ) );
 
         OnlineBackupKernelExtension backup = new OnlineBackupKernelExtension(
                 defaultConfig,

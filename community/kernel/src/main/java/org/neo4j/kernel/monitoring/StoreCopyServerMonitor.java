@@ -19,56 +19,52 @@
  */
 package org.neo4j.kernel.monitoring;
 
-import java.io.File;
-
-public interface StoreCopyMonitor
+public interface StoreCopyServerMonitor
 {
+    void startFlushingEverything();
+    void finishFlushingEverything();
+    void startSendingStoreFiles();
+    void finishSendingStoreFiles();
+    void startSendingTransactions( long startTxId );
+    void finishSendingTransactions( long endTxId );
 
-    void startCopyingFiles();
-    void finishedCopyingStoreFiles();
-    void finishedRotatingLogicalLogs();
-    void streamedFile( File file );
-    void streamingFile( File file );
-    void recoveredStore();
+    public static final StoreCopyServerMonitor NONE = new Adaptor();
 
-
-    public static final StoreCopyMonitor NONE = new Adaptor();
-
-    class Adaptor implements StoreCopyMonitor
+    class Adaptor implements StoreCopyServerMonitor
     {
 
         @Override
-        public void startCopyingFiles()
+        public void startFlushingEverything()
         {
 
         }
 
         @Override
-        public void finishedCopyingStoreFiles()
+        public void finishFlushingEverything()
         {
 
         }
 
         @Override
-        public void finishedRotatingLogicalLogs()
+        public void startSendingStoreFiles()
         {
 
         }
 
         @Override
-        public void streamedFile( File file )
+        public void finishSendingStoreFiles()
         {
 
         }
 
         @Override
-        public void streamingFile( File file )
+        public void startSendingTransactions( long startTxId )
         {
 
         }
 
         @Override
-        public void recoveredStore()
+        public void finishSendingTransactions( long toEndAt )
         {
 
         }

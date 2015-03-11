@@ -48,6 +48,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.monitoring.StoreCopyServerMonitor;
 
 import static org.neo4j.backup.OnlineBackupSettings.online_backup_server;
 
@@ -81,24 +82,25 @@ public class OnlineBackupKernelExtension implements Lifecycle
             public TheBackupInterface newBackup()
             {
                 DependencyResolver resolver = graphDatabaseAPI.getDependencyResolver();
-                TransactionIdStore transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
+                TransactionIdStore txIdStore = resolver.resolveDependency( TransactionIdStore.class );
                 StoreCopyServer copier = new StoreCopyServer(
-                        transactionIdStore,
+                        txIdStore,
                         resolver.resolveDependency( DataSourceManager.class ).getDataSource(),
                         resolver.resolveDependency( LogRotationControl.class ),
                         resolver.resolveDependency( FileSystemAbstraction.class ),
-                        new File( graphDatabaseAPI.getStoreDir() ) );
-                LogicalTransactionStore logicalTransactionStore = resolver.resolveDependency( LogicalTransactionStore.class );
-                LogFileInformation logFileInformation = resolver.resolveDependency( LogFileInformation.class );
-                return new BackupImpl( copier, monitors,
-                        logicalTransactionStore, transactionIdStore, logFileInformation, new Provider<StoreId>()
-                        {
-                            @Override
-                            public StoreId instance()
-                            {
-                                return graphDatabaseAPI.storeId();
-                            }
-                        } );
+                        new File( graphDatabaseAPI.getStoreDir() ),
+                        monitors.newMonitor( StoreCopyServerMonitor.class, "backup" ) );
+                LogicalTransactionStore logicalTxStore = resolver.resolveDependency( LogicalTransactionStore.class );
+                LogFileInformation logFileInfo = resolver.resolveDependency( LogFileInformation.class );
+                Provider<StoreId> storeIdProvider = new Provider<StoreId>()
+                {
+                    @Override
+                    public StoreId instance()
+                    {
+                        return graphDatabaseAPI.storeId();
+                    }
+                };
+                return new BackupImpl( copier, logicalTxStore, txIdStore, logFileInfo, storeIdProvider );
             }
         }, monitors, logging );
     }

@@ -59,7 +59,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.kernel.monitoring.StoreCopyMonitor;
+import org.neo4j.kernel.monitoring.StoreCopyClientMonitor;
 
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
@@ -80,7 +80,7 @@ public class StoreCopyClient
      */
     public interface StoreCopyRequester
     {
-        Response<?> copyStore( StoreWriter writer ) throws IOException;
+        Response<?> copyStore( StoreWriter writer, StoreCopyClientMonitor monitor ) throws IOException;
 
         void done();
     }
@@ -102,11 +102,11 @@ public class StoreCopyClient
     private final Logging logging;
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
-    private final StoreCopyMonitor storeCopyMonitor;
+    private final StoreCopyClientMonitor monitor;
 
     public StoreCopyClient( Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions,
                             ConsoleLogger console, Logging logging, FileSystemAbstraction fs,
-                            PageCache pageCache, StoreCopyMonitor storeCopyMonitor )
+                            PageCache pageCache, StoreCopyClientMonitor monitor )
     {
         this.config = config;
         this.kernelExtensions = kernelExtensions;
@@ -114,7 +114,7 @@ public class StoreCopyClient
         this.logging = logging;
         this.fs = fs;
         this.pageCache = pageCache;
-        this.storeCopyMonitor = storeCopyMonitor;
+        this.monitor = monitor;
     }
 
     public void copyStore( StoreCopyRequester requester, CancellationRequest cancellationRequest )
@@ -127,25 +127,25 @@ public class StoreCopyClient
 
         // Request store files and transactions that will need recovery
         try ( Response<?> response = requester.copyStore( decorateWithProgressIndicator(
-                new ToFileStoreWriter( tempStore ) ) ) )
+                new ToFileStoreWriter( tempStore ) ), monitor ) )
         {
             // Update highest archived log id
             // Write transactions that happened during the copy to the currently active logical log
-            writeTransactionsToActiveLogFile( tempStore, response );
+            writeTransactionsToActiveLogFile( tempStore, response, monitor );
         }
         finally
         {
             requester.done();
         }
-        storeCopyMonitor.finishedCopyingStoreFiles();
 
         // This is a good place to check if the switch has been cancelled
         checkCancellation( cancellationRequest, tempStore );
 
         // Run recovery, so that the transactions we just wrote into the active log will be applied.
+        monitor.startRecoveringStore();
         GraphDatabaseService graphDatabaseService = newTempDatabase( tempStore );
         graphDatabaseService.shutdown();
-        storeCopyMonitor.recoveredStore();
+        monitor.finishRecoveringStore();
 
         // All is well, move the streamed files to the real store directory
         for ( File candidate : tempStore.listFiles( STORE_FILE_FILTER ) )
@@ -154,7 +154,9 @@ public class StoreCopyClient
         }
     }
 
-    private void writeTransactionsToActiveLogFile( File storeDir, Response<?> response ) throws IOException
+    private void writeTransactionsToActiveLogFile( File storeDir, Response<?> response,
+                                                   final StoreCopyClientMonitor monitor )
+            throws IOException
     {
         LifeSupport life = new LifeSupport();
         try
@@ -177,6 +179,7 @@ public class StoreCopyClient
             final TransactionLogWriter writer = new TransactionLogWriter(
                     new LogEntryWriterv1( channel, new CommandWriter( channel ) ) );
             final AtomicLong firstTxId = new AtomicLong( -1 );
+            final AtomicLong lastTxId = new AtomicLong();
 
             response.accept( new Response.Handler()
             {
@@ -195,19 +198,29 @@ public class StoreCopyClient
                         public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
                         {
                             long txId = transaction.getCommitEntry().getTxId();
+                            if ( firstTxId.compareAndSet( -1, txId ) )
+                            {
+                                monitor.startReceivingTransactions( txId );
+                            }
                             writer.append( transaction.getTransactionRepresentation(), txId );
-                            firstTxId.compareAndSet( -1, txId );
+                            lastTxId.set( txId );
                             return false;
                         }
                     };
                 }
             } );
 
+            long initialTxId = Math.max( firstTxId.get() - 1, 0 );
+            if ( initialTxId > 0 )
+            {
+                monitor.finishReceivingTransactions( lastTxId.get() );
+            }
+
             // And since we write this manually we need to set the correct transaction id in the
             // header of the log that we just wrote.
             writeLogHeader( fs,
                     logFiles.getLogFileForVersion( logVersionRepository.getCurrentLogVersion() ),
-                    logVersionRepository.getCurrentLogVersion(), firstTxId.get() != -1 ? firstTxId.get() - 1 : 0 );
+                    logVersionRepository.getCurrentLogVersion(), initialTxId );
         }
         finally
         {
