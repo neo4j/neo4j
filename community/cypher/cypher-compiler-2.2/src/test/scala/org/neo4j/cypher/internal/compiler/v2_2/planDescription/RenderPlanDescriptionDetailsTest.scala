@@ -342,4 +342,21 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
         |+----------+---------------+------+--------+-------------+-----------------+
         |""".stripMargin )
   }
+
+  test("don't show unnamed identifiers in key names") {
+    val joinPipe = NodeHashJoinPipe(Set("a", "  UNNAMED45", "  FRESHID77"), pipe, pipe)(Some(42))(mock[PipeMonitor])
+    val arguments = Seq(
+      Rows( 42 ),
+      DbHits( 33 ))
+
+    renderDetails(joinPipe.planDescription) should equal(
+      """+--------------+---------------+-------------+-----------------------+
+        ||     Operator | EstimatedRows | Identifiers |                 Other |
+        |+--------------+---------------+-------------+-----------------------+
+        || NodeHashJoin |            42 |             | a, anon[45], anon[77] |
+        ||  Argument(1) |             - |             |                       |
+        ||  Argument(1) |             - |             |                       |
+        |+--------------+---------------+-------------+-----------------------+
+        |""".stripMargin )
+  }
 }

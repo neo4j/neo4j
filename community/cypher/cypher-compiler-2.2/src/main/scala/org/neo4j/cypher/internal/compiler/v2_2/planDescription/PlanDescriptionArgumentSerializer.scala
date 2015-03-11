@@ -37,7 +37,7 @@ object PlanDescriptionArgumentSerializer {
       case LegacyIndex(index) => index
       case Index(label, property) => s":$label($property)"
       case LabelName(label) => s":$label"
-      case KeyNames(keys) => keys.mkString(SEPARATOR)
+      case KeyNames(keys) => keys.map(removeGeneratedNames).mkString(SEPARATOR)
       case KeyExpressions(expressions) => expressions.mkString(SEPARATOR)
       case DbHits(value) => Long.box(value)
       case _: EntityByIdRhs => arg.toString

@@ -359,4 +359,6 @@ case class CoercedPredicate(inner:Expression) extends Predicate with CollectionS
   def containsIsNull = false
 
   def symbolTableDependencies = inner.symbolTableDependencies
+
+  override def toString = inner.toString
 }
