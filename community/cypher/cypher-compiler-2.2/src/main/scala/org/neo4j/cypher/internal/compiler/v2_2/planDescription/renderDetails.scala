@@ -39,7 +39,7 @@ object renderDetails extends (InternalPlanDescription => String) {
         val rows = p.arguments.collectFirst { case Rows(count) => count.toString}
         val estimatedRows = p.arguments.collectFirst { case EstimatedRows(count) => format(count) }
         val dbHits = p.arguments.collectFirst { case DbHits(count) => count.toString}
-        val ids = Some(p.orderedIdentifiers.filterNot(_.matches(UNNAMED_PATTERN)).mkString(", "))
+        val ids = Some(p.orderedIdentifiers.map(PlanDescriptionArgumentSerializer.removeGeneratedNames).mkString(", "))
         val other = Some(p.arguments.collect {
           case x
             if !x.isInstanceOf[Rows] &&

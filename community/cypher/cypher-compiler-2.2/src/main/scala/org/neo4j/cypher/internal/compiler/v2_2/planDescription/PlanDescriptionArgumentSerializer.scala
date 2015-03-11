@@ -58,7 +58,7 @@ object PlanDescriptionArgumentSerializer {
     }
   }
 
-  private def removeGeneratedNames(s: String) = {
+   def removeGeneratedNames(s: String) = {
     val named = UNNAMED_PATTERN.replaceAllIn(s, m => s"anon[${m group 2}]")
     DEDUP_PATTERN.replaceAllIn(named, _.group(1))
   }

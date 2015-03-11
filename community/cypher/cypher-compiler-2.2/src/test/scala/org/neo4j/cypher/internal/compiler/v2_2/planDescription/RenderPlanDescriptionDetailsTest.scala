@@ -178,11 +178,11 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
 
     val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  FRESHID12", "  AGGREGATION255"))
     renderDetails(plan) should equal(
-      """+----------+---------------+------+--------+-------------+------------------+
-        || Operator | EstimatedRows | Rows | DbHits | Identifiers |            Other |
-        |+----------+---------------+------+--------+-------------+------------------+
-        ||     NAME |             1 |   42 |     33 |           n | ()-[R:WHOOP]->() |
-        |+----------+---------------+------+--------+-------------+------------------+
+      """+----------+---------------+------+--------+-----------------------------------+------------------+
+        || Operator | EstimatedRows | Rows | DbHits |                       Identifiers |            Other |
+        |+----------+---------------+------+--------+-----------------------------------+------------------+
+        ||     NAME |             1 |   42 |     33 | anon[255], anon[12], anon[123], n | ()-[R:WHOOP]->() |
+        |+----------+---------------+------+--------+-----------------------------------+------------------+
         |""".stripMargin)
   }
 
@@ -193,7 +193,7 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
       ExpandExpression("source", "through", Seq("SOME","OTHER","THING"), "target", Direction.OUTGOING)
     )
 
-    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  UNNAMED2", "  UNNAMED24"))
+    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n"))
     renderDetails(plan) should equal(
       """+----------+---------------+------+--------+-------------+-------------------------------------------------+
         || Operator | EstimatedRows | Rows | DbHits | Identifiers |                                           Other |
@@ -209,7 +209,7 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
       DbHits(33),
       LegacyExpression(Not(Equals(Identifier("  UNNAMED123"), Identifier("  UNNAMED321")))))
 
-    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  UNNAMED2", "  UNNAMED24"))
+    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n"))
     renderDetails(plan) should equal(
       """+----------+---------------+------+--------+-------------+-----------------------------+
         || Operator | EstimatedRows | Rows | DbHits | Identifiers |                       Other |
@@ -226,7 +226,7 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
       DbHits(33),
       LegacyExpression(HasLabel(Identifier("x"), KeyToken.Resolved("Artist", 5, TokenType.Label))))
 
-    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  UNNAMED2", "  UNNAMED24"))
+    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n"))
     renderDetails(plan) should equal(
       """+----------+---------------+------+--------+-------------+----------+
         || Operator | EstimatedRows | Rows | DbHits | Identifiers |    Other |
@@ -243,7 +243,7 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
       DbHits(33),
       LegacyExpression(LengthFunction(Identifier("n"))))
 
-    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  UNNAMED2", "  UNNAMED24"))
+    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n"))
     renderDetails(plan) should equal(
       """+----------+---------------+------+--------+-------------+-----------+
         || Operator | EstimatedRows | Rows | DbHits | Identifiers |     Other |
@@ -260,8 +260,11 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
       DbHits(33),
       LegacyExpression(Identifier("  id@23")))
 
-    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  UNNAMED2", "  UNNAMED24"))
-    renderDetails(plan) should equal(
+    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("  n@76"))
+
+    val details = renderDetails(plan)
+    println(details)
+    details should equal(
       """+----------+---------------+------+--------+-------------+-------+
         || Operator | EstimatedRows | Rows | DbHits | Identifiers | Other |
         |+----------+---------------+------+--------+-------------+-------+
@@ -278,7 +281,7 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
       Planner("COST"),
       LegacyExpression(Identifier("  id@23")))
 
-    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  UNNAMED2", "  UNNAMED24"))
+    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n"))
     renderDetails(plan) should equal(
       """+----------+---------------+------+--------+-------------+-------+
         || Operator | EstimatedRows | Rows | DbHits | Identifiers | Other |
@@ -315,8 +318,7 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
       DbHits( 33 ),
       LegacyExpression( Property(Identifier( "x" ), KeyToken.Resolved( "Artist", 5, TokenType.PropertyKey ))))
 
-    val plan = PlanDescriptionImpl( pipe, "NAME", NoChildren, arguments, Set( "n", "  UNNAMED123", "  UNNAMED2", "  " +
-      "UNNAMED24" ) )
+    val plan = PlanDescriptionImpl( pipe, "NAME", NoChildren, arguments, Set( "n") )
     renderDetails(plan) should equal(
                  """+----------+---------------+------+--------+-------------+----------+
                    || Operator | EstimatedRows | Rows | DbHits | Identifiers |    Other |
@@ -332,8 +334,7 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
       DbHits( 33 ),
       LegacyExpression( PropertyExists(Identifier("x"), KeyToken.Resolved("prop", 42, TokenType.PropertyKey))))
 
-    val plan = PlanDescriptionImpl( pipe, "NAME", NoChildren, arguments, Set( "n", "  UNNAMED123", "  UNNAMED2", "  " +
-      "UNNAMED24" ) )
+    val plan = PlanDescriptionImpl( pipe, "NAME", NoChildren, arguments, Set( "n") )
     renderDetails(plan) should equal(
       """+----------+---------------+------+--------+-------------+-----------------+
         || Operator | EstimatedRows | Rows | DbHits | Identifiers |           Other |
