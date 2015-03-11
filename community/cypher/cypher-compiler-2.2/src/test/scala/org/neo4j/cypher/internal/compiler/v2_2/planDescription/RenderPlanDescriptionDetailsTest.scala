@@ -25,7 +25,7 @@ import org.mockito.Mockito
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.commands._
-import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Identifier, LengthFunction}
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Property, Identifier, LengthFunction}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments._
@@ -292,7 +292,7 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
     val pipe1 = NodeByLabelScanPipe("n", LazyLabel("Foo"))(Some(0.00123456789))(mock[PipeMonitor])
     val pipe2 = NodeByLabelScanPipe("n", LazyLabel("Foo"))(Some(1.23456789))(mock[PipeMonitor])
 
-    renderDetails( pipe1.planDescription ) should equal(
+    renderDetails(pipe1.planDescription) should equal(
       """+-----------------+---------------+-------------+-------+
         ||        Operator | EstimatedRows | Identifiers | Other |
         |+-----------------+---------------+-------------+-------+
@@ -307,5 +307,22 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
         || NodeByLabelScan |             1 |           n |  :Foo |
         |+-----------------+---------------+-------------+-------+
         |""".stripMargin )
+  }
+
+  test("properly show Property") {
+    val arguments = Seq(
+      Rows( 42 ),
+      DbHits( 33 ),
+      LegacyExpression( Property(Identifier( "x" ), KeyToken.Resolved( "Artist", 5, TokenType.PropertyKey ))))
+
+    val plan = PlanDescriptionImpl( pipe, "NAME", NoChildren, arguments, Set( "n", "  UNNAMED123", "  UNNAMED2", "  " +
+      "UNNAMED24" ) )
+    renderDetails(plan) should equal(
+                 """+----------+---------------+------+--------+-------------+----------+
+                   || Operator | EstimatedRows | Rows | DbHits | Identifiers |    Other |
+                   |+----------+---------------+------+--------+-------------+----------+
+                   ||     NAME |             1 |   42 |     33 |           n | x.Artist |
+                   |+----------+---------------+------+--------+-------------+----------+
+                   |""".stripMargin )
   }
 }
