@@ -105,7 +105,7 @@ public abstract class GraphDatabaseSettings
             options( "COST", "RULE"), NO_DEFAULT );
 
     @Description( "The number of Cypher query execution plans that are cached." )
-    public static Setting<Integer> query_cache_size = setting( "query_cache_size", INTEGER, "100", min( 0 ) );
+    public static Setting<Integer> query_cache_size = setting( "query_cache_size", INTEGER, "1000", min( 0 ) );
 
     @Description("The minimum lifetime of a query plan before a query is considered for replanning")
     public static Setting<Long> query_planner_min_replan_interval = setting( "dbms.query_planner.min_replan_interval", DURATION, "1s" );
