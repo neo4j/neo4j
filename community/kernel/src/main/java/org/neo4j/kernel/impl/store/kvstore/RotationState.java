@@ -42,6 +42,9 @@ abstract class RotationState<Key> extends ProgressiveState<Key>
         return "rotating";
     }
 
+    @Override
+    abstract void close() throws IOException;
+
     static final class Rotation<Key> extends RotationState<Key>
     {
         private final ActiveState<Key> preState;
@@ -71,14 +74,13 @@ abstract class RotationState<Key> extends ProgressiveState<Key>
             }
             Pair<File, KeyValueStoreFile> next = strategy
                     .next( file(), updateHeaders( headersUpdater ), keyFormat().filter( preState.dataProvider() ) );
-            try
-            {
-                return postState.create( ReadableState.store( preState.keyFormat(), next.other() ), next.first() );
-            }
-            finally
-            {
-                preState.close();
-            }
+            return postState.create( ReadableState.store( preState.keyFormat(), next.other() ), next.first() );
+        }
+
+        @Override
+        void close() throws IOException
+        {
+            preState.close();
         }
 
         private Headers updateHeaders( Consumer<Headers.Builder> headersUpdater )

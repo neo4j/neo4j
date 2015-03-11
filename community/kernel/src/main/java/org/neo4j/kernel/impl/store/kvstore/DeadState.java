@@ -220,6 +220,11 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
                 {
                     return state;
                 }
+
+                @Override
+                void close() throws IOException
+                {
+                }
             };
         }
 
@@ -271,6 +276,12 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
                         throws IOException
                 {
                     return new Prepared<>( state.rotate( strategy, headers ) );
+                }
+
+                @Override
+                void close() throws IOException
+                {
+                    state.close();
                 }
             };
         }

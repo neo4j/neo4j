@@ -250,6 +250,10 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
                     {
                         state = next;
                     }
+                    finally
+                    {
+                        rotation.close();
+                    }
                     return version;
                 }
             };
