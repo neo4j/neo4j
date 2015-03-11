@@ -37,7 +37,6 @@ import org.neo4j.helpers.Provider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
@@ -73,8 +72,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
     private volatile URI me;
 
     public OnlineBackupKernelExtension( Config config, final GraphDatabaseAPI graphDatabaseAPI,
-                                        final KernelPanicEventGenerator kpeg, final Logging logging,
-                                        final Monitors monitors )
+                                        final Logging logging, final Monitors monitors )
     {
         this( config, graphDatabaseAPI, new BackupProvider()
         {
