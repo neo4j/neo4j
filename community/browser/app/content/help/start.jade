@@ -28,13 +28,3 @@ article.help
               a(help-topic='return') :help RETURN
               | &nbsp;
               a(help-topic='cypher') :help Cypher
-    section.row-fluid.example
-      .col-sm-9.col-sm-offset-3
-        figure
-          pre.code.runnable.
-            START n=node:names(name = "A")
-            RETURN n
-          figcaption The query returns the node indexed with the name "
-            code A
-            | " in the legacy index name "names".
-
