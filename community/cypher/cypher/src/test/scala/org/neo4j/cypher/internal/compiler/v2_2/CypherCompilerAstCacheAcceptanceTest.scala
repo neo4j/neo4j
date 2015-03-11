@@ -59,7 +59,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     }
   }
 
-  override def databaseConfig(): Map[String,String] = Map(GraphDatabaseSettings.query_plan_ttl.name() -> "0")
+  override def databaseConfig(): Map[String,String] = Map(GraphDatabaseSettings.query_planner_min_replan_interval.name() -> "0")
 
   test("should monitor cache misses") {
     val counter = new CacheCounter()

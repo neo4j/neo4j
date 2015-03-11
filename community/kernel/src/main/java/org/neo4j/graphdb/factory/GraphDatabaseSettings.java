@@ -101,14 +101,14 @@ public abstract class GraphDatabaseSettings
 
     @Description( "Set this to specify the default planner." )
     public static final Setting<String> query_planner_version = setting(
-            "query.planner.version",
-            options( "COST", "RULE"), NO_DEFAULT );
+            "dbms.query_planner.version",
+            options( "COST", "RULE", "IDP"), NO_DEFAULT );
 
     @Description( "The number of Cypher query execution plans that are cached." )
     public static Setting<Integer> query_cache_size = setting( "query_cache_size", INTEGER, "100", min( 0 ) );
 
     @Description("The minimum lifetime of a query plan before a query is considered for replanning")
-    public static Setting<Long> query_plan_ttl = setting( "query_plan_ttl", DURATION, "1s" );
+    public static Setting<Long> query_planner_min_replan_interval = setting( "dbms.query_planner.min_replan_interval", DURATION, "1s" );
 
     @Description( "Determines if Cypher will allow using file URLs when loading data using `LOAD CSV`. Setting this "
                   + "value to `false` will cause Neo4j to fail `LOAD CSV` clauses that load data from the file system." )

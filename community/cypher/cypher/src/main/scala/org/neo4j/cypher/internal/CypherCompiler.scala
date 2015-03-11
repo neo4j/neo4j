@@ -142,7 +142,7 @@ class CypherCompiler(graph: GraphDatabaseService,
 
   private def getQueryPlanTTL: Long = {
     optGraphAs[InternalAbstractGraphDatabase]
-      .andThen(_.getConfig.get(GraphDatabaseSettings.query_plan_ttl).longValue())
+      .andThen(_.getConfig.get(GraphDatabaseSettings.query_planner_min_replan_interval).longValue())
       .applyOrElse(graph, (_: GraphDatabaseService) => DEFAULT_QUERY_PLAN_TTL)
   }
 
