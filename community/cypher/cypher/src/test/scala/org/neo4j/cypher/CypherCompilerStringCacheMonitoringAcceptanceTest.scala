@@ -50,7 +50,7 @@ class CypherCompilerStringCacheMonitoringAcceptanceTest extends ExecutionEngineF
     }
   }
 
-  override def databaseConfig(): Map[String,String] = Map(GraphDatabaseSettings.query_plan_ttl.name() -> "0")
+  override def databaseConfig(): Map[String,String] = Map(GraphDatabaseSettings.query_planner_min_replan_interval.name() -> "0")
 
   test("should monitor cache miss") {
     // given
