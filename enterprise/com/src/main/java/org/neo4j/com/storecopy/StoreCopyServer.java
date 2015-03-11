@@ -32,6 +32,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.monitoring.StoreCopyServerMonitor;
 
 import static org.neo4j.com.RequestContext.anonymous;
 import static org.neo4j.io.fs.FileUtils.getMostCanonicalFile;
@@ -49,17 +50,18 @@ public class StoreCopyServer
     private final NeoStoreDataSource dataSource;
     private final LogRotationControl logRotationControl;
     private final FileSystemAbstraction fileSystem;
+    private final StoreCopyServerMonitor monitor;
     private final File storeDirectory;
 
     public StoreCopyServer( TransactionIdStore transactionIdStore,
             NeoStoreDataSource dataSource, LogRotationControl logRotationControl, FileSystemAbstraction fileSystem,
-            File
-            storeDirectory )
+            File storeDirectory, StoreCopyServerMonitor monitor )
     {
         this.transactionIdStore = transactionIdStore;
         this.dataSource = dataSource;
         this.logRotationControl = logRotationControl;
         this.fileSystem = fileSystem;
+        this.monitor = monitor;
         this.storeDirectory = getMostCanonicalFile( storeDirectory );
     }
 
@@ -71,10 +73,14 @@ public class StoreCopyServer
         try
         {
             long lastAppliedTransaction = transactionIdStore.getLastClosedTransactionId();
+            monitor.startFlushingEverything();
             logRotationControl.forceEverything();
+            monitor.finishFlushingEverything();
+
             ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( 1024 * 1024 );
 
             // Copy the store files
+            monitor.startSendingStoreFiles();
             try ( ResourceIterator<File> files = dataSource.listStoreFiles( includeLogs ) )
             {
                 while ( files.hasNext() )
@@ -87,6 +93,7 @@ public class StoreCopyServer
                     }
                 }
             }
+            monitor.finishSendingStoreFiles();
 
             return anonymous( lastAppliedTransaction );
         }
@@ -94,5 +101,10 @@ public class StoreCopyServer
         {
             throw new ServerFailureException( e );
         }
+    }
+
+    public StoreCopyServerMonitor monitor()
+    {
+        return monitor;
     }
 }

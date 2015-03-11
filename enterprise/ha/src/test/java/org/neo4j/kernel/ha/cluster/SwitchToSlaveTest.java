@@ -54,7 +54,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
-import org.neo4j.kernel.monitoring.StoreCopyMonitor;
+import org.neo4j.kernel.monitoring.StoreCopyClientMonitor;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.fail;
@@ -132,7 +132,7 @@ public class SwitchToSlaveTest
                 mock( ClusterMemberAvailability.class ), mock( RequestContextFactory.class ),
                 Iterables.<KernelExtensionFactory<?>>empty(), mock( MasterClientResolver.class ),
                 ByteCounterMonitor.NULL, mock( RequestMonitor.class ), mock( SwitchToSlave.Monitor.class ),
-                StoreCopyMonitor.NONE ) );
+                StoreCopyClientMonitor.NONE ) );
     }
 
     private static NeoStoreDataSource dataSourceMock()

@@ -29,4 +29,19 @@ public interface RequestMonitor
     void beginRequest( SocketAddress remoteAddress, RequestType<?> requestType, RequestContext requestContext );
 
     void endRequest( Throwable t );
+
+    public static final RequestMonitor NULL = new RequestMonitor()
+    {
+        @Override
+        public void beginRequest( SocketAddress remoteAddress, RequestType<?> requestType, RequestContext ctx )
+        {
+
+        }
+
+        @Override
+        public void endRequest( Throwable t )
+        {
+
+        }
+    };
 }
