@@ -45,6 +45,8 @@ abstract class RotationState<Key> extends ProgressiveState<Key>
     @Override
     abstract void close() throws IOException;
 
+    abstract long rotationVersion();
+
     static final class Rotation<Key> extends RotationState<Key>
     {
         private final ActiveState<Key> preState;
@@ -81,6 +83,12 @@ abstract class RotationState<Key> extends ProgressiveState<Key>
         void close() throws IOException
         {
             preState.close();
+        }
+
+        @Override
+        long rotationVersion()
+        {
+            return threshold;
         }
 
         private Headers updateHeaders( Consumer<Headers.Builder> headersUpdater )

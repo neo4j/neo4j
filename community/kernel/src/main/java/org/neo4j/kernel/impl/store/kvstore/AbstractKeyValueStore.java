@@ -237,7 +237,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
                 @Override
                 public long rotate() throws IOException
                 {
-                    final long version = rotation.version();
+                    final long version = rotation.rotationVersion();
                     ProgressiveState<Key> next = rotation.rotate( rotationStrategy, new Consumer<Headers.Builder>()
                     {
                         @Override

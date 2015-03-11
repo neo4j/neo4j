@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.function.IOFunction;
 import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.lifecycle.Lifespan;
@@ -260,6 +261,63 @@ public class AbstractKeyValueStoreTest
         }
     }
 
+    @Test
+    @Resources.Life(STARTED)
+    public void shouldRotateWithCorrectVersion() throws Exception
+    {
+        // given
+        final Store store = the.managed( new Store( TX_ID )
+        {
+            @SuppressWarnings("unchecked")
+            @Override
+            <Value> Value initialHeader( HeaderField<Value> field )
+            {
+                if ( field == TX_ID )
+                {
+                    return (Value) (Object) 1l;
+                }
+                else
+                {
+                    return super.initialHeader( field );
+                }
+            }
+
+            @Override
+            protected void updateHeaders( Headers.Builder headers, long version )
+            {
+                headers.put( TX_ID, version );
+            }
+
+            @Override
+            protected int compareHeaders( Headers lhs, Headers rhs )
+            {
+                return Long.compare( lhs.get( TX_ID ), rhs.get( TX_ID ) );
+            }
+        } );
+        IOFunction<Long, Void> update = new IOFunction<Long, Void>()
+        {
+            @Override
+            public Void apply( Long update ) throws IOException
+            {
+                try ( EntryUpdater<String> updater = store.updater( update ).get() )
+                {
+                    updater.apply( "key " + update, store.value( "value " + update ) );
+                }
+                return null;
+            }
+        };
+
+        // when
+        update.apply( 1l );
+        PreparedRotation rotation = store.prepareRotation( 2 );
+        update.apply( 2l );
+        rotation.rotate();
+
+        // then
+        assertEquals( 2, store.headers().get( TX_ID ).longValue() );
+        store.prepareRotation( 2 ).rotate();
+    }
+
     static DataProvider data( final Entry... data )
     {
         return new DataProvider()
@@ -410,17 +468,22 @@ public class AbstractKeyValueStoreTest
 
         public void put( String key, final String value ) throws IOException
         {
-            try (EntryUpdater<String> updater = updater())
+            try ( EntryUpdater<String> updater = updater() )
             {
-                updater.apply( key, new ValueUpdate()
-                {
-                    @Override
-                    public void update( WritableBuffer target )
-                    {
-                        writeKey( value, target );
-                    }
-                } );
+                updater.apply( key, value( value ) );
             }
+        }
+
+        ValueUpdate value( final String value )
+        {
+            return new ValueUpdate()
+            {
+                @Override
+                public void update( WritableBuffer target )
+                {
+                    writeKey( value, target );
+                }
+            };
         }
 
         public String get( String key ) throws IOException

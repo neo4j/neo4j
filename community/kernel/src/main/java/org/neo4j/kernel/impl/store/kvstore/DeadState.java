@@ -225,6 +225,12 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
                 void close() throws IOException
                 {
                 }
+
+                @Override
+                long rotationVersion()
+                {
+                    return state.version();
+                }
             };
         }
 
@@ -282,6 +288,12 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
                 void close() throws IOException
                 {
                     state.close();
+                }
+
+                @Override
+                long rotationVersion()
+                {
+                    return state.rotationVersion();
                 }
             };
         }
