@@ -95,7 +95,7 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
         |""".stripMargin)
   }
 
-  test("execution plan without profiler stats uses question marks") {
+  test("execution plan without profiler stats are not shown") {
     val arguments = Seq()
 
     val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n"))
@@ -176,7 +176,7 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
       ExpandExpression("  UNNAMED123", "R", Seq("WHOOP"), "  UNNAMED24", Direction.OUTGOING)
     )
 
-    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  UNNAMED2", "  UNNAMED24"))
+    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  FRESHID12", "  AGGREGATION255"))
     renderDetails(plan) should equal(
       """+----------+---------------+------+--------+-------------+------------------+
         || Operator | EstimatedRows | Rows | DbHits | Identifiers |            Other |
