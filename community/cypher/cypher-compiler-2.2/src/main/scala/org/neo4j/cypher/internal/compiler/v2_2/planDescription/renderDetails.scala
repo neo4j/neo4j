@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planDescription
 
-import java.math.MathContext
-
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.UnNamedNameGenerator._
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments._
+
 import scala.collection.mutable
 
 
@@ -67,7 +66,7 @@ object renderDetails extends (InternalPlanDescription => String) {
     renderTable(headers.filter(headersInUse.contains), rowsInUse)
   }
 
-  private def format(v: Double) = if (v.isNaN) v.toString else BigDecimal(v, new MathContext(2)).bigDecimal.toPlainString
+  private def format(v: Double) = if (v.isNaN) v.toString else math.round(v).toString
 
 
   private def renderTable(header: Seq[String], rows: Seq[Seq[String]]): String = {
