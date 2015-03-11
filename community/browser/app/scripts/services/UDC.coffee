@@ -62,7 +62,7 @@ angular.module('neo4jApp.services')
           if (@shouldPing(event))
             switch event
               when 'connect'
-                Intercom.user(@data.uuid, @data)
+                @connectUser()
                 Intercom.update({
                   "companies": [
                       {
@@ -85,6 +85,9 @@ angular.module('neo4jApp.services')
                     accepts_replies: Settings.acceptsReplies
                   })
 
+        connectUser: ->
+          Intercom.user(@data.uuid, @data)
+
         pingLater: (event) =>
           timer = $timeout(
             () =>
@@ -95,6 +98,9 @@ angular.module('neo4jApp.services')
 
         shouldPing: (event) =>
           if not (Settings.shouldReportUdc?)
+            @pingLater(event)
+            return false
+          if not @hasRequiredData()
             @pingLater(event)
             return false
           if Settings.shouldReportUdc
@@ -110,8 +116,19 @@ angular.module('neo4jApp.services')
           else
             return false
 
+        hasRequiredData: ->
+          return @data.store_id and @data.neo4j_version
 
+        toggleMessenger: ->
+          @connectUser()
+          if @isShowing
+            @do('hide')
+          else
+            @do('show')
 
+        newMessage: (message) ->
+          @connectUser()
+          Intercom.newMessage message
 
       new UsageDataCollectionService()
   ]
