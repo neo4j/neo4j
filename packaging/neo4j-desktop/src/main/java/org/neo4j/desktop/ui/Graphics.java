@@ -29,10 +29,10 @@ import static java.lang.String.format;
 
 public final class Graphics
 {
-    public static final String LOGO_32 = "/neo4j-icon_32x32.png";
+    public static final String LOGO = "/neo4j-logo.png";
     public static final String SYSTEM_TRAY_ICON = "/neo4j-systray-16.png";
 
-    private static final String LOGO_PATTERN = "/neo4j-icon_%1$dx%1$d.png";
+    private static final String ICON_PATTERN = "/neo4j-icon_%1$dx%1$d.png";
     private static final int MIN_SIZE = 16;
     private static final int MAX_SIZE = 512;
 
@@ -46,7 +46,7 @@ public final class Graphics
         List<Image> icons = new ArrayList<>();
         for ( int i = MIN_SIZE; i <= MAX_SIZE; i *= 2 )
         {
-            Image image = loadImage( format( LOGO_PATTERN, i ) );
+            Image image = loadImage( format( ICON_PATTERN, i ) );
             if ( null != image )
             {
                 icons.add( image );
