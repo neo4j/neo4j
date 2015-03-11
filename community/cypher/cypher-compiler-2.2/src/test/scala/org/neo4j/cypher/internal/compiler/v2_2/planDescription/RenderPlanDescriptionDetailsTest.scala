@@ -228,11 +228,11 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
 
     val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  UNNAMED2", "  UNNAMED24"))
     renderDetails(plan) should equal(
-      """+----------+---------------+------+--------+-------------+--------------------+
-        || Operator | EstimatedRows | Rows | DbHits | Identifiers |              Other |
-        |+----------+---------------+------+--------+-------------+--------------------+
-        ||     NAME |             1 |   42 |     33 |           n | hasLabel(x:Artist) |
-        |+----------+---------------+------+--------+-------------+--------------------+
+      """+----------+---------------+------+--------+-------------+----------+
+        || Operator | EstimatedRows | Rows | DbHits | Identifiers |    Other |
+        |+----------+---------------+------+--------+-------------+----------+
+        ||     NAME |             1 |   42 |     33 |           n | x:Artist |
+        |+----------+---------------+------+--------+-------------+----------+
         |""".stripMargin)
   }
 
