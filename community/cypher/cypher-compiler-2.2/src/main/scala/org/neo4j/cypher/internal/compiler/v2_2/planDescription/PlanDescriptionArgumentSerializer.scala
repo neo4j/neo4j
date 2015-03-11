@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_2.planDescription
 
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_2.helpers.UnNamedNameGenerator._
+
 
 object PlanDescriptionArgumentSerializer {
   private val SEPARATOR = ", "
@@ -44,10 +46,12 @@ object PlanDescriptionArgumentSerializer {
       case Version(version) => version
       case Planner(planner) => planner
       case ExpandExpression(from, rel, typeNames, to, dir: Direction, varLength) =>
-        val left = if (dir == Direction.INCOMING) "<-[" else "-["
-        val right = if (dir == Direction.OUTGOING) "]->" else "]-"
+        val left = if (dir == Direction.INCOMING) "<-" else "-"
+        val right = if (dir == Direction.OUTGOING) "->" else "-"
         val asterisk = if (varLength) "*" else ""
-        s"($from)$left$rel:${typeNames.mkString("|:")}$asterisk$right($to)"
+        val types = typeNames.mkString(":", "|:", "")
+        val relInfo = if (!varLength && typeNames.isEmpty && rel.unnamed) "" else s"[$rel$types$asterisk]"
+        s"($from)$left$relInfo$right($to)"
 
       // Do not add a fallthrough here - we rely on exhaustive checking to ensure
       // that we don't forget to add new types of arguments here
