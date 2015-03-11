@@ -32,8 +32,8 @@ angular.module('neo4jApp.controllers')
     'GraphStyle'
     'Utils'
     'Settings'
-    'Intercom'
-    ($scope, $timeout, $modal, Editor, Frame, GraphStyle, Utils, Settings, Intercom) ->
+    'UsageDataCollectionService'
+    ($scope, $timeout, $modal, Editor, Frame, GraphStyle, Utils, Settings, UsageDataCollectionService) ->
       $scope.settings = Settings
       _codeMirror = null
       dialog = null
@@ -46,12 +46,12 @@ angular.module('neo4jApp.controllers')
         size: 'lg'
 
       $scope.toggleMessenger = () ->
-        Intercom.toggle()
+        UsageDataCollectionService.toggleMessenger()
 
       $scope.suggestionPlaceholder = 'I want to X, tried Y, suggest Z'
 
       $scope.newMessage = (suggestion) ->
-        Intercom.newMessage(suggestion)
+        UsageDataCollectionService.newMessage(suggestion)
 
       $scope.showDoc = () ->
         Frame.create(input: ':play')
