@@ -19,18 +19,19 @@
  */
 package org.neo4j.backup;
 
+import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.io.File;
-import java.io.FileFilter;
-import java.io.IOException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -76,6 +77,8 @@ import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.test.Mute;
 import org.neo4j.test.TargetDirectory;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -86,6 +89,8 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+
+import static org.neo4j.backup.BackupServiceStressTestingBuilder.untilTimeExpired;
 
 public class BackupServiceIT
 {
@@ -582,6 +587,20 @@ public class BackupServiceIT
             assertThat( e.getMessage(), equalTo( BackupService.DIFFERENT_STORE ) );
             assertThat( e.getCause(), instanceOf( MismatchingStoreIdException.class ) );
         }
+    }
+
+    @Test
+    public void theBackupServiceShouldBeHappyUnderStress() throws Exception
+    {
+        Callable<Integer> callable = new BackupServiceStressTestingBuilder()
+                .until( untilTimeExpired( 10, SECONDS ) )
+                .withStore( storeDir )
+                .withWorkingDirectory( backupDir )
+                .withBackupAddress( BACKUP_HOST, backupPort )
+                .build();
+
+        int brokenStores = callable.call();
+        assertEquals( 0, brokenStores );
     }
 
     private void defaultBackupPortHostParams()
