@@ -33,9 +33,9 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
 {
     public static void recomputeCounts( NeoStore stores )
     {
-        try ( CountsAccessor.Updater countsUpdater = stores.getCounts().reset() )
+        try ( CountsAccessor.Updater updater = stores.getCounts().reset( stores.getLastCommittedTransactionId() ) )
         {
-            new CountsComputer( stores ).initialize( countsUpdater );
+            new CountsComputer( stores ).initialize( updater );
         }
     }
 

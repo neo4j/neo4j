@@ -23,16 +23,22 @@ package org.neo4j.kernel.impl.store.kvstore;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.Future;
 
 import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.function.IOFunction;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.test.ThreadingRule;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 import static org.neo4j.kernel.impl.store.kvstore.DataProvider.EMPTY_DATA_PROVIDER;
 import static org.neo4j.kernel.impl.store.kvstore.Resources.InitialLifecycle.STARTED;
@@ -41,6 +47,7 @@ import static org.neo4j.kernel.impl.store.kvstore.Resources.TestPath.FILE_IN_EXI
 public class AbstractKeyValueStoreTest
 {
     public final @Rule Resources the = new Resources( FILE_IN_EXISTING_DIRECTORY );
+    public final @Rule ThreadingRule threading = new ThreadingRule();
     private static final HeaderField<Long> TX_ID = new HeaderField<Long>()
     {
         @Override
@@ -81,7 +88,7 @@ public class AbstractKeyValueStoreTest
         Store store = the.managed( new Store() );
 
         // when
-        store.prepareRotation( 1 ).rotate();
+        store.prepareRotation( 0 ).rotate();
     }
 
     @Test
@@ -100,7 +107,7 @@ public class AbstractKeyValueStoreTest
         assertEquals( "too old", store.get( "age" ) );
 
         // when
-        store.prepareRotation( 1 ).rotate();
+        store.prepareRotation( 0 ).rotate();
 
         // then
         assertEquals( "hello world", store.get( "message" ) );
@@ -318,6 +325,96 @@ public class AbstractKeyValueStoreTest
         store.prepareRotation( 2 ).rotate();
     }
 
+    @Test
+    @Resources.Life(STARTED)
+    public void shouldBlockRotationUntilRequestedTransactionsAreApplied() throws Exception
+    {
+        // given
+        final Store store = the.managed( new Store( TX_ID )
+        {
+            @SuppressWarnings("unchecked")
+            @Override
+            <Value> Value initialHeader( HeaderField<Value> field )
+            {
+                if ( field == TX_ID )
+                {
+                    return (Value) (Object) 1l;
+                }
+                else
+                {
+                    return super.initialHeader( field );
+                }
+            }
+
+            @Override
+            protected void updateHeaders( Headers.Builder headers, long version )
+            {
+                headers.put( TX_ID, version );
+            }
+
+            @Override
+            protected int compareHeaders( Headers lhs, Headers rhs )
+            {
+                return Long.compare( lhs.get( TX_ID ), rhs.get( TX_ID ) );
+            }
+        } );
+        IOFunction<Long, Void> update = new IOFunction<Long, Void>()
+        {
+            @Override
+            public Void apply( Long update ) throws IOException
+            {
+                try ( EntryUpdater<String> updater = store.updater( update ).get() )
+                {
+                    updater.apply( "key " + update, store.value( "value " + update ) );
+                }
+                return null;
+            }
+        };
+
+        // when
+        update.apply( 1l );
+        Future<Long> rotation = threading.executeAndAwait( store.rotation, 3l, new Predicate<Thread>()
+        {
+            @Override
+            public boolean accept( Thread thread )
+            {
+                switch ( thread.getState() )
+                {
+                case BLOCKED:
+                case WAITING:
+                case TIMED_WAITING:
+                case TERMINATED:
+                    return true;
+                default:
+                    return false;
+                }
+            }
+        }, 100, SECONDS );
+        // rotation should wait...
+        assertFalse( rotation.isDone() );
+        SECONDS.sleep( 1 );
+        assertFalse( rotation.isDone() );
+        // apply update
+        update.apply( 3l );
+        // rotation should still wait...
+        assertFalse( rotation.isDone() );
+        SECONDS.sleep( 1 );
+        assertFalse( rotation.isDone() );
+        // apply update
+        update.apply( 4l );
+        // rotation should still wait...
+        assertFalse( rotation.isDone() );
+        SECONDS.sleep( 1 );
+        assertFalse( rotation.isDone() );
+        // apply update
+        update.apply( 2l );
+
+        // then
+        assertEquals( 3, rotation.get().longValue() );
+        assertEquals( 3, store.headers().get( TX_ID ).longValue() );
+        store.rotation.apply( 4l );
+    }
+
     static DataProvider data( final Entry... data )
     {
         return new DataProvider()
@@ -351,6 +448,14 @@ public class AbstractKeyValueStoreTest
     class Store extends AbstractKeyValueStore<String>
     {
         private final HeaderField<?>[] headerFields;
+        final IOFunction<Long, Long> rotation = new IOFunction<Long, Long>()
+        {
+            @Override
+            public Long apply( Long version ) throws IOException
+            {
+                return prepareRotation( version ).rotate();
+            }
+        };
 
         private Store( HeaderField<?>... headerFields )
         {
