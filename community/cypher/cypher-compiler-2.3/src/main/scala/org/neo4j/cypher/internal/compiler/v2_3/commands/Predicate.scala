@@ -238,7 +238,7 @@ case class PropertyExists(identifier: Expression, propertyKey: KeyToken) extends
     case _                => throw new CypherTypeException("Expected " + identifier + " to be a property container.")
   }
 
-  override def toString: String = "hasProp(" + propertyKey.name + ")"
+  override def toString: String = s"hasProp($identifier.${propertyKey.name})"
 
   def containsIsNull = false
 
@@ -329,7 +329,7 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
       }
   }
 
-  override def toString = s"hasLabel($entity:${label.name})"
+  override def toString = s"$entity:${label.name}"
 
   def rewrite(f: (Expression) => Expression) = f(HasLabel(entity.rewrite(f), label.typedRewrite[KeyToken](f)))
 
@@ -359,4 +359,6 @@ case class CoercedPredicate(inner:Expression) extends Predicate with CollectionS
   def containsIsNull = false
 
   def symbolTableDependencies = inner.symbolTableDependencies
+
+  override def toString = inner.toString
 }

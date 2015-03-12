@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.KeyNames
-import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects._
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.LegacyExpression
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 
 case class ProjectionNewPipe(source: Pipe, expressions: Map[String, Expression])(val estimatedCardinality: Option[Double] = None)
                             (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
@@ -52,7 +52,7 @@ case class ProjectionNewPipe(source: Pipe, expressions: Map[String, Expression])
 
   override def planDescription =
     source.planDescription
-      .andThen(this, "Projection", identifiers, KeyNames(expressions.keys.toSeq))
+      .andThen(this, "Projection", identifiers, expressions.values.toSeq.map(LegacyExpression):_*)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources

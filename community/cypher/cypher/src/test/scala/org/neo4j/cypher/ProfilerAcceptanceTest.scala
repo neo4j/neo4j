@@ -99,7 +99,6 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertRows(1)(result)("NodeById")
   }
 
-
   test("tracks number of graph accesses") {
     //GIVEN
     createNode("foo" -> "bar")
@@ -273,6 +272,18 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertDbHits(7)(result)("Projection")
     assertDbHits(1)(result)("NodeUniqueIndexSeek")
    }
+
+  test("should show expand without types in a simple form") {
+    val a = profile("match n-->() return *")
+
+    a.executionPlanDescription().toString should include("()<--(n)")
+  }
+
+  test("should show expand with types in a simple form") {
+    val a = profile("planner cost match n-[r:T*]->() return *")
+
+    a.executionPlanDescription().toString should include("(n)-[r:T*]->()")
+  }
 
   private def assertRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
     getPlanDescriptions(result, names).foreach {

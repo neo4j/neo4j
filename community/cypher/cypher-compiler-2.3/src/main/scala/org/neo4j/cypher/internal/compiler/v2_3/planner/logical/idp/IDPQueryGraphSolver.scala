@@ -23,24 +23,26 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.idp
 import org.neo4j.cypher.internal.compiler.v2_3.InternalException
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.idp.expandTableSolver.{planSinglePatternSide, planSingleProjectEndpoints}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.solveOptionalMatches.OptionalSolver
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.{applyOptional, outerHashJoin, pickBestPlanUsingHintsAndCost}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.{applyOptional, outerHashJoin}
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.IteratorSupport._
 
 import scala.annotation.tailrec
 
-
-/*
- * This planner is based on the paper "Iterative Dynamic Programming: A New Class of Query Optimization Algorithms"
- * written by Donald Kossmann and Konrad Stocker
+/**
+ * This planner is based on the paper
  *
- * Line comments correspond to the lines in the pseudo-code in that paper for the IDP1 algorithm.
+ *   "Iterative Dynamic Programming: A New Class of Query Optimization Algorithms"
+ *
+ * written by Donald Kossmann and Konrad Stocker
  */
 case class IDPQueryGraphSolver(maxDepth: Int = 5,
                                leafPlanFinder: LogicalLeafPlan.Finder = leafPlanOptions,
                                config: QueryPlannerConfiguration = QueryPlannerConfiguration.default,
-                               solvers: Seq[IDPTableSolver] = Seq(joinTableSolver, expandTableSolver),
+                               solvers: Seq[QueryGraph => IDPSolverStep[PatternRelationship, LogicalPlan]] = Seq(joinSolverStep(_), expandSolverStep(_)),
                                optionalSolvers: Seq[OptionalSolver] = Seq(applyOptional, outerHashJoin))
   extends QueryGraphSolver with PatternExpressionSolving {
 
@@ -49,7 +51,7 @@ case class IDPQueryGraphSolver(maxDepth: Int = 5,
     val components = queryGraph.connectedComponents
     val plans = if (components.isEmpty) planEmptyComponent(queryGraph) else planComponents(components)
 
-    implicit val kit = kitFactory(queryGraph)
+    implicit val kit = kitFactory.apply(queryGraph)
     val plansWithRemainingOptionalMatches = plans.map { (plan: LogicalPlan) => (plan, queryGraph.optionalMatches) }
     val result = connectComponents(plansWithRemainingOptionalMatches)
     result
@@ -80,64 +82,36 @@ case class IDPQueryGraphSolver(maxDepth: Int = 5,
     val leaves = leafPlanFinder(config, qg)
 
     if (qg.patternRelationships.size > 0) {
-      // line 1-4
-      val table = initTable(qg, kit, leaves)
 
-      val initialToDo = Solvables(qg)
-      val solutionGenerator = newSolutionGenerator(qg, table)
-      solvePatterns(qg, initialToDo, table, solutionGenerator)
+      val generators = solvers.map(_(qg))
+      val selectingGenerators = generators.map(_.map(kit.select))
+      val generator = selectingGenerators.foldLeft(IDPSolverStep.empty[PatternRelationship, LogicalPlan])(_ ++ _)
 
-      table.singleRemainingPlan
+      val solver = new IDPSolver[PatternRelationship, LogicalPlan](
+        generator = generator,
+        projectingSelector = kit.pickBest
+      )
+
+      val seed = initTable(qg, kit, leaves)
+      val solutions = solver(seed, qg.patternRelationships)
+      val (_, result) = solutions.toSingleOption.getOrElse(throw new AssertionError("Expected a single plan to be left in the plan table"))
+      result
     } else {
       val solutionPlans = leaves.filter(plan => (qg.coveredIds -- plan.availableSymbols).isEmpty)
       kit.pickBest(solutionPlans).getOrElse(throw new InternalException("Found no leaf plan for connected component.  This must not happen."))
     }
   }
 
-  @tailrec
-  private def solvePatterns(qg: QueryGraph,
-                            toDo: Set[Solvable],
-                            table: IDPPlanTable,
-                            solutionGenerator: Set[Solvable] => Iterable[LogicalPlan])
-                           (implicit context: LogicalPlanningContext, kit: QueryPlannerKit) {
-    val size = toDo.size
-    if (size > 1) {
-      // line 7-16
-      val k = Math.min(size, maxDepth)
-      for (i <- 2 to k;
-           goal <- toDo.subsets(i) if !table.contains(goal); // If we already have an optimal plan, no need to replan
-           candidates = solutionGenerator(goal);
-           best <- kit.pickBest(candidates)) {
-        table.put(goal, best)
-      }
-
-      // line 17
-      val blockCandidates = table.plansOfSize(k)
-      val (bestSolvables, bestBlock) = pickSolution(blockCandidates).getOrElse(throw new InternalException("Did not find a single solution for a block"))
-
-      // TODO: Test this
-      // line 18 - 21
-      val blockSolved = SolvableBlock(bestSolvables.flatMap(_.solvables))
-      table.put(Set(blockSolved), bestBlock)
-      val newToDo = toDo -- bestSolvables + blockSolved
-      table.removeAllTracesOf(bestSolvables)
-      solvePatterns(qg, newToDo, table, solutionGenerator)
-    }
-  }
-
-  def initTable(qg: QueryGraph, kit: QueryPlannerKit, leaves: Set[LogicalPlan])(implicit context: LogicalPlanningContext): IDPPlanTable = {
-    val table = new IDPPlanTable
-    qg.patternRelationships.foreach { pattern =>
+  private def initTable(qg: QueryGraph, kit: QueryPlannerKit, leaves: Set[LogicalPlan])(implicit context: LogicalPlanningContext) = {
+    for (pattern <- qg.patternRelationships)
+    yield {
       val accessPlans = planSinglePattern(qg, pattern, leaves).map(kit.select)
       val bestAccessor = kit.pickBest(accessPlans).getOrElse(throw new InternalException("Found no access plan for a pattern relationship in a connected component. This must not happen."))
-      table.put(Set(SolvableRelationship(pattern)), bestAccessor)
+      Set(pattern) -> bestAccessor
     }
-    table
   }
 
   private def planSinglePattern(qg: QueryGraph, pattern: PatternRelationship, leaves: Iterable[LogicalPlan]): Iterable[LogicalPlan] = {
-
-    import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.idp.expandTableSolver.{planSinglePatternSide, planSingleProjectEndpoints}
 
     leaves.collect {
       case plan if plan.solved.lastQueryGraph.patternRelationships.contains(pattern) =>
@@ -152,16 +126,7 @@ case class IDPQueryGraphSolver(maxDepth: Int = 5,
     }.flatten
   }
 
-  private def pickSolution(input: Iterable[(Set[Solvable], LogicalPlan)])(implicit context: LogicalPlanningContext, kit: QueryPlannerKit): Option[(Set[Solvable], LogicalPlan)] =
-    kit.pickBest[(Set[Solvable], LogicalPlan)](_._2, input)
-
-  private def newSolutionGenerator(qg: QueryGraph, table: IDPPlanTable)(implicit kit: QueryPlannerKit): (Set[Solvable]) => Iterable[LogicalPlan] = {
-    val solverFunctions = solvers.map { solver => (goal: Set[Solvable]) => solver(qg, goal, table)}
-    val solutionGenerator = (goal: Set[Solvable]) => solverFunctions.flatMap { solver => solver(goal).map(kit.select) }
-    solutionGenerator
-  }
-
-  // TODO: Clean up
+  // TODO: Consider replacing with IDP loop
   private def connectComponents(plans: Seq[(LogicalPlan, Seq[QueryGraph])])(implicit context: LogicalPlanningContext, kit: QueryPlannerKit): LogicalPlan = {
     @tailrec
     def recurse(plans: Seq[(LogicalPlan, Seq[QueryGraph])]): LogicalPlan = {
@@ -175,13 +140,11 @@ case class IDPQueryGraphSolver(maxDepth: Int = 5,
         val cartesianProducts: Map[LogicalPlan, (Set[(LogicalPlan, Seq[QueryGraph])], Seq[QueryGraph])] = (for (
           lhs @ (left, leftRemaining) <- candidates.iterator;
           rhs @ (right, rightRemaining) <- candidates.iterator if left ne right;
-          // TODO: Test this line
           remaining = if (leftRemaining.size < rightRemaining.size) leftRemaining else rightRemaining;
           oldPlans = Set(lhs, rhs);
           newPlan = kit.select(planCartesianProduct(left, right))
         )
-        yield newPlan ->(oldPlans, remaining)
-          ).toMap
+        yield newPlan ->(oldPlans, remaining)).toMap
         val bestCartesian = kit.pickBest(cartesianProducts.keys).get
         val (oldPlans, remaining) = cartesianProducts(bestCartesian)
         val newPlans = plans.filterNot(oldPlans.contains) :+ (bestCartesian -> remaining)

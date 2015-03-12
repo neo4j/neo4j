@@ -56,4 +56,6 @@ case class Property(mapExpr: Expression, propertyKey: KeyToken)
   }
 
   def symbolTableDependencies = mapExpr.symbolTableDependencies
+
+  override def toString = s"$mapExpr.${propertyKey.name}"
 }

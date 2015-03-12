@@ -19,19 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
+import scala.collection.immutable.BitSet
 
-import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{LogicalLeafPlan, LogicalPlan}
-
-object leafPlanOptions extends LogicalLeafPlan.Finder {
-
-  def apply(config: QueryPlannerConfiguration, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Set[LogicalPlan] = {
-    val kit = config.toKit(queryGraph)
-    val pickBest = config.pickBestCandidate(context)
-
-    val leafPlanCandidateLists = config.leafPlanners.candidates(queryGraph)
-    val leafPlanCandidateListsWithSelections = leafPlanCandidateLists.map(_.map(kit.select))
-    val bestLeafPlans: Iterable[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(pickBest(_))
-    bestLeafPlans.toSet
-  }
+package object idp {
+  type Goal = BitSet
 }

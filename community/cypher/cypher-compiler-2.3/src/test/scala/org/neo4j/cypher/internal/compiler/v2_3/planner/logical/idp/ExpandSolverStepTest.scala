@@ -22,86 +22,79 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.idp
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Solvable, SolvableRelationship}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanConstructionTestSupport, PlannerQuery, QueryGraph}
 import org.neo4j.graphdb.Direction
 
-class ExpandTableSolverTest extends CypherFunSuite with LogicalPlanConstructionTestSupport {
+class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTestSupport {
 
   import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlanProducer._
-
-  val solvable1 = mock[Solvable]
-  when(solvable1.solvedRelationship).thenReturn(None)
 
   val plan1 = mock[LogicalPlan]
   val plan2 = mock[LogicalPlan]
   when(plan1.solved).thenReturn(PlannerQuery.empty)
   when(plan2.solved).thenReturn(PlannerQuery.empty)
 
-  val table = new IDPPlanTable
+  val pattern1 = PatternRelationship('r1, ('a, 'b), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+  val pattern2 = PatternRelationship('r2, ('b, 'c), Direction.OUTGOING, Seq.empty, SimplePatternLength)
 
+  val table = new IDPTable[LogicalPlan]()
   val qg = mock[QueryGraph]
 
   test("does not expand based on empty table") {
-    val solvable2 = mock[Solvable]
-    when(solvable2.solvedRelationship).thenReturn(None)
+    implicit val registry = IdRegistry[PatternRelationship]
 
-    expandTableSolver(qg, Set(solvable1, solvable2), table) should be(empty)
+    expandSolverStep(qg)(registry, register(pattern1, pattern2), table) should be(empty)
   }
 
   test("expands if an unsolved pattern relationship overlaps once with a single solved plan") {
-    val pattern1 = PatternRelationship('r1, ('a, 'b), Direction.OUTGOING, Seq.empty, SimplePatternLength)
-    val solvable1 = SolvableRelationship(pattern1)
-    val pattern2 = PatternRelationship('r2, ('b, 'c), Direction.OUTGOING, Seq.empty, SimplePatternLength)
-    val solvable2 = SolvableRelationship(pattern2)
+    implicit val registry = IdRegistry[PatternRelationship]
 
     when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b))
+    table.put(register(pattern1), plan1)
 
-    table.put(Set(solvable1), plan1)
-
-    expandTableSolver(qg, Set(solvable1, solvable2), table).toSet should equal(Set(
+    expandSolverStep(qg)(registry, register(pattern1, pattern2), table).toSet should equal(Set(
       planSimpleExpand(plan1, 'b, Direction.OUTGOING, 'c, pattern2, ExpandAll)
     ))
   }
 
   test("expands if an unsolved pattern relationships overlaps twice with a single solved plan") {
-    val pattern = PatternRelationship('r2, ('a, 'b), Direction.OUTGOING, Seq.empty, SimplePatternLength)
-    val solvable2 = SolvableRelationship(pattern)
+    implicit val registry = IdRegistry[PatternRelationship]
 
     when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b))
+    table.put(register(pattern1), plan1)
 
-    table.put(Set(solvable1), plan1)
+    val patternX = PatternRelationship('r2, ('a, 'b), Direction.OUTGOING, Seq.empty, SimplePatternLength)
 
-    expandTableSolver(qg, Set(solvable1, solvable2), table).toSet should equal(Set(
-      planSimpleExpand(plan1, 'a, Direction.OUTGOING, 'b, pattern, ExpandInto),
-      planSimpleExpand(plan1, 'b, Direction.INCOMING, 'a, pattern, ExpandInto)
+    expandSolverStep(qg)(registry, register(pattern1, patternX), table).toSet should equal(Set(
+      planSimpleExpand(plan1, 'a, Direction.OUTGOING, 'b, patternX, ExpandInto),
+      planSimpleExpand(plan1, 'b, Direction.INCOMING, 'a, patternX, ExpandInto)
     ))
   }
 
   test("does not expand if an unsolved pattern relationship does not overlap with a solved plan") {
-    val pattern = PatternRelationship('r2, ('x, 'y), Direction.OUTGOING, Seq.empty, SimplePatternLength)
-    val solvable2 = SolvableRelationship(pattern)
+    implicit val registry = IdRegistry[PatternRelationship]
 
     when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b))
+    table.put(register(pattern1), plan1)
 
-    table.put(Set(solvable1), plan1)
+    val patternX = PatternRelationship('r2, ('x, 'y), Direction.OUTGOING, Seq.empty, SimplePatternLength)
 
-    expandTableSolver(qg, Set(solvable1, solvable2), table).toSet should be(empty)
+    expandSolverStep(qg)(registry, register(pattern1, patternX), table).toSet should be(empty)
   }
 
   test("expands if an unsolved pattern relationship overlaps with multiple solved plans") {
-    val solvable2 = mock[Solvable]
-    when(solvable2.solvedRelationship).thenReturn(None)
+    implicit val registry = IdRegistry[PatternRelationship]
+
     when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b, 'c, 'r2, 'd))
+    table.put(register(pattern1, pattern2), plan1)
 
-    table.put(Set(solvable1, solvable2), plan1)
+    val pattern3 = PatternRelationship('r3, ('b, 'c), Direction.OUTGOING, Seq.empty, SimplePatternLength)
 
-    val pattern = PatternRelationship('r3, ('b, 'c), Direction.OUTGOING, Seq.empty, SimplePatternLength)
-    val solvable3 = SolvableRelationship(pattern)
-
-    expandTableSolver(qg, Set(solvable1, solvable2, solvable3), table).toSet should equal(Set(
-      planSimpleExpand(plan1, 'b, Direction.OUTGOING, 'c, pattern, ExpandInto),
-      planSimpleExpand(plan1, 'c, Direction.INCOMING, 'b, pattern, ExpandInto)
+    expandSolverStep(qg)(registry, register(pattern1, pattern2, pattern3), table).toSet should equal(Set(
+      planSimpleExpand(plan1, 'b, Direction.OUTGOING, 'c, pattern3, ExpandInto),
+      planSimpleExpand(plan1, 'c, Direction.INCOMING, 'b, pattern3, ExpandInto)
     ))
   }
+
+  def register[X](patRels: X*)(implicit registry: IdRegistry[X]) = registry.registerAll(patRels)
 }

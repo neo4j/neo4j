@@ -19,10 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planDescription
 
-import java.math.MathContext
-
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.UnNamedNameGenerator._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
+
 import scala.collection.mutable
 
 
@@ -41,7 +39,7 @@ object renderDetails extends (InternalPlanDescription => String) {
         val rows = p.arguments.collectFirst { case Rows(count) => count.toString}
         val estimatedRows = p.arguments.collectFirst { case EstimatedRows(count) => format(count) }
         val dbHits = p.arguments.collectFirst { case DbHits(count) => count.toString}
-        val ids = Some(p.orderedIdentifiers.filter(_.isNamed).mkString(", "))
+        val ids = Some(p.orderedIdentifiers.map(PlanDescriptionArgumentSerializer.removeGeneratedNames).mkString(", "))
         val other = Some(p.arguments.collect {
           case x
             if !x.isInstanceOf[Rows] &&
@@ -67,8 +65,7 @@ object renderDetails extends (InternalPlanDescription => String) {
     renderTable(headers.filter(headersInUse.contains), rowsInUse)
   }
 
-  private def format(v: Double) = if (v.isNaN) v.toString else BigDecimal(v, new MathContext(2)).bigDecimal.toPlainString
-
+  private def format(v: Double) = if (v.isNaN) v.toString else math.round(v).toString
 
   private def renderTable(header: Seq[String], rows: Seq[Seq[String]]): String = {
     val columnWidth = mutable.ArrayBuffer[Int](header.map(_.length): _*)

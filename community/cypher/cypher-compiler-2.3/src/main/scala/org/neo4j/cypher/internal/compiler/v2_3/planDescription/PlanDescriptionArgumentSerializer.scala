@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_3.planDescription
 
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.UnNamedNameGenerator._
+
 
 object PlanDescriptionArgumentSerializer {
   private val SEPARATOR = ", "
@@ -35,7 +37,7 @@ object PlanDescriptionArgumentSerializer {
       case LegacyIndex(index) => index
       case Index(label, property) => s":$label($property)"
       case LabelName(label) => s":$label"
-      case KeyNames(keys) => keys.mkString(SEPARATOR)
+      case KeyNames(keys) => keys.map(removeGeneratedNames).mkString(SEPARATOR)
       case KeyExpressions(expressions) => expressions.mkString(SEPARATOR)
       case DbHits(value) => Long.box(value)
       case _: EntityByIdRhs => arg.toString
@@ -44,17 +46,19 @@ object PlanDescriptionArgumentSerializer {
       case Version(version) => version
       case Planner(planner) => planner
       case ExpandExpression(from, rel, typeNames, to, dir: Direction, varLength) =>
-        val left = if (dir == Direction.INCOMING) "<-[" else "-["
-        val right = if (dir == Direction.OUTGOING) "]->" else "]-"
+        val left = if (dir == Direction.INCOMING) "<-" else "-"
+        val right = if (dir == Direction.OUTGOING) "->" else "-"
         val asterisk = if (varLength) "*" else ""
-        s"($from)$left$rel:${typeNames.mkString("|:")}$asterisk$right($to)"
+        val types = typeNames.mkString(":", "|:", "")
+        val relInfo = if (!varLength && typeNames.isEmpty && rel.unnamed) "" else s"[$rel$types$asterisk]"
+        s"($from)$left$relInfo$right($to)"
 
       // Do not add a fallthrough here - we rely on exhaustive checking to ensure
       // that we don't forget to add new types of arguments here
     }
   }
 
-  private def removeGeneratedNames(s: String) = {
+   def removeGeneratedNames(s: String) = {
     val named = UNNAMED_PATTERN.replaceAllIn(s, m => s"anon[${m group 2}]")
     DEDUP_PATTERN.replaceAllIn(named, _.group(1))
   }

@@ -116,7 +116,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
   test("should plan for a join between two pattern relationships") {
     // MATCH (a:A)-[r1]->(c)-[r2]->(b:B)
     new given {
-      queryGraphSolver = IDPQueryGraphSolver(solvers = Seq(joinTableSolver))
+      queryGraphSolver = IDPQueryGraphSolver(solvers = Seq(joinSolverStep(_)))
       qg = QueryGraph(
         patternNodes = Set("a", "b", "c"),
         patternRelationships = Set(
@@ -149,7 +149,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     // MATCH (a:A)-[r1]->(c)-[r2]->(b:B) WHERE r1.foo = r2.foo
     new given {
       val predicate = Equals(Property(ident("r1"), PropertyKeyName("foo")(pos))(pos), Property(ident("r2"), PropertyKeyName("foo")(pos))(pos))(pos)
-      queryGraphSolver = IDPQueryGraphSolver(solvers = Seq(joinTableSolver))
+      queryGraphSolver = IDPQueryGraphSolver(solvers = Seq(joinSolverStep(_)))
       qg = QueryGraph(
         patternNodes = Set("a", "b", "c"),
         patternRelationships = Set(
@@ -200,7 +200,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("should solve double expand") {
     new given {
-      queryGraphSolver = IDPQueryGraphSolver(solvers = Seq(expandTableSolver))
+      queryGraphSolver = IDPQueryGraphSolver(solvers = Seq(expandSolverStep(_)))
       qg = QueryGraph(
         patternNodes = Set("a", "b", "c"),
         patternRelationships = Set(
@@ -267,7 +267,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("should expand from projected endpoints") {
     new given {
-      queryGraphSolver = IDPQueryGraphSolver(solvers = Seq(expandTableSolver))
+      queryGraphSolver = IDPQueryGraphSolver(solvers = Seq(expandSolverStep(_)))
       val pattern1 = PatternRelationship("r1", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
       val pattern2 = PatternRelationship("r2", ("b", "c"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
       qg = QueryGraph(
@@ -288,7 +288,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("should plan a relationship pattern based on an argument row since part of the node pattern is already solved") {
     new given {
-      queryGraphSolver = IDPQueryGraphSolver(solvers = Seq(expandTableSolver))
+      queryGraphSolver = IDPQueryGraphSolver(solvers = Seq(expandSolverStep(_)))
       qg = QueryGraph(patternNodes = Set("a", "b"),
         patternRelationships = Set(PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)),
         argumentIds = Set("a")
@@ -532,7 +532,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("should handle passing multiple projectible relationships as arguments") {
     new given {
-      queryGraphSolver = IDPQueryGraphSolver(solvers = Seq(expandTableSolver))
+      queryGraphSolver = IDPQueryGraphSolver(solvers = Seq(expandSolverStep(_)))
       qg = QueryGraph(
         patternNodes = Set("a", "b", "c", "d"),
         patternRelationships = Set(

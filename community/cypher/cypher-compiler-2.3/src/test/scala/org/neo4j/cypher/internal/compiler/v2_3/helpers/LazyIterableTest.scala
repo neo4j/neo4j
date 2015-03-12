@@ -17,32 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.idp
+package org.neo4j.cypher.internal.compiler.v2_3.helpers
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Solvable
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 
+class LazyIterableTest extends CypherFunSuite {
 
-class IDPPlanTableTest extends CypherFunSuite {
-  test("removeAll") {
-    val planTable = new IDPPlanTable()
+  test("iterates") {
+    LazyIterable(Seq(1, 2, 3).iterator).toSeq should equal(Seq(1, 2, 3))
+  }
 
-    val s1 = mock[Solvable]
-    val s2 = mock[Solvable]
-    val s3 = mock[Solvable]
+  test("iterates lazily") {
+    var start = 10
+    val iterable = LazyIterable {
+      Seq(start, start + 1, start + 2).iterator
+    }
 
-    planTable.put(Set(s1), mock[LogicalPlan])
-    planTable.put(Set(s2), mock[LogicalPlan])
-    planTable.put(Set(s3), mock[LogicalPlan])
-    planTable.put(Set(s1, s2), mock[LogicalPlan])
-    planTable.put(Set(s2, s3), mock[LogicalPlan])
-    planTable.put(Set(s1, s3), mock[LogicalPlan])
+    iterable.toSeq should equal (Seq(10, 11, 12))
 
-    planTable.removeAllTracesOf(Set(s1, s2))
+    start = 20
 
-    planTable.keySet should equal(Set(
-      Set(s3)
-    ))
+    iterable.toSeq should equal (Seq(20, 21, 22))
   }
 }
