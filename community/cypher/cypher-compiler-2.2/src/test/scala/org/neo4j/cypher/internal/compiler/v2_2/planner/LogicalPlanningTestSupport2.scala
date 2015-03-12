@@ -55,7 +55,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   var tokenResolver = new SimpleTokenResolver()
   var monitor = mock[PlanningMonitor]
   val planRewriter = LogicalPlanRewriter(rewriterSequencer)
-  var planner = new DefaultQueryPlanner(planRewriter) {
+  final var planner = new DefaultQueryPlanner(planRewriter) {
     def internalPlan(query: PlannerQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan =
       planSingleQuery(query)
   }
@@ -73,7 +73,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     def metricsFactory = new MetricsFactory {
       def newCostModel() =
-        (plan: LogicalPlan, input: QueryGraphSolverInput) => config.costModel()(plan, input)
+        (plan: LogicalPlan, input: QueryGraphSolverInput) => config.costModel()(plan -> input)
 
       def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel) =
         config.cardinalityModel(queryGraphCardinalityModel)

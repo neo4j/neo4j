@@ -249,9 +249,17 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should use indexes for large collections if it is a unique index") {
-    (new given {
+    val result = new given {
+      cost =  {
+        case (_: AllNodesScan, _)    => 10000.0
+        case (_: NodeByLabelScan, _) =>  1000.0
+        case (_: NodeByIdSeek, _)    =>     2.0
+        case _                       => Double.MaxValue
+      }
       uniqueIndexOn("Awesome", "prop")
-    } planFor "MATCH (n:Awesome) WHERE n.prop IN [1,2,3,4,5] RETURN n").plan should beLike {
+    } planFor "MATCH (n:Awesome) WHERE n.prop IN [1,2,3,4,5] RETURN n"
+
+    result.plan should beLike {
       case _: NodeIndexUniqueSeek => ()
     }
   }

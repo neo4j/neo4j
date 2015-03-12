@@ -59,6 +59,28 @@
         <configuration>
           <scalaVersion>${scala.version}</scalaVersion>
           <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
+          <args>
+            <arg>-Xmax-classfile-name</arg>
+            <arg>100</arg>
+            <arg>-Xlint</arg>
+            <arg>-language:implicitConversions</arg>
+            <arg>-language:existentials</arg>
+            <arg>-language:higherKinds</arg>
+            <arg>-language:postfixOps</arg>
+            <arg>-feature</arg>
+
+            <!-- we want to enable this long-term -->
+            <!-- arg>-Xfatal-warnings</arg -->
+
+            <!-- we might want to try those one fine day for performance
+                 (but watch out for binary compatability with scala 2.12)
+
+              <arg>-Yopt:l:project</arg>
+              <arg>-Ybackend:GenBCode</arg>
+              <arg>-Ydelambdafy:method</arg>
+              <arg>-Yinline</arg>
+            -->
+          </args>
         </configuration>
       </plugin>
 
@@ -88,10 +110,15 @@
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest_2.11</artifactId>
+      <version>2.2.4</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
           <artifactId>scala-library</artifactId>
+          <groupId>org.scala-lang</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>scala-reflect</artifactId>
           <groupId>org.scala-lang</groupId>
         </exclusion>
       </exclusions>
@@ -99,10 +126,15 @@
     <dependency>
       <groupId>org.scalautils</groupId>
       <artifactId>scalautils_2.11</artifactId>
+      <version>2.1.7</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
           <artifactId>scala-library</artifactId>
+          <groupId>org.scala-lang</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>scala-reflect</artifactId>
           <groupId>org.scala-lang</groupId>
         </exclusion>
       </exclusions>
@@ -110,6 +142,7 @@
     <dependency>
       <groupId>org.scalacheck</groupId>
       <artifactId>scalacheck_2.11</artifactId>
+      <version>1.12.2</version>
       <scope>test</scope>
     </dependency>
 
@@ -161,6 +194,13 @@
     <dependency>
       <groupId>org.parboiled</groupId>
       <artifactId>parboiled-scala_2.11</artifactId>
+      <version>1.1.7</version>
+      <exclusions>
+        <exclusion>
+          <artifactId>scala-library</artifactId>
+          <groupId>org.scala-lang</groupId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>

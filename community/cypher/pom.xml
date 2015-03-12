@@ -44,7 +44,7 @@
       <id>scala_2_11</id>
       <activation>
         <property>
-          <name>scala211</name>
+          <name>!skipScala211</name>
         </property>
       </activation>
       <modules>
@@ -89,9 +89,7 @@
           <args>
               <arg>-Xmax-classfile-name</arg>
               <arg>100</arg>
-              <!-- uncomment for make the build fail on warnings -->
-              <!--<arg>-Xfatal-warnings</arg>-->
-              <!--<arg>-deprecation</arg>-->
+              <!-- arg>-deprecation</arg -->
           </args>
           <jvmArgs>
             <jvmArg>-Xms64m</jvmArg>
@@ -290,45 +288,6 @@
         <scope>test</scope>
       </dependency>
 
-      <dependency>
-        <groupId>org.scalatest</groupId>
-        <artifactId>scalatest_2.11</artifactId>
-        <version>2.2.4</version>
-        <scope>test</scope>
-        <exclusions>
-          <exclusion>
-            <artifactId>scala-library</artifactId>
-            <groupId>org.scala-lang</groupId>
-          </exclusion>
-          <exclusion>
-            <artifactId>scala-reflect</artifactId>
-            <groupId>org.scala-lang</groupId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>org.scalautils</groupId>
-        <artifactId>scalautils_2.11</artifactId>
-        <version>2.1.7</version>
-        <scope>test</scope>
-        <exclusions>
-          <exclusion>
-            <artifactId>scala-library</artifactId>
-            <groupId>org.scala-lang</groupId>
-          </exclusion>
-          <exclusion>
-            <artifactId>scala-reflect</artifactId>
-            <groupId>org.scala-lang</groupId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>org.scalacheck</groupId>
-        <artifactId>scalacheck_2.11</artifactId>
-        <version>1.12.2</version>
-        <scope>test</scope>
-      </dependency>
-
       <!-- neo4j -->
 
       <dependency>
@@ -377,18 +336,6 @@
       <dependency>
         <groupId>org.parboiled</groupId>
         <artifactId>parboiled-scala_2.10</artifactId>
-        <version>1.1.7</version>
-        <exclusions>
-          <exclusion>
-            <artifactId>scala-library</artifactId>
-            <groupId>org.scala-lang</groupId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-
-      <dependency>
-        <groupId>org.parboiled</groupId>
-        <artifactId>parboiled-scala_2.11</artifactId>
         <version>1.1.7</version>
         <exclusions>
           <exclusion>
