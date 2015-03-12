@@ -47,7 +47,7 @@ class ExecutionEngineIT extends CypherFunSuite {
     //given
     val db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.query_planner_version, "RULE")
+      .setConfig(GraphDatabaseSettings.cypher_planner, "RULE")
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.2").newGraphDatabase()
 
     //when
@@ -61,7 +61,7 @@ class ExecutionEngineIT extends CypherFunSuite {
     //given
     val db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.query_planner_version, "COST")
+      .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.2").newGraphDatabase()
 
     //when
@@ -76,7 +76,7 @@ class ExecutionEngineIT extends CypherFunSuite {
     intercept[Exception] {
       val db = new TestGraphDatabaseFactory()
         .newImpermanentDatabaseBuilder()
-        .setConfig(GraphDatabaseSettings.query_planner_version, "COST")
+        .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
         .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.0").newGraphDatabase()
 
       db.execute("PROFILE MATCH (a)-[:T*]-(a) RETURN a").getExecutionPlanDescription

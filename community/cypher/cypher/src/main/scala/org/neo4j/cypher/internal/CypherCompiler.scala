@@ -142,7 +142,7 @@ class CypherCompiler(graph: GraphDatabaseService,
 
   private def getMinimumTimeBeforeReplanning: Long = {
     optGraphAs[InternalAbstractGraphDatabase]
-      .andThen(_.getConfig.get(GraphDatabaseSettings.query_planner_min_replan_interval).longValue())
+      .andThen(_.getConfig.get(GraphDatabaseSettings.cypher_min_replan_interval).longValue())
       .applyOrElse(graph, (_: GraphDatabaseService) => DEFAULT_QUERY_PLAN_TTL)
   }
 
