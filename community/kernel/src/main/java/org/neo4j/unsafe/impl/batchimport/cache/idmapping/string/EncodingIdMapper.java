@@ -182,6 +182,7 @@ public class EncodingIdMapper implements IdMapper
      * There's an assumption that the progress listener supplied here can support multiple calls
      * to started/done, and that it knows about what stages the processor preparing goes through, namely:
      * <ol>
+     * <li>Split by radix</li>
      * <li>Sorting</li>
      * <li>Collision detection</li>
      * <li>(potentially) Collision resolving</li>
@@ -256,7 +257,7 @@ public class EncodingIdMapper implements IdMapper
 
     private int detectAndMarkCollisions( ProgressListener progress )
     {
-        progress.started();
+        progress.started( "DETECT" );
         int numCollisions = 0;
         long max = trackerCache.size() - 1;
         for ( int i = 0; i < max; )
@@ -302,7 +303,7 @@ public class EncodingIdMapper implements IdMapper
         // This is currently the only way of discovering duplicate input ids, checked per group.
         // groupId --> inputId --> CollisionPoint(dataIndex,sourceLocation)
         PrimitiveIntObjectMap<Map<Object,String>> collidedIds = Primitive.intObjectMap();
-        progress.started();
+        progress.started( "RESOLVE" );
         for ( long i = 0; ids.hasNext(); )
         {
             long j = 0;

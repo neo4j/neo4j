@@ -58,7 +58,6 @@ public class ParallelSort
 
     public long[][] run()
     {
-        progress.started();
         int[][] sortParams = sortRadix();
         int threadsNeeded = 0;
         for ( int i = 0; i < threads; i++ )
@@ -72,6 +71,7 @@ public class ParallelSort
         CountDownLatch waitSignal = new CountDownLatch( 1 );
         CountDownLatch doneSignal = new CountDownLatch( threadsNeeded );
         SortWorker[] sortWorker = new SortWorker[threadsNeeded];
+        progress.started( "SORT" );
         for ( int i = 0; i < threadsNeeded; i++ )
         {
             if ( sortParams[i][1] == 0 )
@@ -106,6 +106,7 @@ public class ParallelSort
         int count = 0, fullCount = 0 + 0;
         rangeParams[0][0] = 0;
         bucketRange[0] = 0;
+        progress.started( "SPLIT" );
         for ( int i = 0, threadIndex = 0; i < radixIndexCount.length && threadIndex < threads; i++ )
         {
             if ( (count + radixIndexCount[i]) > bucketSize )
@@ -116,12 +117,14 @@ public class ParallelSort
                 {
                     rangeParams[threadIndex][1] = count;
                     fullCount += count;
+                    progress.add( count );
                     count = radixIndexCount[i];
                 }
                 else
                 {
                     rangeParams[threadIndex][1] = radixIndexCount[i];
                     fullCount += radixIndexCount[i];
+                    progress.add( radixIndexCount[i] );
                 }
                 threadIndex++;
             }
@@ -137,6 +140,7 @@ public class ParallelSort
                 break;
             }
         }
+        progress.done();
         int[] bucketIndex = new int[threads];
         for ( int i = 0; i < threads; i++ )
         {

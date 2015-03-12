@@ -53,6 +53,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -149,8 +150,8 @@ public class EncodingIdMapperTest
 
         // THEN
         assertEquals( -1L, id );
-        verify( progress, times( 2 ) ).started();
-        verify( progress, times( 2 ) ).done();
+        verify( progress, times( 3 ) ).started( anyString() );
+        verify( progress, times( 3 ) ).done();
     }
 
     @Test
@@ -290,8 +291,8 @@ public class EncodingIdMapperTest
         assertEquals( 0L, mapper.get( "10", GLOBAL ) );
         assertEquals( 1L, mapper.get( "9", GLOBAL ) );
         // 3 times since SORT+DETECT+RESOLVE
-        verify( progress, times( 3 ) ).started();
-        verify( progress, times( 3 ) ).done();
+        verify( progress, times( 4 ) ).started( anyString() );
+        verify( progress, times( 4 ) ).done();
     }
 
     @Test

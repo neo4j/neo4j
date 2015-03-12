@@ -44,16 +44,13 @@ public class IdMapperPreparationStep extends LonelyProcessingStep
     @Override
     protected void process()
     {
-        idMapper.prepare( allIds, new ProgressListener()
+        idMapper.prepare( allIds, new ProgressListener.Adapter()
         {
-            private final String[] stages = {"SORT", "DETECT", "RESOLVE"};
-            private volatile int stage = 0;
-
             @Override
-            public void started()
+            public void started( String task )
             {
                 resetStats();
-                changeName( stages[stage++] );
+                changeName( task );
             }
 
             @Override
