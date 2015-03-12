@@ -9,11 +9,11 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
-  <artifactId>neo4j-cypher-compiler-2.2</artifactId>
+  <artifactId>neo4j-cypher-compiler-2.2_2.11</artifactId>
   <packaging>jar</packaging>
   <version>2.2-SNAPSHOT</version>
-  <name>Neo4j - Cypher Compiler 2.2</name>
-  <description>Compiler for Cypher 2.2</description>
+  <name>Neo4j - Cypher Compiler 2.2 for scala 2.11</name>
+  <description>Compiler for Cypher 2.2 for scala 2.11</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
