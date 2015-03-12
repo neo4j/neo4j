@@ -19,7 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import java.util.Collection;
 import java.util.Iterator;
 
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
@@ -35,7 +34,6 @@ import org.neo4j.kernel.impl.util.ReusableIteratorCostume;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
-import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPropertyRecordAccess;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
@@ -67,7 +65,7 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
             AbstractRecordStore<RECORD> entityStore,
             PropertyStore propertyStore, IoMonitor monitor, WriterFactory writerFactory )
     {
-        super( control, "v", 1, config.movingAverageSize(), 1 ); // work-ahead doesn't matter, we're the last one
+        super( control, "v", 1, config.movingAverageSize(), 1, monitor ); // work-ahead doesn't matter, we're the last one
         this.entityStore = entityStore;
         this.propertyStore = propertyStore;
         this.writerFactory = writerFactory;
@@ -163,13 +161,6 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
                 dynamicRecord.setNextBlock( newId = store.nextId() );
             }
         }
-    }
-
-    @Override
-    protected void addStatsProviders( Collection<StatsProvider> providers )
-    {
-        super.addStatsProviders( providers );
-        providers.add( monitor );
     }
 
     @Override

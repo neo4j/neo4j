@@ -23,6 +23,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.staging.Step;
+import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 /**
  * {@link RecordProcessor} in {@link Step Step-form}.
@@ -33,9 +34,9 @@ public class RecordProcessorStep<T extends AbstractBaseRecord> extends ExecutorS
     private final boolean endOfLine;
 
     public RecordProcessorStep( StageControl control, String name, int workAheadSize, int movingAverageSize,
-            RecordProcessor<T> processor, boolean endOfLine )
+            RecordProcessor<T> processor, boolean endOfLine, StatsProvider... additionalStatsProviders )
     {
-        super( control, name, workAheadSize, movingAverageSize, 1 );
+        super( control, name, workAheadSize, movingAverageSize, 1, additionalStatsProviders );
         this.processor = processor;
         this.endOfLine = endOfLine;
     }

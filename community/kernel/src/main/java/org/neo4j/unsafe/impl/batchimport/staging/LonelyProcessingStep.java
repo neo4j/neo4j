@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
+import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
+
 import static java.lang.System.currentTimeMillis;
 
 /**
@@ -30,9 +32,10 @@ public abstract class LonelyProcessingStep extends AbstractStep<Void>
     private int batch;
     private long lastProcessingTimestamp;
 
-    public LonelyProcessingStep( StageControl control, String name, int batchSize, int movingAverageSize )
+    public LonelyProcessingStep( StageControl control, String name, int batchSize, int movingAverageSize,
+            StatsProvider... additionalStatsProviders )
     {
-        super( control, name, movingAverageSize );
+        super( control, name, movingAverageSize, additionalStatsProviders );
         this.batchSize = batchSize;
     }
 

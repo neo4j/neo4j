@@ -336,9 +336,9 @@ public class NodeRelationshipLinkImpl implements NodeRelationshipLink
         }
 
         @Override
-        public void visit( MemoryStatsVisitor visitor )
+        public void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor )
         {
-            array.visit( visitor );
+            array.acceptMemoryStatsVisitor( visitor );
         }
     }
 
@@ -356,9 +356,9 @@ public class NodeRelationshipLinkImpl implements NodeRelationshipLink
     }
 
     @Override
-    public void visit( MemoryStatsVisitor visitor )
+    public void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor )
     {
-        array.visit( visitor );
-        relGroupCache.visit( visitor );
+        array.acceptMemoryStatsVisitor( visitor );
+        relGroupCache.acceptMemoryStatsVisitor( visitor );
     }
 }

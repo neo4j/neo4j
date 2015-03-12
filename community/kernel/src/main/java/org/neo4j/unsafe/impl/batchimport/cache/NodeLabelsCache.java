@@ -138,10 +138,10 @@ public class NodeLabelsCache implements MemoryStatsVisitor.Home
     }
 
     @Override
-    public void visit( MemoryStatsVisitor visitor )
+    public void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor )
     {
-        cache.visit( visitor );
-        spillOver.visit( visitor );
+        cache.acceptMemoryStatsVisitor( visitor );
+        spillOver.acceptMemoryStatsVisitor( visitor );
     }
 
     private void decode( Bits bits, int length, int[] target )
