@@ -59,6 +59,19 @@
         <configuration>
           <scalaVersion>${scala.version}</scalaVersion>
           <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
+          <args>
+            <arg>-Xmax-classfile-name</arg>
+            <arg>100</arg>
+            <arg>-optimise</arg>
+            <!-- we might want to try those one fine day for performance
+                 (but watch out for binary compatability with scala 2.12)
+
+              <arg>-Yopt:l:project</arg>
+              <arg>-Ybackend:GenBCode</arg>
+              <arg>-Ydelambdafy:method</arg>
+              <arg>-Yinline</arg>
+            -->
+          </args>
         </configuration>
       </plugin>
 
