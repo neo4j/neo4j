@@ -20,34 +20,35 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Solvable
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalPlan, NodeHashJoin}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{LogicalPlan, NodeHashJoin, PatternRelationship}
 
-object joinTableSolver extends IDPTableSolver {
+case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelationship, LogicalPlan] {
 
   import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer.planNodeHashJoin
 
-  override def apply(qg: QueryGraph, goal: Set[Solvable], table: Set[Solvable] => Option[LogicalPlan]): Iterator[LogicalPlan] = {
+  private val argumentIds = qg.argumentIds
+
+  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan]): Iterator[LogicalPlan] = {
+    val goalSize = goal.size / 2
+
     val result: Iterator[Iterator[NodeHashJoin]] =
       for(
-        leftGoal <- goal.subsets;
+        leftGoal <- goal.subsets if leftGoal.size <= goalSize;
         lhs <- table(leftGoal);
-        rightGoal = goal -- leftGoal;
+        leftNodes = lhs.solved.graph.patternNodes -- qg.argumentIds;
+        rightGoal = goal &~ leftGoal; // bit set -- operator
         rhs <- table(rightGoal);
-        overlap =
-        computeOverlap(qg, lhs, rhs) if overlap.nonEmpty
+        rightNodes = rhs.solved.graph.patternNodes;
+        overlap = leftNodes intersect rightNodes if overlap.nonEmpty
       ) yield {
         Iterator(
           planNodeHashJoin(overlap, lhs, rhs),
           planNodeHashJoin(overlap, rhs, lhs)
         )
       }
+
+    // This should be (and is) lazy
     result.flatten
   }
-
-  // TODO: Simplify
-  def computeOverlap(qg: QueryGraph, lhs: LogicalPlan, rhs: LogicalPlan): Set[IdName] = {
-    val overlappingPatternNodes = lhs.solved.graph.patternNodes intersect rhs.solved.graph.patternNodes
-    overlappingPatternNodes -- qg.argumentIds
-  }
 }
+

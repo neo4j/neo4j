@@ -19,30 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.idp
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Solvable
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
+object IDPSolverStep {
+  def empty[S, P] = new IDPSolverStep[S, P] {
+    override def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P]): Iterator[P] =
+      Iterator.empty
+  }
+}
 
+trait IDPSolverStep[S, P] extends ((IdRegistry[S], Goal, IDPCache[P]) => Iterator[P]) {
+  self =>
 
-class IDPPlanTableTest extends CypherFunSuite {
-  test("removeAll") {
-    val planTable = new IDPPlanTable()
+  def map(f: P => P) = new IDPSolverStep[S, P] {
+    override def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P]): Iterator[P] =
+      self(registry, goal, cache).map(f)
+  }
 
-    val s1 = mock[Solvable]
-    val s2 = mock[Solvable]
-    val s3 = mock[Solvable]
-
-    planTable.put(Set(s1), mock[LogicalPlan])
-    planTable.put(Set(s2), mock[LogicalPlan])
-    planTable.put(Set(s3), mock[LogicalPlan])
-    planTable.put(Set(s1, s2), mock[LogicalPlan])
-    planTable.put(Set(s2, s3), mock[LogicalPlan])
-    planTable.put(Set(s1, s3), mock[LogicalPlan])
-
-    planTable.removeAllTracesOf(Set(s1, s2))
-
-    planTable.keySet should equal(Set(
-      Set(s3)
-    ))
+  def ++(next: IDPSolverStep[S, P]) = new IDPSolverStep[S, P] {
+    override def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P]): Iterator[P] =
+      self(registry, goal, cache) ++ next(registry, goal, cache)
   }
 }
