@@ -263,7 +263,6 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
     val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("  n@76"))
 
     val details = renderDetails(plan)
-    println(details)
     details should equal(
       """+----------+---------------+------+--------+-------------+-------+
         || Operator | EstimatedRows | Rows | DbHits | Identifiers | Other |

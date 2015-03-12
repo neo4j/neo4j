@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CachedMetricsFac
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
-import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
 trait SemanticCheckMonitor {
   def startSemanticCheck(query: String)
@@ -65,9 +64,8 @@ object CypherCompilerFactory {
   val monitorTag = "cypher2.2"
 
   def costBasedCompiler(graph: GraphDatabaseService, queryCacheSize: Int, statsDivergenceThreshold: Double,
-                        queryPlanTTL: Long, clock: Clock, kernelMonitors: KernelMonitors,
+                        queryPlanTTL: Long, clock: Clock, monitors: Monitors,
                         logger: InfoLogger, plannerName: CostBasedPlannerName): CypherCompiler = {
-    val monitors = new Monitors(kernelMonitors)
     val parser = new CypherParser(monitors.newMonitor[ParserMonitor[Statement]](monitorTag))
     val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
     val rewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag))
@@ -86,8 +84,7 @@ object CypherCompilerFactory {
   }
 
   def ruleBasedCompiler(graph: GraphDatabaseService, queryCacheSize: Int, statsDivergenceThreshold: Double,
-                        queryPlanTTL: Long, clock: Clock, kernelMonitors: KernelMonitors): CypherCompiler = {
-    val monitors = new Monitors(kernelMonitors)
+                        queryPlanTTL: Long, clock: Clock, monitors: Monitors): CypherCompiler = {
     val parser = new CypherParser(monitors.newMonitor[ParserMonitor[ast.Statement]](monitorTag))
     val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
     val rewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag))

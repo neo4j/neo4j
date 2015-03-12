@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2
 
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compatibility.StringInfoLogger
+import org.neo4j.cypher.internal.compatibility.{WrappedMonitors, StringInfoLogger}
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.ExecutionPlan
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.{Clock, FrozenClock}
@@ -36,7 +36,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   def createCompiler(queryCacheSize: Int = 128, statsDivergenceThreshold: Double = 0.5, queryPlanTTL: Long = 1000,
                      clock: Clock = Clock.SYSTEM_CLOCK, logger: StringLogger = DEV_NULL) =
     CypherCompilerFactory.costBasedCompiler(
-      graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors, new StringInfoLogger(logger), plannerName = CostPlannerName)
+      graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock,
+      new WrappedMonitors(kernelMonitors), new StringInfoLogger(logger), plannerName = CostPlannerName)
 
   case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0, evicted: Int = 0) {
     override def toString = s"hits = $hits, misses = $misses, flushes = $flushes, evicted = $evicted"
