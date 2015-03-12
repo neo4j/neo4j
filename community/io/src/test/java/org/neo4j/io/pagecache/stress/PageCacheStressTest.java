@@ -23,9 +23,9 @@ import java.io.File;
 import java.nio.file.Files;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.RunnablePageCache;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -89,15 +89,10 @@ public class PageCacheStressTest
     {
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs );
-        RunnablePageCache pageCacheUnderTest = new MuninnPageCache(
+        PageCache pageCacheUnderTest = new MuninnPageCache(
                 swapperFactory, numberOfCachePages, cachePageSize, tracer );
-        RunnablePageCache pageCacheKeepingCount = new MuninnPageCache(
+        PageCache pageCacheKeepingCount = new MuninnPageCache(
                 swapperFactory, numberOfCachePages, cachePageSize, tracer );
-
-        Thread thread1 = new Thread( pageCacheUnderTest );
-        Thread thread2 = new Thread( pageCacheKeepingCount );
-        thread1.start();
-        thread2.start();
 
         try
         {
@@ -114,11 +109,8 @@ public class PageCacheStressTest
         }
         finally
         {
-            thread1.interrupt();
-            thread2.interrupt();
-            thread1.join();
-            thread2.join();
             pageCacheUnderTest.close();
+            pageCacheKeepingCount.close();
         }
     }
 

@@ -33,11 +33,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -61,22 +65,21 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
+import org.neo4j.test.LinearHistoryPageCacheTracer;
 import org.neo4j.test.RepeatRule;
 
+import static java.lang.Long.toHexString;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.lang.Long.toHexString;
-
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
@@ -85,7 +88,7 @@ import static org.neo4j.test.ByteArrayMatcher.byteArray;
 import static org.neo4j.test.ThreadTestUtils.awaitThreadState;
 import static org.neo4j.test.ThreadTestUtils.fork;
 
-public abstract class PageCacheTest<T extends RunnablePageCache>
+public abstract class PageCacheTest<T extends PageCache>
 {
     @Rule
     public RepeatRule repeatRule = new RepeatRule();
@@ -131,7 +134,6 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
     protected abstract void tearDownPageCache( T pageCache ) throws IOException;
 
     private T pageCache;
-    private Future<?> pageCacheFuture;
 
     protected final T getPageCache(
             FileSystemAbstraction fs,
@@ -142,27 +144,8 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
         if ( pageCache != null )
         {
             tearDownPageCache( pageCache );
-            pageCacheFuture.cancel( true );
         }
         pageCache = createPageCache( fs, maxPages, pageSize, tracer );
-        pageCacheFuture = executor.submit( new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                Thread thread = Thread.currentThread();
-                String threadName = thread.getName();
-                thread.setName( "Eviction-Thread" );
-                try
-                {
-                    pageCache.run();
-                }
-                finally
-                {
-                    thread.setName( threadName );
-                }
-            }
-        } );
         return pageCache;
     }
 
@@ -3390,49 +3373,71 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
         pagedFile.close();
     }
 
-    @Test( timeout = 20000 )
-    public void evictionThreadMustGracefullyShutDown() throws Exception
+    @Test//( timeout = 20000 )
+    public void backgroundThreadsMustGracefullyShutDown() throws Exception
     {
         int iterations = 1000;
-        final AtomicReference<Throwable> caughtException = new AtomicReference<>();
-        Thread.UncaughtExceptionHandler exceptionHandler = new Thread.UncaughtExceptionHandler()
+        List<WeakReference<PageCache>> refs = new LinkedList<>();
+        final Queue<Throwable> caughtExceptions = new ConcurrentLinkedQueue<>();
+        final Thread.UncaughtExceptionHandler exceptionHandler = new Thread.UncaughtExceptionHandler()
         {
             @Override
             public void uncaughtException( Thread t, Throwable e )
             {
                 e.printStackTrace();
-                caughtException.set( e );
+                caughtExceptions.offer( e );
             }
         };
+        Thread.UncaughtExceptionHandler defaultUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler( exceptionHandler );
 
-        generateFileWithRecords( file, recordCount, recordSize );
-        int filePagesInTotal = recordCount / recordsPerFilePage;
-
-        for ( int i = 0; i < iterations; i++ )
+        try
         {
-            RunnablePageCache cache = createPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
-            String evictionThreadName = cache.getClass().getSimpleName() + "-Eviction-Thread-" + i;
-            Thread evictionThread = new Thread( cache, evictionThreadName );
-            evictionThread.setUncaughtExceptionHandler( exceptionHandler );
-            evictionThread.start();
+            generateFileWithRecords( file, recordCount, recordSize );
+            int filePagesInTotal = recordCount / recordsPerFilePage;
 
-            // Touch all the pages
-            PagedFile pagedFile = cache.map( file, filePageSize );
-            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+            for ( int i = 0; i < iterations; i++ )
             {
-                for ( int j = 0; j < filePagesInTotal; j++ )
+                PageCache cache = createPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+
+                // Touch all the pages
+                PagedFile pagedFile = cache.map( file, filePageSize );
+                try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
                 {
-                    assertTrue( cursor.next() );
+                    for ( int j = 0; j < filePagesInTotal; j++ )
+                    {
+                        assertTrue( cursor.next() );
+                    }
                 }
+
+                // We're now likely racing with the eviction thread
+                pagedFile.close();
+                cache.close();
+                refs.add( new WeakReference<>( cache ) );
+
+                assertTrue( caughtExceptions.isEmpty() );
             }
 
-            // We're now likely racing with the eviction thread
-            pagedFile.close();
-            cache.close();
-            evictionThread.interrupt();
-            evictionThread.join();
+            // Once the page caches has been closed and all references presumably set to null, then the only thing that
+            // could possibly strongly reference the cache is any lingering background thread. If we do a couple of
+            // GCs, then we should observe that the WeakReference has been cleared by the garbage collector. If it
+            // hasn't, then something must be keeping it alive, even though it has been closed.
+            System.gc();
+            Thread.sleep( 100 );
+            System.gc();
+            Thread.sleep( 100 );
+            System.gc();
+            Thread.sleep( 100 );
+            System.gc();
 
-            assertThat( caughtException.get(), is( nullValue() ) );
+            for ( WeakReference<PageCache> ref : refs )
+            {
+                assertNull( ref.get() );
+            }
+        }
+        finally
+        {
+            Thread.setDefaultUncaughtExceptionHandler( defaultUncaughtExceptionHandler );
         }
     }
 
@@ -3484,7 +3489,7 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
         }
     }
 
-    @RepeatRule.Repeat( times = 100 )
+    @RepeatRule.Repeat( times = 10000 )
     @Test( timeout = 60000 )
     public void pageCacheMustRemainInternallyConsistentWhenGettingRandomFailures() throws Exception
     {
@@ -3499,12 +3504,16 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
         File fileB = new File( "b" );
         ThreadLocalRandom rng = ThreadLocalRandom.current();
 
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+        // Because our test failures are non-deterministic, we use this tracer to capture a full history of the
+        // events leading up to any given failure.
+        LinearHistoryPageCacheTracer tracer = new LinearHistoryPageCacheTracer();
+        getPageCache( fs, maxPages, pageCachePageSize, tracer );
+
         PagedFile pfA = pageCache.map( fileA, filePageSize );
         PagedFile pfB = pageCache.map( fileB, filePageSize / 2 + 1 );
         adversary.setProbabilityFactor( 1.0 );
 
-        for ( int i = 0; i < 50000; i++ )
+        for ( int i = 0; i < 1000; i++ )
         {
             PagedFile pagedFile = rng.nextBoolean()? pfA : pfB;
             long maxPageId = pagedFile.getLastPageId();
@@ -3557,11 +3566,19 @@ public abstract class PageCacheTest<T extends RunnablePageCache>
         pageCache.flush();
 
         // Do some post-chaos verification of what has been written.
-        verifyAdversarialPagedContent( pfA );
-        verifyAdversarialPagedContent( pfB );
+        try
+        {
+            verifyAdversarialPagedContent( pfA );
+            verifyAdversarialPagedContent( pfB );
 
-        pfA.close();
-        pfB.close();
+            pfA.close();
+            pfB.close();
+        }
+        catch ( Throwable e )
+        {
+            tracer.printHistory( System.err );
+            throw e;
+        }
     }
 
     private void performConsistentAdversarialRead( PageCursor cursor, long maxPageId, long startingPage,

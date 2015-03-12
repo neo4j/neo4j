@@ -30,7 +30,7 @@ import java.io.IOException;
  * backed by implementations that map entire files into RAM, or implementations with smart
  * eviction strategies, trying to keep "hot" pages in RAM.
  */
-public interface PageCache
+public interface PageCache extends AutoCloseable
 {
     /**
      * Ask for a handle to a paged file, backed by this page cache.

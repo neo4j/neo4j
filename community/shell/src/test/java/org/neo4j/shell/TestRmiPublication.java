@@ -19,20 +19,39 @@
  */
 package org.neo4j.shell;
 
-import java.lang.reflect.Field;
-
 import org.junit.Test;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
+import java.lang.reflect.Field;
+import java.util.Properties;
+
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.test.ProcessStreamHandler;
 
 import static java.lang.Runtime.getRuntime;
 import static java.lang.System.getProperty;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.test.TargetDirectory.forTest;
 
 public class TestRmiPublication
 {
+    public static File createDefaultPropertiesFile( String path ) throws IOException
+    {
+        File propsFile = new File( path, "neo4j.properties" );
+        Properties config = new Properties();
+        config.setProperty( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
+        try ( Writer writer = new FileWriter( propsFile ) )
+        {
+            config.store( writer, "" );
+        }
+        return propsFile;
+    }
+
     @Test
-    public void jvmShouldDieEvenIfWeLeaveSamveJvmClientIsLeftHanging() throws Exception
+    public void jvmShouldDieEvenIfWeLeaveSameJvmClientIsLeftHanging() throws Exception
     {
         assertEquals( 0, spawnJvm( DontShutdownClient.class, "client" ) );
     }

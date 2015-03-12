@@ -30,18 +30,13 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 
 public class PageCacheRule extends ExternalResource
 {
-    private Neo4jJobScheduler jobScheduler;
-    private LifecycledPageCache pageCache;
+    private PageCache pageCache;
     private final boolean automaticallyProduceInconsistentReads;
 
     public PageCacheRule()
@@ -63,17 +58,11 @@ public class PageCacheRule extends ExternalResource
 
     public PageCache getPageCache( FileSystemAbstraction fs, Config config )
     {
-        if ( jobScheduler == null )
-        {
-            jobScheduler = new Neo4jJobScheduler();
-            jobScheduler.init();
-        }
-
         if ( pageCache != null )
         {
             try
             {
-                pageCache.stop();
+                pageCache.close();
             }
             catch ( IOException e )
             {
@@ -81,10 +70,8 @@ public class PageCacheRule extends ExternalResource
                         "Failed to stop existing PageCache prior to creating a new one", e );
             }
         }
-        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs );
-        pageCache = new LifecycledPageCache(
-                swapperFactory, jobScheduler, config, PageCacheTracer.NULL );
-        pageCache.start();
+
+        pageCache = StandalonePageCacheFactory.createPageCache( fs, config );
 
         if ( automaticallyProduceInconsistentReads )
         {
@@ -100,19 +87,13 @@ public class PageCacheRule extends ExternalResource
         {
             try
             {
-                pageCache.stop();
+                pageCache.close();
             }
             catch ( IOException e )
             {
                 throw new AssertionError( "Failed to stop PageCache after test", e );
             }
             pageCache = null;
-        }
-
-        if ( jobScheduler != null )
-        {
-            jobScheduler.shutdown();
-            jobScheduler = null;
         }
     }
 

@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -44,7 +45,7 @@ public class StandalonePageCacheFactoryTest
         File file = new File( "a" );
         fs.create( file );
 
-        try ( StandalonePageCache cache = StandalonePageCacheFactory.createPageCache( fs, "test" );
+        try ( PageCache cache = StandalonePageCacheFactory.createPageCache( fs );
               PagedFile pf = cache.map( file, 4096 );
               PageCursor cursor = pf.io( 0, PagedFile.PF_EXCLUSIVE_LOCK ) )
         {

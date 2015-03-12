@@ -21,13 +21,15 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.RunnablePageCache;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
@@ -83,7 +85,7 @@ import org.neo4j.io.pagecache.tracing.PageFaultEvent;
  *     locks to make uncontended reads and writes fast.
  * </p>
  */
-public class MuninnPageCache implements RunnablePageCache
+public class MuninnPageCache implements PageCache
 {
     // The number of times we will spin, during page faulting, on checking the
     // freelist and LockSupport.unpark'ing the eviction thread, before blocking
@@ -112,12 +114,24 @@ public class MuninnPageCache implements RunnablePageCache
     // down.
     private static final FreePageWaiter shutdownSignal = new FreePageWaiter();
 
+    // A counter used to identify which background threads belong to which page cache.
+    private static final AtomicInteger pageCacheIdCounter = new AtomicInteger();
+
+    // This Executor runs all the background threads for all page cache instances. It allows us to reuse threads
+    // between multiple page cache instances, which is of no consequence in normal usage, but is quite useful for the
+    // many, many tests that create and close page caches all the time. We DO NOT want to take an Executor in through
+    // the constructor of the PageCache, because the Executors have too many configuration options, many of which are
+    // highly troublesome for our use case; caller-runs, bounded submission queues, bounded thread count, non-daemon
+    // thread factories, etc.
+    private static final Executor backgroundThreadExecutor = BackgroundThreadExecutor.INSTANCE;
+
+    private final int pageCacheId;
     private final PageSwapperFactory swapperFactory;
     private final int cachePageSize;
     private final int keepFree;
-    private final MuninnCursorPool cursorPool;
+    private final CursorPool cursorPool;
     private final PageCacheTracer tracer;
-    final MuninnPage[] pages;
+    private final MuninnPage[] pages;
 
     // The freelist takes a bit of explanation. It is a thread-safe linked-list
     // of 3 types of objects. A link can either be a MuninnPage, a FreePage or
@@ -145,11 +159,14 @@ public class MuninnPageCache implements RunnablePageCache
 
     // The thread that runs the eviction algorithm. We unpark this when we've run out of
     // free pages to grab.
-    private volatile Thread evictorThread;
+    private volatile Thread evictionThread;
     private volatile IOException evictorException;
 
     // Flag for when page cache is closed - writes guarded by synchronized(this), reads can be unsynchronized
     private volatile boolean closed;
+
+    // Only used by ensureThreadsInitialised while holding the monitor lock on this MuninnPageCache instance.
+    private boolean threadsInitialised;
 
     public MuninnPageCache(
             PageSwapperFactory swapperFactory,
@@ -160,10 +177,11 @@ public class MuninnPageCache implements RunnablePageCache
         verifyHacks();
         verifyCachePageSizeIsPowerOfTwo( cachePageSize );
 
+        this.pageCacheId = pageCacheIdCounter.incrementAndGet();
         this.swapperFactory = swapperFactory;
         this.cachePageSize = cachePageSize;
         this.keepFree = Math.min( pagesToKeepFree, maxPages / 2 );
-        this.cursorPool = new MuninnCursorPool();
+        this.cursorPool = new CursorPool();
         this.tracer = tracer;
         this.pages = new MuninnPage[maxPages];
 
@@ -220,6 +238,7 @@ public class MuninnPageCache implements RunnablePageCache
     public synchronized PagedFile map( File file, int filePageSize ) throws IOException
     {
         assertHealthy();
+        ensureThreadsInitialised();
         if ( filePageSize > cachePageSize )
         {
             throw new IllegalArgumentException( "Cannot map files with a filePageSize (" +
@@ -264,6 +283,23 @@ public class MuninnPageCache implements RunnablePageCache
         mappedFiles = current;
         tracer.mappedFile( file );
         return pagedFile;
+    }
+
+    /**
+     * Note: Must be called while synchronizing on the MuninnPageCache instance.
+     */
+    private void ensureThreadsInitialised()
+    {
+        if ( threadsInitialised )
+        {
+            return;
+        }
+        threadsInitialised = true;
+        String threadNamePrefix = "MuninnPageCache[" + pageCacheId + "]";
+
+        String name = threadNamePrefix + "-EvictionThread";
+        EvictionRunner evictionRunner = new EvictionRunner( this, name );
+        backgroundThreadExecutor.execute( evictionRunner );
     }
 
     synchronized void unmap( MuninnPagedFile file )
@@ -386,6 +422,12 @@ public class MuninnPageCache implements RunnablePageCache
         {
             pages[i] = null;
         }
+        Thread thread = evictionThread;
+        if ( thread != null )
+        {
+            thread.interrupt();
+        }
+        evictionThread = null;
     }
 
     @Override
@@ -523,7 +565,7 @@ public class MuninnPageCache implements RunnablePageCache
 
     private void unparkEvictor()
     {
-        LockSupport.unpark( evictorThread );
+        LockSupport.unpark( evictionThread );
     }
 
     private Object getFreelistHead()
@@ -544,22 +586,15 @@ public class MuninnPageCache implements RunnablePageCache
     }
 
     /**
-     * Runs the eviction algorithm. Must be run in a dedicated thread.
+     * Scan through all the pages, one by one, and decrement their usage stamps.
+     * If a usage reaches zero, we try-write-locking it, and if we get that lock,
+     * we evict the page. If we don't, we move on to the next page.
+     * Once we have enough free pages, we park our thread. Page-faulting will
+     * unpark our thread as needed.
      */
-    @Override
-    public void run()
+    void continuouslySweepPages()
     {
-        // We scan through all the pages, one by one, and decrement their usage stamps.
-        // If a usage reaches zero, we try-write-locking it, and if we get that lock,
-        // we evict the page. If we don't, we move on to the next page.
-        // Once we have enough free pages, we park our thread. Page-faulting will
-        // unpark our thread as needed.
-        evictorThread = Thread.currentThread();
-        continuouslySweepPages();
-    }
-
-    private void continuouslySweepPages()
-    {
+        evictionThread = Thread.currentThread();
         int clockArm = 0;
 
         while ( !Thread.interrupted() )

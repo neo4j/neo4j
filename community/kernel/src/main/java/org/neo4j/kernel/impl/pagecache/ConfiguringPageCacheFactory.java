@@ -19,59 +19,55 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
-import java.io.File;
-import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapperFactory;
-import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.RunnablePageCache;
+import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_page_size;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 
-public class LifecycledPageCache extends LifecycleAdapter implements PageCache
+public class ConfiguringPageCacheFactory
 {
     private final PageSwapperFactory swapperFactory;
-    private final JobScheduler scheduler;
     private final Config config;
     private final PageCacheTracer tracer;
+    private PageCache pageCache;
 
-    private RunnablePageCache pageCache;
-    private boolean stopped;
-    private JobScheduler.JobHandle pageEvictionJobHandle;
-
-    public LifecycledPageCache(
-            PageSwapperFactory swapperFactory,
-            JobScheduler scheduler,
-            Config config,
-            PageCacheTracer tracer )
+    public ConfiguringPageCacheFactory(
+            FileSystemAbstraction fs, Config config, PageCacheTracer tracer )
     {
-        this.swapperFactory = swapperFactory;
-        this.scheduler = scheduler;
+        this.swapperFactory = new SingleFilePageSwapperFactory( fs );
         this.config = config;
         this.tracer = tracer;
-        initialisePageCache();
     }
 
-    protected void initialisePageCache()
+    public synchronized PageCache getOrCreatePageCache()
     {
-        pageCache = new MuninnPageCache(
+        if ( pageCache == null )
+        {
+            pageCache = createPageCache();
+        }
+        return pageCache;
+    }
+
+    protected PageCache createPageCache()
+    {
+        return new MuninnPageCache(
                 swapperFactory,
                 calculateMaxPages( config ),
                 calculatePageSize( config ),
                 tracer );
     }
 
-    private static int calculateMaxPages( Config config )
+    public int calculateMaxPages( Config config )
     {
         long availableMemory = config.get( pagecache_memory );
         long pageSize = config.get( mapped_memory_page_size );
@@ -79,62 +75,9 @@ public class LifecycledPageCache extends LifecycleAdapter implements PageCache
         return (int) Math.min( Integer.MAX_VALUE, pageCount );
     }
 
-    private static int calculatePageSize( Config config )
+    public int calculatePageSize( Config config )
     {
         return config.get( mapped_memory_page_size ).intValue();
-    }
-
-    @Override
-    public synchronized void start()
-    {
-        if ( stopped )
-        {
-            initialisePageCache();
-            stopped = false;
-        }
-        pageEvictionJobHandle = scheduler.schedule( JobScheduler.Group.pageCacheEviction, pageCache );
-    }
-
-    @Override
-    public synchronized void stop() throws IOException
-    {
-        JobScheduler.JobHandle handle = pageEvictionJobHandle;
-        if ( handle != null )
-        {
-            handle.cancel( true );
-        }
-        pageCache.close();
-        stopped = true;
-    }
-
-    @Override
-    public void close() throws IOException
-    {
-        throw new UnsupportedOperationException( "This page cache is life-cycled and cannot be directly closed." );
-    }
-
-    @Override
-    public PagedFile map( File file, int filePageSize ) throws IOException
-    {
-        return pageCache.map( file, filePageSize );
-    }
-
-    @Override
-    public void flush() throws IOException
-    {
-        pageCache.flush();
-    }
-
-    @Override
-    public int pageSize()
-    {
-        return pageCache.pageSize();
-    }
-
-    @Override
-    public int maxCachedPages()
-    {
-        return pageCache.maxCachedPages();
     }
 
     public void dumpConfiguration( StringLogger messagesLog )
@@ -142,15 +85,15 @@ public class LifecycledPageCache extends LifecycleAdapter implements PageCache
         long totalPhysicalMemory = totalPhysicalMemory();
         String totalPhysicalMemMb = totalPhysicalMemory == -1? "?" : "" + totalPhysicalMemory / 1024 / 1024;
         long maxVmUsageMb = Runtime.getRuntime().maxMemory() / 1024 / 1024;
-        long pageCacheMb = (maxCachedPages() * pageSize()) / 1024 / 1024;
+        long pageCacheMb = (calculateMaxPages( config ) * calculatePageSize( config )) / 1024 / 1024;
         String msg = "Physical mem: " + totalPhysicalMemMb + " MiB," +
-                " Heap size: " + maxVmUsageMb + " MiB," +
-                " Page cache size: " + pageCacheMb + " MiB.";
+                     " Heap size: " + maxVmUsageMb + " MiB," +
+                     " Page cache size: " + pageCacheMb + " MiB.";
 
         messagesLog.info( msg );
     }
 
-    public static long totalPhysicalMemory()
+    public long totalPhysicalMemory()
     {
         try
         {
@@ -164,10 +107,5 @@ public class LifecycledPageCache extends LifecycleAdapter implements PageCache
             // We tried, but at this point we actually have no idea.
             return -1;
         }
-    }
-
-    public PageCache unwrap()
-    {
-        return pageCache;
     }
 }

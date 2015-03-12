@@ -23,12 +23,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageSwapperFactory;
-import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.EphemeralFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -37,7 +33,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_page
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class LifecycledPageCacheTest
+public class ConfiguringPageCacheFactoryTest
 {
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
@@ -52,12 +48,9 @@ public class LifecycledPageCacheTest
                 pagecache_memory.name(), Integer.toString( 4096 * 16 ) ) );
 
         // When
-        LifeSupport life = new LifeSupport();
-        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fsRule.get() );
-        Neo4jJobScheduler scheduler = life.add( new Neo4jJobScheduler() );
-        PageCache cache = life.add( new LifecycledPageCache(
-                swapperFactory, scheduler, config, PageCacheTracer.NULL ) );
-        life.start();
+        ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
+                fsRule.get(), config, PageCacheTracer.NULL );
+        PageCache cache = pageCacheFactory.getOrCreatePageCache();
 
         // Then
         try
@@ -67,7 +60,7 @@ public class LifecycledPageCacheTest
         }
         finally
         {
-            life.shutdown();
+            cache.close();
         }
     }
 }

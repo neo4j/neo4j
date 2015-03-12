@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache.tracing;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.Page;
@@ -52,9 +53,9 @@ public class DummyPageSwapper implements PageSwapper
     }
 
     @Override
-    public String fileName()
+    public File file()
     {
-        return filename;
+        return new File( filename );
     }
 
     @Override

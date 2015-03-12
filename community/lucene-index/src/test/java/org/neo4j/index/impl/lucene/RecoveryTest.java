@@ -32,7 +32,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.collection.MapUtil;
@@ -43,6 +42,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.test.ProcessStreamHandler;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -198,7 +198,7 @@ public class RecoveryTest
     {
         public static void main( String[] args )
         {
-            GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( args[0] );
+            GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( args[0] );
             try ( Transaction tx = db.beginTx() )
             {
                 Index<Node> index = db.index().forNodes( "index" );
@@ -216,7 +216,7 @@ public class RecoveryTest
     {
         public static void main( String[] args )
         {
-            GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( args[0] );
+            GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( args[0] );
             try ( Transaction tx = db.beginTx() )
             {
                 Index<Relationship> index = db.index().forRelationships( "myIndex" );
@@ -237,7 +237,7 @@ public class RecoveryTest
     {
         public static void main( String[] args )
         {
-            GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( args[0] );
+            GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( args[0] );
 
             Index<Node> index;
             Index<Node> index2;

@@ -24,6 +24,8 @@ import org.junit.Test;
 
 import java.io.File;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.consistency.checking.GraphStoreFixture;
@@ -58,7 +60,7 @@ public class ConsistencyCheckServiceIntegrationTest
         // given
         Date timestamp = new Date();
         ConsistencyCheckService service = new ConsistencyCheckService( timestamp );
-        Config configuration = new Config( stringMap(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+        Config configuration = new Config( settings(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
 
         // when
         ConsistencyCheckService.Result result = service.runFullConsistencyCheck( fixture.directory().getPath(),
@@ -77,7 +79,7 @@ public class ConsistencyCheckServiceIntegrationTest
         breakNodeStore();
         Date timestamp = new Date();
         ConsistencyCheckService service = new ConsistencyCheckService( timestamp );
-        Config configuration = new Config( stringMap(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+        Config configuration = new Config( settings(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
 
         // when
         ConsistencyCheckService.Result result = service.runFullConsistencyCheck( fixture.directory().getPath(),
@@ -97,7 +99,7 @@ public class ConsistencyCheckServiceIntegrationTest
         ConsistencyCheckService service = new ConsistencyCheckService();
         File specificLogFile = new File( testDirectory.directory(), "specific_logfile.txt" );
         Config configuration = new Config(
-                stringMap( ConsistencyCheckSettings.consistency_check_report_file.name(), specificLogFile.getPath() ),
+                settings( ConsistencyCheckSettings.consistency_check_report_file.name(), specificLogFile.getPath() ),
                 GraphDatabaseSettings.class, ConsistencyCheckSettings.class
         );
 
@@ -114,7 +116,7 @@ public class ConsistencyCheckServiceIntegrationTest
     {
         // given
         ConsistencyCheckService service = new ConsistencyCheckService();
-        Config configuration = new Config( stringMap(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
+        Config configuration = new Config( settings(), GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.absolutePath() );
 
         String propertyKey = "itemId";
@@ -138,6 +140,13 @@ public class ConsistencyCheckServiceIntegrationTest
 
         // then
         assertEquals( ConsistencyCheckService.Result.SUCCESS, result );
+    }
+
+    protected Map<String,String> settings( String... strings )
+    {
+        Map<String,String> defaults = new HashMap<>();
+        defaults.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
+        return stringMap( defaults, strings );
     }
 
     private void breakNodeStore() throws TransactionFailureException

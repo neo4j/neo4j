@@ -156,6 +156,7 @@
               <configuration>
                <systemPropertyVariables>
                  <remote-csv-upload>${remote-csv-upload}/</remote-csv-upload>
+                 <dbms.pagecache.memory.default.override>8m</dbms.pagecache.memory.default.override>
                </systemPropertyVariables>
               </configuration>
             </plugin>
@@ -184,6 +185,9 @@
                   <include>**/*DocTest.java</include>
                   <include>**/docgen/**</include>
                 </includes>
+                <systemPropertyVariables>
+                  <dbms.pagecache.memory.default.override>8m</dbms.pagecache.memory.default.override>
+                </systemPropertyVariables>
               </configuration>
             </plugin>
           </plugins>
