@@ -28,7 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.cypher.internal.compiler.v2_2.CypherCacheHitMonitor;
-import org.neo4j.cypher.internal.compiler.v2_2.PreparedQuery;
+import org.neo4j.cypher.internal.compiler.v2_2.ast.Statement;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Result;
 import org.neo4j.helpers.Pair;
@@ -52,7 +52,7 @@ public class QueryInvalidationIT
         // GIVEN
         Random random = ThreadLocalRandom.current();
         int USERS = 1000, CONNECTIONS = 10000;
-        Monitor monitor = new Monitor();
+        TestMonitor monitor = new TestMonitor();
         db.resolveDependency( Monitors.class ).addMonitorListener( monitor );
         // - setup schema -
         db.execute( "CREATE INDEX ON :User(userId)" );
@@ -105,24 +105,24 @@ public class QueryInvalidationIT
         return Pair.of( (Long) single( single( result ).values() ), result.getExecutionPlanDescription() );
     }
 
-    private static class Monitor implements CypherCacheHitMonitor<PreparedQuery>
+    private static class TestMonitor implements CypherCacheHitMonitor<Statement>
     {
         int hits, misses, discards;
 
         @Override
-        public synchronized void cacheHit( PreparedQuery key )
+        public synchronized void cacheHit( Statement key )
         {
             hits++;
         }
 
         @Override
-        public synchronized void cacheMiss( PreparedQuery key )
+        public synchronized void cacheMiss( Statement key )
         {
             misses++;
         }
 
         @Override
-        public synchronized void cacheDiscard( PreparedQuery key )
+        public synchronized void cacheDiscard( Statement key )
         {
             discards++;
         }
