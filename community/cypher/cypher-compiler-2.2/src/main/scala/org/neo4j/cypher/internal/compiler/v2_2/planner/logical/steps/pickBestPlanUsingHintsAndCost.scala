@@ -23,16 +23,18 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CandidateSelector, LogicalPlanningContext, LogicalPlanningFunction0}
 
 object pickBestPlanUsingHintsAndCost extends LogicalPlanningFunction0[CandidateSelector] {
-  private final val VERBOSE = false
+  private val VERBOSE = false
+  private val baseOrdering = implicitly[Ordering[(Int, Double, Int)]]
 
   override def apply(implicit context: LogicalPlanningContext): CandidateSelector = new CandidateSelector {
     override def apply[X](projector: (X) => LogicalPlan, input: Iterable[X]): Option[X] = {
-      val costs = context.cost
-      val comparePlans = (plan: LogicalPlan) => (-plan.solved.numHints, costs(plan, context.input), -plan.availableSymbols.size)
-      val compareInput = projector andThen comparePlans
+      val inputOrdering = new Ordering[X] {
+        override def compare(x: X, y: X): Int = baseOrdering.compare(score(projector, x), score(projector, y))
+      }
 
       if (VERBOSE) {
-        val sortedPlans = input.map(projector).toSeq.sortBy(comparePlans)
+        val costs = context.cost
+        val sortedPlans = input.toSeq.sorted(inputOrdering).map(projector)
 
         if (sortedPlans.size > 1) {
           println("- Get best of:")
@@ -49,7 +51,13 @@ object pickBestPlanUsingHintsAndCost extends LogicalPlanningFunction0[CandidateS
         }
       }
 
-      if (input.isEmpty) None else Some(input.minBy(compareInput))
+      if (input.isEmpty) None else Some(input.min(inputOrdering))
     }
+  }
+
+  private def score[X](projector: (X) => LogicalPlan, input: X)(implicit context: LogicalPlanningContext) = {
+    val costs = context.cost
+    val plan = projector(input)
+    (-plan.solved.numHints, costs(plan, context.input).gummyBears, -plan.availableSymbols.size)
   }
 }
