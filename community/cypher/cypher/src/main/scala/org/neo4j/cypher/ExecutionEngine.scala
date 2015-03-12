@@ -202,12 +202,12 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
     val version = CypherVersion(optGraphSetting[String](
       graph, GraphDatabaseSettings.cypher_parser_version, CypherVersion.vDefault.name))
     val planner = PlannerName(optGraphSetting[String](
-      graph, GraphDatabaseSettings.query_planner_version, PlannerName.default.name))
+      graph, GraphDatabaseSettings.cypher_planner, PlannerName.default.name))
     if (version != CypherVersion.v2_2 && (planner == CostPlannerName || planner == IDPPlannerName)) {
       logger.error(s"Cannot combine configurations: ${GraphDatabaseSettings.cypher_parser_version.name}=${version.name} " +
-        s"with ${GraphDatabaseSettings.query_planner_version.name} = ${planner.name}")
+        s"with ${GraphDatabaseSettings.cypher_planner.name} = ${planner.name}")
       throw new IllegalStateException(s"Cannot combine configurations: ${GraphDatabaseSettings.cypher_parser_version.name}=${version.name} " +
-        s"with ${GraphDatabaseSettings.query_planner_version.name} = ${planner.name}")
+        s"with ${GraphDatabaseSettings.cypher_planner.name} = ${planner.name}")
     }
     val optionParser = CypherOptionParser(kernelMonitors.newMonitor(classOf[ParserMonitor[CypherQueryWithOptions]]))
     new CypherCompiler(graph, kernel, kernelMonitors, version, planner, optionParser, logger)

@@ -51,7 +51,7 @@ class CypherCompiler(graph: GraphDatabaseService,
   import CypherCompiler._
 
   private val queryCacheSize: Int = getQueryCacheSize
-  private val queryPlanTTL: Long = getQueryPlanTTL
+  private val queryPlanTTL: Long = getMinimumTimeBeforeReplanning
   private val compatibilityFor1_9 = CompatibilityFor1_9(graph, queryCacheSize, kernelMonitors)
   private val compatibilityFor2_0 = CompatibilityFor2_0(graph, queryCacheSize, kernelMonitors)
   private val compatibilityFor2_1 = CompatibilityFor2_1(graph, queryCacheSize, kernelMonitors, kernelAPI)
@@ -140,9 +140,9 @@ class CypherCompiler(graph: GraphDatabaseService,
       .applyOrElse(graph, (_: GraphDatabaseService) => DEFAULT_QUERY_CACHE_SIZE)
 
 
-  private def getQueryPlanTTL: Long = {
+  private def getMinimumTimeBeforeReplanning: Long = {
     optGraphAs[InternalAbstractGraphDatabase]
-      .andThen(_.getConfig.get(GraphDatabaseSettings.query_plan_ttl).longValue())
+      .andThen(_.getConfig.get(GraphDatabaseSettings.cypher_min_replan_interval).longValue())
       .applyOrElse(graph, (_: GraphDatabaseService) => DEFAULT_QUERY_PLAN_TTL)
   }
 
