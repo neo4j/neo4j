@@ -30,8 +30,10 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.{GreedyPlanTable, expandsOrJoins, expandsOnly, GreedyQueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter.LogicalPlanRewriter
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{GraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.{ValidatingRewriterStepSequencer, RewriterStepSequencer}
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.Clock
 
@@ -43,7 +45,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   val monitors = mock[Monitors]
   val parser = new CypherParser(mock[ParserMonitor[Statement]])
   val semanticChecker = new SemanticChecker(mock[SemanticCheckMonitor])
-  val astRewriter = new ASTRewriter(mock[AstRewritingMonitor], shouldExtractParameters = false)
+  val rewriterSequencer = RewriterStepSequencer.newValidating _
+  val astRewriter = new ASTRewriter(rewriterSequencer, mock[AstRewritingMonitor], shouldExtractParameters = false)
   val mockRel = newPatternRelationship("a", "b", "r")
   val tokenResolver = new SimpleTokenResolver()
   val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
@@ -151,14 +154,16 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     FakePlan(ids)(CardinalityEstimation.lift(PlannerQuery(qg), Cardinality(0)))
   }
 
-  def newPlanner(metricsFactory: MetricsFactory): CostBasedPipeBuilder =
-    CostBasedPipeBuilderFactory(monitors, metricsFactory, mock[PlanningMonitor], Clock.SYSTEM_CLOCK)
+  def newPlanner(metricsFactory: MetricsFactory): CostBasedPipeBuilder = {
+    val queryPlanner = new DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
+    CostBasedPipeBuilderFactory(monitors, metricsFactory, mock[PlanningMonitor], Clock.SYSTEM_CLOCK, queryPlanner, rewriterSequencer)
+  }
 
   def produceLogicalPlan(queryText: String)(implicit planner: CostBasedPipeBuilder, planContext: PlanContext): LogicalPlan = {
     val parsedStatement = parser.parse(queryText)
     val semanticState = semanticChecker.check(queryText, parsedStatement, None)
     val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryText, parsedStatement, semanticState)
-    CostBasedPipeBuilder.rewriteStatement(rewrittenStatement, semanticState.scopeTree, SemanticTable(types = semanticState.typeTable), postConditions, monitors.newMonitor[AstRewritingMonitor]()) match {
+    CostBasedPipeBuilder.rewriteStatement(rewrittenStatement, semanticState.scopeTree, SemanticTable(types = semanticState.typeTable), rewriterSequencer, postConditions, monitors.newMonitor[AstRewritingMonitor]()) match {
       case (ast: Query, newTable)=>
         val semanticState = semanticChecker.check(queryText, ast, None)
         tokenResolver.resolve(ast)(newTable, planContext)

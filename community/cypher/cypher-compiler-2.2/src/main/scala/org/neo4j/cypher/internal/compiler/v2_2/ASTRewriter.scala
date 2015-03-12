@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.{ApplyRewriter, RewriterCondition, RewriterStepSequencer}
 
-class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters: Boolean = true) {
+class ASTRewriter(rewriterSequencer: (String) => RewriterStepSequencer, rewritingMonitor: AstRewritingMonitor, shouldExtractParameters: Boolean = true) {
 
   import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStep._
 
@@ -36,7 +36,7 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters
     else
       (Rewriter.lift(PartialFunction.empty), Map.empty[String, Any])
 
-    val contract = RewriterStepSequencer.newDefault("ASTRewriter")(
+    val contract = rewriterSequencer("ASTRewriter")(
       enableCondition(noReferenceEqualityAmongIdentifiers),
       enableCondition(containsNoNodesOfType[UnaliasedReturnItem]),
       enableCondition(orderByOnlyOnIdentifiers),

@@ -24,14 +24,15 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter.LogicalPlanRewriter
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.{aggregation, projection, sortSkipAndLimit, verifyBestPlan}
+import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
 
 trait QueryPlanner {
   def plan(plannerQuery: UnionQuery)(implicit context: LogicalPlanningContext): LogicalPlan
 }
 
-class DefaultQueryPlanner(config: QueryPlannerConfiguration = QueryPlannerConfiguration.default,
-                          expressionRewriterFactory: (LogicalPlanningContext => Rewriter) = ExpressionRewriterFactory,
-                          planRewriter: Rewriter = LogicalPlanRewriter)
+class DefaultQueryPlanner(planRewriter: Rewriter,
+                          config: QueryPlannerConfiguration = QueryPlannerConfiguration.default,
+                          expressionRewriterFactory: (LogicalPlanningContext => Rewriter) = ExpressionRewriterFactory)
   extends QueryPlanner {
 
   def plan(unionQuery: UnionQuery)(implicit context: LogicalPlanningContext): LogicalPlan = unionQuery match {
