@@ -73,6 +73,9 @@ abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
 
       case TreeContext(head :: tail, parent, right) =>
         Some(Location(head, TreeContext(tail, parent, elem +: right)))
+
+      case _ =>
+        throw new IllegalStateException("Not in tree context when going left")
     }
 
     def leftMost: Location = context match {
@@ -98,6 +101,9 @@ abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
 
       case TreeContext(left, parent, head :: tail) =>
         Some(Location(head, TreeContext(elem +: left, parent, tail)))
+
+      case _ =>
+        throw new IllegalStateException("Not in tree context when going left")
     }
 
     def rightMost: Location = context match {

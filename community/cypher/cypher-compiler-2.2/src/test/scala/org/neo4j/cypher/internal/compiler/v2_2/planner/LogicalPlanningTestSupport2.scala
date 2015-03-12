@@ -68,7 +68,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     def metricsFactory = new MetricsFactory {
       def newCostModel() =
-        (plan: LogicalPlan, input: QueryGraphSolverInput) => config.costModel()(plan, input)
+        (plan: LogicalPlan, input: QueryGraphSolverInput) => config.costModel()(plan -> input)
 
       def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel) =
         config.cardinalityModel(queryGraphCardinalityModel)

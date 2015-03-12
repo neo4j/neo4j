@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{Collection, HasLabels, Property}
-import org.neo4j.cypher.internal.compiler.v2_2.commands.ManyQueryExpression
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{HasLabels, Property}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 
@@ -80,9 +79,6 @@ object CardinalityCostModel extends CostModel {
          _: NodeIndexSeek
     => SLOW_STORE
 
-    case NodeIndexSeek(_, _, _, ManyQueryExpression(Collection(elements)), _)
-    => SLOW_STORE * Multiplier(elements.size)
-
     case _
     => CPU_BOUND
   }
@@ -118,7 +114,9 @@ object CardinalityCostModel extends CostModel {
       case _ =>
         val lhsCost = plan.lhs.map(p => apply(p, input)).getOrElse(Cost(0))
         val rhsCost = plan.rhs.map(p => apply(p, input)).getOrElse(Cost(0))
-        val costForThisPlan = cardinalityForPlan(plan) * costPerRow(plan)
+        val planCardinality = cardinalityForPlan(plan)
+        val rowCost = costPerRow(plan)
+        val costForThisPlan = planCardinality * rowCost
         val totalCost = costForThisPlan + lhsCost + rhsCost
         totalCost
     }
