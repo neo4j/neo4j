@@ -62,6 +62,7 @@ import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
@@ -126,10 +127,20 @@ public abstract class PageCacheTest<T extends PageCache>
     }
 
     protected abstract T createPageCache(
-            FileSystemAbstraction fs,
+            PageSwapperFactory swapperFactory,
             int maxPages,
             int pageSize,
             PageCacheTracer tracer );
+
+    protected T createPageCache(
+            FileSystemAbstraction fs,
+            int maxPages,
+            int pageSize,
+            PageCacheTracer tracer )
+    {
+        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs );
+        return createPageCache( swapperFactory, maxPages, pageSize, tracer );
+    }
 
     protected abstract void tearDownPageCache( T pageCache ) throws IOException;
 
@@ -213,6 +224,10 @@ public abstract class PageCacheTest<T extends PageCache>
         return ByteBuffer.wrap( record ).getInt() - 1;
     }
 
+    /**
+     * Fill the page bound by the cursor with records that can be verified with
+     * {@link #verifyRecordsMatchExpected(PageCursor)} or {@link #verifyRecordsInFile(java.io.File, int)}.
+     */
     private void writeRecords( PageCursor cursor )
     {
         cursor.setOffset( 0 );
@@ -3252,7 +3267,7 @@ public abstract class PageCacheTest<T extends PageCache>
         pagedFileB.close();
     }
 
-    @Test
+    @Test( timeout = 10000 )
     public void concurrentPageFaultingMustNotPutInterleavedDataIntoPages() throws Exception
     {
         getPageCache( fs, 3, pageCachePageSize, PageCacheTracer.NULL );
@@ -3323,7 +3338,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    @Test
+    @Test( timeout = 10000 )
     public void concurrentFlushingMustNotPutInterleavedDataIntoFile() throws Exception
     {
         generateFileWithRecords( file, recordCount, recordSize );
@@ -3373,7 +3388,7 @@ public abstract class PageCacheTest<T extends PageCache>
         pagedFile.close();
     }
 
-    @Test//( timeout = 20000 )
+    @Test( timeout = 20000 )
     public void backgroundThreadsMustGracefullyShutDown() throws Exception
     {
         int iterations = 1000;
@@ -3561,13 +3576,14 @@ public abstract class PageCacheTest<T extends PageCache>
         // Unmapping will cause pages to be flushed.
         // We don't want that to fail, since it will upset the test tear-down.
         adversary.setProbabilityFactor( 0.0 );
-        // Flushing all pages, if successful, should clear any internal
-        // exception.
-        pageCache.flush();
 
-        // Do some post-chaos verification of what has been written.
         try
         {
+            // Flushing all pages, if successful, should clear any internal
+            // exception.
+            pageCache.flush();
+
+            // Do some post-chaos verification of what has been written.
             verifyAdversarialPagedContent( pfA );
             verifyAdversarialPagedContent( pfB );
 
@@ -3639,7 +3655,7 @@ public abstract class PageCacheTest<T extends PageCache>
     // architecture that we support.
     // This test has no timeout because one may want to run it on a CPU
     // emulator, where it's not unthinkable for it to take minutes.
-    @Test
+    @Test( timeout = 10000 )
     public void mustSupportUnalignedWordAccesses() throws Exception
     {
         // 8 MB pages, 10 of them for 80 MB.
@@ -3673,8 +3689,8 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    @Test
-    public void shouldEvictPagesFromUnmappedFiles() throws Exception
+    @Test( timeout = 1000 )
+    public void mustEvictPagesFromUnmappedFiles() throws Exception
     {
         // GIVEN mapping then unmapping
         getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
@@ -3693,6 +3709,50 @@ public abstract class PageCacheTest<T extends PageCache>
                 // THEN eviction happening here should not result in any exception
                 assertTrue( cursor.next() );
             }
+        }
+    }
+
+    @Test( timeout = 10000 )
+    public void mustFlushDirtyPagesInTheBackground() throws Exception
+    {
+        final CountDownLatch swapOutLatch = new CountDownLatch( 1 );
+        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs )
+        {
+            @Override
+            public PageSwapper createPageSwapper( File file, int filePageSize, PageEvictionCallback onEviction )
+                    throws IOException
+            {
+                PageSwapper delegate = super.createPageSwapper( file, filePageSize, onEviction );
+                return new DelegatingPageSwapper( delegate )
+                {
+                    @Override
+                    public int write( long filePageId, Page page ) throws IOException
+                    {
+                        try
+                        {
+                            return super.write( filePageId, page );
+                        }
+                        finally
+                        {
+                            swapOutLatch.countDown();
+                        }
+                    }
+                };
+            }
+        };
+
+        try ( PageCache pageCache = createPageCache(
+                swapperFactory, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+              PagedFile pagedFile = pageCache.map( file, filePageSize ) )
+        {
+            try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+                writeRecords( cursor );
+            }
+
+            swapOutLatch.await();
+            verifyRecordsInFile( file, recordsPerFilePage );
         }
     }
 }

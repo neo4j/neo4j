@@ -20,36 +20,35 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 /**
- * This Runnable runs the eviction algorithm. Only one is expected for each page cache.
- *
- * Interrupting the thread running this runnable, will be interpreted as a shutdown signal.
- *
- * @see MuninnPageCache#continuouslySweepPages()
+ * A base class for page cache background tasks.
  */
-final class EvictionRunner implements Runnable
+abstract class BackgroundTask implements Runnable
 {
     private final MuninnPageCache pageCache;
-    private final String name;
 
-    public EvictionRunner( MuninnPageCache pageCache, String name )
+    public BackgroundTask( MuninnPageCache pageCache )
     {
         this.pageCache = pageCache;
-        this.name = name;
     }
 
     @Override
     public void run()
     {
+        int pageCacheId = pageCache.getPageCacheId();
+        String taskName = getClass().getSimpleName();
+        String threadName = "MuninnPageCache[" + pageCacheId + "]-" + taskName;
         Thread thread = Thread.currentThread();
         String previousName = thread.getName();
         try
         {
-            thread.setName( name );
-            pageCache.continuouslySweepPages();
+            thread.setName( threadName );
+            run( pageCache );
         }
         finally
         {
             thread.setName( previousName );
         }
     }
+
+    protected abstract void run( MuninnPageCache pageCache );
 }

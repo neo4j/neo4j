@@ -24,10 +24,9 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongIntMap;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -37,8 +36,9 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.RecordingPageCacheTracer;
-import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
+import org.neo4j.io.pagecache.tracing.DelegatingPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
+import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 import static org.hamcrest.Matchers.is;
@@ -57,29 +57,47 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
 {
     private final long x = 0xCAFEBABEDEADBEEFL;
     private final long y = 0xDECAFC0FFEEDECAFL;
+    private CountDownLatch backgroundFlushLatch;
 
     @Override
     protected MuninnPageCache createPageCache(
-            FileSystemAbstraction fs,
+            PageSwapperFactory swapperFactory,
             int maxPages,
             int pageSize,
             PageCacheTracer tracer )
     {
-        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs );
         return new MuninnPageCache( swapperFactory, maxPages, pageSize, tracer );
     }
 
     @Override
     protected void tearDownPageCache( MuninnPageCache pageCache ) throws IOException
     {
+        if ( backgroundFlushLatch != null )
+        {
+            backgroundFlushLatch.countDown();
+            backgroundFlushLatch = null;
+        }
         pageCache.close();
     }
 
-    @Test
-    public void primitiveLongIntMapReturnsMinusOneForKeysNotFound()
+    private PageCacheTracer blockCacheFlush( PageCacheTracer delegate )
     {
-        PrimitiveLongIntMap map = Primitive.longIntMap( 5 );
-        assertThat( map.get( 42 ), is( -1 ) );
+        backgroundFlushLatch = new CountDownLatch( 1 );
+        return new DelegatingPageCacheTracer( delegate )
+        {
+            public MajorFlushEvent beginCacheFlush()
+            {
+                try
+                {
+                    backgroundFlushLatch.await();
+                }
+                catch ( InterruptedException e )
+                {
+                    Thread.currentThread().interrupt();
+                }
+                return super.beginCacheFlush();
+            }
+        };
     }
 
     @Test
@@ -88,7 +106,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         writeInitialDataTo( file );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
 
-        MuninnPageCache pageCache = createPageCache( fs, 2, 8, tracer );
+        MuninnPageCache pageCache = createPageCache( fs, 2, 8, blockCacheFlush( tracer ) );
         PagedFile pagedFile = pageCache.map( file, 8 );
 
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
@@ -119,7 +137,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         writeInitialDataTo( file );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
 
-        MuninnPageCache pageCache = createPageCache( fs, 2, 8, tracer );
+        MuninnPageCache pageCache = createPageCache( fs, 2, 8, blockCacheFlush( tracer ) );
         PagedFile pagedFile = pageCache.map( file, 8 );
 
         try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
@@ -147,7 +165,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         writeInitialDataTo( file );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
 
-        MuninnPageCache pageCache = createPageCache( fs, 2, 8, tracer );
+        MuninnPageCache pageCache = createPageCache( fs, 2, 8, blockCacheFlush( tracer ) );
         PagedFile pagedFile = pageCache.map( file, 8 );
 
         try ( PageCursor cursor = pagedFile.io( 1, PF_EXCLUSIVE_LOCK ) )
@@ -175,7 +193,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         writeInitialDataTo( file );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
 
-        MuninnPageCache pageCache = createPageCache( fs, 4, 8, tracer );
+        MuninnPageCache pageCache = createPageCache( fs, 4, 8, blockCacheFlush( tracer ) );
         PagedFile pagedFile = pageCache.map( file, 8 );
 
         try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )

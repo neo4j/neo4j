@@ -100,6 +100,21 @@ public class MuninnPageCache implements PageCache
     private static final int pagesToKeepFree = Integer.getInteger(
             "org.neo4j.io.pagecache.impl.muninn.pagesToKeepFree", 30 );
 
+    private static final double backgroundFlushIoRatio = getDouble(
+            "org.neo4j.io.pagecache.impl.muninn.backgroundFlushIoRatio", 0.5 );
+
+    private static double getDouble( String property, double def )
+    {
+        try
+        {
+            return Double.parseDouble( System.getProperty( property ) );
+        }
+        catch ( Exception e )
+        {
+            return def;
+        }
+    }
+
     // This is a pre-allocated constant, so we can throw it without allocating any objects:
     private static final IOException oomException = new IOException(
             "OutOfMemoryError encountered in the page cache background eviction thread" );
@@ -161,6 +176,8 @@ public class MuninnPageCache implements PageCache
     // free pages to grab.
     private volatile Thread evictionThread;
     private volatile IOException evictorException;
+    // The thread that does background flushing.
+    private volatile Thread flushThread;
 
     // Flag for when page cache is closed - writes guarded by synchronized(this), reads can be unsynchronized
     private volatile boolean closed;
@@ -288,18 +305,32 @@ public class MuninnPageCache implements PageCache
     /**
      * Note: Must be called while synchronizing on the MuninnPageCache instance.
      */
-    private void ensureThreadsInitialised()
+    private void ensureThreadsInitialised() throws IOException
     {
         if ( threadsInitialised )
         {
             return;
         }
         threadsInitialised = true;
-        String threadNamePrefix = "MuninnPageCache[" + pageCacheId + "]";
 
-        String name = threadNamePrefix + "-EvictionThread";
-        EvictionRunner evictionRunner = new EvictionRunner( this, name );
-        backgroundThreadExecutor.execute( evictionRunner );
+        try
+        {
+            backgroundThreadExecutor.execute( new EvictionTask( this ) );
+            backgroundThreadExecutor.execute( new FlushTask( this ) );
+        }
+        catch ( Exception e )
+        {
+            IOException exception = new IOException( e );
+            try
+            {
+                close();
+            }
+            catch ( IOException closeException )
+            {
+                exception.addSuppressed( closeException );
+            }
+            throw exception;
+        }
     }
 
     synchronized void unmap( MuninnPagedFile file )
@@ -375,9 +406,8 @@ public class MuninnPageCache implements PageCache
     {
         try ( MajorFlushEvent cacheFlush = tracer.beginCacheFlush() )
         {
-            for ( int i = 0; i < pages.length; i++ )
+            for ( MuninnPage page : pages )
             {
-                MuninnPage page = pages[i];
                 long stamp = page.readLock();
                 try
                 {
@@ -422,12 +452,19 @@ public class MuninnPageCache implements PageCache
         {
             pages[i] = null;
         }
-        Thread thread = evictionThread;
+
+        interrupt( evictionThread );
+        evictionThread = null;
+        interrupt( flushThread );
+        flushThread = null;
+    }
+
+    private void interrupt( Thread thread )
+    {
         if ( thread != null )
         {
             thread.interrupt();
         }
-        evictionThread = null;
     }
 
     @Override
@@ -465,6 +502,11 @@ public class MuninnPageCache implements PageCache
     public int maxCachedPages()
     {
         return pages.length;
+    }
+
+    int getPageCacheId()
+    {
+        return pageCacheId;
     }
 
     MuninnPage grabFreePage( PageFaultEvent faultEvent ) throws IOException
@@ -823,6 +865,92 @@ public class MuninnPageCache implements PageCache
     private void clearEvictorException()
     {
         evictorException = null;
+    }
+
+    /**
+     * Scan through all the pages, flushing the dirty ones. Aim to only spend at most 50% of its time doing IO, in an
+     * effort to avoid saturating the IO subsystem or steal precious IO resources from more important work.
+     */
+    void continuouslyFlushPages()
+    {
+        Thread thread = Thread.currentThread();
+        flushThread = thread;
+
+        while ( !thread.isInterrupted() )
+        {
+            boolean flushedAnything = flushAtIORatio( backgroundFlushIoRatio );
+            if ( !flushedAnything )
+            {
+                LockSupport.parkNanos( this, TimeUnit.SECONDS.toNanos( 1 ) );
+            }
+        }
+    }
+
+    private boolean flushAtIORatio( double ratio )
+    {
+        Thread thread = Thread.currentThread();
+        long sleepDebtNanos = 0;
+        long sleepPaymentThreshold = TimeUnit.MILLISECONDS.toNanos( 10 );
+        boolean flushedAnything = false;
+
+        try ( MajorFlushEvent event = tracer.beginCacheFlush() )
+        {
+            for ( MuninnPage page : pages )
+            {
+                if ( page == null || thread.isInterrupted() )
+                {
+                    // Null pages means the page cache has been closed.
+                    thread.interrupt();
+                    return true;
+                }
+
+                // The rate is the percentage of time that we want to spend doing IO. If the rate is 0.3, then we
+                // want to spend 30% of our time doing IO. We would then spend the other 70% of the time just
+                // sleeping. This means that for every IO we do, we measure how long it takes. We can then compute
+                // the amount of time we need to sleep. Basically, if we spend 30 microseconds doing IO, then we need
+                // to sleep for 70 microseconds, with the 0.3 ratio. To get the sleep time, we can divide the IO time
+                // T by the ratio R, and then multiply the result by 1 - R. This is equivalent to (T/R) - T = S.
+                // Then, because we don't want to sleep too frequently in too small intervals, we sum up our S's and
+                // only sleep when we have collected a sleep debt of at least 10 milliseconds.
+                long stamp = page.tryReadLock();
+                if ( stamp != 0 )
+                {
+                    try
+                    {
+                        if ( !page.isDirty() )
+                        {
+                            continue; // Continue looping to the next page.
+                        }
+
+                        long startNanos = System.nanoTime();
+                        page.flush( event.flushEventOpportunity() );
+                        long elapsedNanos = System.nanoTime() - startNanos;
+
+                        sleepDebtNanos += (elapsedNanos/ratio) - elapsedNanos;
+                        flushedAnything = true;
+                    }
+                    catch ( Throwable ignore )
+                    {
+                        // The MuninnPage.flush method will keep the page dirty if flushing fails, and the eviction
+                        // thread will eventually report the problem if its serious. Ergo, we can just ignore any and
+                        // all exceptions, and move on to the next page. If we end up not getting anything done this
+                        // iteration of flushAtIORatio, then that's fine too.
+                    }
+                    finally
+                    {
+                        page.unlockRead( stamp );
+                    }
+                }
+
+                // Check if we've collected enough sleep debt, and if so, pay it back.
+                if ( sleepDebtNanos > sleepPaymentThreshold )
+                {
+                    LockSupport.parkNanos( sleepDebtNanos );
+                    sleepDebtNanos = 0;
+                }
+            }
+        }
+        return flushedAnything;
     }
 
     @Override
