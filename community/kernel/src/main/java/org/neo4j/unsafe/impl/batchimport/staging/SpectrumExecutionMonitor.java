@@ -159,6 +159,7 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adpter
                 hasProgressed = true;
             }
             lastDoneBatches = stats.stat( Keys.done_batches ).asLong();
+            stepIndex++;
         }
 
         long progress = lastDoneBatches * execution.getConfig().batchSize();
