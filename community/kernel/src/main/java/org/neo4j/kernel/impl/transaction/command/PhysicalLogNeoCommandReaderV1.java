@@ -576,16 +576,6 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
             {
                 return null;
             }
-            assert deletedRecords >= 0;
-            while ( deletedRecords-- > 0 )
-            {
-                DynamicRecord read = readDynamicRecord();
-                if ( read == null )
-                {
-                    return null;
-                }
-                record.addDeletedRecord( read );
-            }
             if ( (inUse && !record.inUse()) || (!inUse && record.inUse()) )
             {
                 throw new IllegalStateException( "Weird, inUse was read in as " + inUse + " but the record is "
