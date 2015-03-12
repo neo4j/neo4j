@@ -27,7 +27,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.function.Function;
-import org.neo4j.function.RawFunction;
+import org.neo4j.function.IOFunction;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsVisitor;
@@ -377,7 +377,7 @@ public class CountsTrackerTest
         return oracle;
     }
 
-    private static class Rotation implements RawFunction<CountsTracker, Long, IOException>
+    private static class Rotation implements IOFunction<CountsTracker, Long>
     {
         private final long txId;
 

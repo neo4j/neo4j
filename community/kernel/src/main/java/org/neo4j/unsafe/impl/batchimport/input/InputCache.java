@@ -23,6 +23,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.function.IOFunction;
 import org.neo4j.function.RawFunction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -151,7 +152,7 @@ public class InputCache implements Closeable
 
     public InputIterable<InputNode> nodes()
     {
-        return entities( new RawFunction<Void,InputIterator<InputNode>,IOException>()
+        return entities( new IOFunction<Void, InputIterator<InputNode>>()
         {
             @Override
             public InputIterator<InputNode> apply( Void ignore ) throws IOException
@@ -163,7 +164,7 @@ public class InputCache implements Closeable
 
     public InputIterable<InputRelationship> relationships()
     {
-        return entities( new RawFunction<Void,InputIterator<InputRelationship>,IOException>()
+        return entities( new IOFunction<Void, InputIterator<InputRelationship>>()
         {
             @Override
             public InputIterator<InputRelationship> apply( Void ignore ) throws IOException

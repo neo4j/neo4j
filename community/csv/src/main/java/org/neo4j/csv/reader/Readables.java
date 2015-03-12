@@ -36,6 +36,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.function.IOFunction;
 import org.neo4j.function.RawFunction;
 
 /**
@@ -121,7 +122,7 @@ public class Readables
         };
     }
 
-    private static final RawFunction<File,Reader,IOException> FROM_FILE = new RawFunction<File,Reader,IOException>()
+    private static final IOFunction<File, Reader> FROM_FILE = new IOFunction<File, Reader>()
     {
         @Override
         public Reader apply( final File file ) throws IOException
@@ -219,8 +220,7 @@ public class Readables
                name.contains( "/." );
     }
 
-    private static final RawFunction<Reader,Reader,IOException> IDENTITY =
-            new RawFunction<Reader,Reader,IOException>()
+    private static final IOFunction<Reader, Reader> IDENTITY = new IOFunction<Reader, Reader>()
     {
         @Override
         public Reader apply( Reader in )
