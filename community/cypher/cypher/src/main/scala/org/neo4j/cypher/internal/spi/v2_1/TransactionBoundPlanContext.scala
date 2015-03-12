@@ -28,8 +28,8 @@ import org.neo4j.kernel.api.{KernelAPI, Statement}
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException
 import org.neo4j.cypher.internal.compiler.v2_1.spi.{GraphStatistics, PlanContext}
 
-final class TransactionBoundPlanContext(statement: Statement, kernelAPI: KernelAPI, gdb: GraphDatabaseService)
-  extends TransactionBoundTokenContext(statement) with PlanContext {
+final class TransactionBoundPlanContext(someStatement: Statement, kernelAPI: KernelAPI, gdb: GraphDatabaseService)
+  extends TransactionBoundTokenContext(someStatement) with PlanContext {
 
   @Deprecated
   def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = evalOrNone {

@@ -103,10 +103,10 @@ trait ForumPostsCardinalityData {
         addWithLabels(RootForums, 'Forum, 'Root).
         addWithLabels(LeafForums, 'Forum, 'Leaf).
         withIndexSelectivity(('Person, 'id) -> PersonIdSel).
-        withRelationshipCardinality('Person -> 'KNOWS -> 'Person, Persons_KNOWS_Persons).
-        withRelationshipCardinality('Post -> 'POSTED_IN -> 'Forum, Posts_POSTED_IN_Forums).
-        withRelationshipCardinality('Forum -> 'MEMBER_IN -> 'Person, Forums_MEMBER_IN_Persons).
-        withRelationshipCardinality('Forum -> 'MEMBER_IN -> 'Forum, Forums_MEMBER_IN_Forums)
+        withRelationshipCardinality(('Person -> 'KNOWS -> 'Person) -> Persons_KNOWS_Persons).
+        withRelationshipCardinality(('Post -> 'POSTED_IN -> 'Forum) -> Posts_POSTED_IN_Forums).
+        withRelationshipCardinality(('Forum -> 'MEMBER_IN -> 'Person) -> Forums_MEMBER_IN_Persons).
+        withRelationshipCardinality(('Forum -> 'MEMBER_IN -> 'Forum) -> Forums_MEMBER_IN_Forums)
   }
 }
 
@@ -203,19 +203,19 @@ trait ABCDCardinalityData {
         withIndexSelectivity(('A, 'prop) -> Aprop).
         withIndexSelectivity(('B, 'prop) -> Bprop).
         withIndexSelectivity(('A, 'bar) -> Abar).
-        withRelationshipCardinality('A -> 'T1 -> 'A, A_T1_A).
-        withRelationshipCardinality('A -> 'T1 -> 'B, A_T1_B).
-        withRelationshipCardinality('A -> 'T1 -> 'C, A_T1_C).
-        withRelationshipCardinality('A -> 'T1 -> 'D, A_T1_D).
-        withRelationshipCardinality('A -> 'T2 -> 'A, A_T2_A).
-        withRelationshipCardinality('A -> 'T2 -> 'B, A_T2_B).
-        withRelationshipCardinality('B -> 'T1 -> 'B, B_T1_B).
-        withRelationshipCardinality('B -> 'T1 -> 'C, B_T1_C).
-        withRelationshipCardinality('B -> 'T1 -> 'A, B_T1_A).
-        withRelationshipCardinality('B -> 'T1 -> 'D, B_T1_D).
-        withRelationshipCardinality('B -> 'T2 -> 'C, B_T2_C).
-        withRelationshipCardinality('C -> 'T1 -> 'D, C_T1_D).
-        withRelationshipCardinality('D -> 'T1 -> 'C, D_T1_C).
-        withRelationshipCardinality('D -> 'T2 -> 'C, D_T2_C)
+        withRelationshipCardinality(('A -> 'T1 -> 'A) -> A_T1_A).
+        withRelationshipCardinality(('A -> 'T1 -> 'B) -> A_T1_B).
+        withRelationshipCardinality(('A -> 'T1 -> 'C) -> A_T1_C).
+        withRelationshipCardinality(('A -> 'T1 -> 'D) -> A_T1_D).
+        withRelationshipCardinality(('A -> 'T2 -> 'A) -> A_T2_A).
+        withRelationshipCardinality(('A -> 'T2 -> 'B) -> A_T2_B).
+        withRelationshipCardinality(('B -> 'T1 -> 'B) -> B_T1_B).
+        withRelationshipCardinality(('B -> 'T1 -> 'C) -> B_T1_C).
+        withRelationshipCardinality(('B -> 'T1 -> 'A) -> B_T1_A).
+        withRelationshipCardinality(('B -> 'T1 -> 'D) -> B_T1_D).
+        withRelationshipCardinality(('B -> 'T2 -> 'C) -> B_T2_C).
+        withRelationshipCardinality(('C -> 'T1 -> 'D) -> C_T1_D).
+        withRelationshipCardinality(('D -> 'T1 -> 'C) -> D_T1_C).
+        withRelationshipCardinality(('D -> 'T2 -> 'C) -> D_T2_C)
   }
 }

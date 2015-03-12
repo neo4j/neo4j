@@ -115,7 +115,7 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
   def identifier2nodeFn(ctx:PlanContext, identifier: String, unsolvedItems: Seq[QueryToken[StartItem]]):
   (QueryToken[StartItem], EntityProducer[Node]) = {
     val startItemQueryToken = unsolvedItems.filter { (item) => identifier == item.token.identifierName }.head
-    (startItemQueryToken, mapNodeStartCreator()(ctx, startItemQueryToken.token))
+    (startItemQueryToken, mapNodeStartCreator()((ctx, startItemQueryToken.token)))
   }
 
   val entityFactory = new EntityProducerFactory
