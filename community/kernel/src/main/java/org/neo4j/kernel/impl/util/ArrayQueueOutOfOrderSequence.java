@@ -92,6 +92,24 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
     }
 
     @Override
+    public synchronized boolean seen( long number, long meta )
+    {
+        if ( number < highestGapFreeNumber )
+        {
+            //assume meta data correct since they are gone
+            return true;
+        }
+
+        if ( number == highestGapFreeNumber )
+        {
+            return highestGapFreeMeta == meta;
+        }
+
+        return outOfOrderQueue.seen( highestGapFreeNumber, number, new long[]{meta} );
+
+    }
+
+    @Override
     public synchronized void set( long number, long meta )
     {
         highestGapFreeNumber = number;

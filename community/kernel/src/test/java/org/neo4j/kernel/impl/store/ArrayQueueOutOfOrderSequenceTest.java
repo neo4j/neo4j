@@ -19,18 +19,17 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.junit.Test;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-
-import org.junit.Test;
 
 import org.neo4j.kernel.impl.util.ArrayQueueOutOfOrderSequence;
 import org.neo4j.kernel.impl.util.OutOfOrderSequence;
 
 import static java.lang.Thread.sleep;
 import static java.lang.Thread.yield;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -44,33 +43,31 @@ public class ArrayQueueOutOfOrderSequenceTest
         OutOfOrderSequence sequence = new ArrayQueueOutOfOrderSequence( 0L, 10 );
 
         // WHEN/THEN
-        sequence.offer( 1, 1 );
+        offer( sequence, 1, 1 );
         assertGet( sequence, 1, 1 );
-        sequence.offer( 2, 2 );
+
+        offer( sequence, 2, 2 );
         assertGet( sequence, 2, 2 );
+
+        assertFalse( sequence.seen( 4, 3 ) );
         sequence.offer( 4, 3 );
         assertGet( sequence, 2, 2 );
-        sequence.offer( 3, 4 );
+
+        offer( sequence, 3, 4 );
         assertGet( sequence, 4, 3 );
-        sequence.offer( 5, 5 );
+
+        offer( sequence, 5, 5 );
         assertGet( sequence, 5, 5 );
 
         // AND WHEN/THEN
-        sequence.offer( 10, 6 );
-        sequence.offer( 11, 7 );
-        sequence.offer( 8, 8 );
-        sequence.offer( 9, 9 );
-        sequence.offer( 7, 10 );
+        offer( sequence, 10, 6 );
+        offer( sequence, 11, 7 );
+        offer( sequence, 8, 8 );
+        offer( sequence, 9, 9 );
+        offer( sequence, 7, 10 );
         assertGet( sequence, 5, 5 );
-        sequence.offer( 6, 11 );
+        offer( sequence, 6, 11 );
         assertGet( sequence, 11L, 7 );
-    }
-
-    private void assertGet( OutOfOrderSequence sequence, long number, long meta )
-    {
-        long[] data = sequence.get();
-        assertEquals( number, data[0] );
-        assertEquals( meta, data[1] );
     }
 
     @Test
@@ -78,15 +75,16 @@ public class ArrayQueueOutOfOrderSequenceTest
     {
         // GIVEN
         OutOfOrderSequence sequence = new ArrayQueueOutOfOrderSequence( 0L, 5 );
-        sequence.offer( 3L, 0 );
-        sequence.offer( 2L, 1 );
-        sequence.offer( 5L, 2 );
-        sequence.offer( 4L, 3 );
+
+        offer( sequence, 3L, 0 );
+        offer( sequence, 2L, 1 );
+        offer( sequence, 5L, 2 );
+        offer( sequence, 4L, 3 );
 
         // WHEN offering a number that should result in extending the array
-        sequence.offer( 6L, 4 );
+        offer( sequence, 6L, 4 );
         // and WHEN offering the missing number to fill the gap
-        sequence.offer( 1L, 5 );
+        offer( sequence, 1L, 5 );
 
         // THEN the high number should be visible
         assertGet( sequence, 6L, 4 );
@@ -97,24 +95,24 @@ public class ArrayQueueOutOfOrderSequenceTest
     {
         // GIVEN
         OutOfOrderSequence sequence = new ArrayQueueOutOfOrderSequence( 0, 5 );
-        assertTrue( sequence.offer( 1, 0 ) );
-        assertFalse( sequence.offer( 3, 0 ) );
-        assertFalse( sequence.offer( 4, 0 ) );
-        assertTrue( sequence.offer( 2, 0 ) );
-        assertFalse( sequence.offer( 6, 0 ) );
-        assertTrue( sequence.offer( 5, 0 ) );
+        assertTrue( offer( sequence, 1, 0 ) );
+        assertFalse( offer( sequence, 3, 0 ) );
+        assertFalse( offer( sequence, 4, 0 ) );
+        assertTrue( offer( sequence, 2, 0 ) );
+        assertFalse( offer( sequence, 6, 0 ) );
+        assertTrue( offer( sequence, 5, 0 ) );
         // leave out 7
-        assertFalse( sequence.offer( 8, 0 ) );
-        assertFalse( sequence.offer( 9, 0 ) );
-        assertFalse( sequence.offer( 10, 0 ) );
-        assertFalse( sequence.offer( 11, 0 ) );
+        assertFalse( offer( sequence, 8, 0 ) );
+        assertFalse( offer( sequence, 9, 0 ) );
+        assertFalse( offer( sequence, 10, 0 ) );
+        assertFalse( offer( sequence, 11, 0 ) );
         // putting 12 should need extending the backing queue array
-        assertFalse( sequence.offer( 12, 0 ) );
-        assertFalse( sequence.offer( 13, 0 ) );
-        assertFalse( sequence.offer( 14, 0 ) );
+        assertFalse( offer( sequence, 12, 0 ) );
+        assertFalse( offer( sequence, 13, 0 ) );
+        assertFalse( offer( sequence, 14, 0 ) );
 
         // WHEN finally offering nr 7
-        assertTrue( sequence.offer( 7, 0 ) );
+        assertTrue( offer( sequence, 7, 0 ) );
 
         // THEN the number should jump to 14
         assertGet( sequence, 14, 0 );
@@ -144,7 +142,7 @@ public class ArrayQueueOutOfOrderSequenceTest
                     while ( !end.get() )
                     {
                         long number = numberSource.incrementAndGet();
-                        sequence.offer( number, number+2 );
+                        offer( sequence, number, number+2 );
                     }
                 }
             };
@@ -169,10 +167,25 @@ public class ArrayQueueOutOfOrderSequenceTest
 
         // THEN
         long lastNumber = numberSource.get();
-        assertGet( sequence, lastNumber, lastNumber+2 );
+        assertGet( sequence, lastNumber, lastNumber + 2 );
     }
 
-    protected void await( CountDownLatch latch )
+    private boolean offer( OutOfOrderSequence sequence, long number, long meta )
+    {
+        assertFalse( sequence.seen( number, meta ) );
+        boolean result = sequence.offer( number, meta );
+        assertTrue( sequence.seen( number, meta ) );
+        return result;
+    }
+
+    private void assertGet( OutOfOrderSequence sequence, long number, long meta )
+    {
+        long[] data = sequence.get();
+        assertEquals( number, data[0] );
+        assertEquals( meta, data[1] );
+    }
+
+    private void await( CountDownLatch latch )
     {
         try
         {
