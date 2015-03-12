@@ -39,6 +39,20 @@
     <module>docs/refcard-tests</module>
   </modules>
 
+  <profiles>
+    <profile>
+      <id>scala_2_11</id>
+      <activation>
+        <property>
+          <name>scala211</name>
+        </property>
+      </activation>
+      <modules>
+        <module>cypher-compiler-2.2_2.11</module>
+      </modules>
+    </profile>
+  </profiles>
+
   <repositories>
     <repository>
       <id>oss.sonatype.org</id>
