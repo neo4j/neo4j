@@ -37,7 +37,6 @@ import org.neo4j.helpers.Provider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
@@ -48,6 +47,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.monitoring.StoreCopyServerMonitor;
 
 import static org.neo4j.backup.OnlineBackupSettings.online_backup_server;
 
@@ -72,8 +72,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
     private volatile URI me;
 
     public OnlineBackupKernelExtension( Config config, final GraphDatabaseAPI graphDatabaseAPI,
-                                        final KernelPanicEventGenerator kpeg, final Logging logging,
-                                        final Monitors monitors )
+                                        final Logging logging, final Monitors monitors )
     {
         this( config, graphDatabaseAPI, new BackupProvider()
         {
@@ -81,24 +80,25 @@ public class OnlineBackupKernelExtension implements Lifecycle
             public TheBackupInterface newBackup()
             {
                 DependencyResolver resolver = graphDatabaseAPI.getDependencyResolver();
-                TransactionIdStore transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
+                TransactionIdStore txIdStore = resolver.resolveDependency( TransactionIdStore.class );
                 StoreCopyServer copier = new StoreCopyServer(
-                        transactionIdStore,
+                        txIdStore,
                         resolver.resolveDependency( DataSourceManager.class ).getDataSource(),
                         resolver.resolveDependency( LogRotationControl.class ),
                         resolver.resolveDependency( FileSystemAbstraction.class ),
-                        new File( graphDatabaseAPI.getStoreDir() ) );
-                LogicalTransactionStore logicalTransactionStore = resolver.resolveDependency( LogicalTransactionStore.class );
-                LogFileInformation logFileInformation = resolver.resolveDependency( LogFileInformation.class );
-                return new BackupImpl( copier, monitors,
-                        logicalTransactionStore, transactionIdStore, logFileInformation, new Provider<StoreId>()
-                        {
-                            @Override
-                            public StoreId instance()
-                            {
-                                return graphDatabaseAPI.storeId();
-                            }
-                        } );
+                        new File( graphDatabaseAPI.getStoreDir() ),
+                        monitors.newMonitor( StoreCopyServerMonitor.class, "backup" ) );
+                LogicalTransactionStore logicalTxStore = resolver.resolveDependency( LogicalTransactionStore.class );
+                LogFileInformation logFileInfo = resolver.resolveDependency( LogFileInformation.class );
+                Provider<StoreId> storeIdProvider = new Provider<StoreId>()
+                {
+                    @Override
+                    public StoreId instance()
+                    {
+                        return graphDatabaseAPI.storeId();
+                    }
+                };
+                return new BackupImpl( copier, logicalTxStore, txIdStore, logFileInfo, storeIdProvider );
             }
         }, monitors, logging );
     }

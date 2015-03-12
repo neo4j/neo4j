@@ -62,6 +62,6 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
     public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
     {
         return new OnlineBackupKernelExtension( dependencies.getConfig(), dependencies.getGraphDatabaseAPI(),
-                dependencies.kpeg(), dependencies.logging(), dependencies.monitors() );
+                dependencies.logging(), dependencies.monitors() );
     }
 }

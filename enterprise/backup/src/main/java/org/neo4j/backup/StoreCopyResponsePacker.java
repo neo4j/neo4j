@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.monitoring.StoreCopyServerMonitor;
 
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
@@ -48,16 +49,19 @@ public class StoreCopyResponsePacker extends ResponsePacker
 {
     private final long mandatoryStartTransactionId;
     private final LogFileInformation logFileInformation;
+    private final StoreCopyServerMonitor monitor;
     private final TransactionIdStore transactionIdStore;
 
     public StoreCopyResponsePacker( LogicalTransactionStore transactionStore,
-            TransactionIdStore transactionIdStore, LogFileInformation logFileInformation,
-            Provider<StoreId> storeId, long mandatoryStartTransactionId )
+                                    TransactionIdStore transactionIdStore, LogFileInformation logFileInformation,
+                                    Provider<StoreId> storeId, long mandatoryStartTransactionId,
+                                    StoreCopyServerMonitor monitor )
     {
         super( transactionStore, transactionIdStore, storeId );
         this.transactionIdStore = transactionIdStore;
         this.mandatoryStartTransactionId = mandatoryStartTransactionId;
         this.logFileInformation = logFileInformation;
+        this.monitor = monitor;
     }
 
     @Override
@@ -73,7 +77,9 @@ public class StoreCopyResponsePacker extends ResponsePacker
                 // Check so that it's even worth thinking about extracting any transactions at all
                 if ( toStartFrom > BASE_TX_ID && toStartFrom <= toEndAt )
                 {
+                    monitor.startSendingTransactions( toStartFrom );
                     extractTransactions( toStartFrom, filterVisitor( visitor, toEndAt ) );
+                    monitor.finishSendingTransactions( toEndAt );
                 }
             }
         };

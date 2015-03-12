@@ -51,7 +51,8 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.monitoring.StoreCopyMonitor;
+import org.neo4j.kernel.monitoring.StoreCopyClientMonitor;
+import org.neo4j.kernel.monitoring.StoreCopyServerMonitor;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -97,10 +98,10 @@ public class StoreCopyClientTest
             }
         };
 
-        StoreCopyMonitor.Adaptor storeCopyMonitor = new StoreCopyMonitor.Adaptor()
+        StoreCopyClientMonitor.Adaptor storeCopyMonitor = new StoreCopyClientMonitor.Adaptor()
         {
             @Override
-            public void recoveredStore()
+            public void finishRecoveringStore()
             {
                 // simulate a cancellation request
                 cancelStoreCopy.set( true );
@@ -177,10 +178,10 @@ public class StoreCopyClientTest
             }
         };
 
-        StoreCopyMonitor.Adaptor storeCopyMonitor = new StoreCopyMonitor.Adaptor()
+        StoreCopyClientMonitor.Adaptor storeCopyMonitor = new StoreCopyClientMonitor.Adaptor()
         {
             @Override
-            public void finishedCopyingStoreFiles()
+            public void finishedReceivingStoreFiles()
             {
                 // simulate a cancellation request
                 cancelStoreCopy.set( true );
@@ -235,8 +236,9 @@ public class StoreCopyClientTest
                 public Response<?> response;
 
                 @Override
-                public Response<?> copyStore( StoreWriter writer )
+                public Response<?> copyStore( StoreWriter writer, StoreCopyClientMonitor monitor )
                 {
+                    monitor.startReceivingStoreFiles();
                     NeoStoreDataSource neoStoreDataSource =
                             original.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
 
@@ -250,7 +252,7 @@ public class StoreCopyClientTest
                             LogRotationControl.class );
 
                     RequestContext requestContext = new StoreCopyServer(transactionIdStore, neoStoreDataSource,
-                            logRotationControl, fs, new File(originalDir))
+                            logRotationControl, fs, new File(originalDir), StoreCopyServerMonitor.NONE )
                             .flushStoresAndStreamStoreFiles( writer, false );
 
                     final StoreId storeId = original.getDependencyResolver().resolveDependency( StoreId.class );
@@ -267,6 +269,7 @@ public class StoreCopyClientTest
 
 
                     response = spy(responsePacker.packTransactionStreamResponse( requestContext, null ));
+                    monitor.finishedReceivingStoreFiles();
                     return response;
 
                 }

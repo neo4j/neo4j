@@ -81,7 +81,7 @@ import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.kernel.monitoring.StoreCopyMonitor;
+import org.neo4j.kernel.monitoring.StoreCopyClientMonitor;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
@@ -133,7 +133,7 @@ public class SwitchToSlave
     private final MasterClientResolver masterClientResolver;
     private final ByteCounterMonitor byteCounterMonitor;
     private final RequestMonitor requestMonitor;
-    private StoreCopyMonitor storeCopyMonitor;
+    private StoreCopyClientMonitor storeCopyMonitor;
     private final Monitor monitor;
 
     public SwitchToSlave( ConsoleLogger console, Config config, DependencyResolver resolver,
@@ -143,7 +143,7 @@ public class SwitchToSlave
             RequestContextFactory requestContextFactory,
             Iterable<KernelExtensionFactory<?>> kernelExtensions, MasterClientResolver masterClientResolver,
             ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor, Monitor monitor,
-            StoreCopyMonitor storeCopyMonitor )
+            StoreCopyClientMonitor storeCopyMonitor )
     {
         this.console = console;
         this.config = config;
@@ -477,10 +477,14 @@ public class SwitchToSlave
                 new StoreCopyClient.StoreCopyRequester()
                 {
                     @Override
-                    public Response<?> copyStore( StoreWriter writer )
+                    public Response<?> copyStore( StoreWriter writer, StoreCopyClientMonitor monitor )
                     {
-                        return masterClient.copyStore( new RequestContext( 0,
-                                config.get( ClusterSettings.server_id ).toIntegerIndex(), 0, BASE_TX_ID, 0 ), writer );
+                        int machineId = config.get( ClusterSettings.server_id ).toIntegerIndex();
+                        RequestContext context = new RequestContext( 0, machineId, 0, BASE_TX_ID, 0 );
+                        monitor.startReceivingStoreFiles();
+                        Response<Void> response = masterClient.copyStore( context, writer );
+                        monitor.finishedReceivingStoreFiles();
+                        return response;
                     }
 
                     @Override
