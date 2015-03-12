@@ -21,6 +21,8 @@ package org.neo4j.kernel.ha.lock.forseti;
 
 import java.util.concurrent.ConcurrentMap;
 
+import javax.transaction.Transaction;
+
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIntMap;
@@ -63,6 +65,8 @@ public class ForsetiClient implements Locks.Client
 
     /** For exclusive locks, we only need a single re-usable one per client. */
     private final ExclusiveLock myExclusiveLock = new ExclusiveLock(this);
+
+    private Transaction tx;
 
     public ForsetiClient( int id,
                           ConcurrentMap[] lockMaps,
@@ -465,6 +469,8 @@ public class ForsetiClient implements Locks.Client
     public void close()
     {
         releaseAll();
+        setTx( null );
+
         clientPool.release( this );
     }
 
@@ -513,7 +519,7 @@ public class ForsetiClient implements Locks.Client
     @Override
     public String toString()
     {
-        return String.format( "ForsetiClient[%d]", myId );
+        return String.format( "ForsetiClient[id=%d,tx=%s]", myId, tx );
     }
 
     /** Release a lock from the global pool. */
@@ -662,6 +668,11 @@ public class ForsetiClient implements Locks.Client
     public int id()
     {
         return myId;
+    }
+
+    public void setTx( Transaction tx )
+    {
+        this.tx = tx;
     }
 
     // Visitors used for bulk ops on the lock maps (such as releasing all locks)

@@ -76,11 +76,11 @@ class TransactionImpl implements Transaction
     {
         this.txManager = txManager;
         this.logger = logger;
+        this.owner = Thread.currentThread();
         this.state = stateFactory.create( this );
         globalId = xidGlobalId;
         eventIdentifier = txManager.getNextEventIdentifier();
         this.forceMode = forceMode;
-        owner = Thread.currentThread();
     }
 
     /**
@@ -111,8 +111,8 @@ class TransactionImpl implements Transaction
     @Override
     public String toString()
     {
-        return String.format( "Transaction(%d, owner:\"%s\")[%s,Resources=%d]",
-                eventIdentifier, owner.getName(), getStatusAsString(), resourceList.size() );
+        return String.format( "Transaction[eventId=%d,thread=%d:'%s',status=%s,resourceCount=%d]",
+                eventIdentifier, owner.getId(), owner.getName(), getStatusAsString(), resourceList.size() );
     }
 
     @Override

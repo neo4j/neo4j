@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import javax.transaction.Transaction;
+
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.impl.util.concurrent.WaitStrategy;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -106,6 +108,9 @@ public interface Locks extends Lifecycle
 
         /** Release all locks. */
         void releaseAll();
+
+        /** Associate with transaction (for debug). */
+        void setTx( Transaction tx );
 
         /** Releases all locks, using the client after calling this is undefined. */
         @Override

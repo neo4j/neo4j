@@ -52,8 +52,13 @@ public class TransactionStateFactory
     
     public TransactionState create( Transaction tx )
     {
-        return new WritableTransactionState( locks.newClient(), nodeManager,
+        Locks.Client lockClient = locks.newClient();
+        lockClient.setTx( tx );
+
+        TransactionState transactionState = new WritableTransactionState( lockClient, nodeManager,
                 txHook, txIdGenerator );
+
+        return transactionState;
     }
     
     public static TransactionStateFactory noStateFactory( Logging logging )

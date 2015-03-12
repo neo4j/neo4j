@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import javax.transaction.Transaction;
+
 public class NoOpClient implements Locks.Client
 {
     @Override
@@ -65,6 +67,11 @@ public class NoOpClient implements Locks.Client
 
     @Override
     public void releaseAll()
+    {
+    }
+
+    @Override
+    public void setTx( Transaction tx )
     {
     }
 
