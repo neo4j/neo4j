@@ -26,6 +26,9 @@ import java.net.URISyntaxException;
 import org.neo4j.desktop.config.portable.PortableEnvironment;
 
 import static java.lang.Runtime.getRuntime;
+import static java.lang.String.format;
+
+import static org.apache.commons.lang.StringUtils.join;
 
 class WindowsEnvironment extends PortableEnvironment
 {
@@ -82,6 +85,29 @@ class WindowsEnvironment extends PortableEnvironment
         }
 
         windowsOpenDirectory( directory );
+    }
+
+    @Override
+    public void openCommandPrompt( File binDirectory, File jreBinDirectory, File workingDirectory ) throws IOException
+    {
+        String[] shellStartupCommands = {
+                format( "set PATH=\"%s\";\"%s\";%%PATH%%", jreBinDirectory, binDirectory ),
+                "set REPO=" + binDirectory,
+                "cd /D " + workingDirectory,
+                "echo Neo4j Command Prompt",
+                "echo.",
+                "echo This window is configured with Neo4j on the path.",
+                "echo.",
+                "echo Available commands:",
+                "echo * Neo4jShell",
+                "echo * Neo4jImport"
+        };
+        String[] cmdArray = {
+                "cmd",
+                "/C",
+                format( "start \"Neo4j Command Prompt\" cmd /K \"%s\"", join( shellStartupCommands, " && " ) )
+        };
+        getRuntime().exec( cmdArray );
     }
 
     private void windowsOpenDirectory( File directory ) throws IOException
