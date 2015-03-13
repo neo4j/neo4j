@@ -81,9 +81,9 @@ import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.kernel.monitoring.StoreCopyMonitor;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.first;
@@ -133,7 +133,7 @@ public class SwitchToSlave
     private final MasterClientResolver masterClientResolver;
     private final ByteCounterMonitor byteCounterMonitor;
     private final RequestMonitor requestMonitor;
-    private StoreCopyMonitor storeCopyMonitor;
+    private final StoreCopyClient.Monitor storeCopyMonitor;
     private final Monitor monitor;
 
     public SwitchToSlave( ConsoleLogger console, Config config, DependencyResolver resolver,
@@ -143,7 +143,7 @@ public class SwitchToSlave
             RequestContextFactory requestContextFactory,
             Iterable<KernelExtensionFactory<?>> kernelExtensions, MasterClientResolver masterClientResolver,
             ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor, Monitor monitor,
-            StoreCopyMonitor storeCopyMonitor )
+            StoreCopyClient.Monitor storeCopyMonitor )
     {
         this.console = console;
         this.config = config;

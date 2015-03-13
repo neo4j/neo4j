@@ -66,7 +66,6 @@ import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.kernel.monitoring.StoreCopyMonitor;
 
 import static org.neo4j.com.RequestContext.anonymous;
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
@@ -107,21 +106,18 @@ class BackupService
 
     private final FileSystemAbstraction fileSystem;
     private final StringLogger logger;
+    private final Monitors monitors;
 
     BackupService()
     {
-        this( new DefaultFileSystemAbstraction(), StringLogger.SYSTEM );
+        this( new DefaultFileSystemAbstraction(), StringLogger.SYSTEM, new Monitors() );
     }
 
-    BackupService( FileSystemAbstraction fileSystem )
-    {
-        this( fileSystem, StringLogger.SYSTEM );
-    }
-
-    BackupService( FileSystemAbstraction fileSystem, StringLogger logger )
+    BackupService( FileSystemAbstraction fileSystem, StringLogger logger, Monitors monitors )
     {
         this.fileSystem = fileSystem;
         this.logger = logger;
+        this.monitors = monitors;
     }
 
     BackupOutcome doFullBackup( final String sourceHostNameOrIp, final int sourcePort, String targetDirectory,
@@ -137,21 +133,19 @@ class BackupService
         long timestamp = System.currentTimeMillis();
         long lastCommittedTx = -1;
         boolean consistent = !checkConsistency; // default to true if we're not checking consistency
-        GraphDatabaseAPI targetDb = null;
         try ( StandalonePageCache pageCache = createPageCache( fileSystem, "BackupService PageCache" ) )
         {
             StoreCopyClient storeCopier = new StoreCopyClient( tuningConfiguration, loadKernelExtensions(),
                     new ConsoleLogger( StringLogger.SYSTEM ), new DevNullLoggingService(),
-                    new DefaultFileSystemAbstraction(), pageCache, new Monitors().newMonitor( StoreCopyMonitor.class, getClass() ) );
+                    new DefaultFileSystemAbstraction(), pageCache,
+                    monitors.newMonitor( StoreCopyClient.Monitor.class, getClass() ) );
             storeCopier.copyStore( new StoreCopyClient.StoreCopyRequester()
-
             {
                 private BackupClient client;
 
                 @Override
                 public Response<?> copyStore( StoreWriter writer )
                 {
-                    Monitors monitors = new Monitors();
                     client = new BackupClient( sourceHostNameOrIp, sourcePort, new DevNullLoggingService(),
                             StoreId.DEFAULT, timeout, ResponseUnpacker.NO_OP_RESPONSE_UNPACKER,
                             monitors.newMonitor( ByteCounterMonitor.class ),
@@ -167,18 +161,10 @@ class BackupService
                 }
             }, CancellationRequest.NEVER_CANCELLED );
 
-            targetDb = startTemporaryDb( targetDirectory );
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
-        }
-        finally
-        {
-            if ( targetDb != null )
-            {
-                targetDb.shutdown();
-            }
         }
         bumpMessagesDotLogFile( targetDirectory, timestamp );
         if ( checkConsistency )

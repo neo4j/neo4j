@@ -47,13 +47,14 @@ import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
-import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.monitoring.Monitors;
 
 class DefaultMasterImplSPI implements MasterImpl.SPI
 {
@@ -66,6 +67,7 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     private final FileSystemAbstraction fileSystem;
     private final File storeDir;
     private final ResponsePacker responsePacker;
+    private final Monitors monitors;
 
     public DefaultMasterImplSPI( final GraphDatabaseAPI graphDb )
     {
@@ -87,6 +89,7 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
                 return graphDb.storeId();
             }
         } );
+        this.monitors = dependencyResolver.resolveDependency( Monitors.class );
     }
 
     @Override
@@ -158,11 +161,10 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     @Override
     public RequestContext flushStoresAndStreamStoreFiles( StoreWriter writer )
     {
-        NeoStoreDataSource dataSource = graphDb.getDependencyResolver().resolveDependency(
-                DataSourceManager.class ).getDataSource();
-        StoreCopyServer streamer = new StoreCopyServer( transactionIdStore, dataSource, graphDb.getDependencyResolver
-                ().resolveDependency( LogRotationControl.class ), fileSystem,
-                storeDir );
+        NeoStoreDataSource dataSource = dependencyResolver.resolveDependency( DataSourceManager.class ).getDataSource();
+        StoreCopyServer streamer = new StoreCopyServer( transactionIdStore, dataSource,
+                dependencyResolver.resolveDependency( LogRotationControl.class ), fileSystem, storeDir,
+                monitors.newMonitor( StoreCopyServer.Monitor.class ) );
         return streamer.flushStoresAndStreamStoreFiles( writer, false );
     }
 
