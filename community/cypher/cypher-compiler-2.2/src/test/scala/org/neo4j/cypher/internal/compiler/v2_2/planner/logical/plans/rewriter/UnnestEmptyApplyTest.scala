@@ -108,6 +108,26 @@ class UnnestEmptyApplyTest extends CypherFunSuite with LogicalPlanningTestSuppor
     result should equal(Expand(lhs, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved))
   }
 
+  test("unnesting varlength expands should work well") {
+    /*
+                            Apply
+                         LHS   VarExpand
+                                     Arg
+     */
+
+    // Given
+    val lhs: LogicalPlan = newMockedLogicalPlan("a")
+    val arg: LogicalPlan = Argument(Set(IdName("a")))(solved)()
+    val expand: LogicalPlan = VarExpand(arg, IdName("a"), Direction.OUTGOING, Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), VarPatternLength(1, None), ExpandAll)(solved)
+    val apply: LogicalPlan = Apply(lhs, expand)(solved)
+
+    // When
+    val result = rewrite(apply)
+
+    // Then
+    result should equal(VarExpand(lhs, IdName("a"), Direction.OUTGOING, Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), VarPatternLength(1, None), ExpandAll)(solved))
+  }
+
   test("apply on apply on optional should be OK") {
     /*
                             Apply1                Apply
