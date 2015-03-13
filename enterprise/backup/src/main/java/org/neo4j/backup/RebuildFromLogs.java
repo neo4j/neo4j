@@ -31,6 +31,7 @@ import org.neo4j.helpers.Args;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -43,6 +44,7 @@ import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
@@ -158,39 +160,44 @@ class RebuildFromLogs
             }
         }
 
-        GraphDatabaseAPI graphdb = BackupService.startTemporaryDb( target.getAbsolutePath() );
-        try
+        try ( PageCache pageCache = StandalonePageCacheFactory.createPageCache( new DefaultFileSystemAbstraction() ) )
         {
-            PhysicalLogFiles logFiles = new PhysicalLogFiles( source, FS );
-            long highestVersion = logFiles.getHighestLogVersion();
-            if ( highestVersion < 0 )
+            GraphDatabaseAPI graphdb =
+                    BackupService.startTemporaryDb( target.getAbsolutePath(), pageCache, stringMap() );
+            try
             {
-                printUsage( "Inconsistent number of log files found in " + source );
-                return;
+                PhysicalLogFiles logFiles = new PhysicalLogFiles( source, FS );
+                long highestVersion = logFiles.getHighestLogVersion();
+                if ( highestVersion < 0 )
+                {
+                    printUsage( "Inconsistent number of log files found in " + source );
+                    return;
+                }
+                long txCount = findLastTransactionId( logFiles, highestVersion );
+                ProgressMonitorFactory progress;
+                if ( txCount < 0 )
+                {
+                    progress = ProgressMonitorFactory.NONE;
+                    System.err.println(
+                            "Unable to report progress, cannot find highest txId, attempting rebuild anyhow." );
+                }
+                else
+                {
+                    progress = ProgressMonitorFactory.textual( System.err );
+                }
+                ProgressListener listener = progress.singlePart(
+                        format( "Rebuilding store from %s transactions ", txCount ), txCount );
+                RebuildFromLogs rebuilder = new RebuildFromLogs( graphdb ).applyTransactionsFrom( listener, source );
+                // if we didn't run the full checker for each transaction, run it afterwards
+                if ( !full )
+                {
+                    rebuilder.checkConsistency();
+                }
             }
-            long txCount = findLastTransactionId( logFiles, highestVersion );
-            ProgressMonitorFactory progress;
-            if ( txCount < 0 )
+            finally
             {
-                progress = ProgressMonitorFactory.NONE;
-                System.err.println( "Unable to report progress, cannot find highest txId, attempting rebuild anyhow." );
+                graphdb.shutdown();
             }
-            else
-            {
-                progress = ProgressMonitorFactory.textual( System.err );
-            }
-            ProgressListener listener = progress.singlePart(
-                    format( "Rebuilding store from %s transactions ", txCount ), txCount );
-            RebuildFromLogs rebuilder = new RebuildFromLogs( graphdb ).applyTransactionsFrom( listener, source );
-            // if we didn't run the full checker for each transaction, run it afterwards
-            if ( !full )
-            {
-                rebuilder.checkConsistency();
-            }
-        }
-        finally
-        {
-            graphdb.shutdown();
         }
     }
 

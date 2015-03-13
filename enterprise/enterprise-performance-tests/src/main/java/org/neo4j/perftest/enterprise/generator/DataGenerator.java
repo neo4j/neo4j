@@ -32,14 +32,12 @@ import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.io.pagecache.PageSwapperFactory;
-import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
+import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.perftest.enterprise.util.Configuration;
 import org.neo4j.perftest.enterprise.util.Conversion;
 import org.neo4j.perftest.enterprise.util.Parameters;
@@ -112,7 +110,8 @@ public class DataGenerator
         String storeDir = configuration.get( store_dir );
         FileUtils.deleteRecursively( new File( storeDir ) );
         DataGenerator generator = new DataGenerator( configuration );
-        BatchInserter batchInserter = BatchInserters.inserter( storeDir, batchInserterConfig( configuration ) );
+        Map<String,String> config = batchInserterConfig( configuration );
+        BatchInserter batchInserter = BatchInserters.inserter( storeDir, config );
         try
         {
             generator.generateData( batchInserter );
@@ -121,15 +120,9 @@ public class DataGenerator
         {
             batchInserter.shutdown();
         }
-        Neo4jJobScheduler jobScheduler = new Neo4jJobScheduler();
-        jobScheduler.init();
-        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( new DefaultFileSystemAbstraction() );
-        LifecycledPageCache pageCache = new LifecycledPageCache(
-                swapperFactory,
-                jobScheduler,
-                new Config(),
-                PageCacheTracer.NULL );
-        pageCache.start();
+        ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
+                new DefaultFileSystemAbstraction(), new Config( config ), PageCacheTracer.NULL );
+        PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
         StoreAccess stores = new StoreAccess( pageCache, storeDir );
         try
         {
@@ -151,8 +144,6 @@ public class DataGenerator
             stores.close();
             pageCache.flush();
             pageCache.close();
-            pageCache.stop();
-            jobScheduler.shutdown();
         }
     }
 

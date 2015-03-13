@@ -17,17 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache;
+package org.neo4j.kernel.impl.pagecache;
+
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
- * A PageCache that also implements Runnable.
+ * Given a PageCache instance, this LifecycleAdapter will close it upon shutdown.
  *
- * The purpose of this is typically for doing page eviction in the background,
- * and the page cache therefore has be started in a dedicated thread.
- *
- * It is implicitly assumed that sending an interrupt to this dedicated thread,
- * will signal it to shut the page cache down.
+ * This way, the PageCache can participate in our life cycle mechanism without knowing it.
  */
-public interface RunnablePageCache extends PageCache, Runnable
+public class PageCacheLifecycle extends LifecycleAdapter
 {
+    private final PageCache pageCache;
+
+    public PageCacheLifecycle( PageCache pageCache )
+    {
+        this.pageCache = pageCache;
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+        pageCache.close();
+    }
 }

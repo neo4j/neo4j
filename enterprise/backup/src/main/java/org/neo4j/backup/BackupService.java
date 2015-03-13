@@ -30,6 +30,7 @@ import java.util.Map;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.monitor.RequestMonitor;
+import org.neo4j.com.storecopy.ExternallyManagedPageCache;
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
 import org.neo4j.com.storecopy.StoreCopyClient;
@@ -47,13 +48,13 @@ import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigParam;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.pagecache.StandalonePageCache;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -133,7 +134,7 @@ class BackupService
         long timestamp = System.currentTimeMillis();
         long lastCommittedTx = -1;
         boolean consistent = !checkConsistency; // default to true if we're not checking consistency
-        try ( StandalonePageCache pageCache = createPageCache( fileSystem, "BackupService PageCache" ) )
+        try ( PageCache pageCache = createPageCache( fileSystem ) )
         {
             StoreCopyClient storeCopier = new StoreCopyClient( tuningConfiguration, loadKernelExtensions(),
                     new ConsoleLogger( StringLogger.SYSTEM ), new DevNullLoggingService(),
@@ -161,33 +162,34 @@ class BackupService
                 }
             }, CancellationRequest.NEVER_CANCELLED );
 
+            bumpMessagesDotLogFile( targetDirectory, timestamp );
+            if ( checkConsistency )
+            {
+                try
+                {
+                    consistent = new ConsistencyCheckService().runFullConsistencyCheck(
+                            targetDirectory, tuningConfiguration, ProgressMonitorFactory.textual( System.err ),
+                            logger, fileSystem, pageCache ).isSuccessful();
+                }
+                catch ( ConsistencyCheckIncompleteException e )
+                {
+                    logger.error( "Consistency check incomplete", e );
+                }
+                finally
+                {
+                    logger.flush();
+                }
+            }
+            return new BackupOutcome( lastCommittedTx, consistent );
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
         }
-        bumpMessagesDotLogFile( targetDirectory, timestamp );
-        if ( checkConsistency )
-        {
-            try
-            {
-                consistent = new ConsistencyCheckService().runFullConsistencyCheck( targetDirectory,
-                        tuningConfiguration, ProgressMonitorFactory.textual( System.err ), logger ).isSuccessful();
-            }
-            catch ( ConsistencyCheckIncompleteException e )
-            {
-                logger.error( "Consistency check incomplete", e );
-            }
-            finally
-            {
-                logger.flush();
-            }
-        }
-        return new BackupOutcome( lastCommittedTx, consistent );
     }
 
     BackupOutcome doIncrementalBackup( String sourceHostNameOrIp, int sourcePort, String targetDirectory,
-            boolean verification, long timeout ) throws IncrementalBackupNotPossibleException
+            boolean verification, long timeout, Config config ) throws IncrementalBackupNotPossibleException
     {
         if ( !directoryContainsDb( targetDirectory ) )
         {
@@ -202,19 +204,27 @@ class BackupService
                 config.put( GraphDatabaseSettings.keep_logical_logs.name(), Settings.TRUE );
             }
         };
-        GraphDatabaseAPI targetDb = startTemporaryDb( targetDirectory, keepLogs );
-        long backupStartTime = System.currentTimeMillis();
-        BackupOutcome outcome = null;
-        try
+        config = config.with( buildTempDbConfig( keepLogs ) );
+        try ( PageCache pageCache = createPageCache( new DefaultFileSystemAbstraction(), config ) )
         {
-            outcome = doIncrementalBackup( sourceHostNameOrIp, sourcePort, targetDb, timeout );
+            GraphDatabaseAPI targetDb = startTemporaryDb( targetDirectory, pageCache, config.getParams() );
+            long backupStartTime = System.currentTimeMillis();
+            BackupOutcome outcome = null;
+            try
+            {
+                outcome = doIncrementalBackup( sourceHostNameOrIp, sourcePort, targetDb, timeout );
+            }
+            finally
+            {
+                targetDb.shutdown();
+            }
+            bumpMessagesDotLogFile( targetDirectory, backupStartTime );
+            return outcome;
         }
-        finally
+        catch ( IOException e )
         {
-            targetDb.shutdown();
+            throw new IncrementalBackupNotPossibleException( e );
         }
-        bumpMessagesDotLogFile( targetDirectory, backupStartTime );
-        return outcome;
     }
 
     BackupOutcome doIncrementalBackupOrFallbackToFull( String sourceHostNameOrIp, int sourcePort,
@@ -227,7 +237,8 @@ class BackupService
         }
         try
         {
-            return doIncrementalBackup( sourceHostNameOrIp, sourcePort, targetDirectory, verification, timeout );
+            return doIncrementalBackup(
+                    sourceHostNameOrIp, sourcePort, targetDirectory, verification, timeout, config );
         }
         catch ( IncrementalBackupNotPossibleException e )
         {
@@ -266,7 +277,14 @@ class BackupService
         return fileSystem.fileExists( new File( targetDirectory, NeoStore.DEFAULT_NAME ) );
     }
 
-    static GraphDatabaseAPI startTemporaryDb( String targetDirectory, ConfigParam... params )
+    static GraphDatabaseAPI startTemporaryDb( String targetDirectory, PageCache pageCache, Map<String,String> config )
+    {
+        GraphDatabaseFactory factory = ExternallyManagedPageCache.graphDatabaseFactoryWithPageCache( pageCache );
+        return (GraphDatabaseAPI) factory.newEmbeddedDatabaseBuilder( targetDirectory )
+                                         .setConfig( config ).newGraphDatabase();
+    }
+
+    private static Map<String,String> buildTempDbConfig( ConfigParam... params )
     {
         Map<String, String> config = new HashMap<>();
         config.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
@@ -279,8 +297,7 @@ class BackupService
                 param.configure( config );
             }
         }
-        return (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( targetDirectory )
-                .setConfig( config ).newGraphDatabase();
+        return config;
     }
 
     /**

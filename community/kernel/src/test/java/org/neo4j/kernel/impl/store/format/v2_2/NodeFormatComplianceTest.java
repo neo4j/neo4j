@@ -19,15 +19,13 @@
  */
 package org.neo4j.kernel.impl.store.format.v2_2;
 
-import java.io.File;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
+
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStore;
@@ -41,12 +39,11 @@ import org.neo4j.kernel.impl.store.standard.StandardStore;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.PageCacheRule;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
-
 import static org.neo4j.kernel.impl.store.NeoStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.StoreFactory.NODE_STORE_NAME;
 import static org.neo4j.kernel.impl.store.impl.StoreMatchers.records;
@@ -59,6 +56,8 @@ public class NodeFormatComplianceTest
 {
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    @Rule
+    public PageCacheRule pageCacheRule = new PageCacheRule();
     private PageCache pageCache;
     private StoreFactory storeFactory;
     private final File storeDir = new File( "dir" ).getAbsoluteFile();
@@ -66,7 +65,7 @@ public class NodeFormatComplianceTest
     @Before
     public void setup()
     {
-        pageCache = new MuninnPageCache( fsRule.get(), 1024, 1024, PageCacheTracer.NULL );
+        pageCache = pageCacheRule.getPageCache( fsRule.get() );
         storeFactory = new StoreFactory( StoreFactory.configForStoreDir( new Config(), storeDir ),
                 new DefaultIdGeneratorFactory(), pageCache, fsRule.get(), StringLogger.DEV_NULL, new Monitors() );
     }
@@ -92,13 +91,15 @@ public class NodeFormatComplianceTest
 
         // Then
         assertThat( records( store ), equalTo( asList( expectedRecord ) ) );
+        store.stop();
+        store.shutdown();
     }
 
     @Test
     public void writesRecords() throws Throwable
     {
         // Given
-        storeFactory.createNeoStore().close(); // NodeStore wont start unless it's child stores exist, so creat those
+        storeFactory.createNeoStore().close(); // NodeStore wont start unless it's child stores exist, so create those
 
         StandardStore<NodeRecord, NodeRecordCursor> store = new
                 StandardStore<>( new NodeStoreFormat_v2_2(), new File( storeDir, DEFAULT_NAME + NODE_STORE_NAME ),
@@ -117,6 +118,7 @@ public class NodeFormatComplianceTest
         // Then
         NodeStore nodeStore = storeFactory.newNodeStore();
         NodeRecord record = nodeStore.getRecord( expectedRecord.getId() );
+        nodeStore.close();
         assertThat( record, equalTo( expectedRecord ) );
     }
 
@@ -138,10 +140,18 @@ public class NodeFormatComplianceTest
 
         // Given I have a cursor positioned at the record I want
         NodeRecordCursor cursor = store.cursor( Store.SF_NO_FLAGS );
-        cursor.position( record.getId() );
 
         // When
-        long firstRelId = cursor.firstRelationship();
+        cursor.position( record.getId() );
+        long firstRelId;
+        do
+        {
+            firstRelId = cursor.firstRelationship();
+        }
+        while ( cursor.shouldRetry() );
+
+        store.stop();
+        store.shutdown();
 
         // Then
         assertThat( firstRelId, equalTo( nextRel ) );

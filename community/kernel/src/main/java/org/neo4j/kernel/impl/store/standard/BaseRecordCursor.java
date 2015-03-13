@@ -141,11 +141,18 @@ public class BaseRecordCursor<RECORD, FORMAT extends RecordFormat<RECORD>> imple
     }
 
     @Override
-    public boolean next()
+    public boolean next() throws IOException
     {
         while( position( currentRecordId + stepSize ) )
         {
-            if( inUse() )
+            boolean inUse;
+            do
+            {
+                inUse = inUse();
+            }
+            while ( shouldRetry() );
+
+            if( inUse )
             {
                 return true;
             }

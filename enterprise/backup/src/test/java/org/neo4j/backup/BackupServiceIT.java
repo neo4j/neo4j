@@ -353,7 +353,7 @@ public class BackupServiceIT
         try
         {
             backupService.doIncrementalBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
-                    false, BackupClient.BIG_READ_TIMEOUT );
+                    false, BackupClient.BIG_READ_TIMEOUT, defaultConfig );
             fail( "Should have thrown exception." );
         }
         // Then

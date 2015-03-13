@@ -104,7 +104,13 @@ public interface IdGeneratorRebuilder
                         // Scan store
                         while(currentId < highId && cursor.position( currentId++ ))
                         {
-                            if(!cursor.inUse())
+                            boolean inUse;
+                            do
+                            {
+                                inUse = cursor.inUse();
+                            }
+                            while ( cursor.shouldRetry() );
+                            if( !inUse )
                             {
                                 idGenerator.free( cursor.recordId() );
                             }

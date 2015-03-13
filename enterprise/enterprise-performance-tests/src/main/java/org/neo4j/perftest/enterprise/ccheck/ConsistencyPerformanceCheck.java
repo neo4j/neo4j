@@ -27,22 +27,20 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageSwapperFactory;
-import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.impl.index.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
+import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.perftest.enterprise.generator.DataGenerator;
@@ -69,8 +67,7 @@ public class ConsistencyPerformanceCheck
     static final Setting<String> pagecache_memory =
             stringSetting( "dbms.pagecache.memory", "2G" );
     static final Setting<String> mapped_memory_page_size = stringSetting( "dbms.pagecache.pagesize", "4k" );
-    private static LifecycledPageCache pageCache;
-    private static Neo4jJobScheduler jobScheduler;
+    private static PageCache pageCache;
     private static FileSystemAbstraction fileSystem;
 
     /**
@@ -117,14 +114,10 @@ public class ConsistencyPerformanceCheck
         }
 
         Config tuningConfiguration = buildTuningConfiguration( configuration );
-        jobScheduler = new Neo4jJobScheduler();
         fileSystem = new DefaultFileSystemAbstraction();
-        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fileSystem );
-        Monitors monitors = new Monitors();
-        pageCache = new LifecycledPageCache(
-                swapperFactory, jobScheduler, tuningConfiguration, PageCacheTracer.NULL );
-        jobScheduler.init();
-        pageCache.start();
+        ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
+                fileSystem, tuningConfiguration, PageCacheTracer.NULL );
+        pageCache = pageCacheFactory.getOrCreatePageCache();
         DirectStoreAccess directStoreAccess = createScannableStores( configuration.get( DataGenerator.store_dir ),
                 tuningConfiguration );
 
@@ -138,8 +131,7 @@ public class ConsistencyPerformanceCheck
         finally
         {
             directStoreAccess.close();
-            pageCache.stop();
-            jobScheduler.shutdown();
+            pageCache.close();
         }
     }
 

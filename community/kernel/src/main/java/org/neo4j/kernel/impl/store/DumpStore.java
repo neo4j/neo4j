@@ -25,9 +25,9 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.pagecache.StandalonePageCache;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -49,7 +49,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
             return;
         }
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        try ( StandalonePageCache pageCache = createPageCache( fs, "dump-store-tool" ) )
+        try ( PageCache pageCache = createPageCache( fs ) )
         {
             DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
             StoreFactory storeFactory = new StoreFactory(

@@ -19,14 +19,11 @@
  */
 package org.neo4j.kernel;
 
-import java.util.HashMap;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Visitor;
@@ -34,6 +31,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.LogMarker;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
@@ -47,8 +45,9 @@ public class DiagnosticsLoggingTest
     public void shouldSeeHelloWorld()
     {
         FakeLogger logger = new FakeLogger();
-        GraphDatabaseService db = new GraphDatabaseFactory().setLogging( logger ).newEmbeddedDatabase( folder.getRoot
-                ().getAbsolutePath() );
+        String storeDir = folder.getRoot().getAbsolutePath();
+        GraphDatabaseService db =
+                new TestGraphDatabaseFactory().setLogging( logger ).newEmbeddedDatabase( storeDir );
 
         String messages = logger.getMessages();
         assertThat( messages, containsString( "Network information" ) );
@@ -60,20 +59,16 @@ public class DiagnosticsLoggingTest
     @Test
     public void shouldSeePageCacheConfigurationWithDumpConfigurationEnabled()
     {
-        HashMap<String, String> settings = new HashMap<>();
-        settings.put( GraphDatabaseSettings.dump_configuration.name(), "true" );
-        settings.put( GraphDatabaseSettings.pagecache_memory.name(), "8M" );
-
         FakeLogger logger = new FakeLogger();
-        GraphDatabaseService db = new GraphDatabaseFactory().
+        GraphDatabaseService db = new TestGraphDatabaseFactory().
                 setLogging( logger ).
                 newEmbeddedDatabaseBuilder( folder.getRoot().getAbsolutePath() ).
                 setConfig( GraphDatabaseSettings.dump_configuration, Settings.TRUE ).
-                setConfig( GraphDatabaseSettings.pagecache_memory, "8M" ).
+                setConfig( GraphDatabaseSettings.pagecache_memory, "4M" ).
                 newGraphDatabase();
 
         String messages = logger.getMessages();
-        assertThat( messages, containsString( "Page cache size: 8 MiB" ) );
+        assertThat( messages, containsString( "Page cache size: 4 MiB" ) );
         db.shutdown();
     }
 

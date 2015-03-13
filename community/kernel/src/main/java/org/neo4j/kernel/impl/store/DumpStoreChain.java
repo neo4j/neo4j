@@ -27,9 +27,9 @@ import java.util.Set;
 
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.pagecache.StandalonePageCache;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -98,7 +98,7 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
     {
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
-        try ( StandalonePageCache pageCache = createPageCache( fs, "dump-store-chain-tool" ) )
+        try ( PageCache pageCache = createPageCache( fs ) )
         {
             DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
             Config config = new Config();

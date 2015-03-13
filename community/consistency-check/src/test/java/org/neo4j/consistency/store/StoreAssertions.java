@@ -20,7 +20,6 @@
 package org.neo4j.consistency.store;
 
 import java.io.File;
-import java.util.Collections;
 
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckSettings;
@@ -31,6 +30,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class StoreAssertions
 {
@@ -42,7 +42,7 @@ public class StoreAssertions
     {
         final Config configuration =
                 new Config(
-                        Collections.<String, String>emptyMap(),
+                        stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ),
                         GraphDatabaseSettings.class,
                         ConsistencyCheckSettings.class
                 );

@@ -20,15 +20,16 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensions;
-import org.neo4j.kernel.impl.pagecache.StandalonePageCache;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -84,13 +85,17 @@ public class StoreMigrationTool
         }
 
         // Perform the migration
-        try ( StandalonePageCache pageCache = createPageCache( fs, config, "migration-tool" ) )
+        try ( PageCache pageCache = createPageCache( fs, config ) )
         {
             long startTime = System.currentTimeMillis();
             migrationProcess.migrateIfNeeded( new File( legacyStoreDirectory ), schemaIndexProvider, pageCache );
             long duration = System.currentTimeMillis() - startTime;
             logging.getMessagesLog( StoreMigrationTool.class )
                     .info( format( "Migration completed in %d s%n", duration / 1000 ) );
+        }
+        catch ( IOException e )
+        {
+            throw new StoreUpgrader.UnableToUpgradeException( "Failure during upgrade", e );
         }
         finally
         {

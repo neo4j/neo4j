@@ -17,12 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.pagecache;
+package org.neo4j.io.pagecache.impl.muninn;
 
-import org.neo4j.io.pagecache.PageCache;
-
-public interface StandalonePageCache extends PageCache, AutoCloseable
+/**
+ * This runnable continuously flushes dirty pages in the background, such that future calls to
+ * {@link MuninnPageCache#flush()} have less work to do.
+ */
+final class FlushTask extends BackgroundTask
 {
+    public FlushTask( MuninnPageCache pageCache )
+    {
+        super( pageCache );
+    }
+
     @Override
-    void close();
+    protected void run( MuninnPageCache pageCache )
+    {
+        pageCache.continuouslyFlushPages();
+    }
 }

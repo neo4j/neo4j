@@ -26,11 +26,11 @@ import java.util.List;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.CommandApplierFacade;
 import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.api.CountsStoreApplier;
 import org.neo4j.kernel.impl.api.CountsVisitor;
-import org.neo4j.kernel.impl.pagecache.StandalonePageCache;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.keys.IndexSampleKey;
 import org.neo4j.kernel.impl.store.counts.keys.IndexStatisticsKey;
@@ -69,7 +69,7 @@ public class RecountFromTransactions
         }
 
         File nodeStore = new File( path, "recount-from-tx" );
-        try ( StandalonePageCache pages = createPageCache( fs, "recount-from-tx" ) )
+        try ( PageCache pages = createPageCache( fs ) )
         {
             StoreFactory factory = new StoreFactory( fs, path, pages, StringLogger.DEV_NULL, new Monitors() );
 

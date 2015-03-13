@@ -95,7 +95,7 @@ public interface Store<RECORD, CURSOR extends Store.RecordCursor> extends Lifecy
         boolean position( long id );
 
         /** Moves to the next in-use record, or returns false if there are no more records in the store. */
-        boolean next();
+        boolean next() throws IOException;
 
         /** Indicates that a read needs to be retried, this MUST be used when reading with the cursor. */
         boolean shouldRetry() throws IOException;

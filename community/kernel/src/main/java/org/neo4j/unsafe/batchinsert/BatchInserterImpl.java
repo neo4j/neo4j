@@ -49,8 +49,7 @@ import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.io.pagecache.PageSwapperFactory;
-import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -90,7 +89,7 @@ import org.neo4j.kernel.impl.coreapi.schema.PropertyUniqueConstraintDefinition;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
-import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
+import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.NeoStore;
@@ -128,7 +127,6 @@ import org.neo4j.kernel.impl.transaction.state.RelationshipCreator;
 import org.neo4j.kernel.impl.transaction.state.RelationshipGroupGetter;
 import org.neo4j.kernel.impl.transaction.state.RelationshipLocker;
 import org.neo4j.kernel.impl.util.Listener;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
@@ -136,7 +134,6 @@ import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.Boolean.parseBoolean;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -231,10 +228,9 @@ public class BatchInserterImpl implements BatchInserter
         life = new LifeSupport();
         this.fileSystem = fileSystem;
         this.storeDir = new File( FileUtils.fixSeparatorsInPath( storeDir ) );
-        Neo4jJobScheduler jobScheduler = life.add( new Neo4jJobScheduler() );
-        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fileSystem );
-        LifecycledPageCache pageCache = life.add( new LifecycledPageCache(
-                swapperFactory, jobScheduler, config, PageCacheTracer.NULL ) );
+        ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
+                fileSystem, config, PageCacheTracer.NULL );
+        PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 
         msgLog = StringLogger.loggerDirectory( fileSystem, this.storeDir );
         logging = new SingleLoggingService( msgLog );

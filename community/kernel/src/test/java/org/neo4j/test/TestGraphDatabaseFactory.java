@@ -120,7 +120,23 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
     public GraphDatabaseBuilder newImpermanentDatabaseBuilder( final String storeDir )
     {
         final TestGraphDatabaseFactoryState state = getStateCopy();
-        return new TestGraphDatabaseBuilder( new GraphDatabaseBuilder.DatabaseCreator()
+        GraphDatabaseBuilder.DatabaseCreator creator =
+                createImpermanentDatabaseCreator( storeDir, state );
+        TestGraphDatabaseBuilder builder = createImpermanentGraphDatabaseBuilder( creator );
+        configure( builder );
+        return builder;
+    }
+
+    protected TestGraphDatabaseBuilder createImpermanentGraphDatabaseBuilder(
+            GraphDatabaseBuilder.DatabaseCreator creator )
+    {
+        return new TestGraphDatabaseBuilder( creator );
+    }
+
+    protected GraphDatabaseBuilder.DatabaseCreator createImpermanentDatabaseCreator( final String storeDir,
+                                                                                     final TestGraphDatabaseFactoryState state )
+    {
+        return new GraphDatabaseBuilder.DatabaseCreator()
         {
             @Override
             @SuppressWarnings("deprecation")
@@ -143,6 +159,6 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
                     }
                 };
             }
-        } );
+        };
     }
 }

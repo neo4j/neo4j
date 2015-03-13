@@ -151,9 +151,9 @@ public class SingleFilePageSwapper implements PageSwapper
     }
 
     @Override
-    public String fileName()
+    public File file()
     {
-        return file.getName();
+        return file;
     }
 
     private long pageIdToPosition( long pageId )

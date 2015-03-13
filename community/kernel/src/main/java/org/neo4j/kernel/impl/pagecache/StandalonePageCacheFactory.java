@@ -19,18 +19,12 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 
 /*
  * This class is an helper to allow to construct properly a page cache in the few places we need it without all
@@ -46,80 +40,19 @@ public final class StandalonePageCacheFactory
         // Not constructable.
     }
 
-    public static StandalonePageCache createPageCache( FileSystemAbstraction fileSystem, String pageCacheName )
+    public static PageCache createPageCache( FileSystemAbstraction fileSystem )
     {
-        return createPageCache( fileSystem, new Config(), pageCacheName );
+        return createPageCache( fileSystem, new Config() );
     }
 
-    public static StandalonePageCache createPageCache(
-            FileSystemAbstraction fileSystem, Config config, String pageCacheName )
+    public static PageCache createPageCache(
+            FileSystemAbstraction fileSystem, Config config )
     {
-        final LifeSupport life = new LifeSupport();
-        final String qualifiedPageCacheName = "StandalonePageCache[" + pageCacheName + "]";
-
-        Neo4jJobScheduler scheduler = life.add( new Neo4jJobScheduler( qualifiedPageCacheName ) );
-        SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fileSystem );
-
         Config baseConfig = new Config( MapUtil.stringMap(
                 GraphDatabaseSettings.pagecache_memory.name(), "8M" ) );
         Config finalConfig = baseConfig.with( config.getParams() );
-        LifecycledPageCache delegate = life.add(
-                new LifecycledPageCache( swapperFactory, scheduler, finalConfig, PageCacheTracer.NULL ) );
-        life.start();
-
-        return new DelegatingStandalonePageCache( delegate, life, qualifiedPageCacheName );
-    }
-
-    private static final class DelegatingStandalonePageCache implements StandalonePageCache
-    {
-        private final LifecycledPageCache delegate;
-        private final LifeSupport life;
-        private final String pageCacheName;
-
-        private DelegatingStandalonePageCache(
-                LifecycledPageCache delegate,
-                LifeSupport life,
-                String pageCacheName )
-        {
-            this.delegate = delegate;
-            this.life = life;
-            this.pageCacheName = pageCacheName;
-        }
-
-        @Override
-        public PagedFile map( File file, int pageSize ) throws IOException
-        {
-            return delegate.map( file, pageSize );
-        }
-
-        @Override
-        public void flush() throws IOException
-        {
-            delegate.flush();
-        }
-
-        @Override
-        public void close()
-        {
-            life.shutdown();
-        }
-
-        @Override
-        public int pageSize()
-        {
-            return delegate.pageSize();
-        }
-
-        @Override
-        public int maxCachedPages()
-        {
-            return delegate.maxCachedPages();
-        }
-
-        @Override
-        public String toString()
-        {
-            return pageCacheName;
-        }
+        ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
+                fileSystem, finalConfig, PageCacheTracer.NULL );
+        return pageCacheFactory.getOrCreatePageCache();
     }
 }
