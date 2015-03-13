@@ -27,6 +27,7 @@ import org.neo4j.backup.OnlineBackupKernelExtension;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.Response;
 import org.neo4j.com.monitor.RequestMonitor;
+import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Iterables;
@@ -54,9 +55,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
-import org.neo4j.kernel.monitoring.StoreCopyMonitor;
 
-import static java.util.Arrays.asList;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
@@ -66,6 +65,8 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
+
+import static java.util.Arrays.asList;
 
 public class SwitchToSlaveTest
 {
@@ -132,7 +133,7 @@ public class SwitchToSlaveTest
                 mock( ClusterMemberAvailability.class ), mock( RequestContextFactory.class ),
                 Iterables.<KernelExtensionFactory<?>>empty(), mock( MasterClientResolver.class ),
                 ByteCounterMonitor.NULL, mock( RequestMonitor.class ), mock( SwitchToSlave.Monitor.class ),
-                StoreCopyMonitor.NONE ) );
+                new StoreCopyClient.Monitor.Adapter() ) );
     }
 
     private static NeoStoreDataSource dataSourceMock()

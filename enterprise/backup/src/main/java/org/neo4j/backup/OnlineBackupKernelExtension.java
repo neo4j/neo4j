@@ -87,7 +87,8 @@ public class OnlineBackupKernelExtension implements Lifecycle
                         resolver.resolveDependency( DataSourceManager.class ).getDataSource(),
                         resolver.resolveDependency( LogRotationControl.class ),
                         resolver.resolveDependency( FileSystemAbstraction.class ),
-                        new File( graphDatabaseAPI.getStoreDir() ) );
+                        new File( graphDatabaseAPI.getStoreDir() ),
+                        monitors.newMonitor( StoreCopyServer.Monitor.class ) );
                 LogicalTransactionStore logicalTransactionStore = resolver.resolveDependency( LogicalTransactionStore.class );
                 LogFileInformation logFileInformation = resolver.resolveDependency( LogFileInformation.class );
                 return new BackupImpl( copier, monitors,

@@ -30,13 +30,11 @@ import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.kernel.monitoring.StoreCopyMonitor;
 
 import static org.neo4j.com.RequestContext.anonymous;
 
 class BackupImpl implements TheBackupInterface
 {
-    private final StoreCopyMonitor storeCopyMonitor;
     private final StoreCopyServer storeCopyServer;
     private final ResponsePacker incrementalResponsePacker;
     private final LogicalTransactionStore logicalTransactionStore;
@@ -53,19 +51,18 @@ class BackupImpl implements TheBackupInterface
         this.transactionIdStore = transactionIdStore;
         this.logFileInformation = logFileInformation;
         this.storeId = storeId;
-        this.storeCopyMonitor = monitors.newMonitor( StoreCopyMonitor.class, getClass() );
         this.incrementalResponsePacker = new ResponsePacker( logicalTransactionStore, transactionIdStore, storeId );
     }
 
+    @Override
     public Response<Void> fullBackup( StoreWriter writer, boolean forensics )
     {
         try ( StoreWriter storeWriter = writer )
         {
-            storeCopyMonitor.startCopyingFiles();
             RequestContext copyStartContext = storeCopyServer.flushStoresAndStreamStoreFiles( storeWriter, forensics );
             ResponsePacker responsePacker = new StoreCopyResponsePacker( logicalTransactionStore,
                     transactionIdStore, logFileInformation, storeId,
-                    copyStartContext.lastAppliedTransaction() + 1 ); // mandatory transaction id
+                    copyStartContext.lastAppliedTransaction() + 1, storeCopyServer.monitor() ); // mandatory transaction id
             long optionalTransactionId = copyStartContext.lastAppliedTransaction();
             return responsePacker.packTransactionStreamResponse( anonymous( optionalTransactionId ), null/*no response object*/ );
         }
