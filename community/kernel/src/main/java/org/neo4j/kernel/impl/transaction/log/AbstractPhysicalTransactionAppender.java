@@ -67,7 +67,7 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
     /**
      * @return whether or not this transaction contains any legacy index changes.
      */
-    private boolean append0( TransactionRepresentation transaction, long transactionId ) throws IOException
+    private Commitment append0( TransactionRepresentation transaction, long transactionId ) throws IOException
     {
         // Reset command writer so that we, after we've written the transaction, can ask it whether or
         // not any legacy index command was written. If so then there's additional ordering to care about below.
@@ -98,8 +98,7 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
                 // Offer this transaction id to the queue so that the legacy index applier can take part in the ordering
                 legacyIndexTransactionOrdering.offer( transactionId );
             }
-            transactionIdStore.transactionCommitted( transactionId, transactionChecksum );
-            return containsLegacyIndexCommands;
+            return new Commitment( containsLegacyIndexCommands, transactionId, transactionChecksum );
         }
         catch ( final Throwable panic )
         {
@@ -114,7 +113,6 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
     public long append( TransactionRepresentation transaction, LogAppendEvent logAppendEvent ) throws IOException
     {
         long transactionId = -1;
-        boolean hasLegacyIndexChanges;
         int phase = 0;
         // We put log rotation check outside the private append method since it must happen before
         // we generate the next transaction id
@@ -122,19 +120,20 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
 
         try
         {
+            Commitment commit;
             // Synchronized with logFile to get absolute control over concurrent rotations happening
             synchronized ( logFile )
             {
                 try ( SerializeTransactionEvent serialiseEvent = logAppendEvent.beginSerializeTransaction() )
                 {
                     transactionId = transactionIdStore.nextCommittingTransactionId();
-                    hasLegacyIndexChanges = append0( transaction, transactionId );
+                    commit = append0( transaction, transactionId );
                     phase = 1;
                 }
             }
 
             forceAfterAppend( logAppendEvent );
-            coordinateMultipleThreadsApplyingLegacyIndexChanges( hasLegacyIndexChanges, transactionId );
+            commit.complete();
             phase = 2;
             return transactionId;
         }
@@ -167,7 +166,32 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
                         "Received " + transaction + " with txId:" + expectedTransactionId +
                         " to be applied, but appending it ended up generating an unexpected txId:" + transactionId );
             }
-            append0( transaction, transactionId );
+            append0( transaction, transactionId ).transactionCommitted();
+        }
+    }
+
+    private class Commitment
+    {
+        private final boolean hasLegacyIndexChanges;
+        private final long transactionId;
+        private final long transactionChecksum;
+
+        Commitment( boolean hasLegacyIndexChanges, long transactionId, long transactionChecksum )
+        {
+            this.hasLegacyIndexChanges = hasLegacyIndexChanges;
+            this.transactionId = transactionId;
+            this.transactionChecksum = transactionChecksum;
+        }
+
+        void complete() throws IOException
+        {
+            transactionCommitted();
+            coordinateMultipleThreadsApplyingLegacyIndexChanges( hasLegacyIndexChanges, transactionId );
+        }
+
+        void transactionCommitted()
+        {
+            transactionIdStore.transactionCommitted( transactionId, transactionChecksum );
         }
     }
 
