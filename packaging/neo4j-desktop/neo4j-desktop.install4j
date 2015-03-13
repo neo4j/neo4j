@@ -101,7 +101,7 @@
             <object class="com.install4j.runtime.beans.applications.InstallerApplication">
               <void property="customHeaderImage">
                 <object class="com.install4j.api.beans.ExternalFile">
-                  <string>./src/main/resources/neo4j-icon_128x128.png</string>
+                  <string>./src/main/resources/neo4j-logo.png</string>
                 </object>
               </void>
               <void property="customIconImageFiles">
@@ -169,6 +169,14 @@
             <serializedBean>
               <java class="java.beans.XMLDecoder">
                 <object class="com.install4j.runtime.beans.screens.WelcomeScreen">
+                  <void property="bannerBackground">
+                    <object class="java.awt.Color">
+                      <int>255</int>
+                      <int>255</int>
+                      <int>255</int>
+                      <int>255</int>
+                    </object>
+                  </void>
                   <void property="bannerImageAnchor">
                     <object class="com.install4j.api.beans.Anchor" field="CENTER" />
                   </void>
@@ -368,6 +376,14 @@ return "${APPDATA}" + context.getVariable("sys.fileSeparator") + context.getComp
             <serializedBean>
               <java class="java.beans.XMLDecoder">
                 <object class="com.install4j.runtime.beans.screens.FinishedScreen">
+                  <void property="bannerBackground">
+                    <object class="java.awt.Color">
+                      <int>255</int>
+                      <int>255</int>
+                      <int>255</int>
+                      <int>255</int>
+                    </object>
+                  </void>
                   <void property="bannerImageAnchor">
                     <object class="com.install4j.api.beans.Anchor" field="CENTER" />
                   </void>
@@ -480,6 +496,14 @@ return "${APPDATA}" + context.getVariable("sys.fileSeparator") + context.getComp
             <serializedBean>
               <java class="java.beans.XMLDecoder">
                 <object class="com.install4j.runtime.beans.screens.UninstallWelcomeScreen">
+                  <void property="bannerBackground">
+                    <object class="java.awt.Color">
+                      <int>255</int>
+                      <int>255</int>
+                      <int>255</int>
+                      <int>255</int>
+                    </object>
+                  </void>
                   <void property="bannerImageAnchor">
                     <object class="com.install4j.api.beans.Anchor" field="CENTER" />
                   </void>
@@ -588,6 +612,14 @@ return "${APPDATA}" + context.getVariable("sys.fileSeparator") + context.getComp
             <serializedBean>
               <java class="java.beans.XMLDecoder">
                 <object class="com.install4j.runtime.beans.screens.UninstallSuccessScreen">
+                  <void property="bannerBackground">
+                    <object class="java.awt.Color">
+                      <int>255</int>
+                      <int>255</int>
+                      <int>255</int>
+                      <int>255</int>
+                    </object>
+                  </void>
                   <void property="bannerImageAnchor">
                     <object class="com.install4j.api.beans.Anchor" field="CENTER" />
                   </void>
