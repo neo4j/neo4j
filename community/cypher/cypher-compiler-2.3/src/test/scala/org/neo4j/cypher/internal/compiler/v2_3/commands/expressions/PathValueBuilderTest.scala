@@ -26,55 +26,59 @@ import org.mockito.Mockito
 
 class PathValueBuilderTest extends CypherFunSuite {
 
-  val node1 = mockedNode(1)
-  val node2 = mockedNode(2)
-  val node3 = mockedNode(3)
+  val A = mockedNode(1)
+  val B = mockedNode(2)
+  val C = mockedNode(3)
+  val D = mockedNode(4)
+  val E = mockedNode(5)
 
-  val rel1 = mockedRelationship(1, node1, node2)
-  val rel2 = mockedRelationship(2, node2, node3)
+  val rel1 = mockedRelationship(1, A, B)
+  val rel2 = mockedRelationship(2, B, C)
+  val rel3 = mockedRelationship(3, C, D)
+  val rel4 = mockedRelationship(3, D, E)
 
   test("p = (a)") {
     val builder = new PathValueBuilder
 
-    builder.addNode(node1)
+    builder.addNode(A)
 
-    builder.result() should equal(new PathImpl(node1))
+    builder.result() should equal(new PathImpl(A))
   }
 
   test("p = (a)-[r:X]->(b)") {
     val builder = new PathValueBuilder
 
-    builder.addNode(node1)
+    builder.addNode(A)
       .addOutgoingRelationship(rel1)
 
-    builder.result() should equal(new PathImpl(node1, rel1, node2))
+    builder.result() should equal(new PathImpl(A, rel1, B))
   }
 
   test("p = (b)<-[r:X]-(a)") {
     val builder = new PathValueBuilder
 
-    builder.addNode(node2)
+    builder.addNode(B)
       .addIncomingRelationship(rel1)
 
-    builder.result() should equal(new PathImpl(node2, rel1, node1))
+    builder.result() should equal(new PathImpl(B, rel1, A))
   }
 
   test("p = (a)-[r:X]-(b)") {
     val builder = new PathValueBuilder
 
-    builder.addNode(node1)
+    builder.addNode(A)
       .addUndirectedRelationship(rel1)
 
-    builder.result() should equal(new PathImpl(node1, rel1, node2))
+    builder.result() should equal(new PathImpl(A, rel1, B))
   }
 
   test("p = (b)-[r:X]-(a)") {
     val builder = new PathValueBuilder
 
-    builder.addNode(node2)
+    builder.addNode(B)
       .addUndirectedRelationship(rel1)
 
-    builder.result() should equal(new PathImpl(node2, rel1, node1))
+    builder.result() should equal(new PathImpl(B, rel1, A))
   }
 
   test("p = <empty> should throw") {
@@ -88,16 +92,16 @@ class PathValueBuilderTest extends CypherFunSuite {
   test("p = (a)-[r:X*]->(b)") {
     val builder = new PathValueBuilder
 
-    builder.addNode(node1)
+    builder.addNode(A)
       .addOutgoingRelationships(Iterable(rel1, rel2))
 
-    builder.result() should equal(new PathImpl(node1, rel1, node2, rel2, node3))
+    builder.result() should equal(new PathImpl(A, rel1, B, rel2, C))
   }
 
   test("p = (a)-[r:X*]->(b) when rels is null") {
     val builder = new PathValueBuilder
 
-    builder.addNode(node1)
+    builder.addNode(A)
       .addOutgoingRelationships(null)
 
     builder.result() should equal(null)
@@ -106,26 +110,26 @@ class PathValueBuilderTest extends CypherFunSuite {
   test("p = (a)-[r:X]->(b)--(c)") {
     val builder = new PathValueBuilder
 
-    builder.addNode(node1)
+    builder.addNode(A)
       .addOutgoingRelationship(rel1)
       .addUndirectedRelationship(rel2)
 
-    builder.result() should equal(new PathImpl(node1, rel1, node2, rel2, node3))
+    builder.result() should equal(new PathImpl(A, rel1, B, rel2, C))
   }
 
   test("p = (b)<-[r:X*]-(a)") {
     val builder = new PathValueBuilder
 
-    builder.addNode(node3)
+    builder.addNode(C)
       .addIncomingRelationships(Iterable(rel2, rel1))
 
-    builder.result() should equal(new PathImpl(node3, rel2, node2, rel1, node1))
+    builder.result() should equal(new PathImpl(C, rel2, B, rel1, A))
   }
 
   test("p = (b)<-[r:X*]-(a) when rels is null") {
     val builder = new PathValueBuilder
 
-    builder.addNode(node1)
+    builder.addNode(A)
       .addIncomingRelationships(null)
 
     builder.result() should equal(null)
@@ -134,16 +138,74 @@ class PathValueBuilderTest extends CypherFunSuite {
   test("p = (b)-[r:X*]-(a)") {
     val builder = new PathValueBuilder
 
-    builder.addNode(node3)
+    builder.addNode(C)
       .addUndirectedRelationships(Iterable(rel2, rel1))
 
-    builder.result() should equal(new PathImpl(node3, rel2, node2, rel1, node1))
+    builder.result() should equal(new PathImpl(C, rel2, B, rel1, A))
+  }
+
+  test("p = (b)-[r:X*]-(a) reversed") {
+    val builder = new PathValueBuilder
+
+    builder.addNode(C)
+      .addUndirectedRelationships(Iterable(rel1, rel2))
+
+    builder.result() should equal(new PathImpl(C, rel2, B, rel1, A))
+  }
+
+  test("p = (a)-[r1*]-()-[r2*]-()") {
+    val builder = new PathValueBuilder
+
+    builder.addNode(A)
+      .addUndirectedRelationships(Iterable(rel1, rel2))
+      .addUndirectedRelationships(Iterable(rel3, rel4))
+
+    builder.result() should equal(new PathImpl(A, rel1, B, rel2, C, rel3, D, rel4, E))
+  }
+
+  test("p = (a)-[r1*]-()-[r2*]-() reversed r1") {
+    val builder = new PathValueBuilder
+
+    builder.addNode(A)
+      .addUndirectedRelationships(Iterable(rel2, rel1))
+      .addUndirectedRelationships(Iterable(rel3, rel4))
+
+    builder.result() should equal(new PathImpl(A, rel1, B, rel2, C, rel3, D, rel4, E))
+  }
+
+  test("p = (a)-[r1*]-()-[r2*]-() reversed r2") {
+    val builder = new PathValueBuilder
+
+    builder.addNode(A)
+      .addUndirectedRelationships(Iterable(rel1, rel2))
+      .addUndirectedRelationships(Iterable(rel4, rel3))
+
+    builder.result() should equal(new PathImpl(A, rel1, B, rel2, C, rel3, D, rel4, E))
+  }
+
+  test("p = (a)-[r1*]-()-[r2*]-() reversed r1 && r2") {
+    val builder = new PathValueBuilder
+
+    builder.addNode(A)
+      .addUndirectedRelationships(Iterable(rel2, rel1))
+      .addUndirectedRelationships(Iterable(rel4, rel3))
+
+    builder.result() should equal(new PathImpl(A, rel1, B, rel2, C, rel3, D, rel4, E))
+  }
+
+  test("p = (b)-[r:X*0]-(a)") {
+    val builder = new PathValueBuilder
+
+    builder.addNode(C)
+      .addUndirectedRelationships(Iterable())
+
+    builder.result() should equal(new PathImpl(C))
   }
 
   test("p = (b)-[r:X*]-(a) when rels is null") {
     val builder = new PathValueBuilder
 
-    builder.addNode(node1)
+    builder.addNode(A)
       .addUndirectedRelationships(null)
 
     builder.result() should equal(null)
@@ -171,7 +233,7 @@ class PathValueBuilderTest extends CypherFunSuite {
     val builder = new PathValueBuilder
 
     val result = builder
-      .addNode(node1)
+      .addNode(A)
       .addIncomingRelationship(null)
       .result()
 

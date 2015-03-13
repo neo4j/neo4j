@@ -76,9 +76,25 @@ final class PathValueBuilder {
   }
 
   def addUndirectedRelationships(rels: Iterable[Relationship]): PathValueBuilder = nullCheck(rels) {
-    val iterator = rels.iterator
-    while (iterator.hasNext)
-      addUndirectedRelationship(iterator.next())
+    val relIterator = rels.iterator
+
+    def consumeIterator(i: Iterator[Relationship]) =
+      while (i.hasNext)
+        addUndirectedRelationship(i.next())
+
+
+    if (relIterator.hasNext) {
+      val first = relIterator.next()
+      val rightDirection = first.getStartNode == previousNode || first.getEndNode == previousNode
+
+      if (rightDirection) {
+        addUndirectedRelationship(first)
+        consumeIterator(relIterator)
+      } else {
+        consumeIterator(relIterator.toSeq.reverseIterator)
+        addUndirectedRelationship(first)
+      }
+    }
     this
   }
 
