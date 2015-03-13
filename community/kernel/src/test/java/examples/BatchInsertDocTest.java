@@ -61,7 +61,8 @@ public class BatchInsertDocTest
         BatchInserter inserter = null;
         try
         {
-            inserter = BatchInserters.inserter( new File( "target/batchinserter-example" ).getAbsolutePath(),
+            inserter = BatchInserters.inserter(
+                    new File( "target/batchinserter-example" ).getAbsolutePath(),
                     fileSystem );
 
             Label personLabel = DynamicLabel.label( "Person" );
@@ -125,7 +126,7 @@ public class BatchInsertDocTest
     {
         try ( Writer fw = fileSystem.openAsWriter( new File( "target/docs/batchinsert-config" ).getAbsoluteFile(), "utf-8", false ) )
         {
-            fw.append( "dbms.pagecache.memory=512m" );
+            fw.append( "dbms.pagecache.memory=8m" );
         }
 
         // START SNIPPET: configFileInsert

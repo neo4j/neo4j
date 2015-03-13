@@ -17,60 +17,57 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.tracing;
+package org.neo4j.io.pagecache;
 
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.io.pagecache.Page;
-import org.neo4j.io.pagecache.PageSwapper;
-
-public class DummyPageSwapper implements PageSwapper
+/**
+ * A PageSwapper that delegates all calls to a wrapped PageSwapper instance.
+ *
+ * Useful for overriding specific functionality in a sub-class.
+ */
+public class DelegatingPageSwapper implements PageSwapper
 {
-    private final String filename;
+    private final PageSwapper delegate;
 
-    public DummyPageSwapper( String filename )
+    public DelegatingPageSwapper( PageSwapper delegate )
     {
-        this.filename = filename;
+        this.delegate = delegate;
     }
 
-    @Override
     public int read( long filePageId, Page page ) throws IOException
     {
-        return 0;
+        return delegate.read( filePageId, page );
     }
 
-    @Override
-    public int write( long filePageId, Page page ) throws IOException
-    {
-        return 0;
-    }
-
-    @Override
-    public void evicted( long pageId, Page page )
-    {
-
-    }
-
-    @Override
-    public File file()
-    {
-        return new File( filename );
-    }
-
-    @Override
     public void close() throws IOException
     {
+        delegate.close();
     }
 
-    @Override
+    public void evicted( long pageId, Page page )
+    {
+        delegate.evicted( pageId, page );
+    }
+
     public void force() throws IOException
     {
+        delegate.force();
     }
 
-    @Override
+    public File file()
+    {
+        return delegate.file();
+    }
+
+    public int write( long filePageId, Page page ) throws IOException
+    {
+        return delegate.write( filePageId, page );
+    }
+
     public long getLastPageId() throws IOException
     {
-        return 0;
+        return delegate.getLastPageId();
     }
 }

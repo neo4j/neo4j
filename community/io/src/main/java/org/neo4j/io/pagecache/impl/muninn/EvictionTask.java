@@ -17,22 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.shell;
+package org.neo4j.io.pagecache.impl.muninn;
 
-import java.io.File;
-
-import org.neo4j.shell.kernel.GraphDatabaseShellServer;
-
-import static org.neo4j.shell.TestRmiPublication.createDefaultPropertiesFile;
-
-public class DontShutdownLocalServer
+/**
+ * This Runnable runs the eviction algorithm. Only one is expected for each page cache.
+ *
+ * Interrupting the thread running this runnable, will be interpreted as a shutdown signal.
+ *
+ * @see MuninnPageCache#continuouslySweepPages()
+ */
+final class EvictionTask extends BackgroundTask
 {
-    public static void main( String[] args ) throws Exception
+    public EvictionTask( MuninnPageCache pageCache )
     {
-        String path = args[0];
-        File propsFile = createDefaultPropertiesFile( path );
-        GraphDatabaseShellServer server = new GraphDatabaseShellServer(
-                path, false, propsFile.getAbsolutePath() );
-        // Intentionally don't shutdown the server
+        super( pageCache );
+    }
+
+    @Override
+    protected void run( MuninnPageCache pageCache )
+    {
+        pageCache.continuouslySweepPages();
     }
 }

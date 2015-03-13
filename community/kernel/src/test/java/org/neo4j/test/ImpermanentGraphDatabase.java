@@ -36,6 +36,7 @@ import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SingleLoggingService;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.Settings.TRUE;
 import static org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration.ephemeral;
 import static org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent;
@@ -196,6 +197,10 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         Map<String, String> result = new HashMap<>( params );
         // To signal to index provides that we should be in-memory
         result.put( ephemeral.name(), TRUE );
+        if ( !result.containsKey( pagecache_memory.name() ) )
+        {
+            result.put( pagecache_memory.name(), "8M" );
+        }
         return result;
     }
 

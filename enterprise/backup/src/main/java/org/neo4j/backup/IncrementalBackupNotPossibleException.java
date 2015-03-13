@@ -23,6 +23,11 @@ public class IncrementalBackupNotPossibleException extends RuntimeException
 {
     public IncrementalBackupNotPossibleException( String msg, Throwable cause )
     {
-        super(msg, cause);
+        super( msg, cause );
+    }
+
+    public IncrementalBackupNotPossibleException( Throwable cause )
+    {
+        super( cause );
     }
 }

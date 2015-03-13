@@ -203,6 +203,7 @@ abstract class MuninnPageCursor implements PageCursor
             putObjectVolatile( chunk, chunkOffset, null );
             latch.release();
             faultEvent.done( throwable );
+            pinEvent.done();
             // We don't need to worry about the 'stamp' here, because the writeLock call is uninterruptible, so it
             // can't really fail.
             throw throwable;
@@ -225,6 +226,7 @@ abstract class MuninnPageCursor implements PageCursor
             putObjectVolatile( chunk, chunkOffset, null );
             latch.release();
             faultEvent.done( throwable );
+            pinEvent.done();
             throw throwable;
         }
         convertPageFaultLock( page, stamp );

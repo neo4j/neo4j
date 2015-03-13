@@ -58,7 +58,7 @@ final class MuninnPagedFile implements PagedFile
     volatile Object[][] translationTable;
 
     final PageSwapper swapper;
-    private final MuninnCursorPool cursorPool;
+    private final CursorPool cursorPool;
 
     // Accessed via Unsafe
     private volatile int referenceCounter;
@@ -69,7 +69,7 @@ final class MuninnPagedFile implements PagedFile
             MuninnPageCache pageCache,
             int pageSize,
             PageSwapperFactory swapperFactory,
-            MuninnCursorPool cursorPool,
+            CursorPool cursorPool,
             PageCacheTracer tracer ) throws IOException
     {
         this.pageCache = pageCache;
@@ -107,7 +107,7 @@ final class MuninnPagedFile implements PagedFile
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[" + swapper.fileName() + "]";
+        return getClass().getSimpleName() + "[" + swapper.file().getName() + "]";
     }
 
     @Override

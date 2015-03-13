@@ -60,7 +60,6 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.ResourceClosingIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -123,7 +122,8 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
-import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
+import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
+import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
@@ -258,7 +258,7 @@ public abstract class InternalAbstractGraphDatabase
     protected Locks lockManager;
     protected IdGeneratorFactory idGeneratorFactory;
     protected IndexConfigStore indexStore;
-    protected LifecycledPageCache pageCache;
+    protected PageCache pageCache;
     protected StoreFactory storeFactory;
     protected DiagnosticsManager diagnosticsManager;
     protected NeoStoreDataSource neoDataSource;
@@ -427,7 +427,7 @@ public abstract class InternalAbstractGraphDatabase
         jobScheduler = life.add( createJobScheduler() );
 
         pageCache = createPageCache();
-        life.add( pageCache );
+        life.add( new PageCacheLifecycle( pageCache ) );
 
         kernelEventHandlers = new KernelEventHandlers( logging.getMessagesLog( KernelEventHandlers.class ) );
 
@@ -650,17 +650,17 @@ public abstract class InternalAbstractGraphDatabase
                 logging.getMessagesLog( StoreFactory.class ), monitors );
     }
 
-    protected LifecycledPageCache createPageCache()
+    protected PageCache createPageCache()
     {
-        SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fileSystem );
-        LifecycledPageCache lifecycledPageCache = new LifecycledPageCache(
-                swapperFactory, jobScheduler, config, tracers.pageCacheTracer );
+        ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
+                fileSystem, config, tracers.pageCacheTracer );
+        PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 
         if ( config.get( GraphDatabaseSettings.dump_configuration ) )
         {
-            lifecycledPageCache.dumpConfiguration( logging.getMessagesLog( PageCache.class ) );
+            pageCacheFactory.dumpConfiguration( logging.getMessagesLog( PageCache.class ) );
         }
-        return lifecycledPageCache;
+        return pageCache;
     }
 
     protected RecoveryVerifier createRecoveryVerifier()
@@ -1437,7 +1437,7 @@ public abstract class InternalAbstractGraphDatabase
             }
             else if ( PageCache.class.isAssignableFrom( type ) )
             {
-                return type.cast( pageCache.unwrap() );
+                return type.cast( pageCache );
             }
             else if ( Guard.class.isAssignableFrom( type ) && type.isInstance( guard ) )
             {

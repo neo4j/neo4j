@@ -30,16 +30,13 @@ import javax.xml.bind.DatatypeConverter;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.pagecache.PageSwapperFactory;
-import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -52,11 +49,11 @@ import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableVersionableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static javax.transaction.xa.Xid.MAXBQUALSIZE;
 import static javax.transaction.xa.Xid.MAXGTRIDSIZE;
+import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 
@@ -81,28 +78,30 @@ public class RsdrMain
         }
 
         File storepath = new File( args[0] );
-        StoreFactory factory = openStore( storepath );
-        NeoStore neoStore = factory.newNeoStore( false );
-        interact( neoStore );
+        Config config = buildConfig( storepath );
+        try ( PageCache pageCache = createPageCache( files, config ) )
+        {
+            StoreFactory factory = openStore( config, pageCache );
+            NeoStore neoStore = factory.newNeoStore( false );
+            interact( neoStore );
+        }
     }
 
-    private static StoreFactory openStore( File storepath )
+    private static Config buildConfig( File storepath )
     {
-        Config config = new Config( MapUtil.stringMap(
+        return new Config( MapUtil.stringMap(
                 GraphDatabaseSettings.read_only.name(), "true",
                 GraphDatabaseSettings.pagecache_memory.name(), "64M",
-                GraphDatabaseSettings.neo_store.name(), storepath.getAbsolutePath() + File.separator + NeoStore.DEFAULT_NAME ) );
+                GraphDatabaseSettings.neo_store.name(),
+                storepath.getAbsolutePath() + File.separator + NeoStore.DEFAULT_NAME ) );
+    }
+
+    private static StoreFactory openStore( Config config, PageCache pageCache )
+    {
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
-        Neo4jJobScheduler jobScheduler = new Neo4jJobScheduler();
-        jobScheduler.init();
-        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( files );
-        LifecycledPageCache pageCache = new LifecycledPageCache(
-                swapperFactory, jobScheduler, config, PageCacheTracer.NULL );
-        pageCache.start();
         StringLogger logger = StringLogger.DEV_NULL;
-        StoreFactory factory = new StoreFactory(
+        return new StoreFactory(
                 config, idGeneratorFactory, pageCache, files, logger, null );
-        return factory;
     }
 
     private static void interact( NeoStore neoStore ) throws IOException

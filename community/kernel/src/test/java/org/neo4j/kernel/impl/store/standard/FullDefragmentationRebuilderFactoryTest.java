@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.impl.store.standard;
 
-import java.io.File;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.kernel.impl.store.format.Store;
 import org.neo4j.kernel.impl.store.format.TestCursor;
 import org.neo4j.kernel.impl.store.format.TestHeaderlessStoreFormat;
@@ -34,13 +33,20 @@ import org.neo4j.kernel.impl.store.format.TestRecord;
 import org.neo4j.kernel.impl.store.impl.TestStoreIdGenerator;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.PageCacheRule;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 public class FullDefragmentationRebuilderFactoryTest
 {
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    @Rule
+    public PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Test
     public void shouldFindHighestInUseWhenThereAreUnusedRecordsAtEndOfFile() throws Throwable
@@ -48,7 +54,7 @@ public class FullDefragmentationRebuilderFactoryTest
         // Given
         EphemeralFileSystemAbstraction fs = fsRule.get();
         File path = new File( "/store.db" );
-        MuninnPageCache cache = new MuninnPageCache( fs, 1024, 1024, PageCacheTracer.NULL );
+        PageCache cache = pageCacheRule.getPageCache( fsRule.get() );
         Store<TestRecord, TestCursor> store = newStore( fs, path, cache );
 
         // Build our store
@@ -68,6 +74,8 @@ public class FullDefragmentationRebuilderFactoryTest
 
         // When
         rebuilder.newIdGeneratorRebuilder( store, toolkit, idGenerator ).rebuildIdGenerator();
+        store.stop();
+        store.shutdown();
 
         // Then
         verify( idGenerator ).free( 0 );
@@ -84,7 +92,7 @@ public class FullDefragmentationRebuilderFactoryTest
         // Given
         EphemeralFileSystemAbstraction fs = fsRule.get();
         File path = new File( "/store.db" );
-        MuninnPageCache cache = new MuninnPageCache( fs, 1024, 1024, PageCacheTracer.NULL );
+        PageCache cache = pageCacheRule.getPageCache( fsRule.get() );
         Store<TestRecord, TestCursor> store = newStore( fs, path, cache );
 
         // Build our store
@@ -104,6 +112,8 @@ public class FullDefragmentationRebuilderFactoryTest
 
         // When
         rebuilder.newIdGeneratorRebuilder( store, toolkit, idGenerator ).rebuildIdGenerator();
+        store.stop();
+        store.shutdown();
 
         // Then
         verify( idGenerator ).free( 0 );
@@ -120,7 +130,7 @@ public class FullDefragmentationRebuilderFactoryTest
         // Given
         EphemeralFileSystemAbstraction fs = fsRule.get();
         File path = new File( "/store.db" );
-        MuninnPageCache cache = new MuninnPageCache( fs, 1024, 1024, PageCacheTracer.NULL );
+        PageCache cache = pageCacheRule.getPageCache( fsRule.get() );
         Store<TestRecord, TestCursor> store = newStore( fs, path, cache );
 
         // Build our store
@@ -140,6 +150,8 @@ public class FullDefragmentationRebuilderFactoryTest
 
         // When
         rebuilder.newIdGeneratorRebuilder( store, toolkit, idGenerator ).rebuildIdGenerator();
+        store.stop();
+        store.shutdown();
 
         // Then
         verify( idGenerator ).rebuild( 4 );

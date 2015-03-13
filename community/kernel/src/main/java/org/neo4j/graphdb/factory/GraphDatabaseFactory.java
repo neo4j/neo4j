@@ -70,9 +70,14 @@ public class GraphDatabaseFactory
     {
         final GraphDatabaseFactoryState state = getStateCopy();
         GraphDatabaseBuilder.DatabaseCreator creator = createDatabaseCreator( path, state );
-        GraphDatabaseBuilder builder = new GraphDatabaseBuilder( creator );
+        GraphDatabaseBuilder builder = createGraphDatabaseBuilder( creator );
         configure( builder );
         return builder;
+    }
+
+    protected GraphDatabaseBuilder createGraphDatabaseBuilder( GraphDatabaseBuilder.DatabaseCreator creator )
+    {
+        return new GraphDatabaseBuilder( creator );
     }
 
     protected GraphDatabaseBuilder.DatabaseCreator createDatabaseCreator(

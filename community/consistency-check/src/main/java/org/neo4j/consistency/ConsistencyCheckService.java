@@ -30,9 +30,9 @@ import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.PageSwapperFactory;
-import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
@@ -41,11 +41,10 @@ import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
+import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -71,25 +70,47 @@ public class ConsistencyCheckService
                                            StringLogger logger ) throws ConsistencyCheckIncompleteException
     {
         DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        Monitors monitors = new Monitors();
         tuningConfiguration = configForStoreDir( tuningConfiguration, new File( storeDir ) );
-        Neo4jJobScheduler jobScheduler = new Neo4jJobScheduler();
-        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fileSystem );
-        LifecycledPageCache pageCache = new LifecycledPageCache(
-                swapperFactory, jobScheduler, tuningConfiguration, PageCacheTracer.NULL );
+        ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
+                fileSystem, tuningConfiguration, PageCacheTracer.NULL );
+        PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
+
+        try
+        {
+            return runFullConsistencyCheck(
+                    storeDir, tuningConfiguration, progressFactory, logger, fileSystem, pageCache );
+        }
+        finally
+        {
+            try
+            {
+                pageCache.close();
+            }
+            catch ( IOException e )
+            {
+                logger.error( "Failure during shutdown of the page cache", e );
+            }
+        }
+    }
+
+    public Result runFullConsistencyCheck( String storeDir, Config tuningConfiguration,
+                                           ProgressMonitorFactory progressFactory,
+                                           StringLogger logger,
+                                           FileSystemAbstraction fileSystem,
+                                           PageCache pageCache )
+            throws ConsistencyCheckIncompleteException
+    {
+        Monitors monitors = new Monitors();
         StoreFactory factory = new StoreFactory(
                 tuningConfiguration,
                 new DefaultIdGeneratorFactory(),
                 pageCache, fileSystem, logger,
                 monitors
         );
-        jobScheduler.init();
-        pageCache.start();
 
         ConsistencySummaryStatistics summary;
         File reportFile = chooseReportPath( tuningConfiguration );
         StringLogger report = StringLogger.lazyLogger( reportFile );
-
 
         try ( NeoStore neoStore = factory.newNeoStore( false ) )
         {
@@ -126,15 +147,6 @@ public class ConsistencyCheckService
         finally
         {
             report.close();
-            try
-            {
-                pageCache.stop();
-            }
-            catch ( IOException e )
-            {
-                logger.error( "Failure during shutdown of the page cache", e );
-            }
-            jobScheduler.shutdown();
         }
 
         if ( !summary.isConsistent() )

@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache;
 
+import java.io.File;
 import java.io.IOException;
 
 /**
@@ -70,9 +71,9 @@ public interface PageSwapper
     void evicted( long pageId, Page page );
 
     /**
-     * Get the human-readable name for the file that this PageSwapper represents.
+     * Get the file that this PageSwapper represents.
      */
-    String fileName();
+    File file();
 
     /**
      * Close and release all resources associated with the file underlying this

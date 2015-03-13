@@ -21,19 +21,19 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageSwapperFactory;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.PageSwapperFactory;
-import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.RunnablePageCache;
-import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 
 /**
@@ -85,7 +85,7 @@ import org.neo4j.io.pagecache.tracing.PageFaultEvent;
  *     locks to make uncontended reads and writes fast.
  * </p>
  */
-public class MuninnPageCache implements RunnablePageCache
+public class MuninnPageCache implements PageCache
 {
     // The number of times we will spin, during page faulting, on checking the
     // freelist and LockSupport.unpark'ing the eviction thread, before blocking
@@ -99,6 +99,21 @@ public class MuninnPageCache implements RunnablePageCache
     // in the cache.
     private static final int pagesToKeepFree = Integer.getInteger(
             "org.neo4j.io.pagecache.impl.muninn.pagesToKeepFree", 30 );
+
+    private static final double backgroundFlushIoRatio = getDouble(
+            "org.neo4j.io.pagecache.impl.muninn.backgroundFlushIoRatio", 0.5 );
+
+    private static double getDouble( String property, double def )
+    {
+        try
+        {
+            return Double.parseDouble( System.getProperty( property ) );
+        }
+        catch ( Exception e )
+        {
+            return def;
+        }
+    }
 
     // This is a pre-allocated constant, so we can throw it without allocating any objects:
     private static final IOException oomException = new IOException(
@@ -114,12 +129,24 @@ public class MuninnPageCache implements RunnablePageCache
     // down.
     private static final FreePageWaiter shutdownSignal = new FreePageWaiter();
 
+    // A counter used to identify which background threads belong to which page cache.
+    private static final AtomicInteger pageCacheIdCounter = new AtomicInteger();
+
+    // This Executor runs all the background threads for all page cache instances. It allows us to reuse threads
+    // between multiple page cache instances, which is of no consequence in normal usage, but is quite useful for the
+    // many, many tests that create and close page caches all the time. We DO NOT want to take an Executor in through
+    // the constructor of the PageCache, because the Executors have too many configuration options, many of which are
+    // highly troublesome for our use case; caller-runs, bounded submission queues, bounded thread count, non-daemon
+    // thread factories, etc.
+    private static final Executor backgroundThreadExecutor = BackgroundThreadExecutor.INSTANCE;
+
+    private final int pageCacheId;
     private final PageSwapperFactory swapperFactory;
     private final int cachePageSize;
     private final int keepFree;
-    private final MuninnCursorPool cursorPool;
+    private final CursorPool cursorPool;
     private final PageCacheTracer tracer;
-    final MuninnPage[] pages;
+    private final MuninnPage[] pages;
 
     // The freelist takes a bit of explanation. It is a thread-safe linked-list
     // of 3 types of objects. A link can either be a MuninnPage, a FreePage or
@@ -139,7 +166,7 @@ public class MuninnPageCache implements RunnablePageCache
     // or has another FreePageWaiter at the head.
     // This contraption basically gives us a "transfer stack" with some space
     // optimisations for the initial bulk of contents.
-    // This field is accessed via Unsafe.
+    @SuppressWarnings( "unused" ) // This field is accessed via Unsafe.
     private volatile Object freelist;
 
     // Linked list of mappings - guarded by synchronized(this)
@@ -147,20 +174,16 @@ public class MuninnPageCache implements RunnablePageCache
 
     // The thread that runs the eviction algorithm. We unpark this when we've run out of
     // free pages to grab.
-    private volatile Thread evictorThread;
+    private volatile Thread evictionThread;
     private volatile IOException evictorException;
+    // The thread that does background flushing.
+    private volatile Thread flushThread;
 
     // Flag for when page cache is closed - writes guarded by synchronized(this), reads can be unsynchronized
     private volatile boolean closed;
 
-    public MuninnPageCache(
-            FileSystemAbstraction fs,
-            int maxPages,
-            int pageSize,
-            PageCacheTracer monitor )
-    {
-        this( new SingleFilePageSwapperFactory( fs ), maxPages, pageSize, monitor );
-    }
+    // Only used by ensureThreadsInitialised while holding the monitor lock on this MuninnPageCache instance.
+    private boolean threadsInitialised;
 
     public MuninnPageCache(
             PageSwapperFactory swapperFactory,
@@ -171,10 +194,11 @@ public class MuninnPageCache implements RunnablePageCache
         verifyHacks();
         verifyCachePageSizeIsPowerOfTwo( cachePageSize );
 
+        this.pageCacheId = pageCacheIdCounter.incrementAndGet();
         this.swapperFactory = swapperFactory;
         this.cachePageSize = cachePageSize;
         this.keepFree = Math.min( pagesToKeepFree, maxPages / 2 );
-        this.cursorPool = new MuninnCursorPool();
+        this.cursorPool = new CursorPool();
         this.tracer = tracer;
         this.pages = new MuninnPage[maxPages];
 
@@ -231,6 +255,7 @@ public class MuninnPageCache implements RunnablePageCache
     public synchronized PagedFile map( File file, int filePageSize ) throws IOException
     {
         assertHealthy();
+        ensureThreadsInitialised();
         if ( filePageSize > cachePageSize )
         {
             throw new IllegalArgumentException( "Cannot map files with a filePageSize (" +
@@ -275,6 +300,37 @@ public class MuninnPageCache implements RunnablePageCache
         mappedFiles = current;
         tracer.mappedFile( file );
         return pagedFile;
+    }
+
+    /**
+     * Note: Must be called while synchronizing on the MuninnPageCache instance.
+     */
+    private void ensureThreadsInitialised() throws IOException
+    {
+        if ( threadsInitialised )
+        {
+            return;
+        }
+        threadsInitialised = true;
+
+        try
+        {
+            backgroundThreadExecutor.execute( new EvictionTask( this ) );
+            backgroundThreadExecutor.execute( new FlushTask( this ) );
+        }
+        catch ( Exception e )
+        {
+            IOException exception = new IOException( e );
+            try
+            {
+                close();
+            }
+            catch ( IOException closeException )
+            {
+                exception.addSuppressed( closeException );
+            }
+            throw exception;
+        }
     }
 
     synchronized void unmap( MuninnPagedFile file )
@@ -350,9 +406,8 @@ public class MuninnPageCache implements RunnablePageCache
     {
         try ( MajorFlushEvent cacheFlush = tracer.beginCacheFlush() )
         {
-            for ( int i = 0; i < pages.length; i++ )
+            for ( MuninnPage page : pages )
             {
-                MuninnPage page = pages[i];
                 long stamp = page.readLock();
                 try
                 {
@@ -397,6 +452,19 @@ public class MuninnPageCache implements RunnablePageCache
         {
             pages[i] = null;
         }
+
+        interrupt( evictionThread );
+        evictionThread = null;
+        interrupt( flushThread );
+        flushThread = null;
+    }
+
+    private void interrupt( Thread thread )
+    {
+        if ( thread != null )
+        {
+            thread.interrupt();
+        }
     }
 
     @Override
@@ -434,6 +502,11 @@ public class MuninnPageCache implements RunnablePageCache
     public int maxCachedPages()
     {
         return pages.length;
+    }
+
+    int getPageCacheId()
+    {
+        return pageCacheId;
     }
 
     MuninnPage grabFreePage( PageFaultEvent faultEvent ) throws IOException
@@ -534,7 +607,7 @@ public class MuninnPageCache implements RunnablePageCache
 
     private void unparkEvictor()
     {
-        LockSupport.unpark( evictorThread );
+        LockSupport.unpark( evictionThread );
     }
 
     private Object getFreelistHead()
@@ -555,22 +628,15 @@ public class MuninnPageCache implements RunnablePageCache
     }
 
     /**
-     * Runs the eviction algorithm. Must be run in a dedicated thread.
+     * Scan through all the pages, one by one, and decrement their usage stamps.
+     * If a usage reaches zero, we try-write-locking it, and if we get that lock,
+     * we evict the page. If we don't, we move on to the next page.
+     * Once we have enough free pages, we park our thread. Page-faulting will
+     * unpark our thread as needed.
      */
-    @Override
-    public void run()
+    void continuouslySweepPages()
     {
-        // We scan through all the pages, one by one, and decrement their usage stamps.
-        // If a usage reaches zero, we try-write-locking it, and if we get that lock,
-        // we evict the page. If we don't, we move on to the next page.
-        // Once we have enough free pages, we park our thread. Page-faulting will
-        // unpark our thread as needed.
-        evictorThread = Thread.currentThread();
-        continuouslySweepPages();
-    }
-
-    private void continuouslySweepPages()
-    {
+        evictionThread = Thread.currentThread();
         int clockArm = 0;
 
         while ( !Thread.interrupted() )
@@ -799,6 +865,92 @@ public class MuninnPageCache implements RunnablePageCache
     private void clearEvictorException()
     {
         evictorException = null;
+    }
+
+    /**
+     * Scan through all the pages, flushing the dirty ones. Aim to only spend at most 50% of its time doing IO, in an
+     * effort to avoid saturating the IO subsystem or steal precious IO resources from more important work.
+     */
+    void continuouslyFlushPages()
+    {
+        Thread thread = Thread.currentThread();
+        flushThread = thread;
+
+        while ( !thread.isInterrupted() )
+        {
+            boolean flushedAnything = flushAtIORatio( backgroundFlushIoRatio );
+            if ( !flushedAnything )
+            {
+                LockSupport.parkNanos( this, TimeUnit.SECONDS.toNanos( 1 ) );
+            }
+        }
+    }
+
+    private boolean flushAtIORatio( double ratio )
+    {
+        Thread thread = Thread.currentThread();
+        long sleepDebtNanos = 0;
+        long sleepPaymentThreshold = TimeUnit.MILLISECONDS.toNanos( 10 );
+        boolean flushedAnything = false;
+
+        try ( MajorFlushEvent event = tracer.beginCacheFlush() )
+        {
+            for ( MuninnPage page : pages )
+            {
+                if ( page == null || thread.isInterrupted() )
+                {
+                    // Null pages means the page cache has been closed.
+                    thread.interrupt();
+                    return true;
+                }
+
+                // The rate is the percentage of time that we want to spend doing IO. If the rate is 0.3, then we
+                // want to spend 30% of our time doing IO. We would then spend the other 70% of the time just
+                // sleeping. This means that for every IO we do, we measure how long it takes. We can then compute
+                // the amount of time we need to sleep. Basically, if we spend 30 microseconds doing IO, then we need
+                // to sleep for 70 microseconds, with the 0.3 ratio. To get the sleep time, we can divide the IO time
+                // T by the ratio R, and then multiply the result by 1 - R. This is equivalent to (T/R) - T = S.
+                // Then, because we don't want to sleep too frequently in too small intervals, we sum up our S's and
+                // only sleep when we have collected a sleep debt of at least 10 milliseconds.
+                long stamp = page.tryReadLock();
+                if ( stamp != 0 )
+                {
+                    try
+                    {
+                        if ( !page.isDirty() )
+                        {
+                            continue; // Continue looping to the next page.
+                        }
+
+                        long startNanos = System.nanoTime();
+                        page.flush( event.flushEventOpportunity() );
+                        long elapsedNanos = System.nanoTime() - startNanos;
+
+                        sleepDebtNanos += (elapsedNanos/ratio) - elapsedNanos;
+                        flushedAnything = true;
+                    }
+                    catch ( Throwable ignore )
+                    {
+                        // The MuninnPage.flush method will keep the page dirty if flushing fails, and the eviction
+                        // thread will eventually report the problem if its serious. Ergo, we can just ignore any and
+                        // all exceptions, and move on to the next page. If we end up not getting anything done this
+                        // iteration of flushAtIORatio, then that's fine too.
+                    }
+                    finally
+                    {
+                        page.unlockRead( stamp );
+                    }
+                }
+
+                // Check if we've collected enough sleep debt, and if so, pay it back.
+                if ( sleepDebtNanos > sleepPaymentThreshold )
+                {
+                    LockSupport.parkNanos( sleepDebtNanos );
+                    sleepDebtNanos = 0;
+                }
+            }
+        }
+        return flushedAnything;
     }
 
     @Override

@@ -26,8 +26,10 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.helpers.Function;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -36,6 +38,8 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestGraphDatabaseFactoryState;
 import org.neo4j.test.impl.EphemeralIdGenerator;
 import org.neo4j.tooling.GlobalGraphOperations;
 
@@ -45,7 +49,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.hasLabel;
 import static org.neo4j.graphdb.Neo4jMatchers.hasLabels;
@@ -625,45 +628,64 @@ public class LabelsAcceptanceTest
     @SuppressWarnings("deprecation")
     private GraphDatabaseService beansAPIWithNoMoreLabelIds()
     {
-        return new ImpermanentGraphDatabase()
+        final EphemeralIdGenerator.Factory idFactory = new EphemeralIdGenerator.Factory()
         {
             @Override
-            protected IdGeneratorFactory createIdGeneratorFactory()
+            public IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType,
+                                     long highId )
             {
-                return new EphemeralIdGenerator.Factory()
+                switch ( idType )
+                {
+                case LABEL_TOKEN:
+                {
+                    IdGenerator generator = generators.get( idType );
+                    if ( generator == null )
+                    {
+                        generator = new EphemeralIdGenerator( idType )
+                        {
+                            @Override
+                            public long nextId()
+                            {
+                                // Same exception as the one thrown by IdGeneratorImpl
+                                throw new UnderlyingStorageException( "Id capacity exceeded" );
+                            }
+                        };
+                        generators.put( idType, generator );
+                    }
+                    return generator;
+                }
+
+                default:
+                    return super.open( fs, fileName, grabSize, idType, Long.MAX_VALUE );
+                }
+            }
+        };
+
+        TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory()
+        {
+            @Override
+            protected GraphDatabaseBuilder.DatabaseCreator createImpermanentDatabaseCreator(
+                    final String storeDir, final TestGraphDatabaseFactoryState state )
+            {
+                return new GraphDatabaseBuilder.DatabaseCreator()
                 {
                     @Override
-                    public IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType,
-                                             long highId )
+                    public GraphDatabaseService newDatabase( Map<String,String> config )
                     {
-                        switch ( idType )
+                        return new ImpermanentGraphDatabase( storeDir, config, state.databaseDependencies() )
                         {
-                            case LABEL_TOKEN:
+                            @Override
+                            protected IdGeneratorFactory createIdGeneratorFactory()
                             {
-                                IdGenerator generator = generators.get( idType );
-                                if ( generator == null )
-                                {
-                                    generator = new EphemeralIdGenerator( idType )
-                                                {
-                                                    @Override
-                                                    public long nextId()
-                                                    {
-                                                        // Same exception as the one thrown by IdGeneratorImpl
-                                                        throw new UnderlyingStorageException( "Id capacity exceeded" );
-                                                    }
-                                                };
-                                    generators.put( idType, generator );
-                                }
-                                return generator;
+                                return idFactory;
                             }
-
-                            default:
-                                return super.open( fs, fileName, grabSize, idType, Long.MAX_VALUE );
-                        }
+                        };
                     }
                 };
             }
         };
+
+        return dbFactory.newImpermanentDatabase();
     }
 
     private Node createNode( GraphDatabaseService db, Label... labels )

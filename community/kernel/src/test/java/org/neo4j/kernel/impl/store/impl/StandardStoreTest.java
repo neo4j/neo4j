@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.impl.store.impl;
 
-import java.io.File;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.kernel.impl.store.format.Store;
 import org.neo4j.kernel.impl.store.format.TestCursor;
 import org.neo4j.kernel.impl.store.format.TestFormatWithHeader;
@@ -36,15 +35,21 @@ import org.neo4j.kernel.impl.store.standard.StandardStore;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.PageCacheRule;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class StandardStoreTest
 {
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    @Rule
+    public PageCacheRule pageCacheRule = new PageCacheRule();
 
     private LifeSupport life;
     private PageCache pageCache;
@@ -54,7 +59,7 @@ public class StandardStoreTest
     {
         life = new LifeSupport();
         life.start();
-        pageCache = new MuninnPageCache( fsRule.get(), 1024, 1024, PageCacheTracer.NULL );
+        pageCache = pageCacheRule.getPageCache( fsRule.get() );
     }
 
     @Test
@@ -88,6 +93,8 @@ public class StandardStoreTest
 
         assertThat( StoreMatchers.records( store ),
            equalTo( asList( new TestRecord( firstId, 1337 ), new TestRecord( secondId, 1338 ) ) ) );
+        store.stop();
+        store.shutdown();
     }
 
     @Test
@@ -99,13 +106,13 @@ public class StandardStoreTest
 
         long recordId = store.allocate();
 
-        store.write( new TestRecord( recordId, 1338) );
+        store.write( new TestRecord( recordId, 1338 ) );
 
         // When
         TestRecord secondRecord = store.read( recordId );
 
         // Then
-        assertThat(secondRecord.value, equalTo(1338l));
+        assertThat( secondRecord.value, equalTo( 1338l ) );
 
         // And when I restart the store
         life.shutdown();
@@ -116,6 +123,8 @@ public class StandardStoreTest
         store.start();
 
         assertThat( StoreMatchers.records( store ), equalTo( asList( new TestRecord( recordId, 1338 ) ) ) );
+        store.stop();
+        store.shutdown();
     }
 
     @Test
@@ -146,6 +155,8 @@ public class StandardStoreTest
         assertTrue(cursor.next());
         assertEquals(firstId, cursor.recordId());
         assertFalse(cursor.next());
+        store.stop();
+        store.shutdown();
     }
 }
 

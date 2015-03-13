@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.impl;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,13 +27,19 @@ import org.neo4j.kernel.impl.store.format.Store;
 
 public class StoreMatchers
 {
-    public static <R> List<R> records( Store<R, ? extends Store.RecordCursor<R>> store )
+    public static <R> List<R> records( Store<R, ? extends Store.RecordCursor<R>> store ) throws IOException
     {
         List<R> records = new ArrayList<>();
         Store.RecordCursor<R> cursor = store.cursor(0);
-        while(cursor.next())
+        while ( cursor.next() )
         {
-            records.add( cursor.clonedRecord() );
+            R record;
+            do
+            {
+                record = cursor.clonedRecord();
+            }
+            while ( cursor.shouldRetry() );
+            records.add( record );
         }
         return records;
     }

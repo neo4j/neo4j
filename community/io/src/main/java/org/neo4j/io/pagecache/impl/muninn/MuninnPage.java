@@ -90,7 +90,10 @@ final class MuninnPage extends StampedLock implements Page
         return 1 << (cachePageHeader & 0x7F);
     }
 
-    private boolean isDirty()
+    /**
+     * NOTE: Must be called under a page lock.
+     */
+    boolean isDirty()
     {
         return (cachePageHeader & ~0x7F) != 0;
     }

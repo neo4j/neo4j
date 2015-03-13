@@ -25,10 +25,10 @@ import java.io.PrintStream;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.core.Token;
-import org.neo4j.kernel.impl.pagecache.StandalonePageCache;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.kvstore.Headers;
@@ -55,7 +55,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
 
     public static void dumpCountsStore( FileSystemAbstraction fs, File path, PrintStream out ) throws IOException
     {
-        try ( StandalonePageCache pages = createPageCache( fs, "counts-store-dump" ); Lifespan life = new Lifespan() )
+        try ( PageCache pages = createPageCache( fs ); Lifespan life = new Lifespan() )
         {
             if ( fs.isDirectory( path ) )
             {

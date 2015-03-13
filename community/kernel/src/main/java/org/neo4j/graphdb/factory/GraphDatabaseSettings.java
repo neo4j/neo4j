@@ -214,6 +214,13 @@ public abstract class GraphDatabaseSettings
 
     private static String defaultPageCacheMemory()
     {
+        // First check if we have a default override...
+        String defaultMemoryOverride = System.getProperty( "dbms.pagecache.memory.default.override" );
+        if ( defaultMemoryOverride != null )
+        {
+            return defaultMemoryOverride;
+        }
+
         // Try to compute (RAM - maxheap) * 0.75 if we can get reliable numbers...
         long maxHeapMemory = Runtime.getRuntime().maxMemory();
         if ( 0 < maxHeapMemory && maxHeapMemory < Long.MAX_VALUE )
