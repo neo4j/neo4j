@@ -52,9 +52,8 @@ public class ReadNodeRecordsStep extends IoProducerStep<NodeRecord[]>
         NodeRecord[] batch = new NodeRecord[size];
         for ( int i = 0; i < size; i++ )
         {
-            // Passing in null creates a new record if it's in use. Returning null is fine since our processor,
-            // i.e. consumer of these batches, will filter those out.
-            batch[i] = nodeStore.loadRecord( id++, null );
+            // We don't want null in batch[i], a not used record is what we want
+            nodeStore.loadRecord( id, batch[i] = new NodeRecord( id++ ) );
         }
         return size > 0 ? batch : null;
     }

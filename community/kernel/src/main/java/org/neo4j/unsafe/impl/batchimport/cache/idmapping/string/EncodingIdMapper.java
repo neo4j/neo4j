@@ -27,7 +27,6 @@ import java.util.Map;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
-import org.neo4j.function.primitive.PrimitiveIntPredicate;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
@@ -38,6 +37,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.LongBitsManipulator;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 
 import static java.lang.Math.max;
@@ -120,7 +120,7 @@ public class EncodingIdMapper implements IdMapper
     public long get( Object inputId, Group group )
     {
         assert readyForUse;
-        return binarySearch( inputId, group );
+        return binarySearch( inputId, group.id() );
     }
 
     @Override
@@ -188,7 +188,7 @@ public class EncodingIdMapper implements IdMapper
      * </ol>
      */
     @Override
-    public void prepare( InputIterable<Object> ids, ProgressListener progress )
+    public void prepare( InputIterable<Object> ids, Collector collector, ProgressListener progress )
     {
         endPreviousGroup();
         synchronized ( this )
@@ -201,7 +201,7 @@ public class EncodingIdMapper implements IdMapper
         {
             try ( InputIterator<Object> idIterator = ids.iterator() )
             {
-                buildCollisionInfo( idIterator, progress );
+                buildCollisionInfo( idIterator, collector, progress );
             }
         }
         readyForUse = true;
@@ -212,7 +212,7 @@ public class EncodingIdMapper implements IdMapper
         return radix.calculator().radixOf( value );
     }
 
-    private long binarySearch( Object inputId, PrimitiveIntPredicate inGroup )
+    private long binarySearch( Object inputId, int groupId )
     {
         long low = 0;
         long highestSetTrackerIndex = trackerCache.highestSetIndex();
@@ -229,12 +229,12 @@ public class EncodingIdMapper implements IdMapper
             }
         }
 
-        long returnVal = binarySearch( x, inputId, low, high, inGroup );
+        long returnVal = binarySearch( x, inputId, low, high, groupId );
         if ( returnVal == -1 )
         {
             low = 0;
             high = trackerCache.size() - 1;
-            returnVal = binarySearch( x, inputId, low, high, inGroup );
+            returnVal = binarySearch( x, inputId, low, high, groupId );
         }
         return returnVal;
     }
@@ -297,7 +297,7 @@ public class EncodingIdMapper implements IdMapper
         dataCache.set( index, setCollision( dataCache.get( index ) ) );
     }
 
-    private void buildCollisionInfo( InputIterator<Object> ids, ProgressListener progress )
+    private void buildCollisionInfo( InputIterator<Object> ids, Collector collector, ProgressListener progress )
     {
         // This is currently the only way of discovering duplicate input ids, checked per group.
         // groupId --> inputId --> CollisionPoint(dataIndex,sourceLocation)
@@ -324,10 +324,7 @@ public class EncodingIdMapper implements IdMapper
                     String existing = collisionsForGroup.get( id );
                     if ( existing != null )
                     {
-                        throw new IllegalStateException( "Id '" + id + "' is defined more than once in " +
-                                group.name() + ", at least at " +
-                                existing + " and " +
-                                sourceLocation( ids ) );
+                        collector.collectDuplicateNode( id, i, group.name(), existing, sourceLocation( ids ) );
                     }
                     collisionsForGroup.put( id, sourceLocation( ids ) );
 
@@ -364,7 +361,7 @@ public class EncodingIdMapper implements IdMapper
         throw new IllegalArgumentException( "Strange, index " + dataIndex + " isn't included in a group" );
     }
 
-    private long binarySearch( long x, Object inputId, long low, long high, PrimitiveIntPredicate inGroup )
+    private long binarySearch( long x, Object inputId, long low, long high, int groupId )
     {
         while ( low <= high )
         {
@@ -379,9 +376,9 @@ public class EncodingIdMapper implements IdMapper
             {
                 if ( isCollision( midValue ) )
                 {
-                    return findFromCollisions( mid, inputId, inGroup );
+                    return findFromCollisions( mid, inputId, groupId );
                 }
-                return inGroup.accept( groupOf( index ).id() ) ? index : -1;
+                return groupOf( index ).id() == groupId ? index : -1;
             }
             else if ( unsignedCompare( clearCollision( midValue ), x, CompareType.LT ) )
             {
@@ -420,7 +417,7 @@ public class EncodingIdMapper implements IdMapper
         return -1;
     }
 
-    private long findFromCollisions( long index, Object inputId, PrimitiveIntPredicate inGroup )
+    private long findFromCollisions( long index, Object inputId, int groupId )
     {
         long val = clearCollision( dataCache.get( trackerCache.get( index ) ) );
         assert val == encoder.encode( inputId );
@@ -438,47 +435,31 @@ public class EncodingIdMapper implements IdMapper
         }
         long toIndex = index;
 
-        // Find, hopefully one, match given the inputId and group matcher. This is the first step
-        // where the DETECTOR is used.
-        long result = findFromCollisions( fromIndex, toIndex, inGroup, inputId, CollisionHandler.DETECTOR );
-        if ( result == CollisionHandler.COLLISION_MARK )
-        {
-            // If multiple matches were found we go and do the same find once more but using a different
-            // handler. A handler that gathers information about the collision, information useful to the caller
-            // and, in extension, the user. This information gathering is done as a second step to avoid
-            // having to instantiate unnecessary state objects up-front if only a single match was found,
-            // which is by far the most common case.
-            CollisionHandler.Detective detective = new CollisionHandler.Detective( inputId );
-            findFromCollisions( fromIndex, toIndex, inGroup, inputId, detective );
-            throw detective.exception();
-        }
-
-        return result;
+        return findFromCollisions( fromIndex, toIndex, groupId, inputId );
     }
 
-    private long findFromCollisions( long fromIndex, long toIndex, PrimitiveIntPredicate inGroup, Object inputId,
-            CollisionHandler resolver )
+    private long findFromCollisions( long fromIndex, long toIndex, int groupId, Object inputId )
     {
-        long found = -1;
+        long lowestFound = -1; // lowest data index means "first put"
         for ( long index = fromIndex; index <= toIndex; index++ )
         {
             int dataIndex = trackerCache.get( index );
             IdGroup group = groupOf( dataIndex );
-            if ( inGroup.accept( group.id() ) )
+            if ( groupId == group.id() )
             {
                 // If we have more than Integer.MAX_VALUE collisions then I'd be darned.
                 int collisionIndex = safeCastLongToInt( findIndex( collisionCache, dataIndex ) );
                 Object value = collisionValues.get( collisionIndex );
                 if ( inputId.equals( value ) )
                 {
-                    long foundIndex = trackerCache.get( index );
-                    found = resolver.handle( found, foundIndex, group );
-                    // continue checking so that we can throw the exception above, so that the lookup
-                    // happens in a deterministic fashion.
+                    lowestFound = lowestFound == -1 ? dataIndex : min( lowestFound, dataIndex );
+                    // continue checking so that we can find the lowest one. It's not up to us here to
+                    // consider multiple equal ids in this group an error or not. That should have been
+                    // decided in #prepare.
                 }
             }
         }
-        return found;
+        return lowestFound;
     }
 
     static boolean compareDataCache( LongArray dataCache, IntArray tracker, int a, int b, CompareType compareType )

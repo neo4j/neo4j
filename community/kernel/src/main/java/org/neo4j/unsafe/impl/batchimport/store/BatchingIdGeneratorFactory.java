@@ -23,9 +23,9 @@ import java.io.File;
 import java.util.EnumMap;
 import java.util.Map;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdRange;
 
@@ -107,8 +107,7 @@ public class BatchingIdGeneratorFactory implements IdGeneratorFactory
 
         @Override
         public void freeId( long id )
-        {
-            throw new UnsupportedOperationException();
+        {   // No freeing of ids
         }
 
         @Override

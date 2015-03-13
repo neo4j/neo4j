@@ -19,7 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
@@ -41,7 +40,6 @@ import static org.neo4j.graphdb.Direction.OUTGOING;
 public class RelationshipEncoderStep extends ExecutorServiceStep<Batch<InputRelationship,RelationshipRecord>>
 {
     private final BatchingTokenRepository<?> relationshipTypeRepository;
-    private final RelationshipStore relationshipStore;
     private final NodeRelationshipLink nodeRelationshipLink;
 
     // There are two "modes" in generating relationship ids
@@ -55,13 +53,11 @@ public class RelationshipEncoderStep extends ExecutorServiceStep<Batch<InputRela
     public RelationshipEncoderStep( StageControl control,
             Configuration config,
             BatchingTokenRepository<?> relationshipTypeRepository,
-            RelationshipStore relationshipStore,
             NodeRelationshipLink nodeRelationshipLink,
             boolean specificIds )
     {
         super( control, "RELATIONSHIP", config.workAheadSize(), config.movingAverageSize(), 1 );
         this.relationshipTypeRepository = relationshipTypeRepository;
-        this.relationshipStore = relationshipStore;
         this.nodeRelationshipLink = nodeRelationshipLink;
         this.specificIds = specificIds;
     }
@@ -88,11 +84,11 @@ public class RelationshipEncoderStep extends ExecutorServiceStep<Batch<InputRela
             {   // This means that we here have a relationship that refers to missing nodes.
                 // It also means that we tolerate some amount of bad relationships and CalculateDenseNodesStep
                 // already have reported this to the bad collector.
-                batch.records[i] = null;
+                batch.records[i] = new RelationshipRecord( relationshipId );
+                batch.records[i].setInUse( false );
                 continue;
             }
 
-            relationshipStore.setHighestPossibleIdInUse( relationshipId );
             int typeId = batchRelationship.hasTypeId() ? batchRelationship.typeId() :
                     relationshipTypeRepository.getOrCreateId( batchRelationship.type() );
             RelationshipRecord relationshipRecord = batch.records[i] = new RelationshipRecord( relationshipId,

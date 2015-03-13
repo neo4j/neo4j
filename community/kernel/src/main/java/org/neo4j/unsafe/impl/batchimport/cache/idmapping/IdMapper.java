@@ -23,6 +23,7 @@ import org.neo4j.function.primitive.PrimitiveIntPredicate;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
@@ -58,9 +59,10 @@ public interface IdMapper
      *
      * @param all ids put earlier, in the event of difficult collisions so that more information have to be read
      * from the input data again, data that normally isn't necessary and hence discarded.
+     * @param collector {@link Collector} for bad entries, such as duplicate node ids.
      * @param progress reports preparation progress.
      */
-    void prepare( InputIterable<Object> allIds, ProgressListener progress );
+    void prepare( InputIterable<Object> allIds, Collector collector, ProgressListener progress );
 
     /**
      * Returns an actual node id representing {@code inputId}. For this call to work {@link #prepare()} must have

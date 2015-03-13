@@ -19,10 +19,14 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.Predicates;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 
 /**
@@ -31,12 +35,38 @@ import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 public class NodeFirstRelationshipStage extends Stage
 {
     public NodeFirstRelationshipStage( Configuration config, NodeStore nodeStore,
-            RelationshipGroupStore relationshipGroupStore, NodeRelationshipLink cache )
+            RelationshipGroupStore relationshipGroupStore, NodeRelationshipLink cache,
+            Collector collector )
     {
         super( "Node --> Relationship", config, false );
         add( new ReadNodeRecordsStep( control(), config.batchSize(), config.movingAverageSize(), nodeStore ) );
         add( new RecordProcessorStep<>( control(), "LINK", config.workAheadSize(), config.movingAverageSize(),
                 new NodeFirstRelationshipProcessor( relationshipGroupStore, cache ), false ) );
-        add( new UpdateRecordsStep<>( control(), config.workAheadSize(), config.movingAverageSize(), nodeStore ) );
+        add( new UpdateRecordsStep<>( control(), config.workAheadSize(), config.movingAverageSize(), nodeStore,
+                expludeDuplicates( collector.leftOverDuplicateNodesIds() ) ) );
+    }
+
+    private Predicate<NodeRecord> expludeDuplicates( final PrimitiveLongIterator ids )
+    {
+        return !ids.hasNext() ? Predicates.<NodeRecord>TRUE() : new Predicate<NodeRecord>()
+        {
+            private long current = ids.next();
+            private boolean end;
+
+            @Override
+            public boolean accept( NodeRecord node )
+            {
+                if ( !end && current == node.getId() )
+                {   // Found an id to exclude, exclude it and go to the next (they are sorted)
+                    end = !ids.hasNext();
+                    if ( !end )
+                    {
+                        current = ids.next();
+                    }
+                    return false;
+                }
+                return true;
+            }
+        };
     }
 }
