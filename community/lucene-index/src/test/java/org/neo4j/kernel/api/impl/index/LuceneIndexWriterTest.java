@@ -36,22 +36,21 @@ import java.io.IOException;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.index.impl.lucene.LuceneDataSource.KEYWORD_ANALYZER;
 
-public class WriterLogicTest
+public class LuceneIndexWriterTest
 {
-
     @Test
     public void forceShouldSetOnlineStatus() throws Exception
     {
         // GIVEN
         LuceneIndexWriter writer = newWriter();
         writer.addDocument( newDocument() );
-        logic.commitAsOnline( writer );
+        writer.commitAsOnline();
 
         // WHEN
-        writer.close( true );
+        writer.close();
 
         // THEN
-        assertTrue( "Should have had online status set", logic.isOnline( directory ) );
+        assertTrue( "Should have had online status set", LuceneIndexWriter.isOnline( directory ) );
     }
 
     @Test
@@ -59,15 +58,15 @@ public class WriterLogicTest
     {
         // GIVEN
         LuceneIndexWriter writer = newWriter();
-        logic.commitAsOnline( writer );
+        writer.commitAsOnline();
 
         // WHEN
         writer.addDocument( newDocument() );
-        logic.commitAsOnline( writer );
-        writer.close( true );
+        writer.commitAsOnline();
+        writer.close();
 
         // THEN
-        assertTrue( "Should have had online status set", logic.isOnline( directory ) );
+        assertTrue( "Should have had online status set", LuceneIndexWriter.isOnline( directory ) );
     }
 
     @Test
@@ -75,19 +74,18 @@ public class WriterLogicTest
     {
         // GIVEN
         LuceneIndexWriter writer = newWriter();
-        logic.commitAsOnline( writer );
-        writer.close( true );
+        writer.commitAsOnline();
+        writer.close();
 
         // WHEN
         writer = newWriter();
         writer.addDocument( newDocument() );
-        writer.close( true );
+        writer.close();
 
         // THEN
-        assertTrue( "Should have had online status set", logic.isOnline( directory ) );
+        assertTrue( "Should have had online status set", LuceneIndexWriter.isOnline( directory ) );
     }
 
-    private final IndexWriterStatus logic = new IndexWriterStatus();
     private Directory directory;
     private DirectoryFactory.InMemoryDirectoryFactory dirFactory;
 

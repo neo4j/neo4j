@@ -66,12 +66,11 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
     DeferredConstraintVerificationUniqueLuceneIndexPopulator( LuceneDocumentStructure documentStructure,
                                                               IndexWriterFactory<LuceneIndexWriter> writers,
                                                               SearcherManagerFactory searcherManagerFactory,
-                                                              IndexWriterStatus writerStatus,
                                                               DirectoryFactory dirFactory, File dirFile,
                                                               FailureStorage failureStorage, long indexId,
                                                               IndexDescriptor descriptor )
     {
-        super( documentStructure, writers, writerStatus, dirFactory, dirFile, failureStorage, indexId );
+        super( documentStructure, writers, dirFactory, dirFile, failureStorage, indexId );
         this.descriptor = descriptor;
         this.sampler = new UniqueIndexSampler();
         this.searcherManagerFactory = searcherManagerFactory;

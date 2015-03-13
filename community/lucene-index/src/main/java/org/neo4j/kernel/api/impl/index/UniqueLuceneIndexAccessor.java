@@ -40,10 +40,9 @@ class UniqueLuceneIndexAccessor extends LuceneIndexAccessor
 {
     public UniqueLuceneIndexAccessor( LuceneDocumentStructure documentStructure,
                                       IndexWriterFactory<ReservingLuceneIndexWriter> indexWriterFactory,
-                                      IndexWriterStatus writerStatus, DirectoryFactory dirFactory,
-                                      File dirFile ) throws IOException
+                                      DirectoryFactory dirFactory, File dirFile ) throws IOException
     {
-        super( documentStructure, indexWriterFactory, writerStatus, dirFactory, dirFile, -1 /* unused */ );
+        super( documentStructure, indexWriterFactory, dirFactory, dirFile, -1 /* unused */ );
     }
 
     @Override

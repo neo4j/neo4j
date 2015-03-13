@@ -198,8 +198,7 @@ public class LuceneIndexAccessorReservationsTest
                             public IndexAccessor create( ReservingLuceneIndexWriter writer ) throws IOException
                             {
                                 return new UniqueLuceneIndexAccessor( new LuceneDocumentStructure(),
-                                        factoryOfOne( writer ), new IndexWriterStatus(), new InMemoryDirectoryFactory(),
-                                        new File( "unique" ) );
+                                        factoryOfOne( writer ), new InMemoryDirectoryFactory(), new File( "unique" ) );
                             }
                         }},
                 new Object[]{
@@ -210,7 +209,7 @@ public class LuceneIndexAccessorReservationsTest
                             public IndexAccessor create( ReservingLuceneIndexWriter writer ) throws IOException
                             {
                                 return new NonUniqueLuceneIndexAccessor( new LuceneDocumentStructure(),
-                                        factoryOfOne( writer ), new IndexWriterStatus(), new InMemoryDirectoryFactory(),
+                                        factoryOfOne( writer ), new InMemoryDirectoryFactory(),
                                         new File( "non-unique" ), 100_000 );
                             }
                         }}

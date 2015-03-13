@@ -188,7 +188,6 @@ public class LuceneIndexAccessorTest
     {
         final File dir = new File( "dir" );
         final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
-        final IndexWriterStatus writerLogic = new IndexWriterStatus();
         return Arrays.asList(
                 arg( new RawFunction<DirectoryFactory,LuceneIndexAccessor,IOException>()
                 {
@@ -196,8 +195,7 @@ public class LuceneIndexAccessorTest
                     public LuceneIndexAccessor apply( DirectoryFactory dirFactory )
                             throws IOException
                     {
-                        return new NonUniqueLuceneIndexAccessor( documentLogic, reserving(), writerLogic, dirFactory,
-                                dir, 100_000 );
+                        return new NonUniqueLuceneIndexAccessor( documentLogic, reserving(), dirFactory, dir, 100_000 );
                     }
 
                     @Override
@@ -212,7 +210,7 @@ public class LuceneIndexAccessorTest
                     public LuceneIndexAccessor apply( DirectoryFactory dirFactory )
                             throws IOException
                     {
-                        return new UniqueLuceneIndexAccessor( documentLogic, reserving(), writerLogic, dirFactory, dir );
+                        return new UniqueLuceneIndexAccessor( documentLogic, reserving(), dirFactory, dir );
                     }
 
                     @Override
