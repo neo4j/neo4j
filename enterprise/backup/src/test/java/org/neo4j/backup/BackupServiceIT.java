@@ -30,6 +30,7 @@ import java.io.FileFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -68,6 +69,7 @@ import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.test.Mute;
 import org.neo4j.test.TargetDirectory;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -76,6 +78,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.backup.BackupServiceStressTestingBuilder.untilTimeExpired;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 public class BackupServiceIT
@@ -615,6 +618,20 @@ public class BackupServiceIT
             assertThat( e.getMessage(), equalTo( BackupService.DIFFERENT_STORE ) );
             assertThat( e.getCause(), instanceOf( MismatchingStoreIdException.class ) );
         }
+    }
+
+    @Test
+    public void theBackupServiceShouldBeHappyUnderStress() throws Exception
+    {
+        Callable<Integer> callable = new BackupServiceStressTestingBuilder()
+                .until( untilTimeExpired( 10, SECONDS ) )
+                .withStore( storeDir )
+                .withWorkingDirectory( backupDir )
+                .withBackupAddress( BACKUP_HOST, backupPort )
+                .build();
+
+        int brokenStores = callable.call();
+        assertEquals( 0, brokenStores );
     }
 
     private void defaultBackupPortHostParams()
