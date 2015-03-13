@@ -27,7 +27,6 @@ import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
@@ -68,6 +67,7 @@ import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.api.state.AugmentWithLocalStateExpandCursor;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.index.IndexEntityType;
@@ -287,7 +287,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator relationshipsGetAll( KernelStatement state )
+    public RelationshipIterator relationshipsGetAll( KernelStatement state )
     {
         return state.txState().augmentRelationshipsGetAll( storeLayer.relationshipsGetAll() );
     }
@@ -887,7 +887,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodeGetRelationships( KernelStatement state, long nodeId, Direction direction,
+    public RelationshipIterator nodeGetRelationships( KernelStatement state, long nodeId, Direction direction,
                                                        int[] relTypes ) throws EntityNotFoundException
     {
         relTypes = deduplicate( relTypes );
@@ -895,10 +895,10 @@ public class StateHandlingStatementOperations implements
         if ( state.hasTxStateWithChanges() )
         {
             ReadableTxState txState = state.txState();
-            PrimitiveLongIterator stored;
+            RelationshipIterator stored;
             if( txState.nodeIsAddedInThisTx( nodeId ) )
             {
-                stored = PrimitiveLongCollections.emptyIterator();
+                stored = RelationshipIterator.EMPTY;
             }
             else
             {
@@ -914,19 +914,19 @@ public class StateHandlingStatementOperations implements
                                         RelationshipVisitor<? extends RuntimeException> visitor )
             throws EntityNotFoundException
     {
-        return new RelationshipCursor( state, nodeGetRelationships( state, nodeId, direction, types ), visitor );
+        return new RelationshipCursor( nodeGetRelationships( state, nodeId, direction, types ), visitor );
     }
 
     @Override
-    public PrimitiveLongIterator nodeGetRelationships( KernelStatement state, long nodeId, Direction direction ) throws EntityNotFoundException
+    public RelationshipIterator nodeGetRelationships( KernelStatement state, long nodeId, Direction direction ) throws EntityNotFoundException
     {
         if ( state.hasTxStateWithChanges() )
         {
             ReadableTxState txState = state.txState();
-            PrimitiveLongIterator stored;
+            RelationshipIterator stored;
             if( txState.nodeIsAddedInThisTx( nodeId ) )
             {
-                stored = PrimitiveLongCollections.emptyIterator();
+                stored = RelationshipIterator.EMPTY;
             }
             else
             {
@@ -942,20 +942,18 @@ public class StateHandlingStatementOperations implements
                                         RelationshipVisitor<? extends RuntimeException> visitor )
             throws EntityNotFoundException
     {
-        return new RelationshipCursor( state, nodeGetRelationships( state, nodeId, direction ), visitor );
+        return new RelationshipCursor( nodeGetRelationships( state, nodeId, direction ), visitor );
     }
 
     private class RelationshipCursor implements Cursor
     {
-        private final PrimitiveLongIterator relationships;
-        private final KernelStatement state;
+        private final RelationshipIterator relationships;
         private final RelationshipVisitor<? extends RuntimeException> visitor;
 
-        public RelationshipCursor( KernelStatement state, PrimitiveLongIterator relationships,
-                                   RelationshipVisitor<? extends RuntimeException> visitor )
+        public RelationshipCursor( RelationshipIterator relationships,
+                RelationshipVisitor<? extends RuntimeException> visitor )
         {
             this.relationships = relationships;
-            this.state = state;
             this.visitor = visitor;
         }
 
@@ -964,14 +962,8 @@ public class StateHandlingStatementOperations implements
         {
             while ( relationships.hasNext() )
             {
-                try
-                {
-                    relationshipVisit( state, relationships.next(), visitor );
-                }
-                catch ( EntityNotFoundException e )
-                {
-                    continue;
-                }
+                long relationshipId = relationships.next();
+                relationships.relationshipVisit( relationshipId, visitor );
                 return true;
             }
             return false;

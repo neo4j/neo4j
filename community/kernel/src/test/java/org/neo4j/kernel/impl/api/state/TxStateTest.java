@@ -19,24 +19,27 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.txstate.TxStateVisitor;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.api.txstate.TxStateVisitor;
+import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
 import org.neo4j.test.RandomizedTestRule;
 import org.neo4j.test.RepeatRule;
@@ -289,13 +292,13 @@ public class TxStateTest
         // Then
         long otherRel = relId + 1;
         assertTrue( state.hasChanges() );
-        assertThat( state.augmentRelationships( startNode, OUTGOING, iterator( otherRel ) ),
+        assertThat( state.augmentRelationships( startNode, OUTGOING, wrapInRelationshipIterator( iterator( otherRel ) ) ),
                 containsLongs( relId, otherRel ) );
-        assertThat( state.augmentRelationships( startNode, BOTH, iterator( otherRel ) ),
+        assertThat( state.augmentRelationships( startNode, BOTH, wrapInRelationshipIterator( iterator( otherRel ) ) ),
                 containsLongs( relId, otherRel ) );
-        assertThat( state.augmentRelationships( endNode, INCOMING, iterator( otherRel ) ),
+        assertThat( state.augmentRelationships( endNode, INCOMING, wrapInRelationshipIterator( iterator( otherRel ) ) ),
                 containsLongs( relId, otherRel ) );
-        assertThat( state.augmentRelationships( endNode, BOTH, iterator( otherRel ) ),
+        assertThat( state.augmentRelationships( endNode, BOTH, wrapInRelationshipIterator( iterator( otherRel ) ) ),
                 containsLongs( relId, otherRel ) );
         assertThat( state.addedRelationships( endNode, new int[]{relType}, BOTH ),
                     containsLongs( relId ) );
@@ -316,13 +319,13 @@ public class TxStateTest
 
         // Then
         long otherRel = relId + 1;
-        assertThat( state.augmentRelationships( startNode, OUTGOING, iterator( otherRel ) ),
+        assertThat( state.augmentRelationships( startNode, OUTGOING, wrapInRelationshipIterator( iterator( otherRel ) ) ),
                 containsLongs( otherRel ) );
-        assertThat( state.augmentRelationships( startNode, BOTH, iterator( otherRel ) ),
+        assertThat( state.augmentRelationships( startNode, BOTH, wrapInRelationshipIterator( iterator( otherRel ) ) ),
                 containsLongs( otherRel ) );
-        assertThat( state.augmentRelationships( endNode, INCOMING, iterator( otherRel ) ),
+        assertThat( state.augmentRelationships( endNode, INCOMING, wrapInRelationshipIterator( iterator( otherRel ) ) ),
                 containsLongs( otherRel ) );
-        assertThat( state.augmentRelationships( endNode, BOTH, iterator( otherRel ) ),
+        assertThat( state.augmentRelationships( endNode, BOTH, wrapInRelationshipIterator( iterator( otherRel ) ) ),
                 containsLongs( otherRel ) );
     }
 
@@ -637,6 +640,27 @@ public class TxStateTest
         {
             late = true;
         }
+    }
+
+    public static RelationshipIterator wrapInRelationshipIterator( final PrimitiveLongIterator iterator )
+    {
+        return new RelationshipIterator.BaseIterator()
+        {
+            private int cursor;
+
+            @Override
+            public <EXCEPTION extends Exception> boolean relationshipVisit( long relationshipId,
+                    RelationshipVisitor<EXCEPTION> visitor ) throws EXCEPTION
+            {
+                throw new UnsupportedOperationException( "Shouldn't be required" );
+            }
+
+            @Override
+            protected boolean fetchNext()
+            {
+                return iterator.hasNext() ? next( iterator.next() ) : false;
+            }
+        };
     }
 
     private TransactionState state;

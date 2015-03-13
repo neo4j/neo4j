@@ -29,8 +29,8 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.graphdb.Direction;
 import org.neo4j.function.Function;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -39,13 +39,16 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.txstate.ReadableTxState;
 import org.neo4j.kernel.api.txstate.RelationshipChangeVisitorAdapter;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateVisitor;
 import org.neo4j.kernel.api.txstate.UpdateTriState;
-import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 import org.neo4j.kernel.impl.util.diffsets.DiffSetsVisitor;
 import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
+import org.neo4j.kernel.impl.util.diffsets.ReadableRelationshipDiffSets;
+import org.neo4j.kernel.impl.util.diffsets.RelationshipDiffSets;
 
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.api.properties.Property.property;
@@ -61,7 +64,7 @@ import static org.neo4j.kernel.api.properties.Property.property;
  * into one component. Now that that work is done, this class should be refactored to increase transparency in how it
  * works.
  */
-public final class TxState implements TransactionState
+public final class TxState implements TransactionState, RelationshipVisitor.Home
 {
     private Map<Integer/*Label ID*/, LabelState.Mutable> labelStatesMap;
     private static final LabelState.Defaults LABEL_STATE = new LabelState.Defaults()
@@ -124,7 +127,7 @@ public final class TxState implements TransactionState
     private DiffSets<Long> nodes;
 
     // Tracks added and removed relationships, not modified relationships
-    private DiffSets<Long> relationships;
+    private RelationshipDiffSets<Long> relationships;
 
     // This is temporary. It is needed until we've removed nodes and rels from the global cache, to tell
     // that they were created and then deleted in the same tx. This is here just to set a save point to
@@ -802,7 +805,7 @@ public final class TxState implements TransactionState
     }
 
     @Override
-    public PrimitiveLongIterator augmentRelationships( long nodeId, Direction direction, PrimitiveLongIterator rels )
+    public RelationshipIterator augmentRelationships( long nodeId, Direction direction, RelationshipIterator rels )
     {
         NodeState state;
         if ( nodeStatesMap != null && (state = nodeStatesMap.get( nodeId )) != null )
@@ -815,7 +818,7 @@ public final class TxState implements TransactionState
     }
 
     @Override
-    public PrimitiveLongIterator augmentRelationships( long nodeId, Direction direction, int[] types, PrimitiveLongIterator rels )
+    public RelationshipIterator augmentRelationships( long nodeId, Direction direction, int[] types, RelationshipIterator rels )
     {
         NodeState state;
         if ( nodeStatesMap != null && (state = nodeStatesMap.get( nodeId )) != null )
@@ -852,16 +855,16 @@ public final class TxState implements TransactionState
     }
 
     @Override
-    public ReadableDiffSets<Long> addedAndRemovedRelationships()
+    public ReadableRelationshipDiffSets<Long> addedAndRemovedRelationships()
     {
-        return ReadableDiffSets.Empty.ifNull( relationships );
+        return ReadableRelationshipDiffSets.Empty.ifNull( relationships );
     }
 
-    private DiffSets<Long> relationships()
+    private RelationshipDiffSets<Long> relationships()
     {
         if ( relationships == null )
         {
-            relationships = new DiffSets<>();
+            relationships = new RelationshipDiffSets<>( this );
         }
         return relationships;
     }
@@ -1095,7 +1098,7 @@ public final class TxState implements TransactionState
     }
 
     @Override
-    public PrimitiveLongIterator augmentRelationshipsGetAll( PrimitiveLongIterator committed )
+    public RelationshipIterator augmentRelationshipsGetAll( RelationshipIterator committed )
     {
         return addedAndRemovedRelationships().augment( committed );
     }

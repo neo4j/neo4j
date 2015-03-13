@@ -92,7 +92,7 @@ abstract class StateDefaults<KEY, RO, RW extends RO>
         RW value = map.get( key );
         if ( value == null )
         {
-            map.put( key, value = createValue( key ) );
+            map.put( key, value = createValue( key, state ) );
         }
         return value;
     }
@@ -115,8 +115,9 @@ abstract class StateDefaults<KEY, RO, RW extends RO>
     /** Implemented for the value holder - set the map to the state field. */
     abstract void setMap( TxState state, Map<KEY, RW> map );
 
-    /** Implemented for the value type - initializes state by creating a new instance. */
-    abstract RW createValue( KEY key );
+    /** Implemented for the value type - initializes state by creating a new instance.
+     * @param state */
+    abstract RW createValue( KEY key, TxState state );
 
     /** Implemented for the value type - returns a default read-only version of the value type. */
     abstract RO defaultValue();

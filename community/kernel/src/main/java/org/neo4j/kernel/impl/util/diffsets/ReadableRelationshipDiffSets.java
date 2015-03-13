@@ -24,31 +24,33 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 
-public interface ReadableDiffSets<T> extends SuperReadableDiffSets<T,PrimitiveLongIterator>
+public interface ReadableRelationshipDiffSets<T> extends SuperReadableDiffSets<T,RelationshipIterator>
 {
     @Override
-    ReadableDiffSets<T> filterAdded( Predicate<T> addedFilter );
+    ReadableRelationshipDiffSets<T> filterAdded( Predicate<T> addedFilter );
 
     @Override
-    ReadableDiffSets<T> filter( Predicate<T> filter );
+    ReadableRelationshipDiffSets<T> filter( Predicate<T> filter );
 
-    static final class Empty<T> implements ReadableDiffSets<T>
+    static final class Empty<T> implements ReadableRelationshipDiffSets<T>
     {
         @SuppressWarnings( "unchecked" )
-        public static <T> ReadableDiffSets<T> instance()
+        public static <T> ReadableRelationshipDiffSets<T> instance()
         {
             return INSTANCE;
         }
 
-        public static <T> ReadableDiffSets<T> ifNull( ReadableDiffSets<T> diffSets )
+        @SuppressWarnings( "unchecked" )
+        public static <T> ReadableRelationshipDiffSets<T> ifNull( ReadableRelationshipDiffSets<T> diffSets )
         {
-            return diffSets == null ? Empty.<T>instance() : diffSets;
+            return diffSets == null ? INSTANCE : diffSets;
         }
 
-        private static final ReadableDiffSets INSTANCE = new Empty();
+        @SuppressWarnings( "rawtypes" )
+        private static final ReadableRelationshipDiffSets INSTANCE = new Empty();
 
         private Empty()
         {
@@ -98,7 +100,7 @@ public interface ReadableDiffSets<T> extends SuperReadableDiffSets<T,PrimitiveLo
         }
 
         @Override
-        public PrimitiveLongIterator augment( PrimitiveLongIterator source )
+        public RelationshipIterator augment( RelationshipIterator source )
         {
             return source;
         }
@@ -110,25 +112,25 @@ public interface ReadableDiffSets<T> extends SuperReadableDiffSets<T,PrimitiveLo
         }
 
         @Override
-        public PrimitiveLongIterator augmentWithRemovals( PrimitiveLongIterator source )
+        public RelationshipIterator augmentWithRemovals( RelationshipIterator source )
         {
             return source;
         }
 
         @Override
-        public PrimitiveLongIterator augmentWithAdditions( PrimitiveLongIterator source )
+        public RelationshipIterator augmentWithAdditions( RelationshipIterator source )
         {
             return source;
         }
 
         @Override
-        public ReadableDiffSets<T> filterAdded( Predicate<T> addedFilter )
+        public ReadableRelationshipDiffSets<T> filterAdded( Predicate<T> addedFilter )
         {
             return this;
         }
 
         @Override
-        public ReadableDiffSets<T> filter( Predicate<T> filter )
+        public ReadableRelationshipDiffSets<T> filter( Predicate<T> filter )
         {
             return this;
         }

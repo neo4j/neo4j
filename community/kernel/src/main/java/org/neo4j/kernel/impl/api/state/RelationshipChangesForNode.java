@@ -29,10 +29,12 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.api.RelationshipVisitor.Home;
+import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.util.VersionedHashMap;
 
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.iterator;
@@ -51,79 +53,83 @@ public class RelationshipChangesForNode
     public enum DiffStrategy
     {
         REMOVE
-                {
-                    @Override
-                    int augmentDegree( int degree, int diff )
-                    {
-                        return degree - diff;
-                    }
+        {
+            @Override
+            int augmentDegree( int degree, int diff )
+            {
+                return degree - diff;
+            }
 
-                    @Override
-                    PrimitiveLongIterator augmentPrimitiveIterator( PrimitiveLongIterator original,
-                                                                    Iterator<Set<Long>> diff )
-                    {
-                        throw new UnsupportedOperationException();
-                    }
-                },
+            @Override
+            RelationshipIterator augmentPrimitiveIterator( RelationshipIterator original,
+                    Iterator<Set<Long>> diff, RelationshipVisitor.Home txStateRelationshipHome )
+            {
+                throw new UnsupportedOperationException();
+            }
+        },
         ADD
+        {
+            @Override
+            int augmentDegree( int degree, int diff )
+            {
+                return degree + diff;
+            }
+
+            @Override
+            RelationshipIterator augmentPrimitiveIterator( final RelationshipIterator original,
+                    final Iterator<Set<Long>> diff, final RelationshipVisitor.Home txStateRelationshipHome )
+            {
+                if ( !diff.hasNext() )
                 {
+                    return original;
+                }
+
+                return new RelationshipIterator()
+                {
+                    private Iterator<Long> currentSetOfAddedRels;
+
                     @Override
-                    int augmentDegree( int degree, int diff )
+                    public boolean hasNext()
                     {
-                        return degree + diff;
+                        return original.hasNext() || (currentSetOfAddedRels().hasNext());
+                    }
+
+                    private Iterator<Long> currentSetOfAddedRels()
+                    {
+                        while ( diff.hasNext() && (currentSetOfAddedRels == null || !currentSetOfAddedRels.hasNext()) )
+                        {
+                            currentSetOfAddedRels = diff.next().iterator();
+                        }
+                        return currentSetOfAddedRels;
                     }
 
                     @Override
-                    PrimitiveLongIterator augmentPrimitiveIterator( final PrimitiveLongIterator original,
-                                                                    final Iterator<Set<Long>> diff )
+                    public long next()
                     {
-                        if(!diff.hasNext())
-                        {
-                            return original;
-                        }
+                        return original.hasNext() ? original.next() : currentSetOfAddedRels().next();
+                    }
 
-                        return new PrimitiveLongIterator()
-                        {
-                            private Iterator<Long> currentSetOfAddedRels;
-
-                            @Override
-                            public boolean hasNext()
-                            {
-                                return original.hasNext() || (currentSetOfAddedRels().hasNext());
-                            }
-
-                            private Iterator<Long> currentSetOfAddedRels()
-                            {
-                                while(diff.hasNext() && (currentSetOfAddedRels == null || !currentSetOfAddedRels.hasNext()))
-                                {
-                                    currentSetOfAddedRels = diff.next().iterator();
-                                }
-                                return currentSetOfAddedRels;
-                            }
-
-                            @Override
-                            public long next()
-                            {
-                                if(original.hasNext())
-                                {
-                                    long next = original.next();
-                                    return next;
-                                }
-                                else
-                                {
-                                    return currentSetOfAddedRels().next();
-                                }
-                            }
-                        };
+                    @Override
+                    public <EXCEPTION extends Exception> boolean relationshipVisit( long relationshipId,
+                            RelationshipVisitor<EXCEPTION> visitor ) throws EXCEPTION
+                    {
+                        RelationshipVisitor.Home home = currentSetOfAddedRels != null ?
+                                txStateRelationshipHome : original;
+                        return home.relationshipVisit( relationshipId, visitor );
                     }
                 };
+            }
+        };
 
         abstract int augmentDegree( int degree, int diff );
-        abstract PrimitiveLongIterator augmentPrimitiveIterator( PrimitiveLongIterator original, Iterator<Set<Long>> diff );
+
+        abstract RelationshipIterator augmentPrimitiveIterator( RelationshipIterator original,
+                Iterator<Set<Long>> diff, RelationshipVisitor.Home txStateRelationshipHome );
 
     }
 
     private final DiffStrategy diffStrategy;
+    private final Home relationshipHome;
 
     private Map<Integer /* Type */, Set<Long /* Id */>> outgoing;
     private Map<Integer /* Type */, Set<Long /* Id */>> incoming;
@@ -134,9 +140,10 @@ public class RelationshipChangesForNode
     private int totalIncoming = 0;
     private int totalLoops = 0;
 
-    public RelationshipChangesForNode( DiffStrategy diffStrategy )
+    public RelationshipChangesForNode( DiffStrategy diffStrategy, RelationshipVisitor.Home relationshipHome )
     {
         this.diffStrategy = diffStrategy;
+        this.relationshipHome = relationshipHome;
     }
 
     public void addRelationship( long relId, int typeId, Direction direction )
@@ -207,49 +214,49 @@ public class RelationshipChangesForNode
         return false;
     }
 
-    public PrimitiveLongIterator augmentRelationships( Direction direction, PrimitiveLongIterator rels )
+    public RelationshipIterator augmentRelationships( Direction direction, RelationshipIterator rels )
     {
         return augmentRelationships( direction, rels, ALL_TYPES );
     }
 
-    public PrimitiveLongIterator augmentRelationships( Direction direction, int[] types, PrimitiveLongIterator rels )
+    public RelationshipIterator augmentRelationships( Direction direction, int[] types, RelationshipIterator rels )
     {
         return augmentRelationships( direction, rels, typeFilter( types ) );
     }
 
-    public PrimitiveLongIterator augmentRelationships( Direction direction, PrimitiveLongIterator rels,
-                                                       Function<Map<Integer, Set<Long>>, Iterator<Set<Long>>> typeFilter )
+    public RelationshipIterator augmentRelationships( Direction direction, RelationshipIterator rels,
+                                                      Function<Map<Integer, Set<Long>>, Iterator<Set<Long>>> typeFilter )
     {
         switch ( direction )
         {
-            case INCOMING:
-                if(incoming != null && !incoming.isEmpty())
-                {
-                    rels = diffStrategy.augmentPrimitiveIterator( rels, typeFilter.apply( incoming ) );
-                }
-                break;
-            case OUTGOING:
-                if(outgoing != null && !outgoing.isEmpty())
-                {
-                    rels = diffStrategy.augmentPrimitiveIterator( rels, typeFilter.apply( outgoing ) );
-                }
-                break;
-            case BOTH:
-                if(outgoing != null && !outgoing.isEmpty())
-                {
-                    rels = diffStrategy.augmentPrimitiveIterator( rels, typeFilter.apply( outgoing ) );
-                }
-                if(incoming != null && !incoming.isEmpty())
-                {
-                    rels = diffStrategy.augmentPrimitiveIterator( rels, typeFilter.apply( incoming ) );
-                }
-                break;
+        case INCOMING:
+            if ( incoming != null && !incoming.isEmpty() )
+            {
+                rels = diffStrategy.augmentPrimitiveIterator( rels, typeFilter.apply( incoming ), relationshipHome );
+            }
+            break;
+        case OUTGOING:
+            if ( outgoing != null && !outgoing.isEmpty() )
+            {
+                rels = diffStrategy.augmentPrimitiveIterator( rels, typeFilter.apply( outgoing ), relationshipHome );
+            }
+            break;
+        case BOTH:
+            if ( outgoing != null && !outgoing.isEmpty() )
+            {
+                rels = diffStrategy.augmentPrimitiveIterator( rels, typeFilter.apply( outgoing ), relationshipHome );
+            }
+            if ( incoming != null && !incoming.isEmpty() )
+            {
+                rels = diffStrategy.augmentPrimitiveIterator( rels, typeFilter.apply( incoming ), relationshipHome );
+            }
+            break;
         }
 
         // Loops are always included
-        if(loops != null && !loops.isEmpty())
+        if ( loops != null && !loops.isEmpty() )
         {
-            rels = diffStrategy.augmentPrimitiveIterator( rels, typeFilter.apply( loops ) );
+            rels = diffStrategy.augmentPrimitiveIterator( rels, typeFilter.apply( loops ), relationshipHome );
         }
 
         return rels;

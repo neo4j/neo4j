@@ -27,8 +27,11 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.api.RelationshipVisitor.Home;
+import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.util.DiffApplyingPrimitiveIntIterator;
-import org.neo4j.kernel.impl.util.DiffApplyingPrimitiveLongIterator;
+import org.neo4j.kernel.impl.util.DiffApplyingRelationshipIterator;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
@@ -40,28 +43,33 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
  *
  * @param <T> type of elements
  */
-public class DiffSets<T> extends SuperDiffSets<T,PrimitiveLongIterator> implements ReadableDiffSets<T>
+public class RelationshipDiffSets<T> extends SuperDiffSets<T,RelationshipIterator>
+        implements ReadableRelationshipDiffSets<T>
 {
+    private Home txStateRelationshipHome;
+
     @SuppressWarnings("unchecked")
-    public static <T> DiffSets<T> emptyDiffSets()
+    public static <T> RelationshipDiffSets<T> emptyDiffSets()
     {
         return EMPTY;
     }
 
-    public DiffSets()
+    public RelationshipDiffSets( RelationshipVisitor.Home txStateRelationshipHome )
     {
-        this( null, null );
+        this( txStateRelationshipHome, null, null );
     }
 
-    public DiffSets( Set<T> addedElements, Set<T> removedElements )
+    public RelationshipDiffSets( RelationshipVisitor.Home txStateRelationshipHome,
+            Set<T> addedElements, Set<T> removedElements )
     {
         super( addedElements, removedElements );
+        this.txStateRelationshipHome = txStateRelationshipHome;
     }
 
     @Override
-    public PrimitiveLongIterator augment( final PrimitiveLongIterator source )
+    public RelationshipIterator augment( final RelationshipIterator source )
     {
-        return new DiffApplyingPrimitiveLongIterator( source, added( false ), removed( false ) );
+        return new DiffApplyingRelationshipIterator( source, added( false ), removed( false ), txStateRelationshipHome );
     }
 
     @Override
@@ -71,35 +79,36 @@ public class DiffSets<T> extends SuperDiffSets<T,PrimitiveLongIterator> implemen
     }
 
     @Override
-    public PrimitiveLongIterator augmentWithRemovals( final PrimitiveLongIterator source )
+    public RelationshipIterator augmentWithRemovals( final RelationshipIterator source )
     {
-        return new DiffApplyingPrimitiveLongIterator( source, Collections.emptySet(), removed( false ) );
+        return new DiffApplyingRelationshipIterator( source, Collections.emptySet(), removed( false ), txStateRelationshipHome );
     }
 
     @Override
-    public PrimitiveLongIterator augmentWithAdditions( final PrimitiveLongIterator source )
+    public RelationshipIterator augmentWithAdditions( final RelationshipIterator source )
     {
-        return new DiffApplyingPrimitiveLongIterator( source, added( false ), Collections.emptySet() );
+        return new DiffApplyingRelationshipIterator( source, added( false ), Collections.emptySet(), txStateRelationshipHome );
     }
 
     @Override
-    public DiffSets<T> filterAdded( Predicate<T> addedFilter )
+    public RelationshipDiffSets<T> filterAdded( Predicate<T> addedFilter )
     {
-        return new DiffSets<>(
+        return new RelationshipDiffSets<>( txStateRelationshipHome,
                 asSet( Iterables.filter( addedFilter, added( false ) ) ),
                 asSet( removed( false ) ) );
     }
 
     @Override
-    public DiffSets<T> filter( Predicate<T> filter )
+    public RelationshipDiffSets<T> filter( Predicate<T> filter )
     {
-        return new DiffSets<>(
+        return new RelationshipDiffSets<>( txStateRelationshipHome,
                 asSet( Iterables.filter( filter, added( false ) ) ),
                 asSet( Iterables.filter( filter, removed( false ) ) ) );
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    private static final DiffSets EMPTY = new DiffSets( Collections.emptySet(), Collections.emptySet() )
+    private static final RelationshipDiffSets EMPTY = new RelationshipDiffSets( null,
+            Collections.emptySet(), Collections.emptySet() )
     {
         @Override
         public Iterator apply( Iterator source )
@@ -132,13 +141,13 @@ public class DiffSets<T> extends SuperDiffSets<T,PrimitiveLongIterator> implemen
         }
 
         @Override
-        public DiffSets filterAdded( Predicate addedFilter )
+        public RelationshipDiffSets filterAdded( Predicate addedFilter )
         {
             return this;
         }
 
         @Override
-        public DiffSets filter( Predicate filter )
+        public RelationshipDiffSets filter( Predicate filter )
         {
             return this;
         }

@@ -21,5 +21,11 @@ package org.neo4j.kernel.impl.api;
 
 public interface RelationshipVisitor<EXCEPTION extends Exception>
 {
+    interface Home
+    {
+        <EXCEPTION extends Exception> boolean relationshipVisit( long relId,
+                RelationshipVisitor<EXCEPTION> visitor ) throws EXCEPTION;
+    }
+
     void visit( long relId, int type, long startNode, long endNode ) throws EXCEPTION;
 }

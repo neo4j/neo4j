@@ -72,7 +72,7 @@ public interface RelationshipState extends PropertyContainerState
     abstract class Defaults extends StateDefaults<Long, RelationshipState, RelationshipState.Mutable>
     {
         @Override
-        Mutable createValue( Long id )
+        Mutable createValue( Long id, TxState state )
         {
             return new Mutable( id );
         }

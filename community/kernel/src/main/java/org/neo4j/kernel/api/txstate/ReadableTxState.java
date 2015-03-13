@@ -30,7 +30,9 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.state.NodeState;
 import org.neo4j.kernel.impl.api.state.RelationshipState;
+import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
+import org.neo4j.kernel.impl.util.diffsets.ReadableRelationshipDiffSets;
 
 /**
  * Kernel transaction state.
@@ -54,7 +56,7 @@ public interface ReadableTxState
     ReadableDiffSets<Long> addedAndRemovedNodes();
 
     /** Returns rels that have been added and removed in this tx. */
-    ReadableDiffSets<Long> addedAndRemovedRelationships();
+    ReadableRelationshipDiffSets<Long> addedAndRemovedRelationships();
 
     /** Nodes that have had labels, relationships, or properties modified in this tx. */
     Iterable<NodeState> modifiedNodes();
@@ -89,10 +91,10 @@ public interface ReadableTxState
     boolean nodeModifiedInThisTx( long nodeId );
 
     // TODO: refactor so that these are the same!
-    PrimitiveLongIterator augmentRelationships( long nodeId, Direction direction, PrimitiveLongIterator stored );
+    RelationshipIterator augmentRelationships( long nodeId, Direction direction, RelationshipIterator stored );
 
-    PrimitiveLongIterator augmentRelationships( long nodeId, Direction direction, int[] relTypes,
-                                                PrimitiveLongIterator stored );
+    RelationshipIterator augmentRelationships( long nodeId, Direction direction, int[] relTypes,
+            RelationshipIterator stored );
 
     PrimitiveLongIterator addedRelationships( long nodeId, int[] relTypes, Direction direction );
 
@@ -104,7 +106,7 @@ public interface ReadableTxState
 
     PrimitiveLongIterator augmentNodesGetAll( PrimitiveLongIterator committed );
 
-    PrimitiveLongIterator augmentRelationshipsGetAll( PrimitiveLongIterator committed );
+    RelationshipIterator augmentRelationshipsGetAll( RelationshipIterator committed );
 
     /**
      * @return {@code true} if the relationship was visited in this state, i.e. if it was created
