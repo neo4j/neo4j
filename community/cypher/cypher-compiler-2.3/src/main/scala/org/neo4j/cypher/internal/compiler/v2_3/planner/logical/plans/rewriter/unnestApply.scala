@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
-import Foldable._
 
 case object unnestApply extends Rewriter {
 
@@ -59,9 +58,14 @@ case object unnestApply extends Rewriter {
       val newApply = Apply(lhs, rhs)(origApply.solved)
       p.copy(left = newApply)(origApply.solved)
 
-    // L Ax (EXP R) => EXP( L Ax R )
-    case apply@Apply(lhs, expand@Expand(rhs, _, _, _, _, _, _)) =>
-      val newApply = apply.copy(right = rhs)(apply.solved)
+    // L Ax (EXP R) => EXP( L Ax R ) (for single step pattern relationships)
+    case apply@Apply(lhs, expand: Expand) =>
+      val newApply = apply.copy(right = expand.left)(apply.solved)
+      expand.copy(left = newApply)(apply.solved)
+
+    // L Ax (EXP R) => EXP( L Ax R ) (for varlength pattern relationships)
+    case apply@Apply(lhs, expand: VarExpand) =>
+      val newApply = apply.copy(right = expand.left)(apply.solved)
       expand.copy(left = newApply)(apply.solved)
 
     // L Ax (Arg LOJ R) => L LOJ R
