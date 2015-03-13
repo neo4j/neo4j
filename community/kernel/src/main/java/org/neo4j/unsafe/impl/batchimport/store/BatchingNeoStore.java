@@ -69,7 +69,7 @@ public class BatchingNeoStore implements AutoCloseable
     private final NeoStore neoStore;
     private final WriterFactory writerFactory;
 
-    public BatchingNeoStore( FileSystemAbstraction fileSystem, String storeDir,
+    public BatchingNeoStore( FileSystemAbstraction fileSystem, File storeDir,
                              Configuration config, Monitor writeMonitor, Logging logging,
                              Monitors monitors, WriterFactory writerFactory, AdditionalInitialIds initialIds )
     {
@@ -80,7 +80,7 @@ public class BatchingNeoStore implements AutoCloseable
         this.neo4jConfig = configForStoreDir(
                 new Config( stringMap( dense_node_threshold.name(), valueOf( config.denseNodeThreshold() ) ),
                         GraphDatabaseSettings.class ),
-                new File( storeDir ) );
+                storeDir );
 
         this.pageCache = new BatchingPageCache( fileSystem, config.fileChannelBufferSize(),
                 config.bigFileChannelBufferSizeMultiplier(), writerFactory, writeMonitor );

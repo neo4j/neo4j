@@ -54,7 +54,7 @@ public class BatchingNeoStoreTest
         PageCache pageCache = new BatchingPageCache( fsr.get(), 10_000, 1, SYNCHRONOUS, NO_MONITOR );
         try
         {
-            new BatchingNeoStore( fsr.get(), storeDir.getAbsolutePath(), DEFAULT, NO_MONITOR,
+            new BatchingNeoStore( fsr.get(), storeDir, DEFAULT, NO_MONITOR,
                     new DevNullLoggingService(), new Monitors(), SYNCHRONOUS, EMPTY );
             fail( "Should fail on existing data" );
         }
