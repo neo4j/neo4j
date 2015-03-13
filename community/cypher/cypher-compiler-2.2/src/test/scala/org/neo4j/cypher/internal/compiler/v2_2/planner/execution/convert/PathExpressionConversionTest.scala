@@ -100,7 +100,27 @@ class PathExpressionConversionTest extends CypherFunSuite {
     )
   }
 
-  test("p = (a)-[r*1..2]->(b)<-[r2]-c") {
+  test("p = (a)-[r1*1..2]->(b)<-[r2]-c") {
+    val expr = PathExpression(
+      NodePathStep(Identifier("a")_,
+      MultiRelationshipPathStep(Identifier("r1")_, Direction.OUTGOING,
+      SingleRelationshipPathStep(Identifier("r2")_, Direction.INCOMING,
+      NilPathStep
+    ))))_
+
+    PathConverter(expr).asCommandProjectedPath should equal(
+      ProjectedPath(
+        Set("a", "r1", "r2"),
+        singleNodeProjector("a",
+          multiOutgoingRelationshipProjector("r1",
+            singleIncomingRelationshipProjector("r2", nilProjector)
+          )
+        )
+      )
+    )
+  }
+
+  test("p = (a)-[r1]->(b)<-[r2*1..2]-c") {
     val expr = PathExpression(
       NodePathStep(Identifier("a")_,
       MultiRelationshipPathStep(Identifier("r1")_, Direction.OUTGOING,
