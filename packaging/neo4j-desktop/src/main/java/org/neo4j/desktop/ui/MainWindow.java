@@ -38,7 +38,6 @@ import javax.swing.JTextField;
 
 import org.neo4j.desktop.runtime.DatabaseActions;
 
-import static java.lang.String.format;
 import static javax.swing.SwingUtilities.invokeLater;
 
 import static org.neo4j.desktop.ui.Components.createPanel;
@@ -121,8 +120,8 @@ public class MainWindow
     private JPanel createLogoPanel()
     {
         return withFlowLayout( FlowLayout.LEFT, createPanel(
-                new JLabel( new ImageIcon( loadImage( Graphics.LOGO_32 ) ) ),
-                new JLabel( format( "Neo4j %s", model.getNeo4jVersion() ) ) ) );
+                new JLabel( new ImageIcon( loadImage( Graphics.LOGO ) ) ),
+                new JLabel( model.getNeo4jVersion() ) ) );
     }
 
     private JPanel createActionPanel( JButton startButton, JButton stopButton, JButton settingsButton )
