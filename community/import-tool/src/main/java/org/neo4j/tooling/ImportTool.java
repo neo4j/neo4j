@@ -130,10 +130,11 @@ public class ImportTool
         STACKTRACE( "stacktrace", null,
                 "",
                 "Enable printing of error stack traces." ),
-        BAD( "bad", org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT.badFileName(),
+        BAD( "bad", null,
                 "<file name>",
                 "Relationships that refer to nodes that cannot be found can, instead of making the import fail,"
-                        + " be logged to a file specified by this option" ),
+                        + " be logged to a file specified by this option. Can be relative (to store directory)"
+                        + " or absolute" ),
         BAD_TOLERANCE( "bad-tolerance", 1000,
                 "<max number of bad entries>",
                 "Number of bad entries before the import is considered failed. This tolerance threshold is "
@@ -289,7 +290,7 @@ public class ImportTool
         }
         finally
         {
-            File badRelationships = new File( config.badFileName() );
+            File badRelationships = config.badFile( storeDir );
             if ( badRelationships.exists() )
             {
                 out.println("There were bad relationships which were skipped " +
@@ -329,9 +330,15 @@ public class ImportTool
             }
 
             @Override
-            public String badFileName()
+            public File badFile( File storeDirectory )
             {
-                return badFileName != null ? badFileName : super.badFileName();
+                if ( badFileName == null )
+                {
+                    return super.badFile( storeDirectory );
+                }
+
+                File part = new File( badFileName );
+                return part.isAbsolute() ? part : new File( storeDirectory, badFileName );
             }
 
             @Override

@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import java.io.File;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 
@@ -91,9 +93,11 @@ public interface Configuration
 
     /**
      * File name of log accepting bad entries encountered during import. Can be relative (to where the
-     * initiator of the import is) or absolute.
+     * store directory of the database that gets created) or absolute.
+     *
+     * @param the directory of the target database.
      */
-    String badFileName();
+    File badFile( File storeDirectory );
 
     public static class Default implements Configuration
     {
@@ -159,9 +163,9 @@ public interface Configuration
         }
 
         @Override
-        public String badFileName()
+        public File badFile( File storeDirectory )
         {
-            return "not-imported.bad";
+            return new File( storeDirectory, "not-imported.bad" );
         }
     }
 
@@ -232,9 +236,9 @@ public interface Configuration
         }
 
         @Override
-        public String badFileName()
+        public File badFile( File storeDirectory )
         {
-            return defaults.badFileName();
+            return defaults.badFile( storeDirectory );
         }
     }
 

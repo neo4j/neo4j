@@ -38,12 +38,10 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.ImportTool.Options;
-import org.neo4j.unsafe.impl.batchimport.Configuration;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -515,18 +513,19 @@ public class ImportToolDocIT
         }
 
         // WHEN
+        File badFile = file( "ops", "bad-relationships-default-not-imported.bad.adoc" ).getAbsoluteFile();
         String[] arguments = arguments(
                 "--into", directory.absolutePath(),
                 "--nodes", movies.getAbsolutePath(),
                 "--nodes", actors.getAbsolutePath(),
-                "--relationships", roles.getAbsolutePath() );
+                "--relationships", roles.getAbsolutePath(),
+                "--bad", badFile.getAbsolutePath() );
         importTool( arguments );
+        assertTrue( badFile.exists() );
 
         // DOCS
         String realDir = movies.getParentFile().getAbsolutePath();
         printCommandToFile( arguments, realDir, "bad-relationships-default.adoc" );
-        FileUtils.copyFile(new File(new Configuration.Default().badFileName()),
-                file( "ops", "bad-relationships-default-not-imported.bad.adoc" ) );
 
         // THEN
         verifyData();

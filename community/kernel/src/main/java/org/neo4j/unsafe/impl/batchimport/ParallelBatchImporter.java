@@ -74,7 +74,7 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.sup
  */
 public class ParallelBatchImporter implements BatchImporter
 {
-    private final String storeDir;
+    private final File storeDir;
     private final FileSystemAbstraction fileSystem;
     private final Configuration config;
     private final IoMonitor writeMonitor;
@@ -93,7 +93,7 @@ public class ParallelBatchImporter implements BatchImporter
             Logging logging, ExecutionMonitor executionMonitor, Function<Configuration,WriterFactory> writerFactory,
             AdditionalInitialIds additionalInitialIds )
     {
-        this.storeDir = storeDir;
+        this.storeDir = new File( storeDir );
         this.fileSystem = fileSystem;
         this.config = config;
         this.logging = logging;
@@ -121,16 +121,16 @@ public class ParallelBatchImporter implements BatchImporter
         NodeRelationshipLink nodeRelationshipLink = null;
         NodeLabelsCache nodeLabelsCache = null;
         long startTime = currentTimeMillis();
-        File badRelationshipsFile = new File( config.badFileName() );
         boolean hasBadRelationships = false;
+        File badFile = config.badFile( storeDir );
         try ( BatchingNeoStore neoStore = new BatchingNeoStore( fileSystem, storeDir, config,
                 writeMonitor, logging, monitors, writerFactory, additionalInitialIds );
               OutputStream badRelationshipsOutput = new BufferedOutputStream(
-                      fileSystem.openAsOutputStream( badRelationshipsFile, false ) );
+                      fileSystem.openAsOutputStream( badFile, false ) );
               Collector<InputRelationship> badRelationships =
                       input.badRelationshipsCollector( badRelationshipsOutput );
               CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset();
-              InputCache inputCache = new InputCache( fileSystem, new File( storeDir ) ) )
+              InputCache inputCache = new InputCache( fileSystem, storeDir ) )
         {
             // Some temporary caches and indexes in the import
             IdMapper idMapper = input.idMapper();
@@ -200,7 +200,7 @@ public class ParallelBatchImporter implements BatchImporter
             if ( hasBadRelationships )
             {
                 logger.warn( "There were " + badRelationships.badEntries() + " bad relationships which were skipped " +
-                             "and logged into " + badRelationshipsFile.getAbsolutePath() );
+                             "and logged into " + badFile.getAbsolutePath() );
             }
         }
         catch ( Throwable t )
@@ -221,7 +221,7 @@ public class ParallelBatchImporter implements BatchImporter
             }
             if ( !hasBadRelationships )
             {
-                fileSystem.deleteFile( badRelationshipsFile );
+                fileSystem.deleteFile( badFile );
             }
         }
     }
