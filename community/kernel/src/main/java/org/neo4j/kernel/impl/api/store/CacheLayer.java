@@ -398,14 +398,14 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveLongIterator nodeListRelationships( long nodeId, Direction direction )
+    public RelationshipIterator nodeListRelationships( long nodeId, Direction direction )
             throws EntityNotFoundException
     {
         return diskLayer.nodeListRelationships( nodeId, direction );
     }
 
     @Override
-    public PrimitiveLongIterator nodeListRelationships( long nodeId, Direction direction,
+    public RelationshipIterator nodeListRelationships( long nodeId, Direction direction,
                                                         int[] relTypes ) throws EntityNotFoundException
     {
         return diskLayer.nodeListRelationships( nodeId, direction, relTypes );
@@ -479,7 +479,7 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveLongIterator relationshipsGetAll()
+    public RelationshipIterator relationshipsGetAll()
     {
         return diskLayer.relationshipsGetAll();
     }

@@ -129,7 +129,7 @@ public abstract class LabelState
     static abstract class Defaults extends StateDefaults<Integer, LabelState, Mutable>
     {
         @Override
-        Mutable createValue( Integer key )
+        Mutable createValue( Integer key, TxState state )
         {
             return new Mutable( key );
         }

@@ -22,10 +22,10 @@ package org.neo4j.kernel.impl.api.store;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.api.state.TxStateTest;
 import org.neo4j.kernel.impl.util.Cursors;
 import org.neo4j.kernel.impl.util.register.NeoRegister;
 import org.neo4j.register.Register;
@@ -34,7 +34,14 @@ import org.neo4j.register.Registers;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
-import static org.mockito.Mockito.*;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
 import static org.neo4j.kernel.impl.util.register.NeoRegisters.newNodeRegister;
 import static org.neo4j.kernel.impl.util.register.NeoRegisters.newRelTypeRegister;
 import static org.neo4j.kernel.impl.util.register.NeoRegisters.newRelationshipRegister;
@@ -46,7 +53,7 @@ public class StoreExpandCursorTest
     public void shouldDelegateToGetRelsAndRelVisitor() throws Exception
     {
         // Given
-        PrimitiveLongIterator rels = PrimitiveLongCollections.iterator( 1 );
+        RelationshipIterator rels = TxStateTest.wrapInRelationshipIterator( iterator( 1 ) );
 
         CacheLayer cache = mock(CacheLayer.class);
         when(cache.nodeListRelationships( anyLong(), any(Direction.class), any(int[].class) )).thenReturn( rels );

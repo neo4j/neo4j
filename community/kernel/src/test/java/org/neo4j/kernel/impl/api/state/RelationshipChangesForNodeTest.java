@@ -20,60 +20,48 @@
 package org.neo4j.kernel.impl.api.state;
 
 import org.junit.Test;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.graphdb.Direction;
 
-import static org.junit.Assert.*;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+
+import static org.neo4j.kernel.impl.api.store.RelationshipIterator.EMPTY;
 public class RelationshipChangesForNodeTest
 {
-
-    public static final PrimitiveLongIterator EMPTY = new PrimitiveLongIterator()
-    {
-        @Override
-        public boolean hasNext()
-        {
-            return false;
-        }
-
-        @Override
-        public long next()
-        {
-            return -1;
-        }
-    };
-    public static final int REL_0 = 0;
-    public static final int REL_1 = 1;
-    public static final int TYPE_SELF = 0;
-    public static final int TYPE_DIR = 1;
+    private static final int REL_0 = 0;
+    private static final int REL_1 = 1;
+    private static final int TYPE_SELF = 0;
+    private static final int TYPE_DIR = 1;
 
     @Test
     public void testOutgoingRelsWithTypeAndLoop() throws Exception
     {
-        RelationshipChangesForNode changes = new RelationshipChangesForNode( RelationshipChangesForNode.DiffStrategy.ADD );
+        RelationshipChangesForNode changes = new RelationshipChangesForNode(
+                RelationshipChangesForNode.DiffStrategy.ADD, mock( RelationshipVisitor.Home.class ) );
         changes.addRelationship( REL_0, TYPE_SELF, Direction.BOTH );
         changes.addRelationship( REL_1, TYPE_DIR, Direction.OUTGOING );
 
-        PrimitiveLongIterator iterator = changes.augmentRelationships(
+        RelationshipIterator iterator = changes.augmentRelationships(
                 Direction.OUTGOING, new int[]{TYPE_DIR}, EMPTY );
         assertEquals( true, iterator.hasNext() );
         assertEquals( REL_1, iterator.next() );
-        assertEquals( "should have no next relationships but has ",
-                false,
-                iterator.hasNext() );
+        assertEquals( "should have no next relationships but has ", false, iterator.hasNext() );
     }
     @Test
     public void testIncomingRelsWithTypeAndLoop() throws Exception
     {
-        RelationshipChangesForNode changes = new RelationshipChangesForNode( RelationshipChangesForNode.DiffStrategy.ADD );
+        RelationshipChangesForNode changes = new RelationshipChangesForNode(
+                RelationshipChangesForNode.DiffStrategy.ADD, mock( RelationshipVisitor.Home.class ) );
         changes.addRelationship( REL_0, TYPE_SELF, Direction.BOTH );
         changes.addRelationship( REL_1, TYPE_DIR, Direction.INCOMING );
 
-        PrimitiveLongIterator iterator = changes.augmentRelationships(
+        RelationshipIterator iterator = changes.augmentRelationships(
                 Direction.INCOMING, new int[]{TYPE_DIR}, EMPTY );
         assertEquals( true, iterator.hasNext() );
         assertEquals( REL_1, iterator.next() );
-        assertEquals( "should have no next relationships but has ",
-                false,
-                iterator.hasNext() );
+        assertEquals( "should have no next relationships but has ", false, iterator.hasNext() );
     }
 }

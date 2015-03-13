@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-
 public class RelationshipRecord extends PrimitiveRecord
 {
     private long firstNode;

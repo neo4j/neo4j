@@ -386,22 +386,6 @@ public class TestRelationshipCount
         newTransaction();
         assertCounts( me, expectedCounts );
 
-//        System.out.println( "all" );
-//        System.out.println( "  total:" + me.getDegree() );
-//        for ( Direction direction : Direction.values() )
-//        {
-//            System.out.println( "  " + direction + ":" + me.getDegree( direction ) );
-//        }
-//        for ( RelationshipType type : me.getRelationshipTypes() )
-//        {
-//            System.out.println( "type:" + type );
-//            System.out.println( "  total:" + me.getDegree( type ) );
-//            for ( Direction direction : Direction.values() )
-//            {
-//                System.out.println( "  " + direction + ":" + me.getDegree( type, direction ) );
-//            }
-//        }
-
         // Delete one of each type/direction combination
         counter = 0;
         if ( dspecs == null )
@@ -504,7 +488,6 @@ public class TestRelationshipCount
 
     private void deleteOneRelationship( Node node, RelType type, Direction direction, int which )
     {
-        System.out.println( "deleting one relationship " + type + "/" + direction );
         Relationship last = null;
         int counter = 0;
         for ( Relationship rel : node.getRelationships( type, direction ) )
@@ -515,7 +498,6 @@ public class TestRelationshipCount
                 if ( counter++ == which )
                 {
                     rel.delete();
-                    System.out.println( "  deleted " + rel );
                     return;
                 }
             }
@@ -524,7 +506,6 @@ public class TestRelationshipCount
         if ( which == Integer.MAX_VALUE && last != null )
         {
             last.delete();
-            System.out.println( "  deleted last " + last );
             return;
         }
 

@@ -97,30 +97,14 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
     public RelationshipRecord getRecord( long id )
     {
         RelationshipRecord record = new RelationshipRecord( id );
-
-        if ( fillRecord( id, record, RecordLoad.NORMAL ) )
-        {
-            return record;
-        }
-        else
-        {
-            return null;
-        }
+        return fillRecord( id, record, RecordLoad.NORMAL ) ? record : null;
     }
 
     @Override
     public RelationshipRecord forceGetRecord( long id )
     {
         RelationshipRecord record = new RelationshipRecord( -1 );
-
-        if ( fillRecord( id, record, RecordLoad.FORCE ) )
-        {
-            return record;
-        }
-        else
-        {
-            return null;
-        }
+        return fillRecord( id, record, RecordLoad.FORCE ) ? record : null;
     }
 
     @Override
@@ -138,15 +122,7 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
     public RelationshipRecord getLightRel( long id )
     {
         RelationshipRecord record = new RelationshipRecord( id );
-
-        if( fillRecord( id, record, RecordLoad.CHECK ) )
-        {
-            return record;
-        }
-        else
-        {
-            return null;
-        }
+        return fillRecord( id, record, RecordLoad.CHECK ) ? record : null;
     }
 
     public boolean fillRecord( long id, RelationshipRecord target, RecordLoad loadMode )

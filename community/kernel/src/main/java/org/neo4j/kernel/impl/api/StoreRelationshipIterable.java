@@ -23,25 +23,39 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterable;
 import org.neo4j.function.primitive.PrimitiveIntPredicate;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.format.Store;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.store.standard.StandardStore;
 
 /**
  * Low level {@link PrimitiveLongIterable} for iterating over relationship chains, both sparse and dense.
  * Goes directly to {@link RelationshipStore} and {@link RelationshipGroupStore} for loading its data.
+ *
+ * {@link #iterator() Emits} {@link StoreRelationshipIterator}, which is a {@link RelationshipIterator}
+ * with an added {@link StoreRelationshipIterator#recordClone() relationship record accessor}.
+ *
+ * No record are created when iterating through this iterator and the {@link RelationshipRecord} data can
+ * also be accessed using {@link StoreRelationshipIterator#relationshipVisit(long, RelationshipVisitor)}
+ * after a successful call to {@link StoreRelationshipIterator#next()}.
+ *
+ * TODO this is an excellent place to plug in and use {@link StandardStore} with its {@link Store.RecordCursor}
+ * to reduce overhead of calling {@link PagedFile#io(long, int)} on every step through the iterator.
  */
 public class StoreRelationshipIterable implements PrimitiveLongIterable
 {
-    private final RelationshipStore relStore;
-    private final RelationshipGroupStore groupStore;
+    private final NeoStore neoStore;
     private final NodeRecord node;
     private final PrimitiveIntPredicate type;
     private final Direction direction;
@@ -49,15 +63,39 @@ public class StoreRelationshipIterable implements PrimitiveLongIterable
     public StoreRelationshipIterable( NeoStore neoStore, long nodeId, PrimitiveIntPredicate type, Direction direction )
             throws EntityNotFoundException
     {
+        this.neoStore = neoStore;
         this.type = type;
         this.direction = direction;
-        this.relStore = neoStore.getRelationshipStore();
-        this.groupStore = neoStore.getRelationshipGroupStore();
-        this.node = neoStore.getNodeStore().loadRecord( nodeId, null );
+        this.node = nodeRecord( neoStore, nodeId );
+    }
+
+    public static RelationshipIterator iterator( NeoStore neoStore, long nodeId,
+            PrimitiveIntPredicate type, Direction direction ) throws EntityNotFoundException
+    {
+        NodeRecord node = nodeRecord( neoStore, nodeId );
+        return iterator( neoStore, node, type, direction );
+    }
+
+    private static NodeRecord nodeRecord( NeoStore neoStore, long nodeId ) throws EntityNotFoundException
+    {
+        NodeRecord node = neoStore.getNodeStore().loadRecord( nodeId, null );
         if ( node == null )
         {
             throw new EntityNotFoundException( EntityType.NODE, nodeId );
         }
+        return node;
+    }
+
+    public static RelationshipIterator iterator( NeoStore neoStore, NodeRecord node,
+            PrimitiveIntPredicate type, Direction direction )
+    {
+        RelationshipGroupStore groupStore = neoStore.getRelationshipGroupStore();
+        RelationshipStore relationshipStore = neoStore.getRelationshipStore();
+        if ( node.isDense() )
+        {
+            return new DenseIterator( node, groupStore, relationshipStore, type, direction );
+        }
+        return new SparseIterator( node, relationshipStore, type, direction );
     }
 
     private static long followRelationshipChain( long nodeId, RelationshipRecord relRecord )
@@ -78,21 +116,19 @@ public class StoreRelationshipIterable implements PrimitiveLongIterable
     }
 
     @Override
-    public StoreRelationshipIterator iterator()
+    public RelationshipIterator iterator()
     {
-        if ( node.isDense() )
-        {
-            return new DenseIterator( node, groupStore, relStore, type, direction );
-        }
-        return new SparseIterator( node, relStore, type, direction );
+        return iterator( neoStore, node, type, direction );
     }
 
-    public static abstract class StoreRelationshipIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator
+    public static abstract class StoreRelationshipIterator
+            extends PrimitiveLongCollections.PrimitiveLongBaseIterator
+            implements RelationshipIterator
     {
         protected final RelationshipStore relationshipStore;
         protected final PrimitiveIntPredicate type;
         protected final Direction direction;
-        protected RelationshipRecord relationship;
+        protected final RelationshipRecord relationship = new RelationshipRecord( -1 );
 
         private StoreRelationshipIterator( RelationshipStore relationshipStore,
             PrimitiveIntPredicate type, Direction direction )
@@ -102,9 +138,13 @@ public class StoreRelationshipIterable implements PrimitiveLongIterable
             this.direction = direction;
         }
 
-        public RelationshipRecord record()
+        @Override
+        public <EXCEPTION extends Exception> boolean relationshipVisit( long relationshipId,
+                RelationshipVisitor<EXCEPTION> visitor ) throws EXCEPTION
         {
-            return relationship;
+            visitor.visit( relationship.getId(), relationship.getType(),
+                    relationship.getFirstNode(), relationship.getSecondNode() );
+            return false;
         }
 
         protected boolean directionMatches( long nodeId, RelationshipRecord relationship )
@@ -137,7 +177,7 @@ public class StoreRelationshipIterable implements PrimitiveLongIterable
         {
             while ( nextRelId != Record.NO_NEXT_RELATIONSHIP.intValue() )
             {
-                relationship = relationshipStore.getRecord( nextRelId );
+                relationshipStore.fillRecord( nextRelId, relationship, RecordLoad.NORMAL );
                 try
                 {
                     // Filter by type and direction
@@ -207,7 +247,7 @@ public class StoreRelationshipIterable implements PrimitiveLongIterable
         {
             while ( nextRelId != Record.NO_NEXT_RELATIONSHIP.intValue() )
             {
-                relationship = relationshipStore.getRecord( nextRelId );
+                relationshipStore.fillRecord( nextRelId, relationship, RecordLoad.NORMAL );
                 try
                 {
                     return next( nextRelId );

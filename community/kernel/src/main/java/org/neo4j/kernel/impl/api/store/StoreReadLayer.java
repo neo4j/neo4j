@@ -59,10 +59,10 @@ public interface StoreReadLayer
 
     PrimitiveIntIterator nodeGetLabels( long nodeId ) throws EntityNotFoundException;
 
-    PrimitiveLongIterator nodeListRelationships( long nodeId, Direction direction)
+    RelationshipIterator nodeListRelationships( long nodeId, Direction direction)
             throws EntityNotFoundException;
 
-    PrimitiveLongIterator nodeListRelationships( long nodeId, Direction direction,
+    RelationshipIterator nodeListRelationships( long nodeId, Direction direction,
             int[] relTypes ) throws EntityNotFoundException;
 
     int nodeGetDegree( long nodeId, Direction direction )
@@ -166,7 +166,7 @@ public interface StoreReadLayer
 
     PrimitiveLongIterator nodesGetAll();
 
-    PrimitiveLongIterator relationshipsGetAll();
+    RelationshipIterator relationshipsGetAll();
 
     /**
      * Reserves a node id for future use.

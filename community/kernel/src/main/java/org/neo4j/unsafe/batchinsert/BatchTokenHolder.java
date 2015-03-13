@@ -19,49 +19,57 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
-import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
 class BatchTokenHolder
 {
-    private final ArrayMap<String,Integer> nameToId =
-        new ArrayMap<String,Integer>( (byte)5, false, false);
-    private final ArrayMap<Integer,String> idToName =
-        new ArrayMap<Integer,String>( (byte)5, false, false);
-    
+    private final ArrayMap<String,Token> nameToToken = new ArrayMap<>( (byte) 5, false, false );
+    private final PrimitiveIntObjectMap<Token> idToToken = Primitive.intObjectMap( 20 );
+
     BatchTokenHolder( Token[] tokens )
     {
         for ( Token token : tokens )
         {
-            nameToId.put( token.name(), token.id() );
-            idToName.put( token.id(), token.name() );
+            addToken( token );
         }
     }
-    
-    void addToken( String stringKey, int keyId )
+
+    void addToken( Token token )
     {
-        nameToId.put( stringKey, keyId );
-        idToName.put( keyId, stringKey );
+        nameToToken.put( token.name(), token );
+        idToToken.put( token.id(), token );
     }
-    
-    int idOf( String stringKey )
+
+    Token byId( int id )
     {
-        Integer id = nameToId.get( stringKey );
-        if ( id != null )
-        {
-            return id;
-        }
-        return -1;
+        return idToToken.get( id );
     }
-    
-    String nameOf( int id )
+
+    Token byName( String name )
     {
-        String name = idToName.get( id );
-        if ( name == null )
-        {
-            throw new NotFoundException( "No token with id:" + id );
-        }
-        return name;
+        return nameToToken.get( name );
     }
+
+//    int idOf( String stringKey )
+//    {
+//        Integer id = nameToToken.get( stringKey );
+//        if ( id != null )
+//        {
+//            return id;
+//        }
+//        return -1;
+//    }
+//
+//    String nameOf( int id )
+//    {
+//        String name = idToName.get( id );
+//        if ( name == null )
+//        {
+//            throw new NotFoundException( "No token with id:" + id );
+//        }
+//        return name;
+//    }
 }

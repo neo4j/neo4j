@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import org.neo4j.graphdb.RelationshipType;
 
-class RelationshipTypeToken extends Token implements RelationshipType
+public class RelationshipTypeToken extends Token implements RelationshipType
 {
     public RelationshipTypeToken( String name, int id )
     {
