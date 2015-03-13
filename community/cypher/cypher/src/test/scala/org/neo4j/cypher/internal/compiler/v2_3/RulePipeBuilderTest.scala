@@ -25,6 +25,7 @@ import org.junit.Assert._
 import org.mockito.Mockito._
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compatibility.WrappedMonitors2_3
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Identifier, Literal}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType.{Label, PropertyKey}
@@ -68,7 +69,7 @@ class RulePipeBuilderTest
     val planContext = mock[PlanContext]
 
     val exception = intercept[ExecutionException](timeoutAfter(5) {
-      val pipeBuilder = new LegacyPipeBuilderWithCustomPlanBuilders(Seq(new BadBuilder), Monitors(kernelMonitors))
+      val pipeBuilder = new LegacyPipeBuilderWithCustomPlanBuilders(Seq(new BadBuilder), new WrappedMonitors2_3(kernelMonitors))
       val query = new FakePreparedQuery(q)
       pipeBuilder.producePlan(query, planContext)
     })
@@ -90,7 +91,7 @@ class RulePipeBuilderTest
         .updates(DeletePropertyAction(identifier, PropertyKey("foo")))
         .returns(ReturnItem(Identifier("x"), "x"))
 
-      val pipeBuilder = new LegacyPipeBuilder(Monitors(kernelMonitors))
+      val pipeBuilder = new LegacyPipeBuilder(new WrappedMonitors2_3(kernelMonitors))
       val queryContext = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, statement)
       val pkId = queryContext.getPropertyKeyId("foo")
       val parsedQ = new FakePreparedQuery(q)
@@ -116,7 +117,7 @@ class RulePipeBuilderTest
         .where(HasLabel(Identifier("x"), Label("Person")))
         .returns(ReturnItem(Identifier("x"), "x"))
 
-      val execPlanBuilder = new LegacyPipeBuilder(Monitors(kernelMonitors))
+      val execPlanBuilder = new LegacyPipeBuilder(new WrappedMonitors2_3(kernelMonitors))
       val queryContext = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, statement)
       val labelId = queryContext.getLabelId("Person")
       val parsedQ = new FakePreparedQuery(q)
@@ -146,7 +147,7 @@ class RulePipeBuilderTest
         .returns(AllIdentifiers())
       val parsedQ = new FakePreparedQuery(q)
 
-      val pipeBuilder = new LegacyPipeBuilder(Monitors(kernelMonitors))
+      val pipeBuilder = new LegacyPipeBuilder(new WrappedMonitors2_3(kernelMonitors))
       val pipe = pipeBuilder.producePlan(parsedQ, planContext).pipe
 
       toSeq(pipe) should equal (Seq(
@@ -172,7 +173,7 @@ class RulePipeBuilderTest
       val parsedQ = new FakePreparedQuery(q)
 
 
-      val execPlanBuilder = new LegacyPipeBuilder(Monitors(kernelMonitors))
+      val execPlanBuilder = new LegacyPipeBuilder(new WrappedMonitors2_3(kernelMonitors))
       val pipe = execPlanBuilder.producePlan(parsedQ, planContext).pipe
 
       toSeq(pipe) should equal (Seq(
@@ -196,7 +197,7 @@ class RulePipeBuilderTest
       )
       val parsedQ = new FakePreparedQuery(q)
 
-      val pipeBuilder = new LegacyPipeBuilder(Monitors(kernelMonitors))
+      val pipeBuilder = new LegacyPipeBuilder(new WrappedMonitors2_3(kernelMonitors))
 
       // when
       val periodicCommit = pipeBuilder.producePlan(parsedQ, planContext).periodicCommit

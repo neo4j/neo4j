@@ -21,9 +21,8 @@ package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.CypherCompiler.{CLOCK, DEFAULT_QUERY_PLAN_TTL, STATISTICS_DIVERGENCE_THRESHOLD}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.allQueryAcceptor
-import org.neo4j.cypher.internal.compiler.v2_3.{PlannerName, CostPlannerName, CypherCompilerFactory}
-import org.neo4j.kernel.impl.util.StringLogger
+import org.neo4j.cypher.internal.compatibility.WrappedMonitors2_3
+import org.neo4j.cypher.internal.compiler.v2_3.{CostPlannerName, CypherCompilerFactory, InfoLogger}
 
 class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
 
@@ -173,9 +172,13 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
       statsDivergenceThreshold = STATISTICS_DIVERGENCE_THRESHOLD,
       queryPlanTTL = DEFAULT_QUERY_PLAN_TTL,
       clock = CLOCK,
-      kernelMonitors = kernelMonitors,
-      logger = StringLogger.DEV_NULL,
+      monitors = new WrappedMonitors2_3(kernelMonitors),
+      logger = DEV_NULL,
       plannerName = CostPlannerName
     )
+  }
+
+  object DEV_NULL extends InfoLogger {
+    def info(message: String){}
   }
 }

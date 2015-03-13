@@ -39,12 +39,10 @@ import scala.collection.mutable
 trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
   self: CypherFunSuite =>
 
-  val kernelMonitors = new org.neo4j.kernel.monitoring.Monitors
-  val monitors = new Monitors(kernelMonitors)
-  val monitorTag = "compiler2.1"
-  val parser = new CypherParser(monitors.newMonitor[ParserMonitor[Statement]](monitorTag))
-  val semanticChecker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
-  val astRewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag), shouldExtractParameters = false)
+  val monitors = mock[Monitors]
+  val parser = new CypherParser(mock[ParserMonitor[Statement]])
+  val semanticChecker = new SemanticChecker(mock[SemanticCheckMonitor])
+  val astRewriter = new ASTRewriter(mock[AstRewritingMonitor], shouldExtractParameters = false)
   val mockRel = newPatternRelationship("a", "b", "r")
   val tokenResolver = new SimpleTokenResolver()
   val solved = PlannerQuery.empty
@@ -148,7 +146,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   }
 
   def newPlanner(metricsFactory: MetricsFactory): CostBasedPipeBuilder =
-    CostBasedPipeBuilderFactory(monitors, metricsFactory, monitors.newMonitor[PlanningMonitor](), Clock.SYSTEM_CLOCK)
+    CostBasedPipeBuilderFactory(monitors, metricsFactory, mock[PlanningMonitor], Clock.SYSTEM_CLOCK)
 
   def produceLogicalPlan(queryText: String)(implicit planner: CostBasedPipeBuilder, planContext: PlanContext): LogicalPlan = {
     val parsedStatement = parser.parse(queryText)

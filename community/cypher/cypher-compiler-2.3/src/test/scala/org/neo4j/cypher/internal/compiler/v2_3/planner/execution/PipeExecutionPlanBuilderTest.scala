@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner.execution
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_3.CostPlannerName
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{Collection, SignedDecimalIntegerLiteral, SignedIntegerLiteral}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{True, expressions => legacy}
@@ -34,7 +33,7 @@ import org.neo4j.helpers.Clock
 class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   implicit val planContext = newMockedPlanContext
-  implicit val pipeMonitor = monitors.newMonitor[PipeMonitor]()
+  implicit val pipeMonitor = mock[PipeMonitor]
   implicit val LogicalPlanningContext = newMockedLogicalPlanningContext(planContext)
   implicit val pipeBuildContext = newMockedPipeExecutionPlanBuilderContext
   val patternRel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)

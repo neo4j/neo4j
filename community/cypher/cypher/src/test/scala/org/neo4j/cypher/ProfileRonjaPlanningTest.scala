@@ -21,6 +21,7 @@ package org.neo4j.cypher
 
 import org.json4s.JsonAST._
 import org.json4s.native.JsonMethods
+import org.neo4j.cypher.internal.compatibility.WrappedMonitors2_3
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan._
@@ -37,7 +38,7 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.kernel.impl.query.{QueryEngineProvider, QueryExecutionEngine}
+import org.neo4j.kernel.impl.query.QueryEngineProvider
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
 import scala.collection.mutable
@@ -54,7 +55,7 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
 
   def buildCompiler(metricsFactoryInput: MetricsFactory = SimpleMetricsFactory)(graph: GraphDatabaseService) = {
     val kernelMonitors = new KernelMonitors()
-    val monitors = new Monitors(kernelMonitors)
+    val monitors = new WrappedMonitors2_3(kernelMonitors)
     val parser = new CypherParser(monitors.newMonitor[ParserMonitor[Statement]](monitorTag))
     val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
     val rewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag))

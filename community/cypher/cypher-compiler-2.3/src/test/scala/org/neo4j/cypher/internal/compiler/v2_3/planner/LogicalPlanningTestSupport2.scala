@@ -45,12 +45,9 @@ case class SemanticPlan(plan: LogicalPlan, semanticTable: SemanticTable)
 trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
   self: CypherFunSuite =>
 
-  var kernelMonitors = new org.neo4j.kernel.monitoring.Monitors
-  var monitors = new Monitors(kernelMonitors)
-  var monitorTag = "compiler2.1"
-  var parser = new CypherParser(monitors.newMonitor[ParserMonitor[Statement]](monitorTag))
-  var semanticChecker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
-  var astRewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag), shouldExtractParameters = false)
+  var parser = new CypherParser(mock[ParserMonitor[Statement]])
+  var semanticChecker = new SemanticChecker(mock[SemanticCheckMonitor])
+  var astRewriter = new ASTRewriter(mock[AstRewritingMonitor], shouldExtractParameters = false)
   var tokenResolver = new SimpleTokenResolver()
   var monitor = mock[PlanningMonitor]
   var planner = new DefaultQueryPlanner() {

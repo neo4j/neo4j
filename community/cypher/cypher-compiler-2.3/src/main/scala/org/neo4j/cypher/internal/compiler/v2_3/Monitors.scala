@@ -20,15 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3
 
 import scala.reflect.ClassTag
-import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
-case class Monitors(kernelMonitors: KernelMonitors) {
-  def addMonitorListener[T](monitor: T, tags: String*) {
-    kernelMonitors.addMonitorListener(monitor, tags: _*)
-  }
-
-  def newMonitor[T <: AnyRef : ClassTag](tags: String*): T = {
-    val clazz = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
-    kernelMonitors.newMonitor(clazz, tags: _*)
-  }
+trait Monitors {
+  def addMonitorListener[T](monitor: T, tags: String*)
+  def newMonitor[T <: AnyRef : ClassTag](tags: String*): T
 }
