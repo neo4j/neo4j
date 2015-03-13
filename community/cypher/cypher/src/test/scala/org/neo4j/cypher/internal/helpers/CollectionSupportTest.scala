@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.helpers
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.CollectionSupport
 
 class CollectionSupportTest extends CypherFunSuite with CollectionSupport {
 

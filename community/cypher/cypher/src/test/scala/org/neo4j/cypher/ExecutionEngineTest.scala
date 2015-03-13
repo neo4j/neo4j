@@ -1040,7 +1040,7 @@ order by a.COL1""")
     kernelMonitors.addMonitorListener(planningListener)
 
     createLabeledNode("Dog")
-    (0 until 50).foreach { _ => createLabeledNode("Person") }
+    (0 until 10).foreach { _ => createLabeledNode("Person") }
 
     // WHEN
     eengine.execute(s"match (n:Person:Dog) return n").toList

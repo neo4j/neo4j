@@ -23,4 +23,5 @@ import scala.collection.immutable.BitSet
 
 package object idp {
   type Goal = BitSet
+  type Seed[S, P] = Iterable[(Set[S], P)]
 }

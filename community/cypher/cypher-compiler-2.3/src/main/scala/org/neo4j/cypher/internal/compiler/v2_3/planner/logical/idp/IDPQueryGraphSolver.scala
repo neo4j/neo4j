@@ -39,7 +39,7 @@ import scala.annotation.tailrec
  *
  * written by Donald Kossmann and Konrad Stocker
  */
-case class IDPQueryGraphSolver(maxDepth: Int = 5,
+case class IDPQueryGraphSolver(maxTableSize: Int = 256,
                                leafPlanFinder: LogicalLeafPlan.Finder = leafPlanOptions,
                                config: QueryPlannerConfiguration = QueryPlannerConfiguration.default,
                                solvers: Seq[QueryGraph => IDPSolverStep[PatternRelationship, LogicalPlan]] = Seq(joinSolverStep(_), expandSolverStep(_)),
@@ -89,7 +89,8 @@ case class IDPQueryGraphSolver(maxDepth: Int = 5,
 
       val solver = new IDPSolver[PatternRelationship, LogicalPlan](
         generator = generator,
-        projectingSelector = kit.pickBest
+        projectingSelector = kit.pickBest,
+        maxTableSize = maxTableSize
       )
 
       val seed = initTable(qg, kit, leaves)

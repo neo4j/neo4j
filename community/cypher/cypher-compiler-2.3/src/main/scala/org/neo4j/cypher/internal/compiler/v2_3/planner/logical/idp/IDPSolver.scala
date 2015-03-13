@@ -35,12 +35,13 @@ import scala.collection.immutable.BitSet
 class IDPSolver[S, P](generator: IDPSolverStep[S, P], // generates candidates at each step
                       projectingSelector: ProjectingSelector[P], // pick best from a set of candidates
                       registryFactory: () => IdRegistry[S] = () => IdRegistry[S], // maps from Set[S] to BitSet
-                      maxSearchDepth: Int = 5 // limits computation effort by reducing result quality
+                      tableFactory: (IdRegistry[S], Seed[S, P]) => IDPTable[P] = (registry: IdRegistry[S], seed: Seed[S, P]) => IDPTable(registry, seed),
+                      maxTableSize: Int // limits computation effort by reducing result quality
                      ) {
 
-  def apply(seed: Iterable[(Set[S], P)], initialToDo: Set[S]): Iterator[(Set[S], P)] = {
+  def apply(seed: Seed[S, P], initialToDo: Set[S]): Iterator[(Set[S], P)] = {
     val registry = registryFactory()
-    val table = IDPTable(registry.registerAll, seed)
+    val table = tableFactory(registry, seed)
     var toDo = registry.registerAll(initialToDo)
 
     // utility functions
@@ -48,18 +49,27 @@ class IDPSolver[S, P](generator: IDPSolverStep[S, P], // generates candidates at
     val identitySelector: Selector[P] = projectingSelector(_)
     val goalSelector: Selector[(Goal, P)] = projectingSelector.apply[(Goal, P)](_._2, _)
 
-    def generateBestCandidates(blockSize: Int) {
-      for (i <- 2 to blockSize;
-           // If we already have an optimal plan, no need to re-plan
-           goal <- toDo.subsets(i) if !table.contains(goal);
-           candidates = LazyIterable(generator(registry, goal, table));
-           best <- projectingSelector(candidates)) {
-        table.put(goal, best)
+    def generateBestCandidates(maxTableSize: Int, maxBlockSize: Int): Int = {
+      var lastStarted = 1
+      var keepGoing = true
+
+      while (keepGoing && lastStarted <= maxBlockSize) {
+        lastStarted += 1
+        val goals = toDo.subsets(lastStarted)
+        while (keepGoing && goals.hasNext) {
+          val goal = goals.next()
+          if (!table.contains(goal)) {
+            val candidates = LazyIterable(generator(registry, goal, table))
+            projectingSelector(candidates).foreach(table.put(goal, _))
+            keepGoing = lastStarted == 2 || table.size <= maxTableSize
+          }
+        }
       }
+      lastStarted - 1
     }
 
     def findBestCandidateInBlock(blockSize: Int): (Goal, P) = {
-      val blockCandidates: Iterable[(Goal, P)] = LazyIterable(table.plansOfSize(blockSize))
+      val blockCandidates: Iterable[(Goal, P)] = LazyIterable(table.plansOfSize(blockSize)).toSeq
       val bestInBlock = goalSelector(blockCandidates)
       bestInBlock.getOrElse(throw new IllegalStateException("Found no solution for block"))
     }
@@ -74,13 +84,12 @@ class IDPSolver[S, P](generator: IDPSolverStep[S, P], // generates candidates at
     // actual algorithm
 
     while (toDo.size > 1) {
-      val k = Math.min(toDo.size, maxSearchDepth)
-      generateBestCandidates(k)
-      val (bestGoal, bestInBlock) = findBestCandidateInBlock(k)
+      val largestFinished = generateBestCandidates(maxTableSize, toDo.size)
+      val (bestGoal, bestInBlock) = findBestCandidateInBlock(largestFinished)
       compactBlock(bestGoal, bestInBlock)
     }
 
-    table.plans.map { case (k, v) => k.flatMap(registry.lookup) -> v }
+    table.plans.map { case (k, v) => registry.explode(k) -> v }
   }
 }
 

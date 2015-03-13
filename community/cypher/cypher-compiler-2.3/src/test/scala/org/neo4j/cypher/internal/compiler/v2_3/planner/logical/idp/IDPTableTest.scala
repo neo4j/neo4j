@@ -46,7 +46,7 @@ import scala.collection.immutable.BitSet
 class IDPTableTest extends CypherFunSuite {
 
   test("removes all traces of a goal") {
-    val table = IDPTable.apply[BitSet, LogicalPlan](identity, Seq.empty)
+    val table = new IDPTable[LogicalPlan]()
 
     table.put(BitSet(0), mock[LogicalPlan])
     table.put(BitSet(1), mock[LogicalPlan])
