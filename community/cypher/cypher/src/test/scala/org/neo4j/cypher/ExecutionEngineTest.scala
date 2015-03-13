@@ -1021,7 +1021,7 @@ order by a.COL1""")
   }
 
   override def databaseConfig() = super.databaseConfig() ++ Map(
-    "query_plan_ttl" -> "0"
+    "dbms.cypher.min_replan_interval" -> "0"
   )
 
   case class PlanningListener(planRequests: mutable.ArrayBuffer[String] = mutable.ArrayBuffer.empty) extends PlanningMonitor {
