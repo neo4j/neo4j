@@ -88,7 +88,7 @@ public class TransactionRepresentationStoreApplier
 
         // Schema index application
         IndexTransactionApplier indexApplier = new IndexTransactionApplier( indexingService, indexUpdates,
-                labelScanStore, cacheAccess );
+                labelScanStore );
 
         // Legacy index application
         LegacyIndexApplier legacyIndexApplier = new LegacyIndexApplier( indexConfigStore,

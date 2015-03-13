@@ -758,4 +758,14 @@ public class PrimitiveIntCollections
             }
         };
     }
+
+    public static PrimitiveIntSet asSet( int[] values )
+    {
+        PrimitiveIntSet set = Primitive.intSet( values.length );
+        for ( int value : values )
+        {
+            set.add( value );
+        }
+        return set;
+    }
 }

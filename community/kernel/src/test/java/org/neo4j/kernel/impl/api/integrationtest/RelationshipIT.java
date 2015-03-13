@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
+import org.hamcrest.Matcher;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import org.hamcrest.Matcher;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
@@ -35,7 +35,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadRule;
 
@@ -227,9 +226,6 @@ public class RelationshipIT extends KernelIntegrationTest
             commit();
         }
 
-        // Given the cache is empty
-        this.db.getDependencyResolver().resolveDependency( Caches.class ).clear();
-
         {
             ReadOperations stmt = readOperationsInNewTransaction();
 
@@ -272,9 +268,6 @@ public class RelationshipIT extends KernelIntegrationTest
 
             commit();
         }
-
-        // Given the cache is empty
-        this.db.getDependencyResolver().resolveDependency( Caches.class ).clear();
 
         {
             ReadOperations stmt = readOperationsInNewTransaction();

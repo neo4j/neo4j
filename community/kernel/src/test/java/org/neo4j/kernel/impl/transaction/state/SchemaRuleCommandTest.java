@@ -50,6 +50,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.store.UniquenessConstraintRule.uniquenessConstraintRule;
@@ -208,7 +209,7 @@ public class SchemaRuleCommandTest
     private final NeoStoreTransactionApplier storeApplier = new NeoStoreTransactionApplier( neoStore,
             mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE, new LockGroup(), txId );
     private final IndexTransactionApplier indexApplier = new IndexTransactionApplier( indexes,
-            ValidatedIndexUpdates.NONE, labelScanStore, mock( CacheAccessBackDoor.class ) );
+            ValidatedIndexUpdates.NONE, labelScanStore );
     private final PhysicalLogNeoCommandReaderV2 reader = new PhysicalLogNeoCommandReaderV2();
     private final IndexRule rule = IndexRule.indexRule( id, labelId, propertyKey, PROVIDER_DESCRIPTOR );
 

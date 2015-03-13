@@ -19,25 +19,24 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.function.primitive.FunctionFromPrimitiveLongLongToPrimitiveLong;
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -45,7 +44,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.UTF8;
-import org.neo4j.helpers.collection.CombiningIterable;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -69,12 +67,9 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
-import org.neo4j.kernel.impl.cache.NoCacheProvider;
-import org.neo4j.kernel.impl.core.DefaultCaches;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
-import org.neo4j.kernel.impl.core.RelationshipLoadingPosition;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -84,19 +79,16 @@ import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
-import org.neo4j.kernel.impl.transaction.state.RelationshipChainLoader;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState.PropertyReceiver;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -212,9 +204,7 @@ public class TestNeoStore
         Locks locks = mock( Locks.class );
         Locks.Client lockClient = mock(Locks.Client.class);
         when(locks.newClient()).thenReturn( lockClient );
-        DefaultCaches caches = new DefaultCaches( StringLogger.DEV_NULL, new Monitors() );
-        caches.configure( new NoCacheProvider(), config );
-        NodeManager nodeManager = new NodeManager( null, null, new ThreadToStatementContextBridge() );
+        NodeManager nodeManager = new NodeManager( null, null, null, new ThreadToStatementContextBridge() );
         ds = new NeoStoreDataSource(config, sf, StringLogger.DEV_NULL,
                 mock( JobScheduler.class ), DevNullLoggingService.DEV_NULL,
                 mock(TokenNameLookup.class),
@@ -224,7 +214,7 @@ public class TestNeoStore
                 mock( SchemaWriteGuard.class), mock( TransactionEventHandlers.class), IndexingService.NO_MONITOR, fs,
                 mock( StoreUpgrader.class ), mock( TransactionMonitor.class ), kernelHealth,
                 mock( PhysicalLogFile.Monitor.class ),
-                TransactionHeaderInformationFactory.DEFAULT, new StartupStatisticsProvider(), caches, nodeManager,
+                TransactionHeaderInformationFactory.DEFAULT, new StartupStatisticsProvider(), nodeManager,
                 null, null, InternalAbstractGraphDatabase.defaultCommitProcessFactory, pageCache,
                 mock( Monitors.class ), new Tracers( "null", StringLogger.DEV_NULL ) );
         ds.init();
@@ -234,7 +224,6 @@ public class TestNeoStore
         pStore = neoStore.getPropertyStore();
         rtStore = neoStore.getRelationshipTypeTokenStore();
         storeLayer = ds.getStoreLayer();
-        relationshipLoader = new RelationshipChainLoader( neoStore );
         propertyLoader = new PropertyLoader( neoStore );
     }
 
@@ -265,7 +254,6 @@ public class TestNeoStore
     private KernelTransaction tx;
     private TransactionRecordState transaction;
     private StoreReadLayer storeLayer;
-    private RelationshipChainLoader relationshipLoader;
     private PropertyLoader propertyLoader;
 
     private void startTx() throws TransactionFailureException
@@ -451,91 +439,15 @@ public class TestNeoStore
         }
         for ( int i = 0; i < 3; i++ )
         {
-            MutableRelationshipLoadingPosition pos = getPosition( nodeIds[i] );
-            for ( RelationshipRecord rel : getMore( nodeIds[i], pos ) )
-            {
-                transaction.relDelete( rel.getId() );
-            }
             transaction.nodeDelete( nodeIds[i] );
         }
         commitTx();
         ds.stop();
     }
 
-    private MutableRelationshipLoadingPosition getPosition( long node )
-    {
-        return new MutableRelationshipLoadingPosition(
-                relationshipLoader.getRelationshipChainPosition( node ) );
-    }
-
-    private static class MutableRelationshipLoadingPosition implements RelationshipLoadingPosition
-    {
-        private RelationshipLoadingPosition actual;
-
-        MutableRelationshipLoadingPosition( RelationshipLoadingPosition actual )
-        {
-            this.actual = actual;
-        }
-
-        void setActual( RelationshipLoadingPosition actual )
-        {
-            this.actual = actual;
-        }
-
-        @Override
-        public long position( DirectionWrapper direction, int[] types )
-        {
-            return actual.position( direction, types );
-        }
-
-        @Override
-        public long nextPosition( long position, DirectionWrapper direction, int[] types )
-        {
-            return actual.nextPosition( position, direction, types );
-        }
-
-        @Override
-        public boolean hasMore( DirectionWrapper direction, int[] types )
-        {
-            return actual.hasMore( direction, types );
-        }
-
-        @Override
-        public boolean atPosition( DirectionWrapper direction, int type, long position )
-        {
-            return actual.atPosition( direction, type, position );
-        }
-
-        @Override
-        public void patchPosition( long nodeId, FunctionFromPrimitiveLongLongToPrimitiveLong<RuntimeException> next )
-        {
-            actual.patchPosition( nodeId, next );
-        }
-
-        @Override
-        public RelationshipLoadingPosition clone()
-        {
-            return new MutableRelationshipLoadingPosition( actual.clone() );
-        }
-    }
-
-    private Iterable<RelationshipRecord> getMore( long node, MutableRelationshipLoadingPosition position )
-    {
-        Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, RelationshipLoadingPosition> rels =
-                relationshipLoader.getMoreRelationships( node, position, DirectionWrapper.BOTH,
-                        new int[0] );
-        List<Iterable<RelationshipRecord>> list = new ArrayList<>();
-        for ( Map.Entry<DirectionWrapper, Iterable<RelationshipRecord>> entry : rels.first().entrySet() )
-        {
-            list.add( entry.getValue() );
-        }
-        position.setActual( rels.other() );
-        return new CombiningIterable<>( list );
-    }
-
-    private void validateNodeRel1( long node, DefinedProperty prop1,
+    private void validateNodeRel1( final long node, DefinedProperty prop1,
             DefinedProperty prop2, DefinedProperty prop3, long rel1, long rel2,
-            int relType1, int relType2 ) throws IOException
+            final int relType1, final int relType2 ) throws IOException, EntityNotFoundException
     {
         assertTrue( storeLayer.nodeExists( node ) );
         ArrayMap<Integer, Pair<DefinedProperty,Long>> props = new ArrayMap<>();
@@ -577,32 +489,39 @@ public class TestNeoStore
         }
         assertEquals( 3, count );
         count = 0;
-        MutableRelationshipLoadingPosition pos = getPosition( node );
-        while ( true )
+        PrimitiveLongIterator relationships = storeLayer.nodeListRelationships( node, Direction.BOTH );
+        while ( relationships.hasNext() )
         {
-            Iterable<RelationshipRecord> relData = getMore( node, pos );
-            if ( !relData.iterator().hasNext() )
+            long rel = relationships.next();
+            if ( rel == rel1 )
             {
-                break;
+                storeLayer.relationshipVisit( rel, new RelationshipVisitor<RuntimeException>()
+                {
+                    @Override
+                    public void visit( long relId, int type, long startNode, long endNode ) throws RuntimeException
+                    {
+                        assertEquals( node, startNode );
+                        assertEquals( relType1, type );
+                    }
+                } );
             }
-            for ( RelationshipRecord rel : relData )
+            else if ( rel == rel2 )
             {
-                if ( rel.getId() == rel1 )
+                storeLayer.relationshipVisit( rel, new RelationshipVisitor<RuntimeException>()
                 {
-                    assertEquals( node, rel.getFirstNode() );
-                    assertEquals( relType1, rel.getType() );
-                }
-                else if ( rel.getId() == rel2 )
-                {
-                    assertEquals( node, rel.getSecondNode() );
-                    assertEquals( relType2, rel.getType() );
-                }
-                else
-                {
-                    throw new IOException();
-                }
-                count++;
+                    @Override
+                    public void visit( long relId, int type, long startNode, long endNode ) throws RuntimeException
+                    {
+                        assertEquals( node, endNode );
+                        assertEquals( relType2, type );
+                    }
+                } );
             }
+            else
+            {
+                throw new IOException();
+            }
+            count++;
         }
         assertEquals( 2, count );
     }
@@ -619,9 +538,10 @@ public class TestNeoStore
         };
     }
 
-    private void validateNodeRel2( long node, DefinedProperty prop1,
+    private void validateNodeRel2( final long node, DefinedProperty prop1,
             DefinedProperty prop2, DefinedProperty prop3,
-            long rel1, long rel2, int relType1, int relType2 ) throws IOException
+            long rel1, long rel2, final int relType1, final int relType2 )
+                    throws IOException, EntityNotFoundException, RuntimeException
     {
         assertTrue( storeLayer.nodeExists( node ) );
         ArrayMap<Integer, Pair<DefinedProperty,Long>> props = new ArrayMap<>();
@@ -663,32 +583,39 @@ public class TestNeoStore
         assertEquals( 3, count );
         count = 0;
 
-        MutableRelationshipLoadingPosition pos = getPosition( node );
-        while ( true )
+        PrimitiveLongIterator relationships = storeLayer.nodeListRelationships( node, Direction.BOTH );
+        while ( relationships.hasNext() )
         {
-            Iterable<RelationshipRecord> relData = getMore( node, pos );
-            if ( !relData.iterator().hasNext() )
+            long rel = relationships.next();
+            if ( rel == rel1 )
             {
-                break;
+                storeLayer.relationshipVisit( rel, new RelationshipVisitor<RuntimeException>()
+                {
+                    @Override
+                    public void visit( long relId, int type, long startNode, long endNode ) throws RuntimeException
+                    {
+                        assertEquals( node, endNode );
+                        assertEquals( relType1, type );
+                    }
+                } );
             }
-            for ( RelationshipRecord rel : relData )
+            else if ( rel == rel2 )
             {
-                if ( rel.getId() == rel1 )
+                storeLayer.relationshipVisit( rel, new RelationshipVisitor<RuntimeException>()
                 {
-                    assertEquals( node, rel.getSecondNode() );
-                    assertEquals( relType1, rel.getType() );
-                }
-                else if ( rel.getId() == rel2 )
-                {
-                    assertEquals( node, rel.getFirstNode() );
-                    assertEquals( relType2, rel.getType() );
-                }
-                else
-                {
-                    throw new IOException();
-                }
-                count++;
+                    @Override
+                    public void visit( long relId, int type, long startNode, long endNode ) throws RuntimeException
+                    {
+                        assertEquals( node, startNode );
+                        assertEquals( relType2, type );
+                    }
+                } );
             }
+            else
+            {
+                throw new IOException();
+            }
+            count++;
         }
         assertEquals( 2, count );
     }
@@ -835,7 +762,7 @@ public class TestNeoStore
 
     private void deleteRel1( long rel, DefinedProperty prop1, DefinedProperty prop2,
             DefinedProperty prop3, long firstNode, long secondNode, int relType )
-                    throws IOException
+                    throws IOException, EntityNotFoundException
     {
         ArrayMap<Integer, Pair<DefinedProperty,Long>> props = new ArrayMap<>();
         propertyLoader.relLoadProperties( rel, newPropertyReceiver( props ) );
@@ -877,11 +804,9 @@ public class TestNeoStore
         assertEquals( 3, propertyCounter.count );
         assertRelationshipData( rel, firstNode, secondNode, relType );;
         transaction.relDelete( rel );
-        MutableRelationshipLoadingPosition firstPos = getPosition( firstNode );
-        Iterator<RelationshipRecord> first = getMore( firstNode, firstPos ).iterator();
+        PrimitiveLongIterator first = storeLayer.nodeListRelationships( firstNode, Direction.BOTH );
         first.next();
-        MutableRelationshipLoadingPosition secondPos = getPosition( secondNode );
-        Iterator<RelationshipRecord> second = getMore( secondNode, secondPos ).iterator();
+        PrimitiveLongIterator second = storeLayer.nodeListRelationships( secondNode, Direction.BOTH );
         second.next();
         assertTrue( first.hasNext() );
         assertTrue( second.hasNext() );
@@ -899,7 +824,8 @@ public class TestNeoStore
     }
 
     private void deleteRel2( long rel, DefinedProperty prop1, DefinedProperty prop2,
-            DefinedProperty prop3, long firstNode, long secondNode, int relType ) throws IOException
+            DefinedProperty prop3, long firstNode, long secondNode, int relType )
+                    throws IOException, EntityNotFoundException
     {
         ArrayMap<Integer, Pair<DefinedProperty,Long>> props = new ArrayMap<>();
         propertyLoader.relLoadProperties( rel, newPropertyReceiver( props ) );
@@ -941,17 +867,15 @@ public class TestNeoStore
         assertEquals( 3, propertyCounter.count );
         assertRelationshipData( rel, firstNode, secondNode, relType );
         transaction.relDelete( rel );
-        MutableRelationshipLoadingPosition firstPos = getPosition( firstNode );
-        Iterator<RelationshipRecord> first = getMore( firstNode, firstPos ).iterator();
-        MutableRelationshipLoadingPosition secondPos = getPosition( secondNode );
-        Iterator<RelationshipRecord> second = getMore( secondNode, secondPos ).iterator();
+        PrimitiveLongIterator first = storeLayer.nodeListRelationships( firstNode, Direction.BOTH );
+        PrimitiveLongIterator second = storeLayer.nodeListRelationships( secondNode, Direction.BOTH );
         assertTrue( first.hasNext() );
         assertTrue( second.hasNext() );
     }
 
     private void deleteNode1( long node, DefinedProperty prop1,
             DefinedProperty prop2, DefinedProperty prop3 )
-            throws IOException
+            throws IOException, EntityNotFoundException
     {
         ArrayMap<Integer, Pair<DefinedProperty,Long>> props = new ArrayMap<>();
         propertyLoader.nodeLoadProperties( node, newPropertyReceiver( props ) );
@@ -991,15 +915,14 @@ public class TestNeoStore
         CountingPropertyReceiver propertyCounter = new CountingPropertyReceiver();
         propertyLoader.nodeLoadProperties( node, propertyCounter );
         assertEquals( 3, propertyCounter.count );
-        MutableRelationshipLoadingPosition pos = getPosition( node );
-        Iterator<RelationshipRecord> rels = getMore( node, pos ).iterator();
+        PrimitiveLongIterator rels = storeLayer.nodeListRelationships( node, Direction.BOTH );
         assertTrue( rels.hasNext() );
         transaction.nodeDelete( node );
     }
 
     private void deleteNode2( long node, DefinedProperty prop1,
             DefinedProperty prop2, DefinedProperty prop3 )
-            throws IOException
+            throws IOException, EntityNotFoundException
     {
         ArrayMap<Integer, Pair<DefinedProperty,Long>> props = new ArrayMap<>();
         propertyLoader.nodeLoadProperties( node, newPropertyReceiver( props ) );
@@ -1039,8 +962,7 @@ public class TestNeoStore
         CountingPropertyReceiver propertyCounter = new CountingPropertyReceiver();
         propertyLoader.nodeLoadProperties( node, propertyCounter );
         assertEquals( 3, propertyCounter.count );
-        MutableRelationshipLoadingPosition pos = getPosition( node );
-        Iterator<RelationshipRecord> rels = getMore( node, pos ).iterator();
+        PrimitiveLongIterator rels = storeLayer.nodeListRelationships( node, Direction.BOTH );
         assertTrue( rels.hasNext() );
         transaction.nodeDelete( node );
     }
@@ -1078,10 +1000,10 @@ public class TestNeoStore
         startTx();
         for ( int i = 0; i < 3; i += 2 )
         {
-            MutableRelationshipLoadingPosition pos = getPosition( nodeIds[i] );
-            for ( RelationshipRecord rel : getMore( nodeIds[i], pos ) )
+            PrimitiveLongIterator relationships = storeLayer.nodeListRelationships( nodeIds[i], Direction.BOTH );
+            while ( relationships.hasNext() )
             {
-                transaction.relDelete( rel.getId() );
+                transaction.relDelete( relationships.next() );
             }
             transaction.nodeDelete( nodeIds[i] );
         }
@@ -1117,10 +1039,10 @@ public class TestNeoStore
         startTx();
         for ( int i = 0; i < 3; i++ )
         {
-            MutableRelationshipLoadingPosition pos = getPosition( nodeIds[i] );
-            for ( RelationshipRecord rel : getMore( nodeIds[i], pos ) )
+            PrimitiveLongIterator relationships = storeLayer.nodeListRelationships( nodeIds[i], Direction.BOTH );
+            while ( relationships.hasNext() )
             {
-                transaction.relDelete( rel.getId() );
+                transaction.relDelete( relationships.next() );
             }
             transaction.nodeDelete( nodeIds[i] );
         }

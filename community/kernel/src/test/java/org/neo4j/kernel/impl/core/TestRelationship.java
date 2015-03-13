@@ -42,6 +42,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
@@ -639,7 +640,6 @@ public class TestRelationship extends AbstractNeo4jTestCase
     {
         Node n1 = getGraphDb().createNode();
         newTransaction();
-        clearCache();
         n1 = getGraphDb().getNodeById( n1.getId() );
         Node n2 = getGraphDb().createNode();
         n1.createRelationshipTo( n2, MyRelTypes.TEST );
@@ -778,7 +778,6 @@ public class TestRelationship extends AbstractNeo4jTestCase
             neighbor.createRelationshipTo( hub, innie );
         }
         commit();
-        clearCache();
 
         newTransaction();
         hub = graphDB.getNodeById( hub.getId() );
@@ -813,7 +812,6 @@ public class TestRelationship extends AbstractNeo4jTestCase
             expectedCount++;
         }
         newTransaction();
-        clearCache();
         for ( int i = 0; i < 50; i++ )
         {
             node1.createRelationshipTo( node2, TEST );
@@ -836,7 +834,6 @@ public class TestRelationship extends AbstractNeo4jTestCase
             node.createRelationshipTo( otherNode, types[i%types.length] );
         }
         newTransaction();
-        clearCache();
         int delCount = 0;
         int loopCount = 0;
         while ( delCount < count )
@@ -885,9 +882,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     public void createAndClearCacheBeforeCommit()
     {
         Node node = getGraphDb().createNode();
-        clearCache();
         node.createRelationshipTo( getGraphDb().createNode(), TEST );
-        clearCache();
         assertEquals( 1, IteratorUtil.count( node.getRelationships() ) );
     }
 
@@ -895,9 +890,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     public void setPropertyAndClearCacheBeforeCommit() throws Exception
     {
         Node node = getGraphDb().createNode();
-        clearCache();
         node.setProperty( "name", "Test" );
-        clearCache();
         assertEquals( "Test", node.getProperty( "name" ) );
     }
 
@@ -932,7 +925,6 @@ public class TestRelationship extends AbstractNeo4jTestCase
             tx.success();
         }
         // WHEN
-        clearCache();
         int one, two;
         try ( Transaction tx = db.beginTx() )
         {

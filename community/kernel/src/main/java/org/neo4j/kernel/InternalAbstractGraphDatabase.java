@@ -22,7 +22,6 @@ package org.neo4j.kernel;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -92,17 +91,13 @@ import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
-import org.neo4j.kernel.impl.api.store.CacheLayer;
 import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
-import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.MonitorGc;
-import org.neo4j.kernel.impl.cache.NoCacheProvider;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
-import org.neo4j.kernel.impl.core.Caches;
-import org.neo4j.kernel.impl.core.DefaultCaches;
 import org.neo4j.kernel.impl.core.DefaultLabelIdCreator;
 import org.neo4j.kernel.impl.core.DefaultPropertyTokenCreator;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
+import org.neo4j.kernel.impl.core.GraphPropertiesProxy.GraphPropertiesActions;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeManager;
@@ -172,6 +167,7 @@ import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.String.format;
+
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.helpers.Settings.ANY;
 import static org.neo4j.helpers.Settings.STRING;
@@ -212,8 +208,6 @@ public abstract class InternalAbstractGraphDatabase
 
         Iterable<KernelExtensionFactory<?>> kernelExtensions();
 
-        Iterable<CacheProvider> cacheProviders();
-
         Iterable<QueryEngineProvider> executionEngines();
     }
 
@@ -244,7 +238,6 @@ public abstract class InternalAbstractGraphDatabase
     protected final Config config;
     protected final LifeSupport life = new LifeSupport();
     private final Dependencies dependencies;
-    private final Map<String,CacheProvider> cacheProviders;
     protected KernelExtensions kernelExtensions;
     protected File storeDir;
     protected Logging logging;
@@ -274,7 +267,6 @@ public abstract class InternalAbstractGraphDatabase
     protected NodeAutoIndexerImpl nodeAutoIndexer;
     protected RelationshipAutoIndexerImpl relAutoIndexer;
     protected KernelData extensions;
-    protected Caches caches;
     protected ThreadToStatementContextBridge threadToTransactionBridge;
     protected BridgingCacheAccess cacheBridge;
     protected JobScheduler jobScheduler;
@@ -296,24 +288,13 @@ public abstract class InternalAbstractGraphDatabase
 
         // SPI - provided services
         this.dependencies = dependencies;
-        this.cacheProviders = mapCacheProviders( this.dependencies.cacheProviders() );
         config = new Config( params, getSettingsClasses(
-                dependencies.settingsClasses(), dependencies.kernelExtensions(), dependencies.cacheProviders() ) );
+                dependencies.settingsClasses(), dependencies.kernelExtensions() ) );
         this.logging = dependencies.logging();
         this.monitors = dependencies.monitors();
 
         this.storeDir = config.get( Configuration.store_dir );
         transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout );
-    }
-
-    private Map<String,CacheProvider> mapCacheProviders( Iterable<CacheProvider> cacheProviders )
-    {
-        Map<String,CacheProvider> map = new HashMap<>();
-        for ( CacheProvider provider : cacheProviders )
-        {
-            map.put( provider.getName(), provider );
-        }
-        return map;
     }
 
     protected void run()
@@ -443,31 +424,6 @@ public abstract class InternalAbstractGraphDatabase
 
         new JvmChecker( msgLog, new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
 
-        String cacheTypeName = config.get( Configuration.cache_type );
-        CacheProvider cacheProvider = cacheProviders.get( cacheTypeName );
-        if ( cacheProvider == null )
-        {
-            // Temporarily here to allow experimentally turning off the cache layer entirely. This is different
-            // from cache_type=none in that it *completely* bypasses the caching layer.
-            if ( config.get( Configuration.cache_type ).equals( CacheLayer.EXPERIMENTAL_OFF ) )
-            {
-                cacheProvider = new NoCacheProvider();
-            }
-            else
-            {
-                throw new IllegalArgumentException( "No provider for cache type '" + cacheTypeName + "'. " +
-                                                    "Cache providers are loaded using java service loading where they" +
-                                                    " " +
-                                                    "register themselves in resource (plain-text) files found on the " +
-                                                    "class path under " +
-                                                    "META-INF/services/" + CacheProvider.class.getName() +
-                                                    ". This missing provider may have " +
-                                                    "been caused by either such a missing registration, " +
-                                                    "or by the lack of the provider class itself." );
-
-            }
-        }
-
         jobScheduler = life.add( createJobScheduler() );
 
         pageCache = createPageCache();
@@ -475,7 +431,6 @@ public abstract class InternalAbstractGraphDatabase
 
         kernelEventHandlers = new KernelEventHandlers( logging.getMessagesLog( KernelEventHandlers.class ) );
 
-        caches = createCaches();
         diagnosticsManager = life.add( createDiagnosticsManager() );
         monitors.addMonitorListener( new RollingLogMonitor()
         {
@@ -515,10 +470,6 @@ public abstract class InternalAbstractGraphDatabase
         propertyKeyTokenHolder = life.add( new PropertyKeyTokenHolder( createPropertyKeyCreator() ) );
         labelTokenHolder = life.add( new LabelTokenHolder( createLabelIdCreator() ) );
         relationshipTypeTokenHolder = life.add( new RelationshipTypeTokenHolder( createRelationshipTypeCreator() ) );
-
-        caches.configure( cacheProvider, config );
-        diagnosticsManager.tryAppendProvider( caches.node() );
-        diagnosticsManager.tryAppendProvider( caches.relationship() );
 
         threadToTransactionBridge = life.add( new ThreadToStatementContextBridge() );
 
@@ -661,10 +612,12 @@ public abstract class InternalAbstractGraphDatabase
     private NodeManager createNodeManager()
     {
         NodeActions nodeActions = createNodeActions();
-        RelationshipActions relationshipLookup = createRelationshipActions();
+        RelationshipActions relationshipActions = createRelationshipActions();
+        GraphPropertiesActions graphPropertiesActions = createGraphPropertiesActions();
         return new NodeManager(
                 nodeActions,
-                relationshipLookup,
+                relationshipActions,
+                graphPropertiesActions,
                 threadToTransactionBridge );
     }
 
@@ -720,9 +673,34 @@ public abstract class InternalAbstractGraphDatabase
         return new DefaultKernelData( config, this );
     }
 
-    protected Caches createCaches()
+    protected GraphPropertiesActions createGraphPropertiesActions()
     {
-        return new DefaultCaches( msgLog, monitors );
+        return new GraphPropertiesActions()
+        {
+            @Override
+            public GraphDatabaseService getGraphDatabaseService()
+            {
+                return InternalAbstractGraphDatabase.this;
+            }
+
+            @Override
+            public void failTransaction()
+            {
+                threadToTransactionBridge.getKernelTransactionBoundToThisThread( true ).failure();
+            }
+
+            @Override
+            public void assertInUnterminatedTransaction()
+            {
+                threadToTransactionBridge.assertInUnterminatedTransaction();
+            }
+
+            @Override
+            public Statement statement()
+            {
+                return threadToTransactionBridge.instance();
+            }
+        };
     }
 
     protected RelationshipActions createRelationshipActions()
@@ -885,7 +863,7 @@ public abstract class InternalAbstractGraphDatabase
                 monitors.newMonitor( IndexingService.Monitor.class ), fileSystem,
                 storeMigrationProcess, transactionMonitor, kernelHealth,
                 monitors.newMonitor( PhysicalLogFile.Monitor.class ),
-                createHeaderInformationFactory(), startupStatistics, caches, nodeManager, guard, indexStore,
+                createHeaderInformationFactory(), startupStatistics, nodeManager, guard, indexStore,
                 getCommitProcessFactory(), pageCache, monitors, tracers );
         dataSourceManager.register( neoDataSource );
     }
@@ -1108,8 +1086,7 @@ public abstract class InternalAbstractGraphDatabase
     }
 
     private Iterable<Class<?>> getSettingsClasses( Iterable<Class<?>> settingsClasses,
-                                                   Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                                                   Iterable<CacheProvider> cacheProviders )
+                                                   Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
         List<Class<?>> totalSettingsClasses = new ArrayList<>();
 
@@ -1119,14 +1096,6 @@ public abstract class InternalAbstractGraphDatabase
             if ( kernelExtension.getSettingsClass() != null )
             {
                 totalSettingsClasses.add( kernelExtension.getSettingsClass() );
-            }
-        }
-
-        for ( CacheProvider cacheProvider : cacheProviders )
-        {
-            if ( cacheProvider.getSettingsClass() != null )
-            {
-                totalSettingsClasses.add( cacheProvider.getSettingsClass() );
             }
         }
 
@@ -1309,7 +1278,6 @@ public abstract class InternalAbstractGraphDatabase
     {
         public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
         public static final Setting<Boolean> execution_guard_enabled = GraphDatabaseSettings.execution_guard_enabled;
-        public static final Setting<String> cache_type = GraphDatabaseSettings.cache_type;
         public static final Setting<Boolean> ephemeral = setting( "ephemeral", Settings.BOOLEAN, Settings.FALSE );
         public static final Setting<String> ephemeral_keep_logical_logs = setting("keep_logical_logs", STRING, "1 files", illegalValueMessage( "must be `true`/`false` or of format '<number><optional unit> <type>' for example `100M size` for " +
                             "limiting logical log space on disk to 100Mb," +
@@ -1603,10 +1571,6 @@ public abstract class InternalAbstractGraphDatabase
             else if ( PageCacheMonitor.class.isAssignableFrom( type ) )
             {
                 return type.cast( tracers.pageCacheTracer );
-            }
-            else if ( Caches.class.isAssignableFrom( type ) )
-            {
-                return type.cast( caches );
             }
             return null;
         }

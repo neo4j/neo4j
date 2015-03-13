@@ -41,6 +41,7 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
@@ -146,7 +147,6 @@ public class BigJumpingStoreIT
                 assertProperties( map( "number", nodeCount++, "string", stringValue, "array", arrayValue ), node );
                 relCount += count( node.getRelationships( Direction.OUTGOING ) );
             }
-            caches().clear();
         }
         assertEquals( numberOfRels, relCount );
         //noinspection deprecation
@@ -260,15 +260,9 @@ public class BigJumpingStoreIT
                 }
                 nodeCount++;
             }
-            caches().clear();
         }
         //noinspection deprecation
         tx.finish();
-    }
-
-    private Caches caches()
-    {
-        return db.getDependencyResolver().resolveDependency( Caches.class );
     }
 
     private void setPropertyOnAll( Iterable<Relationship> relationships, String key,

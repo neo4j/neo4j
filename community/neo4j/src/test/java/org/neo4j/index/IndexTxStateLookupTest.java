@@ -32,14 +32,14 @@ import java.util.Random;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
+import static org.junit.Assert.assertEquals;
+
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 
@@ -137,15 +137,7 @@ public class IndexTxStateLookupTest
     }
 
     @Rule
-    public final DatabaseRule db = new ImpermanentDatabaseRule()
-    {
-        @Override
-        protected void configure( GraphDatabaseBuilder builder )
-        {
-            super.configure( builder );
-            builder.setConfig( GraphDatabaseSettings.cache_type, "none" );
-        }
-    };
+    public final DatabaseRule db = new ImpermanentDatabaseRule();
 
     private final Object store;
     private final Object lookup;
@@ -195,7 +187,6 @@ public class IndexTxStateLookupTest
         {
             // when
             graphDb.createNode( label( "Node" ) ).setProperty( "prop", store );
-            db.clearCache();
 
             // then
             assertEquals( 1, count( graphDb.findNodes( label( "Node" ), "prop", lookup ) ) );
@@ -229,7 +220,6 @@ public class IndexTxStateLookupTest
             graphDb.createNode( label( "Node" ) ).setProperty( "prop", store );
             tx.success();
         }
-        db.clearCache();
         // then
         try ( Transaction tx = graphDb.beginTx() )
         {

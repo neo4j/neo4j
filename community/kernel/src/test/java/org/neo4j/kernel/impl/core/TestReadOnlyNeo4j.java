@@ -21,18 +21,18 @@ package org.neo4j.kernel.impl.core;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotInTransactionException;
-import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -41,6 +41,7 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
@@ -149,14 +150,11 @@ public class TestReadOnlyNeo4j
         { // good
         }
 
-        // clear caches and try reads
-        clearCache( db );
 
         Transaction transaction = db.beginTx();
         assertEquals( node1, db.getNodeById( node1.getId() ) );
         assertEquals( node2, db.getNodeById( node2.getId() ) );
         assertEquals( rel, db.getRelationshipById( rel.getId() ) );
-        clearCache( db );
 
         assertThat( node1, inTx( db, hasProperty( "key1" ).withValue( "value1" ) ) );
         Relationship loadedRel = node1.getSingleRelationship(
@@ -165,10 +163,5 @@ public class TestReadOnlyNeo4j
         assertThat(loadedRel, inTx(db, hasProperty( "key1" ).withValue( "value1" )));
         transaction.finish();
         db.shutdown();
-    }
-
-    private void clearCache( GraphDatabaseService db )
-    {
-        ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( Caches.class ).clear();
     }
 }

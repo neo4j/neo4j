@@ -25,7 +25,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
-import org.neo4j.kernel.impl.util.RelIdArray;
+import org.neo4j.kernel.impl.util.DirectionWrapper;
 
 public class RelationshipCreator
 {
@@ -69,6 +69,11 @@ public class RelationshipCreator
                 recordChangeSet.getRelGroupRecords() );
     }
 
+    public static int relCount( long nodeId, RelationshipRecord rel )
+    {
+        return (int) (nodeId == rel.getFirstNode() ? rel.getFirstPrevRel() : rel.getSecondPrevRel());
+    }
+
     private void convertNodeToDenseIfNecessary( NodeRecord node,
                                                 RecordAccess<Long, RelationshipRecord, Void> relRecords,
                                                 RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords )
@@ -82,7 +87,7 @@ public class RelationshipCreator
         {
             RecordProxy<Long, RelationshipRecord, Void> relChange = relRecords.getOrLoad( relId, null );
             RelationshipRecord rel = relChange.forReadingLinkage();
-            if ( RelationshipChainLoader.relCount( node.getId(), rel ) >= denseNodeThreshold )
+            if ( relCount( node.getId(), rel ) >= denseNodeThreshold )
             {
                 locker.getWriteLock( relId );
                 // Re-read the record after we've locked it since another transaction might have
@@ -155,7 +160,7 @@ public class RelationshipCreator
     {
         RelationshipGroupRecord group =
                 relGroupGetter.getOrCreateRelationshipGroup( node, rel.getType(), relGroupRecords ).forChangingData();
-        RelIdArray.DirectionWrapper dir = DirectionIdentifier.wrapDirection( rel, node );
+        DirectionWrapper dir = DirectionIdentifier.wrapDirection( rel, node );
         long nextRel = dir.getNextRel( group );
         setCorrectNextRel( node, rel, nextRel );
         connect( node.getId(), nextRel, rel, relRecords );

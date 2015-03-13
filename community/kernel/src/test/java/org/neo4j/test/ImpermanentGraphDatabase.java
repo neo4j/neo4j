@@ -31,7 +31,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.logging.Logging;
@@ -95,9 +94,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     {
         this( storeDir, withForcedInMemoryConfiguration( params ),
                 Iterables.<KernelExtensionFactory<?>, KernelExtensionFactory>cast( Service.load(
-                        KernelExtensionFactory.class ) ),
-                Service.load( CacheProvider.class )
-        );
+                        KernelExtensionFactory.class ) ) );
     }
 
     /**
@@ -105,10 +102,9 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
      */
     @Deprecated
     public ImpermanentGraphDatabase( Map<String, String> params,
-                                     Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                                     Iterable<CacheProvider> cacheProviders )
+                                     Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
-        this( PATH, params, kernelExtensions, cacheProviders );
+        this( PATH, params, kernelExtensions );
     }
 
     /**
@@ -116,20 +112,15 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
      */
     @Deprecated
     public ImpermanentGraphDatabase( String storeDir, Map<String, String> params,
-                                     Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                                     Iterable<CacheProvider> cacheProviders )
+                                     Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
-        this( storeDir, withForcedInMemoryConfiguration( params ),
-                getDependencies( kernelExtensions, cacheProviders ) );
+        this( storeDir, withForcedInMemoryConfiguration( params ), getDependencies( kernelExtensions ) );
     }
 
-    private static Dependencies getDependencies(
-            Iterable<KernelExtensionFactory<?>> kernelExtensions,
-            Iterable<CacheProvider> cacheProviders )
+    private static Dependencies getDependencies( Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
         GraphDatabaseFactoryState state = new GraphDatabaseFactoryState();
         state.setKernelExtensions( kernelExtensions );
-        state.setCacheProviders( cacheProviders );
         return state.databaseDependencies();
     }
 

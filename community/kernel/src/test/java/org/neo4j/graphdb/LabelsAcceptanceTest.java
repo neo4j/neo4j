@@ -19,14 +19,14 @@
  */
 package org.neo4j.graphdb;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.helpers.Function;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -604,7 +604,6 @@ public class LabelsAcceptanceTest
                 tx.finish();
             }
         }
-        dbRule.clearCache();
 
         // then
         Transaction transaction = db.beginTx();

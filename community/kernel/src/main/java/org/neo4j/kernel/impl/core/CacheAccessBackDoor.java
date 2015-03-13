@@ -19,25 +19,15 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.util.Collection;
-
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
-import org.neo4j.kernel.impl.transaction.command.RelationshipHoles;
 
 public interface CacheAccessBackDoor
 {
-    void removeNodeFromCache( long nodeId );
-
-    void removeRelationshipFromCache( long id );
-
     void removeRelationshipTypeFromCache( int id );
 
     void removePropertyKeyFromCache( int id );
 
     void removeLabelFromCache( int id );
-
-    void removeGraphPropertiesFromCache();
 
     void addSchemaRule( SchemaRule schemaRule );
 
@@ -48,22 +38,4 @@ public interface CacheAccessBackDoor
     void addLabelToken( Token labelId );
 
     void addPropertyKeyToken( Token index );
-
-    void applyLabelUpdates( Collection<NodeLabelUpdate> labelUpdates );
-
-    /**
-     * Patches the relationship chain loading parts of the start and end nodes of deleted relationships. This is
-     * a good idea to call when deleting relationships, otherwise the in memory representation of relationship chains
-     * may become damaged.
-     * This is not expected to remove the deleted relationship from the cache - use
-     * {@link #removeRelationshipFromCache(long)} for that purpose before calling this method.
-     *
-     * @param relId The relId of the relationship deleted
-     * @param type type of the relationship deleted
-     * @param firstNodeId The relId of the first node
-     * @param firstNodeNextRelId The next relationship relId of the first node in its relationship chain
-     * @param secondNodeId The relId of the second node
-     * @param secondNodeNextRelId The next relationship relId of the second node in its relationship chain
-     */
-    void patchDeletedRelationshipNodes( long nodeId, RelationshipHoles holes );
 }

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
-
 final class LongProperty extends IntegralNumberProperty
 {
     private final long value;
@@ -41,11 +39,5 @@ final class LongProperty extends IntegralNumberProperty
     long longValue()
     {
         return value;
-    }
-
-    @Override
-    public int sizeOfObjectInBytesIncludingOverhead()
-    {
-        return withObjectOverhead( 8 );
     }
 }

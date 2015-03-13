@@ -72,8 +72,6 @@ public class TestDenseNodeRelChainPositionIT
             tx.success();
         }
 
-        db.getDependencyResolver().resolveDependency( Caches.class ).clear();
-
         // When/Then
         try ( Transaction ignored = db.beginTx() )
         {
@@ -86,6 +84,6 @@ public class TestDenseNodeRelChainPositionIT
             assertEquals(denseNodeThreshold, Iterables.count( rels2 ) );
         }
     }
-    
+
     public final @Rule CleanupRule cleanup = new CleanupRule();
 }

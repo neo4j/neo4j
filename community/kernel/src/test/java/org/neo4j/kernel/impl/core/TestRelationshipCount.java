@@ -46,10 +46,12 @@ import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
-import static java.lang.Integer.parseInt;
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+
+import static java.lang.Integer.parseInt;
+import static java.util.Arrays.asList;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 @RunWith( Parameterized.class )
@@ -104,7 +106,6 @@ public class TestRelationshipCount
             node.createRelationshipTo( getGraphDb().createNode(), MyRelTypes.TEST );
         }
 
-        clearCache();
         assertEquals( expectedRelCount, node.getDegree() );
         assertEquals( expectedRelCount, node.getDegree( Direction.BOTH ) );
         assertEquals( expectedRelCount, node.getDegree( Direction.OUTGOING ) );
@@ -180,7 +181,6 @@ public class TestRelationshipCount
         {
             newTransaction();
         }
-        clearCache();
         assertEquals( expectedTypes, asSet( asStrings( node.getRelationshipTypes() ) ) );
     }
 
@@ -228,7 +228,6 @@ public class TestRelationshipCount
             if ( i%10 == 0 )
             {
                 newTransaction();
-                clearCache();
             }
         }
 
@@ -387,6 +386,22 @@ public class TestRelationshipCount
         newTransaction();
         assertCounts( me, expectedCounts );
 
+//        System.out.println( "all" );
+//        System.out.println( "  total:" + me.getDegree() );
+//        for ( Direction direction : Direction.values() )
+//        {
+//            System.out.println( "  " + direction + ":" + me.getDegree( direction ) );
+//        }
+//        for ( RelationshipType type : me.getRelationshipTypes() )
+//        {
+//            System.out.println( "type:" + type );
+//            System.out.println( "  total:" + me.getDegree( type ) );
+//            for ( Direction direction : Direction.values() )
+//            {
+//                System.out.println( "  " + direction + ":" + me.getDegree( type, direction ) );
+//            }
+//        }
+
         // Delete one of each type/direction combination
         counter = 0;
         if ( dspecs == null )
@@ -489,6 +504,7 @@ public class TestRelationshipCount
 
     private void deleteOneRelationship( Node node, RelType type, Direction direction, int which )
     {
+        System.out.println( "deleting one relationship " + type + "/" + direction );
         Relationship last = null;
         int counter = 0;
         for ( Relationship rel : node.getRelationships( type, direction ) )
@@ -499,6 +515,7 @@ public class TestRelationshipCount
                 if ( counter++ == which )
                 {
                     rel.delete();
+                    System.out.println( "  deleted " + rel );
                     return;
                 }
             }
@@ -507,6 +524,7 @@ public class TestRelationshipCount
         if ( which == Integer.MAX_VALUE && last != null )
         {
             last.delete();
+            System.out.println( "  deleted last " + last );
             return;
         }
 
@@ -592,10 +610,5 @@ public class TestRelationshipCount
     private GraphDatabaseService getGraphDb()
     {
         return dbRule.getGraphDatabaseService();
-    }
-
-    private void clearCache()
-    {
-        dbRule.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( Caches.class ).clear();
     }
 }

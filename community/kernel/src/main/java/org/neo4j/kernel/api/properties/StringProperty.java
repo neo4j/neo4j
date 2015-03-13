@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.api.properties;
 
-import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOf;
-import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
-import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
-
 final class StringProperty extends DefinedProperty
 {
     private final String value;
@@ -80,11 +76,5 @@ final class StringProperty extends DefinedProperty
             return value.length() == 1 && that.value == value.charAt( 0 );
         }
         return false;
-    }
-
-    @Override
-    public int sizeOfObjectInBytesIncludingOverhead()
-    {
-        return withObjectOverhead( withReference( sizeOf( value ) ) );
     }
 }

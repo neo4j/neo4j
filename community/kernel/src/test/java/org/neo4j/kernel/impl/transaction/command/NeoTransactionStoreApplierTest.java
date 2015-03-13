@@ -138,7 +138,6 @@ public class NeoTransactionStoreApplierTest
         verify( lockService, times( 1 ) ).acquireNodeLock( command.getKey(), LockService.LockType.WRITE_LOCK );
         verify( nodeStore, times( 1 ) ).updateRecord( after );
         verify( nodeStore, times( 1 ) ).updateDynamicLabelRecords( Arrays.asList( one, two, three ) );
-        verify( cacheAccess, never() ).removeNodeFromCache( command.getKey() );
     }
 
     private NeoCommandHandler newApplier( boolean recovery )
@@ -200,7 +199,6 @@ public class NeoTransactionStoreApplierTest
         verify( nodeStore, times( 1 ) ).updateRecord( after );
         verify( dynamicLabelStore, times( 1 ) ).setHighestPossibleIdInUse( three.getId() );
         verify( nodeStore, times( 1 ) ).updateDynamicLabelRecords( Arrays.asList( one, two, three ) );
-        verify( cacheAccess, times( 1 ) ).removeNodeFromCache( command.getKey() );
     }
 
     @Test
@@ -227,28 +225,6 @@ public class NeoTransactionStoreApplierTest
         verify( lockService, times( 1 ) ).acquireNodeLock( command.getKey(), LockService.LockType.WRITE_LOCK );
         verify( nodeStore, times( 1 ) ).updateRecord( after );
         verify( nodeStore, times( 1 ) ).updateDynamicLabelRecords( Arrays.asList( one, two, three ) );
-        verify( cacheAccess, times( 1 ) ).removeNodeFromCache( command.getKey() );
-    }
-
-    @Test
-    public void cacheShouldInvalidateOnlyOnceWhenNodeBecomesDense() throws IOException
-    {
-        // given
-        final NeoCommandHandler applier = newApplier( false );
-        final NodeRecord before = new NodeRecord( 11 );
-        before.setLabelField( 42, Arrays.asList( one, two ) );
-        before.setInUse( true );
-        before.setDense( false );
-        final NodeRecord after = new NodeRecord( 12 );
-        after.setInUse( true );
-        after.setDense( true );
-        after.setLabelField( 42, Arrays.asList( one, three ) );
-        final Command.NodeCommand command = new Command.NodeCommand().init( before, after );
-
-        // when
-        applier.visitNodeCommand( command );
-
-        verify( cacheAccess, times( 1 ) ).removeNodeFromCache( command.getKey() );
     }
 
     // RELATIONSHIP COMMAND
@@ -268,7 +244,6 @@ public class NeoTransactionStoreApplierTest
         assertFalse( result );
 
         verify( relationshipStore, times( 1 ) ).updateRecord( record );
-        verify( cacheAccess, never() ).removeRelationshipFromCache( record.getId() );
     }
 
     @Test
@@ -305,7 +280,6 @@ public class NeoTransactionStoreApplierTest
 
         verify( relationshipStore, times( 1 ) ).setHighestPossibleIdInUse( record.getId() );
         verify( relationshipStore, times( 1 ) ).updateRecord( record );
-        verify( cacheAccess, times( 1 ) ).removeRelationshipFromCache( record.getId() );
     }
 
     // PROPERTY COMMAND
@@ -348,7 +322,6 @@ public class NeoTransactionStoreApplierTest
         verify( lockService, times( 1 ) ).acquireNodeLock( 42, LockService.LockType.WRITE_LOCK );
         verify( propertyStore, times( 1 ) ).setHighestPossibleIdInUse( after.getId() );
         verify( propertyStore, times( 1 ) ).updateRecord( after );
-        verify( cacheAccess, times( 1 ) ).removeNodeFromCache( after.getNodeId() );
     }
 
     @Test
@@ -387,7 +360,6 @@ public class NeoTransactionStoreApplierTest
 
         verify( propertyStore, times( 1 ) ).setHighestPossibleIdInUse( 12 );
         verify( propertyStore, times( 1 ) ).updateRecord( after );
-        verify( cacheAccess, times( 1 ) ).removeRelationshipFromCache( after.getRelId() );
     }
 
     private void applyAndClose( NeoCommandHandler... appliers )
@@ -572,7 +544,7 @@ public class NeoTransactionStoreApplierTest
         // given
         final NeoCommandHandler applier = newApplier( false );
         final NeoCommandHandler indexApplier = new IndexTransactionApplier( indexingService,
-                ValidatedIndexUpdates.NONE, labelScanStore, cacheAccess );
+                ValidatedIndexUpdates.NONE, labelScanStore );
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         record.setCreated();
         final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
@@ -759,7 +731,7 @@ public class NeoTransactionStoreApplierTest
 
     private NeoCommandHandler newIndexApplier( TransactionApplicationMode mode )
     {
-        return new IndexTransactionApplier( indexingService, ValidatedIndexUpdates.NONE, labelScanStore, cacheAccess );
+        return new IndexTransactionApplier( indexingService, ValidatedIndexUpdates.NONE, labelScanStore );
     }
 
     @Test
@@ -938,7 +910,6 @@ public class NeoTransactionStoreApplierTest
         assertFalse( result );
 
         verify( neoStore, times( 1 ) ).setGraphNextProp( record.getNextProp() );
-        verify( cacheAccess, times( 1 ) ).removeGraphPropertiesFromCache();
     }
 
     // CLOSE

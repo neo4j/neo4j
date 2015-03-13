@@ -38,6 +38,7 @@ import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
@@ -85,8 +86,7 @@ public class CreateAndLoadDenseNodeIT
     public void before()
     {
         createDbIfNecessary();
-        dbRule.setConfig( GraphDatabaseSettings.cache_type, "none" )
-              .setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
+        dbRule.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
         db = dbRule.getGraphDatabaseService();
     }
 

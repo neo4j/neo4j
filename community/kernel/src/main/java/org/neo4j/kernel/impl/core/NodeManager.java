@@ -37,16 +37,19 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
     private final ThreadToStatementContextBridge threadToTransactionBridge;
     private final NodeProxy.NodeActions nodeActions;
     private final RelationshipProxy.RelationshipActions relationshipActions;
+    private final GraphPropertiesProxy.GraphPropertiesActions graphPropertiesActions;
 
     private final List<PropertyTracker<Node>> nodePropertyTrackers;
     private final List<PropertyTracker<Relationship>> relationshipPropertyTrackers;
     private long epoch;
 
     public NodeManager( NodeProxy.NodeActions nodeActions, RelationshipProxy.RelationshipActions relationshipActions,
+                        GraphPropertiesProxy.GraphPropertiesActions graphPropertiesActions,
                         ThreadToStatementContextBridge threadToTransactionBridge )
     {
         this.nodeActions = nodeActions;
         this.relationshipActions = relationshipActions;
+        this.graphPropertiesActions = graphPropertiesActions;
         this.threadToTransactionBridge = threadToTransactionBridge;
         // Trackers may be added and removed at runtime, e.g. via the REST interface in server,
         // so we use the thread-safe CopyOnWriteArrayList.
@@ -101,9 +104,9 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
     }
 
     @Override
-    public GraphPropertiesImpl newGraphProperties()
+    public GraphProperties newGraphProperties()
     {
-        return new GraphPropertiesImpl( epoch, threadToTransactionBridge );
+        return new GraphPropertiesProxy( graphPropertiesActions );
     }
 
     public List<PropertyTracker<Node>> getNodePropertyTrackers()

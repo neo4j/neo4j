@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.ha;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -58,10 +58,10 @@ import org.neo4j.test.ha.ClusterManager.RepairKit;
 import org.neo4j.test.ha.ClusterRule;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.neo4j.cluster.protocol.cluster.ClusterConfiguration.COORDINATOR;
 import static org.neo4j.helpers.Predicates.not;
@@ -87,7 +87,6 @@ public class ClusterTopologyChangesIT
                 .config(HaSettings.read_timeout, "1s")
                 .config(HaSettings.state_switch_timeout, "2s")
                 .config(HaSettings.com_chunk_size, "1024")
-                .config(GraphDatabaseSettings.cache_type, "none")
                 .startCluster();
     }
 

@@ -34,7 +34,6 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
-import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -65,15 +64,13 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
 
     private final IndexingService indexingService;
     private final LabelScanStore labelScanStore;
-    private final CacheAccessBackDoor cacheAccess;
 
     public IndexTransactionApplier( IndexingService indexingService, ValidatedIndexUpdates indexUpdates,
-            LabelScanStore labelScanStore, CacheAccessBackDoor cacheAccess )
+            LabelScanStore labelScanStore )
     {
         this.indexingService = indexingService;
         this.indexUpdates = indexUpdates;
         this.labelScanStore = labelScanStore;
-        this.cacheAccess = cacheAccess;
     }
 
     @Override
@@ -82,7 +79,6 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
         if ( !labelUpdates.isEmpty() )
         {
             updateLabelScanStore();
-            cacheAccess.applyLabelUpdates( labelUpdates );
         }
 
         updateIndexes();

@@ -19,6 +19,14 @@
  */
 package org.neo4j.kernel.impl;
 
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
+
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -35,21 +43,12 @@ import java.lang.reflect.Field;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.NeoStore;
@@ -280,11 +279,6 @@ public abstract class AbstractNeo4jTestCase
         {
             file.delete();
         }
-    }
-
-    protected void clearCache()
-    {
-        getGraphDbAPI().getDependencyResolver().resolveDependency( Caches.class ).clear();
     }
 
     protected long propertyRecordsInUse()

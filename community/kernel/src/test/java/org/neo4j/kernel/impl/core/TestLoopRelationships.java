@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
-
-import org.junit.Test;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
@@ -34,11 +34,11 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
-import static java.util.Arrays.asList;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static java.util.Arrays.asList;
 
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 
@@ -99,8 +99,6 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
         node.createRelationshipTo( node, TEST );
 
         newTransaction();
-
-        clearCache();
 
         for ( Direction dir : Direction.values() )
         {
@@ -352,8 +350,6 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
     private void verifyRelationships( String message, Node root,
             boolean[] loop, Relationship... relationships )
     {
-        clearCache();
-
         for ( Direction dir : Direction.values() )
         {
             Set<Relationship> expected = new HashSet<Relationship>();

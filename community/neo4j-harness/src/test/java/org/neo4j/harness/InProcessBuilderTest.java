@@ -19,6 +19,10 @@
  */
 package org.neo4j.harness;
 
+import org.codehaus.jackson.JsonNode;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
@@ -31,10 +35,6 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
-
-import org.codehaus.jackson.JsonNode;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
@@ -84,17 +84,17 @@ public class InProcessBuilderTest
         trustAllSSLCerts();
 
         // When
-        try(ServerControls server = newInProcessBuilder( testDir.directory() )
+        try ( ServerControls server = newInProcessBuilder( testDir.directory() )
                 .withConfig( Configurator.WEBSERVER_HTTPS_ENABLED_PROPERTY_KEY, "true")
                 .withConfig( Configurator.WEBSERVER_HTTPS_CERT_PATH_PROPERTY_KEY, testDir.file( "cert" ).getAbsolutePath() )
                 .withConfig( Configurator.WEBSERVER_KEYSTORE_PATH_PROPERTY_KEY, testDir.file( "keystore" ).getAbsolutePath() )
                 .withConfig( Configurator.WEBSERVER_HTTPS_KEY_PATH_PROPERTY_KEY, testDir.file( "key" ).getAbsolutePath() )
-                .withConfig( GraphDatabaseSettings.cache_type, "none" )
-                .newServer())
+                .withConfig( GraphDatabaseSettings.dense_node_threshold, "20" )
+                .newServer() )
         {
             // Then
             assertThat( HTTP.GET( server.httpsURI().toString() ).status(), equalTo( 200 ) );
-            assertDBConfig( server, "none", "cache_type" );
+            assertDBConfig( server, "20", GraphDatabaseSettings.dense_node_threshold.name() );
         }
     }
 

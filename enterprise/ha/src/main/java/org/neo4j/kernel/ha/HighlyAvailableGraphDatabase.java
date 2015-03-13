@@ -94,8 +94,6 @@ import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
-import org.neo4j.kernel.impl.cache.CacheProvider;
-import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -148,20 +146,19 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
     public HighlyAvailableGraphDatabase( String storeDir, Map<String,String> params,
                                          Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                                         Iterable<CacheProvider> cacheProviders, Monitors monitors )
+                                         Monitors monitors )
     {
         this( storeDir, params, newDependencies()
                 .settingsClasses( GraphDatabaseSettings.class, ClusterSettings.class, HaSettings.class )
-                .kernelExtensions( kernelExtensions ).cacheProviders( cacheProviders ).monitors( monitors ) );
+                .kernelExtensions( kernelExtensions ).monitors( monitors ) );
     }
 
     public HighlyAvailableGraphDatabase( String storeDir, Map<String,String> params,
-                                         Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                                         Iterable<CacheProvider> cacheProviders )
+                                         Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
         this( storeDir, params, newDependencies()
                 .settingsClasses( GraphDatabaseSettings.class, ClusterSettings.class, HaSettings.class )
-                .kernelExtensions( kernelExtensions ).cacheProviders( cacheProviders ) );
+                .kernelExtensions( kernelExtensions ) );
     }
 
     public HighlyAvailableGraphDatabase( String storeDir, Map<String,String> params, Dependencies dependencies )
@@ -607,12 +604,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                     masterDelegateInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory );
             return labelIdCreator;
         }
-    }
-
-    @Override
-    protected Caches createCaches()
-    {
-        return new HaCaches( logging.getMessagesLog( Caches.class ), monitors );
     }
 
     @Override

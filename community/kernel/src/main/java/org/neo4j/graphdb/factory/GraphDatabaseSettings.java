@@ -23,11 +23,8 @@ import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
@@ -35,8 +32,6 @@ import org.neo4j.kernel.configuration.Internal;
 import org.neo4j.kernel.configuration.Migrator;
 import org.neo4j.kernel.configuration.Obsoleted;
 import org.neo4j.kernel.configuration.Title;
-import org.neo4j.kernel.impl.api.store.CacheLayer;
-import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.MonitorGc;
 
 import static org.neo4j.helpers.Settings.ANY;
@@ -70,11 +65,6 @@ public abstract class GraphDatabaseSettings
     @Description("Only allow read operations from this Neo4j instance. "
             + "This mode still requires write access to the directory for lock purposes.")
     public static final Setting<Boolean> read_only = setting( "read_only", BOOLEAN, FALSE );
-
-    @Description("The type of cache to use for nodes and relationships. "
-                  + "Note that the Neo4j Enterprise Edition has the additional `hpc` cache type (High-Performance Cache). "
-            + "See the chapter on caches in the manual for more information.")
-    public static final Setting<String> cache_type = setting( "cache_type", options( availableCaches() ), availableCaches()[0] );
 
     @Description("Print out the effective Neo4j configuration after startup.")
     public static final Setting<Boolean> dump_configuration = setting("dump_configuration", BOOLEAN, FALSE );
@@ -384,26 +374,4 @@ public abstract class GraphDatabaseSettings
     @Description("If the execution of query takes more time than this threshold, the query is logged - " +
             "provided query logging is enabled. Defaults to 0 seconds, that is all queries are logged.")
     public static final Setting<Long> log_queries_threshold = setting("dbms.querylog.threshold", DURATION, "0s");
-
-    private static String[] availableCaches()
-    {
-        List<String> available = new ArrayList<>();
-        for ( CacheProvider cacheProvider : Service.load( CacheProvider.class ) )
-        {
-            available.add( cacheProvider.getName() );
-        }
-
-        // Temporary hidden config to turn off cache layer entirely
-        available.add( CacheLayer.EXPERIMENTAL_OFF );
-
-                                           // --- higher prio ---->
-        for ( String prioritized : new String[] { "soft", "hpc" } )
-        {
-            if ( available.remove( prioritized ) )
-            {
-                available.add( 0, prioritized );
-            }
-        }
-        return available.toArray( new String[available.size()] );
-    }
 }

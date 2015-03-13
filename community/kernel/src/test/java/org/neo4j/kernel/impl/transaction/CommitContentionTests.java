@@ -32,15 +32,11 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
-import org.neo4j.kernel.impl.cache.CacheProvider;
-import org.neo4j.kernel.impl.cache.NoCacheProvider;
 import org.neo4j.test.TargetDirectory;
 
-import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration.cache_type;
 import static org.neo4j.test.TargetDirectory.forTest;
 
 public class CommitContentionTests
@@ -130,10 +126,8 @@ public class CommitContentionTests
     private GraphDatabaseService createDb()
     {
         GraphDatabaseFactoryState state = new GraphDatabaseFactoryState();
-        state.setCacheProviders( asList( (CacheProvider) new NoCacheProvider() ) );
         //noinspection deprecation
-        return new EmbeddedGraphDatabase( storeLocation.absolutePath(), stringMap( cache_type.name(),
-                NoCacheProvider.NAME ), state.databaseDependencies() )
+        return new EmbeddedGraphDatabase( storeLocation.absolutePath(), stringMap(), state.databaseDependencies() )
         {
             @Override
             protected TransactionCounters createTransactionCounters()

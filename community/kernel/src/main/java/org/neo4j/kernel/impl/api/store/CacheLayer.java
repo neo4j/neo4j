@@ -64,7 +64,6 @@ import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -73,8 +72,6 @@ import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 import org.neo4j.kernel.impl.util.register.NeoRegister;
 import org.neo4j.register.Register;
 
-import static org.neo4j.collection.primitive.PrimitiveIntCollections.asArray;
-import static org.neo4j.collection.primitive.PrimitiveIntCollections.iterator;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 
@@ -99,55 +96,16 @@ public class CacheLayer implements StoreReadLayer
         }
     };
 
-    /* Experimental cache_type setting for disabling this cache layer entirely. */
-    public static final String EXPERIMENTAL_OFF = "experimental-off";
-
-    private final CacheLoader<Iterator<DefinedProperty>> nodePropertyLoader = new CacheLoader<Iterator<DefinedProperty>>()
-    {
-        @Override
-        public Iterator<DefinedProperty> load( long id ) throws EntityNotFoundException
-        {
-            return diskLayer.nodeGetAllProperties( id );
-        }
-    };
-    private final CacheLoader<Iterator<DefinedProperty>> relationshipPropertyLoader = new CacheLoader<Iterator<DefinedProperty>>()
-    {
-        @Override
-        public Iterator<DefinedProperty> load( long id ) throws EntityNotFoundException
-        {
-            return diskLayer.relationshipGetAllProperties( id );
-        }
-    };
-    private final CacheLoader<Iterator<DefinedProperty>> graphPropertyLoader = new CacheLoader<Iterator<DefinedProperty>>()
-    {
-        @Override
-        public Iterator<DefinedProperty> load( long id ) throws EntityNotFoundException
-        {
-            return diskLayer.graphGetAllProperties();
-        }
-    };
-    private final CacheLoader<int[]> nodeLabelLoader = new CacheLoader<int[]>()
-    {
-        @Override
-        public int[] load( long id ) throws EntityNotFoundException
-        {
-            return asArray( diskLayer.nodeGetLabels( id ) );
-        }
-    };
-
-    private final PersistenceCache persistenceCache;
     private final SchemaCache schemaCache;
     private final DiskLayer diskLayer;
     private final IndexingService indexingService;
 
     public CacheLayer(
             DiskLayer diskLayer,
-            PersistenceCache persistenceCache,
             IndexingService indexingService,
             SchemaCache schemaCache )
     {
         this.diskLayer = diskLayer;
-        this.persistenceCache = persistenceCache;
         this.indexingService = indexingService;
         this.schemaCache = schemaCache;
     }
@@ -161,13 +119,13 @@ public class CacheLayer implements StoreReadLayer
     @Override
     public boolean nodeHasLabel( long nodeId, int labelId ) throws EntityNotFoundException
     {
-        return persistenceCache.nodeHasLabel( nodeId, labelId, nodeLabelLoader );
+        return diskLayer.nodeHasLabel( nodeId, labelId );
     }
 
     @Override
     public PrimitiveIntIterator nodeGetLabels( long nodeId ) throws EntityNotFoundException
     {
-        return iterator( persistenceCache.nodeGetLabels( nodeId, nodeLabelLoader ) );
+        return diskLayer.nodeGetLabels( nodeId );
     }
 
     @Override
@@ -253,19 +211,19 @@ public class CacheLayer implements StoreReadLayer
     @Override
     public PrimitiveLongIterator nodeGetPropertyKeys( long nodeId ) throws EntityNotFoundException
     {
-        return persistenceCache.nodeGetPropertyKeys( nodeId, nodePropertyLoader );
+        return diskLayer.nodeGetPropertyKeys( nodeId );
     }
 
     @Override
     public Property nodeGetProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
     {
-        return persistenceCache.nodeGetProperty( nodeId, propertyKeyId, nodePropertyLoader );
+        return diskLayer.nodeGetProperty( nodeId, propertyKeyId );
     }
 
     @Override
     public Iterator<DefinedProperty> nodeGetAllProperties( long nodeId ) throws EntityNotFoundException
     {
-        return persistenceCache.nodeGetProperties( nodeId, nodePropertyLoader );
+        return diskLayer.nodeGetAllProperties( nodeId );
     }
 
     @Override
@@ -279,33 +237,32 @@ public class CacheLayer implements StoreReadLayer
     public Property relationshipGetProperty( long relationshipId, int propertyKeyId )
             throws EntityNotFoundException
     {
-        return persistenceCache.relationshipGetProperty( relationshipId, propertyKeyId,
-                                                         relationshipPropertyLoader );
+        return diskLayer.relationshipGetProperty( relationshipId, propertyKeyId );
     }
 
     @Override
-    public Iterator<DefinedProperty> relationshipGetAllProperties( long nodeId )
+    public Iterator<DefinedProperty> relationshipGetAllProperties( long relationshipId )
             throws EntityNotFoundException
     {
-        return persistenceCache.relationshipGetProperties( nodeId, relationshipPropertyLoader );
+        return diskLayer.relationshipGetAllProperties( relationshipId );
     }
 
     @Override
     public PrimitiveLongIterator graphGetPropertyKeys( KernelStatement state )
     {
-        return persistenceCache.graphGetPropertyKeys( graphPropertyLoader );
+        return diskLayer.graphGetPropertyKeys( state );
     }
 
     @Override
     public Property graphGetProperty( int propertyKeyId )
     {
-        return persistenceCache.graphGetProperty( graphPropertyLoader, propertyKeyId );
+        return diskLayer.graphGetProperty( propertyKeyId );
     }
 
     @Override
     public Iterator<DefinedProperty> graphGetAllProperties()
     {
-        return persistenceCache.graphGetProperties( graphPropertyLoader );
+        return diskLayer.graphGetAllProperties();
     }
 
     @Override
@@ -444,50 +401,48 @@ public class CacheLayer implements StoreReadLayer
     public PrimitiveLongIterator nodeListRelationships( long nodeId, Direction direction )
             throws EntityNotFoundException
     {
-        return persistenceCache.nodeGetRelationships( nodeId, direction );
+        return diskLayer.nodeListRelationships( nodeId, direction );
     }
 
     @Override
     public PrimitiveLongIterator nodeListRelationships( long nodeId, Direction direction,
                                                         int[] relTypes ) throws EntityNotFoundException
     {
-        return persistenceCache.nodeGetRelationships( nodeId, direction, relTypes );
+        return diskLayer.nodeListRelationships( nodeId, direction, relTypes );
     }
 
     @Override
     public int nodeGetDegree( long nodeId, Direction direction )
             throws EntityNotFoundException
     {
-        return persistenceCache.nodeGetDegree( nodeId, direction );
+        return diskLayer.nodeGetDegree( nodeId, direction );
     }
 
     @Override
     public int nodeGetDegree( long nodeId, Direction direction, int relType )
             throws EntityNotFoundException
     {
-        return persistenceCache.nodeGetDegree( nodeId, relType, direction );
+        return diskLayer.nodeGetDegree( nodeId, direction, relType );
     }
 
     @Override
     public boolean nodeVisitDegrees( long nodeId, DegreeVisitor visitor )
     {
-        return persistenceCache.nodeVisitDegrees( nodeId, visitor );
+        return diskLayer.nodeVisitDegrees( nodeId, visitor );
     }
 
     @Override
     public PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId )
             throws EntityNotFoundException
     {
-        return persistenceCache.nodeGetRelationshipTypes( nodeId );
+        return diskLayer.nodeGetRelationshipTypes( nodeId );
     }
 
     @Override
     public <EXCEPTION extends Exception> void relationshipVisit( long relationshipId,
             RelationshipVisitor<EXCEPTION> relationshipVisitor ) throws EntityNotFoundException, EXCEPTION
     {
-        RelationshipImpl relationship = persistenceCache.getRelationship( relationshipId );
-        relationshipVisitor.visit( relationshipId, relationship.getTypeId(), relationship.getStartNodeId(),
-                relationship.getEndNodeId());
+        diskLayer.relationshipVisit( relationshipId, relationshipVisitor );
     }
 
     @Override

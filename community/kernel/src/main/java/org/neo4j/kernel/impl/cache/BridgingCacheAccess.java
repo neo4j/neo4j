@@ -19,68 +19,51 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import java.util.Collection;
-
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.SchemaState;
-import org.neo4j.kernel.impl.api.store.PersistenceCache;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
+import org.neo4j.kernel.impl.core.LabelTokenHolder;
+import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
-import org.neo4j.kernel.impl.transaction.command.RelationshipHoles;
 
 public class BridgingCacheAccess implements CacheAccessBackDoor
 {
     private final SchemaCache schemaCache;
     private final SchemaState schemaState;
-    private final PersistenceCache persistenceCache;
+    private final PropertyKeyTokenHolder propertyKeyTokenHolder;
+    private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
+    private final LabelTokenHolder labelTokenHolder;
 
     public BridgingCacheAccess( SchemaCache schemaCache, SchemaState schemaState,
-                                PersistenceCache persistenceCache )
+            PropertyKeyTokenHolder propertyKeyTokenHolder,
+            RelationshipTypeTokenHolder relationshipTypeTokenHolder,
+            LabelTokenHolder labelTokenHolder )
     {
         this.schemaCache = schemaCache;
         this.schemaState = schemaState;
-        this.persistenceCache = persistenceCache;
-    }
-
-    @Override
-    public void removeNodeFromCache( long nodeId )
-    {
-        if ( nodeId != -1 )
-        {
-            persistenceCache.evictNode( nodeId );
-        }
-    }
-
-    @Override
-    public void removeRelationshipFromCache( long id )
-    {
-        persistenceCache.evictRelationship( id );
+        this.propertyKeyTokenHolder = propertyKeyTokenHolder;
+        this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
+        this.labelTokenHolder = labelTokenHolder;
     }
 
     @Override
     public void removeRelationshipTypeFromCache( int id )
     {
-        persistenceCache.evictRelationshipType( id );
+        relationshipTypeTokenHolder.removeToken( id );
     }
 
     @Override
     public void removePropertyKeyFromCache( int id )
     {
-        persistenceCache.evictPropertyKey( id );
+        propertyKeyTokenHolder.removeToken( id );
     }
 
     @Override
     public void removeLabelFromCache( int id )
     {
-        persistenceCache.evictLabel( id );
-    }
-
-    @Override
-    public void removeGraphPropertiesFromCache()
-    {
-        persistenceCache.evictGraphProperties();
+        labelTokenHolder.removeToken( id );
     }
 
     @Override
@@ -99,30 +82,18 @@ public class BridgingCacheAccess implements CacheAccessBackDoor
     @Override
     public void addRelationshipTypeToken( Token type )
     {
-        persistenceCache.cacheRelationshipType( type );
+        relationshipTypeTokenHolder.addToken( type );
     }
 
     @Override
     public void addLabelToken( Token label )
     {
-        persistenceCache.cacheLabel( label );
+        labelTokenHolder.addToken( label );
     }
 
     @Override
     public void addPropertyKeyToken( Token propertyKey )
     {
-        persistenceCache.cachePropertyKey( propertyKey );
-    }
-
-    @Override
-    public void patchDeletedRelationshipNodes( long nodeId, RelationshipHoles holes )
-    {
-        persistenceCache.patchDeletedRelationshipNodes( nodeId, holes );
-    }
-
-    @Override
-    public void applyLabelUpdates( Collection<NodeLabelUpdate> labelUpdates )
-    {
-        persistenceCache.apply( labelUpdates );
+        propertyKeyTokenHolder.addToken( propertyKey );
     }
 }

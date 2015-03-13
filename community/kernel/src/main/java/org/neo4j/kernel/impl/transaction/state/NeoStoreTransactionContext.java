@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.impl.core.RelationshipLoadingPosition;
 import org.neo4j.kernel.impl.locking.Locks.Client;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -40,7 +39,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 public class NeoStoreTransactionContext
 {
@@ -52,7 +50,6 @@ public class NeoStoreTransactionContext
     private final PropertyDeleter propertyDeleter;
     private final TransactionalRelationshipLocker locker;
     private final RelationshipGroupGetter relationshipGroupGetter;
-    private final RelationshipChainLoader relationshipLoader;
 
     private final RecordAccessSet recordChangeSet;
     private final NeoStore neoStore;
@@ -71,7 +68,6 @@ public class NeoStoreTransactionContext
         propertyDeleter = new PropertyDeleter( neoStore.getPropertyStore(), propertyTraverser );
         relationshipCreator = new RelationshipCreator( locker, relationshipGroupGetter, neoStore.getDenseNodeThreshold() );
         relationshipDeleter = new RelationshipDeleter( locker, relationshipGroupGetter, propertyDeleter );
-        relationshipLoader = new RelationshipChainLoader( neoStore );
     }
 
     public RecordAccessSet getRecordChangeSet()
@@ -216,20 +212,5 @@ public class NeoStoreTransactionContext
     public boolean hasChanges()
     {
         return recordChangeSet.hasChanges();
-    }
-
-    public int getRelationshipCount( long id, int type, DirectionWrapper direction )
-    {
-        return relationshipLoader.getRelationshipCount( id, type, direction );
-    }
-
-    public Integer[] getRelationshipTypes( long id )
-    {
-        return relationshipLoader.getRelationshipTypes( id );
-    }
-
-    public RelationshipLoadingPosition getRelationshipLoadingChainPoisition( long id )
-    {
-        return relationshipLoader.getRelationshipChainPosition( id );
     }
 }
