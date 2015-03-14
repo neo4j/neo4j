@@ -22,10 +22,14 @@ package org.neo4j.csv.reader;
 import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 
@@ -35,10 +39,33 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import static java.util.Arrays.asList;
+
+import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 import static org.neo4j.csv.reader.Readables.wrap;
 
+@RunWith( Parameterized.class )
 public class BufferedCharSeekerTest
 {
+    private final boolean useThreadAhead;
+
+    @Parameters( name = "{1}" )
+    public static Collection<Object[]> data()
+    {
+        return asList(
+                new Object[] {Boolean.FALSE, "without thread-ahead"},
+                new Object[] {Boolean.TRUE, "with thread-ahead"} );
+    }
+
+    /**
+     * @param description used to provider a better description of what the boolean values means,
+     * which shows up in the junit results.
+     */
+    public BufferedCharSeekerTest( boolean useThreadAhead, String description )
+    {
+        this.useThreadAhead = useThreadAhead;
+    }
+
     @Test
     public void shouldFindCertainCharacter() throws Exception
     {
@@ -468,6 +495,37 @@ public class BufferedCharSeekerTest
         assertFalse( seeker.seek( mark, COMMA ) );
     }
 
+    @Test
+    public void shouldListenToMusic() throws Exception
+    {
+        // GIVEN
+        String data =
+                "\"1\",\"ABBA\",\"1992\"\n" +
+                "\"2\",\"Roxette\",\"1986\"\n" +
+                "\"3\",\"Europe\",\"1979\"\n" +
+                "\"4\",\"The Cardigans\",\"1992\"";
+        seeker = seeker( data );
+
+        // WHEN
+        assertNextValue( seeker, mark, COMMA, "1" );
+        assertNextValue( seeker, mark, COMMA, "ABBA" );
+        assertNextValue( seeker, mark, COMMA, "1992" );
+        assertTrue( mark.isEndOfLine() );
+        assertNextValue( seeker, mark, COMMA, "2" );
+        assertNextValue( seeker, mark, COMMA, "Roxette" );
+        assertNextValue( seeker, mark, COMMA, "1986" );
+        assertTrue( mark.isEndOfLine() );
+        assertNextValue( seeker, mark, COMMA, "3" );
+        assertNextValue( seeker, mark, COMMA, "Europe" );
+        assertNextValue( seeker, mark, COMMA, "1979" );
+        assertTrue( mark.isEndOfLine() );
+        assertNextValue( seeker, mark, COMMA, "4" );
+        assertNextValue( seeker, mark, COMMA, "The Cardigans" );
+        assertNextValue( seeker, mark, COMMA, "1992" );
+        assertTrue( mark.isEndOfLine() );
+        assertFalse( seeker.seek( mark, COMMA ) );
+    }
+
     private String[][] randomWeirdValues( int cols, int rows, char... except )
     {
         String[][] data = new String[rows][cols];
@@ -558,22 +616,22 @@ public class BufferedCharSeekerTest
         return line.toArray( new String[line.size()] );
     }
 
-    private BufferedCharSeeker seeker( CharReadable readable )
+    private CharSeeker seeker( CharReadable readable )
     {
         return seeker( readable, 1_000 );
     }
 
-    private BufferedCharSeeker seeker( CharReadable readable, int bufferSize )
+    private CharSeeker seeker( CharReadable readable, int bufferSize )
     {
-        return new BufferedCharSeeker( readable, bufferSize );
+        return charSeeker( readable, bufferSize, useThreadAhead, '"' );
     }
 
-    private BufferedCharSeeker seeker( String data )
+    private CharSeeker seeker( String data )
     {
         return seeker( data, 1_000 );
     }
 
-    private BufferedCharSeeker seeker( String data, int bufferSize )
+    private CharSeeker seeker( String data, int bufferSize )
     {
         return seeker( wrap( new StringReader( data ) ), bufferSize );
     }
@@ -584,7 +642,7 @@ public class BufferedCharSeekerTest
     private final Extractors extractors = new Extractors( ',' );
     private final Mark mark = new Mark();
 
-    private BufferedCharSeeker seeker;
+    private CharSeeker seeker;
 
     @After
     public void closeSeeker() throws IOException

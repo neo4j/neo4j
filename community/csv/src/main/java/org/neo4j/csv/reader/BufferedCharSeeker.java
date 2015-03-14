@@ -136,7 +136,7 @@ public class BufferedCharSeeker implements CharSeeker, SourceTraceability
                 isQuoted = true;
                 if ( ch == quoteChar )
                 {   // Found a quote within a quote, peek at next char
-                    int nextCh = peekChar();
+                    int nextCh = peekChar( skippedChars );
 
                     if ( nextCh == quoteChar )
                     {   // Found a double quote, skip it and we're going down one more quote depth (quote-in-quote)
@@ -158,7 +158,7 @@ public class BufferedCharSeeker implements CharSeeker, SourceTraceability
                 }
                 else if ( ch == BACK_SLASH )
                 {   // Legacy concern, support java style quote encoding
-                    int nextCh = peekChar();
+                    int nextCh = peekChar( skippedChars );
                     if ( nextCh == quoteChar || nextCh == BACK_SLASH )
                     {   // Found a slash encoded quote
                         repositionChar( bufferPos++, ++skippedChars );
@@ -194,9 +194,20 @@ public class BufferedCharSeeker implements CharSeeker, SourceTraceability
         return ch == EOL_CHAR || ch == EOL_CHAR_2;
     }
 
-    private int peekChar() throws IOException
+    private int peekChar( int skippedChars ) throws IOException
     {
-        return fillBufferIfWeHaveExhaustedIt() ? buffer[bufferPos] : EOF_CHAR;
+        int ch = nextChar( skippedChars );
+        try
+        {
+            return ch;
+        }
+        finally
+        {
+            if ( ch != EOF_CHAR )
+            {
+                bufferPos--;
+            }
+        }
     }
 
     private boolean eof( Mark mark )
