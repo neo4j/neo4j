@@ -24,7 +24,7 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.Pipe
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
-import org.neo4j.cypher.internal.compiler.v2_3.{CostPlannerName, EagerResultIterator, ExplainExecutionResult, PipeExecutionResult}
+import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.{ExplainMode, NormalMode}
 import org.neo4j.graphdb.GraphDatabaseService
 
@@ -44,7 +44,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     builder.setQueryContext(context)
 
     // THEN
-    val result = builder.build(graph, "42", NormalMode, Map.empty)
+    val result = builder.build(graph, "42", NormalMode, Map.empty, devNullLogger)
     result shouldBe a [PipeExecutionResult]
     result.asInstanceOf[PipeExecutionResult].result shouldBe a[EagerResultIterator]
   }
@@ -62,7 +62,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     builder.setQueryContext(context)
 
     // THEN
-    val result = builder.build(graph, "42", NormalMode, Map.empty)
+    val result = builder.build(graph, "42", NormalMode, Map.empty, devNullLogger)
     result shouldBe a [PipeExecutionResult]
     result.asInstanceOf[PipeExecutionResult].result should not be an[EagerResultIterator]
   }
@@ -80,7 +80,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     builder.setQueryContext(context)
 
     // THEN
-    val result = builder.build(graph, "42", ExplainMode, Map.empty)
+    val result = builder.build(graph, "42", ExplainMode, Map.empty, devNullLogger)
     result shouldBe a [ExplainExecutionResult]
   }
 }

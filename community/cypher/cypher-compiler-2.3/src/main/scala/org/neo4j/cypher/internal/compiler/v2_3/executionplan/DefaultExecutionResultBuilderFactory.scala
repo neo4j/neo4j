@@ -56,12 +56,12 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo, columns: Lis
       exceptionDecorator = newDecorator
     }
 
-    def build(graph: GraphDatabaseService, queryId: AnyRef, planType: ExecutionMode, params: Map[String, Any]): InternalExecutionResult = {
+    def build(graph: GraphDatabaseService, queryId: AnyRef, planType: ExecutionMode, params: Map[String, Any], notificationLogger: InternalNotificationLogger): InternalExecutionResult = {
       taskCloser.addTask(queryContext.close)
       val state = new QueryState(graph, queryContext, externalResource, params, pipeDecorator, queryId = queryId)
       try {
         try {
-          createResults(state, planType)
+          createResults(state, planType, notificationLogger)
         }
         catch {
           case e: CypherException =>
@@ -75,7 +75,7 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo, columns: Lis
       }
     }
 
-    private def createResults(state: QueryState, planType: ExecutionMode): InternalExecutionResult = {
+    private def createResults(state: QueryState, planType: ExecutionMode, notificationLogger: InternalNotificationLogger): InternalExecutionResult = {
       val queryType =
         if (pipeInfo.pipe.isInstanceOf[IndexOperationPipe] || pipeInfo.pipe.isInstanceOf[ConstraintOperationPipe])
           QueryType.SCHEMA_WRITE
@@ -87,7 +87,7 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo, columns: Lis
         } else
           QueryType.READ_ONLY
       if (planType == ExplainMode) {
-        new ExplainExecutionResult(taskCloser, columns, pipeInfo.pipe.planDescription, queryType)
+        new ExplainExecutionResult(taskCloser, columns, pipeInfo.pipe.planDescription, queryType, notificationLogger.notifications)
       } else {
         val results = pipeInfo.pipe.createResults(state)
         val resultIterator = buildResultIterator(results, pipeInfo.updating)

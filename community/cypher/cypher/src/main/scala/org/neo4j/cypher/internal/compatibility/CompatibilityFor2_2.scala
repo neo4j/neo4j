@@ -203,9 +203,12 @@ case class ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, planner:
       }
       def remove() =  exceptionHandlerFor2_2.runSafely{innerJavaIterator.remove}
     }
+
   }
 
-  def columnAs[T](column: String) = exceptionHandlerFor2_2.runSafely{inner.columnAs[T](column)}
+  def columnAs[T](column: String) = exceptionHandlerFor2_2.runSafely {
+    inner.columnAs[T](column)
+  }
 
   def columns = exceptionHandlerFor2_2.runSafely{inner.columns}
 
@@ -252,6 +255,8 @@ case class ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, planner:
   }
 
   def executionType: QueryExecutionType = exceptionHandlerFor2_2.runSafely {inner.executionType}
+
+  def notifications = Seq.empty
 }
 
 case class CompatibilityPlanDescription(inner: InternalPlanDescription, version: CypherVersion, planner: PlannerName)

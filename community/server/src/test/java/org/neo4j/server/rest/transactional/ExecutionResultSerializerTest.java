@@ -31,6 +31,7 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,6 +48,9 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.InputPosition;
+import org.neo4j.graphdb.impl.notification.NotificationCode;
+import org.neo4j.graphdb.Notification;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.TestLogger;
@@ -794,6 +798,102 @@ public class ExecutionResultSerializerTest
         verifyNoMoreInteractions(result);
     }
 
+    @Test
+    public void shouldReturnNotifications() throws IOException
+    {
+        // given
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+
+        Notification notification = NotificationCode.CARTESIAN_PRODUCT.notification( new InputPosition( 1, 2, 3 ) );
+        List<Notification> notifications = Arrays.asList( notification );
+        Result executionResult = mockExecutionResult( null, notifications, map(
+                "column1", "value1",
+                "column2", "value2" ) );
+
+        // when
+        serializer.transactionCommitUri( URI.create( "commit/uri/1" ) );
+        serializer.statementResult( executionResult, false );
+        serializer.notifications( notifications );
+        serializer.finish();
+
+        // then
+        String result = output.toString( "UTF-8" );
+
+        assertEquals(
+                "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
+                        "\"data\":[{\"row\":[\"value1\",\"value2\"]}]}],\"notifications\":[{\"code\":\"Neo" +
+                        ".ClientNotification.Statement.CartesianProduct\",\"severity\":\"WARNING\",\"title\":\"This " +
+                        "query builds a cartesian product between disconnected patterns.\",\"description\":\"If a " +
+                        "part of a query contains multiple disconnected patterns, this will build a cartesian product" +
+                        " between all those parts. This may produce a large amount of data and slow down query " +
+                        "processing. While occasionally intended, it may often be possible to reformulate the query " +
+                        "that avoids the use of this cross product, perhaps by adding a relationship between the " +
+                        "different parts or by using OPTIONAL MATCH\",\"position\":{\"offset\":1,\"line\":2," +
+                        "\"column\":3}}],\"errors\":[]}", result );
+    }
+
+    @Test
+    public void shouldNotReturnNotificationsWhenEmptyNotifications() throws IOException
+    {
+        // given
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+
+        List<Notification> notifications = Collections.emptyList();
+        Result executionResult = mockExecutionResult( null, notifications, map(
+                "column1", "value1",
+                "column2", "value2" ) );
+
+        // when
+        serializer.transactionCommitUri( URI.create( "commit/uri/1" ) );
+        serializer.statementResult( executionResult, false );
+        serializer.notifications( notifications );
+        serializer.finish();
+
+        // then
+        String result = output.toString( "UTF-8" );
+
+        assertEquals(
+                "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
+                        "\"data\":[{\"row\":[\"value1\",\"value2\"]}]}],\"errors\":[]}", result );
+    }
+
+    @Test
+    public void shouldNotReturnPositionWhenEmptyPosition() throws IOException
+    {
+        // given
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, DEV_NULL );
+
+        Notification notification = NotificationCode.CARTESIAN_PRODUCT.notification( InputPosition.empty );
+
+        List<Notification> notifications = Arrays.asList( notification );
+        Result executionResult = mockExecutionResult( null, notifications, map(
+                "column1", "value1",
+                "column2", "value2" ) );
+
+        // when
+        serializer.transactionCommitUri( URI.create( "commit/uri/1" ) );
+        serializer.statementResult( executionResult, false );
+        serializer.notifications( notifications );
+        serializer.finish();
+
+        // then
+        String result = output.toString( "UTF-8" );
+
+        assertEquals(
+                "{\"commit\":\"commit/uri/1\",\"results\":[{\"columns\":[\"column1\",\"column2\"]," +
+                        "\"data\":[{\"row\":[\"value1\",\"value2\"]}]}],\"notifications\":[{\"code\":\"Neo" +
+                        ".ClientNotification.Statement.CartesianProduct\",\"severity\":\"WARNING\",\"title\":\"This " +
+                        "query builds a cartesian product between disconnected patterns.\",\"description\":\"If a " +
+                        "part of a query contains multiple disconnected patterns, this will build a cartesian product" +
+                        " between all those parts. This may produce a large amount of data and slow down query " +
+                        "processing. While occasionally intended, it may often be possible to reformulate the query " +
+                        "that avoids the use of this cross product, perhaps by adding a relationship between the " +
+                        "different parts or by using OPTIONAL MATCH\"}],\"errors\":[]}", result );
+    }
+
     @SafeVarargs
     private static Result mockExecutionResult( Map<String, Object>... rows )
     {
@@ -801,7 +901,13 @@ public class ExecutionResultSerializerTest
     }
 
     @SafeVarargs
-    private static Result mockExecutionResult( ExecutionPlanDescription planDescription, Map<String, Object>... rows )
+    private static Result mockExecutionResult(ExecutionPlanDescription planDescription, Map<String, Object>... rows )
+    {
+        return mockExecutionResult( planDescription, Collections.<Notification>emptyList(), rows );
+    }
+
+    @SafeVarargs
+    private static Result mockExecutionResult( ExecutionPlanDescription planDescription, Iterable<Notification> notifications, Map<String, Object>... rows )
     {
         Set<String> keys = new TreeSet<>();
         for ( Map<String, Object> row : rows )
@@ -838,6 +944,8 @@ public class ExecutionResultSerializerTest
         {
             when( executionResult.getExecutionPlanDescription() ).thenReturn( planDescription );
         }
+
+        when(executionResult.getNotifications()).thenReturn( notifications );
 
         return executionResult;
     }

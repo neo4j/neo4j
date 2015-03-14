@@ -26,6 +26,7 @@ import java.util.Collections;
 import static java.lang.String.format;
 
 import static org.neo4j.kernel.api.exceptions.Status.Classification.ClientError;
+import static org.neo4j.kernel.api.exceptions.Status.Classification.ClientNotification;
 import static org.neo4j.kernel.api.exceptions.Status.Classification.DatabaseError;
 import static org.neo4j.kernel.api.exceptions.Status.Classification.TransientError;
 
@@ -157,6 +158,7 @@ public interface Status
         // database
         ExecutionFailure( DatabaseError, "The database was unable to execute the statement." ),
         ExternalResourceFailure( TransientError, "The external resource is not available"),
+        CartesianProduct( ClientNotification, "This query builds a cartesian product between disconnected patterns." ),
         ;
 
         private final Code code;
@@ -401,6 +403,9 @@ public interface Status
         /** The Client sent a bad request - changing the request might yield a successful outcome. */
         ClientError( TransactionEffect.NONE,
                 "The Client sent a bad request - changing the request might yield a successful outcome." ),
+        /** There are notifications about the request sent by the client.*/
+        ClientNotification( TransactionEffect.NONE,
+                "There are notifications about the request sent by the client." ),
         /** The database failed to service the request. */
         DatabaseError( TransactionEffect.ROLLBACK,
                 "The database failed to service the request. " ),

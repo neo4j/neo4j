@@ -178,4 +178,14 @@ public interface Result extends ResourceIterator<Map<String, Object>>
 
     /** Removing rows from the result is not supported. */
     void remove();
+
+    /**
+     * Provides notifications about the query producing this result.
+     *
+     * Notifications can be warnings about problematic queries or other valuable information that can be
+     * presented in a client.
+     *
+     * @return an iterable of all notifications created when running the query.
+     */
+    Iterable<Notification> getNotifications();
 }

@@ -326,6 +326,7 @@ public class TransactionHandle implements TransactionTerminationHandle
                     Result result = engine.executeQuery( statement.statement(), statement.parameters(),
                             sessionFactory.create( request ) );
                     output.statementResult( result, statement.includeStats(), statement.resultDataContents() );
+                    output.notifications( result.getNotifications() );
                 }
                 catch ( KernelException | CypherException e )
                 {
@@ -376,6 +377,7 @@ public class TransactionHandle implements TransactionTerminationHandle
                         .create(request) );
                 ensureActiveTransaction();
                 output.statementResult( result, statement.includeStats(), statement.resultDataContents() );
+                output.notifications( result.getNotifications() );
                 closeContextAndCollectErrors(errors);
             }
             catch ( KernelException | CypherException e )

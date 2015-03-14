@@ -35,6 +35,7 @@ import org.mockito.stubbing.Answer;
 
 import org.neo4j.cypher.SyntaxException;
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.Notification;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -60,6 +61,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.Matchers.anyCollectionOf;
 
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.transactional.StubStatementDeserializer.statements;
@@ -94,6 +96,7 @@ public class TransactionHandleTest
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
         outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[])null );
+        outputOrder.verify( output ).notifications( anyCollectionOf( Notification.class ) );
         outputOrder.verify( output ).transactionStatus( anyLong() );
         outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
         outputOrder.verify( output ).finish();
@@ -132,6 +135,7 @@ public class TransactionHandleTest
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
         outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[])null );
+        outputOrder.verify( output ).notifications( anyCollectionOf( Notification.class ) );
         outputOrder.verify( output ).transactionStatus( anyLong() );
         outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
         outputOrder.verify( output ).finish();
@@ -175,7 +179,8 @@ public class TransactionHandleTest
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
-        outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[])null );
+        outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[]) null );
+        outputOrder.verify( output ).notifications( anyCollectionOf( Notification.class ) );
         outputOrder.verify( output ).transactionStatus( anyLong() );
         outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
         outputOrder.verify( output ).finish();
@@ -214,6 +219,7 @@ public class TransactionHandleTest
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[]) null );
+        outputOrder.verify( output ).notifications( anyCollectionOf( Notification.class ) );
         outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
@@ -251,6 +257,7 @@ public class TransactionHandleTest
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).statementResult( result, false, (ResultDataContent[])null );
+        outputOrder.verify( output ).notifications( anyCollectionOf( Notification.class ) );
         outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
@@ -317,6 +324,7 @@ public class TransactionHandleTest
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
         outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[])null );
+        outputOrder.verify( output ).notifications( anyCollectionOf( Notification.class ) );
         outputOrder.verify( output ).transactionStatus( anyLong() );
         outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
         outputOrder.verify( output ).finish();
@@ -390,6 +398,7 @@ public class TransactionHandleTest
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[])null );
+        outputOrder.verify( output ).notifications( anyCollectionOf( Notification.class ) );
         outputOrder.verify( output ).errors( argThat( hasErrors( Status.Transaction.CouldNotCommit ) ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
