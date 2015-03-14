@@ -68,11 +68,11 @@ public class IndexTxStateLookupTest
                 new Object[]{15.0f, 15L},
                 new Object[]{2.5f, 2.5},
                 new Object[]{16.25, 16.25f},
-                new Object[]{new String[]{"a", "b", "c"}, new char[]{'a', 'b', 'c'}},
-                new Object[]{new char[]{'d', 'e', 'f'}, new String[]{"d", "e", "f"}},
+                new Object[]{stringArray( "a", "b", "c" ), charArray( 'a', 'b', 'c' )},
+                new Object[]{charArray( 'd', 'e', 'f' ), stringArray( "d", "e", "f" )},
                 new Object[]{splitStrings( TRIGGER_LAZY ), splitChars( TRIGGER_LAZY )},
                 new Object[]{splitChars( TRIGGER_LAZY ), splitStrings( TRIGGER_LAZY )},
-                new Object[]{new String[]{"foo", "bar"}, new String[]{"foo", "bar"}} ) );
+                new Object[]{stringArray( "foo", "bar" ), stringArray( "foo", "bar" )} ) );
         Class[] numberTypes = {byte.class, short.class, int.class, long.class, float.class, double.class};
         for ( Class lhs : numberTypes )
         {
@@ -85,6 +85,34 @@ public class IndexTxStateLookupTest
         return parameters;
     }
 
+    private static class NamedObject
+    {
+        private final Object object;
+        private final String name;
+
+        NamedObject( Object object, String name )
+        {
+            this.object = object;
+            this.name = name;
+        }
+
+        @Override
+        public String toString()
+        {
+            return name;
+        }
+    }
+
+    private static NamedObject stringArray( String... items )
+    {
+        return new NamedObject( items, arrayToString( items ) );
+    }
+
+    private static NamedObject charArray( char... items )
+    {
+        return new NamedObject( items, arrayToString( items ) );
+    }
+
     private static Object[] randomNumbers( int length, Class<?> lhsType, Class<?> rhsType )
     {
         Object lhs = Array.newInstance( lhsType, length ), rhs = Array.newInstance( rhsType, length );
@@ -94,7 +122,21 @@ public class IndexTxStateLookupTest
             Array.set( lhs, i, convert( value, lhsType ) );
             Array.set( rhs, i, convert( value, rhsType ) );
         }
-        return new Object[]{lhs, rhs};
+        return new Object[]{
+                new NamedObject( lhs, arrayToString( lhs ) ),
+                new NamedObject( rhs, arrayToString( rhs ) )};
+    }
+
+    private static String arrayToString( Object arrayObject )
+    {
+        int length = Array.getLength( arrayObject );
+        String type = arrayObject.getClass().getComponentType().getSimpleName();
+        StringBuilder builder = new StringBuilder( "(" + type + ") {" );
+        for ( int i = 0; i < length; i++ )
+        {
+            builder.append( i > 0 ? "," : "" ).append( Array.get( arrayObject, i ) );
+        }
+        return builder.append( "}" ).toString();
     }
 
     private static Object convert( int value, Class<?> type )
@@ -118,22 +160,28 @@ public class IndexTxStateLookupTest
         }
     }
 
-    private static String[] splitStrings( String string )
+    private static NamedObject splitStrings( String string )
     {
-        char[] chars = splitChars( string );
+        char[] chars = internalSplitChars( string );
         String[] result = new String[chars.length];
         for ( int i = 0; i < chars.length; i++ )
         {
             result[i] = Character.toString( chars[i] );
         }
-        return result;
+        return stringArray( result );
     }
 
-    private static char[] splitChars( String string )
+    private static char[] internalSplitChars( String string )
     {
         char[] result = new char[string.length()];
         string.getChars( 0, result.length, result, 0 );
         return result;
+    }
+
+    private static NamedObject splitChars( String string )
+    {
+        char[] result = internalSplitChars( string );
+        return charArray( result );
     }
 
     public final @Rule DatabaseRule db = new ImpermanentDatabaseRule();
@@ -144,8 +192,13 @@ public class IndexTxStateLookupTest
 
     public IndexTxStateLookupTest( Object store, Object lookup )
     {
-        this.store = store;
-        this.lookup = lookup;
+        this.store = realValue( store );
+        this.lookup = realValue( lookup );
+    }
+
+    private Object realValue( Object object )
+    {
+        return object instanceof NamedObject ? ((NamedObject)object).object : object;
     }
 
     @Before
