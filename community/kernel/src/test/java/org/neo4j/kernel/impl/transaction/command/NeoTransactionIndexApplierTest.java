@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -36,14 +37,15 @@ import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
-import static java.util.Collections.singleton;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
+
+import static java.util.Collections.singleton;
+
 import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
 import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
 
@@ -62,6 +64,7 @@ public class NeoTransactionIndexApplierTest
     {
         // given
         final ValidatedIndexUpdates indexUpdates = mock( ValidatedIndexUpdates.class );
+        when( indexUpdates.hasChanges() ).thenReturn( true );
         final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService, indexUpdates,
                 labelScanStore, cacheAccess );
 
@@ -86,6 +89,21 @@ public class NeoTransactionIndexApplierTest
         verify( cacheAccess, times( 1 ) ).applyLabelUpdates( eq( labelUpdates ) );
 
         verify( indexUpdates, times( 1 ) ).flush();
+    }
+
+    @Test
+    public void shouldAvoidCallingIndexUpdatesIfNoIndexChanges() throws Exception
+    {
+        // given
+        final ValidatedIndexUpdates indexUpdates = mock( ValidatedIndexUpdates.class );
+        when( indexUpdates.hasChanges() ).thenReturn( false );
+        final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService, indexUpdates,
+                labelScanStore, cacheAccess );
+        // when
+        applier.apply();
+
+        // then
+        verify( indexUpdates, times( 0 ) ).flush();
     }
 
     @Test

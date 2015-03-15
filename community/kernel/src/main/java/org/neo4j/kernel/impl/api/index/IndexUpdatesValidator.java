@@ -36,12 +36,11 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.state.LazyIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
-
-import static org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
-import static org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 
 /**
  * Performs validation of index updates for transactions based on
@@ -101,6 +100,12 @@ public class IndexUpdatesValidator
             @Override
             public void close()
             {
+            }
+
+            @Override
+            public boolean hasChanges()
+            {
+                return !nodeIds.isEmpty();
             }
         };
     }
