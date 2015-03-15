@@ -19,13 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -33,7 +26,14 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Future;
 
-import org.neo4j.function.RawFunction;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+import org.neo4j.function.IOFunction;
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -47,8 +47,10 @@ import org.neo4j.test.ThreadingRule;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
@@ -147,10 +149,10 @@ public class LuceneIndexAccessorTest
         // when
         IndexReader indexReader = accessor.newReader(); // needs to be acquired before drop() is called
 
-        Future<Void> drop = threading.executeAndAwait( new RawFunction<Void,Void,Exception>()
+        Future<Void> drop = threading.executeAndAwait( new IOFunction<Void, Void>()
         {
             @Override
-            public Void apply( Void nothing ) throws Exception
+            public Void apply( Void nothing ) throws IOException
             {
                 accessor.drop();
                 return nothing;
@@ -180,17 +182,17 @@ public class LuceneIndexAccessorTest
     public final ThreadingRule threading = new ThreadingRule();
 
     @Parameterized.Parameter
-    public RawFunction<DirectoryFactory,LuceneIndexAccessor,IOException> accessorFactory;
+    public IOFunction<DirectoryFactory,LuceneIndexAccessor> accessorFactory;
     private LuceneIndexAccessor accessor;
 
     @Parameterized.Parameters( name = "{0}" )
-    public static Collection<RawFunction<DirectoryFactory,LuceneIndexAccessor,IOException>[]> implementations()
+    public static Collection<IOFunction<DirectoryFactory,LuceneIndexAccessor>[]> implementations()
     {
         final File dir = new File( "dir" );
         final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
         final IndexWriterStatus writerLogic = new IndexWriterStatus();
         return Arrays.asList(
-                arg( new RawFunction<DirectoryFactory,LuceneIndexAccessor,IOException>()
+                arg( new IOFunction<DirectoryFactory,LuceneIndexAccessor>()
                 {
                     @Override
                     public LuceneIndexAccessor apply( DirectoryFactory dirFactory )
@@ -206,7 +208,7 @@ public class LuceneIndexAccessorTest
                         return NonUniqueLuceneIndexAccessor.class.getName();
                     }
                 } ),
-                arg( new RawFunction<DirectoryFactory,LuceneIndexAccessor,IOException>()
+                arg( new IOFunction<DirectoryFactory,LuceneIndexAccessor>()
                 {
                     @Override
                     public LuceneIndexAccessor apply( DirectoryFactory dirFactory )
@@ -224,10 +226,10 @@ public class LuceneIndexAccessorTest
         );
     }
 
-    private static RawFunction<DirectoryFactory,LuceneIndexAccessor,IOException>[] arg(
-            RawFunction<DirectoryFactory,LuceneIndexAccessor,IOException> foo )
+    private static IOFunction<DirectoryFactory,LuceneIndexAccessor>[] arg(
+            IOFunction<DirectoryFactory,LuceneIndexAccessor> foo )
     {
-        return new RawFunction[]{foo};
+        return new IOFunction[]{foo};
     }
 
     @Before

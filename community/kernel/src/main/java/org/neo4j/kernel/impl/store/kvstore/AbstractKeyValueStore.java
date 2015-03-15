@@ -180,25 +180,12 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
         }
     }
 
-    protected final EntryUpdater<Key> resetter()
+    protected final EntryUpdater<Key> resetter( long version )
     {
         try ( LockWrapper lock = writeLock( updateLock ) )
         {
-            return state.resetter( lock.get(), new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    try
-                    {
-                        prepareRotation( version( headers() ) ).rotate();
-                    }
-                    catch ( IOException e )
-                    {
-                        throw new UnderlyingStorageException( e );
-                    }
-                }
-            } );
+            ProgressiveState<Key> current = state;
+            return current.resetter( lock.get(), new RotationTask( version ) );
         }
     }
 
@@ -230,29 +217,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
                     }
                 };
             }
-            final RotationState<Key> rotation = prior.prepareRotation( version );
-            state = rotation;
-            return new PreparedRotation()
-            {
-                @Override
-                public long rotate() throws IOException
-                {
-                    final long version = rotation.version();
-                    ProgressiveState<Key> next = rotation.rotate( rotationStrategy, new Consumer<Headers.Builder>()
-                    {
-                        @Override
-                        public void accept( Headers.Builder value )
-                        {
-                            updateHeaders( value, version );
-                        }
-                    } );
-                    try ( LockWrapper ignored = writeLock( updateLock ) )
-                    {
-                        state = next;
-                    }
-                    return version;
-                }
-            };
+            return new RotationTask( version );
         }
     }
 
@@ -277,6 +242,57 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
             }
         }
         return true;
+    }
+
+    private class RotationTask implements PreparedRotation, Runnable
+    {
+        private final RotationState<Key> rotation;
+
+        RotationTask( long version )
+        {
+            state = this.rotation = state.prepareRotation( version );
+        }
+
+        @Override
+        public long rotate() throws IOException
+        {
+            return rotate( false );
+        }
+
+        @Override
+        public void run()
+        {
+            try ( LockWrapper ignored = writeLock( updateLock ) )
+            {
+                rotate( true );
+            }
+            catch ( IOException e )
+            {
+                throw new UnderlyingStorageException( e );
+            }
+        }
+
+        private long rotate( boolean force ) throws IOException
+        {
+            final long version = rotation.rotationVersion();
+            ProgressiveState<Key> next = rotation.rotate( force, rotationStrategy, new Consumer<Headers.Builder>()
+            {
+                @Override
+                public void accept( Headers.Builder value )
+                {
+                    updateHeaders( value, version );
+                }
+            } );
+            try ( LockWrapper ignored = writeLock( updateLock ) )
+            {
+                state = next;
+            }
+            finally
+            {
+                rotation.close();
+            }
+            return version;
+        }
     }
 
     public static abstract class Reader<Value>

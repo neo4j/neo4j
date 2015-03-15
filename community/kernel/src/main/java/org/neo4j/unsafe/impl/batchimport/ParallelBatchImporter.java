@@ -129,7 +129,8 @@ public class ParallelBatchImporter implements BatchImporter
                       fileSystem.openAsOutputStream( badFile, false ) );
               Collector<InputRelationship> badRelationships =
                       input.badRelationshipsCollector( badRelationshipsOutput );
-              CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset();
+              CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset(
+                      neoStore.getLastCommittedTransactionId() );
               InputCache inputCache = new InputCache( fileSystem, storeDir ) )
         {
             // Some temporary caches and indexes in the import

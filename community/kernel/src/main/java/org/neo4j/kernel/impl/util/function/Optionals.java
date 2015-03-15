@@ -54,6 +54,12 @@ public class Optionals
         {
             return this;
         }
+
+        @Override
+        public String toString()
+        {
+            return "none";
+        }
     };
 
     @SuppressWarnings("unchecked")
@@ -95,6 +101,12 @@ public class Optionals
             public <To> Optional<To> map( Function<TYPE, ? extends To> conversion )
             {
                 return Optionals.<To>some( conversion.apply( obj ) );
+            }
+
+            @Override
+            public String toString()
+            {
+                return "some( " + obj.toString() + " )";
             }
         };
     }

@@ -199,9 +199,9 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
         return new CountsUpdater( updater() );
     }
 
-    public CountsAccessor.Updater reset()
+    public CountsAccessor.Updater reset( long txId )
     {
-        return new CountsUpdater( resetter() );
+        return new CountsUpdater( resetter( txId ) );
     }
 
     @Override

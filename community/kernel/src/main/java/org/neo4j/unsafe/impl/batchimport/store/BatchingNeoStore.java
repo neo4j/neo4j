@@ -203,4 +203,9 @@ public class BatchingNeoStore implements AutoCloseable
     {
         pageCache.flush();
     }
+
+    public long getLastCommittedTransactionId()
+    {
+        return neoStore.getLastCommittedTransactionId();
+    }
 }
