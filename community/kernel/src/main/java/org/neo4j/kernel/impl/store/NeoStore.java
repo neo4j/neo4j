@@ -946,9 +946,9 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     }
 
     @Override
-    public boolean closedTransactionIdIsOnParWithCommittedTransactionId()
+    public boolean closedTransactionIdIsOnParWithOpenedTransactionId()
     {
-        boolean onPar = lastClosedTx.getHighestGapFreeNumber() == lastCommittedTx.getHighestGapFreeNumber();
+        boolean onPar = lastClosedTx.getHighestGapFreeNumber() == lastCommittingTxField.get();
         if ( !onPar )
         {   // Trigger some logging here, max logged every 30 secs or so
             transactionCloseWaitLogger.event( null );

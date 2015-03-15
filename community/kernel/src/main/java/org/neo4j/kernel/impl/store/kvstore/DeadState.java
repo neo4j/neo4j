@@ -215,10 +215,22 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
             return new Rotation<Key, NeedsCreation<Key>>( this )
             {
                 @Override
-                ProgressiveState<Key> rotate( RotationStrategy strategy, Consumer<Headers.Builder> headers )
+                ProgressiveState<Key> rotate( boolean force, RotationStrategy strategy,
+                                              Consumer<Headers.Builder> headers )
                         throws IOException
                 {
                     return state;
+                }
+
+                @Override
+                void close() throws IOException
+                {
+                }
+
+                @Override
+                long rotationVersion()
+                {
+                    return state.version();
                 }
             };
         }
@@ -267,10 +279,22 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
             return new Rotation<Key, RotationState.Rotation<Key>>( state.prepareRotation( version ) )
             {
                 @Override
-                ProgressiveState<Key> rotate( RotationStrategy strategy, Consumer<Headers.Builder> headers )
-                        throws IOException
+                ProgressiveState<Key> rotate( boolean force, RotationStrategy strategy,
+                                              Consumer<Headers.Builder> headers ) throws IOException
                 {
-                    return new Prepared<>( state.rotate( strategy, headers ) );
+                    return new Prepared<>( state.rotate( force, strategy, headers ) );
+                }
+
+                @Override
+                void close() throws IOException
+                {
+                    state.close();
+                }
+
+                @Override
+                long rotationVersion()
+                {
+                    return state.rotationVersion();
                 }
             };
         }

@@ -33,7 +33,8 @@ import org.neo4j.kernel.impl.util.function.Optionals;
 
 abstract class RotationState<Key> extends ProgressiveState<Key>
 {
-    abstract ProgressiveState<Key> rotate( RotationStrategy strategy, Consumer<Headers.Builder> headersUpdater )
+    abstract ProgressiveState<Key> rotate( boolean force, RotationStrategy strategy,
+                                           Consumer<Headers.Builder> headersUpdater )
             throws IOException;
 
     @Override
@@ -41,6 +42,11 @@ abstract class RotationState<Key> extends ProgressiveState<Key>
     {
         return "rotating";
     }
+
+    @Override
+    abstract void close() throws IOException;
+
+    abstract long rotationVersion();
 
     static final class Rotation<Key> extends RotationState<Key>
     {
@@ -55,30 +61,39 @@ abstract class RotationState<Key> extends ProgressiveState<Key>
             this.threshold = version;
         }
 
-        ActiveState<Key> rotate( RotationStrategy strategy, Consumer<Headers.Builder> headersUpdater ) throws IOException
+        ActiveState<Key> rotate( boolean force, RotationStrategy strategy, Consumer<Headers.Builder> headersUpdater )
+                throws IOException
         {
-            for ( long expected = preState.version() - preState.store.version(), sleep = 1;
-                  preState.applied() < expected; sleep = Math.min( sleep * 2, 100 ) )
+            if ( !force )
             {
-                try
+                for ( long expected = threshold - preState.store.version(), sleep = 10;
+                      preState.applied() < expected; sleep = Math.min( sleep * 2, 100 ) )
                 {
-                    Thread.sleep( sleep );
-                }
-                catch ( InterruptedException e )
-                {
-                    throw Exceptions.withCause( new InterruptedIOException( "Rotation was interrupted." ), e );
+                    try
+                    {
+                        Thread.sleep( sleep );
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        throw Exceptions.withCause( new InterruptedIOException( "Rotation was interrupted." ), e );
+                    }
                 }
             }
             Pair<File, KeyValueStoreFile> next = strategy
                     .next( file(), updateHeaders( headersUpdater ), keyFormat().filter( preState.dataProvider() ) );
-            try
-            {
-                return postState.create( ReadableState.store( preState.keyFormat(), next.other() ), next.first() );
-            }
-            finally
-            {
-                preState.close();
-            }
+            return postState.create( ReadableState.store( preState.keyFormat(), next.other() ), next.first() );
+        }
+
+        @Override
+        void close() throws IOException
+        {
+            preState.close();
+        }
+
+        @Override
+        long rotationVersion()
+        {
+            return threshold;
         }
 
         private Headers updateHeaders( Consumer<Headers.Builder> headersUpdater )

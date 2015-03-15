@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,11 +29,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.log.BatchingPhysicalTransactionAppender;
@@ -58,11 +57,13 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.test.CleanupRule;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -79,6 +80,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.Exceptions.contains;
 import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
 
@@ -315,7 +317,7 @@ public class PhysicalTransactionAppenderTest
     }
 
     @Test
-    public void shouldCloseTransactionThatWasAppendedAndMarkedAsCommitButFailedBeforeExitingAppend() throws Exception
+    public void shouldCloseTransactionThatWasAppendedButFailedBeforeExitingAppend() throws Exception
     {
         // GIVEN
         long txId = 3;
@@ -343,8 +345,6 @@ public class PhysicalTransactionAppenderTest
             // THEN
             assertTrue( contains( e, failureMessage, IOException.class ) );
             verify( transactionIdStore, times( 1 ) ).nextCommittingTransactionId();
-            verify( transactionIdStore, times( 1 ) ).transactionCommitted( txId, LogEntryStart.checksum(
-                    transaction.additionalHeader(), transaction.getMasterId(), transaction.getAuthorId() ) );
             verify( transactionIdStore, times( 1 ) ).transactionClosed( txId );
             verifyNoMoreInteractions( transactionIdStore );
         }

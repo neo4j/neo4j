@@ -44,7 +44,7 @@ public class LogRotationControl
 
     public void awaitAllTransactionsClosed()
     {
-        while ( !transactionIdStore.closedTransactionIdIsOnParWithCommittedTransactionId() )
+        while ( !transactionIdStore.closedTransactionIdIsOnParWithOpenedTransactionId() )
         {
             LockSupport.parkNanos( 1_000_000 ); // 1 ms
         }

@@ -1117,7 +1117,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
 
     public void awaitAllTransactionsClosed()
     {
-        while ( !neoStoreModule.neoStore().closedTransactionIdIsOnParWithCommittedTransactionId() )
+        while ( !neoStoreModule.neoStore().closedTransactionIdIsOnParWithOpenedTransactionId() )
         {
             LockSupport.parkNanos( 1_000_000 ); // 1 ms
         }

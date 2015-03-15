@@ -11,9 +11,9 @@
   <artifactId>neo4j-stresstests</artifactId>
   <version>2.3-SNAPSHOT</version>
 
-  <name>Neo4j - Page Cache Stress Tests</name>
+  <name>Neo4j - Stress Tests</name>
   <packaging>jar</packaging>
-  <description>A package for page cache stress tests.</description>
+  <description>A package for stress tests.</description>
 
   <properties>
     <license-text.header>GPL-3-header.txt</license-text.header>
@@ -59,6 +59,19 @@
       <type>test-jar</type>
     </dependency>
     <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-backup</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-backup</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+      <type>test-jar</type>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <exclusions>
@@ -71,11 +84,6 @@
     <dependency>
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-all</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-all</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

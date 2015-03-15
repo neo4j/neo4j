@@ -101,7 +101,7 @@ public class DeadSimpleTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public boolean closedTransactionIdIsOnParWithCommittedTransactionId()
+    public boolean closedTransactionIdIsOnParWithOpenedTransactionId()
     {
         return closedTransactionId.getHighestGapFreeNumber() == committedTransactionId.getHighestGapFreeNumber();
     }

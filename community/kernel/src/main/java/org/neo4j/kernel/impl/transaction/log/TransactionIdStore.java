@@ -34,7 +34,7 @@ package org.neo4j.kernel.impl.transaction.log;
  *   {@link #getLastCommittedTransactionId()} if all ids before it have also been committed.</li>
  *   <li>{@link #transactionClosed(long)} is called with this id again, this time after all changes the
  *   transaction imposes have been applied to the store. At this point this id is regarded in
- *   {@link #closedTransactionIdIsOnParWithCommittedTransactionId()} as well.
+ *   {@link #closedTransactionIdIsOnParWithOpenedTransactionId()} as well.
  * </ol>
  */
 public interface TransactionIdStore
@@ -104,7 +104,7 @@ public interface TransactionIdStore
      * @return {@code true} if the latest applied transaction (without any lower transaction id gaps)
      * is the same as the highest returned {@code committed transaction id}.
      */
-    boolean closedTransactionIdIsOnParWithCommittedTransactionId();
+    boolean closedTransactionIdIsOnParWithOpenedTransactionId();
 
     /**
      * Forces the transaction id counters to persistent storage.
