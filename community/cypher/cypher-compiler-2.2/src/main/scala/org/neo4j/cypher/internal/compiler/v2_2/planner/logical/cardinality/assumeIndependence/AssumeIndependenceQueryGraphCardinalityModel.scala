@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics,
                                                         semanticTable: SemanticTable,
                                                         combiner: SelectivityCombiner)
-  extends QueryGraphCardinalityModel  {
+  extends QueryGraphCardinalityModel {
 
   private val expressionSelectivityEstimator = ExpressionSelectivityCalculator(stats, combiner)
   private val patternSelectivityEstimator = PatternSelectivityCalculator(stats, combiner)
@@ -73,10 +73,18 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics,
     val numberOfPatternNodes = calculcateNumberOfPatternNodes(qg)
     val numberOfGraphNodes = stats.nodesWithLabelCardinality(None)
 
-    val c = if (qg.argumentIds.nonEmpty)
-      input.inboundCardinality
-    else
-      Cardinality(1)
+    val c = if (qg.argumentIds.nonEmpty) {
+      if ((qg.argumentIds intersect qg.patternNodes).isEmpty) {
+        /*
+       * If have a node pattern and we have arguments the produced cardinality is at least
+       * the one produce of the node pattern solved
+       */
+        Cardinality.max(Cardinality(1.0), input.inboundCardinality)
+      } else
+        input.inboundCardinality
+
+    } else
+      Cardinality(1.0)
 
     c * (numberOfGraphNodes ^ numberOfPatternNodes) * selectivity
   }

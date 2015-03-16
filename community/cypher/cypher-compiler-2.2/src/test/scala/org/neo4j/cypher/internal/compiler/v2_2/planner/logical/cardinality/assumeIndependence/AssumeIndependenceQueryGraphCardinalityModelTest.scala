@@ -231,6 +231,14 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
     shouldHaveQueryGraphCardinality(1000.0 / 500.0 * 13.0)
   }
 
+  test("input cardinality of zero on a different identifier should not affect cardinality estimation of the pattern") {
+    givenPattern("MATCH (a)").
+    withQueryGraphArgumentIds(IdName("e")).
+    withInboundCardinality(0.0).
+    withGraphNodes(500).
+    shouldHaveQueryGraphCardinality(500)
+  }
+
 
   // TODO: Add a test for a relpatterns where the number of matching nodes is zero
 
