@@ -32,7 +32,10 @@ h4 About Neo4j
     b Suggestions:
   p What do you want to do? How did you try to do it? What would you suggest?
     form(ng-submit="newMessage(suggestion)")
-      input.form-control(type='text', placeholder='{{suggestionPlaceholder}}', ng-model='suggestion')    
+      .form-group
+        input.form-control(type='text', placeholder='{{suggestionPlaceholder}}', ng-model='suggestion')    
+      button.btn.btn-default.btn-xs(type="submit") Compose
+
   p 
     b Options:
     ul(ng-controller="SettingsCtrl")  
