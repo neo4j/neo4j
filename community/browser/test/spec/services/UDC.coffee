@@ -23,14 +23,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 describe 'Service: UDC', () ->
   UsageDataCollectionService = {}
   Settings = {}
+  httpBackend = {}
+  Cypher = {}
+  scope = {}
 
   # load the service's module
   beforeEach module 'neo4jApp.services'
 
   beforeEach ->
-    inject((_UsageDataCollectionService_, _Settings_) ->
+    inject((_UsageDataCollectionService_, _Settings_, $httpBackend, _Cypher_, $rootScope) ->
       UsageDataCollectionService = _UsageDataCollectionService_
       Settings = _Settings_
+      httpBackend = $httpBackend
+      Cypher = _Cypher_
+      scope = $rootScope.$new()
     )
 
 
@@ -74,4 +80,86 @@ describe 'Service: UDC', () ->
 
       expect(no_data).toBe(false)
       expect(has_data).toBe(true)
+
+  describe "Stats", ->
+    it 'should treat a begin/commit transaction as one attempt', ->
+      UsageDataCollectionService.reset()
+      Settings.shouldReportUdc = yes
+      setUDCData UsageDataCollectionService
+      current_transaction = Cypher.transaction()
+      httpBackend.expectPOST("#{Settings.endpoint.transaction}")
+      .respond(->
+        return [200, JSON.stringify({
+          commit: "http://localhost:9000#{Settings.endpoint.transaction}/1/commit",
+          results: []
+          errors: []
+        })]
+      )
+
+      current_transaction.begin().then(
+        ->
+          type = typeof UsageDataCollectionService.data['cypher_attempts']
+          expect(type).toBe('undefined')
+      )
+      scope.$apply()
+      httpBackend.flush()
+
+      httpBackend.expectPOST("#{Settings.endpoint.transaction}/1/commit")
+      .respond(->
+        return [200, JSON.stringify({
+          results: [{
+            columns: ["n"],
+            data: [{
+              row: [{name: 'mock'}],
+              graph: {nodes: [{id: 1}], relationships: []}
+            }],
+            stats: {}
+          }],
+          errors: []
+        })]
+      )
+      current_transaction.commit("MATCH n RETURN n").then(
+        ->
+          expect(UsageDataCollectionService.data.cypher_attempts).toBe(1)
+          expect(UsageDataCollectionService.data.cypher_wins).toBe(1)
+      )
+      scope.$apply()
+      httpBackend.flush()
+
+    it 'should detect a cypher failure', ->
+      UsageDataCollectionService.reset()
+      Settings.shouldReportUdc = yes
+      setUDCData UsageDataCollectionService
+      current_transaction = Cypher.transaction()
+      httpBackend.expectPOST("#{Settings.endpoint.transaction}")
+      .respond(->
+        return [200, JSON.stringify({
+          commit: "http://localhost:9000#{Settings.endpoint.transaction}/1/commit",
+          results: []
+          errors: []
+        })]
+      )
+
+      current_transaction.begin()
+      scope.$apply()
+      httpBackend.flush()
+
+      httpBackend.expectPOST("#{Settings.endpoint.transaction}/1/commit")
+      .respond(->
+        return [200, JSON.stringify({
+          results: [],
+          errors: [{code: 'TestFail', message:'This is a wanted failure.'}]
+        })]
+      )
+      current_transaction.commit("MATCH n RETURN nr").then(
+        ->
+          expect("This should never happen").toBe('Nope')
+        ->
+          wins_type = typeof UsageDataCollectionService.data['cypher_wins']
+          expect(wins_type).toBe('undefined')
+          expect(UsageDataCollectionService.data.cypher_attempts).toBe(1)
+          expect(UsageDataCollectionService.data.cypher_fails).toBe(1)
+      )
+      scope.$apply()
+      httpBackend.flush()
 

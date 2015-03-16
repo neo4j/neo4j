@@ -148,7 +148,6 @@ angular.module('neo4jApp.services')
               statements: statements
             ).success(
               (r) =>
-                UDC.increment('cypher_wins')
                 @delegate?.transactionFinished.call(@delegate, @id)
                 @_reset()
                 q.resolve(r)
@@ -156,7 +155,12 @@ angular.module('neo4jApp.services')
                 UDC.increment('cypher_fails')
                 q.reject(r)
             )
-            promiseResult(rr)
+            res = promiseResult(rr)
+            res.then(
+              -> UDC.increment('cypher_wins')
+              -> UDC.increment('cypher_fails')
+            )
+            res
           else
             promiseResult(Server.transaction(
               path: "/commit"
