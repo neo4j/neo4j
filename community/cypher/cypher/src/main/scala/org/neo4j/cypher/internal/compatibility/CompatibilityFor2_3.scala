@@ -23,20 +23,18 @@ import java.io.PrintWriter
 import java.util
 
 import org.neo4j.cypher.internal._
-import org.neo4j.cypher.internal.compiler.v2_3.{InfoLogger, Monitors, ConservativePlannerName, CostPlannerName, CypherCompilerFactory, IDPPlannerName, PlannerName}
 import org.neo4j.cypher.internal.compiler.v2_3
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutionPlan => ExecutionPlan_v2_3, InternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v2_3.notification.{CartesianProductNotification, InternalNotification}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{DbHits, Planner, Rows, Version}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.MapToPublicExceptions
-import org.neo4j.cypher.internal.compiler.v2_3.{CypherException => CypherException_v2_3, _}
+import org.neo4j.cypher.internal.compiler.v2_3.{CypherCompilerFactory, CypherException => CypherException_v2_3, InfoLogger, Monitors, PlannerName, _}
 import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
-import org.neo4j.cypher.{ArithmeticException, CypherTypeException, EntityNotFoundException, FailedIndexException, IncomparableValuesException, IndexHintException, InternalException, InvalidArgumentException, InvalidSemanticsException, LoadCsvStatusWrapCypherException, LoadExternalResourceException, MergeConstraintConflictException, NodeStillHasRelationshipsException, ParameterNotFoundException, ParameterWrongTypeException, PatternException, PeriodicCommitInOpenTransactionException, ProfilerStatisticsNotReadyException, SyntaxException, UniquePathNotUniqueException, UnknownLabelException, LabelScanHintException, _}
-
+import org.neo4j.cypher.{ArithmeticException, CypherTypeException, EntityNotFoundException, FailedIndexException, IncomparableValuesException, IndexHintException, InternalException, InvalidArgumentException, InvalidSemanticsException, LabelScanHintException, LoadCsvStatusWrapCypherException, LoadExternalResourceException, MergeConstraintConflictException, NodeStillHasRelationshipsException, ParameterNotFoundException, ParameterWrongTypeException, PatternException, PeriodicCommitInOpenTransactionException, ProfilerStatisticsNotReadyException, SyntaxException, UniquePathNotUniqueException, UnknownLabelException, _}
 import org.neo4j.graphdb.impl.notification.NotificationCode
-import org.neo4j.graphdb.{InputPosition, GraphDatabaseService, QueryExecutionType, ResourceIterator}
+import org.neo4j.graphdb.{GraphDatabaseService, InputPosition, QueryExecutionType, ResourceIterator}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{KernelAPI, Statement}
@@ -321,7 +319,7 @@ class StringInfoLogger2_3(stringLogger: StringLogger) extends InfoLogger {
     stringLogger.info(message)
   }
 }
-case class CompatibilityFor2_3Conservative(graph: GraphDatabaseService,
+case class CompatibilityFor2_3Cost(graph: GraphDatabaseService,
                                            queryCacheSize: Int,
                                            statsDivergenceThreshold: Double,
                                            queryPlanTTL: Long,
@@ -329,40 +327,11 @@ case class CompatibilityFor2_3Conservative(graph: GraphDatabaseService,
                                            kernelMonitors: KernelMonitors,
                                            kernelAPI: KernelAPI,
                                            logger: StringLogger,
-                                           notificationLoggerBuilder: (ExecutionMode => InternalNotificationLogger)) extends CompatibilityFor2_3 {
+                                           notificationLoggerBuilder: (ExecutionMode => InternalNotificationLogger),
+                                           plannerName: CostBasedPlannerName) extends CompatibilityFor2_3 {
   protected val compiler = CypherCompilerFactory.costBasedCompiler(
     graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, new WrappedMonitors2_3( kernelMonitors ),
-    new StringInfoLogger2_3( logger ), notificationLoggerBuilder, plannerName = ConservativePlannerName
-  )
-}
-
-case class CompatibilityFor2_3Cost(graph: GraphDatabaseService,
-                                   queryCacheSize: Int,
-                                   statsDivergenceThreshold: Double,
-                                   queryPlanTTL: Long,
-                                   clock: Clock,
-                                   kernelMonitors: KernelMonitors,
-                                   kernelAPI: KernelAPI,
-                                   logger: StringLogger,
-                                   notificationLoggerBuilder: (ExecutionMode => InternalNotificationLogger)) extends CompatibilityFor2_3 {
-  protected val compiler = CypherCompilerFactory.costBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, new WrappedMonitors2_3( kernelMonitors ),
-    new StringInfoLogger2_3( logger ), notificationLoggerBuilder, plannerName = CostPlannerName
-  )
-}
-
-case class CompatibilityFor2_3IDP(graph: GraphDatabaseService,
-                                  queryCacheSize: Int,
-                                  statsDivergenceThreshold: Double,
-                                  queryPlanTTL: Long,
-                                  clock: Clock,
-                                  kernelMonitors: KernelMonitors,
-                                  kernelAPI: KernelAPI,
-                                  logger: StringLogger,
-                                  notificationLoggerBuilder: (ExecutionMode => InternalNotificationLogger)) extends CompatibilityFor2_3 {
-  protected val compiler = CypherCompilerFactory.costBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, new WrappedMonitors2_3( kernelMonitors ),
-    new StringInfoLogger2_3( logger ), notificationLoggerBuilder, plannerName = IDPPlannerName
+    new StringInfoLogger2_3( logger ), notificationLoggerBuilder, plannerName
   )
 }
 

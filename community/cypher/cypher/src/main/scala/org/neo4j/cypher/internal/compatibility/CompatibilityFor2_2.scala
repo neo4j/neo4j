@@ -316,20 +316,6 @@ case class CompatibilityPlanDescription(inner: InternalPlanDescription, version:
 //  }
 //}
 
-case class CompatibilityFor2_2Conservative(graph: GraphDatabaseService,
-                                           queryCacheSize: Int,
-                                           statsDivergenceThreshold: Double,
-                                           queryPlanTTL: Long,
-                                           clock: Clock,
-                                           kernelMonitors: KernelMonitors,
-                                           kernelAPI: KernelAPI,
-                                           logger: StringLogger) extends CompatibilityFor2_2 {
-  protected val compiler = CypherCompilerFactory.costBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors,
-    logger, plannerName = ConservativePlanner
-  )
-}
-
 case class CompatibilityFor2_2Cost(graph: GraphDatabaseService,
                                    queryCacheSize: Int,
                                    statsDivergenceThreshold: Double,
@@ -337,24 +323,10 @@ case class CompatibilityFor2_2Cost(graph: GraphDatabaseService,
                                    clock: Clock,
                                    kernelMonitors: KernelMonitors,
                                    kernelAPI: KernelAPI,
-                                   logger: StringLogger) extends CompatibilityFor2_2 {
+                                   logger: StringLogger,
+                                   plannerName: CostBasedPlannerName) extends CompatibilityFor2_2 {
   protected val compiler = CypherCompilerFactory.costBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors,
-    logger, plannerName = CostPlanner
-  )
-}
-
-case class CompatibilityFor2_2IDP(graph: GraphDatabaseService,
-                                  queryCacheSize: Int,
-                                  statsDivergenceThreshold: Double,
-                                  queryPlanTTL: Long,
-                                  clock: Clock,
-                                  kernelMonitors: KernelMonitors,
-                                  kernelAPI: KernelAPI,
-                                  logger: StringLogger) extends CompatibilityFor2_2 {
-  protected val compiler = CypherCompilerFactory.costBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors,
-    logger, plannerName = IDPPlanner
+    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors, logger, plannerName
   )
 }
 

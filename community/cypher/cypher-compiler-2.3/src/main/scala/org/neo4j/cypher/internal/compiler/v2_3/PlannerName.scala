@@ -52,6 +52,14 @@ case object IDPPlannerName extends CostBasedPlannerName {
 }
 
 /**
+ * Cost based query planner uses statistics from the running database to find good
+ * query execution plans using exhaustive search based on the DP algorithm.
+ */
+case object DPPlannerName extends CostBasedPlannerName {
+  def name = "DP"
+}
+
+/**
  * Hybrid planner that uses the Cost based planner for most of its operations but falls back to
  * Rule based planner for classes of queries where the cost based planner might end up with suboptimal plans.
  */
@@ -67,6 +75,7 @@ object PlannerName {
     case "RULE" => RulePlannerName
     case "COST" => CostPlannerName
     case "IDP" => IDPPlannerName
+    case "DP" => DPPlannerName
     case "CONSERVATIVE" => ConservativePlannerName
 
     // Note that conservative planner is not exposed to end users.

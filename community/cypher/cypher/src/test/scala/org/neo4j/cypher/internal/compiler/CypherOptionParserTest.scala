@@ -60,6 +60,8 @@ class CypherOptionParserTest extends CypherFunSuite {
     parse("CYPHER 2.2 PLANNER RULE RETURN") should equal(CypherQueryWithOptions("RETURN", Seq(VersionOption("2.2"), RulePlannerOption)))
     parse("PLANNER RULE RETURN") should equal(CypherQueryWithOptions("RETURN", Seq(RulePlannerOption)))
     parse("CYPHER 2.2 PLANNER IDP RETURN") should equal(CypherQueryWithOptions("RETURN", Seq(VersionOption("2.2"), IDPPlannerOption)))
+    parse("CYPHER 2.2 PLANNER DP RETURN") should equal(CypherQueryWithOptions("RETURN", Seq(VersionOption("2.2"), DPPlannerOption)))
     parse("PLANNER IDP RETURN") should equal(CypherQueryWithOptions("RETURN",Seq(IDPPlannerOption)))
+    parse("PLANNER DP RETURN") should equal(CypherQueryWithOptions("RETURN",Seq(DPPlannerOption)))
   }
 }
