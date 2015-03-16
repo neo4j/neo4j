@@ -33,8 +33,7 @@ object CostBasedPlanningStrategy {
 
   def apply(plannerName: CostBasedPlannerName): CostBasedPlanningStrategy = plannerName match {
     case ConservativePlannerName => CostBasedPlanningStrategy(plannerName, conservativeQueryAcceptor)
-    case CostPlannerName => CostBasedPlanningStrategy(plannerName, allQueryAcceptor)
-    case IDPPlannerName => CostBasedPlanningStrategy(plannerName, allQueryAcceptor)
+    case _ => CostBasedPlanningStrategy(plannerName, allQueryAcceptor)
   }
 }
 
@@ -57,6 +56,9 @@ object CostBasedPipeBuilderFactory {
     val queryGraphSolver = plannerName match {
       case IDPPlannerName =>
         IDPQueryGraphSolver()
+
+      case DPPlannerName =>
+        IDPQueryGraphSolver(maxTableSize = Int.MaxValue)
 
       case _ =>
 //        IDPQueryGraphSolver()

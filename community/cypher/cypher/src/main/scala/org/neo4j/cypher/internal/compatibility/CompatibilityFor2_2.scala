@@ -24,23 +24,20 @@ import java.util
 
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v2_2
-import org.neo4j.cypher.internal.compiler.v2_2.{CostPlannerName, ConservativePlannerName, IDPPlannerName}
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{InternalExecutionResult, ExecutionPlan => ExecutionPlan_v2_2}
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ExecutionPlan => ExecutionPlan_v2_2, InternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.{DbHits, Planner, Rows, Version}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.MapToPublicExceptions
-import org.neo4j.cypher.internal.compiler.v2_2.{CypherCompilerFactory, PlannerName, CypherException => CypherException_v2_2}
-import org.neo4j.cypher.internal.compiler.v2_2.InfoLogger
+import org.neo4j.cypher.internal.compiler.v2_2.{CypherException => CypherException_v2_2, CostBasedPlannerName, DPPlannerName, IDPPlannerName, CostPlannerName, CypherCompilerFactory, ConservativePlannerName, InfoLogger, PlannerName, Monitors}
 import org.neo4j.cypher.internal.spi.v2_2.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
-import org.neo4j.cypher.{ArithmeticException, CypherTypeException, EntityNotFoundException, FailedIndexException, IncomparableValuesException, IndexHintException, InternalException, InvalidArgumentException, InvalidSemanticsException, LoadCsvStatusWrapCypherException, LoadExternalResourceException, MergeConstraintConflictException, NodeStillHasRelationshipsException, ParameterNotFoundException, ParameterWrongTypeException, PatternException, PeriodicCommitInOpenTransactionException, ProfilerStatisticsNotReadyException, SyntaxException, UniquePathNotUniqueException, UnknownLabelException, _}
+import org.neo4j.cypher.{ArithmeticException, CypherTypeException, EntityNotFoundException, FailedIndexException, IncomparableValuesException, IndexHintException, InternalException, InvalidArgumentException, InvalidSemanticsException, LabelScanHintException, LoadCsvStatusWrapCypherException, LoadExternalResourceException, MergeConstraintConflictException, NodeStillHasRelationshipsException, ParameterNotFoundException, ParameterWrongTypeException, PatternException, PeriodicCommitInOpenTransactionException, ProfilerStatisticsNotReadyException, SyntaxException, UniquePathNotUniqueException, UnknownLabelException, _}
 import org.neo4j.graphdb.{GraphDatabaseService, QueryExecutionType, ResourceIterator}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{KernelAPI, Statement}
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
 import org.neo4j.kernel.impl.util.StringLogger
-import org.neo4j.cypher.internal.compiler.v2_2.Monitors
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
 import scala.collection.JavaConverters._
@@ -134,7 +131,7 @@ case class WrappedMonitors(kernelMonitors: KernelMonitors) extends Monitors {
 
 
 trait CompatibilityFor2_2 {
-  import compatibility.helpers._
+  import org.neo4j.cypher.internal.compatibility.helpers._
 
   val graph: GraphDatabaseService
   val queryCacheSize: Int
@@ -317,20 +314,6 @@ class StringInfoLogger(stringLogger: StringLogger) extends InfoLogger {
 }
 
 
-case class CompatibilityFor2_2Conservative(graph: GraphDatabaseService,
-                                           queryCacheSize: Int,
-                                           statsDivergenceThreshold: Double,
-                                           queryPlanTTL: Long,
-                                           clock: Clock,
-                                           kernelMonitors: KernelMonitors,
-                                           kernelAPI: KernelAPI,
-                                           logger: StringLogger) extends CompatibilityFor2_2 {
-  protected val compiler = CypherCompilerFactory.costBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, new WrappedMonitors(kernelMonitors),
-    new StringInfoLogger(logger), plannerName = ConservativePlannerName
-  )
-}
-
 case class CompatibilityFor2_2Cost(graph: GraphDatabaseService,
                                    queryCacheSize: Int,
                                    statsDivergenceThreshold: Double,
@@ -338,25 +321,11 @@ case class CompatibilityFor2_2Cost(graph: GraphDatabaseService,
                                    clock: Clock,
                                    kernelMonitors: KernelMonitors,
                                    kernelAPI: KernelAPI,
-                                   logger: StringLogger) extends CompatibilityFor2_2 {
+                                   logger: StringLogger,
+                                   plannerName: CostBasedPlannerName) extends CompatibilityFor2_2 {
   protected val compiler = CypherCompilerFactory.costBasedCompiler(
     graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, new WrappedMonitors(kernelMonitors),
-    new StringInfoLogger(logger), plannerName = CostPlannerName
-  )
-}
-
-case class CompatibilityFor2_2IDP(graph: GraphDatabaseService,
-                                  queryCacheSize: Int,
-                                  statsDivergenceThreshold: Double,
-                                  queryPlanTTL: Long,
-                                  clock: Clock,
-                                  kernelMonitors: KernelMonitors,
-                                  kernelAPI: KernelAPI,
-                                  logger: StringLogger) extends CompatibilityFor2_2 {
-  protected val compiler = CypherCompilerFactory.costBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, new WrappedMonitors(kernelMonitors),
-    new StringInfoLogger(logger),
-    plannerName = IDPPlannerName
+    new StringInfoLogger(logger), plannerName
   )
 }
 

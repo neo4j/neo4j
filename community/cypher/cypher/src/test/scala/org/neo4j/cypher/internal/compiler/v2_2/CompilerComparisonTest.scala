@@ -52,8 +52,9 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
 
   val compilers = Seq[(String, GraphDatabaseService => CypherCompiler)](
     "legacy (rule)" -> legacyCompiler,
-    "ronja (cost)" -> ronjaCompilerUsingCostPlanner(),
-    "ronja (idp)" -> ronjaCompilerUsingIDPPlanner()
+    "ronja (cost)" -> ronjaCompiler(CostPlannerName),
+    "ronja (idp)" -> ronjaCompiler(IDPPlannerName),
+    "ronja (dp)" -> ronjaCompiler(DPPlannerName)
   )
 
   val queriesByDataSet: Map[(String, String), Map[String, String]] = Map.empty
@@ -278,7 +279,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
 
   private def format(in: Option[Long]) = in.map(l => NumberFormat.getNumberInstance(Locale.US).format(l)).getOrElse("???")
 
-  private def ronjaCompilerUsingCostPlanner(metricsFactoryInput: MetricsFactory = SimpleMetricsFactory)(graph: GraphDatabaseService): CypherCompiler = {
+  private def ronjaCompiler(plannerName: CostBasedPlannerName, metricsFactoryInput: MetricsFactory = SimpleMetricsFactory)(graph: GraphDatabaseService): CypherCompiler = {
     val kernelMonitors = new KernelMonitors()
     val monitors = new WrappedMonitors(kernelMonitors)
     val parser = new CypherParser(monitors.newMonitor[ParserMonitor[ast.Statement]](monitorTag))
@@ -287,27 +288,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     val planBuilderMonitor = monitors.newMonitor[NewLogicalPlanSuccessRateMonitor](monitorTag)
     val planningMonitor = monitors.newMonitor[PlanningMonitor](monitorTag)
     val metricsFactory = CachedMetricsFactory(metricsFactoryInput)
-    val planner = CostBasedPipeBuilderFactory(monitors = monitors, metricsFactory = metricsFactory, monitor = planningMonitor, clock = clock, planningStrategy = CostBasedPlanningStrategy(CostPlannerName))
-    val pipeBuilder = new LegacyVsNewPipeBuilder(new LegacyPipeBuilder(monitors), planner, planBuilderMonitor)
-    val execPlanBuilder = new ExecutionPlanBuilder(graph, statsDivergenceThreshold, queryPlanTTL, clock, pipeBuilder)
-    val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](100)
-    val cacheHitMonitor = monitors.newMonitor[CypherCacheHitMonitor[Statement]](monitorTag)
-    val cacheFlushMonitor = monitors.newMonitor[CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan]]](monitorTag)
-    val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheHitMonitor)
-
-    new CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheFlushMonitor, monitors)
-  }
-
-  private def ronjaCompilerUsingIDPPlanner(metricsFactoryInput: MetricsFactory = SimpleMetricsFactory)(graph: GraphDatabaseService): CypherCompiler = {
-    val kernelMonitors = new KernelMonitors()
-    val monitors = new WrappedMonitors(kernelMonitors)
-    val parser = new CypherParser(monitors.newMonitor[ParserMonitor[ast.Statement]](monitorTag))
-    val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
-    val rewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag))
-    val planBuilderMonitor = monitors.newMonitor[NewLogicalPlanSuccessRateMonitor](monitorTag)
-    val planningMonitor = monitors.newMonitor[PlanningMonitor](monitorTag)
-    val metricsFactory = CachedMetricsFactory(metricsFactoryInput)
-    val planner = CostBasedPipeBuilderFactory(monitors = monitors, metricsFactory = metricsFactory, monitor = planningMonitor, clock = clock, planningStrategy = CostBasedPlanningStrategy(IDPPlannerName))
+    val planner = CostBasedPipeBuilderFactory(monitors = monitors, metricsFactory = metricsFactory, monitor = planningMonitor, clock = clock, planningStrategy = CostBasedPlanningStrategy(plannerName))
     val pipeBuilder = new LegacyVsNewPipeBuilder(new LegacyPipeBuilder(monitors), planner, planBuilderMonitor)
     val execPlanBuilder = new ExecutionPlanBuilder(graph, statsDivergenceThreshold, queryPlanTTL, clock, pipeBuilder)
     val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](100)
