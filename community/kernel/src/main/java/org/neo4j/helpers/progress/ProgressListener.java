@@ -29,6 +29,8 @@ package org.neo4j.helpers.progress;
  */
 public interface ProgressListener
 {
+    void started( String task );
+
     void started();
 
     void set( long progress );
@@ -39,10 +41,19 @@ public interface ProgressListener
 
     void failed( Throwable e );
 
-    public static final ProgressListener NONE = new ProgressListener()
+    abstract class Adapter implements ProgressListener
     {
         @Override
         public void started()
+        {
+            started( null );
+        }
+    }
+
+    ProgressListener NONE = new Adapter()
+    {
+        @Override
+        public void started( String task )
         {
             // do nothing
         }
@@ -72,7 +83,7 @@ public interface ProgressListener
         }
     };
 
-    static class SinglePartProgressListener implements ProgressListener
+    static class SinglePartProgressListener extends Adapter
     {
         final Indicator indicator;
         private final long totalCount;
@@ -87,7 +98,7 @@ public interface ProgressListener
         }
 
         @Override
-        public void started()
+        public void started( String task )
         {
             if ( !stared )
             {
@@ -161,7 +172,7 @@ public interface ProgressListener
         }
     }
 
-    static final class MultiPartProgressListener implements ProgressListener
+    static final class MultiPartProgressListener extends Adapter
     {
         private final Aggregator aggregator;
         final String part;
@@ -177,7 +188,7 @@ public interface ProgressListener
         }
 
         @Override
-        public void started()
+        public void started( String task )
         {
             if ( !started )
             {

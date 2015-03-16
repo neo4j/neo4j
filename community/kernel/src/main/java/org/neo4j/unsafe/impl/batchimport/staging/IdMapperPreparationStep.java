@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 /**
  * Preparation of an {@link IdMapper}, {@link IdMapper#prepare(InputIterable, ProgressListener)}
@@ -34,9 +35,9 @@ public class IdMapperPreparationStep extends LonelyProcessingStep
     private final InputIterable<Object> allIds;
 
     public IdMapperPreparationStep( StageControl control, int batchSize, int movingAverageSize,
-            IdMapper idMapper, InputIterable<Object> allIds )
+            IdMapper idMapper, InputIterable<Object> allIds, StatsProvider memoryUsageStats )
     {
-        super( control, "" /*named later in the progress listener*/, batchSize, movingAverageSize );
+        super( control, "" /*named later in the progress listener*/, batchSize, movingAverageSize, memoryUsageStats );
         this.idMapper = idMapper;
         this.allIds = allIds;
     }
@@ -44,16 +45,13 @@ public class IdMapperPreparationStep extends LonelyProcessingStep
     @Override
     protected void process()
     {
-        idMapper.prepare( allIds, new ProgressListener()
+        idMapper.prepare( allIds, new ProgressListener.Adapter()
         {
-            private final String[] stages = {"SORT", "DETECT", "RESOLVE"};
-            private volatile int stage = 0;
-
             @Override
-            public void started()
+            public void started( String task )
             {
                 resetStats();
-                changeName( stages[stage++] );
+                changeName( task );
             }
 
             @Override

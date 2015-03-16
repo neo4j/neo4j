@@ -38,10 +38,10 @@ public abstract class IoProducerStep<BATCH> extends ProducerStep<BATCH> implemen
     }
 
     @Override
-    protected void addStatsProviders( Collection<StatsProvider> providers )
+    protected void collectStatsProviders( Collection<StatsProvider> into )
     {
-        super.addStatsProviders( providers );
-        providers.add( this );
+        super.collectStatsProviders( into );
+        into.add( this );
     }
 
     @Override
