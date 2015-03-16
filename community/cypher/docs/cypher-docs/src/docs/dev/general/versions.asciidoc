@@ -1,0 +1,12 @@
+[[cypher-versions]]
+Supported Language Versions
+===========================
+
+Neo4j 2.2 supports the following versions of the Cypher language:
+
+* Neo4j Cypher 2.2
+* Neo4j Cypher 2.1 *[DEPRECATED]*
+* Neo4j Cypher 2.0 *[DEPRECATED]*
+* Neo4j Cypher 1.9 *[DEPRECATED]*
+
+WARNING: All Cypher versions marked as deprecated above may not be supported any more in the next GA release (major version) of Neo4j.
