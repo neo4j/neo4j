@@ -51,9 +51,9 @@ import org.neo4j.kernel.api.index.Reservation;
 import org.neo4j.kernel.api.index.util.FailureStorage;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
+import org.neo4j.register.Register.DoubleLong;
 
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
-import static org.neo4j.register.Register.DoubleLong;
 
 class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
@@ -89,7 +89,10 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
     {
         try
         {
-            searcherManager.close();
+            if ( searcherManager != null )
+            {
+                searcherManager.close();
+            }
         }
         finally
         {
