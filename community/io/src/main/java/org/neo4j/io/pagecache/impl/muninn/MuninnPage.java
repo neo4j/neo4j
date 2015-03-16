@@ -91,7 +91,7 @@ final class MuninnPage extends StampedLock implements Page
     }
 
     /**
-     * NOTE: Must be called under a page lock.
+     * NOTE: Should be called under a page lock.
      */
     boolean isDirty()
     {
@@ -106,6 +106,27 @@ final class MuninnPage extends StampedLock implements Page
     private void markAsClean()
     {
         cachePageHeader &= 0x7F;
+    }
+
+    /** Increment the usage stamp to at most 4. */
+    public void incrementUsage()
+    {
+        // This is intentionally left benignly racy for performance.
+        byte usage = UnsafeUtil.getByteVolatile( this, usageStampOffset );
+        usage <<= 1;
+        usage++; // Raise at least one bit in case it was all zeros.
+        usage &= 0x0F;
+        UnsafeUtil.putByteVolatile( this, usageStampOffset, usage );
+    }
+
+    /** Decrement the usage stamp. Returns true if it reaches 0. */
+    public boolean decrementUsage()
+    {
+        // This is intentionally left benignly racy for performance.
+        byte usage = UnsafeUtil.getByteVolatile( this, usageStampOffset );
+        usage >>>= 1;
+        UnsafeUtil.putByteVolatile( this, usageStampOffset, usage );
+        return usage == 0;
     }
 
     public byte getByte( int offset )
@@ -280,27 +301,6 @@ final class MuninnPage extends StampedLock implements Page
             UnsafeUtil.putByte( address, data[i] );
             address++;
         }
-    }
-
-    /** Increment the usage stamp to at most 4. */
-    public void incrementUsage()
-    {
-        // This is intentionally left benignly racy for performance.
-        byte usage = UnsafeUtil.getByteVolatile( this, usageStampOffset );
-        usage <<= 1;
-        usage++; // Raise at least one bit in case it was all zeros.
-        usage &= 0x0F;
-        UnsafeUtil.putByteVolatile( this, usageStampOffset, usage );
-    }
-
-    /** Decrement the usage stamp. Returns true if it reaches 0. */
-    public boolean decrementUsage()
-    {
-        // This is intentionally left benignly racy for performance.
-        byte usage = UnsafeUtil.getByteVolatile( this, usageStampOffset );
-        usage >>>= 1;
-        UnsafeUtil.putByteVolatile( this, usageStampOffset, usage );
-        return usage == 0;
     }
 
     /**

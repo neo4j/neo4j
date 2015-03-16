@@ -100,8 +100,18 @@ public class MuninnPageCache implements PageCache
     private static final int pagesToKeepFree = Integer.getInteger(
             "org.neo4j.io.pagecache.impl.muninn.pagesToKeepFree", 30 );
 
+    // The background flush task will only spend a certain amount of time doing IO, to avoid saturating the IO
+    // subsystem during times when there is more important work to be done. It will do this by measuring how much
+    // time it spends on each flush, and then accumulate a sleep debt. Once the sleep debt grows beyond this
+    // threshold, the flush task will pay it back.
+    private static final long backgroundFlushSleepDebtThreshold = Long.getLong(
+            "org.neo4j.io.pagecache.impl.muninn.backgroundFlushSleepDebtThreshold", 10 );
+
+    // This ratio determines how the background flush task will spend its time. Specifically, it is a ratio of how
+    // much of its time will be spent doing IO. For instance, setting the ratio to 0.3 will make the flusher task
+    // spend 30% of its time doing IO, and 70% of its time sleeping.
     private static final double backgroundFlushIoRatio = getDouble(
-            "org.neo4j.io.pagecache.impl.muninn.backgroundFlushIoRatio", 0.5 );
+            "org.neo4j.io.pagecache.impl.muninn.backgroundFlushIoRatio", 0.2 );
 
     private static double getDouble( String property, double def )
     {
@@ -114,6 +124,13 @@ public class MuninnPageCache implements PageCache
             return def;
         }
     }
+
+    private static final long backgroundFlushBusyBreak = Long.getLong(
+            "org.neo4j.io.pagecache.impl.muninn.backgroundFlushBusyBreak", 5000 );
+    private static final long backgroundFlushMediumBreak = Long.getLong(
+            "org.neo4j.io.pagecache.impl.muninn.backgroundFlushMediumBreak", 5000 );
+    private static final long backgroundFlushLongBreak = Long.getLong(
+            "org.neo4j.io.pagecache.impl.muninn.backgroundFlushLongBreak", 5000 );
 
     // This is a pre-allocated constant, so we can throw it without allocating any objects:
     private static final IOException oomException = new IOException(
@@ -184,6 +201,9 @@ public class MuninnPageCache implements PageCache
 
     // Only used by ensureThreadsInitialised while holding the monitor lock on this MuninnPageCache instance.
     private boolean threadsInitialised;
+
+    // The accumulator for the flush task sleep debt. This is only accessed from the flush task.
+    private long sleepDebtNanos;
 
     public MuninnPageCache(
             PageSwapperFactory swapperFactory,
@@ -878,20 +898,22 @@ public class MuninnPageCache implements PageCache
 
         while ( !thread.isInterrupted() )
         {
-            boolean flushedAnything = flushAtIORatio( backgroundFlushIoRatio );
-            if ( !flushedAnything )
+            long iterationSleepMillis = flushAtIORatio( backgroundFlushIoRatio );
+            if ( iterationSleepMillis > 0 )
             {
-                LockSupport.parkNanos( this, TimeUnit.SECONDS.toNanos( 1 ) );
+                LockSupport.parkNanos( this, TimeUnit.MILLISECONDS.toNanos( iterationSleepMillis ) );
+                sleepDebtNanos = 0;
             }
         }
     }
 
-    private boolean flushAtIORatio( double ratio )
+    private long flushAtIORatio( double ratio )
     {
         Thread thread = Thread.currentThread();
-        long sleepDebtNanos = 0;
-        long sleepPaymentThreshold = TimeUnit.MILLISECONDS.toNanos( 10 );
-        boolean flushedAnything = false;
+        long sleepPaymentThreshold = TimeUnit.MILLISECONDS.toNanos( backgroundFlushSleepDebtThreshold );
+        boolean seenDirtyPages = false;
+        boolean flushedPages = false;
+        double sleepFactor = (1 - ratio) / ratio;
 
         try ( MajorFlushEvent event = tracer.beginCacheFlush() )
         {
@@ -901,7 +923,7 @@ public class MuninnPageCache implements PageCache
                 {
                     // Null pages means the page cache has been closed.
                     thread.interrupt();
-                    return true;
+                    return 0;
                 }
 
                 // The rate is the percentage of time that we want to spend doing IO. If the rate is 0.3, then we
@@ -912,11 +934,28 @@ public class MuninnPageCache implements PageCache
                 // T by the ratio R, and then multiply the result by 1 - R. This is equivalent to (T/R) - T = S.
                 // Then, because we don't want to sleep too frequently in too small intervals, we sum up our S's and
                 // only sleep when we have collected a sleep debt of at least 10 milliseconds.
+                // IO is not the only point of contention, however. Doing a flush also means that we have to take a
+                // pessimistic read-lock on the page, and if we do this on a page that is very popular for writing,
+                // then it can noticeably impact the performance of the database. Therefore, we check the dirtiness of
+                // a given page under and *optimistic* read lock, and we also decrement the usage counter to avoid
+                // aggressively flushing very popular pages. We need to carefully balance this, though, since we are
+                // at risk of the mutator threads performing so many writes that we can't decrement the usage
+                // counters fast enough to reach zero.
+
+                // Skip the page if it is already write locked, or not dirty, or too popular.
+                boolean thisPageIsDirty = false;
+                if ( page.isWriteLocked() || !(thisPageIsDirty = page.isDirty()) || !page.decrementUsage() )
+                {
+                    seenDirtyPages |= thisPageIsDirty;
+                    continue; // Continue looping to the next page.
+                }
+
                 long stamp = page.tryReadLock();
                 if ( stamp != 0 )
                 {
                     try
                     {
+                        // Double-check that the page is still dirty. We could be racing with other flushing threads.
                         if ( !page.isDirty() )
                         {
                             continue; // Continue looping to the next page.
@@ -926,8 +965,8 @@ public class MuninnPageCache implements PageCache
                         page.flush( event.flushEventOpportunity() );
                         long elapsedNanos = System.nanoTime() - startNanos;
 
-                        sleepDebtNanos += (elapsedNanos/ratio) - elapsedNanos;
-                        flushedAnything = true;
+                        sleepDebtNanos += elapsedNanos * sleepFactor;
+                        flushedPages = true;
                     }
                     catch ( Throwable ignore )
                     {
@@ -950,7 +989,15 @@ public class MuninnPageCache implements PageCache
                 }
             }
         }
-        return flushedAnything;
+
+        // We return an amount of time, in milliseconds, that we want to wait before we do the next iteration. If we
+        // have seen no dirty pages, then we can take a long break because the database is presumably not very busy
+        // with writing. If we have seen dirty pages and flushed some, then we can take a medium break since we've
+        // made some progress but we also need to keep up. If we have seen dirty pages and flushed none of them, then
+        // we shouldn't take any break, since we are falling behind the mutator threads.
+        return seenDirtyPages?
+               flushedPages? backgroundFlushMediumBreak : backgroundFlushBusyBreak
+                             : backgroundFlushLongBreak;
     }
 
     @Override
