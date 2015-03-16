@@ -60,7 +60,7 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
     };
 
     private final ValidatedIndexUpdates indexUpdates;
-    private final List<NodeLabelUpdate> labelUpdates = new ArrayList<>();
+    private List<NodeLabelUpdate> labelUpdates;
 
     private final IndexingService indexingService;
     private final LabelScanStore labelScanStore;
@@ -76,31 +76,34 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
     @Override
     public void apply()
     {
-        if ( !labelUpdates.isEmpty() )
+        try
         {
-            updateLabelScanStore();
-        }
+            if ( labelUpdates != null )
+            {
+                updateLabelScanStore();
+            }
 
-        updateIndexes();
+            if ( indexUpdates.hasChanges() )
+            {
+                updateIndexes();
+            }
+        }
+        catch ( IOException | IndexCapacityExceededException | IndexEntryConflictException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
     }
 
-    private void updateIndexes()
+    private void updateIndexes() throws IOException, IndexCapacityExceededException, IndexEntryConflictException
     {
         // We only allow a single writer at the time to update the schema index stores
         synchronized ( indexingService )
         {
-            try
-            {
-                indexUpdates.flush();
-            }
-            catch ( IOException | IndexCapacityExceededException | IndexEntryConflictException e )
-            {
-                throw new UnderlyingStorageException( e );
-            }
+            indexUpdates.flush();
         }
     }
 
-    private void updateLabelScanStore()
+    private void updateLabelScanStore() throws IOException, IndexCapacityExceededException
     {
         Collections.sort( labelUpdates, nodeLabelUpdateComparator );
 
@@ -113,10 +116,6 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
                 {
                     writer.write( update );
                 }
-            }
-            catch ( IOException | IndexCapacityExceededException e )
-            {
-                throw new UnderlyingStorageException( e );
             }
         }
     }
@@ -137,11 +136,20 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
             long[] labelsAfter = labelFieldAfter.getIfLoaded();
             if ( labelsBefore != null && labelsAfter != null )
             {
-                labelUpdates.add( NodeLabelUpdate.labelChanges( command.getKey(), labelsBefore, labelsAfter ) );
+                addLabelUpdate( NodeLabelUpdate.labelChanges( command.getKey(), labelsBefore, labelsAfter ) );
             }
         }
 
         return false;
+    }
+
+    private void addLabelUpdate( NodeLabelUpdate labelChanges )
+    {
+        if ( labelUpdates == null )
+        {
+            labelUpdates = new ArrayList<>();
+        }
+        labelUpdates.add( labelChanges );
     }
 
     @Override

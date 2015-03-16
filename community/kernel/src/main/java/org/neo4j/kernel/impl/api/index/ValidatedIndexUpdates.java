@@ -49,7 +49,18 @@ public interface ValidatedIndexUpdates extends AutoCloseable
         public void close()
         {
         }
+
+        @Override
+        public boolean hasChanges()
+        {
+            return false;
+        }
     };
+
+    /**
+     * @return whether or not there are any updates to be {@link #flush() flushed}.
+     */
+    boolean hasChanges();
 
     /**
      * Flush all validated and prepared index updates to corresponding indexes.

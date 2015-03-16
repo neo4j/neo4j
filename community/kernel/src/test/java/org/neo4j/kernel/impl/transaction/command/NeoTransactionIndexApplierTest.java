@@ -63,6 +63,7 @@ public class NeoTransactionIndexApplierTest
     {
         // given
         final ValidatedIndexUpdates indexUpdates = mock( ValidatedIndexUpdates.class );
+        when( indexUpdates.hasChanges() ).thenReturn( true );
         final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService, indexUpdates,
                 labelScanStore );
 
@@ -85,6 +86,21 @@ public class NeoTransactionIndexApplierTest
         final Collection<NodeLabelUpdate> labelUpdates = Arrays.asList( update );
 
         verify( indexUpdates, times( 1 ) ).flush();
+    }
+
+    @Test
+    public void shouldAvoidCallingIndexUpdatesIfNoIndexChanges() throws Exception
+    {
+        // given
+        final ValidatedIndexUpdates indexUpdates = mock( ValidatedIndexUpdates.class );
+        when( indexUpdates.hasChanges() ).thenReturn( false );
+        final IndexTransactionApplier applier = new IndexTransactionApplier( indexingService, indexUpdates,
+                labelScanStore );
+        // when
+        applier.apply();
+
+        // then
+        verify( indexUpdates, times( 0 ) ).flush();
     }
 
     @Test
