@@ -126,6 +126,34 @@ describe 'Service: UDC', () ->
       scope.$apply()
       httpBackend.flush()
 
+    it 'should collect stats from auto-committed transactions', ->
+      UsageDataCollectionService.reset()
+      Settings.shouldReportUdc = yes
+      setUDCData UsageDataCollectionService
+      current_transaction = Cypher.transaction()
+
+      httpBackend.expectPOST("#{Settings.endpoint.transaction}/commit")
+      .respond(->
+        return [200, JSON.stringify({
+          results: [{
+            columns: ["n"],
+            data: [{
+              row: [{name: 'mock'}],
+              graph: {nodes: [{id: 1}], relationships: []}
+            }],
+            stats: {}
+          }],
+          errors: []
+        })]
+      )
+      current_transaction.commit("MATCH n RETURN n").then(
+        ->
+          expect(UsageDataCollectionService.data.cypher_attempts).toBe(1)
+          expect(UsageDataCollectionService.data.cypher_wins).toBe(1)
+      )
+      scope.$apply()
+      httpBackend.flush()
+
     it 'should detect a cypher failure', ->
       UsageDataCollectionService.reset()
       Settings.shouldReportUdc = yes
@@ -163,3 +191,27 @@ describe 'Service: UDC', () ->
       scope.$apply()
       httpBackend.flush()
 
+    it 'should detect a failure in an auto-committed transaction', ->
+      UsageDataCollectionService.reset()
+      Settings.shouldReportUdc = yes
+      setUDCData UsageDataCollectionService
+      current_transaction = Cypher.transaction()
+
+      httpBackend.expectPOST("#{Settings.endpoint.transaction}/commit")
+      .respond(->
+        return [200, JSON.stringify({
+          results: [],
+          errors: [{code: 'TestFail', message:'This is a wanted failure.'}]
+        })]
+      )
+      current_transaction.commit("MATCH n RETURN n").then(
+        ->
+          expect("This should never happen").toBe('Nope')
+        ->
+          wins_type = typeof UsageDataCollectionService.data['cypher_wins']
+          expect(wins_type).toBe('undefined')
+          expect(UsageDataCollectionService.data.cypher_attempts).toBe(1)
+          expect(UsageDataCollectionService.data.cypher_fails).toBe(1)
+      )
+      scope.$apply()
+      httpBackend.flush()
