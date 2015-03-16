@@ -58,6 +58,7 @@ import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
+import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static java.lang.String.format;
@@ -82,7 +83,7 @@ class RebuildFromLogs
         this.stores = new StoreAccess( graphdb );
         this.dataSource = graphdb.getDependencyResolver().resolveDependency( DataSourceManager.class ).getDataSource();
         this.storeApplier = graphdb.getDependencyResolver().resolveDependency(
-                TransactionRepresentationStoreApplier.class );
+                TransactionRepresentationStoreApplier.class ).withLegacyIndexTransactionOrdering( IdOrderingQueue.BYPASS);
         PropertyLoader propertyLoader = new PropertyLoader( stores.getRawNeoStore() );
         this.indexUpdatesValidator = new IndexUpdatesValidator( stores.getRawNeoStore(), propertyLoader,
                 graphdb.getDependencyResolver().resolveDependency( IndexingService.class ) );
