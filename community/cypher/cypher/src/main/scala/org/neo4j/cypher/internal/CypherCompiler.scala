@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher._
+import org.neo4j.cypher.InvalidArgumentException
+import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.compatibility._
-import org.neo4j.cypher.internal.compiler.v2_2.{RulePlannerName, CostPlannerName, IDPPlannerName, ConservativePlannerName, PlannerName}
+import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.Clock
@@ -48,7 +49,7 @@ class CypherCompiler(graph: GraphDatabaseService,
                      defaultPlanner: PlannerName,
                      optionParser: CypherOptionParser,
                      logger: StringLogger) {
-  import CypherCompiler._
+  import org.neo4j.cypher.internal.CypherCompiler._
 
   private val queryCacheSize: Int = getQueryCacheSize
   private val queryPlanTTL: Long = getMinimumTimeBeforeReplanning
@@ -56,9 +57,10 @@ class CypherCompiler(graph: GraphDatabaseService,
   private val compatibilityFor2_0 = CompatibilityFor2_0(graph, queryCacheSize, kernelMonitors)
   private val compatibilityFor2_1 = CompatibilityFor2_1(graph, queryCacheSize, kernelMonitors, kernelAPI)
   private val compatibilityFor2_2Rule = CompatibilityFor2_2Rule(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI)
-  private val compatibilityFor2_2Cost = CompatibilityFor2_2Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger)
-  private val compatibilityFor2_2IDP = CompatibilityFor2_2IDP(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger)
-  private val compatibilityFor2_2 = CompatibilityFor2_2Conservative(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger)
+  private val compatibilityFor2_2Cost = CompatibilityFor2_2Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, CostPlannerName)
+  private val compatibilityFor2_2IDP = CompatibilityFor2_2Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, IDPPlannerName)
+  private val compatibilityFor2_2DP = CompatibilityFor2_2Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, DPPlannerName)
+  private val compatibilityFor2_2 = CompatibilityFor2_2Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, ConservativePlannerName)
 
   @throws(classOf[SyntaxException])
   def preParseQuery(queryText: String): PreParsedQuery = {
@@ -77,6 +79,7 @@ class CypherCompiler(graph: GraphDatabaseService,
       case (CypherVersion.v2_2, ConservativePlannerName) => compatibilityFor2_2.produceParsedQuery(statementAsText)
       case (CypherVersion.v2_2, CostPlannerName)         => compatibilityFor2_2Cost.produceParsedQuery(statementAsText)
       case (CypherVersion.v2_2, IDPPlannerName)          => compatibilityFor2_2IDP.produceParsedQuery(statementAsText)
+      case (CypherVersion.v2_2, DPPlannerName)           => compatibilityFor2_2DP.produceParsedQuery(statementAsText)
       case (CypherVersion.v2_2, RulePlannerName)         => compatibilityFor2_2Rule.produceParsedQuery(statementAsText)
       case (CypherVersion.v2_2, _)                   => compatibilityFor2_2.produceParsedQuery(statementAsText)
       case (CypherVersion.v2_1, _)                   => compatibilityFor2_1.parseQuery(statementAsText)
@@ -122,6 +125,7 @@ class CypherCompiler(graph: GraphDatabaseService,
       case CostPlannerOption => CostPlannerName
       case RulePlannerOption => RulePlannerName
       case IDPPlannerOption => IDPPlannerName
+      case DPPlannerOption => DPPlannerName
     }.distinct
     if (version != CypherVersion.v2_2 && planner.nonEmpty) {
       throw new InvalidArgumentException("PLANNER not supported in versions older than Neo4j v2.2")
