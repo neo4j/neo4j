@@ -50,6 +50,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.IdMapperPreparationStep;
 import org.neo4j.unsafe.impl.batchimport.staging.InputIteratorBatcherStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
+import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStore;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
@@ -137,14 +138,15 @@ public class ParallelBatchImporter implements BatchImporter
             IdMapper idMapper = input.idMapper();
             IdGenerator idGenerator = input.idGenerator();
             nodeRelationshipLink = new NodeRelationshipLinkImpl( AUTO, config.denseNodeThreshold() );
+            StatsProvider memoryUsageStats = new MemoryUsageStatsProvider( nodeRelationshipLink, idMapper );
             InputIterable<InputNode> nodes = input.nodes();
             InputIterable<InputRelationship> relationships = input.relationships();
 
             // Stage 1 -- nodes, properties, labels
-            final NodeStage nodeStage = new NodeStage( nodes, idMapper, idGenerator, neoStore, inputCache );
+            NodeStage nodeStage = new NodeStage( nodes, idMapper, idGenerator, neoStore, inputCache, memoryUsageStats );
 
             // Stage 2 -- calculate dense node threshold
-            final CalculateDenseNodesStage calculateDenseNodesStage = new CalculateDenseNodesStage( relationships,
+            CalculateDenseNodesStage calculateDenseNodesStage = new CalculateDenseNodesStage( relationships,
                     nodeRelationshipLink, idMapper, badRelationships, inputCache );
 
             // Execute stages 1 and 2 in parallel or sequentially?
@@ -153,7 +155,7 @@ public class ParallelBatchImporter implements BatchImporter
                 // So we need to execute the node stage first as it fills the id mapper and prepares it in the end,
                 // before executing any stage that needs ids from the id mapper, for example calc dense node stage.
                 executeStages( nodeStage );
-                executeStages( new IdMapperPreparationStage( config, idMapper, nodes, inputCache ) );
+                executeStages( new IdMapperPreparationStage( config, idMapper, nodes, inputCache, memoryUsageStats ) );
                 executeStages( calculateDenseNodesStage );
             }
             else
@@ -171,7 +173,6 @@ public class ParallelBatchImporter implements BatchImporter
             // Prepare for updating
             neoStore.flush();
             writerFactory.awaitEverythingWritten();
-            nodeLabelsCache = new NodeLabelsCache( AUTO, neoStore.getLabelRepository().getHighId() );
 
             // Stage 4 -- set node nextRel fields
             executeStages( new NodeFirstRelationshipStage( config, neoStore.getNodeStore(),
@@ -186,8 +187,10 @@ public class ParallelBatchImporter implements BatchImporter
             nodeRelationshipLink = null;
 
             // Stage 6 -- count nodes per label and labels per node
+            nodeLabelsCache = new NodeLabelsCache( AUTO, neoStore.getLabelRepository().getHighId() );
+            memoryUsageStats = new MemoryUsageStatsProvider( nodeLabelsCache );
             executeStages( new NodeCountsStage( config, nodeLabelsCache, neoStore.getNodeStore(),
-                    neoStore.getLabelRepository().getHighId(), countsUpdater ) );
+                    neoStore.getLabelRepository().getHighId(), countsUpdater, memoryUsageStats ) );
             // Stage 7 -- count label-[type]->label
             executeStages( new RelationshipCountsStage( config, nodeLabelsCache, neoStore.getRelationshipStore(),
                     neoStore.getLabelRepository().getHighId(),
@@ -235,7 +238,7 @@ public class ParallelBatchImporter implements BatchImporter
     public class NodeStage extends Stage
     {
         public NodeStage( InputIterable<InputNode> nodes, IdMapper idMapper, IdGenerator idGenerator,
-                          BatchingNeoStore neoStore, InputCache inputCache ) throws IOException
+                BatchingNeoStore neoStore, InputCache inputCache, StatsProvider memoryUsage ) throws IOException
         {
             super( "Nodes", config, idGenerator.dependsOnInput() );
             add( new InputIteratorBatcherStep<>( control(), config.batchSize(), config.movingAverageSize(),
@@ -251,7 +254,7 @@ public class ParallelBatchImporter implements BatchImporter
             add( new PropertyEncoderStep<>( control(), config, 1, neoStore.getPropertyKeyRepository(),
                     propertyStore ) );
             add( new NodeEncoderStep( control(), config, idMapper, idGenerator,
-                    neoStore.getLabelRepository(), nodeStore ) );
+                    neoStore.getLabelRepository(), nodeStore, memoryUsage ) );
             add( new EntityStoreUpdaterStep<>( control(), config, nodeStore, propertyStore,
                     writeMonitor, writerFactory ) );
         }
@@ -260,11 +263,11 @@ public class ParallelBatchImporter implements BatchImporter
     public class IdMapperPreparationStage extends Stage
     {
         public IdMapperPreparationStage( Configuration config, IdMapper idMapper, InputIterable<InputNode> nodes,
-                InputCache inputCache )
+                InputCache inputCache, StatsProvider memoryUsageStats )
         {
             super( "Prepare node index", config, false );
             add( new IdMapperPreparationStep( control(), config.batchSize(), config.movingAverageSize(),
-                    idMapper, idsOf( nodes.supportsMultiplePasses() ? nodes : inputCache.nodes() ) ) );
+                    idMapper, idsOf( nodes.supportsMultiplePasses() ? nodes : inputCache.nodes() ), memoryUsageStats ) );
         }
     }
 

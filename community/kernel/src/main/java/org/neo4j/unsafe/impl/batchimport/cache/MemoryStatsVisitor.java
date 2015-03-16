@@ -26,7 +26,7 @@ public interface MemoryStatsVisitor
 {
     interface Home
     {
-        void visit( MemoryStatsVisitor visitor );
+        void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor );
     }
 
     void heapUsage( long bytes );

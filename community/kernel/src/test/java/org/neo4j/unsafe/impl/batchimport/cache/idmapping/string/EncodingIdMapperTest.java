@@ -109,7 +109,7 @@ public class EncodingIdMapperTest
         }
         idMapper.prepare( ids, NONE );
         MemoryStatsVisitor memoryStats = new GatheringMemoryStatsVisitor();
-        idMapper.visitMemoryStats( memoryStats );
+        idMapper.acceptMemoryStatsVisitor( memoryStats );
 
         // THEN
         for ( Object id : ids )

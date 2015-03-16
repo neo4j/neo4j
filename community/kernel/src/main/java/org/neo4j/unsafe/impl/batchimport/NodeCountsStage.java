@@ -24,6 +24,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
+import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 /**
  * Reads all records from {@link RelationshipStore} and process the counts in them. Uses a {@link NodeLabelsCache}
@@ -32,11 +33,11 @@ import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 public class NodeCountsStage extends Stage
 {
     public NodeCountsStage( Configuration config, NodeLabelsCache cache, NodeStore nodeStore,
-            int highLabelId, CountsAccessor.Updater countsUpdater )
+            int highLabelId, CountsAccessor.Updater countsUpdater, StatsProvider... additionalStatsProviders )
     {
         super( "Node counts", config, false );
         add( new ReadNodeRecordsStep( control(), config.batchSize(), config.movingAverageSize(), nodeStore ) );
         add( new RecordProcessorStep<>( control(), "COUNT", config.workAheadSize(), config.movingAverageSize(),
-                new NodeCountsProcessor( nodeStore, cache, highLabelId, countsUpdater ), true ) );
+                new NodeCountsProcessor( nodeStore, cache, highLabelId, countsUpdater ), true, additionalStatsProviders ) );
     }
 }

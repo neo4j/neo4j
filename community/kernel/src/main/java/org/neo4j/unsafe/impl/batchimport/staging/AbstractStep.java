@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -33,6 +34,7 @@ import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
+import static java.util.Arrays.asList;
 
 /**
  * Basic implementation of a {@link Step}. Does the most plumbing job of building a step implementation.
@@ -69,12 +71,15 @@ public abstract class AbstractStep<T> implements Step<T>
     // Milliseconds spent processing all received batches.
     protected final MovingAverage totalProcessingTime;
     protected long startTime, endTime;
+    private final List<StatsProvider> additionalStatsProvider;
 
-    public AbstractStep( StageControl control, String name, int movingAverageSize )
+    public AbstractStep( StageControl control, String name, int movingAverageSize,
+            StatsProvider... additionalStatsProvider )
     {
         this.control = control;
         this.name = name;
         this.totalProcessingTime = new MovingAverage( movingAverageSize );
+        this.additionalStatsProvider = asList( additionalStatsProvider );
     }
 
     @Override
@@ -201,15 +206,16 @@ public abstract class AbstractStep<T> implements Step<T>
     public StepStats stats()
     {
         Collection<StatsProvider> providers = new ArrayList<>();
-        addStatsProviders( providers );
+        collectStatsProviders( providers );
         return new StepStats( name, stillWorking(), providers );
     }
 
-    protected void addStatsProviders( Collection<StatsProvider> providers )
+    protected void collectStatsProviders( Collection<StatsProvider> into )
     {
-        providers.add( new ProcessingStats( doneBatches.get()+queuedBatches.get(), doneBatches.get(),
+        into.add( new ProcessingStats( doneBatches.get()+queuedBatches.get(), doneBatches.get(),
                 totalProcessingTime.total(), totalProcessingTime.average() / numberOfProcessors(),
                 upstreamIdleTime.get(), downstreamIdleTime.get() ) );
+        into.addAll( additionalStatsProvider );
     }
 
     @SuppressWarnings( "unchecked" )

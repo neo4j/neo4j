@@ -497,11 +497,11 @@ public class EncodingIdMapper implements IdMapper
     }
 
     @Override
-    public void visitMemoryStats( MemoryStatsVisitor visitor )
+    public void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor )
     {
-        dataCache.visit( visitor );
-        trackerCache.visit( visitor );
-        collisionCache.visit( visitor );
+        dataCache.acceptMemoryStatsVisitor( visitor );
+        trackerCache.acceptMemoryStatsVisitor( visitor );
+        collisionCache.acceptMemoryStatsVisitor( visitor );
     }
 
     @Override

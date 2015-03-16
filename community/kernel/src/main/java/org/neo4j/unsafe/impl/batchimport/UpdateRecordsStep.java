@@ -19,23 +19,34 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import java.util.Collection;
+
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
+import org.neo4j.unsafe.impl.batchimport.stats.Key;
+import org.neo4j.unsafe.impl.batchimport.stats.Keys;
+import org.neo4j.unsafe.impl.batchimport.stats.Stat;
+import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 /**
  * Updates a batch of records to a store.
  */
-public class UpdateRecordsStep<RECORD extends AbstractBaseRecord> extends ExecutorServiceStep<RECORD[]>
+public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
+        extends ExecutorServiceStep<RECORD[]>
+        implements StatsProvider
 {
     private final RecordStore<RECORD> store;
+    private final int recordSize;
+    private int recordsUpdated;
 
     public UpdateRecordsStep( StageControl control, int workAheadSize, int movingAverageSize,
             RecordStore<RECORD> store )
     {
         super( control, "v", workAheadSize, movingAverageSize, 1 );
         this.store = store;
+        this.recordSize = store.getRecordSize();
     }
 
     @Override
@@ -48,6 +59,26 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord> extends Execut
                 store.updateRecord( record );
             }
         }
+        recordsUpdated += batch.length;
         return null; // end of line
+    }
+
+    @Override
+    protected void collectStatsProviders( Collection<StatsProvider> into )
+    {
+        super.collectStatsProviders( into );
+        into.add( this );
+    }
+
+    @Override
+    public Stat stat( Key key )
+    {
+        return key == Keys.io_throughput ? new IoThroughputStat( startTime, endTime, recordSize*recordsUpdated ) : null;
+    }
+
+    @Override
+    public Key[] keys()
+    {
+        return new Keys[] {Keys.io_throughput};
     }
 }

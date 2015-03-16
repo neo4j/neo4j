@@ -53,7 +53,7 @@ abstract class HeapNumberArray implements NumberArray
     }
 
     @Override
-    public void visit( MemoryStatsVisitor visitor )
+    public void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor )
     {
         visitor.heapUsage( length() * itemSize ); // roughly
     }

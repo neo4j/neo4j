@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.function.primitive.PrimitiveLongPredicate;
 import org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor;
 import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor;
+import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 import static java.lang.System.currentTimeMillis;
 
@@ -54,18 +55,19 @@ public abstract class ExecutorServiceStep<T> extends AbstractStep<T>
     private final AtomicLong lastBatchEndTime = new AtomicLong();
 
     protected ExecutorServiceStep( StageControl control, String name, int workAheadSize, int movingAverageSize,
-            int initialProcessorCount, boolean allowMultipleProcessors )
+            int initialProcessorCount, boolean allowMultipleProcessors, StatsProvider... additionalStatsProviders )
     {
-        super( control, name, movingAverageSize );
+        super( control, name, movingAverageSize, additionalStatsProviders );
         this.workAheadSize = workAheadSize;
         this.initialProcessorCount = initialProcessorCount;
         this.allowMultipleProcessors = allowMultipleProcessors;
     }
 
     protected ExecutorServiceStep( StageControl control, String name, int workAheadSize, int movingAverageSize,
-            int initialProcessorCount )
+            int initialProcessorCount, StatsProvider... additionalStatsProviders )
     {
-        this( control, name, workAheadSize, movingAverageSize, initialProcessorCount, initialProcessorCount > 1 );
+        this( control, name, workAheadSize, movingAverageSize, initialProcessorCount, initialProcessorCount > 1,
+                additionalStatsProviders );
     }
 
     @Override

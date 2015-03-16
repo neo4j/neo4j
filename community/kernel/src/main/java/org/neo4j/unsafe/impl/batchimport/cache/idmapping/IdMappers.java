@@ -61,7 +61,7 @@ public class IdMappers
         }
 
         @Override
-        public void visitMemoryStats( MemoryStatsVisitor visitor )
+        public void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor )
         {   // No memory usage
         }
 

@@ -30,6 +30,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
+import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingLabelTokenRepository;
 
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
@@ -48,9 +49,10 @@ public final class NodeEncoderStep extends ExecutorServiceStep<Batch<InputNode,N
     public NodeEncoderStep( StageControl control, Configuration config,
             IdMapper idMapper, IdGenerator idGenerator,
             BatchingLabelTokenRepository labelHolder,
-            NodeStore nodeStore )
+            NodeStore nodeStore,
+            StatsProvider memoryUsageStats )
     {
-        super( control, "NODE", config.workAheadSize(), config.movingAverageSize(), 1 );
+        super( control, "NODE", config.workAheadSize(), config.movingAverageSize(), 1, memoryUsageStats );
         this.idMapper = idMapper;
         this.idGenerator = idGenerator;
         this.nodeStore = nodeStore;

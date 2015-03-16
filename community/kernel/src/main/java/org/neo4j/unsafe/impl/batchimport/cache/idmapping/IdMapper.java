@@ -31,7 +31,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
  * Maps node ids as specified by {@link InputNode#id()}, {@link InputRelationship#startNode()} and
  * {@link InputRelationship#endNode()} from an id of some unknown sort, coming directly from input, to actual node ids.
  */
-public interface IdMapper
+public interface IdMapper extends MemoryStatsVisitor.Home
 {
     /**
      * Maps an {@code inputId} to an actual node id.
@@ -73,9 +73,4 @@ public interface IdMapper
      * @return the actual node id previously specified by {@link #put(Object, long)}, or {@code -1} if not found.
      */
     long get( Object inputId, Group group );
-
-    /**
-     * Gathers statistics about memory usage in this object.
-     */
-    void visitMemoryStats( MemoryStatsVisitor visitor );
 }
