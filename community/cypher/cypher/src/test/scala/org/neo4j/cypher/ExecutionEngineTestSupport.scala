@@ -55,7 +55,9 @@ trait ExecutionEngineTestSupport extends CypherTestSupport {
   def runAndFail[T <: Throwable : Manifest](q: String): ExpectedException[T] =
     ExpectedException(intercept[T](execute(q)))
 
-  def executeScalar[T](q: String, params: (String, Any)*):T = eengine.execute(q, params.toMap).toList match {
+  def executeScalar[T](q: String, params: (String, Any)*): T = scalar(eengine.execute(q, params.toMap).toList)
+
+  def scalar[T](input: List[Map[String, Any]]) = input match {
     case m :: Nil =>
       if (m.size!=1)
         fail(s"expected scalar value: $m")

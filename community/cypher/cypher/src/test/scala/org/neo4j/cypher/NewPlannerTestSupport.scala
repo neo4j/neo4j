@@ -96,6 +96,9 @@ trait NewPlannerTestSupport extends CypherTestSupport {
   def executeWithOlderPlanner(queryText: String, params: (String, Any)*): ExecutionResult =
     eengine.execute("cypher 2.1 " + queryText, params.toMap)
 
+  def executeScalarWithOlderPlanner[T](queryText: String, params: (String, Any)*): T =
+    scalar(eengine.execute("cypher 2.1 " + queryText, params.toMap).toList)
+
   override def execute(queryText: String, params: (String, Any)*) =
     monitoringNewPlanner(innerExecute(queryText, params: _*)) { trace =>
       val unableToHandle = trace.collectFirst {
