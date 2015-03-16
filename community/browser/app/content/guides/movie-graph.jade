@@ -544,7 +544,7 @@ article.guide
               (JamesThompson)-[:REVIEWED {summary:'Fun, but a little far fetched', rating:65}]->(TheDaVinciCode),
               (JessicaThompson)-[:REVIEWED {summary:'You had me at Jerry', rating:92}]->(JerryMaguire)
 
-            WITH *
+            WITH TomH as a
             MATCH (a)-[:ACTED_IN]->(m)<-[:DIRECTED]-(d) RETURN a,m,d LIMIT 10
             ;
 
@@ -637,7 +637,7 @@ article.guide
                 a(href='http://neo4j.com/docs/{{neo4j.version | neo4jdoc }}/query-match.html#match-variable-length-relationships') variable length relationships
               li
                 a(href='http://neo4j.com/docs/{{neo4j.version | neo4jdoc }}/query-match.html#match-shortest-path') shortestPath
-      .col-sm-9        
+      .col-sm-9
         p.lead Movies and actors up to 4 "hops" away from Kevin Bacon
         figure
           pre.pre-scrollable.code.runnable.
@@ -650,7 +650,7 @@ article.guide
               (bacon:Person {name:"Kevin Bacon"})-[*]-(meg:Person {name:"Meg Ryan"})
             )
             RETURN p
-            
+
     slide.row-fluid
       .col-sm-3
         h5 The Movie Graph
@@ -662,7 +662,7 @@ article.guide
         p For Tom Hanks, that means:
         ol
           li Find actors that Tom Hanks hasn't yet worked with, but his co-actors have.
-          li Find someone who can introduce Tom to his potential co-actor. 
+          li Find someone who can introduce Tom to his potential co-actor.
         hr
         p
           small Neo4j Manual
@@ -714,7 +714,7 @@ article.guide
       .col-sm-4
         h3 Next steps
       .col-sm-4
-        h3 More code 
+        h3 More code
         ul.undecorated
           li
             a(play-topic='northwind-graph') Northwind Graph

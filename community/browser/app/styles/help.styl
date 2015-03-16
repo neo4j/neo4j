@@ -27,14 +27,39 @@
       padding: 1em
       background-color: #008cc1
       color: #fff
-    .btn-app
+    .teaser
       margin: .5em
-      padding: 5px
-      width: 100px
-      [help-topic], [play-topic]
-        margin: 0px
-        padding: 0
-        width: 100%
+      padding: 10px
+      border: 1px solid #ccc
+      border-radius: 4px
+      height: 270px
+      float: left
+      position: relative
+      &.teaser-3
+        width: 30%
+        min-width: 240px
+      button
+        position: absolute
+        bottom: 5px
+        width: 90%
+        left: 5%
+        outline: none
+      .icon
+        float: left
+      .topic-bullets
+        float: left
+        word-wrap: break-word
+        min-width: 150px
+        max-width: 65%
+        list-style: none
+        padding-left: 10px
+        margin-top: 0
+        :first-child
+          margin-top: 0
+        li
+          margin-top: 5px
+      .icon-holder
+        margin-top: 10px
     p
       font-size: 15px
       line-height: 1.428

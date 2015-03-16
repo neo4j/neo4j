@@ -40,7 +40,7 @@
 
     .message-bar.error.slide-down(ng-if='editor.showMessage', ng-class="editor.errorCode")
       span(ng-bind-html-unsafe="editor.errorMessage")
-      |  Type <code click-to-code="':help'">:help</code> for a list of available commands.
+      |  Type <code click-to-code="':help commands'">:help commands</code> for a list of available commands.
       .actions
         a.fa.fa-times-circle(ng-click='editor.showMessage = null')
     .message-bar.info(ng-if='unauthorized', ng-class="editor.errorCode")
