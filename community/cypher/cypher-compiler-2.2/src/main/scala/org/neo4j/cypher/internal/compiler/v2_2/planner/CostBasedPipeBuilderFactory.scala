@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.execution.PipeExecutionPlanBuilder
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.{expandsOrJoins, expandsOnly, GreedyQueryGraphSolver}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.idp.IDPQueryGraphSolver
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.idp.{IDPQueryGraphSolverMonitor, IDPQueryGraphSolver}
 import org.neo4j.helpers.Clock
 
 final case class CostBasedPlanningStrategy(plannerName: CostBasedPlannerName, acceptQuery: QueryAcceptor)
@@ -55,13 +55,13 @@ object CostBasedPipeBuilderFactory {
     val plannerName = planningStrategy.plannerName
     val queryGraphSolver = plannerName match {
       case IDPPlannerName =>
-        IDPQueryGraphSolver()
+        IDPQueryGraphSolver(monitors.newMonitor[IDPQueryGraphSolverMonitor]())
 
       case DPPlannerName =>
-        IDPQueryGraphSolver(maxTableSize = Int.MaxValue)
+        IDPQueryGraphSolver(monitors.newMonitor[IDPQueryGraphSolverMonitor](), maxTableSize = Int.MaxValue)
 
       case _ =>
-//        IDPQueryGraphSolver()
+//        IDPQueryGraphSolver(monitors.newMonitor[IDPQueryGraphSolverMonitor]())
         new CompositeQueryGraphSolver(
           new GreedyQueryGraphSolver(expandsOrJoins),
           new GreedyQueryGraphSolver(expandsOnly)
