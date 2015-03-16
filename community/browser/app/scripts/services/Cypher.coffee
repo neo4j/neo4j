@@ -140,28 +140,36 @@ angular.module('neo4jApp.services')
 
         commit: (query) ->
           statements = if query then [{statement:query}] else []
+          UDC.increment('cypher_attempts')
           if @id
             q = $q.defer()
-            UDC.increment('cypher_attempts')
             rr = Server.transaction(
               path: "/#{@id}/commit"
               statements: statements
             ).success(
               (r) =>
-                UDC.increment('cypher_wins')
                 @delegate?.transactionFinished.call(@delegate, @id)
                 @_reset()
                 q.resolve(r)
             ).error((r) =>
-                UDC.increment('cypher_fails')
                 q.reject(r)
             )
-            promiseResult(rr)
+            res = promiseResult(rr)
+            res.then(
+              -> UDC.increment('cypher_wins')
+              -> UDC.increment('cypher_fails')
+            )
+            res
           else
-            promiseResult(Server.transaction(
+            res = promiseResult(Server.transaction(
               path: "/commit"
               statements: statements
             ))
+            res.then(
+              -> UDC.increment('cypher_wins')
+              -> UDC.increment('cypher_fails')
+            )
+            res
 
         rollback: ->
           q = $q.defer()
