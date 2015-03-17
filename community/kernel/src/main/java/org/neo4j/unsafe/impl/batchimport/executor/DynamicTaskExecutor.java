@@ -42,7 +42,7 @@ public class DynamicTaskExecutor implements TaskExecutor
     private final String processorThreadNamePrefix;
     private volatile Processor[] processors = new Processor[0];
     private volatile boolean shutDown;
-    private volatile Throwable shutDownCause;
+    private volatile Throwable panic;
 
     public DynamicTaskExecutor( int initialProcessorCount, int maxQueueSize, ParkStrategy parkStrategy,
             String processorThreadNamePrefix )
@@ -125,8 +125,8 @@ public class DynamicTaskExecutor implements TaskExecutor
         if ( shutDown )
         {
             String message = "Executor has been shut down";
-            throw shutDownCause != null
-                    ? new IllegalStateException( message, shutDownCause )
+            throw panic != null
+                    ? new IllegalStateException( message, panic )
                     : new IllegalStateException( message );
         }
     }
@@ -140,21 +140,15 @@ public class DynamicTaskExecutor implements TaskExecutor
     }
 
     @Override
-    public void shutdown( boolean awaitAllCompleted )
-    {
-        shutdown0( awaitAllCompleted, null );
-    }
-
-    private synchronized void shutdown0( boolean awaitAllCompleted, Throwable cause )
+    public synchronized void shutdown( boolean awaitAllCompleted )
     {
         if ( shutDown )
         {
             return;
         }
 
-        this.shutDownCause = cause;
         this.shutDown = true;
-        while ( awaitAllCompleted && !queue.isEmpty() )
+        while ( awaitAllCompleted && !queue.isEmpty() && panic == null /*all bets are off in the event of panic*/ )
         {
             parkAWhile();
         }
@@ -162,7 +156,7 @@ public class DynamicTaskExecutor implements TaskExecutor
         {
             processor.shutDown = true;
         }
-        while ( awaitAllCompleted && anyAlive() )
+        while ( awaitAllCompleted && anyAlive() && panic == null /*all bets are off in the event of panic*/ )
         {
             parkAWhile();
         }
@@ -218,8 +212,8 @@ public class DynamicTaskExecutor implements TaskExecutor
                     }
                     catch ( Throwable e )
                     {
-                        // TODO too defensive to shut down?
-                        shutdown0( false, e );
+                        panic = e;
+                        shutdown( false );
                         throw launderedException( e );
                     }
                 }

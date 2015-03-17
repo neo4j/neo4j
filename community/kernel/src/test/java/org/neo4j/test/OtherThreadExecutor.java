@@ -287,6 +287,18 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
             }
             return builder.toString();
         }
+
+        public boolean isAt( Class<?> clz, String method )
+        {
+            for ( StackTraceElement element : stackTrace )
+            {
+                if ( element.getClassName().equals( clz.getName() ) && element.getMethodName().equals( method ) )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     public Thread.State state()

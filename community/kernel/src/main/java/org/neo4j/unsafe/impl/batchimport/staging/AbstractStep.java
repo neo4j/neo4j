@@ -46,7 +46,7 @@ public abstract class AbstractStep<T> implements Step<T>
     @SuppressWarnings( "rawtypes" )
     private volatile Step downstream;
     private volatile boolean endOfUpstream;
-    private volatile Throwable panic;
+    protected volatile Throwable panic;
     private volatile boolean completed;
     protected boolean orderedTickets;
     protected final PrimitiveLongPredicate rightTicket = new PrimitiveLongPredicate()
