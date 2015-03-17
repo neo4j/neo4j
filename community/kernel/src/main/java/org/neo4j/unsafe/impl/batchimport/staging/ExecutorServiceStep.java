@@ -148,7 +148,7 @@ public abstract class ExecutorServiceStep<T> extends AbstractStep<T>
     public void close()
     {
         super.close();
-        executor.shutdown( true );
+        executor.shutdown( panic == null );
     }
 
     @Override

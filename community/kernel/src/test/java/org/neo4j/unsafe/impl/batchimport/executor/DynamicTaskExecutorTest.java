@@ -23,11 +23,14 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.transaction.log.ParkStrategy;
+import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
+import org.neo4j.test.OtherThreadExecutor;
+import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -154,6 +157,7 @@ public class DynamicTaskExecutorTest
         FailingTask task = new FailingTask( exception );
         executor.submit( task );
         task.latch.await();
+        task.latch.release();
 
         // THEN
         assertExceptionOnSubmit( executor, exception );
@@ -181,6 +185,7 @@ public class DynamicTaskExecutorTest
         // WHEN
         firstBlockingTask.latch.finish();
         failingTask.latch.await();
+        failingTask.latch.release();
 
         // THEN
         assertExceptionOnSubmit( executor, exception );
@@ -198,6 +203,7 @@ public class DynamicTaskExecutorTest
         FailingTask failingTask = new FailingTask( exception );
         executor.submit( failingTask );
         failingTask.latch.await();
+        failingTask.latch.release();
 
         // WHEN
         for ( int i = 0; i < 5; i++ )
@@ -215,6 +221,45 @@ public class DynamicTaskExecutorTest
             }
         }
         fail( "Should not be considered healthy after failing task" );
+    }
+
+    @Test
+    public void shouldLetShutdownCompleteInEventOfPanic() throws Exception
+    {
+        // GIVEN
+        final TaskExecutor executor = new DynamicTaskExecutor( 2, 10, new ParkStrategy.Park( 1 ), getClass().getSimpleName() );
+        IOException exception = new IOException( "Failure" );
+
+        // WHEN
+        FailingTask failingTask = new FailingTask( exception );
+        executor.submit( failingTask );
+        failingTask.latch.await();
+
+        // WHEN
+        try ( OtherThreadExecutor<Void> closer = new OtherThreadExecutor<>( "closer", null ) )
+        {
+            Future<Void> shutdown = closer.executeDontWait( new WorkerCommand<Void,Void>()
+            {
+                @Override
+                public Void doWork( Void state ) throws Exception
+                {
+                    executor.shutdown( true );
+                    return null;
+                }
+            } );
+            while ( !closer.waitUntilWaiting().isAt( DynamicTaskExecutor.class, "shutdown" ) )
+            {
+                Thread.sleep( 10 );
+            }
+
+            // Here we've got a shutdown call stuck awaiting queue to be empty (since true was passed in)
+            // at the same time we've got a FailingTask ready to throw its exception and another task
+            // sitting in the queue after it. Now make the task throw that exception.
+            failingTask.latch.release();
+
+            // Some time after throwing this, the shutdown request should have been completed.
+            shutdown.get();
+        }
     }
 
     private void assertExceptionOnSubmit( TaskExecutor executor, IOException exception )
@@ -260,7 +305,7 @@ public class DynamicTaskExecutorTest
     private static class FailingTask implements Callable<Void>
     {
         private final Exception exception;
-        private final CountDownLatch latch = new CountDownLatch( 1 );
+        private final Barrier.Control latch = new Barrier.Control();
 
         public FailingTask( Exception exception )
         {
@@ -276,7 +321,7 @@ public class DynamicTaskExecutorTest
             }
             finally
             {
-                latch.countDown();
+                latch.reached();
             }
         }
     }
