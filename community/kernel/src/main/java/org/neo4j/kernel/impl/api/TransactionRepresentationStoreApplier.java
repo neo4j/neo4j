@@ -115,4 +115,12 @@ public class TransactionRepresentationStoreApplier
         }
         return handlerOption.get();
     }
+
+    public TransactionRepresentationStoreApplier withLegacyIndexTransactionOrdering(
+            IdOrderingQueue legacyIndexTransactionOrdering )
+    {
+        return new TransactionRepresentationStoreApplier( indexingService, labelScanStore, neoStore, cacheAccess,
+                                                          lockService, legacyIndexProviderLookup, indexConfigStore,
+                                                          legacyIndexTransactionOrdering );
+    }
 }
