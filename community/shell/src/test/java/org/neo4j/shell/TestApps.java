@@ -1159,8 +1159,8 @@ public class TestApps extends AbstractShellTest
     @Test
     public void shouldBeAbleToSwitchBetweenPlanners() throws Exception
     {
-        executeCommand( "PROFILE PLANNER RULE MATCH (n)-[:T*]-(n) RETURN n;", "Planner RULE");
-        executeCommand( "PROFILE PLANNER COST MATCH (n)-[:T*]-(n) RETURN n;", "Planner COST");
+        executeCommand( "PROFILE PLANNER RULE MATCH (n)-[:T]-(n) RETURN n;", "Planner RULE");
+        executeCommand( "PROFILE PLANNER COST MATCH (n)-[:T]-(n) RETURN n;", "Planner COST");
     }
 
     @Test
