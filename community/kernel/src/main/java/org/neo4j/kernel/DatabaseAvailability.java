@@ -19,8 +19,13 @@
  */
 package org.neo4j.kernel;
 
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.kernel.impl.transaction.TransactionCounters;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.locks.LockSupport.parkNanos;
 
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 
@@ -34,11 +39,19 @@ public class DatabaseAvailability
 {
     private final AvailabilityGuard availabilityGuard;
     private final TransactionCounters transactionMonitor;
+    private final long awaitActiveTransactionDeadlineMillis;
 
     public DatabaseAvailability( AvailabilityGuard availabilityGuard, TransactionCounters transactionMonitor )
     {
+        this( availabilityGuard, transactionMonitor, TimeUnit.SECONDS.toMillis( 10 ) );
+    }
+
+    public DatabaseAvailability( AvailabilityGuard availabilityGuard, TransactionCounters transactionMonitor,
+            long awaitActiveTransactionDeadlineMillis )
+    {
         this.availabilityGuard = availabilityGuard;
         this.transactionMonitor = transactionMonitor;
+        this.awaitActiveTransactionDeadlineMillis = awaitActiveTransactionDeadlineMillis;
 
         // On initial setup, deny availability
         availabilityGuard.deny( this );
@@ -54,7 +67,7 @@ public class DatabaseAvailability
     public void start()
             throws Throwable
     {
-        availabilityGuard.grant(this);
+        availabilityGuard.grant( this );
     }
 
     @Override
@@ -63,18 +76,18 @@ public class DatabaseAvailability
     {
         // Database is no longer available for use
         // Deny beginning new transactions
-        availabilityGuard.deny(this);
+        availabilityGuard.deny( this );
 
         // Await transactions stopped
-        awaitNoTransactionsOr( 10_000  /* ms */);
+        awaitTransactionsClosedWithinTimeout();
     }
 
-    private void awaitNoTransactionsOr( int orUntilDeadline )
+    private void awaitTransactionsClosedWithinTimeout()
     {
-        long deadline = SYSTEM_CLOCK.currentTimeMillis() + orUntilDeadline;
-        while ( transactionMonitor.getNumberOfActiveTransactions() > 0 && SYSTEM_CLOCK.currentTimeMillis() < deadline)
+        long deadline = SYSTEM_CLOCK.currentTimeMillis() + awaitActiveTransactionDeadlineMillis;
+        while ( transactionMonitor.getNumberOfActiveTransactions() > 0 && SYSTEM_CLOCK.currentTimeMillis() < deadline )
         {
-            Thread.yield();
+            parkNanos( MILLISECONDS.toNanos( 10 ) );
         }
     }
 
