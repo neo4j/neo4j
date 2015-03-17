@@ -102,4 +102,9 @@ public interface Installation
      * Get the directory where the neo4j-desktop.jar file has been installed into.
      */
     File getInstallationBinDirectory() throws URISyntaxException;
+
+    /**
+     * Get the directory where bundled JRE binaries are located.
+     */
+    File getInstallationJreBinDirectory() throws URISyntaxException;
 }

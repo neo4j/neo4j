@@ -74,6 +74,12 @@ public abstract class PortableInstallation implements Installation
         return appFile.getParentFile();
     }
 
+    @Override
+    public File getInstallationJreBinDirectory() throws URISyntaxException
+    {
+        return new File( getInstallationDirectory(), "jre/bin" );
+    }
+
     private static class PathAlreadyExistException extends RuntimeException
     {
         public PathAlreadyExistException( File path, String description )

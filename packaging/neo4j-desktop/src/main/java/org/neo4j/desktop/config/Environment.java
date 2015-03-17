@@ -33,4 +33,6 @@ public interface Environment
     void editFile( File file ) throws IOException;
 
     void openDirectory( File directory ) throws IOException;
+
+    void openCommandPrompt( File binDirectory, File jreBinDirectory, File workingDirectory ) throws IOException;
 }

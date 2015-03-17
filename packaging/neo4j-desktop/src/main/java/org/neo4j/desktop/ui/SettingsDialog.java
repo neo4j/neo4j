@@ -30,6 +30,8 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 
+import static org.neo4j.desktop.ui.Components.alert;
+import static org.neo4j.desktop.ui.Components.createLabel;
 import static org.neo4j.desktop.ui.Components.createPanel;
 import static org.neo4j.desktop.ui.Components.createTextButton;
 import static org.neo4j.desktop.ui.Components.createUnmodifiableTextField;
@@ -46,24 +48,25 @@ class SettingsDialog extends JDialog
 
     SettingsDialog( Frame owner, DesktopModel model )
     {
-        super( owner, "Neo4j Settings", true );
+        super( owner, "Neo4j Community - Options", true );
         this.model = model;
 
-       getContentPane().add( withSpacingBorder( withBoxLayout( BoxLayout.Y_AXIS, createPanel(
-            createEditDatabaseConfigPanel(createEditDatabaseConfigurationButton()),
-            createEditServerConfigPanel( createEditServerConfigurationButton() ),
-            createEditVmOptionsPanel( createEditVmOptionsButton() ),
-            createExtensionsPanel( createOpenPluginsDirectoryButton() ),
-            createVerticalSpacing(),
-            withFlowLayout( FlowLayout.RIGHT, createPanel(
-                createTextButton( "Close", new ActionListener()
-                {
-                    @Override
-                    public void actionPerformed( ActionEvent e )
-                    {
-                        close();
-                    }
-                } ) ) )
+        getContentPane().add( withSpacingBorder( withBoxLayout( BoxLayout.Y_AXIS, createPanel(
+                createCommandPromptPanel( createCommandPromptButton() ),
+                createEditDatabaseConfigPanel( createEditDatabaseConfigurationButton() ),
+                createEditServerConfigPanel( createEditServerConfigurationButton() ),
+                createEditVmOptionsPanel( createEditVmOptionsButton() ),
+                createExtensionsPanel( createOpenPluginsDirectoryButton() ),
+                createVerticalSpacing(),
+                withFlowLayout( FlowLayout.RIGHT, createPanel(
+                        createTextButton( "Close", new ActionListener()
+                        {
+                            @Override
+                            public void actionPerformed( ActionEvent e )
+                            {
+                                close();
+                            }
+                        } ) ) )
         ) ) ) );
 
         pack();
@@ -74,33 +77,102 @@ class SettingsDialog extends JDialog
         setVisible( false );
     }
 
-    private Component createEditDatabaseConfigPanel(JButton configurationButton)
+    private Component createCommandPromptPanel( JButton commandPromptButton )
     {
-        String configFilePath = model.getDatabaseConfigurationFile().getAbsolutePath();
-        return withFlowLayout( withTitledBorder( "Database Configuration",
-            createPanel( createUnmodifiableTextField( configFilePath ), configurationButton ) ) );
+        return withTitledBorder( "Command-line Tools", withBoxLayout( BoxLayout.Y_AXIS,
+                createPanel(
+                        withFlowLayout( FlowLayout.LEFT, createPanel( createLabel(
+                                "Use the command prompt to run command-line tools such as neo4j-shell and neo4j-import."
+                        ) ) ),
+                        withFlowLayout( FlowLayout.RIGHT, createPanel( commandPromptButton ) ) ) ) );
     }
 
-    private Component createEditServerConfigPanel(JButton configurationButton) {
-        String configFilePath = model.getServerConfigurationFile().getAbsolutePath();
+    private Component createEditDatabaseConfigPanel( JButton configurationButton )
+    {
+        File configFile = model.getDatabaseConfigurationFile();
+        return withTitledBorder( "Database Tuning", withBoxLayout( BoxLayout.Y_AXIS,
+                createPanel(
+                        withFlowLayout( FlowLayout.LEFT, createPanel( createLabel(
+                                "neo4j.properties contains tuning configuration such as cache settings.",
+                                "You will need to stop and re-start the database for changes to take effect."
+                        ) ) ),
+                        withFlowLayout( FlowLayout.RIGHT, createPanel(
+                                createUnmodifiableTextField( configFile.getAbsolutePath() ),
+                                configurationButton
+                        ) )
+                )
+        ) );
+    }
 
-        return withFlowLayout( withTitledBorder( "Server Configuration",
-                createPanel( createUnmodifiableTextField( configFilePath ), configurationButton ) ) );
+    private Component createEditServerConfigPanel( JButton configurationButton )
+    {
+        File configFile = model.getServerConfigurationFile();
+
+        return withTitledBorder( "Server Configuration", withBoxLayout( BoxLayout.Y_AXIS,
+                createPanel(
+                        withFlowLayout( FlowLayout.LEFT, createPanel( createLabel(
+                                configFile.getName() + " contains server configuration such as port bindings.",
+                                "You will need to stop and re-start the database for changes to take effect."
+                        ) ) ),
+                        withFlowLayout( FlowLayout.RIGHT, createPanel(
+                                createUnmodifiableTextField( configFile.getAbsolutePath() ),
+                                configurationButton
+                        ) )
+                )
+        ) );
     }
 
     private Component createEditVmOptionsPanel( JButton editVmOptionsButton )
     {
         File vmOptionsFile = model.getVmOptionsFile();
-        String vmOptionsPath = vmOptionsFile.getAbsolutePath();
-        return withFlowLayout( withTitledBorder( "Java VM Options (effective on restart)",
-                createPanel( createUnmodifiableTextField( vmOptionsPath ), editVmOptionsButton ) ) );
+        return withTitledBorder( "Java VM Tuning", withBoxLayout( BoxLayout.Y_AXIS,
+                createPanel(
+                        withFlowLayout( FlowLayout.LEFT, createPanel( createLabel(
+                                vmOptionsFile.getName() + " is for adjusting Java VM settings, such as memory usage.",
+                                "You will need to close and re-start this application for changes to take effect."
+                        ) ) ),
+                        withFlowLayout( FlowLayout.RIGHT, createPanel(
+                                createUnmodifiableTextField( vmOptionsFile.getAbsolutePath() ),
+                                editVmOptionsButton
+                        ) )
+                )
+        ) );
     }
 
     private Component createExtensionsPanel( JButton openPluginsDirectoryButton )
     {
         String pluginsDirectory = model.getPluginsDirectory().getAbsolutePath();
-        return withFlowLayout( withTitledBorder( "Plugins and Extensions",
-                createPanel( createUnmodifiableTextField( pluginsDirectory ), openPluginsDirectoryButton ) ) );
+        return withTitledBorder( "Plugins and Extensions", withBoxLayout( BoxLayout.Y_AXIS,
+                createPanel(
+                        withFlowLayout( FlowLayout.LEFT, createPanel( createLabel(
+                                "Neo4j looks for Server Plugins and Unmanaged Extensions in this folder."
+                        ) ) ),
+                        withFlowLayout( FlowLayout.RIGHT, createPanel(
+                                createUnmodifiableTextField( pluginsDirectory ),
+                                openPluginsDirectoryButton
+                        ) )
+                )
+        ) );
+    }
+
+    private JButton createCommandPromptButton()
+    {
+        return Components.createTextButton( ellipsis( "Command Prompt" ), new ActionListener()
+        {
+            @Override
+            public void actionPerformed( ActionEvent e )
+            {
+                try
+                {
+                    model.launchCommandPrompt();
+                }
+                catch ( Exception exception )
+                {
+                    exception.printStackTrace();
+                    alert( exception.getMessage() );
+                }
+            }
+        } );
     }
 
     private JButton createEditDatabaseConfigurationButton()
@@ -118,7 +190,7 @@ class SettingsDialog extends JDialog
             protected void ensureFileAndParentDirectoriesExists( File file ) throws IOException
             {
                 file.getParentFile().mkdirs();
-                if (!file.exists())
+                if ( !file.exists() )
                 {
                     model.writeDefaultDatabaseConfiguration( file );
                 }
@@ -141,7 +213,7 @@ class SettingsDialog extends JDialog
             protected void ensureFileAndParentDirectoriesExists( File file ) throws IOException
             {
                 file.getParentFile().mkdirs();
-                if (!file.exists())
+                if ( !file.exists() )
                 {
                     model.writeDefaultServerConfiguration( file );
                 }

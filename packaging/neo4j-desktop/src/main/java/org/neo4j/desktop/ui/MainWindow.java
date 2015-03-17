@@ -64,7 +64,6 @@ public class MainWindow
     private final JFrame frame;
     private final DatabaseActions databaseActions;
     private final JButton browseButton;
-    private final JButton settingsButton;
     private final JButton startButton;
     private final JButton stopButton;
     private final CardLayout statusPanelLayout;
@@ -85,16 +84,16 @@ public class MainWindow
         this.frame.setIconImages( Graphics.loadIcons() );
         this.sysTray = SysTray.install( new SysTrayActions(), frame );
 
-        this.directoryDisplay = createUnmodifiableTextField( model.getDatabaseDirectory().getAbsolutePath() );
+        this.directoryDisplay = createUnmodifiableTextField( model.getDatabaseDirectory().getAbsolutePath(), 35 );
         this.browseButton = createBrowseButton();
         this.statusPanelLayout = new CardLayout();
         this.statusPanel = createStatusPanel( statusPanelLayout );
         this.startButton = createStartButton();
         this.stopButton = createStopButton();
-        this.settingsButton = createSettingsButton();
 
+        JButton optionsButton = createOptionsButton();
         JPanel root =
-                createRootPanel( directoryDisplay, browseButton, statusPanel, startButton, stopButton, settingsButton );
+                createRootPanel( directoryDisplay, browseButton, statusPanel, startButton, stopButton, optionsButton );
 
         frame.add( root );
         frame.pack();
@@ -127,12 +126,12 @@ public class MainWindow
     private JPanel createActionPanel( JButton startButton, JButton stopButton, JButton settingsButton )
     {
         return withBoxLayout( BoxLayout.LINE_AXIS,
-            createPanel( settingsButton, Box.createHorizontalGlue(), stopButton, startButton ) );
+                createPanel( settingsButton, Box.createHorizontalGlue(), stopButton, startButton ) );
     }
 
-    private JButton createSettingsButton()
+    private JButton createOptionsButton()
     {
-        return Components.createTextButton( ellipsis( "Settings" ), new ActionListener()
+        return Components.createTextButton( ellipsis( "Options" ), new ActionListener()
         {
             @Override
             public void actionPerformed( ActionEvent e )
@@ -147,16 +146,13 @@ public class MainWindow
     private JPanel createSelectionPanel( JTextField directoryDisplay, JButton selectButton )
     {
         return withTitledBorder( "Database location", withBoxLayout( BoxLayout.LINE_AXIS,
-            createPanel( directoryDisplay, selectButton ) ) );
+                createPanel( directoryDisplay, selectButton ) ) );
     }
 
     protected void shutdown()
     {
         databaseActions.shutdown();
-        if ( debugWindow != null )
-        {
-            debugWindow.dispose();
-        }
+        debugWindow.dispose();
         frame.dispose();
         System.exit( 0 );
     }
@@ -219,7 +215,6 @@ public class MainWindow
     public void updateStatus( DatabaseStatus status )
     {
         browseButton.setEnabled( STOPPED == status );
-        settingsButton.setEnabled( STOPPED == status );
         startButton.setEnabled( STOPPED == status );
         stopButton.setEnabled( STARTED == status );
         statusPanelLayout.show( statusPanel, status.name() );
