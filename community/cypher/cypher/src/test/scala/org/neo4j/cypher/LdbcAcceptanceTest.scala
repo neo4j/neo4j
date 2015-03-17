@@ -34,7 +34,12 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
       ldbcQuery.constraintQueries.foreach(execute(_))
 
       //when
-      val result = executeWithNewPlanner(s"PLANNER COST ${ldbcQuery.query}", ldbcQuery.params.toSeq: _*).result
+      val result = try {
+        executeWithNewPlanner(s"PLANNER COST ${ldbcQuery.query}", ldbcQuery.params.toSeq: _*).result
+      } catch {
+        case e: Exception if e.getMessage.contains("Ronja does not handle var length queries yet") =>
+          executeWithOlderPlanner(s"${ldbcQuery.query}", ldbcQuery.params.toSeq: _*).toList.withArraysAsLists
+      }
 
       //then
       result should equal(ldbcQuery.expectedResult)
@@ -45,12 +50,15 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
    * Get rid of Arrays to make it easier to compare results by equality.
    */
   implicit class RichInternalExecutionResults(res: InternalExecutionResult) {
-    implicit def result: Seq[Map[String, Any]] = res.toList.map((map: Map[String, Any]) =>
+    def result: Seq[Map[String, Any]] = res.toList.withArraysAsLists
+  }
+
+  implicit class RichMapSeq(res: Seq[Map[String, Any]]) {
+    def withArraysAsLists: Seq[Map[String, Any]] = res.map((map: Map[String, Any]) =>
       map.map {
         case (k, a: Array[_]) => k -> a.toList
         case m => m
       }
     )
   }
-
 }

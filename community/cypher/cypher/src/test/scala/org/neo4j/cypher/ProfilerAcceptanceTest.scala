@@ -280,9 +280,9 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   }
 
   test("should show expand with types in a simple form") {
-    val a = profile("planner cost match n-[r:T*]->() return *")
+    val a = profile("planner cost match n-[r:T]->() return *")
 
-    a.executionPlanDescription().toString should include("(n)-[r:T*]->()")
+    a.executionPlanDescription().toString should include("()<-[r:T]-(n)")
   }
 
   private def assertRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
@@ -321,7 +321,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   private def getArgument[A <: Argument](plan: v2_3.planDescription.InternalPlanDescription)(implicit manifest: Manifest[A]): A = plan.arguments.collectFirst {
     case x: A => x
-  }.getOrElse(fail(s"Failed to find plan description argument where expected. Wanted ${manifest.toString} but only found ${plan.arguments}"))
+  }.getOrElse(fail(s"Failed to find plan description argument where expected. Wanted ${manifest.toString()} but only found ${plan.arguments}"))
 
   private def getPlanDescriptions(result: InternalExecutionResult, names: Seq[String]): Seq[v2_3.planDescription.InternalPlanDescription] = {
     result.toList

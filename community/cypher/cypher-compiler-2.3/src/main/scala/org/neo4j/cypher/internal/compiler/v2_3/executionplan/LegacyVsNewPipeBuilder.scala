@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan
 
 import org.neo4j.cypher.internal.compiler.v2_3.PreparedQuery
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{Statement, UpdateClause}
+import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 
@@ -29,20 +29,40 @@ class LegacyVsNewPipeBuilder(oldBuilder: PipeBuilder,
                              monitor: NewLogicalPlanSuccessRateMonitor) extends PipeBuilder {
   def producePlan(inputQuery: PreparedQuery, planContext: PlanContext): PipeInfo = {
     val queryText = inputQuery.queryText
+    val statement = inputQuery.statement
     try {
-      monitor.newQuerySeen(queryText, inputQuery.statement)
+      monitor.newQuerySeen(queryText, statement)
 
       // Temporary measure, to save time compiling update queries
-      if (containsUpdateClause(inputQuery.statement)) {
+      if (containsUpdateClause(statement)) {
         throw new CantHandleQueryException("Ronja does not handle update queries yet.")
+      }
+
+      if (containsPlainVarLengthPattern(statement)) {
+        throw new CantHandleQueryException("Ronja does not handle var length queries yet.")
       }
 
       newBuilder.producePlan(inputQuery, planContext)
     } catch {
       case e: CantHandleQueryException =>
-        monitor.unableToHandleQuery(queryText, inputQuery.statement, e)
+        monitor.unableToHandleQuery(queryText, statement, e)
         oldBuilder.producePlan(inputQuery, planContext)
     }
+  }
+
+  private def containsPlainVarLengthPattern(node: ASTNode): Boolean = node.treeFold(false) {
+    // only traverse expressions in node patterns in shortest path
+    case sp: ShortestPaths =>
+      (acc, children) =>
+        acc || sp.element.exists { case node: NodePattern => containsPlainVarLengthPattern(node) }
+
+    // check relationship patterns
+    case rel: RelationshipPattern =>
+      (acc, children) => if (acc || !rel.isSingleLength) true else children(false)
+
+    // bail out early
+    case _ =>
+      (acc, children) => if (acc) true else children(false)
   }
 
   private def containsUpdateClause(s: Statement) = s.exists {
