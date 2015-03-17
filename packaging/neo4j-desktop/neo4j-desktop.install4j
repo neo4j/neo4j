@@ -27,6 +27,10 @@
       <fileEntry mountPoint="262" file="./target/neo4j-desktop-@NEO4J_VERSION@.jar" overwriteMode="4" shared="true" fileMode="644" uninstallMode="0" overrideFileMode="true" overrideOverwriteMode="true" overrideUninstallMode="true" />
       <fileEntry mountPoint="262" file="./src/main/install4j/neo4j-community.vmoptions" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="262" file="./src/main/install4j/install.properties" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
+      <fileEntry mountPoint="262" file="./target/shell-scripts/neo4j-import" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
+      <fileEntry mountPoint="262" file="./target/shell-scripts/neo4j-shell" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
+      <fileEntry mountPoint="262" file="./target/shell-scripts/Neo4jImport.bat" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
+      <fileEntry mountPoint="262" file="./target/shell-scripts/Neo4jShell.bat" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="386" file="./target/plugins/README.txt" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="210" file="./target/licenses/LICENSES.txt" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
       <fileEntry mountPoint="210" file="./target/licenses/NOTICE.txt" overwriteMode="4" shared="false" fileMode="644" uninstallMode="0" overrideFileMode="false" overrideOverwriteMode="false" overrideUninstallMode="false" />
@@ -36,7 +40,10 @@
       <component name="Neo4j Community Launcher" id="155" customizedId="" displayDescription="false" hideHelpButton="false" selected="true" changeable="false" downloadable="false" hidden="false">
         <description />
         <include all="false">
-          <entry location="bin" fileType="regular" />
+          <entry location="bin/neo4j-desktop-@NEO4J_VERSION@.jar" fileType="regular" />
+          <entry location="bin/neo4j-community.vmoptions" fileType="regular" />
+          <entry location="bin/install.properties" fileType="regular" />
+          <entry location="bin/neo4j-community" fileType="launcher" />
           <entry location="plugins" fileType="regular" />
         </include>
         <dependencies>
@@ -49,6 +56,22 @@
           <entry location="LICENSES.txt" fileType="regular" />
           <entry location="NOTICE.txt" fileType="regular" />
           <entry location="LICENSE.txt" fileType="regular" />
+        </include>
+        <dependencies />
+      </component>
+      <component name="Windows batch files" id="448" customizedId="" displayDescription="false" hideHelpButton="false" selected="true" changeable="true" downloadable="false" hidden="false">
+        <description />
+        <include all="false">
+          <entry location="bin/Neo4jShell.bat" fileType="regular" />
+          <entry location="bin/Neo4jImport.bat" fileType="regular" />
+        </include>
+        <dependencies />
+      </component>
+      <component name="Shell scripts" id="449" customizedId="" displayDescription="false" hideHelpButton="false" selected="true" changeable="true" downloadable="false" hidden="false">
+        <description />
+        <include all="false">
+          <entry location="bin/neo4j-import" fileType="regular" />
+          <entry location="bin/neo4j-shell" fileType="regular" />
         </include>
         <dependencies />
       </component>
@@ -653,7 +676,9 @@ return "${APPDATA}" + context.getVariable("sys.fileSeparator") + context.getComp
         <commentFiles />
         <customAttributes />
       </autoUpdate>
-      <excludedComponents />
+      <excludedComponents>
+        <component id="449" />
+      </excludedComponents>
       <includedDownloadableComponents />
     </windows>
     <windows name="Windows32" id="26" customizedId="" mediaFileName="" installDir="Neo4j Community" overridePrincipalLanguage="false" jreBitType="32" runPostProcessor="false" postProcessor="" failOnPostProcessorError="false" useLegacyMediaFileIds="false" legacyMediaFileIds="" includedJRE="windows-x86-1.7.0_45" manualJREEntry="false" bundleType="1" jreURL="" jreShared="false" directDownload="false" installOnlyIfNecessary="true" customInstallBaseDir="" contentFilesType="1" downloadURL="" verifyIntegrity="true">
@@ -666,7 +691,9 @@ return "${APPDATA}" + context.getVariable("sys.fileSeparator") + context.getComp
         <commentFiles />
         <customAttributes />
       </autoUpdate>
-      <excludedComponents />
+      <excludedComponents>
+        <component id="449" />
+      </excludedComponents>
       <includedDownloadableComponents />
     </windows>
   </mediaSets>

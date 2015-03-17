@@ -30,21 +30,25 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.Border;
+
+import org.apache.commons.lang.StringUtils;
 
 import static java.awt.font.TextAttribute.UNDERLINE;
 import static java.awt.font.TextAttribute.UNDERLINE_ON;
 import static java.lang.String.format;
 import static javax.swing.JOptionPane.WARNING_MESSAGE;
+
 import static org.neo4j.desktop.ui.ScrollableOptionPane.showWrappedMessageDialog;
 
 @SuppressWarnings("MagicConstant")
 public final class Components
 {
     public static final int BASE_SPACING_SIZE = 5;
-    public static final int DEFAULT_TEXT_COLUMNS = 35;
+    public static final int DEFAULT_TEXT_COLUMNS = 50;
 
     private Components()
     {
@@ -118,7 +122,12 @@ public final class Components
 
     static JTextField createUnmodifiableTextField( String text )
     {
-        JTextField textField = new JTextField( text, DEFAULT_TEXT_COLUMNS );
+        return createUnmodifiableTextField( text, DEFAULT_TEXT_COLUMNS );
+    }
+
+    static JTextField createUnmodifiableTextField( String text, int columns )
+    {
+        JTextField textField = new JTextField( text, columns );
         textField.setEditable( false );
         textField.setForeground( Color.GRAY );
         return textField;
@@ -129,6 +138,11 @@ public final class Components
         JButton button = new JButton( text );
         button.addActionListener( actionListener );
         return button;
+    }
+
+    public static JLabel createLabel( String... textLines )
+    {
+        return new JLabel( format( "<html>%s</html>", StringUtils.join( textLines, "<br>" ) ) );
     }
 
     static String ellipsis( String input )

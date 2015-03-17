@@ -135,19 +135,24 @@
         <artifactId>maven-antrun-plugin</artifactId>
         <executions>
           <execution>
-            <id>fix-license-line-endings</id>
+            <id>fetch-static-files</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>run</goal>
             </goals>
             <configuration>
-              <target name="fix-license-line-endings">
+              <target name="fetch-static-files">
                 <mkdir dir="${project.build.directory}/licenses" />
                 <mkdir dir="${project.build.directory}/plugins" />
+                <mkdir dir="${project.build.directory}/shell-scripts" />
                 <fixcrlf file="${project.basedir}/../../community/LICENSE.txt" destDir="${project.build.directory}/licenses" eol="dos" />
                 <fixcrlf file="src/main/distribution/text/community/LICENSES.txt" destDir="${project.build.directory}/licenses" eol="dos" />
                 <fixcrlf file="src/main/distribution/text/community/NOTICE.txt" destDir="${project.build.directory}/licenses" eol="dos" />
                 <fixcrlf file="src/main/distribution/text/plugins/README.txt" destDir="${project.build.directory}/plugins" eol="dos" />
+                <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/neo4j-import" todir="${project.build.directory}/shell-scripts" />
+                <copy file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/neo4j-shell" todir="${project.build.directory}/shell-scripts" />
+                <fixcrlf file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/Neo4jImport.bat" destDir="${project.build.directory}/shell-scripts" eol="dos" />
+                <fixcrlf file="${project.basedir}/../standalone/src/main/distribution/shell-scripts/bin/Neo4jShell.bat" destDir="${project.build.directory}/shell-scripts" eol="dos" />
               </target>
             </configuration>
           </execution>
