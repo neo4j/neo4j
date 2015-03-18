@@ -39,17 +39,7 @@ case object addUniquenessPredicates extends Rewriter {
         replacer.stop(expr)
 
     case m@Match(_, pattern: Pattern, _, where: Option[Where]) =>
-      val uniqueRels: Seq[UniqueRel] = pattern.treeFold(Seq.empty[UniqueRel]) {
-        case _: ShortestPaths =>
-          (acc, _) => acc
-
-        case RelationshipChain(_, RelationshipPattern(optR, _, types, None, _, _), _) =>
-          (acc, children) => {
-            val r = optR.getOrElse(throw new InternalException("This rewriter cannot work with unnamed patterns"))
-            val rel = UniqueRel(r, types.toSet)
-            children(acc :+ rel)
-          }
-      }
+      val uniqueRels: Seq[UniqueRel] = collectUniqueRels(pattern)
 
       if (uniqueRels.size < 2) {
         m
@@ -71,12 +61,27 @@ case object addUniquenessPredicates extends Rewriter {
       replacer.expand(astNode)
   })
 
+  def collectUniqueRels(pattern: ASTNode): Seq[UniqueRel] =
+    pattern.treeFold(Seq.empty[UniqueRel]) {
+      case _: ShortestPaths =>
+        (acc, _) => acc
+
+      case RelationshipChain(_, RelationshipPattern(optR, _, types, None, _, _), _) =>
+        (acc, children) => {
+          val r = optR.getOrElse(throw new InternalException("This rewriter cannot work with unnamed patterns"))
+          val rel = UniqueRel(r, types.toSet)
+          children(acc :+ rel)
+        }
+    }
+
   private def createPredicateFor(uniqueRels: Seq[UniqueRel], pos: InputPosition): Option[Expression] = {
-    val predicates: Seq[Expression] = for {
+    createPredicatesFor(uniqueRels, pos).reduceOption(And(_, _)(pos))
+  }
+
+  def createPredicatesFor(uniqueRels: Seq[UniqueRel], pos: InputPosition): Seq[Expression] = {
+    for {
       x <- uniqueRels
       y <- uniqueRels if x.name < y.name && !x.isAlwaysDifferentFrom(y)
     } yield Not(Equals(x.identifier.copyId, y.identifier.copyId)(pos))(pos)
-
-    predicates.reduceOption(And(_, _)(pos))
   }
 }

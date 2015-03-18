@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.assumeIndependence
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.LabelName
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{Identifier, LabelName}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.{QueryGraphCardinalityInput, QueryGraphCardinalityModel}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.{ExpressionSelectivityCalculator, SelectivityCombiner}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, SimplePatternLength, VarPatternLength}
@@ -39,12 +39,12 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
    * of matches, and then take the max.
    */
   def apply(queryGraph: QueryGraph, input: QueryGraphCardinalityInput, semanticTable: SemanticTable): Cardinality = {
-    val combinations: Seq[QueryGraph] = findQueryGraphCombinations(queryGraph, semanticTable)
+    val combinations: Seq[QueryGraph] = findQueryGraphCombinations(queryGraph)
     val cardinalities = combinations.map(cardinalityForQueryGraph(_, input)(semanticTable))
     cardinalities.max
   }
 
-  private def findQueryGraphCombinations(queryGraph: QueryGraph, semanticTable: SemanticTable): Seq[QueryGraph] =
+  private def findQueryGraphCombinations(queryGraph: QueryGraph): Seq[QueryGraph] =
     if (queryGraph.optionalMatches.isEmpty)
       Seq(queryGraph)
     else {

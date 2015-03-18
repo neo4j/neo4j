@@ -89,7 +89,7 @@ object CostBasedPipeBuilder {
   import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStep._
 
   def rewriteStatement(statement: Statement, scopeTree: Scope, semanticTable: SemanticTable, preConditions: Set[RewriterCondition], monitor: AstRewritingMonitor): (Statement, SemanticTable) = {
-    val namespacer = Namespacer(statement, semanticTable, scopeTree)
+    val namespacer = Namespacer(statement, scopeTree)
     val newStatement = rewriteStatement(namespacer, statement, preConditions, monitor)
     val newSemanticTable = namespacer.tableRewriter(semanticTable)
     (newStatement, newSemanticTable)
