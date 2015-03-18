@@ -23,7 +23,6 @@ public enum AuthenticationResult
 {
     SUCCESS,
     FAILURE,
-    NOT_AUTHORIZED,
     TOO_MANY_ATTEMPTS,
     PASSWORD_CHANGE_REQUIRED
 }

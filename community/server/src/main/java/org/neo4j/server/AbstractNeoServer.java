@@ -168,7 +168,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
         FileUserRepository users = life.add( new FileUserRepository( configurator.configuration().get( ServerInternalSettings.auth_store ).toPath(), dependencies.logging() ) );
 
-        this.authManager = life.add(new AuthManager( Clock.SYSTEM_CLOCK, users ));
+        this.authManager = life.add(new AuthManager( users, Clock.SYSTEM_CLOCK, configurator.configuration().get( ServerSettings.auth_enabled ) ));
         this.preFlight = dependencyResolver.satisfyDependency(createPreflightTasks());
         this.webServer = createWebServer();
 
