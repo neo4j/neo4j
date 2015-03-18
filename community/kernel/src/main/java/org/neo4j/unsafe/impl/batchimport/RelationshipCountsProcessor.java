@@ -38,11 +38,13 @@ public class RelationshipCountsProcessor implements RecordProcessor<Relationship
     private final CountsAccessor.Updater countsUpdater;
     private final int anyLabel;
     private final int anyRelationshipType;
+    private final NodeLabelsCache.Client client;
 
     public RelationshipCountsProcessor( NodeLabelsCache nodeLabelCache,
             int highLabelId, int highRelationshipTypeId, CountsAccessor.Updater countsUpdater )
     {
         this.nodeLabelCache = nodeLabelCache;
+        this.client = nodeLabelCache.newClient();
         this.countsUpdater = countsUpdater;
 
         // Instantiate with high id + 1 since we need that extra slot for the ANY counts
@@ -57,7 +59,7 @@ public class RelationshipCountsProcessor implements RecordProcessor<Relationship
 
         counts[anyLabel][anyRelationshipType][anyLabel]++;
         counts[anyLabel][type][anyLabel]++;
-        startScratch = nodeLabelCache.get( startNode, startScratch );
+        startScratch = nodeLabelCache.get( client, startNode, startScratch );
         for ( int startNodeLabelId : startScratch )
         {
             if ( startNodeLabelId == -1 )
@@ -67,7 +69,7 @@ public class RelationshipCountsProcessor implements RecordProcessor<Relationship
 
             counts[startNodeLabelId][anyRelationshipType][anyLabel]++;
             counts[startNodeLabelId][type][anyLabel]++;
-            endScratch = nodeLabelCache.get( endNode, endScratch );
+            endScratch = nodeLabelCache.get( client, endNode, endScratch );
             for ( int endNodeLabelId : endScratch )
             {
                 if ( endNodeLabelId == -1 )
@@ -79,7 +81,7 @@ public class RelationshipCountsProcessor implements RecordProcessor<Relationship
                 counts[startNodeLabelId][type][endNodeLabelId]++;
             }
         }
-        endScratch = nodeLabelCache.get( endNode, endScratch );
+        endScratch = nodeLabelCache.get( client, endNode, endScratch );
         for ( int endNodeLabelId : endScratch )
         {
             if ( endNodeLabelId == -1 )

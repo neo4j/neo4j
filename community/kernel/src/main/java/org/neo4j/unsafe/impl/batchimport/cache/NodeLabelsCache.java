@@ -32,15 +32,26 @@ import static org.neo4j.kernel.impl.util.Bits.bitsFromLongs;
  */
 public class NodeLabelsCache implements MemoryStatsVisitor.Home
 {
+    public static class Client
+    {
+        private final long[] labelScratch;
+        private final Bits labelBits;
+        private final long[] fieldScratch = new long[1];
+        private final Bits fieldBits = bitsFromLongs( fieldScratch );
+
+        public Client( int worstCaseLongsNeeded )
+        {
+            this.labelScratch = new long[worstCaseLongsNeeded];
+            this.labelBits = bitsFromLongs( labelScratch );
+        }
+    }
+
     private final LongArray cache;
     private final LongArray spillOver;
     private long spillOverIndex;
     private final int bitsPerLabel;
-
-    private final long[] labelScratch;
-    private final Bits labelBits;
-    private final long[] fieldScratch = new long[1];
-    private final Bits fieldBits = bitsFromLongs( fieldScratch );
+    private final int worstCaseLongsNeeded;
+    private final Client putClient;
 
     public NodeLabelsCache( NumberArrayFactory cacheFactory, int highLabelId )
     {
@@ -52,10 +63,18 @@ public class NodeLabelsCache implements MemoryStatsVisitor.Home
         this.cache = cacheFactory.newDynamicLongArray( chunkSize, 0 );
         this.spillOver = cacheFactory.newDynamicLongArray( chunkSize / 5, 0 ); // expect way less of these
         this.bitsPerLabel = max( Integer.SIZE-numberOfLeadingZeros( highLabelId ), 1 );
+        this.worstCaseLongsNeeded = ((bitsPerLabel * (highLabelId+1 /*length slot*/)) - 1) / Long.SIZE + 1;
+        this.putClient = new Client( worstCaseLongsNeeded );
+    }
 
-        int worstCaseLongsNeeded = ((bitsPerLabel * (highLabelId+1 /*length slot*/)) - 1) / Long.SIZE + 1;
-        this.labelScratch = new long[worstCaseLongsNeeded];
-        this.labelBits = bitsFromLongs( labelScratch );
+    /**
+     * @return a new {@link Client} used in {@link #get(Client, long, int[])}. {@link Client} contains
+     * mutable state and so each thread calling {@link #get(Client, long, int[])} must create their own
+     * client instance once and (re)use it for every get-call they do.
+     */
+    public Client newClient()
+    {
+        return new Client( worstCaseLongsNeeded );
     }
 
     /**
@@ -66,35 +85,38 @@ public class NodeLabelsCache implements MemoryStatsVisitor.Home
      * The first slot will contain number of labels for this node. If those labels fit in the long, after the
      * length slot, they will be stored there. Otherwise the rest of the bits will point to the index into
      * the spillOver array.
+     *
+     * This method may only be called by a single thread, putting from multiple threads may cause undeterministic
+     * behaviour.
      */
     public void put( long nodeId, long[] labelIds )
     {
-        labelBits.clear( true );
-        labelBits.put( labelIds.length, bitsPerLabel );
+        putClient.labelBits.clear( true );
+        putClient.labelBits.put( labelIds.length, bitsPerLabel );
         for ( long labelId : labelIds )
         {
-            labelBits.put( (int) labelId, bitsPerLabel );
+            putClient.labelBits.put( (int) labelId, bitsPerLabel );
         }
 
-        int longsInUse = labelBits.longsInUse();
+        int longsInUse = putClient.labelBits.longsInUse();
         assert longsInUse > 0 : "Uhm";
         if ( longsInUse == 1 )
         {   // We only require one long, so put it right in there
-            cache.set( nodeId, labelScratch[0] );
+            cache.set( nodeId, putClient.labelScratch[0] );
         }
         else
         {   // Now it gets tricky, we have to spill over into another array
             // So create the reference
-            fieldBits.clear( true );
-            fieldBits.put( labelIds.length, bitsPerLabel );
-            fieldBits.put( spillOverIndex, Long.SIZE - bitsPerLabel );
-            cache.set( nodeId, fieldBits.getLongs()[0] );
+            putClient.fieldBits.clear( true );
+            putClient.fieldBits.put( labelIds.length, bitsPerLabel );
+            putClient.fieldBits.put( spillOverIndex, Long.SIZE - bitsPerLabel );
+            cache.set( nodeId, putClient.fieldBits.getLongs()[0] );
 
             // And set the longs in the spill over array. For simplicity we put the encoded bits as they
             // are right into the spill over array, where the first slot will have the length "again".
             for ( int i = 0; i < longsInUse; i++ )
             {
-                spillOver.set( spillOverIndex++, labelScratch[i] );
+                spillOver.set( spillOverIndex++, putClient.labelScratch[i] );
             }
         }
     }
@@ -102,36 +124,39 @@ public class NodeLabelsCache implements MemoryStatsVisitor.Home
     /**
      * Write labels for a node into {@code target}. If target isn't big enough it will grow.
      * The target, intact or grown, will be returned.
+     *
+     * Multiple threads may call this method simultaneously, given that they do so with each their own {@link Client}
+     * instance.
      */
-    public int[] get( long nodeId, int[] target )
+    public int[] get( Client client, long nodeId, int[] target )
     {
         // make this field available to our Bits instance, hackish? meh
-        fieldBits.clear( false );
-        fieldScratch[0] = cache.get( nodeId );
-        if ( fieldScratch[0] == 0 )
+        client.fieldBits.clear( false );
+        client.fieldScratch[0] = cache.get( nodeId );
+        if ( client.fieldScratch[0] == 0 )
         {   // Nothing here
             target[0] = -1; // mark the end
             return target;
         }
 
-        int length = fieldBits.getInt( bitsPerLabel );
+        int length = client.fieldBits.getInt( bitsPerLabel );
         int longsInUse = ((bitsPerLabel * (length+1))-1) / Long.SIZE + 1;
         target = ensureCapacity( target, length );
         if ( longsInUse == 1 )
         {
-            decode( fieldBits, length, target );
+            decode( client.fieldBits, length, target );
         }
         else
         {
             // Read data from spill over cache into the label bits array for decoding
-            long spillOverIndex = fieldBits.getLong( Long.SIZE - bitsPerLabel );
-            labelBits.clear( false );
+            long spillOverIndex = client.fieldBits.getLong( Long.SIZE - bitsPerLabel );
+            client.labelBits.clear( false );
             for ( int i = 0; i < longsInUse; i++ )
             {
-                labelScratch[i] = spillOver.get( spillOverIndex + i );
+                client.labelScratch[i] = spillOver.get( spillOverIndex + i );
             }
-            labelBits.getInt( bitsPerLabel ); // first one ignored, since it's just the length
-            decode( labelBits, length, target );
+            client.labelBits.getInt( bitsPerLabel ); // first one ignored, since it's just the length
+            decode( client.labelBits, length, target );
         }
 
         return target;
