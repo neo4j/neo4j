@@ -657,6 +657,29 @@ public class CsvInputTest
         }
     }
 
+    @Test
+    public void shouldPropagateExceptionFromFailingDecorator() throws Exception
+    {
+        // GIVEN
+        RuntimeException failure = new RuntimeException( "FAILURE" );
+        Iterable<DataFactory<InputNode>> data =
+                DataFactories.nodeData( CsvInputTest.<InputNode>data( ":ID,name\n1,Mattias",
+                        new FailingNodeDecorator( failure ) ) );
+        Input input = new CsvInput( data, defaultFormatNodeFileHeader(), null, null, IdType.INTEGER, COMMAS,
+                badRelationships( 0 ) );
+
+        // WHEN
+        try ( InputIterator<InputNode> nodes = input.nodes().iterator() )
+        {
+            nodes.next();
+        }
+        catch ( RuntimeException e )
+        {
+            // THEN
+            assertTrue( e == failure );
+        }
+    }
+
     private Configuration customConfig( final char delimiter, final char arrayDelimiter, final char quote )
     {
         return new Configuration.Default()
@@ -817,6 +840,22 @@ public class CsvInputTest
     private <ENTITY extends InputEntity> Iterable<DataFactory<ENTITY>> dataIterable( DataFactory... data )
     {
         return Iterables.<DataFactory<ENTITY>,DataFactory<ENTITY>>iterable( data );
+    }
+
+    private static class FailingNodeDecorator implements Function<InputNode,InputNode>
+    {
+        private final RuntimeException failure;
+
+        FailingNodeDecorator( RuntimeException failure )
+        {
+            this.failure = failure;
+        }
+
+        @Override
+        public InputNode apply( InputNode from ) throws RuntimeException
+        {
+            throw failure;
+        }
     }
 
     public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
