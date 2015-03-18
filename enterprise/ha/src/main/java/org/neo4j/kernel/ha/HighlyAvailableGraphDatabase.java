@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.jboss.netty.logging.InternalLoggerFactory;
-
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.Map;
+
+import org.jboss.netty.logging.InternalLoggerFactory;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -117,6 +117,10 @@ import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
 import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
 import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
 
+/**
+ * This has all the functionality of an embedded database, with the addition of services
+ * for handling clustering.
+ */
 public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 {
     private final LifeSupport paxosLife = new LifeSupport();
