@@ -57,7 +57,7 @@ public class RedirectToBrowserTest extends ExclusiveServerTestBase
                 .TEXT_HTML_TYPE ).get( server.baseUri().toString() );
 
         assertEquals( 303, response.getStatus() );
-        assertEquals( new URI( "http://localhost:7474/browser" ), response.getLocation() );
+        assertEquals( new URI( "http://localhost:7474/browser/" ), response.getLocation() );
         response.close();
     }
 
@@ -73,7 +73,7 @@ public class RedirectToBrowserTest extends ExclusiveServerTestBase
                 "https" ).get( server.baseUri().toString() );
 
         assertEquals( 303, response.getStatus() );
-        assertEquals( new URI( "https://foo.bar:8734/browser" ), response.getLocation() );
+        assertEquals( new URI( "https://foo.bar:8734/browser/" ), response.getLocation() );
         response.close();
     }
 }
