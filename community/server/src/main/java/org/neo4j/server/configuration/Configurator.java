@@ -67,7 +67,7 @@ public interface Configurator
     String MANAGEMENT_PATH_PROPERTY_KEY = "org.neo4j.server.webadmin.management.uri";
     String DEFAULT_MANAGEMENT_API_PATH = "/db/manage";
 
-    String BROWSER_PATH = "/browser";
+    String BROWSER_PATH = "/browser/";
 
     String RRDB_LOCATION_PROPERTY_KEY = "org.neo4j.server.webadmin.rrdb.location";
 

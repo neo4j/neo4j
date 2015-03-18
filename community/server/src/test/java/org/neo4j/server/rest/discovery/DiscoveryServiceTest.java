@@ -113,6 +113,6 @@ public class DiscoveryServiceTest
         Response response = ds.redirectToBrowser();
 
         assertThat( response.getMetadata().getFirst( "Location" ), is( (Object) new URI( "http://www.example" +
-                ".com:5435/browser" ) ) );
+                ".com:5435/browser/" ) ) );
     }
 }
