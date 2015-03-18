@@ -1908,4 +1908,22 @@ return b
       result.toSet should equal(Set(Map("paths" -> new PathImpl(node1, r, node2)), Map("paths" -> new PathImpl(node2, r, node1))))
     )
   }
+
+  test("should handle paths of containing undirected varlength") {
+    // given
+    val db1 = createLabeledNode("Start")
+    val db2 = createLabeledNode("End")
+    val mid = createNode()
+    val other = createNode()
+    relate(mid, db1, "CONNECTED_TO")
+    relate(mid, db2, "CONNECTED_TO")
+    relate(mid, db2, "CONNECTED_TO")
+    relate(mid, other, "CONNECTED_TO")
+    relate(mid, other, "CONNECTED_TO")
+
+    // when
+    val query = "PLANNER COST MATCH topRoute = (db1:Start)<-[:CONNECTED_TO]-()-[:CONNECTED_TO*3..3]-(db2:End) RETURN topRoute"
+
+    executeWithNewPlanner(query).toList should have size(4)
+  }
 }
