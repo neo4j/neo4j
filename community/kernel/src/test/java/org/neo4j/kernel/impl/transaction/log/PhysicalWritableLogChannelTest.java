@@ -19,14 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.util.Random;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -36,6 +37,7 @@ import org.neo4j.test.TargetDirectory.TestDirectory;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class PhysicalWritableLogChannelTest
 {
@@ -183,6 +185,71 @@ public class PhysicalWritableLogChannelTest
 
         // THEN
         assertEquals( 12, positionAfterSomeData.getByteOffset() - initialPosition.getByteOffset() );
+    }
+
+    @Test
+    public void shouldThrowIllegalStateExceptionAfterClosed() throws Exception
+    {
+        // GIVEN
+        final File file = new File( directory.directory(), "file" );
+        StoreChannel storeChannel = fs.open( file, "rw" );
+        PhysicalLogVersionedStoreChannel versionedStoreChannel =
+                new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1 /* ignored */ );
+        PhysicalWritableLogChannel channel = new PhysicalWritableLogChannel( versionedStoreChannel );
+
+        // closing the WritableLogChannel, then the underlying channel is what PhysicalLogFile does
+        channel.close();
+        storeChannel.close();
+
+        // WHEN just appending something to the buffer
+        channel.put( (byte) 0 );
+        // and wanting to empty that into the channel
+        try
+        {
+            channel.emptyBufferIntoChannelAndClearIt();
+            fail( "Should have thrown exception" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // THEN we should get an IllegalStateException, not a ClosedChannelException
+        }
+
+        try
+        {
+            channel.force();
+            fail( "Should have thrown exception" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // THEN we should get an IllegalStateException, not a ClosedChannelException
+        }
+    }
+
+    @Test
+    public void shouldThrowClosedChannelExceptionWhenChannelUnexpectedlyClosed() throws Exception
+    {
+        // GIVEN
+        final File file = new File( directory.directory(), "file" );
+        StoreChannel storeChannel = fs.open( file, "rw" );
+        PhysicalLogVersionedStoreChannel versionedStoreChannel =
+                new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1 /* ignored */ );
+        PhysicalWritableLogChannel channel = new PhysicalWritableLogChannel( versionedStoreChannel );
+
+        // just close the underlying channel
+        storeChannel.close();
+
+        // WHEN just appending something to the buffer
+        channel.put( (byte) 0 );
+        // and wanting to empty that into the channel
+        try
+        {
+            channel.emptyBufferIntoChannelAndClearIt();
+            fail( "Should have thrown exception" );
+        }
+        catch ( ClosedChannelException e )
+        {
+            // THEN we should get a ClosedChannelException
+        }
     }
 
     private ByteBuffer readFile( File file ) throws IOException
