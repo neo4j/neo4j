@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 
 import static java.lang.Math.min;
 
@@ -30,6 +31,7 @@ public class PhysicalWritableLogChannel implements WritableLogChannel
 {
     private LogVersionedStoreChannel channel;
     private final ByteBuffer buffer;
+    private volatile boolean closed;
 
     public PhysicalWritableLogChannel( LogVersionedStoreChannel channel )
     {
@@ -45,7 +47,14 @@ public class PhysicalWritableLogChannel implements WritableLogChannel
     @Override
     public void force() throws IOException
     {
-        channel.force( false );
+        try
+        {
+            channel.force( false );
+        }
+        catch ( ClosedChannelException e )
+        {
+            handleClosedChannelException( e );
+        }
     }
 
     void setChannel( LogVersionedStoreChannel channel )
@@ -54,14 +63,37 @@ public class PhysicalWritableLogChannel implements WritableLogChannel
     }
 
     /**
-     * Assume some kind of external synchronization.
+     * External synchronization between this method and close is required so that they aren't called concurrently.
+     * Currently that's done by acquiring the PhysicalLogFile monitor.
      */
     @Override
     public void emptyBufferIntoChannelAndClearIt() throws IOException
     {
         buffer.flip();
-        channel.write( buffer );
+        try
+        {
+            channel.write( buffer );
+        }
+        catch ( ClosedChannelException e )
+        {
+            handleClosedChannelException( e );
+        }
         buffer.clear();
+    }
+
+    private void handleClosedChannelException( ClosedChannelException e ) throws ClosedChannelException
+    {
+        // We don't want to check the closed flag every time we empty, instead we can avoid unnecessary the
+        // volatile read and catch ClosedChannelException where we see if the channel being closed was
+        // deliberate or not. If it was deliberately closed then throw IllegalStateException instead so
+        // that callers won't treat this as a kernel panic.
+        if ( closed )
+        {
+            throw new IllegalStateException( "This log channel has been closed", e );
+        }
+
+        // OK, this channel was closed without us really knowing about it, throw exception as is.
+        throw e;
     }
 
     @Override
@@ -137,9 +169,14 @@ public class PhysicalWritableLogChannel implements WritableLogChannel
         return buffer;
     }
 
+    /**
+     * External synchronization between this method and emptyBufferIntoChannelAndClearIt is required so that they
+     * aren't called concurrently. Currently that's done by acquiring the PhysicalLogFile monitor.
+     */
     @Override
     public void close() throws IOException
     {
         emptyBufferIntoChannelAndClearIt();
+        closed = true;
     }
 }
