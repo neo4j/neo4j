@@ -184,7 +184,7 @@ public class AuthorizationFilterTest
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
         when( servletRequest.getRemoteAddr() ).thenReturn( "remote_ip_address" );
-        when( authManager.authenticate( "foo", "bar" ) ).thenReturn( AuthenticationResult.NOT_AUTHORIZED );
+        when( authManager.authenticate( "foo", "bar" ) ).thenReturn( AuthenticationResult.FAILURE );
 
         // When
         filter.doFilter( servletRequest, servletResponse, filterChain );

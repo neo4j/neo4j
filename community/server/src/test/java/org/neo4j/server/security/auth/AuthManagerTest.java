@@ -26,6 +26,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -211,5 +212,60 @@ public class AuthManagerTest
 
         // Then
         assertNull( user );
+    }
+
+    @Test
+    public void shouldThrowWhenAuthIsDisabled() throws Throwable
+    {
+        final InMemoryUserRepository users = new InMemoryUserRepository();
+        final AuthManager manager = new AuthManager( users, mock( AuthenticationStrategy.class ), false );
+        manager.start();
+
+        try
+        {
+            manager.authenticate( "foo", "bar" );
+            fail( "exception expected" );
+        } catch ( IllegalStateException e )
+        {
+            // expected
+        }
+
+        try
+        {
+            manager.newUser( "foo", "bar", true );
+            fail( "exception expected" );
+        } catch ( IllegalStateException e )
+        {
+            // expected
+        }
+
+        try
+        {
+            manager.deleteUser( "foo" );
+            fail( "exception expected" );
+        } catch ( IllegalStateException e )
+        {
+            // expected
+        }
+
+        try
+        {
+            manager.getUser( "foo" );
+            fail( "exception expected" );
+        } catch ( IllegalStateException e )
+        {
+            // expected
+        }
+
+        try
+        {
+            manager.setPassword( "foo", "bar" );
+            fail( "exception expected" );
+        } catch ( IllegalStateException e )
+        {
+            // expected
+        }
+
+        assertTrue( users.numberOfUsers() == 0 );
     }
 }

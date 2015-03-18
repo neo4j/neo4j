@@ -30,6 +30,7 @@ import static org.neo4j.helpers.Settings.FALSE;
 import static org.neo4j.helpers.Settings.NORMALIZED_RELATIVE_URI;
 import static org.neo4j.helpers.Settings.PATH;
 import static org.neo4j.helpers.Settings.TRUE;
+import static org.neo4j.helpers.Settings.URI;
 import static org.neo4j.helpers.Settings.STRING;
 import static org.neo4j.helpers.Settings.setting;
 
@@ -65,7 +66,7 @@ public class ServerInternalSettings
     public static final Setting<URI> management_api_path = setting( "org.neo4j.server.webadmin.management.uri",
             NORMALIZED_RELATIVE_URI, "/db/manage" );
 
-    public static final Setting<URI> browser_path = setting( "org.neo4j.server.webadmin.browser.uri", NORMALIZED_RELATIVE_URI, "/browser" );
+    public static final Setting<URI> browser_path = setting( "org.neo4j.server.webadmin.browser.uri", URI, "/browser/" );
 
     public static final Setting<Boolean> script_sandboxing_enabled = setting("org.neo4j.server.script.sandboxing.enabled",
             BOOLEAN, TRUE );

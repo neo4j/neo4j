@@ -1049,25 +1049,33 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
         // in the future. Such transactions will fail if they come to commit after our synchronized block below.
         // Here we're zooming in and focusing on getting committed transactions to close.
         logRotationControl.awaitAllTransactionsClosed();
-        synchronized ( transactionLogModule.logFile() )
+        LogFile logFile = transactionLogModule.logFile();
+        synchronized ( logFile )
         {
-            // Under the guard of the logFile monitor do a second pass of waiting committing transactions
-            // to close. This is because there might have been transactions that were in flight and just now
-            // want to commit. We will allow committed transactions be properly closed, but no new transactions
-            // will be able to start committing at this point.
-            logRotationControl.awaitAllTransactionsClosed();
+            // The synchronization in TransactionAppender is intricate. Some incarnations lock logFile,
+            // others logFile+writer or logFile THEN writer. In any case if both are locked by a single call
+            // stack it's always in the order of logFile THAN writer. Let's do that here as well to be as
+            // safe as we can be.
+            synchronized ( logFile.getWriter() )
+            {
+                // Under the guard of the logFile monitor do a second pass of waiting committing transactions
+                // to close. This is because there might have been transactions that were in flight and just now
+                // want to commit. We will allow committed transactions be properly closed, but no new transactions
+                // will be able to start committing at this point.
+                logRotationControl.awaitAllTransactionsClosed();
 
-            // Force all pending store changes to disk.
-            logRotationControl.forceEverything();
+                // Force all pending store changes to disk.
+                logRotationControl.forceEverything();
 
-            // We simply increment the version, essentially "rotating" away
-            // the current active log file, to avoid having a recovery on
-            // next startup. Not necessary, simply speeds up the startup
-            // process.
-            neoStoreModule.neoStore().incrementAndGetVersion();
+                // We simply increment the version, essentially "rotating" away
+                // the current active log file, to avoid having a recovery on
+                // next startup. Not necessary, simply speeds up the startup
+                // process.
+                neoStoreModule.neoStore().incrementAndGetVersion();
 
-            // Shut down all services in here, effectively making the database unusable for anyone who tries.
-            life.shutdown();
+                // Shut down all services in here, effectively making the database unusable for anyone who tries.
+                life.shutdown();
+            }
         }
         // After we've released the logFile monitor there might be transactions that wants to commit, but had
         // to wait for the logFile monitor until now. When they finally get it and try to commit they will
