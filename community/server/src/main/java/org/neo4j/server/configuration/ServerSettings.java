@@ -49,6 +49,14 @@ import static org.neo4j.helpers.Settings.setting;
 public interface ServerSettings
 {
 
+    @Description( "Maximum request header size" )
+    public static final Setting<Integer> maximum_request_header_size =
+            setting( "org.neo4j.server.webserver.max.request.header", INTEGER, "20480" );
+
+    @Description( "Maximum response header size" )
+    public static final Setting<Integer> maximum_response_header_size =
+            setting( "org.neo4j.server.webserver.max.response.header", INTEGER, "20480" );
+
     @Description( "Comma-seperated list of custom security rules for Neo4j to use." )
     public static final Setting<List<String>> security_rules = setting( "org.neo4j.server.rest.security_rules",
             STRING_LIST, EMPTY );

@@ -865,6 +865,8 @@ public class DatabaseActions
         return new ListRepresentation( RepresentationType.RELATIONSHIP, results );
     }
 
+
+
     public Pair<IndexedEntityRepresentation, Boolean> getOrCreateIndexedNode(
             String indexName, String key, String value, Long nodeOrNull, Map<String, Object> properties )
             throws BadInputException, NodeNotFoundException

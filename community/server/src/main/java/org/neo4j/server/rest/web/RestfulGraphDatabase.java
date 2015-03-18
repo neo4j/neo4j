@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.rest.web;
 
+import org.apache.commons.configuration.Configuration;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -47,6 +49,7 @@ import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.EvaluationException;
 import org.neo4j.server.rest.domain.PropertySettingStrategy;
@@ -155,6 +158,7 @@ public class RestfulGraphDatabase
     private static final String HEADER_TRANSACTION = "Transaction";
 
     private final DatabaseActions actions;
+    private Configuration config;
     private final OutputFormat output;
     private final InputFormat input;
 
@@ -169,11 +173,14 @@ public class RestfulGraphDatabase
     }
 
     public RestfulGraphDatabase( @Context InputFormat input,
-                                 @Context OutputFormat output, @Context DatabaseActions actions )
+                                 @Context OutputFormat output,
+                                 @Context DatabaseActions actions,
+                                 @Context Configuration config )
     {
         this.input = input;
         this.output = output;
         this.actions = actions;
+        this.config = config;
     }
 
     public OutputFormat getOutputFormat()
@@ -974,6 +981,9 @@ public class RestfulGraphDatabase
     public Response addToNodeIndex( @PathParam("indexName") String indexName, @QueryParam("unique") String unique,
                                     @QueryParam("uniqueness") String uniqueness, String postBody )
     {
+        int otherHeaders = 512;
+        int maximumSizeInBytes = config.getInt( ServerSettings.maximum_response_header_size.name() ) - otherHeaders;
+
         try
         {
             Map<String, Object> entityBody;
@@ -983,18 +993,32 @@ public class RestfulGraphDatabase
             {
                 case GetOrCreate:
                     entityBody = input.readMap( postBody, "key", "value" );
+
+                    String getOrCreateValue = String.valueOf( entityBody.get( "value" ) );
+                    if ( getOrCreateValue.length() > maximumSizeInBytes )
+                    {
+                        return valueTooBig();
+                    }
+
                     result = actions.getOrCreateIndexedNode( indexName,
                             String.valueOf( entityBody.get( "key" ) ),
-                            String.valueOf( entityBody.get( "value" ) ), extractNodeIdOrNull( getStringOrNull(
+                            getOrCreateValue, extractNodeIdOrNull( getStringOrNull(
                             entityBody, "uri" ) ), getMapOrNull( entityBody, "properties" ) );
                     return result.other() ? output.created( result.first() ) : output.okIncludeLocation( result.first
                             () );
 
                 case CreateOrFail:
                     entityBody = input.readMap( postBody, "key", "value" );
+
+                    String createOrFailValue = String.valueOf( entityBody.get( "value" ) );
+                    if ( createOrFailValue.length() > maximumSizeInBytes )
+                    {
+                        return valueTooBig();
+                    }
+
                     result = actions.getOrCreateIndexedNode( indexName,
                             String.valueOf( entityBody.get( "key" ) ),
-                            String.valueOf( entityBody.get( "value" ) ), extractNodeIdOrNull( getStringOrNull(
+                            createOrFailValue, extractNodeIdOrNull( getStringOrNull(
                             entityBody, "uri" ) ), getMapOrNull( entityBody, "properties" ) );
                     if ( result.other() )
                     {
@@ -1020,9 +1044,16 @@ public class RestfulGraphDatabase
 
                 default:
                     entityBody = input.readMap( postBody, "key", "value", "uri" );
+                    String value = String.valueOf( entityBody.get( "value" ) );
+
+                    if ( value.length() > maximumSizeInBytes )
+                    {
+                        return valueTooBig();
+                    }
+
                     return output.created( actions.addToNodeIndex( indexName,
                             String.valueOf( entityBody.get( "key" ) ),
-                            String.valueOf( entityBody.get( "value" ) ), extractNodeId( entityBody.get( "uri" )
+                            value, extractNodeId( entityBody.get( "uri" )
                             .toString() ) ) );
 
             }
@@ -1043,6 +1074,15 @@ public class RestfulGraphDatabase
         {
             return output.serverError( e );
         }
+    }
+
+    private Response valueTooBig()
+    {
+        return Response.status( 413 ).entity( String.format(
+                "The property value provided was too large. The maximum size is currently set to %d bytes. " +
+                "You can configure this by setting the '%s' property.",
+                config.getInt(ServerSettings.maximum_response_header_size.name()),
+                ServerSettings.maximum_response_header_size.name() ) ).build();
     }
 
     @POST

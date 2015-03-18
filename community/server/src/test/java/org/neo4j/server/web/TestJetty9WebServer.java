@@ -28,6 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.TestLogging;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.SystemOutLogging;
@@ -50,7 +51,7 @@ public class TestJetty9WebServer
     {
         TestLogging logging = new TestLogging();
 
-        Jetty9WebServer webServer = new Jetty9WebServer( logging );
+        Jetty9WebServer webServer = new Jetty9WebServer( logging, new Config() );
 
         webServer.setPort( 0 );
 
@@ -62,7 +63,7 @@ public class TestJetty9WebServer
     @Test
     public void shouldBeAbleToRestart() throws Throwable
     {
-        Jetty9WebServer server = new Jetty9WebServer( new SystemOutLogging() );
+        Jetty9WebServer server = new Jetty9WebServer( new SystemOutLogging(),new Config() );
         try
         {
             server.setAddress( "127.0.0.1" );
@@ -111,7 +112,7 @@ public class TestJetty9WebServer
     @Test
     public void shouldStopCleanlyEvenWhenItHasntBeenStarted()
     {
-        new Jetty9WebServer( DevNullLoggingService.DEV_NULL ).stop();
+        new Jetty9WebServer( DevNullLoggingService.DEV_NULL, null ).stop();
     }
 
     /*

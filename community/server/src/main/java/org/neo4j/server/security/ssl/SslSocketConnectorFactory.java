@@ -23,12 +23,22 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.web.HttpConnectorFactory;
 import org.neo4j.server.web.JettyThreadCalculator;
 
 
 public class SslSocketConnectorFactory extends HttpConnectorFactory
 {
+    private Config configuration;
+
+    public SslSocketConnectorFactory( Config configuration )
+    {
+        super(configuration);
+        this.configuration = configuration;
+    }
+
     @Override
     protected HttpConfiguration createHttpConfig()
     {
