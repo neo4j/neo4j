@@ -1716,7 +1716,7 @@ return b
 
 
     //WHEN
-    val result = executeWithOlderPlanner(query)
+    val result = executeWithNewPlanner(query)
 
     //THEN
     result.toList should equal (List(Map("b" -> b)))
