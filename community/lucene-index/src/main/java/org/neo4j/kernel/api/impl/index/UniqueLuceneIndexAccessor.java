@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.apache.lucene.search.IndexSearcher;
-
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.TopDocs;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.CancellationRequest;
@@ -36,7 +38,10 @@ import org.neo4j.kernel.api.index.Reservation;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.UniquePropertyIndexUpdater;
 
-class UniqueLuceneIndexAccessor extends LuceneIndexAccessor
+/**
+ * Variant of {@link LuceneIndexAccessor} that also verifies uniqueness constraints.
+ */
+class UniqueLuceneIndexAccessor extends LuceneIndexAccessor implements UniquePropertyIndexUpdater.Lookup
 {
     public UniqueLuceneIndexAccessor( LuceneDocumentStructure documentStructure,
                                       IndexWriterFactory<ReservingLuceneIndexWriter> indexWriterFactory,
@@ -64,6 +69,26 @@ class UniqueLuceneIndexAccessor extends LuceneIndexAccessor
     protected IndexReader makeNewReader( IndexSearcher searcher, Closeable closeable, CancellationRequest cancellation )
     {
         return new LuceneUniqueIndexAccessorReader( searcher, documentStructure, closeable, cancellation );
+    }
+
+    @Override
+    public Long currentlyIndexedNode( Object value ) throws IOException
+    {
+        IndexSearcher searcher = searcherManager.acquire();
+        try
+        {
+            TopDocs docs = searcher.search( documentStructure.newQuery( value ), 1 );
+            if ( docs.scoreDocs.length > 0 )
+            {
+                Document doc = searcher.getIndexReader().document( docs.scoreDocs[0].doc );
+                return documentStructure.getNodeId( doc );
+            }
+        }
+        finally
+        {
+            searcherManager.release( searcher );
+        }
+        return null;
     }
 
     /* The fact that this is here is a sign of a design error, and we should revisit and
@@ -101,6 +126,7 @@ class UniqueLuceneIndexAccessor extends LuceneIndexAccessor
 
         public LuceneUniquePropertyIndexUpdater( IndexUpdater delegate )
         {
+            super( UniqueLuceneIndexAccessor.this );
             this.delegate = delegate;
         }
 
