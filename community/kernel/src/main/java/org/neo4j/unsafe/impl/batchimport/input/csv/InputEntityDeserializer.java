@@ -71,36 +71,11 @@ public class InputEntityDeserializer<ENTITY extends InputEntity>
     protected ENTITY fetchNextOrNull()
     {
         // Read a CSV "line" and convert the values into what they semantically mean.
-        int fieldIndex = 0;
-        Header.Entry[] entries = header.entries();
         try
         {
-            for ( ; fieldIndex < entries.length; fieldIndex++ )
+            if ( !deserializeNextFromSource() )
             {
-                // Seek the next value
-                if ( !data.seek( mark, delimiter ) )
-                {
-                    if ( fieldIndex > 0 )
-                    {
-                        throw new UnexpectedEndOfInputException( "Near " + mark );
-                    }
-                    // We're just at the end
-                    return null;
-                }
-
-                // Extract it, type according to our header
-                Header.Entry entry = entries[fieldIndex];
-                if ( entry.type() != Type.IGNORE )
-                {
-                    Object value = data.tryExtract( mark, entry.extractor() )
-                            ? entry.extractor().value() : null;
-                    deserialization.handle( entry, value );
-                }
-
-                if ( mark.isEndOfLine() )
-                {   // We're at the end of the line, break and return an entity with what we have.
-                    break;
-                }
+                return null;
             }
 
             // When we have everything, create an input entity out of it
@@ -120,6 +95,47 @@ public class InputEntityDeserializer<ENTITY extends InputEntity>
         catch ( IOException e )
         {
             throw new InputException( "Unable to read more data from input stream", e );
+        }
+        finally
+        {
+            deserialization.clear();
+        }
+    }
+
+    private boolean deserializeNextFromSource() throws IOException
+    {
+        Header.Entry[] entries = header.entries();
+        int fieldIndex = 0;
+        try
+        {
+            for ( ; fieldIndex < entries.length; fieldIndex++ )
+            {
+                // Seek the next value
+                if ( !data.seek( mark, delimiter ) )
+                {
+                    if ( fieldIndex > 0 )
+                    {
+                        throw new UnexpectedEndOfInputException( "Near " + mark );
+                    }
+                    // We're just at the end
+                    return false;
+                }
+
+                // Extract it, type according to our header
+                Header.Entry entry = entries[fieldIndex];
+                if ( entry.type() != Type.IGNORE )
+                {
+                    Object value = data.tryExtract( mark, entry.extractor() )
+                            ? entry.extractor().value() : null;
+                    deserialization.handle( entry, value );
+                }
+
+                if ( mark.isEndOfLine() )
+                {   // We're at the end of the line, break and return an entity with what we have.
+                    break;
+                }
+            }
+            return true;
         }
         catch ( final RuntimeException e )
         {
@@ -150,10 +166,6 @@ public class InputEntityDeserializer<ENTITY extends InputEntity>
                 throw Exceptions.withMessage( e, message );
             }
             throw new InputException( message, e );
-        }
-        finally
-        {
-            deserialization.clear();
         }
     }
 
