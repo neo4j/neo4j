@@ -33,7 +33,7 @@ angular.module('neo4jApp.directives')
         element.on 'click', (e) ->
           e.preventDefault()
 
-          topic = topic.toLowerCase().trim().replace('-', ' ')
+          topic = topic.toLowerCase().trim().replace(/-/g, ' ')
           Frame.create(input: "#{Settings.cmdchar}#{command} #{topic}")
 
           $rootScope.$apply() unless $rootScope.$$phase
