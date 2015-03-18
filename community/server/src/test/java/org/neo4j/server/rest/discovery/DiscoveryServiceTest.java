@@ -100,7 +100,7 @@ public class DiscoveryServiceTest
     public void shouldReturnRedirectToAbsoluteAPIUsingOutputFormat() throws Exception
     {
         Config mockConfig = mock( Config.class );
-        URI browserUri = new URI( "/browser" );
+        URI browserUri = new URI( "/browser/" );
         when( mockConfig.get( ServerInternalSettings.browser_path ) ).thenReturn(
                 browserUri );
 
@@ -111,6 +111,6 @@ public class DiscoveryServiceTest
         Response response = ds.redirectToBrowser();
 
         assertThat( response.getMetadata().getFirst( "Location" ), is( (Object) new URI( "http://www.example" +
-                ".com:5435/browser" ) ) );
+                ".com:5435/browser/" ) ) );
     }
 }
