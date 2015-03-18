@@ -49,7 +49,7 @@ public class BackupServiceStressTesting
         long durationInMinutes = parseLong( fromEnv( "BACKUP_SERVICE_STRESS_DURATION", DEFAULT_DURATION_IN_MINUTES ) );
         String storeDirectory = fromEnv( "BACKUP_SERVICE_STRESS_STORE_DIRECTORY", DEFAULT_STORE_DIR );
         String workingDirectory = fromEnv( "BACKUP_SERVICE_STRESS_WORKING_DIRECTORY", DEFAULT_WORKING_DIR );
-        String backupHostname = fromEnv( "BACKUP_SERVICE_STRESS_WORKING_DIRECTORY", DEFAULT_HOSTNAME );
+        String backupHostname = fromEnv( "BACKUP_SERVICE_STRESS_BACKUP_HOSTNAME", DEFAULT_HOSTNAME );
         int backupPort = parseInt( fromEnv( "BACKUP_SERVICE_STRESS_BACKUP_PORT", DEFAULT_PORT ) );
 
         Callable<Integer> callable = new BackupServiceStressTestingBuilder()
