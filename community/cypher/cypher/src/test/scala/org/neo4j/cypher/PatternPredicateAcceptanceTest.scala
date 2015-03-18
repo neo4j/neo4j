@@ -57,7 +57,7 @@ class PatternPredicateAcceptanceTest extends ExecutionEngineFunSuite with Matche
     createPath(324234,666)
 
     // when
-    val result = executeScalarWithOlderPlanner[Node]("match (n:Start) where (n)-[*2 {prop: 42}]->() return n")
+    val result = executeScalarWithNewPlanner[Node]("match (n:Start) where (n)-[*2 {prop: 42}]->() return n")
 
     // then
     assert(start1 == result)
@@ -70,7 +70,7 @@ class PatternPredicateAcceptanceTest extends ExecutionEngineFunSuite with Matche
     createPath(55555, 7777)
 
     // when
-    val result = executeWithOlderPlanner("match (n:Start) where n.p = 12 OR (n)-[*2 {prop: 42}]->() return n").columnAs[Node]("n").toList
+    val result = executeWithNewPlanner("match (n:Start) where n.p = 12 OR (n)-[*2 {prop: 42}]->() return n").columnAs[Node]("n").toList
 
     // then
     assert(Seq(start1, start2) == result)
@@ -84,7 +84,7 @@ class PatternPredicateAcceptanceTest extends ExecutionEngineFunSuite with Matche
     createPath(55555, 7777)
 
     // when
-    val result = executeWithOlderPlanner("match (n:Start) where n.p = 12 OR (n)-[*2 {prop: 42}]->() OR n.p = 25 return n").columnAs[Node]("n").toList
+    val result = executeWithNewPlanner("match (n:Start) where n.p = 12 OR (n)-[*2 {prop: 42}]->() OR n.p = 25 return n").columnAs[Node]("n").toList
 
     // then
     assert(Seq(start1, start2, start3) == result)
@@ -97,7 +97,7 @@ class PatternPredicateAcceptanceTest extends ExecutionEngineFunSuite with Matche
     createPath(nodePropertyValue = 25, relPropertyValue = 42)
 
     // when
-    val result = executeWithOlderPlanner("match (n:Start) where n.p = 12 OR NOT (n)-[*2 {prop: 42}]->() return n").columnAs[Node]("n").toList
+    val result = executeWithNewPlanner("match (n:Start) where n.p = 12 OR NOT (n)-[*2 {prop: 42}]->() return n").columnAs[Node]("n").toList
 
     // then
     assert(Seq(start1, start2) == result)

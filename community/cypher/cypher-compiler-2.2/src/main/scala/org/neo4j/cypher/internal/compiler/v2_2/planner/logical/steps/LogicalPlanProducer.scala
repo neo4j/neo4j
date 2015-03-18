@@ -109,15 +109,18 @@ object LogicalPlanProducer extends CollectionSupport {
                     pattern: PatternRelationship,
                     predicates: Seq[(Identifier, Expression)],
                     allPredicates: Seq[Expression],
-                    mode: ExpansionMode) = pattern.length match {
+                    mode: ExpansionMode) =  pattern.length match {
     case l: VarPatternLength =>
-      VarExpand(left, from, dir, pattern.dir, pattern.types, to, pattern.name, l, mode, predicates)(
+      val projectedDir = if (dir == Direction.BOTH) {
+        if (from == pattern.left) Direction.OUTGOING else Direction.INCOMING
+      } else pattern.dir
+      VarExpand(left, from, dir, projectedDir, pattern.types, to, pattern.name, l, mode, predicates)(
         left.solved.updateGraph(_
           .addPatternRelationship(pattern)
           .addPredicates(allPredicates: _*)
         ))
 
-    case _                   => throw new InternalException("Expected a varlength path to be here")
+    case _ => throw new InternalException("Expected a varlength path to be here")
   }
 
   def planHiddenSelection(predicates: Seq[Expression], left: LogicalPlan) =

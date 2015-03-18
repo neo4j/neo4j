@@ -60,7 +60,7 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     val b = createLabeledNode("End")
     relate(a, b)
 
-    val resultPath = executeWithOlderPlanner("match (a:Start), (b:End) RETURN a-[*]->b as path")
+    val resultPath = executeWithNewPlanner("match (a:Start), (b:End) RETURN a-[*]->b as path")
       .toList.head("path").asInstanceOf[Seq[_]]
 
     resultPath should have size 1
@@ -141,7 +141,7 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     val b = createLabeledNode("End")
     relate(a, b)
 
-    val resultPath = executeWithOlderPlanner("match (a:Start), (b:End) with a-[*]->b as path, count(a) as c return path, c")
+    val resultPath = executeWithNewPlanner("match (a:Start), (b:End) with a-[*]->b as path, count(a) as c return path, c")
       .toList.head("path").asInstanceOf[Seq[_]]
 
     resultPath should have size 1
