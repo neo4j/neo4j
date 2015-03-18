@@ -35,22 +35,29 @@ public class AuthManager extends LifecycleAdapter
 {
     private final AuthenticationStrategy authStrategy;
     private final UserRepository users;
+    private final boolean authEnabled;
 
-    public AuthManager( UserRepository users, AuthenticationStrategy authStrategy )
+    public AuthManager( UserRepository users, AuthenticationStrategy authStrategy, boolean authEnabled )
     {
         this.users = users;
         this.authStrategy = authStrategy;
+        this.authEnabled = authEnabled;
     }
 
-    public AuthManager( Clock clock, UserRepository users )
+    public AuthManager( UserRepository users, AuthenticationStrategy authStrategy )
     {
-        this( users, new RateLimitedAuthenticationStrategy( clock, 3 ) );
+        this( users, authStrategy, true );
+    }
+
+    public AuthManager( UserRepository users, Clock clock, boolean authEnabled )
+    {
+        this( users, new RateLimitedAuthenticationStrategy( clock, 3 ), authEnabled );
     }
 
     @Override
     public void start() throws Throwable
     {
-        if ( users.numberOfUsers() == 0 )
+        if ( authEnabled && users.numberOfUsers() == 0 )
         {
             newUser( "neo4j", "neo4j", true );
         }
@@ -58,6 +65,7 @@ public class AuthManager extends LifecycleAdapter
 
     public AuthenticationResult authenticate( String username, String password )
     {
+        assertAuthEnabled();
         User user = users.findByName( username );
         if ( user == null )
         {
@@ -77,6 +85,7 @@ public class AuthManager extends LifecycleAdapter
 
     public User newUser( String username, String initialPassword, boolean requirePasswordChange ) throws IOException, IllegalUsernameException
     {
+        assertAuthEnabled();
         assertValidName( username );
         User user = new User.Builder()
                 .withName( username )
@@ -89,17 +98,20 @@ public class AuthManager extends LifecycleAdapter
 
     public boolean deleteUser( String username ) throws IOException
     {
+        assertAuthEnabled();
         User user = users.findByName( username );
         return user != null && users.delete( user );
     }
 
     public User getUser( String username )
     {
+        assertAuthEnabled();
         return users.findByName( username );
     }
 
     public User setPassword( String username, String password ) throws IOException
     {
+        assertAuthEnabled();
         User existingUser = users.findByName( username );
         if ( existingUser == null )
         {
@@ -123,6 +135,14 @@ public class AuthManager extends LifecycleAdapter
         {
             // try again
             return setPassword( username, password );
+        }
+    }
+
+    private void assertAuthEnabled()
+    {
+        if ( !authEnabled )
+        {
+            throw new IllegalStateException( "Auth not enabled" );
         }
     }
 
