@@ -321,14 +321,17 @@ neo.queryPlan = (element)->
                   x = d.source.x + operatorWidth / 2
                   y = d.source.y + d.source.height + operatorDetailHeight
                   source = d.source
-                  [key, caption] = if source.Rows?
-                    ['Rows', 'row']
+                  if source.Rows? or source.EstimatedRows?
+                    [key, caption] = if source.Rows?
+                      ['Rows', 'row']
+                    else
+                      ['EstimatedRows', 'estimated row']
+                    [
+                      { x: x, y: y, text: formatNumber(source[key]) + ' ', anchor: 'end' }
+                      { x: x, y: y, text: plural(caption, source[key]), anchor: 'start' }
+                    ]
                   else
-                    ['EstimatedRows', 'estimated row']
-                  [
-                    { x: x, y: y, text: formatNumber(source[key]) + ' ', anchor: 'end' }
-                    { x: x, y: y, text: plural(caption, source[key]), anchor: 'start' }
-                  ]
+                    []
                 selections: (enter, update) ->
                   enter
                   .append('text')
