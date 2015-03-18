@@ -17,14 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.internal.compiler.v2_3.planner
 
-import org.neo4j.graphdb.Result.ResultVisitor
-import org.neo4j.graphdb._
+import org.neo4j.cypher.internal.compiler.v2_3.CypherException
+import org.neo4j.cypher.internal.compiler.v2_3.spi.MapToPublicExceptions
+import org.neo4j.kernel.api.exceptions.Status
 
-trait ExtendedExecutionResult extends ExecutionResult {
-  def planDescriptionRequested: Boolean
-  def executionType: QueryExecutionType
-  def notifications: Iterable[Notification]
-  def accept(visitor: ResultVisitor)
+class CantCompileQueryException(message: String = "Internal error - should have used fall back to execute query, but something went horribly wrong")
+  extends CypherException(message, null) {
+
+  def status = Status.Statement.ExecutionFailure
+
+  def mapToPublic[T <: Throwable](thrower: MapToPublicExceptions[T]) = throw new CantCompileQueryException(message)
 }

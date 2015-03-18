@@ -1,29 +1,56 @@
-package org.neo4j.cypher.internal;
+/**
+ * Copyright (c) 2002-2015 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.cypher.internal.compiler.v2_3.birk;
+
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.api.Statement;
+import sun.tools.java.CompilerError;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.security.SecureClassLoader;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
-import javax.tools.DiagnosticCollector;
-import javax.tools.FileObject;
-import javax.tools.ForwardingJavaFileManager;
-import javax.tools.JavaCompiler;
-import javax.tools.JavaFileManager;
-import javax.tools.JavaFileObject;
-import javax.tools.SimpleJavaFileObject;
-import javax.tools.StandardLocation;
-import javax.tools.ToolProvider;
+import javax.tools.*;
 
 import static javax.tools.JavaCompiler.CompilationTask;
 
+//TODO this should be replaced, here for testing stuff out
 public class Javac
 {
+    //TODO this is not the way it should work…
     @SuppressWarnings( "unchecked" )
-    public static ExecutablePlan newInstance( String className, String classBody ) throws Exception
+    public static InternalExecutionResult newInstance( String className, String classBody, Statement statement, GraphDatabaseService db ) throws Exception
+    {
+       return newInstance( compile(className, classBody), statement, db );
+    }
+
+    public static Class<InternalExecutionResult> compile(String className, String classBody) throws
+            ClassNotFoundException
     {
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         JavaFileManager manager = new InMemFileManager();
@@ -31,10 +58,28 @@ public class Javac
         Iterable<? extends JavaFileObject> sources = Arrays.asList( new InMemSource( className, classBody ) );
         CompilationTask task = compiler.getTask( null, manager, diagnosticsCollector, null, null, sources );
 
-        task.call();
+        if ( !task.call() )
+        {
+            StringBuilder sb = new StringBuilder();
+            int number = 1;
+            for ( Diagnostic<?> diagnostic : diagnosticsCollector.getDiagnostics() )
+            {
+                sb.append(  diagnostic.getKind() + "  : " + number + " Type : " + diagnostic.getMessage(Locale.getDefault()));
+                sb.append(" at column : " + diagnostic.getColumnNumber() );
+                sb.append(" Line number : " + diagnostic.getLineNumber() + System.lineSeparator() );
+                number++;
+            }
+            throw new CompilerError( sb.toString() );
+        }
 
-        Class<?> clazz = manager.getClassLoader( null ).loadClass( "org.neo4j.cypher.internal." + className );
-        return (ExecutablePlan) clazz.newInstance();
+        Class<InternalExecutionResult> clazz = (Class<InternalExecutionResult>) manager.getClassLoader( null ).loadClass(className );
+        return clazz;
+    }
+
+    public static InternalExecutionResult newInstance(Class<InternalExecutionResult> clazz, Statement statement, GraphDatabaseService db) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException
+    {
+        Constructor<InternalExecutionResult> constructor = clazz.getDeclaredConstructor( Statement.class, GraphDatabaseService.class );
+        return  constructor.newInstance( statement, db );
     }
 
     private static class InMemSource extends SimpleJavaFileObject

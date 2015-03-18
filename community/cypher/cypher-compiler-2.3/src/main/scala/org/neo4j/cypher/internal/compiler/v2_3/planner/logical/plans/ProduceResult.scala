@@ -17,14 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
-import org.neo4j.graphdb.Result.ResultVisitor
-import org.neo4j.graphdb._
+import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression
 
-trait ExtendedExecutionResult extends ExecutionResult {
-  def planDescriptionRequested: Boolean
-  def executionType: QueryExecutionType
-  def notifications: Iterable[Notification]
-  def accept(visitor: ResultVisitor)
+case class ProduceResult(nodes: Seq[String], relationships: Seq[String], inner: LogicalPlan) extends LogicalPlan {
+  val lhs = Some(inner)
+
+  def solved = inner.solved
+
+  def availableSymbols = inner.availableSymbols
+
+  def rhs = None
+
+  def mapExpressions(f: (Set[IdName], Expression) => Expression) =
+    copy(inner = inner.mapExpressions(f))
+
+  def strictness = inner.strictness
 }

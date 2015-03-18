@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
 
+
 case class PipeInfo(pipe: Pipe,
                     updating: Boolean,
                     periodicCommit: Option[PeriodicCommitInfo] = None,

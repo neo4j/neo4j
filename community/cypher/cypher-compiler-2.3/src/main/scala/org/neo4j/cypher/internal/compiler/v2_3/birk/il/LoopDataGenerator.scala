@@ -17,14 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.internal.compiler.v2_3.birk.il
 
-import org.neo4j.graphdb.Result.ResultVisitor
-import org.neo4j.graphdb._
-
-trait ExtendedExecutionResult extends ExecutionResult {
-  def planDescriptionRequested: Boolean
-  def executionType: QueryExecutionType
-  def notifications: Iterable[Notification]
-  def accept(visitor: ResultVisitor)
+// Generates the code that moves data into local variables from the iterator being consumed
+trait LoopDataGenerator extends Instruction {
+  def generateVariablesAndAssignment(): String
+  def javaType:String
+  def fields() = ""
 }

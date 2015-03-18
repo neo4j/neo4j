@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionRe
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.notification.InternalNotification
 import org.neo4j.graphdb.QueryExecutionType.{QueryType, explained}
+import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{Notification, ResourceIterator}
 
 case class ExplainExecutionResult(closer: TaskCloser, columns: List[String],
@@ -61,6 +62,8 @@ case class ExplainExecutionResult(closer: TaskCloser, columns: List[String],
   def next() = Iterator.empty.next()
 
   def hasNext = false
+
+  override def accept(visitor: ResultVisitor) = {}
 }
 
 final class EmptyResourceIterator[T](onClose: () => Unit) extends ResourceIterator[T] {
