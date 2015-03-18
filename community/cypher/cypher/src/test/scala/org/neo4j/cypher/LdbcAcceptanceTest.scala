@@ -34,12 +34,7 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
       ldbcQuery.constraintQueries.foreach(execute(_))
 
       //when
-      val result = try {
-        executeWithNewPlanner(s"PLANNER COST ${ldbcQuery.query}", ldbcQuery.params.toSeq: _*).result
-      } catch {
-        case e: Exception if e.getMessage.contains("Ronja does not handle var length queries yet") =>
-          executeWithOlderPlanner(s"${ldbcQuery.query}", ldbcQuery.params.toSeq: _*).toList.withArraysAsLists
-      }
+      val result = executeWithNewPlanner(s"PLANNER COST ${ldbcQuery.query}", ldbcQuery.params.toSeq: _*).result
 
       //then
       result should equal(ldbcQuery.expectedResult)

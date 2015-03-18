@@ -38,9 +38,6 @@ class LegacyVsNewPipeBuilder(oldBuilder: PipeBuilder,
         throw new CantHandleQueryException("Ronja does not handle update queries yet.")
       }
 
-      if (containsPlainVarLengthPattern(statement)) {
-        throw new CantHandleQueryException("Ronja does not handle var length queries yet.")
-      }
 
       newBuilder.producePlan(inputQuery, planContext)
     } catch {
@@ -48,21 +45,6 @@ class LegacyVsNewPipeBuilder(oldBuilder: PipeBuilder,
         monitor.unableToHandleQuery(queryText, statement, e)
         oldBuilder.producePlan(inputQuery, planContext)
     }
-  }
-
-  private def containsPlainVarLengthPattern(node: ASTNode): Boolean = node.treeFold(false) {
-    // only traverse expressions in node patterns in shortest path
-    case sp: ShortestPaths =>
-      (acc, children) =>
-        acc || sp.element.exists { case node: NodePattern => containsPlainVarLengthPattern(node) }
-
-    // check relationship patterns
-    case rel: RelationshipPattern =>
-      (acc, children) => if (acc || !rel.isSingleLength) true else children(false)
-
-    // bail out early
-    case _ =>
-      (acc, children) => if (acc) true else children(false)
   }
 
   private def containsUpdateClause(s: Statement) = s.exists {

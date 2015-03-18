@@ -33,7 +33,7 @@ class LegacyVsNewPipeBuilderTest extends CypherFunSuite {
   test("should delegate var length to old pipe builder") {
     new uses("MATCH ()-[r*]->() RETURN r") {
       result should equal(pipeInfo)
-      assertUsed(oldBuilder)
+      assertUsed(newBuilder)
     }
   }
 
@@ -47,7 +47,7 @@ class LegacyVsNewPipeBuilderTest extends CypherFunSuite {
   test("should delegate shortest path with var length expressions to old pipe builder") {
     new uses("MATCH shortestPath(()-[r*]->({x: ()-[:T*]->()})) RETURN r") {
       result should equal(pipeInfo)
-      assertUsed(oldBuilder)
+      assertUsed(newBuilder)
     }
   }
 

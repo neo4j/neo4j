@@ -19,9 +19,13 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
-import java.util.Random;
-
 import org.junit.Test;
+
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
+
+import org.neo4j.test.Race;
+
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -33,6 +37,7 @@ public class NodeLabelsCacheTest
     {
         // GIVEN
         NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO, 5, CHUNK_SIZE );
+        NodeLabelsCache.Client client = cache.newClient();
         long nodeId = 0;
 
         // WHEN
@@ -40,7 +45,7 @@ public class NodeLabelsCacheTest
 
         // THEN
         int[] readLabels = new int[3];
-        cache.get( nodeId, readLabels );
+        cache.get( client, nodeId, readLabels );
         assertArrayEquals( new int[] {1,2,3}, readLabels );
     }
 
@@ -50,6 +55,7 @@ public class NodeLabelsCacheTest
         // GIVEN
         int highLabelId = 1000;
         NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO, highLabelId, CHUNK_SIZE );
+        NodeLabelsCache.Client client = cache.newClient();
         long nodeId = 0;
 
         // WHEN
@@ -58,7 +64,7 @@ public class NodeLabelsCacheTest
 
         // THEN
         int[] readLabels = new int[labels.length];
-        cache.get( nodeId, readLabels );
+        cache.get( client, nodeId, readLabels );
         assertArrayEquals( labels, readLabels );
     }
 
@@ -68,6 +74,7 @@ public class NodeLabelsCacheTest
         // GIVEN a really weird scenario where we have 5000 different labels
         int highLabelId = 1_000;
         NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO, highLabelId, 1_000_000 );
+        NodeLabelsCache.Client client = cache.newClient();
         int numberOfNodes = 100_000;
         int[][] expectedLabels = new int[numberOfNodes][];
         for ( int i = 0; i < numberOfNodes; i++ )
@@ -81,7 +88,7 @@ public class NodeLabelsCacheTest
         int[] forceCreationOfNewIntArray = new int[0];
         for ( int i = 0; i < numberOfNodes; i++ )
         {
-            int[] labels = cache.get( i, forceCreationOfNewIntArray );
+            int[] labels = cache.get( client, i, forceCreationOfNewIntArray );
             assertArrayEquals( "For node " + i, expectedLabels[i], labels );
         }
     }
@@ -91,11 +98,12 @@ public class NodeLabelsCacheTest
     {
         // GIVEN
         NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO, 10 );
+        NodeLabelsCache.Client client = cache.newClient();
         cache.put( 10, new long[] { 5, 6, 7, 8 } );
 
         // WHEN
         int[] target = new int[20];
-        assertTrue( target == cache.get( 10, target ) );
+        assertTrue( target == cache.get( client, 10, target ) );
         assertEquals( 5, target[0] );
         assertEquals( 6, target[1] );
         assertEquals( 7, target[2] );
@@ -110,13 +118,80 @@ public class NodeLabelsCacheTest
     {
         // GIVEN
         NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO, 0 );
+        NodeLabelsCache.Client client = cache.newClient();
 
         // WHEN
         int[] target = new int[3];
-        cache.get( 0, target );
+        cache.get( client, 0, target );
 
         // THEN
         assertEquals( -1, target[0] );
+    }
+
+    @Test
+    public void shouldSupportConcurrentGet() throws Throwable
+    {
+        // GIVEN
+        int highLabelId = 10, numberOfNodes = 100;
+        int[][] expectedLabels = new int[numberOfNodes][];
+        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO, highLabelId );
+        for ( int i = 0; i < numberOfNodes; i++ )
+        {
+            cache.put( i, asLongArray( expectedLabels[i] = randomLabels( random.nextInt( 5 ), highLabelId ) ) );
+        }
+
+        // WHEN
+        Race getRace = new Race();
+        for ( int i = 0; i < 10; i++ )
+        {
+            getRace.addContestant( new LabelGetter( cache, expectedLabels, numberOfNodes ) );
+        }
+
+        // THEN expected labels should be had (asserted in LabelGetter), and no exceptions (propagated by go())
+        getRace.go();
+    }
+
+    private static class LabelGetter implements Runnable
+    {
+        private final NodeLabelsCache cache;
+        private final int[][] expectedLabels;
+        private final NodeLabelsCache.Client client;
+        private final int numberOfNodes;
+        private int[] scratch = new int[10];
+
+        public LabelGetter( NodeLabelsCache cache, int[][] expectedLabels, int numberOfNodes )
+        {
+            this.cache = cache;
+            this.client = cache.newClient();
+            this.expectedLabels = expectedLabels;
+            this.numberOfNodes = numberOfNodes;
+        }
+
+        @Override
+        public void run()
+        {
+            for ( int i = 0; i < 1_000; i++ )
+            {
+                int nodeId = ThreadLocalRandom.current().nextInt( numberOfNodes );
+                scratch = cache.get( client, nodeId, scratch );
+                assertCorrectLabels( nodeId, scratch );
+            }
+        }
+
+        private void assertCorrectLabels( int nodeId, int[] gotten )
+        {
+            int[] expected = expectedLabels[nodeId];
+            for ( int i = 0; i < expected.length; i++ )
+            {
+                assertEquals( expected[i], gotten[i] );
+            }
+
+            if ( gotten.length != expected.length )
+            {
+                // gotten is a "scratch" array, i.e. reused and not resized all the time, instead ended with -1 value.
+                assertEquals( -1, gotten[expected.length] );
+            }
+        }
     }
 
     private long[] asLongArray( int[] labels )

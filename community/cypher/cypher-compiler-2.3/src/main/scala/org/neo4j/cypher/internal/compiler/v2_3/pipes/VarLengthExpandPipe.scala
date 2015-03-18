@@ -58,7 +58,8 @@ case class VarLengthExpandPipe(source: Pipe,
             }
           }
         }
-        val projectedRels = if (dir != projectedDir) {
+        val needsFlipping = if (dir == Direction.BOTH) projectedDir == Direction.INCOMING else dir != projectedDir
+        val projectedRels = if (needsFlipping) {
           rels.reverse
         } else {
           rels
