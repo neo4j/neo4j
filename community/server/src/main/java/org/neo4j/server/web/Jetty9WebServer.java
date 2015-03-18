@@ -21,9 +21,11 @@ package org.neo4j.server.web;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.channels.ServerSocketChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -35,7 +37,6 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.BlockingQueue;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.ServletException;
@@ -59,6 +60,7 @@ import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.WebAppContext;
+
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
@@ -69,6 +71,11 @@ import org.neo4j.server.security.ssl.SslSocketConnectorFactory;
 
 import static java.lang.String.format;
 
+/**
+ * This class handles the configuration and runtime management of a Jetty web server. The server is restartable.
+ *
+ * TODO: it really should be split up into a builder that returns a Closeable, to separate between the conf and runtime part.
+ */
 public class Jetty9WebServer implements WebServer
 {
     private boolean wadlEnabled;

@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.web;
 
+import java.io.IOException;
+
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -26,8 +28,9 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.impl.util.TestLogging;
 import org.neo4j.kernel.logging.DevNullLoggingService;
-import org.neo4j.server.WrappingNeoServer;
+import org.neo4j.kernel.logging.SystemOutLogging;
 import org.neo4j.server.WrappingNeoServerBootstrapper;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
@@ -42,44 +45,52 @@ import static org.neo4j.test.Mute.muteAll;
 
 public class TestJetty9WebServer
 {
-	@Test
-	public void shouldBeAbleToRestart() throws Throwable
-	{
-		// TODO: This is needed because WebServer has a cyclic
-		// dependency to NeoServer, which should be removed.
-		// Once that is done, we should instantiate WebServer
-		// here directly.
-		WrappingNeoServer neoServer = new WrappingNeoServer(dbRule.getGraphDatabaseAPI());
-		WebServer server = neoServer.getWebServer();
+    @Test
+    public void shouldBeAbleToUsePortZero() throws IOException
+    {
+        TestLogging logging = new TestLogging();
 
-		try
-		{
-			server.setAddress("127.0.0.1");
-			server.setPort(7878);
+        Jetty9WebServer webServer = new Jetty9WebServer( logging );
 
-			server.start();
-			server.stop();
-			server.start();
-		}
+        webServer.setPort( 0 );
+
+        webServer.start();
+
+        webServer.stop();
+    }
+
+    @Test
+    public void shouldBeAbleToRestart() throws Throwable
+    {
+        Jetty9WebServer server = new Jetty9WebServer( new SystemOutLogging() );
+        try
+        {
+            server.setAddress( "127.0.0.1" );
+            server.setPort( 7878 );
+
+            server.start();
+            server.stop();
+            server.start();
+        }
         finally
-		{
-			try
-			{
-				server.stop();
-			}
-            catch( Throwable t )
-			{
+        {
+            try
+            {
+                server.stop();
+            }
+            catch ( Throwable t )
+            {
 
-			}
-		}
-	}
+            }
+        }
+    }
 
     @Test
     public void shouldBeAbleToSetExecutionLimit() throws Throwable
     {
         @SuppressWarnings("deprecation")
         ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( "path", stringMap(),
-                GraphDatabaseDependencies.newDependencies())
+                GraphDatabaseDependencies.newDependencies() )
         {
         };
 
@@ -114,7 +125,7 @@ public class TestJetty9WebServer
     {
         @SuppressWarnings("deprecation")
         ImpermanentGraphDatabase db = new ImpermanentGraphDatabase( "path", stringMap(),
-                GraphDatabaseDependencies.newDependencies())
+                GraphDatabaseDependencies.newDependencies() )
         {
         };
 
@@ -124,7 +135,8 @@ public class TestJetty9WebServer
 
         testBootstrapper.start();
 
-        try ( CloseableHttpClient httpClient = HttpClientBuilder.create().build() ) {
+        try ( CloseableHttpClient httpClient = HttpClientBuilder.create().build() )
+        {
             // Depends on specific resources exposed by the browser module; if this test starts to fail,
             // check whether the structure of the browser module has changed and adjust accordingly.
             assertEquals( 200, httpClient.execute( new HttpGet(
