@@ -33,7 +33,6 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.ArrayIterator;
@@ -41,10 +40,12 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -85,11 +86,15 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.setOf;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -97,6 +102,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
+import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.RECOVERY;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.TRIGGER_REBUILD_ALL;
 import static org.neo4j.kernel.impl.store.record.IndexRule.constraintIndexRule;
@@ -492,7 +498,7 @@ public class IndexingServiceTest
     public void recordingOfRecoveredNodesShouldThrowIfServiceIsStarted() throws Exception
     {
         // Given
-        PrimitiveLongSet recoveredNodeIds = PrimitiveLongCollections.setOf( 1 );
+        PrimitiveLongSet recoveredNodeIds = setOf( 1 );
 
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
         life.start();
@@ -654,7 +660,7 @@ public class IndexingServiceTest
         // Given
         final long nodeId1 = 1;
         final long nodeId2 = 2;
-        final PrimitiveLongSet nodeIds = PrimitiveLongCollections.setOf( nodeId1, nodeId2 );
+        final PrimitiveLongSet nodeIds = setOf( nodeId1, nodeId2 );
 
         final NodePropertyUpdate nodeUpdate1 = add( nodeId1, "foo" );
         final NodePropertyUpdate nodeUpdate2 = add( nodeId2, "bar" );
@@ -696,6 +702,46 @@ public class IndexingServiceTest
         // Then
         assertTrue( "applyingRecoveredData was not called", applyingRecoveredDataCalled.get() );
         assertTrue( "appliedRecoveredData was not called", appliedRecoveredDataCalled.get() );
+    }
+
+    /*
+     * See comments in IndexingService#createIndex
+     */
+    @Test
+    public void shouldNotLoseIndexDescriptorDueToOtherSimilarIndexDuringRecovery() throws Exception
+    {
+        // GIVEN
+        long nodeId = 0, indexId = 1, otherIndexId = 2;
+        NodePropertyUpdate update = add( nodeId, "value" );
+        when( storeView.nodeAsUpdates( nodeId ) ).thenReturn( asList( update ) );
+        DoubleLongRegister register = mock( DoubleLongRegister.class );
+        when( register.readSecond() ).thenReturn( 42L );
+        when( storeView.indexSample( any( IndexDescriptor.class ), any( DoubleLongRegister.class ) ) )
+                .thenReturn( register );
+        // For some reason the usual accessor returned null from newUpdater, even when told to return the updater
+        // so spying on a real object instead.
+        IndexAccessor accessor = spy( new TrackingIndexAccessor() );
+        IndexRule index = indexRule( 1, labelId, propertyKeyId, PROVIDER_DESCRIPTOR );
+        IndexingService indexing = newIndexingServiceWithMockedDependencies(
+                populator, accessor, withData( update ), index
+        );
+        when( indexProvider.getInitialState( indexId ) ).thenReturn( ONLINE );
+        life.init();
+
+        // WHEN dropping another index, which happens to have the same label/property... while recovering
+        IndexRule otherIndex = indexRule( otherIndexId, labelId, propertyKeyId, PROVIDER_DESCRIPTOR );
+        indexing.createIndex( otherIndex );
+        indexing.dropIndex( otherIndex );
+        indexing.addRecoveredNodeIds( setOf( nodeId ) );
+        // and WHEN finally creating our index again (at a later point in recovery)
+        indexing.createIndex( index );
+        reset( accessor );
+        // and WHEN starting, i.e. completing recovery
+        life.start();
+
+        // THEN our index should still have been recovered properly
+        // apparently we create updaters two times during recovery, get over it
+        verify( accessor, times( 2 ) ).newUpdater( RECOVERY );
     }
 
     private Answer<Void> waitForLatch( final CountDownLatch latch )
@@ -855,6 +901,51 @@ public class IndexingServiceTest
         {
             int id = (Integer) invocation.getArguments()[0];
             return kind + "[" + id + "]";
+        }
+    }
+
+    private static class TrackingIndexAccessor implements IndexAccessor
+    {
+        private IndexUpdater updater = mock( IndexUpdater.class );
+
+        @Override
+        public void drop() throws IOException
+        {
+            throw new UnsupportedOperationException( "Not required" );
+        }
+
+        @Override
+        public IndexUpdater newUpdater( IndexUpdateMode mode )
+        {
+            return updater;
+        }
+
+        @Override
+        public void force() throws IOException
+        {
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+        }
+
+        @Override
+        public IndexReader newReader()
+        {
+            throw new UnsupportedOperationException( "Not required" );
+        }
+
+        @Override
+        public BoundedIterable<Long> newAllEntriesReader()
+        {
+            throw new UnsupportedOperationException( "Not required" );
+        }
+
+        @Override
+        public ResourceIterator<File> snapshotFiles() throws IOException
+        {
+            throw new UnsupportedOperationException( "Not required" );
         }
     }
 }
