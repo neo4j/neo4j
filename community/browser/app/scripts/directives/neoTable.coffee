@@ -41,6 +41,7 @@ angular.module('neo4jApp.directives')
           unbind()
 
         json2html = (obj) ->
+          return '' unless Object.keys(obj).length
           html  = "<table class='json-object'><tbody>"
           html += "<tr><th>#{k}</th><td>#{cell2html(v)}</td></tr>" for own k, v of obj
           html += "</tbody></table>"
