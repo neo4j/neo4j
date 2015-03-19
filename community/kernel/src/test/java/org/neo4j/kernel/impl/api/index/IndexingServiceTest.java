@@ -38,10 +38,12 @@ import org.neo4j.helpers.collection.ArrayIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -56,7 +58,12 @@ import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.logging.Logging;
 
+import static org.mockito.Mockito.times;
+
+import static org.mockito.Mockito.reset;
+
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -73,12 +80,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
+import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.RECOVERY;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.nioneo.store.IndexRule.indexRule;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
@@ -499,6 +508,42 @@ public class IndexingServiceTest
         inOrder.verify( validatedRecoveredUpdates ).close();
     }
 
+    /*
+     * See comments in IndexingService#createIndex
+     */
+    @Test
+    public void shouldNotLoseIndexDescriptorDueToOtherSimilarIndexDuringRecovery() throws Exception
+    {
+        // GIVEN
+        long nodeId = 0, indexId = 1, otherIndexId = 2;
+        NodePropertyUpdate update = add( nodeId, "value" );
+        when( storeView.nodeAsUpdates( nodeId ) ).thenReturn( asList( update ) );
+        // For some reason the usual accessor returned null from newUpdater, even when told to return the updater
+        // so spying on a real object instead.
+        IndexAccessor accessor = spy( new TrackingIndexAccessor() );
+        IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData( update ) );
+        when( indexProvider.getInitialState( indexId ) ).thenReturn( ONLINE );
+        IndexRule index = indexRule( 1, labelId, propertyKeyId, PROVIDER_DESCRIPTOR );
+        indexing.initIndexes( iterator( index ) );
+
+        // WHEN dropping another index, which happens to have the same label/property... while recovering
+        IndexRule otherIndex = indexRule( otherIndexId, labelId, propertyKeyId, PROVIDER_DESCRIPTOR );
+        indexing.createIndex( otherIndex );
+        indexing.dropIndex( otherIndex );
+        ValidatedIndexUpdates updates = mock( ValidatedIndexUpdates.class );
+        when( updates.changedNodeIds() ).thenReturn( asSet( nodeId ) );
+        indexing.updateIndexes( updates );
+        // and WHEN finally creating our index again (at a later point in recovery)
+        indexing.createIndex( index );
+        reset( accessor );
+        // and WHEN starting, i.e. completing recovery
+        indexing.startIndexes();
+
+        // THEN our index should still have been recovered properly
+        // apparently we create updaters two times during recovery, get over it
+        verify( accessor, times( 2 ) ).newUpdater( RECOVERY );
+    }
+
     private Answer waitForLatch( final CountDownLatch latch ) {
         return new Answer() {
             @Override
@@ -622,6 +667,51 @@ public class IndexingServiceTest
         public String toString()
         {
             return Arrays.toString( updates );
+        }
+    }
+
+    private static class TrackingIndexAccessor implements IndexAccessor
+    {
+        private IndexUpdater updater = mock( IndexUpdater.class );
+
+        @Override
+        public void drop() throws IOException
+        {
+            throw new UnsupportedOperationException( "Not required" );
+        }
+
+        @Override
+        public IndexUpdater newUpdater( IndexUpdateMode mode )
+        {
+            return updater;
+        }
+
+        @Override
+        public void force() throws IOException
+        {
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+        }
+
+        @Override
+        public IndexReader newReader()
+        {
+            throw new UnsupportedOperationException( "Not required" );
+        }
+
+        @Override
+        public BoundedIterable<Long> newAllEntriesReader()
+        {
+            throw new UnsupportedOperationException( "Not required" );
+        }
+
+        @Override
+        public ResourceIterator<File> snapshotFiles() throws IOException
+        {
+            throw new UnsupportedOperationException( "Not required" );
         }
     }
 }
