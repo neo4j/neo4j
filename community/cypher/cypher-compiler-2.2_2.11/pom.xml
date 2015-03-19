@@ -9,11 +9,11 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
-  <artifactId>neo4j-cypher-compiler-2.2</artifactId>
+  <artifactId>neo4j-cypher-compiler-2.2_2.11</artifactId>
   <packaging>jar</packaging>
   <version>2.2-SNAPSHOT</version>
-  <name>Neo4j - Cypher Compiler 2.2</name>
-  <description>Compiler for Cypher 2.2</description>
+  <name>Neo4j - Cypher Compiler 2.2 for scala 2.11</name>
+  <description>Compiler for Cypher 2.2 for scala 2.11</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
@@ -22,8 +22,8 @@
 
   <properties>
     <version-package>cypher.internal.compiler.v2_2</version-package>
-    <scala.version>2.10.5</scala.version>
-    <scala.binary.version>2.10</scala.binary.version>
+    <scala.version>2.11.6</scala.version>
+    <scala.binary.version>2.11</scala.binary.version>
   </properties>
 
   <licenses>
@@ -47,6 +47,10 @@
   </licenses>
 
   <build>
+
+    <sourceDirectory>../cypher-compiler-2.2/src/main/scala</sourceDirectory>
+    <testSourceDirectory>../cypher-compiler-2.2/src/test/scala</testSourceDirectory>
+
     <plugins>
 
       <plugin>
@@ -55,13 +59,22 @@
         <configuration>
           <scalaVersion>${scala.version}</scalaVersion>
           <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
+          <args>
+            <arg>-Xmax-classfile-name</arg>
+            <arg>100</arg>
+            <arg>-optimise</arg>
+            <!-- we might want to try those one fine day for performance
+                 (but watch out for binary compatability with scala 2.12)
+
+              <arg>-Yopt:l:project</arg>
+              <arg>-Ybackend:GenBCode</arg>
+              <arg>-Ydelambdafy:method</arg>
+              <arg>-Yinline</arg>
+            -->
+          </args>
         </configuration>
       </plugin>
 
-      <plugin>
-        <groupId>org.scalastyle</groupId>
-        <artifactId>scalastyle-maven-plugin</artifactId>
-      </plugin>
     </plugins>
   </build>
 
@@ -87,7 +100,7 @@
 
     <dependency>
       <groupId>org.scalatest</groupId>
-      <artifactId>scalatest_2.10</artifactId>
+      <artifactId>scalatest_2.11</artifactId>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -98,7 +111,7 @@
     </dependency>
     <dependency>
       <groupId>org.scalautils</groupId>
-      <artifactId>scalautils_2.10</artifactId>
+      <artifactId>scalautils_2.11</artifactId>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -109,7 +122,7 @@
     </dependency>
     <dependency>
       <groupId>org.scalacheck</groupId>
-      <artifactId>scalacheck_2.10</artifactId>
+      <artifactId>scalacheck_2.11</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -160,7 +173,7 @@
 
     <dependency>
       <groupId>org.parboiled</groupId>
-      <artifactId>parboiled-scala_2.10</artifactId>
+      <artifactId>parboiled-scala_2.11</artifactId>
     </dependency>
 
     <dependency>

@@ -22,16 +22,17 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{LabelName, Identifier}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.LazyLabel
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, LogicalPlanningTestSupport2}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{SemanticTable, PlannerQuery, LogicalPlanningTestSupport2}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 
 class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("MATCH (a:A) RETURN a AS a UNION ALL MATCH (a:B) RETURN a AS a") {
 
-    implicit val (logicalPlan, semanticTable) = new given {
+    val setup: UnionPlanningIntegrationTest.this.type#given = new given {
       knownLabels = Set("A", "B")
-    } getLogicalPlanFor "MATCH (a:A) RETURN a AS a UNION ALL MATCH (a:B) RETURN a AS a"
+    }
+    implicit val (logicalPlan, semanticTable) = setup.getLogicalPlanFor("MATCH (a:A) RETURN a AS a UNION ALL MATCH (a:B) RETURN a AS a")
 
     logicalPlan should equal(
       Union(
@@ -48,9 +49,10 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
   }
   test("MATCH (a:A) RETURN a AS a UNION MATCH (a:B) RETURN a AS a") {
 
-    implicit val (logicalPlan, semanticTable) = new given {
+    val setup: UnionPlanningIntegrationTest.this.type#given = new given {
       knownLabels = Set("A", "B")
-    } getLogicalPlanFor "MATCH (a:A) RETURN a AS a UNION MATCH (a:B) RETURN a AS a"
+    }
+    implicit val (logicalPlan, semanticTable) = setup.getLogicalPlanFor("MATCH (a:A) RETURN a AS a UNION MATCH (a:B) RETURN a AS a")
 
     logicalPlan should equal(
       Aggregation(
