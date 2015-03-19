@@ -658,7 +658,7 @@ public final class Settings
     }
 
     public static final Function2<Integer, Function<String, String>, Integer> port =
-            illegalValueMessage( "must be a valid port number", range( 1, 65535 ) );
+            illegalValueMessage( "must be a valid port number", range( 0, 65535 ) );
 
     public static <T> Function2<T, Function<String, String>, T> illegalValueMessage( final String message,
                                                                                      final Function2<T,
