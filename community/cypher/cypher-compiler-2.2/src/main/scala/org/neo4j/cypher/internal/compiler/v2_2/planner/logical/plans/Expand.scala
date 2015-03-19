@@ -33,7 +33,7 @@ case class Expand(left: LogicalPlan,
                   types: Seq[RelTypeName],
                   to: IdName, relName: IdName,
                   mode: ExpansionMode = ExpandAll)(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LogicalPlanWithoutExpressions {
+  extends LogicalPlan with LogicalPlanWithoutExpressions with LazyLogicalPlan {
 
   val lhs = Some(left)
   def rhs = None
@@ -42,7 +42,7 @@ case class Expand(left: LogicalPlan,
 }
 
 case class OptionalExpand(left: LogicalPlan, from: IdName, dir: Direction, types: Seq[RelTypeName], to: IdName, relName: IdName, mode: ExpansionMode = ExpandAll, predicates: Seq[Expression] = Seq.empty)
-                         (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan {
+                         (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
   val lhs = Some(left)
   def rhs = None
 
@@ -64,7 +64,7 @@ case class VarExpand(left: LogicalPlan,
                      length: VarPatternLength,
                      mode: ExpansionMode = ExpandAll,
                      predicates: Seq[(Identifier, Expression)] = Seq.empty)
-                    (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan {
+                    (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
 
   val lhs = Some(left)
   def rhs = None

@@ -24,12 +24,10 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
 
-sealed trait QueryHorizon
+sealed trait QueryHorizon extends PageDocFormatting { // with ToPrettyString[QueryHorizon] {
 
-  extends PageDocFormatting { // with ToPrettyString[QueryHorizon] {
-
-//  def toDefaultPrettyString(formatter: DocFormatter) =
-//    toPrettyString(formatter)(InternalDocHandler.docGen)
+  //  def toDefaultPrettyString(formatter: DocFormatter) =
+  //    toPrettyString(formatter)(InternalDocHandler.docGen)
 
   def exposedSymbols: Set[IdName]
 
@@ -45,12 +43,11 @@ sealed abstract class QueryProjection extends QueryHorizon { // with internalDoc
   def projections: Map[String, Expression]
   def shuffle: QueryShuffle
   def keySet: Set[String]
-  def updateShuffle(f: QueryShuffle => QueryShuffle) = withShuffle(f(shuffle))
   def withProjections(projections: Map[String, Expression]): QueryProjection
   def withShuffle(shuffle: QueryShuffle): QueryProjection
 
-  def dependingExpressions: Seq[Expression] =
-    shuffle.sortItems.map(_.expression)
+  def updateShuffle(f: QueryShuffle => QueryShuffle) = withShuffle(f(shuffle))
+  def dependingExpressions: Seq[Expression] = shuffle.sortItems.map(_.expression)
 }
 
 object QueryProjection {

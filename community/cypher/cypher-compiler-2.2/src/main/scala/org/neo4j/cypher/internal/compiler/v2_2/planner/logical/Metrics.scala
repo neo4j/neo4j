@@ -160,14 +160,14 @@ case class Selectivity(factor: Double) extends Ordered[Selectivity] {
 }
 
 object Selectivity {
-  def of( value: Double ): Option[Selectivity] = if ( value.isInfinite || value.isNaN ) None else Some(value)
+  def of(value: Double): Option[Selectivity] = if (value.isInfinite || value.isNaN) None else Some(value)
 
   val ZERO = Selectivity(0.0d)
   val ONE = Selectivity(1.0d)
 
   implicit def lift(amount: Double): Selectivity = Selectivity(amount)
 
-  implicit def turnSeqIntoSingleSelectivity(p: Seq[Selectivity]):Selectivity =
+  implicit def turnSeqIntoSingleSelectivity(p: Seq[Selectivity]): Selectivity =
     p.reduceOption(_ * _).getOrElse(Selectivity(1))
 }
 

@@ -56,7 +56,7 @@ class DefaultQueryPlanner(config: QueryPlannerConfiguration = QueryPlannerConfig
   }
 
   protected def planSingleQuery(query: PlannerQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan = {
-    val partPlan = planPart(query, leafPlan)
+    val partPlan = planPart(query, context, leafPlan)
 
     val projectedPlan = planEventHorizon(query, partPlan)
     val projectedContext = context.recurse(projectedPlan)
@@ -72,7 +72,7 @@ class DefaultQueryPlanner(config: QueryPlannerConfiguration = QueryPlannerConfig
       case Some(query) =>
         val lhs = pred
         val lhsContext = context.recurse(lhs)
-        val rhs = planPart(query, Some(context.logicalPlanProducer.planQueryArgumentRow(query.graph)))(lhsContext)
+        val rhs = planPart(query, lhsContext, Some(context.logicalPlanProducer.planQueryArgumentRow(query.graph)))
         val applyPlan = context.logicalPlanProducer.planTailApply(lhs, rhs)
 
         val applyContext = lhsContext.recurse(applyPlan)
@@ -89,9 +89,8 @@ class DefaultQueryPlanner(config: QueryPlannerConfiguration = QueryPlannerConfig
         pred
     }
 
-  private def planPart(query: PlannerQuery, leafPlan: Option[LogicalPlan])(implicit context: LogicalPlanningContext): LogicalPlan =
+  private def planPart(query: PlannerQuery, context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan =
     context.strategy.plan(query.graph)(context, leafPlan)
-
 
   private def planEventHorizon(query: PlannerQuery, plan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan = {
     val selectedPlan = config.applySelections(plan, query.graph)

@@ -176,7 +176,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     plans.foldLeft(GreedyPlanTable.empty)(_ + _)
 }
 
-case class FakePlan(availableSymbols: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LogicalPlanWithoutExpressions {
+case class FakePlan(availableSymbols: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
+  extends LogicalPlan with LogicalPlanWithoutExpressions with LazyLogicalPlan {
   def rhs = None
   def lhs = None
 }

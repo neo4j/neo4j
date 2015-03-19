@@ -23,9 +23,10 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{CardinalityEstimation, PlannerQuery}
 
 case class Skip(left: LogicalPlan, count: Expression)
-               (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan {
+               (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
   val lhs = Some(left)
   val rhs = None
+
   def availableSymbols = left.availableSymbols
 
   override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =

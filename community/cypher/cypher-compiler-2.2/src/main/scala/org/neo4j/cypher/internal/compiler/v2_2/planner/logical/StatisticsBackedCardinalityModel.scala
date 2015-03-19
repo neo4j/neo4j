@@ -29,8 +29,8 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
   def apply(query: PlannerQuery, input0: QueryGraphCardinalityInput, semanticTable: SemanticTable): Cardinality = {
     val output = query.fold(input0) {
       case (input, PlannerQuery(graph, horizon, _)) =>
-        val QueryGraphCardinalityInput(newLabels, graphCardinality) =
-          calculateCardinalityForQueryGraph(graph, input, semanticTable)
+        val QueryGraphCardinalityInput(newLabels, graphCardinality) = calculateCardinalityForQueryGraph(graph, input, semanticTable)
+
         val horizonCardinality = calculateCardinalityForQueryHorizon(graphCardinality, horizon)
         QueryGraphCardinalityInput(newLabels, horizonCardinality)
     }
