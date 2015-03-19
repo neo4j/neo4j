@@ -59,4 +59,28 @@ public class MuninnPageSwappingTest extends PageSwappingTest
     {
         ((MuninnPage) page).unlockWrite( stamp );
     }
+
+    @Override
+    protected long getLong( Page page, int offset )
+    {
+        return ((MuninnPage) page).getLong( offset );
+    }
+
+    @Override
+    protected int getInt( Page page, int offset )
+    {
+        return ((MuninnPage) page).getInt( offset );
+    }
+
+    @Override
+    protected void putLong( Page page, long value, int offset )
+    {
+        ((MuninnPage) page).putLong( value, offset );
+    }
+
+    @Override
+    protected void putInt( Page page, int value, int offset )
+    {
+        ((MuninnPage) page).putInt( value, offset );
+    }
 }

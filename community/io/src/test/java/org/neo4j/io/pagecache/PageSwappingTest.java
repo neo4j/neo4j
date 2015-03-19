@@ -101,6 +101,14 @@ public abstract class PageSwappingTest
 
     protected abstract void unlockWrite( Page page, long stamp );
 
+    protected abstract long getLong( Page page, int offset );
+
+    protected abstract int getInt( Page page, int offset );
+
+    protected abstract void putLong( Page page, long value, int offset );
+
+    protected abstract void putInt( Page page, int value, int offset );
+
     @Before
     @After
     public void clearStrayInterrupts()
@@ -179,9 +187,9 @@ public abstract class PageSwappingTest
         // Clear the interrupted flag and assert that it was still raised
         assertTrue( Thread.interrupted() );
 
-        assertThat( page.getLong( 0 ), is( x ) );
-        assertThat( page.getLong( 8 ), is( y ) );
-        assertThat( page.getInt( 16 ), is( z ) );
+        assertThat( getLong( page, 0 ), is( x ) );
+        assertThat( getLong( page, 8 ), is( y ) );
+        assertThat( getInt( page, 16 ), is( z ) );
 
         // This must not throw because we should still have a usable channel
         swapper.force();
@@ -195,9 +203,9 @@ public abstract class PageSwappingTest
         int z = ThreadLocalRandom.current().nextInt();
 
         Page page = createPage( cachePageSize );
-        page.putLong( x, 0 );
-        page.putLong( y, 8 );
-        page.putInt( z, 16 );
+        putLong( page, x, 0 );
+        putLong( page, y, 8 );
+        putInt( page, z, 16 );
         File file = new File( "a" );
         fs.create( file ).close();
 

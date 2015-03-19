@@ -79,7 +79,6 @@ final class MuninnPage extends StampedLock implements Page
         }
     }
 
-    @Override
     public int getCachePageId()
     {
         return System.identityHashCode( this );
@@ -277,7 +276,6 @@ final class MuninnPage extends StampedLock implements Page
         UnsafeUtil.putByte( p + 1, (byte)( value      ) );
     }
 
-    @Override
     public void getBytes( byte[] data, int offset )
     {
         checkBounds( offset + data.length );
@@ -290,7 +288,6 @@ final class MuninnPage extends StampedLock implements Page
         }
     }
 
-    @Override
     public void putBytes( byte[] data, int offset )
     {
         checkBounds( offset + data.length );
