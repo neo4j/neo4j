@@ -23,12 +23,11 @@ import java.io.IOException;
 
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
  * Accessor of meta data information about transactions.
  */
-public interface LogicalTransactionStore extends Lifecycle
+public interface LogicalTransactionStore
 {
     /**
      * @return a {@link TransactionAppender} capable of adding new transactions.

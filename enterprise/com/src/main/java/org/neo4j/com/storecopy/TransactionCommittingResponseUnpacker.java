@@ -25,7 +25,6 @@ import org.neo4j.com.ComException;
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
-import org.neo4j.com.storecopy.TransactionQueue.TransactionVisitor;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.KernelHealth;
@@ -35,12 +34,14 @@ import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.Commitment;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
+import org.neo4j.kernel.impl.util.Access;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 import static org.neo4j.kernel.impl.api.TransactionApplicationMode.EXTERNAL;
@@ -64,21 +65,28 @@ public class TransactionCommittingResponseUnpacker implements ResponseUnpacker, 
     private final TransactionVisitor batchCommitter = new TransactionVisitor()
     {
         @Override
-        public void visit( CommittedTransactionRepresentation transaction, TxHandler handler ) throws IOException
+        public void visit( CommittedTransactionRepresentation transaction, TxHandler handler,
+                Access<Commitment> commitmentAccess ) throws IOException
         {
-            appender.append( transaction.getTransactionRepresentation(), transaction.getCommitEntry().getTxId() );
+            // Tuck away the Commitment returned from the call to append. We'll use each Commitment right before
+            // applying each transaction.
+            Commitment commitment = appender.append( transaction.getTransactionRepresentation(),
+                    transaction.getCommitEntry().getTxId() );
+            commitmentAccess.set( commitment );
         }
     };
     // Visits all queued, and recently appended, transactions, applying them to the store
     private final TransactionVisitor batchApplier = new TransactionVisitor()
     {
         @Override
-        public void visit( CommittedTransactionRepresentation transaction, TxHandler handler ) throws IOException
+        public void visit( CommittedTransactionRepresentation transaction, TxHandler handler,
+                Access<Commitment> commitmentAccess ) throws IOException
         {
             long transactionId = transaction.getCommitEntry().getTxId();
             TransactionRepresentation representation = transaction.getTransactionRepresentation();
             try
             {
+                commitmentAccess.get().transactionCommitted();
                 try ( LockGroup locks = new LockGroup();
                       ValidatedIndexUpdates indexUpdates = indexUpdatesValidator.validate( representation, EXTERNAL ) )
                 {
