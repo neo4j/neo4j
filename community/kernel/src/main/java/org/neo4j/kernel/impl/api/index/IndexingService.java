@@ -63,6 +63,7 @@ import org.neo4j.kernel.logging.Logging;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
+
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.Iterables.concatResourceIterators;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
@@ -305,11 +306,26 @@ public class IndexingService extends LifecycleAdapter
 
         long ruleId = rule.getId();
         IndexProxy index = indexMap.getIndexProxy( ruleId );
-        if (index != null)
+        if ( index != null && state == State.NOT_STARTED )
         {
-            // We already have this index
+            // During recovery we might run into this scenario:
+            // - We're starting recovery on a database, where init() is called and all indexes that
+            //   are found in the store, instantiated and put into the IndexMap. Among them is index X.
+            // - While we recover the database we bump into a transaction creating index Y, with the
+            //   same IndexDescriptor, i.e. same label/property, as X. This is possible since this took
+            //   place before the creation of X.
+            // - When Y is dropped in between this creation and the creation of X (it will have to be
+            //   otherwise X wouldn't have had an opportunity to be created) the index is removed from
+            //   the IndexMap, both by id AND descriptor.
+            //
+            // Because of the scenario above we need to put this created index into the IndexMap
+            // again, otherwise it will disappear from the IndexMap (at least for lookup by descriptor)
+            // and not be able to accept changes applied from recovery later on.
+            indexMap.putIndexProxy( ruleId, index );
+            indexMapReference.setIndexMap( indexMap );
             return;
         }
+
         final IndexDescriptor descriptor = createDescriptor( rule );
         SchemaIndexProvider.Descriptor providerDescriptor = rule.getProviderDescriptor();
         boolean constraint = rule.isConstraintIndex();
