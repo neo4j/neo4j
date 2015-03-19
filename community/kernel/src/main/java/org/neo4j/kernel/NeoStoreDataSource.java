@@ -1132,14 +1132,15 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
 
                 // Shut down all services in here, effectively making the database unusable for anyone who tries.
                 life.shutdown();
+
+                // Close the NeoStore
+                neoStoreModule.neoStore().close();
+                msgLog.info( "NeoStore closed" );
             }
         }
         // After we've released the logFile monitor there might be transactions that wants to commit, but had
         // to wait for the logFile monitor until now. When they finally get it and try to commit they will
         // fail since the logFile no longer works.
-
-        neoStoreModule.neoStore().close();
-        msgLog.info( "NeoStore closed" );
     }
 
     @Override
