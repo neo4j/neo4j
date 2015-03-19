@@ -38,7 +38,7 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.kernel.impl.query.{QueryEngineProvider, QueryExecutionEngine}
+import org.neo4j.kernel.impl.query.QueryEngineProvider
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
 import scala.collection.mutable
@@ -121,7 +121,7 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
     def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel) =
       SimpleMetricsFactory.newCardinalityEstimator(queryGraphCardinalityModel)
 
-    def newCostModel(cardinality: CardinalityModel) = SimpleMetricsFactory.newCostModel(cardinality)
+    def newCostModel() = SimpleMetricsFactory.newCostModel()
   }
 
   class LoggingState() {
@@ -146,10 +146,10 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
       }
     }
 
-    def startCardinalityEstimation(plan: LogicalPlan) {
+    def startCardinalityEstimation(pq: PlannerQuery) {
       if (currentCostCalc.nonEmpty) {
         assert(currentCardinalityEstimation.isEmpty)
-        currentCardinalityEstimation = Some(CardinalityEstimation(plan, None))
+        currentCardinalityEstimation = Some(new CardinalityEstimation(pq, None))
       }
     }
 
@@ -178,11 +178,10 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
   }
 
   case class LoggingMetricsFactory(inner: MetricsFactory, log: LoggingState) extends MetricsFactory {
-    def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel) =
-      new CardinalityModel {
+    def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel) =  new CardinalityModel {
         val innerCardinalityModel = inner.newCardinalityEstimator(queryGraphCardinalityModel)
 
-        def apply(in: LogicalPlan, c: QueryGraphCardinalityInput): Cardinality = {
+        def apply(in: PlannerQuery, c: QueryGraphCardinalityInput): Cardinality = {
           log.startCardinalityEstimation(in)
           val result = innerCardinalityModel(in, c)
           log.finishCardinalityEstimation(result)
@@ -190,12 +189,12 @@ class ProfileRonjaPlanningTest extends ExecutionEngineFunSuite with QueryStatist
         }
       }
 
-    def newCostModel(cardinality: CardinalityModel): CostModel = new CostModel {
-      val innerCostModel = inner.newCostModel(cardinality)
+    def newCostModel(): CostModel = new CostModel {
+      val innerCostModel = inner.newCostModel()
 
-      def apply(in: LogicalPlan, c: QueryGraphCardinalityInput): Cost = {
+      def apply(in: LogicalPlan): Cost = {
         log.startCostCalculation(in)
-        val result = innerCostModel(in, c)
+        val result = innerCostModel(in)
         log.finishCostCalculation(result)
         result
       }
@@ -227,9 +226,9 @@ case class CostCalculation(plan: LogicalPlan, result: Option[Cost], cardinalityE
   ))
 }
 
-case class CardinalityEstimation(plan: LogicalPlan, result: Option[Cardinality]) {
+case class CardinalityEstimation(pq: PlannerQuery, result: Option[Cardinality]) {
   def toJson: JValue = JObject(List[(String, JValue)](
-    "plan" -> JString(plan.toString),
+    "pq" -> JString(pq.toString),
     "result" -> JDouble(result.map(_.amount).getOrElse(-1))
   ))
 }

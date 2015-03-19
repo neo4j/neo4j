@@ -20,22 +20,22 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.pipes.LazyLabel
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, LogicalPlanningTestSupport2}
-import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.LazyLabel
+import org.neo4j.cypher.internal.compiler.v2_2.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
+import org.neo4j.graphdb.Direction
 
 class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("should build plans containing outgoing path projections") {
     planFor("MATCH p = (a:X)-[r]->(b) RETURN p").plan should equal(
       Projection(
-        Expand( NodeByLabelScan("a",  LazyLabel("X"), Set.empty)(PlannerQuery.empty), "a", Direction.OUTGOING, Seq.empty, "b", "r")(PlannerQuery.empty),
+        Expand( NodeByLabelScan("a",  LazyLabel("X"), Set.empty)(solved), "a", Direction.OUTGOING, Seq.empty, "b", "r")(solved),
         expressions = Map(
           "p" -> PathExpression(NodePathStep(Identifier("a")_,SingleRelationshipPathStep(Identifier("r")_, Direction.OUTGOING, NilPathStep)))_
         )
-      )(PlannerQuery.empty)
+      )(solved)
     )
   }
 
@@ -49,10 +49,10 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
             FunctionInvocation(FunctionName("head")_, FunctionInvocation(FunctionName("nodes")_, pathExpr)_)_,
             Identifier("a")_
           )_),
-          Expand( NodeByLabelScan("a",  LazyLabel("X"), Set.empty)(PlannerQuery.empty), "a", Direction.OUTGOING,  Seq.empty, "b", "r")(PlannerQuery.empty)
-        )(PlannerQuery.empty),
+          Expand( NodeByLabelScan("a",  LazyLabel("X"), Set.empty)(solved), "a", Direction.OUTGOING,  Seq.empty, "b", "r")(solved)
+        )(solved),
         expressions = Map("b" -> Identifier("b") _)
-      )(PlannerQuery.empty)
+      )(solved)
     )
   }
 
@@ -72,10 +72,10 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
               Identifier("a")_
             )_
           ),
-          Expand( NodeByLabelScan("a",  LazyLabel("X"), Set.empty)(PlannerQuery.empty), "a", Direction.OUTGOING,  Seq.empty, "b", "r")(PlannerQuery.empty)
-        )(PlannerQuery.empty),
+          Expand( NodeByLabelScan("a",  LazyLabel("X"), Set.empty)(solved), "a", Direction.OUTGOING,  Seq.empty, "b", "r")(solved)
+        )(solved),
         expressions = Map("b" -> Identifier("b") _)
-      )(PlannerQuery.empty)
+      )(solved)
     )
   }
 }

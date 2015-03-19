@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{LogicalPlanningContext, PlanTransformer}
 
 object selectCovered extends PlanTransformer[QueryGraph] {
@@ -32,7 +31,7 @@ object selectCovered extends PlanTransformer[QueryGraph] {
     if (unsolvedPredicates.isEmpty)
       plan
     else {
-      planSelection(unsolvedPredicates, plan)
+      context.logicalPlanProducer.planSelection(unsolvedPredicates, plan)
     }
   }
 }

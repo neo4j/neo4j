@@ -19,16 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
-import org.neo4j.graphdb.Direction
+import org.mockito.Matchers._
+import org.mockito.Mockito._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
-import org.mockito.Mockito._
-import org.mockito.Matchers._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
+import org.neo4j.graphdb.Direction
 
 class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -48,7 +47,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
   )_)_)
 
   val factory = newMockedMetricsFactory
-  when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan, _: QueryGraphCardinalityInput) => plan match {
+  when(factory.newCardinalityEstimator(any())).thenReturn((plan: PlannerQuery, _: QueryGraphCardinalityInput) => plan match {
     case _ => Cardinality(1000)
   })
 
@@ -79,13 +78,13 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     )
 
     val aPlan = newMockedLogicalPlan("a")
-    val inner = planSimpleExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, IdName(nodeName), patternRel, ExpandAll)
+    val inner = Expand(Argument(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
 
     // When
     val result = selectPatternPredicates(passThrough, pickBest)(aPlan, qg)
 
     // Then
-    result should equal(planSemiApply(aPlan, inner, patternExp))
+    result should equal(SemiApply(aPlan, inner)(solved))
   }
 
   test("should introduce anti semi apply for unsolved exclusive negated pattern predicate") {
@@ -112,13 +111,13 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     )
 
     val aPlan = newMockedLogicalPlan("a")
-    val inner = planSimpleExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, IdName(nodeName), patternRel, ExpandAll)
+    val inner = Expand(Argument(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
 
     // When
     val result = selectPatternPredicates(passThrough, pickBest)(aPlan, qg)
 
     // Then
-    result should equal(planAntiSemiApply(aPlan, inner, patternExp, notExpr))
+    result should equal(AntiSemiApply(aPlan, inner)(solved))
   }
 
   test("should not introduce semi apply for unsolved exclusive pattern predicate when nodes not applicable") {
@@ -180,14 +179,14 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     )
 
     val aPlan = newMockedLogicalPlan("a")
-    val singleRow = planArgumentRow(Set(IdName("a")))
-    val inner = planSimpleExpand(singleRow, IdName("a"), dir, IdName(nodeName), patternRel, ExpandAll)
+    val singleRow = Argument(Set(IdName("a")))(solved)()
+    val inner = Expand(singleRow, IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
 
     // When
     val result = selectPatternPredicates(passThrough, pickBest)(aPlan, qg)
 
     // Then
-    result should equal(solvePredicate(planSelectOrSemiApply(aPlan, inner, equals), orsExp))
+    result should equal(SelectOrSemiApply(aPlan, inner, equals)(solved))
   }
 
   test("should introduce select or anti semi apply for unsolved negated pattern predicates in disjunction with an expression") {
@@ -218,13 +217,13 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     )
 
     val aPlan = newMockedLogicalPlan("a")
-    val inner = planSimpleExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, IdName(nodeName), patternRel, ExpandAll)
+    val inner = Expand(Argument(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
 
     // When
     val result = selectPatternPredicates(passThrough, pickBest)(aPlan, qg)
 
     // Then
-    result should equal(solvePredicate(planSelectOrAntiSemiApply(aPlan, inner, equals), orsExp))
+    result should equal(SelectOrAntiSemiApply(aPlan, inner, equals)(solved))
   }
 
   test("should introduce let semi apply and select or semi apply for multiple pattern predicates in or") {
@@ -265,14 +264,14 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     )
 
     val aPlan = newMockedLogicalPlan("a")
-    val inner = planSimpleExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, IdName(nodeName), patternRel, ExpandAll)
-    val inner2 = planSimpleExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, IdName("  UNNAMED4"), patternRel2, ExpandAll)
+    val inner = Expand(Argument(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
+    val inner2 = Expand(Argument(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName("  UNNAMED4"), patternRel2.name, ExpandAll)(solved)
 
     // When
     val result = selectPatternPredicates(passThrough, pickBest)(aPlan, qg)
 
     // Then
-    result should equal(solvePredicate(planSelectOrSemiApply(planLetSemiApply(aPlan, inner, IdName("  FRESHID0")), inner2, ident("  FRESHID0")), orsExp))
+    result should equal(SelectOrSemiApply(LetSemiApply(aPlan, inner, IdName("  FRESHID0"))(solved), inner2, ident("  FRESHID0"))(solved))
   }
 
   test("should introduce let semi apply and select or anti semi apply for multiple pattern predicates in or") {
@@ -312,14 +311,14 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     )
 
     val aPlan = newMockedLogicalPlan("a")
-    val inner = planSimpleExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, IdName(nodeName), patternRel, ExpandAll)
-    val inner2 = planSimpleExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, IdName("  UNNAMED4"), patternRel2, ExpandAll)
+    val inner = Expand(Argument(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
+    val inner2 = Expand(Argument(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName("  UNNAMED4"), patternRel2.name, ExpandAll)(solved)
 
     // When
     val result = selectPatternPredicates(passThrough, pickBest)(aPlan, qg)
 
     // Then
-    result should equal(solvePredicate(planSelectOrAntiSemiApply(planLetSemiApply(aPlan, inner, IdName("  FRESHID0")), inner2, ident("  FRESHID0")), orsExp))
+    result should equal(SelectOrAntiSemiApply(LetSemiApply(aPlan, inner, IdName("  FRESHID0"))(solved), inner2, ident("  FRESHID0"))(solved))
   }
 
   test("should introduce let anti semi apply and select or semi apply for multiple pattern predicates in or") {
@@ -359,14 +358,14 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     )
 
     val aPlan = newMockedLogicalPlan("a")
-    val inner = planSimpleExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, IdName(nodeName), patternRel, ExpandAll)
-    val inner2 = planSimpleExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, IdName("  UNNAMED4"), patternRel2, ExpandAll)
+    val inner = Expand(Argument(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
+    val inner2 = Expand(Argument(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName("  UNNAMED4"), patternRel2.name, ExpandAll)(solved)
 
     // When
     val result = selectPatternPredicates(passThrough, pickBest)(aPlan, qg)
 
     // Then
-    result should equal(solvePredicate(planSelectOrSemiApply(planLetAntiSemiApply(aPlan, inner, IdName("  FRESHID0")), inner2, ident("  FRESHID0")), orsExp))
+    result should equal(SelectOrSemiApply(LetAntiSemiApply(aPlan, inner, IdName("  FRESHID0"))(solved), inner2, ident("  FRESHID0"))(solved))
   }
 
   test("should introduce let select or semi apply and select or anti semi apply for multiple pattern predicates in or") {
@@ -411,14 +410,14 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     )
 
     val aPlan = newMockedLogicalPlan("a")
-    val inner = planSimpleExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, IdName(nodeName), patternRel, ExpandAll)
-    val inner2 = planSimpleExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, IdName("  UNNAMED4"), patternRel2, ExpandAll)
+    val inner = Expand(Argument(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
+    val inner2 = Expand(Argument(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName("  UNNAMED4"), patternRel2.name, ExpandAll)(solved)
 
     // When
     val result = selectPatternPredicates(passThrough, pickBest)(aPlan, qg)
 
     // Then
-    result should equal(solvePredicate(planSelectOrAntiSemiApply(planLetSelectOrSemiApply(aPlan, inner, IdName("  FRESHID0"), equals), inner2, ident("  FRESHID0")), orsExp))
+    result should equal(SelectOrAntiSemiApply(LetSelectOrSemiApply(aPlan, inner, IdName("  FRESHID0"), equals)(solved), inner2, ident("  FRESHID0"))(solved))
   }
 
   test("should introduce let anti select or semi apply and select or semi apply for multiple pattern predicates in or") {
@@ -463,13 +462,13 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     )
 
     val aPlan = newMockedLogicalPlan("a")
-    val inner = planSimpleExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, IdName(nodeName), patternRel, ExpandAll)
-    val inner2 = planSimpleExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, IdName("  UNNAMED4"), patternRel2, ExpandAll)
+    val inner = Expand(Argument(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
+    val inner2 = Expand(Argument(Set(IdName("a")))(solved)(), IdName("a"), dir, types, IdName("  UNNAMED4"), patternRel2.name, ExpandAll)(solved)
 
     // When
     val result = selectPatternPredicates(passThrough, pickBest)(aPlan, qg)
 
     // Then
-    result should equal(solvePredicate(planSelectOrSemiApply(planLetSelectOrAntiSemiApply(aPlan, inner, IdName("  FRESHID0"), equals), inner2, ident("  FRESHID0")), orsExp))
+    result should equal(SelectOrSemiApply(LetSelectOrAntiSemiApply(aPlan, inner, IdName("  FRESHID0"), equals)(solved), inner2, ident("  FRESHID0"))(solved))
   }
 }

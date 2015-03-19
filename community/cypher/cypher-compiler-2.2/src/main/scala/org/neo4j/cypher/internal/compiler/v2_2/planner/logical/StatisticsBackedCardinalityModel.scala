@@ -23,15 +23,10 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.IntegerLiteral
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.MapSupport._
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.{QueryGraphCardinalityInput, QueryGraphCardinalityModel}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
 
-class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel)
-  extends Metrics.CardinalityModel {
+class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel) extends Metrics.CardinalityModel {
 
-  def apply(plan: LogicalPlan, input: QueryGraphCardinalityInput): Cardinality =
-    computeCardinality(plan.solved, input)
-
-  private def computeCardinality(query: PlannerQuery, input0: QueryGraphCardinalityInput): Cardinality = {
+  def apply(query: PlannerQuery, input0: QueryGraphCardinalityInput): Cardinality = {
     val output = query.fold(input0) {
       case (input, PlannerQuery(graph, horizon, _)) =>
         val QueryGraphCardinalityInput(newLabels, graphCardinality) = calculateCardinalityForQueryGraph(graph, input)

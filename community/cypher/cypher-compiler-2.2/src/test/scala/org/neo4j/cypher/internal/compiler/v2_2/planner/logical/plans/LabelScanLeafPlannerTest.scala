@@ -19,16 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
-import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.LabelId
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cardinality
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cost
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.labelScanLeafPlanner
 
 import scala.collection.mutable
@@ -48,9 +46,9 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       patternNodes = Set(idName))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan, _: QueryGraphCardinalityInput) => plan match {
-      case _: NodeByLabelScan => Cardinality(1)
-      case _                  => Cardinality(Double.MaxValue)
+    when(factory.newCostModel()).thenReturn((plan: LogicalPlan) => plan match {
+      case _: NodeByLabelScan => Cost(1)
+      case _                  => Cost(Double.MaxValue)
     })
 
     val semanticTable = newMockedSemanticTable
@@ -67,7 +65,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
     // then
     resultPlans should equal(Seq(
-      planNodeByLabelScan(idName, LazyLabel("Awesome"), Seq(hasLabels), None, Set.empty))
+      NodeByLabelScan(idName, LazyLabel("Awesome"), Set.empty)(solved))
     )
   }
 
@@ -81,9 +79,9 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       patternNodes = Set(idName))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan, _: QueryGraphCardinalityInput) => plan match {
-      case _: NodeByLabelScan => Cardinality(100)
-      case _                  => Cardinality(Double.MaxValue)
+    when(factory.newCostModel()).thenReturn((plan: LogicalPlan) => plan match {
+      case _: NodeByLabelScan => Cost(100)
+      case _                  => Cost(Double.MaxValue)
     })
 
     implicit val semanticTable = newMockedSemanticTable
@@ -100,6 +98,6 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
     // then
     resultPlans should equal(
-      Seq(planNodeByLabelScan(idName, LazyLabel(LabelName("Awesome")_), Seq(hasLabels), None, Set.empty)))
+      Seq(NodeByLabelScan(idName, LazyLabel(LabelName("Awesome")_), Set.empty)(solved)))
   }
 }

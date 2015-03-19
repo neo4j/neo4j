@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, QueryGraph}
 import org.neo4j.graphdb.Direction
 
@@ -38,79 +37,80 @@ class ProjectEndpointsTest
 
   test("project single simple outgoing relationship") {
     implicit val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
-    val inputPlan = planArgumentRow(patternNodes = Set.empty, patternRels = Set.empty, other = Set(rName))
+    val inputPlan = Argument(Set(rName))(solved)()
     val planTable = greedyPlanTableWith(inputPlan)
 
     val patternRel = PatternRelationship(rName, (aName, bName), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph.empty.addPatternRelationship(patternRel)
 
     projectEndpoints(planTable, qg) should equal(Seq(
-      planEndpointProjection(inputPlan, aName, startInScope = false, bName, endInScope = false, patternRel)
+      ProjectEndpoints(inputPlan, rName, aName, startInScope = false, bName, endInScope = false, None, directed = true, SimplePatternLength)(solved)
     ))
   }
 
   test("project single simple outgoing relationship and verifies it's type") {
     implicit val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
-    val inputPlan = planArgumentRow(patternNodes = Set.empty, patternRels = Set.empty, other = Set(rName))
+    val inputPlan = Argument(Set(rName))(solved)()
     val planTable = greedyPlanTableWith(inputPlan)
 
-    val patternRel = PatternRelationship(rName, (aName, bName), Direction.OUTGOING, Seq(RelTypeName("X")_), SimplePatternLength)
+    val patternRel = PatternRelationship(rName, (aName, bName), Direction.OUTGOING, Seq(RelTypeName("X") _), SimplePatternLength)
     val qg = QueryGraph.empty.addPatternRelationship(patternRel)
 
     projectEndpoints(planTable, qg) should equal(Seq(
-      planEndpointProjection(inputPlan, aName, startInScope = false, bName, endInScope = false, patternRel)
+      ProjectEndpoints(inputPlan, rName, aName, startInScope = false, bName, endInScope = false, Some(Seq(RelTypeName("X") _)), directed = true, SimplePatternLength)(solved)
     ))
   }
 
   test("project single simple incoming relationship") {
     implicit val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
-    val inputPlan = planArgumentRow(patternNodes = Set.empty, patternRels = Set.empty, other = Set(rName))
+    val inputPlan = Argument(Set(rName))(solved)()
     val planTable = greedyPlanTableWith(inputPlan)
 
     val patternRel = PatternRelationship(rName, (aName, bName), Direction.INCOMING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph.empty.addPatternRelationship(patternRel)
 
     projectEndpoints(planTable, qg) should equal(Seq(
-      planEndpointProjection(inputPlan, bName, startInScope = false, aName, endInScope = false, patternRel)
+      ProjectEndpoints(inputPlan, rName, bName, startInScope = false, aName, endInScope = false, None, directed = true, SimplePatternLength)(solved)
     ))
   }
 
   test("project single simple outgoing relationship where start node is bound") {
     implicit val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
-    val inputPlan = planArgumentRow(patternNodes = Set.empty, patternRels = Set.empty, other = Set(aName, rName))
+    val inputPlan = Argument(Set(aName, rName))(solved)()
     val planTable = greedyPlanTableWith(inputPlan)
 
     val patternRel = PatternRelationship(rName, (aName, bName), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph.empty.addPatternRelationship(patternRel)
 
     projectEndpoints(planTable, qg) should equal(Seq(
-      planEndpointProjection(inputPlan, aName, startInScope = true, bName, endInScope = false, patternRel)
+      ProjectEndpoints(inputPlan, rName, aName, startInScope = true, bName, endInScope = false, None, directed = true, SimplePatternLength)(solved)
     ))
   }
 
   test("project single simple outgoing relationship where end node is bound") {
     implicit val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
-    val inputPlan = planArgumentRow(patternNodes = Set.empty, patternRels = Set.empty, other = Set(bName, rName))
+    val inputPlan = Argument(Set(bName, rName))(solved)()
     val planTable = greedyPlanTableWith(inputPlan)
 
     val patternRel = PatternRelationship(rName, (aName, bName), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph.empty.addPatternRelationship(patternRel)
 
     projectEndpoints(planTable, qg) should equal(Seq(
-      planEndpointProjection(inputPlan, aName, startInScope = false, bName, endInScope = true, patternRel)
+      ProjectEndpoints(inputPlan, rName, aName, startInScope = false, bName, endInScope = true, None, directed = true, SimplePatternLength)(solved)
     ))
   }
 
   test("project single simple outgoing relationship where both nodes are bound") {
     implicit val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
-    val inputPlan = planArgumentRow(patternNodes = Set.empty, patternRels = Set.empty, other = Set(aName, bName, rName))
+    val inputPlan = Argument(Set(aName, bName, rName))(solved)()
+
     val planTable = greedyPlanTableWith(inputPlan)
 
     val patternRel = PatternRelationship(rName, (aName, bName), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph.empty.addPatternRelationship(patternRel)
 
     projectEndpoints(planTable, qg) should equal(Seq(
-      planEndpointProjection(inputPlan, aName, startInScope = true, bName, endInScope = true, patternRel)
+      ProjectEndpoints(inputPlan, rName, aName, startInScope = true, bName, endInScope = true, None, directed = true, SimplePatternLength)(solved)
     ))
   }
 }

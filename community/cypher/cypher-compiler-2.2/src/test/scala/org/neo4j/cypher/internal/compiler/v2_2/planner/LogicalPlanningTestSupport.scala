@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.{GreedyPlanTable, expandsOrJoins, expandsOnly, GreedyQueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{GraphStatistics, PlanContext}
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.Clock
@@ -45,7 +46,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   val astRewriter = new ASTRewriter(mock[AstRewritingMonitor], shouldExtractParameters = false)
   val mockRel = newPatternRelationship("a", "b", "r")
   val tokenResolver = new SimpleTokenResolver()
-  val solved = PlannerQuery.empty
+  val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(0))
 
   def newPatternRelationship(start: IdName, end: IdName, rel: IdName, dir: Direction = Direction.OUTGOING, types: Seq[RelTypeName] = Seq.empty, length: PatternLength = SimplePatternLength) = {
     PatternRelationship(rel, (start, end), dir, types, length)
@@ -54,8 +55,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   class SpyableMetricsFactory extends MetricsFactory {
     def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel) =
       SimpleMetricsFactory.newCardinalityEstimator(queryGraphCardinalityModel)
-    def newCostModel(cardinality: CardinalityModel) =
-      SimpleMetricsFactory.newCostModel(cardinality)
+    def newCostModel() =
+      SimpleMetricsFactory.newCostModel()
     def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable): QueryGraphCardinalityModel =
       SimpleMetricsFactory.newQueryGraphCardinalityModel(statistics, semanticTable)
   }
@@ -65,8 +66,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   def newMockedPipeExecutionPlanBuilderContext: PipeExecutionBuilderContext = {
     val context = mock[PipeExecutionBuilderContext]
     val cardinality = new Metrics.CardinalityModel {
-      def apply(v1: LogicalPlan, ignored: QueryGraphCardinalityInput) = v1 match {
-        case _:SingleRow => Cardinality(1)
+      def apply(v1: PlannerQuery, ignored: QueryGraphCardinalityInput) = v1 match {
+        case PlannerQuery.empty => Cardinality(1)
         case _ => Cardinality(104999.99999)
       }
     }
@@ -88,6 +89,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   def newMockedSemanticTable: SemanticTable = {
     val m = mock[SemanticTable]
     when(m.resolvedLabelIds).thenReturn(mutable.Map.empty[String, LabelId])
+    when(m.resolvedPropertyKeyNames).thenReturn(mutable.Map.empty[String, PropertyKeyId])
+    when(m.resolvedRelTypeNames).thenReturn(mutable.Map.empty[String, RelTypeId])
     m
   }
 
@@ -99,7 +102,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     strategy
   }
 
-  def mockedMetrics: Metrics = self.mock[Metrics]
+  def mockedMetrics: Metrics = newSimpleMetrics(hardcodedStatistics, newMockedSemanticTable)
 
   def newMockedLogicalPlanningContext(planContext: PlanContext,
                                       metrics: Metrics = mockedMetrics,
@@ -109,7 +112,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                         new GreedyQueryGraphSolver(expandsOnly)
                                       ),
                                       cardinality: Cardinality = Cardinality(1)): LogicalPlanningContext =
-    LogicalPlanningContext(planContext, metrics, semanticTable, strategy, QueryGraphCardinalityInput(Map.empty, cardinality))
+    LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality), metrics, semanticTable,
+      strategy, QueryGraphCardinalityInput(Map.empty, cardinality))
 
   def newMockedStatistics = mock[GraphStatistics]
   def hardcodedStatistics = HardcodedGraphStatistics
@@ -122,27 +126,27 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newMockedLogicalPlanWithProjections(ids: String*): LogicalPlan = {
     val projections = RegularQueryProjection(projections = ids.map((id) => id -> ident(id)).toMap)
-    FakePlan(ids.map(IdName(_)).toSet)(PlannerQuery(
+    FakePlan(ids.map(IdName(_)).toSet)(CardinalityEstimation.lift(PlannerQuery(
         horizon = projections,
         graph = QueryGraph.empty.addPatternNodes(ids.map(IdName(_)).toSeq: _*)
-      )
+      ), Cardinality(0))
     )
   }
 
   def newMockedLogicalPlan(idNames: Set[IdName]): LogicalPlan = {
     val qg = QueryGraph.empty.addPatternNodes(idNames.toSeq: _*)
-    FakePlan(idNames)(PlannerQuery(qg))
+    FakePlan(idNames)(CardinalityEstimation.lift(PlannerQuery(qg), Cardinality(0)))
   }
 
   def newMockedLogicalPlan(ids: String*): LogicalPlan =
     newMockedLogicalPlan(ids.map(IdName(_)).toSet)
 
-  def newMockedLogicalPlanWithSolved(ids: Set[IdName], solved: PlannerQuery): LogicalPlan =
+  def newMockedLogicalPlanWithSolved(ids: Set[IdName], solved: PlannerQuery with CardinalityEstimation): LogicalPlan =
     FakePlan(ids)(solved)
 
   def newMockedLogicalPlanWithPatterns(ids: Set[IdName], patterns: Seq[PatternRelationship] = Seq.empty): LogicalPlan = {
     val qg = QueryGraph.empty.addPatternNodes(ids.toSeq: _*).addPatternRelationships(patterns)
-    FakePlan(ids)(PlannerQuery(qg))
+    FakePlan(ids)(CardinalityEstimation.lift(PlannerQuery(qg), Cardinality(0)))
   }
 
   def newPlanner(metricsFactory: MetricsFactory): CostBasedPipeBuilder =
@@ -173,7 +177,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     plans.foldLeft(GreedyPlanTable.empty)(_ + _)
 }
 
-case class FakePlan(availableSymbols: Set[IdName])(val solved: PlannerQuery) extends LogicalPlan with LogicalPlanWithoutExpressions {
+case class FakePlan(availableSymbols: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LogicalPlanWithoutExpressions {
   def rhs = None
   def lhs = None
 }

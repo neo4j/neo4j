@@ -28,8 +28,8 @@ case class CachedMetricsFactory(metricsFactory: MetricsFactory) extends MetricsF
   def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel): CardinalityModel =
     CachedFunction(metricsFactory.newCardinalityEstimator(queryGraphCardinalityModel))
 
-  def newCostModel(cardinality: CardinalityModel) =
-    CachedFunction(metricsFactory.newCostModel(cardinality))
+  def newCostModel() =
+    CachedFunction(metricsFactory.newCostModel())
 
   def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable) =
     CachedFunction(metricsFactory.newQueryGraphCardinalityModel(statistics, semanticTable))

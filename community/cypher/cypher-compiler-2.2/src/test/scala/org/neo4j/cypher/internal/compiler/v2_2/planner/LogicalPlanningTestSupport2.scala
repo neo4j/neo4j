@@ -29,9 +29,10 @@ import org.neo4j.cypher.internal.compiler.v2_2.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.QueryGraphCardinalityModel
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.{GreedyPlanTable, expandsOrJoins, expandsOnly, GreedyQueryGraphSolver}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.{GreedyPlanTable, GreedyQueryGraphSolver, expandsOnly, expandsOrJoins}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter.unnestApply
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{GraphStatistics, PlanContext}
 import org.neo4j.helpers.collection.Visitable
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
@@ -45,6 +46,7 @@ case class SemanticPlan(plan: LogicalPlan, semanticTable: SemanticTable)
 trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
   self: CypherFunSuite =>
 
+  val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(0))
   var parser = new CypherParser(mock[ParserMonitor[Statement]])
   var semanticChecker = new SemanticChecker(mock[SemanticCheckMonitor])
   var astRewriter = new ASTRewriter(mock[AstRewritingMonitor], shouldExtractParameters = false)
@@ -52,7 +54,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   var monitor = mock[PlanningMonitor]
   var planner = new DefaultQueryPlanner() {
     def internalPlan(query: PlannerQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan =
-     planSingleQuery(query)
+      planSingleQuery(query)
   }
   var queryGraphSolver: QueryGraphSolver = new CompositeQueryGraphSolver(
     new GreedyQueryGraphSolver(expandsOrJoins),
@@ -65,9 +67,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     lazy val semanticTable = config.computeSemanticTable
 
     def metricsFactory = new MetricsFactory {
-      def newCostModel(cardinality: Metrics.CardinalityModel) =
-        (plan: LogicalPlan, c: QueryGraphCardinalityInput) =>
-        config.costModel(cardinality)(plan)
+      def newCostModel() =
+        (plan: LogicalPlan) => config.costModel()(plan)
 
       def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel) =
         config.cardinalityModel(queryGraphCardinalityModel, semanticTable)
@@ -120,14 +121,23 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         semanticTable.resolvedRelTypeNames.get(relType).map(_.id)
 
       def checkNodeIndex(idxName: String): Unit = ???
+
       def checkRelIndex(idxName: String): Unit = ???
+
       def getOrCreateFromSchemaState[T](key: Any, f: => T): T = ???
+
       def getRelTypeName(id: Int): String = ???
+
       def getRelTypeId(relType: String): Int = ???
+
       def getLabelName(id: Int): String = ???
+
       def getPropertyKeyId(propertyKeyName: String): Int = ???
+
       def getPropertyKeyName(id: Int): String = ???
+
       def getLabelId(labelName: String): Int = ???
+
       def txIdProvider: () => Long = ???
     }
 
@@ -143,7 +153,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
           tokenResolver.resolve(ast)(newTable, planContext)
           val unionQuery = ast.asUnionQuery
           val metrics = metricsFactory.newMetrics(planContext.statistics, newTable)
-          val context = LogicalPlanningContext(planContext, metrics, newTable, queryGraphSolver, QueryGraphCardinalityInput.empty)
+          val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
+          val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, newTable, queryGraphSolver, QueryGraphCardinalityInput.empty)
           val plannerQuery = unionQuery.queries.head
           val resultPlan = planner.internalPlan(plannerQuery)(context)
           SemanticPlan(resultPlan.endoRewrite(unnestApply), newTable)
@@ -160,7 +171,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
           tokenResolver.resolve(ast)(newTable, planContext)
           val unionQuery = ast.asUnionQuery
           val metrics = metricsFactory.newMetrics(planContext.statistics, newTable)
-          val context = LogicalPlanningContext(planContext, metrics, newTable, queryGraphSolver, QueryGraphCardinalityInput.empty)
+          val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
+          val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, newTable, queryGraphSolver, QueryGraphCardinalityInput.empty)
           (planner.plan(unionQuery)(context), newTable)
       }
     }
@@ -170,8 +182,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     def withLogicalPlanningContext[T](f: (C, LogicalPlanningContext) => T): T = {
       val metrics = metricsFactory.newMetrics(config.graphStatistics, semanticTable)
+      val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
       val ctx = LogicalPlanningContext(
         planContext = planContext,
+        logicalPlanProducer = logicalPlanProducer,
         metrics = metrics,
         semanticTable = semanticTable,
         strategy = queryGraphSolver,
@@ -181,7 +195,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     }
   }
 
-  def fakeLogicalPlanFor(id: String*): FakePlan = FakePlan(id.map(IdName(_)).toSet)(PlannerQuery.empty)
+  def fakeLogicalPlanFor(id: String*): FakePlan = FakePlan(id.map(IdName(_)).toSet)(solved)
 
   def planFor(queryString: String): SemanticPlan = new given().planFor(queryString)
 

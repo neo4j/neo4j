@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{LabelName, Identifier}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{Identifier, LabelName}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.LazyLabel
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, LogicalPlanningTestSupport2}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 
 class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -36,14 +36,14 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     logicalPlan should equal(
       Union(
         Projection(
-          NodeByLabelScan("  a@7", LazyLabel(LabelName("A")_), Set.empty)(PlannerQuery.empty),
+          NodeByLabelScan("  a@7", LazyLabel(LabelName("A")_), Set.empty)(solved),
           Map("a" -> Identifier("  a@7")_)
-        )(PlannerQuery.empty),
+        )(solved),
         Projection(
-          NodeByLabelScan("  a@43", LazyLabel(LabelName("B")_), Set.empty)(PlannerQuery.empty),
+          NodeByLabelScan("  a@43", LazyLabel(LabelName("B")_), Set.empty)(solved),
           Map("a" -> Identifier("  a@43")_)
-        )(PlannerQuery.empty)
-      )(PlannerQuery.empty)
+        )(solved)
+      )(solved)
     )
   }
   test("MATCH (a:A) RETURN a AS a UNION MATCH (a:B) RETURN a AS a") {
@@ -56,17 +56,17 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
       Aggregation(
         left = Union(
           Projection(
-            NodeByLabelScan("  a@7", LazyLabel(LabelName("A")_), Set.empty)(PlannerQuery.empty),
+            NodeByLabelScan("  a@7", LazyLabel(LabelName("A")_), Set.empty)(solved),
             Map("a" -> Identifier("  a@7")_)
-          )(PlannerQuery.empty),
+          )(solved),
           Projection(
-            NodeByLabelScan("  a@39", LazyLabel(LabelName("B")_), Set.empty)(PlannerQuery.empty),
+            NodeByLabelScan("  a@39", LazyLabel(LabelName("B")_), Set.empty)(solved),
             Map("a" -> Identifier("  a@39")_)
-          )(PlannerQuery.empty)
-        )(PlannerQuery.empty),
+          )(solved)
+        )(solved),
         groupingExpressions = Map("a" -> ident("a")),
         aggregationExpression = Map.empty
-      )(PlannerQuery.empty)
+      )(solved)
     )
   }
 }

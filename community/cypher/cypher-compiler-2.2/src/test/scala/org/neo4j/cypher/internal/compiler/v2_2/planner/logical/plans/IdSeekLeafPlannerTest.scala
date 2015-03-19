@@ -19,15 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
-import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.RelTypeId
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cardinality
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cost
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.idSeekLeafPlanner
 import org.neo4j.graphdb.Direction
 
@@ -55,9 +52,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan, _: QueryGraphCardinalityInput) => plan match {
-      case _: NodeByIdSeek => Cardinality(1)
-      case _               => Cardinality(Double.MaxValue)
+    when(factory.newCostModel()).thenReturn((plan: LogicalPlan) => plan match {
+      case _: NodeByIdSeek => Cost(1)
+      case _               => Cost(Double.MaxValue)
     })
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
@@ -70,9 +67,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     // then
     resultPlans should equal(
-      Seq(planNodeByIdSeek(IdName("n"), EntityByIdExprs(Seq(
+      Seq(NodeByIdSeek(IdName("n"), EntityByIdExprs(Seq(
         SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_
-      )), Seq(expr), Set.empty))
+      )), Set.empty)(solved))
     )
   }
 
@@ -95,9 +92,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan, _: QueryGraphCardinalityInput) => plan match {
-      case _: DirectedRelationshipByIdSeek => Cardinality(1)
-      case _                               => Cardinality(Double.MaxValue)
+    when(factory.newCostModel()).thenReturn((plan: LogicalPlan) => plan match {
+      case _: DirectedRelationshipByIdSeek => Cost(1)
+      case _                               => Cost(Double.MaxValue)
     })
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
@@ -109,9 +106,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val resultPlans = idSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Seq(planDirectedRelationshipByIdSeek(IdName("r"), EntityByIdExprs(Seq(
+    resultPlans should equal(Seq(DirectedRelationshipByIdSeek(IdName("r"), EntityByIdExprs(Seq(
       SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_
-    )), from, end, patternRel, Set.empty, Seq(expr))))
+    )), from, end, Set.empty)(solved)))
   }
 
   test("simple undirected relationship by id seek with a collection of relationship ids") {
@@ -132,9 +129,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       patternRelationships = Set(patternRel))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan, _: QueryGraphCardinalityInput) => plan match {
-      case _: UndirectedRelationshipByIdSeek => Cardinality(2)
-      case _                                 => Cardinality(Double.MaxValue)
+    when(factory.newCostModel()).thenReturn((plan: LogicalPlan) => plan match {
+      case _: UndirectedRelationshipByIdSeek => Cost(2)
+      case _                                 => Cost(Double.MaxValue)
     })
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
@@ -146,9 +143,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val resultPlans = idSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Seq(planUndirectedRelationshipByIdSeek(IdName("r"), EntityByIdExprs(Seq(
+    resultPlans should equal(Seq(UndirectedRelationshipByIdSeek(IdName("r"), EntityByIdExprs(Seq(
       SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_
-    )), from, end, patternRel, Set.empty, Seq(expr))))
+    )), from, end, Set.empty)(solved)))
   }
 
   test("simple undirected typed relationship by id seek with a collection of relationship ids") {
@@ -175,9 +172,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       patternRelationships = Set(patternRel))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan, _: QueryGraphCardinalityInput) => plan match {
-      case _: UndirectedRelationshipByIdSeek => Cardinality(2)
-      case _                                 => Cardinality(Double.MaxValue)
+    when(factory.newCostModel()).thenReturn((plan: LogicalPlan) => plan match {
+      case _: UndirectedRelationshipByIdSeek => Cost(2)
+      case _                                 => Cost(Double.MaxValue)
     })
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
@@ -190,10 +187,10 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     // then
     resultPlans should equal(
-      Seq(planHiddenSelection(
+      Seq(Selection(
         Seq(Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("X")_)_),
-        planUndirectedRelationshipByIdSeek(IdName("r"), EntityByIdExprs(Seq(SignedDecimalIntegerLiteral("42")_)), from, end, patternRel, Set.empty, Seq(expr))
-      ))
+        UndirectedRelationshipByIdSeek(IdName("r"), EntityByIdExprs(Seq(SignedDecimalIntegerLiteral("42")_)), from, end, Set.empty)(solved)
+      )(solved))
     )
   }
 
@@ -222,9 +219,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       patternRelationships = Set(patternRel))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan, _: QueryGraphCardinalityInput) => plan match {
-      case _: UndirectedRelationshipByIdSeek => Cardinality(2)
-      case _                                 => Cardinality(Double.MaxValue)
+    when(factory.newCostModel()).thenReturn((plan: LogicalPlan) => plan match {
+      case _: UndirectedRelationshipByIdSeek => Cost(2)
+      case _                                 => Cost(Double.MaxValue)
     })
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
@@ -237,14 +234,14 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     // then
     resultPlans should equal(
-      Seq(planHiddenSelection(
+      Seq(Selection(
         Seq(
           Ors(Set(
             Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("X")_)(pos),
             Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("Y")_)(pos)
           ))_
         ),
-        planUndirectedRelationshipByIdSeek(IdName("r"), EntityByIdExprs(Seq(SignedDecimalIntegerLiteral("42")_)), from, end, patternRel, Set.empty, Seq(expr))
-    )))
+        UndirectedRelationshipByIdSeek(IdName("r"), EntityByIdExprs(Seq(SignedDecimalIntegerLiteral("42")_)), from, end, Set.empty)(solved)
+    )(solved)))
   }
 }

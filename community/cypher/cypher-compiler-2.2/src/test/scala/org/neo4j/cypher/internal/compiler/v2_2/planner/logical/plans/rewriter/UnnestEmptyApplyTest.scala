@@ -28,7 +28,7 @@ import org.neo4j.graphdb.Direction
 class UnnestEmptyApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should unnest apply with a single SingleRow on the lhs") {
     val rhs = newMockedLogicalPlan()
-    val singleRow = SingleRow()
+    val singleRow = SingleRow()(solved)
     val input = Apply(singleRow, rhs)(solved)
 
     rewrite(input) should equal(rhs)

@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
-import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{CardinalityEstimation, PlannerQuery}
 
 case class UndirectedRelationshipByIdSeek(idName: IdName,
                                           relIds: EntityByIdRhs,
                                           leftNode: IdName,
                                           rightNode: IdName,
-                                          argumentIds: Set[IdName])(val solved: PlannerQuery)
+                                          argumentIds: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalLeafPlan {
 
   def availableSymbols = argumentIds ++ Set(idName, leftNode, rightNode)

@@ -22,8 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{LogicalPlan, Projection}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{Aggregation, LogicalPlan, Projection}
 
 class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
   val aggregatingMap: Map[String, Expression] = Map("count(*)" -> CountStar()(pos))
@@ -48,7 +47,7 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val startPlan = newMockedLogicalPlan()
 
     aggregation(startPlan, projection)(context) should equal(
-      planAggregation(startPlan, Map(), aggregatingMap)
+      Aggregation(startPlan, Map(), aggregatingMap)(solved)
     )
   }
 
@@ -66,9 +65,9 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val startPlan = newMockedLogicalPlan()
 
     aggregation(startPlan, projectionPlan)(context) should equal(
-      planAggregation(
+      Aggregation(
         projection(startPlan, groupingMap + ("n" -> ident("n")), true),
-        groupingMap, aggregatingMap2)
+        groupingMap, aggregatingMap2)(solved)
     )
   }
 
@@ -87,19 +86,14 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val startPlan = newMockedLogicalPlan()
 
-    val solvedQuery = PlannerQuery(horizon = RegularQueryProjection(groupingMap))
-
-    val projectionPlan: LogicalPlan = Projection(startPlan, groupingMap)(solvedQuery)
+    val projectionPlan: LogicalPlan = Projection(startPlan, groupingMap)(solved)
 
     // When
     val result = aggregation(projectionPlan, projection)(context)
 
     // Then
     result should equal(
-      planAggregation(
-        left = projectionPlan,
-        grouping = groupingKeyMap,
-        aggregation = aggregatingMap)
+      Aggregation(projectionPlan, groupingKeyMap, aggregatingMap)(solved)
     )
   }
 }

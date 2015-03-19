@@ -22,37 +22,37 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.LazyLabel
+import org.neo4j.cypher.internal.compiler.v2_2.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter.unnestOptional
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{Limit, _}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport2, PlannerQuery}
 import org.neo4j.graphdb.Direction
 
 class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("should build plans containing joins") {
     (new given {
-      cardinality = mapCardinality {
-        case _: AllNodesScan => 2000000
-        case _: NodeByLabelScan => 20
-        case _: Expand => 10
-        case _: OuterHashJoin => 20
-        case _: SingleRow => 1
+      cost =  {
+        case _: AllNodesScan => 2000000.0
+        case _: NodeByLabelScan => 20.0
+        case _: Expand => 10.0
+        case _: OuterHashJoin => 20.0
+        case _: SingleRow => 1.0
         case _ => Double.MaxValue
       }
     } planFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b").plan should equal(
       Projection(
         OuterHashJoin(Set("b"),
-          Expand(NodeByLabelScan("a", LazyLabel("X"), Set.empty)(PlannerQuery.empty), "a", Direction.OUTGOING, Seq(), "b", "r1")(PlannerQuery.empty),
-          Expand(NodeByLabelScan("c", LazyLabel("Y"), Set.empty)(PlannerQuery.empty), "c", Direction.INCOMING, Seq(), "b", "r2")(PlannerQuery.empty)
-        )(PlannerQuery.empty),
+          Expand(NodeByLabelScan("a", LazyLabel("X"), Set.empty)(solved), "a", Direction.OUTGOING, Seq(), "b", "r1")(solved),
+          Expand(NodeByLabelScan("c", LazyLabel("Y"), Set.empty)(solved), "c", Direction.INCOMING, Seq(), "b", "r2")(solved)
+        )(solved),
         expressions = Map("b" -> ident("b"))
-      )(PlannerQuery.empty)
+      )(solved)
     )
   }
 
   test("should build simple optional match plans") { // This should be built using plan rewriting
     planFor("OPTIONAL MATCH a RETURN a").plan should equal(
-      Optional(AllNodesScan("a", Set.empty)(PlannerQuery.empty))(PlannerQuery.empty)
+      Optional(AllNodesScan("a", Set.empty)(solved))(solved)
     )
   }
 
@@ -129,11 +129,11 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       Projection(
         OptionalExpand(
           OptionalExpand(
-            AllNodesScan(IdName("a"), Set.empty)(PlannerQuery.empty),
-            IdName("a"), Direction.OUTGOING, List(RelTypeName("R1") _), IdName("x1"), IdName("  UNNAMED27"), ExpandAll, Seq.empty)(PlannerQuery.empty),
-          IdName("a"), Direction.OUTGOING, List(RelTypeName("R2") _), IdName("x2"), IdName("  UNNAMED58"), ExpandAll, Seq.empty)(PlannerQuery.empty),
+            AllNodesScan(IdName("a"), Set.empty)(solved),
+            IdName("a"), Direction.OUTGOING, List(RelTypeName("R1") _), IdName("x1"), IdName("  UNNAMED27"), ExpandAll, Seq.empty)(solved),
+          IdName("a"), Direction.OUTGOING, List(RelTypeName("R2") _), IdName("x2"), IdName("  UNNAMED58"), ExpandAll, Seq.empty)(solved),
         Map("a" -> ident("a"), "x1" -> ident("x1"), "x2" -> ident("x2"))
-      )(PlannerQuery.empty)
+      )(solved)
     )
   }
 
@@ -142,7 +142,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
                          |OPTIONAL MATCH n-[r]-(m)
                          |WHERE m.prop = 42
                          |RETURN m""".stripMargin).plan.endoRewrite(unnestOptional)
-    val s = PlannerQuery.empty
+    val s = solved
     val allNodesN:LogicalPlan = AllNodesScan(IdName("n"),Set())(s)
     val predicate: Expression = In(Property(ident("m"), PropertyKeyName("prop") _) _, Collection(List(SignedDecimalIntegerLiteral("42") _)) _) _
     plan should equal(

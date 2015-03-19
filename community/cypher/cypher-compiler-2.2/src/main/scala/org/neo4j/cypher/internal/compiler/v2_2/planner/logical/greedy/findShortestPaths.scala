@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{LogicalPlan, ShortestPathPattern}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CandidateGenerator, LogicalPlanningContext}
 
 object findShortestPaths extends CandidateGenerator[GreedyPlanTable] {
@@ -29,7 +28,7 @@ object findShortestPaths extends CandidateGenerator[GreedyPlanTable] {
     qg.shortestPathPatterns.flatMap { (shortestPath: ShortestPathPattern) =>
       input.plans.collect {
         case plan if shortestPath.isFindableFrom(plan.availableSymbols) =>
-          planShortestPaths(plan, shortestPath)
+          context.logicalPlanProducer.planShortestPaths(plan, shortestPath)
       }
     }.toSeq
 }

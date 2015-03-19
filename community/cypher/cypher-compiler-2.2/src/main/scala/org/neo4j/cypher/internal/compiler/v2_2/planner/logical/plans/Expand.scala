@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Expression, Identifier, RelTypeName}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.graphdb.Direction
 
 sealed trait ExpansionMode
@@ -32,7 +32,7 @@ case class Expand(left: LogicalPlan,
                   dir: Direction,
                   types: Seq[RelTypeName],
                   to: IdName, relName: IdName,
-                  mode: ExpansionMode = ExpandAll)(val solved: PlannerQuery)
+                  mode: ExpansionMode = ExpandAll)(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LogicalPlanWithoutExpressions {
 
   val lhs = Some(left)
@@ -41,7 +41,8 @@ case class Expand(left: LogicalPlan,
   def availableSymbols: Set[IdName] = left.availableSymbols + relName + to
 }
 
-case class OptionalExpand(left: LogicalPlan, from: IdName, dir: Direction, types: Seq[RelTypeName], to: IdName, relName: IdName, mode: ExpansionMode = ExpandAll, predicates: Seq[Expression] = Seq.empty)(val solved: PlannerQuery) extends LogicalPlan {
+case class OptionalExpand(left: LogicalPlan, from: IdName, dir: Direction, types: Seq[RelTypeName], to: IdName, relName: IdName, mode: ExpansionMode = ExpandAll, predicates: Seq[Expression] = Seq.empty)
+                         (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan {
   val lhs = Some(left)
   def rhs = None
 
@@ -63,7 +64,7 @@ case class VarExpand(left: LogicalPlan,
                      length: VarPatternLength,
                      mode: ExpansionMode = ExpandAll,
                      predicates: Seq[(Identifier, Expression)] = Seq.empty)
-                    (val solved: PlannerQuery) extends LogicalPlan {
+                    (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan {
 
   val lhs = Some(left)
   def rhs = None

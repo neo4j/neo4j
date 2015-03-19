@@ -28,8 +28,6 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, QueryProje
 
 object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
 
-  import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
-
   def apply(plan: LogicalPlan, query: PlannerQuery)(implicit context: LogicalPlanningContext): LogicalPlan = query.horizon match {
     case p: QueryProjection =>
       val shuffle = p.shuffle
@@ -38,15 +36,15 @@ object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
           addLimit(l, addSkip(s, plan))
 
         case (sortItems, None, Some(l)) =>
-          planSortedLimit(plan, l, sortItems)
+          context.logicalPlanProducer.planSortedLimit(plan, l, sortItems)
 
         case (sortItems, Some(s), Some(l)) =>
-          planSortedSkipAndLimit(plan, s, l, sortItems)
+          context.logicalPlanProducer.planSortedSkipAndLimit(plan, s, l, sortItems)
 
         case (sortItems, s, None) =>
           require(sortItems.forall(_.expression.isInstanceOf[Identifier]))
           val sortDescriptions = sortItems.map(sortDescription)
-          val sortPlan = planSort(plan, sortDescriptions, sortItems)
+          val sortPlan = context.logicalPlanProducer.planSort(plan, sortDescriptions, sortItems)
           addSkip(s, sortPlan)
       }
 
@@ -61,9 +59,9 @@ object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
     case _ => ???
   }
 
-  private def addSkip(s: Option[ast.Expression], plan: LogicalPlan): LogicalPlan =
-    s.fold(plan)(x => planSkip(plan, x))
+  private def addSkip(s: Option[ast.Expression], plan: LogicalPlan)(implicit context: LogicalPlanningContext) =
+    s.fold(plan)(x => context.logicalPlanProducer.planSkip(plan, x))
 
-  private def addLimit(s: Option[ast.Expression], plan: LogicalPlan): LogicalPlan =
-    s.fold(plan)(x => planLimit(plan, x))
+  private def addLimit(s: Option[ast.Expression], plan: LogicalPlan)(implicit context: LogicalPlanningContext) =
+    s.fold(plan)(x => context.logicalPlanProducer.planLimit(plan, x))
 }

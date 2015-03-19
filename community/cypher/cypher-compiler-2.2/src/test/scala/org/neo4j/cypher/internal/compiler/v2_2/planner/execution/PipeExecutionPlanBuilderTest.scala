@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.commands.{True, expressions => le
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.{EntityByIdExprs => PipeEntityByIdExprs, _}
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{EntityByIdExprs => PlanEntityByIdExprs, _}
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.Clock
@@ -40,12 +41,12 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
   val planBuilder = new PipeExecutionPlanBuilder(Clock.SYSTEM_CLOCK, monitors)
 
-  def build(f: PlannerQuery => LogicalPlan): PipeInfo =
+  def build(f: PlannerQuery with CardinalityEstimation => LogicalPlan): PipeInfo =
     planBuilder.build(f(solved))
 
   test("projection only query") {
     val logicalPlan = Projection(
-      SingleRow(), Map("42" -> SignedDecimalIntegerLiteral("42") _))_
+      SingleRow()(solvedWithEstimation(1.0)), Map("42" -> SignedDecimalIntegerLiteral("42")(pos)))_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -183,4 +184,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
       ExpandAllPipe( AllNodesScanPipe("c")(), "c", "r2", "b", Direction.INCOMING, LazyTypes.empty)()
     )())
   }
+
+  def solvedWithEstimation(estimantion: Cardinality): PlannerQuery with CardinalityEstimation =
+    CardinalityEstimation.lift(PlannerQuery.empty, estimantion)
 }

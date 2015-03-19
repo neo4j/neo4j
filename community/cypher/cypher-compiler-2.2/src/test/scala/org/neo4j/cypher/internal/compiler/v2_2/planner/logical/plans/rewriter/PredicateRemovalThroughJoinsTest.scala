@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{Selections, QueryGraph, PlannerQuery, LogicalPlanningTestSupport}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, NodeHashJoin, Selection}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{CardinalityEstimation, QueryGraph, PlannerQuery, LogicalPlanningTestSupport, Selections}
 
 class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanningTestSupport {
   val aHasLabel = identHasLabel("a", "LABEL")
@@ -75,6 +76,7 @@ class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanni
   private def selectionOp(id: String, predicates: Expression*) = {
     val selections = Selections.from(predicates: _*)
     val lhsLeaf = newMockedLogicalPlan("a")
-    Selection(Seq(aHasLabel), lhsLeaf)(PlannerQuery.empty.withGraph(QueryGraph(selections = selections)))
+    val solved: PlannerQuery = PlannerQuery.empty.withGraph(QueryGraph(selections = selections))
+    Selection(Seq(aHasLabel), lhsLeaf)(CardinalityEstimation.lift(solved, Cardinality(0)))
   }
 }

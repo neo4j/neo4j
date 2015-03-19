@@ -22,9 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.InputPosition
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.GreedyPlanTable
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport2, QueryGraph, SemanticTable}
 
 class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -39,7 +38,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
       override def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = expectedPlan
     }
 
-    implicit val context = LogicalPlanningContext(null, null, SemanticTable(), solver, QueryGraphCardinalityInput.empty)
+    implicit val context = LogicalPlanningContext(null, LogicalPlanProducer(mock[Metrics.CardinalityModel]), null, SemanticTable(), solver)
     val patExpr = parsePatternExpression("WITH {a} AS a, {r} AS r, {b} AS b LIMIT 1 RETURN ()-[]->(b)")
 
     // when
@@ -65,7 +64,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
       }
     }
 
-    implicit val context = LogicalPlanningContext(null, null, SemanticTable(), solver, QueryGraphCardinalityInput.empty)
+    implicit val context = LogicalPlanningContext(null, LogicalPlanProducer(mock[Metrics.CardinalityModel]), null, SemanticTable(), solver)
     val patExpr = parsePatternExpression("WITH {a} AS a, {r} AS r, {b} AS b LIMIT 1 RETURN ()-[]->(b)")
 
     // when

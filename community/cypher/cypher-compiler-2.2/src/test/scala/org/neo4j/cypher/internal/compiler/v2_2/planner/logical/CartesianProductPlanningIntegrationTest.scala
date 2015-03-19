@@ -21,17 +21,18 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.LazyLabel
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, LogicalPlanningTestSupport2}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.BeLikeMatcher._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport2, PlannerQuery}
 
 class CartesianProductPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("should build plans for simple cartesian product") {
     planFor("MATCH n, m RETURN n, m").plan should equal(
       CartesianProduct(
-        AllNodesScan(IdName("n"), Set.empty)(PlannerQuery.empty),
-        AllNodesScan(IdName("m"), Set.empty)(PlannerQuery.empty))(PlannerQuery.empty)
+        AllNodesScan(IdName("n"), Set.empty)(solved),
+        AllNodesScan(IdName("m"), Set.empty)(solved)
+      )(solved)
     )
   }
 
@@ -42,8 +43,7 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
         case _: NodeByLabelScan => 20.0
       }
       cardinality = mapCardinality {
-        case _: Selection => 10
-        case _: NodeByLabelScan => 10
+        case PlannerQuery(queryGraph, _, _) if queryGraph.selections.predicates.size == 1 => 10
       }
     } planFor "MATCH n, m WHERE n.prop = 12 AND m:Label RETURN n, m").plan should beLike {
       case CartesianProduct(_: Selection, _: NodeByLabelScan) => ()
@@ -61,12 +61,12 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
 
     plan.plan should equal(
       CartesianProduct(
-        NodeByLabelScan("a", LazyLabel("A"), Set.empty)(PlannerQuery.empty),
+        NodeByLabelScan("a", LazyLabel("A"), Set.empty)(solved),
         CartesianProduct(
-          NodeByLabelScan("c", LazyLabel("C"), Set.empty)(PlannerQuery.empty),
-          NodeByLabelScan("b", LazyLabel("B"), Set.empty)(PlannerQuery.empty)
-        )(PlannerQuery.empty)
-      )(PlannerQuery.empty)
+          NodeByLabelScan("c", LazyLabel("C"), Set.empty)(solved),
+          NodeByLabelScan("b", LazyLabel("B"), Set.empty)(solved)
+        )(solved)
+      )(solved)
     )
   }
 
@@ -83,9 +83,9 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
 
     plan.plan should equal(
       CartesianProduct(
-        NodeByLabelScan("b", LazyLabel("B"), Set.empty)(PlannerQuery.empty),
-        NodeByLabelScan("a", LazyLabel("A"), Set.empty)(PlannerQuery.empty)
-      )(PlannerQuery.empty)
+        NodeByLabelScan("b", LazyLabel("B"), Set.empty)(solved),
+        NodeByLabelScan("a", LazyLabel("A"), Set.empty)(solved)
+      )(solved)
     )
   }
 }

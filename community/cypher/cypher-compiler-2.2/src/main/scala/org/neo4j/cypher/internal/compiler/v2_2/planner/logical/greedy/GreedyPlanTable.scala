@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy
 
 import org.neo4j.cypher.internal.compiler.v2_2.InternalException
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 
 import scala.collection.immutable
 
@@ -58,13 +58,13 @@ object GreedyPlanTable {
  }
 
 trait GreedyPlanTable extends ((QueryGraph) => LogicalPlan) {
-  def uniquePlan: LogicalPlan = {
+  def uniquePlan(implicit context: LogicalPlanningContext): LogicalPlan = {
     val allPlans = plans.toList
 
     if (allPlans.size > 1)
       throw new InternalException(s"Expected the final plan table to have 0 or 1 plan (got ${allPlans.size})")
 
-    allPlans.headOption.getOrElse(planSingleRow())
+    allPlans.headOption.getOrElse(context.logicalPlanProducer.planSingleRow())
   }
 
   def size: Int = m.size

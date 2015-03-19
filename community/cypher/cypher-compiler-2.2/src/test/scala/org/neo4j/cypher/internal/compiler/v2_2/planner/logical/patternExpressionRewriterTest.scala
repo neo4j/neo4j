@@ -24,8 +24,8 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{Selection, AllNodesScan, IdName, LogicalPlan}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, PlannerQuery}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{AllNodesScan, IdName, LogicalPlan, Selection}
 import org.neo4j.graphdb.Direction
 
 class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -66,7 +66,7 @@ class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningT
 
   test("Does rewrite pattern expressions inside nested plans") {
     // given
-    val plan = Selection(Seq(patExpr3), dummyPlan)(PlannerQuery.empty)
+    val plan = Selection(Seq(patExpr3), dummyPlan)(solved)
     val expr: Expression = Or(And(patExpr1, NestedPlanExpression(plan, patExpr2)_)_, patExpr4)_
     val strategy = createStrategy
     val context = newMockedLogicalPlanningContext(newMockedPlanContext, strategy = strategy)
@@ -87,7 +87,7 @@ class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningT
   private val patExpr3 = newPatExpr( "e", "f ")
   private val patExpr4 = newPatExpr( "g", "h" )
 
-  private val dummyPlan = AllNodesScan(IdName("a"), Set.empty)(PlannerQuery.empty)
+  private val dummyPlan = AllNodesScan(IdName("a"), Set.empty)(solved)
 
   private def newPatExpr(left: String, right: String): PatternExpression = {
     PatternExpression(RelationshipsPattern(RelationshipChain(

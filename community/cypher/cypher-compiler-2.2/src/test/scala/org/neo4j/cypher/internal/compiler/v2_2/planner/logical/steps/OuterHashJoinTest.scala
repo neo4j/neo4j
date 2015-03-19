@@ -19,16 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
-import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cardinality
-import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.mockito.Mockito._
-import org.mockito.Matchers._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
+import org.neo4j.cypher.internal.compiler.v2_2.planner._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cost
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
+import org.neo4j.graphdb.Direction
 
 class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -54,9 +51,9 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any())).thenReturn((plan: LogicalPlan, _: QueryGraphCardinalityInput) => plan match {
-      case AllNodesScan(IdName("b"), _) => Cardinality(1) // Make sure we start the inner plan using b
-      case _                         => Cardinality(1000)
+    when(factory.newCostModel()).thenReturn((plan: LogicalPlan) => plan match {
+      case AllNodesScan(IdName("b"), _) => Cost(1) // Make sure we start the inner plan using b
+      case _ => Cost(1000)
     })
 
     val innerPlan = newMockedLogicalPlan("b")
@@ -69,6 +66,6 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val left = newMockedLogicalPlanWithPatterns(Set(aNode))
     val plans = outerHashJoin(optionalQg, left)
 
-    plans should equal(Some(planOuterHashJoin(Set(aNode), left, innerPlan)))
+    plans should equal(Some(OuterHashJoin(Set(aNode), left, innerPlan)(solved)))
   }
 }

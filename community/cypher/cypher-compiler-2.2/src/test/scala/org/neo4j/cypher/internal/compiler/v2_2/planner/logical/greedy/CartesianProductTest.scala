@@ -19,15 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy
 
-import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.HardcodedGraphStatistics
 import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cost
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{CartesianProduct, LogicalPlan}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, QueryGraph}
 
 class CartesianProductTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -53,13 +50,13 @@ class CartesianProductTest extends CypherFunSuite with LogicalPlanningTestSuppor
       case CartesianProduct(a, b) => cost(a) + 10 * cost(b)
     }
     implicit val (table, context) = prepare(cost, plan1, plan2)
-    cartesianProduct(table, qg).toSet should equal(Set(planCartesianProduct(plan2, plan1)))
+    cartesianProduct(table, qg).toSet should equal(Set(CartesianProduct(plan2, plan1)(solved)))
   }
 
   private def prepare(cost: LogicalPlan => Double, plans: LogicalPlan*) = {
     val factory = newMockedMetricsFactory
 
-    when(factory.newCostModel(any())).thenReturn((plan: LogicalPlan, _: QueryGraphCardinalityInput) => Cost(cost(plan)))
+    when(factory.newCostModel()).thenReturn((plan: LogicalPlan) => Cost(cost(plan)))
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
       metrics = factory.newMetrics(HardcodedGraphStatistics, newMockedSemanticTable)

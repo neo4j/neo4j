@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner
 
 import org.neo4j.cypher.internal.compiler.v2_2.InternalException
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{LabelName, Hint}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{Hint, LabelName}
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, PatternRelationship}
 
 import scala.annotation.tailrec
@@ -31,10 +32,11 @@ case class UnionQuery(queries: Seq[PlannerQuery], distinct: Boolean)
 case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
                         horizon: QueryHorizon = QueryProjection.empty,
                         tail: Option[PlannerQuery] = None)
-  extends PageDocFormatting { // with ToPrettyString[PlannerQuery] {
+  extends PageDocFormatting {
+  // with ToPrettyString[PlannerQuery] {
 
-//  def toDefaultPrettyString(formatter: DocFormatter) =
-//    toPrettyString(formatter)(InternalDocHandler.docGen)
+  //  def toDefaultPrettyString(formatter: DocFormatter) =
+  //    toPrettyString(formatter)(InternalDocHandler.docGen)
 
   def lastQueryGraph: QueryGraph = tail.map(_.lastQueryGraph).getOrElse(graph)
 
@@ -44,21 +46,23 @@ case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
   }
 
   def withHorizon(horizon: QueryHorizon): PlannerQuery = copy(horizon = horizon)
+
   def withGraph(graph: QueryGraph): PlannerQuery = copy(graph = graph)
 
   def isCoveredByHints(other: PlannerQuery) = allHints.forall(other.allHints.contains)
 
   def allHints: Set[Hint] = tail match {
     case Some(tailPlannerQuery) => graph.allHints ++ tailPlannerQuery.allHints
-    case None                   => graph.allHints
+    case None => graph.allHints
   }
 
   def numHints: Int = tail match {
     case Some(tailPlannerQuery) => graph.numHints + tailPlannerQuery.numHints
-    case None                   => graph.numHints
+    case None => graph.numHints
   }
 
   def updateGraph(f: QueryGraph => QueryGraph): PlannerQuery = withGraph(f(graph))
+
   def updateHorizon(f: QueryHorizon => QueryHorizon): PlannerQuery = withHorizon(f(horizon))
 
   def updateQueryProjection(f: QueryProjection => QueryProjection): PlannerQuery = horizon match {
@@ -67,12 +71,12 @@ case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
   }
 
   def updateTail(f: PlannerQuery => PlannerQuery) = tail match {
-    case None            => this
+    case None => this
     case Some(tailQuery) => copy(tail = Some(f(tailQuery)))
   }
 
   def updateTailOrSelf(f: PlannerQuery => PlannerQuery): PlannerQuery = tail match {
-    case None            => f(this)
+    case None => f(this)
     case Some(tailQuery) => this.updateTail(_.updateTailOrSelf(f))
   }
 
@@ -123,7 +127,7 @@ case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
 
       pq.tail match {
         case Some(tailPQ) => recurse(nextAcc, tailPQ)
-        case None         => nextAcc
+        case None => nextAcc
       }
     }
 
@@ -140,4 +144,17 @@ object PlannerQuery {
     val patternRelIds = patternRels.flatMap(_.coveredIds)
     patternNodeIds ++ patternRelIds
   }
+}
+
+trait CardinalityEstimation {
+  self: PlannerQuery =>
+
+  def estimation: Cardinality
+}
+
+object CardinalityEstimation {
+  def lift(plannerQuery: PlannerQuery, cardinality: Cardinality) =
+    new PlannerQuery(plannerQuery.graph, plannerQuery.horizon, plannerQuery.tail) with CardinalityEstimation {
+      val estimation = cardinality
+    }
 }

@@ -20,11 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.InternalException
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{RelationshipChain, NodePattern, PatternExpression}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.GreedyPlanTable
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{NodePattern, PatternExpression, RelationshipChain}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalPlan}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{QueryGraph, UnionQuery}
 
 trait QueryGraphSolver {
   def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan
@@ -43,7 +41,7 @@ trait PatternExpressionSolving {
     val (namedExpr, namedMap) = PatternExpressionPatternElementNamer(expr)
     val qg = namedExpr.asQueryGraph.withArgumentIds(qgArguments)
 
-    val argLeafPlan = Some(planQueryArgumentRow(qg))
+    val argLeafPlan = Some(context.logicalPlanProducer.planQueryArgumentRow(qg))
     val namedNodes = namedMap.collect { case (elem: NodePattern, identifier) => identifier}
     val namedRels = namedMap.collect { case (elem: RelationshipChain, identifier) => identifier}
     val patternPlanningContext = context.forExpressionPlanning(namedNodes, namedRels)
