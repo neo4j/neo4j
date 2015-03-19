@@ -86,6 +86,7 @@ angular.module('neo4jApp.services')
                   })
 
         connectUser: ->
+          @data.name = Settings.userName
           Intercom.user(@data.uuid, @data)
 
         pingLater: (event) =>
@@ -108,7 +109,7 @@ angular.module('neo4jApp.services')
             today = new Date()
             today = new Date(today.getFullYear(), today.getMonth(), today.getDay())
 
-            if (pingTime < today)
+            if (pingTime < today) || true
               @set("pingTime", today.getTime())
               return true
             else
@@ -121,10 +122,7 @@ angular.module('neo4jApp.services')
 
         toggleMessenger: ->
           @connectUser()
-          if @isShowing
-            @do('hide')
-          else
-            @do('show')
+          Intercom.toggle()
 
         newMessage: (message) ->
           @connectUser()

@@ -34,5 +34,5 @@ angular.module('neo4jApp.controllers')
 
       $scope.save = () ->
         SettingsStore.save()
-
+        
   ]
