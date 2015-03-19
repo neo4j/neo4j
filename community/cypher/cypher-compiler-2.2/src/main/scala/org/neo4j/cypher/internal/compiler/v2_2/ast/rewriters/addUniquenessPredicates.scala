@@ -27,18 +27,11 @@ case object addUniquenessPredicates extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = instance(that)
 
-  case class UniqueRel(identifier: Identifier, types: Set[RelTypeName]) {
-    def name = identifier.name
-
-    def isAlwaysDifferentFrom(other: UniqueRel) =
-      types.nonEmpty && other.types.nonEmpty && (types intersect other.types).isEmpty
-  }
-
   private val instance = replace(replacer => {
     case expr: Expression =>
-        replacer.stop(expr)
+      replacer.stop(expr)
 
-    case m@Match(_, pattern: Pattern, _, where: Option[Where]) =>
+    case m @ Match(_, pattern: Pattern, _, where: Option[Where]) =>
       val uniqueRels: Seq[UniqueRel] = collectUniqueRels(pattern)
 
       if (uniqueRels.size < 2) {
@@ -66,11 +59,10 @@ case object addUniquenessPredicates extends Rewriter {
       case _: ShortestPaths =>
         (acc, _) => acc
 
-      case RelationshipChain(_, RelationshipPattern(optR, _, types, None, _, _), _) =>
+      case RelationshipChain(_, patRel @ RelationshipPattern(optIdent, _, types, _, _, _), _) =>
         (acc, children) => {
-          val r = optR.getOrElse(throw new InternalException("This rewriter cannot work with unnamed patterns"))
-          val rel = UniqueRel(r, types.toSet)
-          children(acc :+ rel)
+          val ident = optIdent.getOrElse(throw new InternalException("This rewriter cannot work with unnamed patterns"))
+          children(acc :+ UniqueRel(ident, types.toSet, patRel.isSingleLength))
         }
     }
 
@@ -78,10 +70,32 @@ case object addUniquenessPredicates extends Rewriter {
     createPredicatesFor(uniqueRels, pos).reduceOption(And(_, _)(pos))
   }
 
-  def createPredicatesFor(uniqueRels: Seq[UniqueRel], pos: InputPosition): Seq[Expression] = {
+  def createPredicatesFor(uniqueRels: Seq[UniqueRel], pos: InputPosition): Seq[Expression] =
     for {
       x <- uniqueRels
       y <- uniqueRels if x.name < y.name && !x.isAlwaysDifferentFrom(y)
-    } yield Not(Equals(x.identifier.copyId, y.identifier.copyId)(pos))(pos)
+    } yield {
+      val equals = Equals(x.identifier.copyId, y.identifier.copyId)(pos)
+
+      (x.singleLength, y.singleLength) match {
+        case (true, true) =>
+          Not(equals)(pos)
+
+        case (true, false) =>
+          NoneIterablePredicate(y.identifier.copyId, y.identifier.copyId, Some(equals))(pos)
+
+        case (false, true) =>
+          NoneIterablePredicate(x.identifier.copyId, x.identifier.copyId, Some(equals))(pos)
+
+        case (false, false) =>
+          NoneIterablePredicate(x.identifier.copyId, x.identifier.copyId, Some(AnyIterablePredicate(y.identifier.copyId, y.identifier.copyId, Some(equals))(pos)))(pos)
+      }
+    }
+
+  case class UniqueRel(identifier: Identifier, types: Set[RelTypeName], singleLength: Boolean) {
+    def name = identifier.name
+
+    def isAlwaysDifferentFrom(other: UniqueRel) =
+      types.nonEmpty && other.types.nonEmpty && (types intersect other.types).isEmpty
   }
 }
