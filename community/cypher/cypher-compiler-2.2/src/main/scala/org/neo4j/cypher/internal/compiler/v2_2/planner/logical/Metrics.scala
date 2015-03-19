@@ -52,9 +52,9 @@ object Metrics {
 
   // This metric estimates how many rows of data a logical plan produces
   // (e.g. by asking the database for statistics)
-  type CardinalityModel = (PlannerQuery, QueryGraphCardinalityInput) => Cardinality
+  type CardinalityModel = (PlannerQuery, QueryGraphCardinalityInput, SemanticTable) => Cardinality
 
-  type QueryGraphCardinalityModel = (QueryGraph, QueryGraphCardinalityInput) => Cardinality
+  type QueryGraphCardinalityModel = (QueryGraph, QueryGraphCardinalityInput, SemanticTable) => Cardinality
 
   type LabelInfo = Map[IdName, Set[LabelName]]
 }
@@ -174,10 +174,10 @@ object Selectivity {
 trait MetricsFactory {
   def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel): CardinalityModel
   def newCostModel(): CostModel
-  def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable): QueryGraphCardinalityModel
+  def newQueryGraphCardinalityModel(statistics: GraphStatistics): QueryGraphCardinalityModel
 
-  def newMetrics(statistics: GraphStatistics, semanticTable: SemanticTable) = {
-    val queryGraphCardinalityModel = newQueryGraphCardinalityModel(statistics, semanticTable)
+  def newMetrics(statistics: GraphStatistics) = {
+    val queryGraphCardinalityModel = newQueryGraphCardinalityModel(statistics)
     val cardinality = newCardinalityEstimator(queryGraphCardinalityModel)
     Metrics(newCostModel(), cardinality, queryGraphCardinalityModel)
   }

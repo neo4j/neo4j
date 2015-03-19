@@ -69,7 +69,7 @@ case class CostBasedPipeBuilder(monitors: Monitors,
     // If we cannot handle the query, throw CantHandleQueryException and let the compiler delegate this query to another planner.
     if (!acceptQuery(unionQuery)) throw new CantHandleQueryException(s"The conservative check failed this query: $unionQuery")
 
-    val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
+    val metrics = metricsFactory.newMetrics(planContext.statistics)
     val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
     val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, semanticTable, queryGraphSolver)
     val plan = queryPlanner.plan(unionQuery)(context)

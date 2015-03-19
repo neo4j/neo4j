@@ -57,8 +57,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       SimpleMetricsFactory.newCardinalityEstimator(queryGraphCardinalityModel)
     def newCostModel() =
       SimpleMetricsFactory.newCostModel()
-    def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable): QueryGraphCardinalityModel =
-      SimpleMetricsFactory.newQueryGraphCardinalityModel(statistics, semanticTable)
+    def newQueryGraphCardinalityModel(statistics: GraphStatistics): QueryGraphCardinalityModel =
+      SimpleMetricsFactory.newQueryGraphCardinalityModel(statistics)
   }
 
   def newMockedQueryGraph = mock[QueryGraph]
@@ -66,7 +66,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   def newMockedPipeExecutionPlanBuilderContext: PipeExecutionBuilderContext = {
     val context = mock[PipeExecutionBuilderContext]
     val cardinality = new Metrics.CardinalityModel {
-      def apply(v1: PlannerQuery, ignored: QueryGraphCardinalityInput) = v1 match {
+      def apply(pq: PlannerQuery, ignored: QueryGraphCardinalityInput, ignoredAsWell: SemanticTable) = pq match {
         case PlannerQuery.empty => Cardinality(1)
         case _ => Cardinality(104999.99999)
       }
@@ -81,8 +81,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newMetricsFactory = SimpleMetricsFactory
 
-  def newSimpleMetrics(stats: GraphStatistics = newMockedGraphStatistics, semanticTable: SemanticTable) =
-    newMetricsFactory.newMetrics(stats, semanticTable)
+  def newSimpleMetrics(stats: GraphStatistics = newMockedGraphStatistics) = newMetricsFactory.newMetrics(stats)
 
   def newMockedGraphStatistics = mock[GraphStatistics]
 
@@ -102,7 +101,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     strategy
   }
 
-  def mockedMetrics: Metrics = newSimpleMetrics(hardcodedStatistics, newMockedSemanticTable)
+  def mockedMetrics: Metrics = newSimpleMetrics(hardcodedStatistics)
 
   def newMockedLogicalPlanningContext(planContext: PlanContext,
                                       metrics: Metrics = mockedMetrics,

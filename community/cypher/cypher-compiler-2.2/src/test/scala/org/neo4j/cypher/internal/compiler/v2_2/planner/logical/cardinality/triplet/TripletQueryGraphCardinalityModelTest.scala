@@ -57,6 +57,6 @@ class TripletQueryGraphCardinalityModelTest extends RandomizedCardinalityModelTe
       shouldHaveQueryGraphCardinality(result)
   }
 
-  def createCardinalityModel(stats: GraphStatistics, semanticTable: SemanticTable): QueryGraphCardinalityModel =
-    TripletQueryGraphCardinalityModel(stats, semanticTable, combiner)
+  def createCardinalityModel(stats: GraphStatistics): QueryGraphCardinalityModel =
+    TripletQueryGraphCardinalityModel(stats, combiner)
 }

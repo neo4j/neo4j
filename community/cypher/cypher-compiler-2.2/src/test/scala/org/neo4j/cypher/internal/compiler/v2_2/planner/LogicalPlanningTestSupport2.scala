@@ -71,10 +71,9 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         (plan: LogicalPlan) => config.costModel()(plan)
 
       def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel) =
-        config.cardinalityModel(queryGraphCardinalityModel, semanticTable)
+        config.cardinalityModel(queryGraphCardinalityModel)
 
-      def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable) =
-        QueryGraphCardinalityModel.default(statistics, semanticTable)
+      def newQueryGraphCardinalityModel(statistics: GraphStatistics) = QueryGraphCardinalityModel.default(statistics)
     }
 
     def table = Map.empty[PatternExpression, QueryGraph]
@@ -152,7 +151,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         case (ast: Query, newTable) =>
           tokenResolver.resolve(ast)(newTable, planContext)
           val unionQuery = ast.asUnionQuery
-          val metrics = metricsFactory.newMetrics(planContext.statistics, newTable)
+          val metrics = metricsFactory.newMetrics(planContext.statistics)
           val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
           val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, newTable, queryGraphSolver, QueryGraphCardinalityInput.empty)
           val plannerQuery = unionQuery.queries.head
@@ -170,7 +169,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         case (ast: Query, newTable) =>
           tokenResolver.resolve(ast)(newTable, planContext)
           val unionQuery = ast.asUnionQuery
-          val metrics = metricsFactory.newMetrics(planContext.statistics, newTable)
+          val metrics = metricsFactory.newMetrics(planContext.statistics)
           val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
           val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, newTable, queryGraphSolver, QueryGraphCardinalityInput.empty)
           (planner.plan(unionQuery)(context), newTable)
@@ -178,10 +177,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     }
 
     def estimate(qg: QueryGraph, input: QueryGraphCardinalityInput = QueryGraphCardinalityInput.empty) =
-      metricsFactory.newMetrics(config.graphStatistics, semanticTable).queryGraphCardinalityModel(qg, input)
+      metricsFactory.newMetrics(config.graphStatistics).queryGraphCardinalityModel(qg, input, semanticTable)
 
     def withLogicalPlanningContext[T](f: (C, LogicalPlanningContext) => T): T = {
-      val metrics = metricsFactory.newMetrics(config.graphStatistics, semanticTable)
+      val metrics = metricsFactory.newMetrics(config.graphStatistics)
       val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
       val ctx = LogicalPlanningContext(
         planContext = planContext,

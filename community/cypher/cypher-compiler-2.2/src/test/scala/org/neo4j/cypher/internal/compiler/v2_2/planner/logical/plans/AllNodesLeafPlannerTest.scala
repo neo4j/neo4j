@@ -35,7 +35,7 @@ class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     implicit val planContext = newMockedPlanContext
     implicit val context = newMockedLogicalPlanningContext(
       planContext = planContext,
-      metrics = newMockedMetricsFactory.newMetrics(hardcodedStatistics, newMockedSemanticTable))
+      metrics = newMockedMetricsFactory.newMetrics(hardcodedStatistics))
 
     // when
     val resultPlans = allNodesLeafPlanner(queryGraph)

@@ -28,10 +28,10 @@ import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 case class RealLogicalPlanningConfiguration()
   extends LogicalPlanningConfiguration with LogicalPlanningConfigurationAdHocSemanticTable {
 
-  def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, semanticTable: SemanticTable) = {
+  def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel) = {
     val model: Metrics.CardinalityModel = new StatisticsBackedCardinalityModel(queryGraphCardinalityModel)
     ({
-      case (pq: PlannerQuery, card: QueryGraphCardinalityInput) => model(pq, card)
+      case (pq: PlannerQuery, card: QueryGraphCardinalityInput, semanticTable: SemanticTable) => model(pq, card, semanticTable)
     })
   }
 

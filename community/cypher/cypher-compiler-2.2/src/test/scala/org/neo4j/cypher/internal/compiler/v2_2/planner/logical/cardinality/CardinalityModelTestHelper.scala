@@ -20,16 +20,16 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_2.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Metrics}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 
 trait CardinalityModelTestHelper extends CardinalityTestHelper {
 
   self: CypherFunSuite with LogicalPlanningTestSupport =>
 
-  def createCardinalityModel(stats: GraphStatistics, semanticTable: SemanticTable): QueryGraphCardinalityModel
+  def createCardinalityModel(stats: GraphStatistics): QueryGraphCardinalityModel
 
   def givenPattern(pattern: String) = TestUnit(pattern)
   def givenPredicate(pattern: String) = TestUnit("MATCH " + pattern)
@@ -41,20 +41,20 @@ trait CardinalityModelTestHelper extends CardinalityTestHelper {
       val (statistics, semanticTable) = testUnit.prepareTestContext
 
       val (queryGraph, rewrittenSemanticTable) = testUnit.createQueryGraph(semanticTable)
-      val cardinalityModel: QueryGraphCardinalityModel = createCardinalityModel(statistics, rewrittenSemanticTable)
-      val result = cardinalityModel(queryGraph, QueryGraphCardinalityInput(Map.empty, testUnit.inboundCardinality))
+      val cardinalityModel: QueryGraphCardinalityModel = createCardinalityModel(statistics)
+      val result = cardinalityModel(queryGraph, QueryGraphCardinalityInput(Map.empty, testUnit.inboundCardinality), rewrittenSemanticTable)
       result should equal(Cardinality(number))
     }
 
-    def shouldHavePlannerQueryCardinality(f: QueryGraphCardinalityModel => Metrics.CardinalityModel)(number: Double) {
+    def shouldHavePlannerQueryCardinality(f: QueryGraphCardinalityModel => CardinalityModel)(number: Double) {
       import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.CardinalitySupport.Eq
 
       val (statistics, semanticTable) = testUnit.prepareTestContext
 
-      val graphCardinalityModel = createCardinalityModel(statistics, semanticTable)
+      val graphCardinalityModel = createCardinalityModel(statistics)
       val cardinalityModelUnderTest = f(graphCardinalityModel)
       val (plannerQuery, _) = producePlannerQueryForPattern(testUnit.query)
-      cardinalityModelUnderTest(plannerQuery, QueryGraphCardinalityInput.empty) should equal(Cardinality(number))
+      cardinalityModelUnderTest(plannerQuery, QueryGraphCardinalityInput.empty, semanticTable) should equal(Cardinality(number))
     }
   }
 
