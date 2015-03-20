@@ -1,3 +1,9 @@
+2.2.0-GA
+--------
+o Deprecate Cypher language / parser version 1.9
+o Deprecate Cypher language / parser version 2.0
+o Deprecate Cypher language / parser version 2.1
+
 2.2.0-RC1
 ---------
 o Fixes problem where eagerness was unnecessarily being introduced.
