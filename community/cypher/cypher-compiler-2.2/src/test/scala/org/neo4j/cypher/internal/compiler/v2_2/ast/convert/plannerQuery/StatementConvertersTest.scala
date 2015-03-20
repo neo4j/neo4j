@@ -345,7 +345,14 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.INCOMING, Seq.empty, VarPatternLength(1, None)),
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.BOTH, Seq.empty, VarPatternLength(1, None))))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
-    query.graph.selections should equal(Selections(Set.empty))
+
+    val identR = Identifier("r")(null)
+    val identR2 = Identifier("r2")(null)
+    val inner = AnyIterablePredicate(FilterScope(identR2, Some(Equals(identR, identR2)(null)))(null), identR2)(null)
+    val outer = NoneIterablePredicate(FilterScope(identR, Some(inner))(null), identR)(null)
+    val predicate = Predicate(Set(IdName("r2"), IdName("r")), outer)
+
+    query.graph.selections should equal(Selections(Set(predicate)))
     query.horizon should equal(RegularQueryProjection(Map(
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
