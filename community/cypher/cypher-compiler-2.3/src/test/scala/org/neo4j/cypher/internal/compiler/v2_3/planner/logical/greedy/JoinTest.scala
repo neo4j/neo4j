@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.greedy
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.ast.PatternExpression
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanningTestSupport, QueryGraph}
 import org.neo4j.graphdb.Direction
 
@@ -54,8 +53,8 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val qg = createQuery(r1Rel, r2Rel)
 
     join(planTable, qg) should equal(Seq(
-      planNodeHashJoin(Set(bNode), left, right),
-      planNodeHashJoin(Set(bNode), right, left)
+      NodeHashJoin(Set(bNode), left, right)(solved),
+      NodeHashJoin(Set(bNode), right, left)(solved)
     ))
   }
 
@@ -70,8 +69,8 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val qg = createQuery(r1Rel, r2Rel)
 
     join(planTable, qg) should equal(Seq(
-      planNodeHashJoin(Set(bNode, cNode), left, right),
-      planNodeHashJoin(Set(bNode, cNode), right, left)
+      NodeHashJoin(Set(bNode, cNode), left, right)(solved),
+      NodeHashJoin(Set(bNode, cNode), right, left)(solved)
     ))
   }
 
@@ -87,10 +86,10 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val qg = createQuery(r1Rel, r2Rel, r3Rel)
 
     join(planTable, qg) should equal(Seq(
-      planNodeHashJoin(Set(bNode), left, middle),
-      planNodeHashJoin(Set(bNode), middle, left),
-      planNodeHashJoin(Set(cNode), middle, right),
-      planNodeHashJoin(Set(cNode), right, middle)
+      NodeHashJoin(Set(bNode), left, middle)(solved),
+      NodeHashJoin(Set(bNode), middle, left)(solved),
+      NodeHashJoin(Set(cNode), middle, right)(solved),
+      NodeHashJoin(Set(cNode), right, middle)(solved)
     ))
   }
 

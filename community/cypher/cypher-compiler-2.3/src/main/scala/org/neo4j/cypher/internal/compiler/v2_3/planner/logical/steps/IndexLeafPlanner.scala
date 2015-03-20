@@ -22,9 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{ManyQueryExpression, QueryExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LeafPlanner, LogicalPlanningContext}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 
@@ -85,7 +84,7 @@ object uniqueIndexSeekLeafPlanner extends IndexLeafPlanner {
                               argumentIds: Set[IdName])
                              (implicit context: LogicalPlanningContext): (Seq[Expression]) => LogicalPlan =
     (predicates: Seq[Expression]) =>
-      planNodeIndexUniqueSeek(idName, label, propertyKey, valueExpr, predicates, hint, argumentIds)
+      context.logicalPlanProducer.planNodeIndexUniqueSeek(idName, label, propertyKey, valueExpr, predicates, hint, argumentIds)
 
 
   protected def findIndexesFor(label: String, property: String)(implicit context: LogicalPlanningContext): Option[IndexDescriptor] =
@@ -101,7 +100,7 @@ object indexSeekLeafPlanner extends IndexLeafPlanner {
                               argumentIds: Set[IdName])
                              (implicit context: LogicalPlanningContext): (Seq[Expression]) => LogicalPlan =
     (predicates: Seq[Expression]) =>
-      planNodeIndexSeek(idName, label, propertyKey, valueExpr, predicates, hint, argumentIds)
+      context.logicalPlanProducer.planNodeIndexSeek(idName, label, propertyKey, valueExpr, predicates, hint, argumentIds)
 
   protected def findIndexesFor(label: String, property: String)(implicit context: LogicalPlanningContext): Option[IndexDescriptor] =
     context.planContext.getIndexRule(label, property)
@@ -111,7 +110,8 @@ object indexSeekLeafPlanner extends IndexLeafPlanner {
 object legacyHintLeafPlanner extends LeafPlanner {
   def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext) = {
     qg.hints.toSeq.collect {
-      case hint: LegacyIndexHint => planLegacyHintSeek(IdName(hint.identifier.name), hint, qg.argumentIds)
+      case hint: LegacyIndexHint =>
+        context.logicalPlanProducer.planLegacyHintSeek(IdName(hint.identifier.name), hint, qg.argumentIds)
     }
   }
 }

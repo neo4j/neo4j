@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.SortDescription
-import org.neo4j.cypher.internal.compiler.v2_3.planner.PlannerQuery
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
 
-case class Sort(left: LogicalPlan, sortItems: Seq[SortDescription])(val solved: PlannerQuery)
+case class Sort(left: LogicalPlan, sortItems: Seq[SortDescription])
+               (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LogicalPlanWithoutExpressions {
 
   val lhs = Some(left)

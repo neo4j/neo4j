@@ -21,23 +21,19 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.ast.GetDegree
+import org.neo4j.cypher.internal.compiler.v2_3.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{AllNodesScan, Projection}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanningTestSupport2, PlannerQuery}
 import org.neo4j.graphdb.Direction.OUTGOING
 
 class PlanRewritingPlanningIntegrationTest  extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("should use GetDegree to compute the degree of a node") {
     val result = (new given {
-      cardinality = mapCardinality {
-        case _: AllNodesScan => 1
-        case _               => Double.MaxValue
-      }
     } planFor "MATCH (n) RETURN length((n)-->()) AS deg").plan
 
     result should equal(
       Projection(
-        AllNodesScan("n", Set.empty)(PlannerQuery.empty),
+        AllNodesScan("n", Set.empty)(solved),
         Map("deg" -> GetDegree(ident("n"), None, OUTGOING)_)
       )(result.solved)
     )

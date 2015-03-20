@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.docgen
 import org.neo4j.cypher.internal.compiler.v2_3.perty._
 import org.neo4j.cypher.internal.compiler.v2_3.perty.gen.{DocHandlerTestSuite, toStringDocGen}
 import org.neo4j.cypher.internal.compiler.v2_3.perty.print.{PrintNewLine, PrintText, condense}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.PlannerQuery
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{LogicalPlanWithoutExpressions, IdName, LogicalLeafPlan, LogicalPlan}
 
 class LogicalPlanDocGenTest extends DocHandlerTestSuite[Any] {
@@ -79,7 +79,7 @@ class LogicalPlanDocGenTest extends DocHandlerTestSuite[Any] {
 
   case class TestLeafPlan(x: Int) extends LogicalLeafPlan with LogicalPlanWithoutExpressions {
     def availableSymbols = Set[IdName](IdName("a"))
-    def solved: PlannerQuery = ???
+    def solved: PlannerQuery with CardinalityEstimation = ???
     def argumentIds: Set[IdName] = ???
   }
 
@@ -87,13 +87,13 @@ class LogicalPlanDocGenTest extends DocHandlerTestSuite[Any] {
     def lhs = Some(left)
     def rhs = None
     def availableSymbols = Set[IdName](IdName("b"))
-    def solved: PlannerQuery = ???
+    def solved: PlannerQuery with CardinalityEstimation = ???
   }
 
   case class TestComboPlan(left: LogicalPlan, right: LogicalPlan) extends LogicalPlan with LogicalPlanWithoutExpressions {
     def lhs = Some(left)
     def rhs = Some(right)
     def availableSymbols = Set[IdName](IdName("c"), IdName("d"))
-    def solved: PlannerQuery = ???
+    def solved: PlannerQuery with CardinalityEstimation = ???
   }
 }

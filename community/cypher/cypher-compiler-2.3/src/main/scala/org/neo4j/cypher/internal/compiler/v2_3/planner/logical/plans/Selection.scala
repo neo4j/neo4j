@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression
-import org.neo4j.cypher.internal.compiler.v2_3.planner.PlannerQuery
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
 
-case class Selection(predicates: Seq[Expression], left: LogicalPlan)(val solved: PlannerQuery) extends LogicalPlan {
+case class Selection(predicates: Seq[Expression], left: LogicalPlan)
+                    (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan {
   assert(predicates.nonEmpty, "A selection plan should never be created without predicates")
 
   val lhs = Some(left)

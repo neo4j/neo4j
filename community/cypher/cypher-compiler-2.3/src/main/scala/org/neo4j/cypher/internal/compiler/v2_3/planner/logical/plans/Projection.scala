@@ -21,9 +21,10 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
-import org.neo4j.cypher.internal.compiler.v2_3.planner.PlannerQuery
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
 
-case class Projection(left: LogicalPlan, expressions: Map[String, Expression])(val solved: PlannerQuery) extends LogicalPlan {
+case class Projection(left: LogicalPlan, expressions: Map[String, Expression])
+                     (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan {
   val lhs = Some(left)
   val rhs = None
 

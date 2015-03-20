@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.rewriter.LogicalPlanRewriter
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.{aggregation, projection, sortSkipAndLimit, verifyBestPlan}
 
 trait QueryPlanner {
@@ -47,11 +46,11 @@ class DefaultQueryPlanner(config: QueryPlannerConfiguration = QueryPlannerConfig
   private def planQuery(queries: Seq[PlannerQuery], distinct: Boolean)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None) = {
     val logicalPlans: Seq[LogicalPlan] = queries.map(p => planSingleQuery(p))
     val unionPlan = logicalPlans.reduce[LogicalPlan] {
-      case (p1, p2) => planUnion(p1, p2)
+      case (p1, p2) => context.logicalPlanProducer.planUnion(p1, p2)
     }
 
     if (distinct)
-      planDistinct(unionPlan)
+      context.logicalPlanProducer.planDistinct(unionPlan)
     else
       unionPlan
   }
@@ -73,8 +72,8 @@ class DefaultQueryPlanner(config: QueryPlannerConfiguration = QueryPlannerConfig
       case Some(query) =>
         val lhs = pred
         val lhsContext = context.recurse(lhs)
-        val rhs = planPart(query, Some(planQueryArgumentRow(query.graph)))(lhsContext)
-        val applyPlan = planTailApply(lhs, rhs)
+        val rhs = planPart(query, Some(context.logicalPlanProducer.planQueryArgumentRow(query.graph)))(lhsContext)
+        val applyPlan = context.logicalPlanProducer.planTailApply(lhs, rhs)
 
         val applyContext = lhsContext.recurse(applyPlan)
         val projectedPlan = planEventHorizon(query, applyPlan)(applyContext)
@@ -106,7 +105,7 @@ class DefaultQueryPlanner(config: QueryPlannerConfiguration = QueryPlannerConfig
         projection(sortedAndLimited, queryProjection.projections, intermediate = query.tail.isDefined)
 
       case UnwindProjection(identifier, expression) =>
-        planUnwind(plan, identifier, expression)
+        context.logicalPlanProducer.planUnwind(plan, identifier, expression)
 
       case _ =>
         throw new CantHandleQueryException

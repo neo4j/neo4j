@@ -23,19 +23,20 @@ import org.neo4j.cypher.internal.compiler.v2_3.helpers.Converge.iterateUntilConv
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{CartesianProduct, LogicalPlan}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlanProducer._
 
 object cartesianProduct extends CandidateGenerator[GreedyPlanTable] {
   def apply(planTable: GreedyPlanTable, ignored: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
     val usablePlans = iterateUntilConverged { usablePlans: Set[LogicalPlan] =>
-      val cartesianProducts = for (planA <- usablePlans; planB <- usablePlans if planA != planB) yield planCartesianProduct(planA, planB)
+      val cartesianProducts =
+        for (planA <- usablePlans; planB <- usablePlans if planA != planB)
+        yield context.logicalPlanProducer.planCartesianProduct(planA, planB)
       if (cartesianProducts.isEmpty) {
         usablePlans
       } else {
-        val worstCartesianProduct = cartesianProducts.minBy(p => context.cost(p, context.cardinalityInput))
+        val worstCartesianProduct = cartesianProducts.minBy(p => context.cost(p))
         usablePlans - worstCartesianProduct.left - worstCartesianProduct.right + worstCartesianProduct
       }
-    } (planTable.plans.toSet)
-    usablePlans.toSeq.collect { case c: CartesianProduct => c }
+    }(planTable.plans.toSet)
+    usablePlans.toSeq.collect { case c: CartesianProduct => c}
   }
 }

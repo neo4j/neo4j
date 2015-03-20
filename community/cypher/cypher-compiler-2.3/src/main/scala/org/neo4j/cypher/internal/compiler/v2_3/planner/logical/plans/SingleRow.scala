@@ -19,19 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_3.planner.PlannerQuery
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
 
-case class SingleRow()
+case class SingleRow()(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalLeafPlan with LogicalPlanWithoutExpressions {
+
+  val argumentIds: Set[IdName] = Set.empty
 
   def availableSymbols = argumentIds
 
-  def argumentIds = Set.empty
-
-  def solved = PlannerQuery.empty
-
   override def dup(children: Seq[AnyRef]) = {
     assert(children.isEmpty)
-    SingleRow().asInstanceOf[this.type]
+    SingleRow()(solved).asInstanceOf[this.type]
   }
 }

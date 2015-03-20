@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_3.planner.PlannerQuery
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.CypherType
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 // Argument is used inside of an Apply to feed the row from the LHS of the Apply to the leaf of the RHS
-case class Argument(argumentIds: Set[IdName])(val solved: PlannerQuery)
+case class Argument(argumentIds: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
                     (val typeInfo: Map[String, CypherType] = argumentIds.map( id => id.name -> CTNode).toMap)
   extends LogicalLeafPlan with LogicalPlanWithoutExpressions {
 

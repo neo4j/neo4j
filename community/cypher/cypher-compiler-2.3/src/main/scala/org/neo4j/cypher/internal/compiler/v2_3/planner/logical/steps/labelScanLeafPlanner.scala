@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{Identifier, UsingScanHint}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LeafPlanner, LogicalPlanningContext}
 
 object labelScanLeafPlanner extends LeafPlanner {
@@ -38,7 +37,7 @@ object labelScanLeafPlanner extends LeafPlanner {
         case hint@UsingScanHint(Identifier(`identName`), `labelName`) => hint
       }
 
-      planNodeByLabelScan(idName, LazyLabel(labelName), Seq(labelPredicate), hint, qg.argumentIds)
+      context.logicalPlanProducer.planNodeByLabelScan(idName, LazyLabel(labelName), Seq(labelPredicate), hint, qg.argumentIds)
     }
   }
 }

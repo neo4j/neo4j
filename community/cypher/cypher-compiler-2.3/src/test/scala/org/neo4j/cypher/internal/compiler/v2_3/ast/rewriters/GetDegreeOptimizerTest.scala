@@ -104,7 +104,7 @@ class GetDegreeOptimizerTest extends CypherFunSuite with RewriteTest {
     forAll(functionNames) { fun =>
       val patternStatement = parseForRewriting(s"MATCH n WHERE (n)-[:X]->({prop: $fun((n)-[:X]->())}) RETURN n")
       val patternExpression = findWherePredicate(patternStatement).asInstanceOf[PatternExpression]
-      val nestedPlanExpression = NestedPlanExpression(AllNodesScan(IdName("a"), Set.empty)(PlannerQuery.empty), patternExpression)(pos)
+      val nestedPlanExpression = NestedPlanExpression(AllNodesScan(IdName("a"), Set.empty)(null), patternExpression)(pos)
 
       val degreeStatement = parseForRewriting(s"MATCH n WHERE $fun((n)-[:X]->()) RETURN n")
       val degreeExpression = findWherePredicate(degreeStatement)

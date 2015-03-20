@@ -20,17 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.CachedFunction
-import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics._
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.{QueryGraphCardinalityModel, CardinalityModel}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
 
 case class CachedMetricsFactory(metricsFactory: MetricsFactory) extends MetricsFactory {
   def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel): CardinalityModel =
     CachedFunction(metricsFactory.newCardinalityEstimator(queryGraphCardinalityModel))
 
-  def newCostModel(cardinality: CardinalityModel) =
-    CachedFunction(metricsFactory.newCostModel(cardinality))
+  def newCostModel() = CachedFunction(metricsFactory.newCostModel())
 
-  def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable) =
-    CachedFunction(metricsFactory.newQueryGraphCardinalityModel(statistics, semanticTable))
+  def newQueryGraphCardinalityModel(statistics: GraphStatistics) =
+    CachedFunction(metricsFactory.newQueryGraphCardinalityModel(statistics))
 }

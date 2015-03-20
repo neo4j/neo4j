@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.Foldable._
 import org.neo4j.cypher.internal.compiler.v2_3.Rewritable._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{Identifier, Expression}
 import org.neo4j.cypher.internal.compiler.v2_3.perty._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.{QueryGraph, PlannerQuery}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, QueryGraph, PlannerQuery}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{QueryPlannerConfiguration, LogicalPlanningFunction2}
 import org.neo4j.cypher.internal.compiler.v2_3.{InternalException, Rewritable}
 
@@ -49,7 +49,7 @@ abstract class LogicalPlan
 
   def lhs: Option[LogicalPlan]
   def rhs: Option[LogicalPlan]
-  def solved: PlannerQuery
+  def solved: PlannerQuery with CardinalityEstimation
   def availableSymbols: Set[IdName]
 
   def leafs: Seq[LogicalPlan] = this.treeFold(Seq.empty[LogicalPlan]) {
@@ -57,7 +57,7 @@ abstract class LogicalPlan
       if plan.lhs.isEmpty && plan.rhs.isEmpty => (acc, r) => r(acc :+ plan)
   }
 
-  def updateSolved(newSolved: PlannerQuery): LogicalPlan = {
+  def updateSolved(newSolved: PlannerQuery with CardinalityEstimation): LogicalPlan = {
     val arguments = this.children.toList :+ newSolved
     try {
       copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
@@ -69,7 +69,7 @@ abstract class LogicalPlan
 
   lazy val copyConstructor: Method = this.getClass.getMethods.find(_.getName == "copy").get
 
-  def updateSolved(f: PlannerQuery => PlannerQuery): LogicalPlan =
+  def updateSolved(f: PlannerQuery with CardinalityEstimation => PlannerQuery with CardinalityEstimation): LogicalPlan =
     updateSolved(f(solved))
 
   def dup(children: Seq[AnyRef]): this.type =

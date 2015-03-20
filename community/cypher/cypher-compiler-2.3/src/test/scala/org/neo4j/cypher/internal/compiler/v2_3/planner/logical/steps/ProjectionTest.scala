@@ -20,14 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_3.planner._
 import org.neo4j.cypher.internal.compiler.v2_3.ast
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.Projection
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.{SortDescription, Ascending}
 import org.neo4j.cypher.internal.compiler.v2_3.ast.AscSortItem
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{Ascending, SortDescription}
+import org.neo4j.cypher.internal.compiler.v2_3.planner._
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, LogicalPlanningContext}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, LogicalPlan, Projection}
 
 class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -46,7 +44,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = projection(startPlan, projections, intermediate = true)
 
     // then
-    result should equal(Projection(startPlan, projections)(PlannerQuery.empty))
+    result should equal(Projection(startPlan, projections)(solved))
     result.solved.horizon should equal(RegularQueryProjection(projections))
   }
 
@@ -72,7 +70,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = projection(startPlan, projections, intermediate = false)
 
     // then
-    result should equal(Projection(startPlan, projections)(PlannerQuery.empty))
+    result should equal(Projection(startPlan, projections)(solved))
     result.solved.horizon should equal(RegularQueryProjection(projections))
   }
 
@@ -100,7 +98,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val ids = Set(IdName("n"), IdName("m"))
 
     val plan =
-      newMockedLogicalPlanWithSolved(ids, PlannerQuery(QueryGraph.empty.addPatternNodes(IdName("n"), IdName("m"))))
+      newMockedLogicalPlanWithSolved(ids, CardinalityEstimation.lift(PlannerQuery(QueryGraph.empty.addPatternNodes(IdName("n"), IdName("m"))), Cardinality(0)))
 
     (context, plan)
   }

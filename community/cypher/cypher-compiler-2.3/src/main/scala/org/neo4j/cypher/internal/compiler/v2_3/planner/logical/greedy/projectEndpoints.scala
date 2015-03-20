@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.greedy
 
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{LogicalPlan, PatternRelationship}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{CandidateGenerator, LogicalPlanningContext, PlanTransformer}
 
 object projectEndpoints extends CandidateGenerator[GreedyPlanTable] {
@@ -36,11 +35,11 @@ object projectEndpoints extends CandidateGenerator[GreedyPlanTable] {
     }
   }
 
-  private def doPlan(plan: LogicalPlan, patternRel: PatternRelationship): LogicalPlan = {
+  private def doPlan(plan: LogicalPlan, patternRel: PatternRelationship)(implicit context: LogicalPlanningContext): LogicalPlan = {
     val (start, end) = patternRel.inOrder
     val isStartInScope = plan.availableSymbols(start)
     val isEndInScope = plan.availableSymbols(end)
-    planEndpointProjection(plan, start, isStartInScope, end, isEndInScope, patternRel)
+    context.logicalPlanProducer.planEndpointProjection(plan, start, isStartInScope, end, isEndInScope, patternRel)
   }
 
 

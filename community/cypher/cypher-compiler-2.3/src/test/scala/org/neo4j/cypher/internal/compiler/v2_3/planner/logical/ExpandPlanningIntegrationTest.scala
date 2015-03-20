@@ -34,11 +34,11 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
     planFor("MATCH (a)-[r]->(b) RETURN r").plan should equal(
       Projection(
         Expand(
-          AllNodesScan("b", Set.empty)(PlannerQuery.empty),
+          AllNodesScan("b", Set.empty)(solved),
           "b", Direction.INCOMING, Seq.empty, "a", "r"
-        )(PlannerQuery.empty),
+        )(solved),
         Map("r" -> Identifier("r") _)
-      )(PlannerQuery.empty)
+      )(solved)
     )
   }
 
@@ -46,12 +46,11 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
 
     (new given {
       cardinality = mapCardinality {
-        case AllNodesScan(IdName("a"), _) => 1000
-        case AllNodesScan(IdName("b"), _) => 2000
-        case AllNodesScan(IdName("c"), _) => 3000
-        case AllNodesScan(IdName("d"), _) => 4000
-        case _: Expand => 100.0
-        case _ => Double.MaxValue
+        case PlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set(IdName("a")) => 1000.0
+        case PlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set(IdName("b")) => 2000.0
+        case PlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set(IdName("c")) => 3000.0
+        case PlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set(IdName("d")) => 4000.0
+        case _ => 100.0
       }
     } planFor "MATCH (a)-[r1]->(b), (c)-[r2]->(d) RETURN r1, r2").plan should beLike {
       case Projection(
@@ -72,18 +71,19 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
     result should equal(
       Projection(
         Expand(
-          AllNodesScan("a", Set.empty)(PlannerQuery.empty),
-          "a", Direction.OUTGOING, Seq.empty, "a", "r", ExpandInto)(PlannerQuery.empty),
+          AllNodesScan("a", Set.empty)(solved),
+          "a", Direction.OUTGOING, Seq.empty, "a", "r", ExpandInto)(solved),
         Map("r" -> Identifier("r") _)
-      )(PlannerQuery.empty)
+      )(solved)
     )
   }
 
   test("Should build plans containing expand for looping relationship patterns") {
     (new given {
       cardinality = mapCardinality {
-        case _: AllNodesScan => 1000.0
-        case _                => 1.0
+        // all node scans
+        case PlannerQuery(queryGraph, _, _) if queryGraph.patternNodes.size == 1 => 1000.0
+        case _                                                                   => 1.0
       }
 
     } planFor "MATCH (a)-[r1]->(b)<-[r2]-(a) RETURN r1, r2").plan should equal(
@@ -91,22 +91,19 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
       Selection(Seq(Not(Equals(Identifier("r1")_,Identifier("r2")_)_)_),
         Expand(
           Expand(
-            AllNodesScan(IdName("b"),Set.empty)(PlannerQuery.empty),
-            IdName("b"), Direction.INCOMING, Seq.empty, IdName("a"), IdName("r1"),ExpandAll)(PlannerQuery.empty),
-          IdName("b"), Direction.INCOMING, Seq.empty, IdName("a"), IdName("r2"), ExpandInto)(PlannerQuery.empty)
-        )(PlannerQuery.empty),
-        Map("r1" -> Identifier("r1")_, "r2" -> Identifier("r2")_))(PlannerQuery.empty)
+            AllNodesScan(IdName("b"),Set.empty)(solved),
+            IdName("b"), Direction.INCOMING, Seq.empty, IdName("a"), IdName("r1"),ExpandAll)(solved),
+          IdName("b"), Direction.INCOMING, Seq.empty, IdName("a"), IdName("r2"), ExpandInto)(solved)
+        )(solved),
+        Map("r1" -> Identifier("r1")_, "r2" -> Identifier("r2")_))(solved)
     )
   }
 
   test("Should build plans expanding from the cheaper side for single relationship pattern") {
 
-    def myCardinality(plan: LogicalPlan): Cardinality = Cardinality(plan match {
-      case _: NodeIndexSeek                 => 10.0
-      case _: AllNodesScan                  => 100.04
-      case Expand(lhs, _, _, _, _, _, _)    => (myCardinality(lhs) * Multiplier(10)).amount
-      case _: Selection                     => 100.04
-      case _                                => Double.MaxValue
+    def myCardinality(plan: PlannerQuery): Cardinality = Cardinality(plan match {
+      case PlannerQuery(queryGraph, _, _) if !queryGraph.selections.isEmpty  => 10
+      case _ => 1000
     })
 
     (new given {
@@ -116,19 +113,19 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
         Expand(
           Selection(
             Seq(In(Property(Identifier("a")_, PropertyKeyName("name")_)_, Collection(Seq(StringLiteral("Andres")_))_)_),
-            AllNodesScan("a", Set.empty)(PlannerQuery.empty)
-          )(PlannerQuery.empty),
+            AllNodesScan("a", Set.empty)(solved)
+          )(solved),
           "a", Direction.BOTH, Seq(RelTypeName("x")_), "start", "rel"
-        )(PlannerQuery.empty),
+        )(solved),
         Map("a" -> Identifier("a") _)
-      )(PlannerQuery.empty)
+      )(solved)
     )
   }
 
   test("Should build plans expanding from the more expensive side if that is requested by using a hint") {
     (new given {
       cardinality = mapCardinality {
-        case _: NodeIndexSeek => 1000.0
+        case PlannerQuery(queryGraph, _, _) if queryGraph.selections.predicates.size == 2 => 1000.0
         case _                => 10.0
       }
 
@@ -136,38 +133,11 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
     } planFor "MATCH (a)-[r]->(b) USING INDEX b:Person(name) WHERE b:Person AND b.name = 'Andres' return r").plan should equal(
       Projection(
         Expand(
-          NodeIndexSeek("b", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(StringLiteral("Andres") _)) _), Set.empty)(PlannerQuery.empty),
+          NodeIndexSeek("b", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(StringLiteral("Andres") _)) _), Set.empty)(solved),
           "b", Direction.INCOMING, Seq.empty, "a", "r"
-        )(PlannerQuery.empty),
+        )(solved),
         Map("r" -> ident("r"))
-      )(PlannerQuery.empty)
-    )
-  }
-
-  test("Should build plans with leaves for both sides if that is requested by using hints") {
-    (new given {
-      cardinality = mapCardinality {
-        case _: NodeIndexSeek                   => 1000.0
-        case x: Expand if x.from == IdName("a") => 100.0
-        case x: Expand if x.from == IdName("b") => 200.0
-        case _                                  => 10.0
-      }
-      indexOn("Person", "name")
-    } planFor "MATCH (a)-[r]->(b) USING INDEX a:Person(name) USING INDEX b:Person(name) WHERE a:Person AND b:Person AND a.name = 'Jakub' AND b.name = 'Andres' return r").plan should equal(
-      Projection(
-        NodeHashJoin(
-          Set(IdName("b")),
-          Selection(
-            Seq(In(Property(ident("b"), PropertyKeyName("name")_)_, Collection(Seq(StringLiteral("Andres")_))_)_, HasLabels(ident("b"), Seq(LabelName("Person")_))_),
-            Expand(
-              NodeIndexSeek("a", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(StringLiteral("Jakub") _)) _), Set.empty)(PlannerQuery.empty),
-              "a", Direction.OUTGOING, Seq.empty, "b", "r"
-            )(PlannerQuery.empty)
-          )(PlannerQuery.empty),
-          NodeIndexSeek("b", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(StringLiteral("Andres") _)) _), Set.empty)(PlannerQuery.empty)
-        )(PlannerQuery.empty),
-        Map("r" -> ident("r"))
-      )(PlannerQuery.empty)
+      )(solved)
     )
   }
 }

@@ -23,21 +23,23 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.QueryGraphCardinalityInput
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 
 case class LogicalPlanningContext(planContext: PlanContext,
+                                  logicalPlanProducer: LogicalPlanProducer,
                                   metrics: Metrics,
                                   semanticTable: SemanticTable,
                                   strategy: QueryGraphSolver,
-                                  cardinalityInput: QueryGraphCardinalityInput) {
+                                  cardinalityInput: QueryGraphCardinalityInput = QueryGraphCardinalityInput.empty) {
   def recurse(plan: LogicalPlan) = {
-    val newInput = cardinalityInput.recurse(plan)(metrics.cardinality)
+    val newInput = cardinalityInput.recurse(plan)
     copy(cardinalityInput = newInput)
   }
 
   def forExpressionPlanning(nodes: Iterable[Identifier], rels: Iterable[Identifier]) = {
-    val tableWithNodes = nodes.foldLeft(semanticTable) { case (table, node) => table.addNode(node) }
-    val tableWithRels = rels.foldLeft(tableWithNodes) { case (table, rel) => table.addRelationship(rel) }
+    val tableWithNodes = nodes.foldLeft(semanticTable) { case (table, node) => table.addNode(node)}
+    val tableWithRels = rels.foldLeft(tableWithNodes) { case (table, rel) => table.addRelationship(rel)}
 
     copy(
       cardinalityInput = cardinalityInput.copy(inboundCardinality = Cardinality(1)),
@@ -46,20 +48,22 @@ case class LogicalPlanningContext(planContext: PlanContext,
   }
 
   def statistics = planContext.statistics
+
   def cost = metrics.cost
+
   def cardinality = metrics.cardinality
 }
 
 object NodeIdName {
   def unapply(v: Any)(implicit context: LogicalPlanningContext): Option[IdName] = v match {
-    case identifier @ Identifier(name) if context.semanticTable.isNode(identifier) => Some(IdName(identifier.name))
-    case _                                                                         => None
+    case identifier@Identifier(name) if context.semanticTable.isNode(identifier) => Some(IdName(identifier.name))
+    case _ => None
   }
 }
 
 object RelationshipIdName {
   def unapply(v: Any)(implicit context: LogicalPlanningContext): Option[IdName] = v match {
-    case identifier @ Identifier(name) if context.semanticTable.isRelationship(identifier) => Some(IdName(identifier.name))
-    case _                                                                                 => None
+    case identifier@Identifier(name) if context.semanticTable.isRelationship(identifier) => Some(IdName(identifier.name))
+    case _ => None
   }
 }

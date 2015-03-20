@@ -111,8 +111,7 @@ class NamespacerTest extends CypherFunSuite {
   private def assertRewritten(from: String, to: String) = {
     val fromAst = parseAndRewrite(from)
     val state = fromAst.semanticState
-    val table = SemanticTable(state.typeTable, state.recordedScopes)
-    val namespacer = Namespacer(fromAst, table, state.scopeTree)
+    val namespacer = Namespacer(fromAst, state.scopeTree)
     val namespacedAst = fromAst.endoRewrite(namespacer.astRewriter)
 
     val expectedAst = parseAndRewrite(to)

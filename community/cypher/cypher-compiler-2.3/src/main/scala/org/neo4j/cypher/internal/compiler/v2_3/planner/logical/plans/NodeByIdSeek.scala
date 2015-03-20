@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{Expression, Parameter}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{EntityByIdRhs => CommandEntityByIdRhs, EntityByIdParameter => CommandEntityByIdParameter, EntityByIdExprs => CommandEntityByIdExprs}
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.PlannerQuery
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
 
 sealed trait EntityByIdRhs {
   def mapExpressions(f: Expression => Expression): EntityByIdRhs
@@ -46,7 +46,8 @@ case class EntityByIdExprs(exprs: Seq[Expression]) extends EntityByIdRhs {
     CommandEntityByIdExprs(exprs.asCommandExpressions)
 }
 
-case class NodeByIdSeek(idName: IdName, nodeIds: EntityByIdRhs, argumentIds: Set[IdName])(val solved: PlannerQuery)
+case class NodeByIdSeek(idName: IdName, nodeIds: EntityByIdRhs, argumentIds: Set[IdName])
+                       (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalLeafPlan with LogicalPlanWithoutExpressions {
 
   def availableSymbols: Set[IdName] = argumentIds + idName

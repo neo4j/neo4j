@@ -19,17 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.assumeIndependence
 
-import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.QueryGraphCardinalityModel
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.{RandomizedCardinalityModelTestSuite, ABCDCardinalityData}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.{ABCDCardinalityData, RandomizedCardinalityModelTestSuite}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
 
 class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardinalityModelTestSuite with ABCDCardinalityData {
 
-  import org.scalatest.prop.TableDrivenPropertyChecks._
-
   import ABCD._
+  import org.scalatest.prop.TableDrivenPropertyChecks._
 
   test("all queries") {
     val queries = Table.apply[String, Double](
@@ -267,6 +265,6 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
 //      )
 //  }
 
-  def createCardinalityModel(stats: GraphStatistics, semanticTable: SemanticTable): QueryGraphCardinalityModel =
-    AssumeIndependenceQueryGraphCardinalityModel(stats, semanticTable, combiner)
+  def createCardinalityModel(stats: GraphStatistics): QueryGraphCardinalityModel =
+    AssumeIndependenceQueryGraphCardinalityModel(stats, combiner)
 }

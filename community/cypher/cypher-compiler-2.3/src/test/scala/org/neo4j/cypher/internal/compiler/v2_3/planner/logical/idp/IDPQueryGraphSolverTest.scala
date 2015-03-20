@@ -231,7 +231,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       implicit val x = ctx
 
       queryGraphSolver.plan(cfg.qg) should equal(
-        SingleRow()
+        SingleRow()(solved)
       )
     }
   }
@@ -413,20 +413,16 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
           patternRelationships = Set(PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength))
         ))
       )
-
-      labelCardinality = immutable.Map(
-        "B" -> Cardinality(10)
-      )
     }.withLogicalPlanningContext { (cfg, ctx) =>
       implicit val x = ctx
 
       queryGraphSolver.plan(cfg.qg) should equal(
         Apply(
-          AllNodesScan("a", Set.empty)(null),
+          AllNodesScan("a", Set.empty)(solved),
           Optional(
-            Expand(Argument(Set("a"))(null)(), "a", Direction.OUTGOING, Seq.empty, "b", "r")(null)
-          )(null)
-        )(null)
+            Expand(Argument(Set("a"))(solved)(), "a", Direction.OUTGOING, Seq.empty, "b", "r")(solved)
+          )(solved)
+        )(solved)
       )
     }
   }
@@ -478,14 +474,14 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
       queryGraphSolver.plan(cfg.qg) should equal(
         Apply(
-          SingleRow(),
+          SingleRow()(solved),
           Optional(
             Expand(
               AllNodesScan("b", Set.empty)(null),
               "b", Direction.INCOMING, Seq.empty, "a", "r", ExpandAll
-            )(null)
-          )(null)
-        )(null)
+            )(solved)
+          )(solved)
+        )(solved)
       )
     }
   }

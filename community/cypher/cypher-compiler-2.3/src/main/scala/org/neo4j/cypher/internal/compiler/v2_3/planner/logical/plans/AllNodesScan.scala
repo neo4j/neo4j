@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_3.planner.PlannerQuery
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
 
-case class AllNodesScan(idName: IdName, argumentIds: Set[IdName])(val solved: PlannerQuery)
+case class AllNodesScan(idName: IdName, argumentIds: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalLeafPlan with LogicalPlanWithoutExpressions {
 
   def availableSymbols = argumentIds + idName

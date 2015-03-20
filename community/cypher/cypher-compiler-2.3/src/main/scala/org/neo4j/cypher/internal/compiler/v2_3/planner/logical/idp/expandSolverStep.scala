@@ -21,14 +21,15 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{AllIterablePredicate, FilterScope, Identifier}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlanProducer._
 
 case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelationship, LogicalPlan] {
 
   import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.idp.expandSolverStep._
 
-  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan]): Iterator[LogicalPlan] = {
+  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan])
+                    (implicit context: LogicalPlanningContext): Iterator[LogicalPlan] = {
     val result: Iterator[Iterator[LogicalPlan]] =
       for (patternId <- goal.iterator;
            pattern <- registry.lookup(patternId);
@@ -52,14 +53,16 @@ case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelatio
 
 object expandSolverStep {
 
-  def planSingleProjectEndpoints(patternRel: PatternRelationship, plan: LogicalPlan): LogicalPlan = {
+  def planSingleProjectEndpoints(patternRel: PatternRelationship, plan: LogicalPlan)
+                                (implicit context: LogicalPlanningContext): LogicalPlan = {
     val (start, end) = patternRel.inOrder
     val isStartInScope = plan.availableSymbols(start)
     val isEndInScope = plan.availableSymbols(end)
-    planEndpointProjection(plan, start, isStartInScope, end, isEndInScope, patternRel)
+    context.logicalPlanProducer.planEndpointProjection(plan, start, isStartInScope, end, isEndInScope, patternRel)
   }
 
-  def planSinglePatternSide(qg: QueryGraph, patternRel: PatternRelationship, plan: LogicalPlan, nodeId: IdName): Option[LogicalPlan] = {
+  def planSinglePatternSide(qg: QueryGraph, patternRel: PatternRelationship, plan: LogicalPlan, nodeId: IdName)
+                           (implicit context: LogicalPlanningContext): Option[LogicalPlan] = {
     val availableSymbols = plan.availableSymbols
     if (availableSymbols(nodeId)) {
       val dir = patternRel.directionRelativeTo(nodeId)
@@ -69,7 +72,7 @@ object expandSolverStep {
 
       patternRel.length match {
         case SimplePatternLength =>
-          Some(planSimpleExpand(plan, nodeId, dir, otherSide, patternRel, mode))
+          Some(context.logicalPlanProducer.planSimpleExpand(plan, nodeId, dir, otherSide, patternRel, mode))
 
         case length: VarPatternLength =>
           val availablePredicates = qg.selections.predicatesGiven(availableSymbols + patternRel.name)
@@ -78,7 +81,7 @@ object expandSolverStep {
               if identifier == relId || !innerPredicate.dependencies(relId) =>
               (identifier, innerPredicate) -> all
           }.unzip
-          Some(planVarExpand(plan, nodeId, dir, otherSide, patternRel, predicates, allPredicates, mode))
+          Some(context.logicalPlanProducer.planVarExpand(plan, nodeId, dir, otherSide, patternRel, predicates, allPredicates, mode))
       }
     } else {
       None

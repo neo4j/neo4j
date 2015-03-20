@@ -20,8 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.LazyIterable
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Selector
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.ProjectingSelector
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LogicalPlanningContext, Selector, ProjectingSelector}
 
 import scala.collection.immutable.BitSet
 
@@ -39,7 +38,7 @@ class IDPSolver[S, P](generator: IDPSolverStep[S, P], // generates candidates at
                       maxTableSize: Int // limits computation effort by reducing result quality
                      ) {
 
-  def apply(seed: Seed[S, P], initialToDo: Set[S]): Iterator[(Set[S], P)] = {
+  def apply(seed: Seed[S, P], initialToDo: Set[S])(implicit context: LogicalPlanningContext): Iterator[(Set[S], P)] = {
     val registry = registryFactory()
     val table = tableFactory(registry, seed)
     var toDo = registry.registerAll(initialToDo)

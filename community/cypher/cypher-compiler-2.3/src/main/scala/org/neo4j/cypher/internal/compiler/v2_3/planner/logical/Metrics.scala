@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast.LabelName
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.MapSupport._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics._
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.{QueryGraphCardinalityModel, CardinalityModel, CostModel}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, LogicalPlan}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.{QueryGraph, SemanticTable}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{PlannerQuery, QueryGraph, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
 
 import scala.language.implicitConversions
@@ -38,8 +38,8 @@ object Metrics {
     def withCardinality(c: Cardinality): QueryGraphCardinalityInput =
       copy(inboundCardinality = c)
 
-    def recurse(fromPlan: LogicalPlan)(implicit cardinality: Metrics.CardinalityModel): QueryGraphCardinalityInput = {
-      val newCardinalityInput = cardinality(fromPlan, this)
+    def recurse(fromPlan: LogicalPlan): QueryGraphCardinalityInput = {
+      val newCardinalityInput = fromPlan.solved.estimation
       val newLabels = (labelInfo fuse fromPlan.solved.labelInfo)(_ ++ _)
       copy(labelInfo = newLabels, inboundCardinality = newCardinalityInput)
     }
@@ -48,13 +48,13 @@ object Metrics {
   // This metric calculates how expensive executing a logical plan is.
   // (e.g. by looking at cardinality, expression selectivity and taking into account the effort
   // required to execute a step)
-  type CostModel = (LogicalPlan, QueryGraphCardinalityInput) => Cost
+  type CostModel = LogicalPlan => Cost
 
   // This metric estimates how many rows of data a logical plan produces
   // (e.g. by asking the database for statistics)
-  type CardinalityModel = (LogicalPlan, QueryGraphCardinalityInput) => Cardinality
+  type CardinalityModel = (PlannerQuery, QueryGraphCardinalityInput, SemanticTable) => Cardinality
 
-  type QueryGraphCardinalityModel = (QueryGraph, QueryGraphCardinalityInput) => Cardinality
+  type QueryGraphCardinalityModel = (QueryGraph, QueryGraphCardinalityInput, SemanticTable) => Cardinality
 
   type LabelInfo = Map[IdName, Set[LabelName]]
 }
@@ -173,14 +173,13 @@ object Selectivity {
 
 trait MetricsFactory {
   def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel): CardinalityModel
-  def newCostModel(cardinality: CardinalityModel): CostModel
-  def newQueryGraphCardinalityModel(statistics: GraphStatistics, semanticTable: SemanticTable): QueryGraphCardinalityModel
+  def newCostModel(): CostModel
+  def newQueryGraphCardinalityModel(statistics: GraphStatistics): QueryGraphCardinalityModel
 
-  def newMetrics(statistics: GraphStatistics, semanticTable: SemanticTable) = {
-    val queryGraphCardinalityModel = newQueryGraphCardinalityModel(statistics, semanticTable)
+  def newMetrics(statistics: GraphStatistics) = {
+    val queryGraphCardinalityModel = newQueryGraphCardinalityModel(statistics)
     val cardinality = newCardinalityEstimator(queryGraphCardinalityModel)
-    val cost = newCostModel(cardinality)
-    Metrics(cost, cardinality, queryGraphCardinalityModel)
+    Metrics(newCostModel(), cardinality, queryGraphCardinalityModel)
   }
 }
 

@@ -19,16 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.optional
 
-import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{SemanticTable, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.{QueryGraphCardinalityInput, QueryGraphCardinalityModel}
 
-case class OptionalQueryGraphCardinalityModel(inner: QueryGraphCardinalityModel)
-  extends QueryGraphCardinalityModel {
+case class OptionalQueryGraphCardinalityModel(inner: QueryGraphCardinalityModel) extends QueryGraphCardinalityModel {
 
-  override def apply(qg: QueryGraph, input: QueryGraphCardinalityInput): Cardinality = {
+  override def apply(qg: QueryGraph, input: QueryGraphCardinalityInput, semanticTable: SemanticTable): Cardinality = {
     val combinations: Seq[QueryGraph] = findQueryGraphCombinations(qg)
-    val cardinalities: Seq[Cardinality] = combinations.map(inner(_, input))
+    val cardinalities: Seq[Cardinality] = combinations.map(inner(_, input, semanticTable))
     cardinalities.max
   }
 

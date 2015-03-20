@@ -24,12 +24,10 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{AscSortItem, PatternExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{Ascending, SortDescription}
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, LogicalPlanningContext}
 
 class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
-
-  import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlanProducer._
 
   val x: ast.Expression = ast.UnsignedDecimalIntegerLiteral("110") _
   val y: ast.Expression = ast.UnsignedDecimalIntegerLiteral("10") _
@@ -48,7 +46,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val result = sortSkipAndLimit(startPlan, query)
 
     // then
-    result should equal(Skip(startPlan, x)(PlannerQuery.empty))
+    result should equal(Skip(startPlan, x)(solved))
     result.solved.horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(skip = Some(x))))
   }
 
@@ -62,7 +60,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val result = sortSkipAndLimit(startPlan, query)
 
     // then
-    result should equal(Limit(startPlan, x)(PlannerQuery.empty))
+    result should equal(Limit(startPlan, x)(solved))
     result.solved.horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(limit = Some(x))))
   }
 
@@ -77,7 +75,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val result = sortSkipAndLimit(startPlan, query)
 
     // then
-    result should equal(Limit(Skip(startPlan, y)(PlannerQuery.empty), x)(PlannerQuery.empty))
+    result should equal(Limit(Skip(startPlan, y)(solved), x)(solved))
     result.solved.horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(limit = Some(x), skip = Some(y))))
   }
 
@@ -91,7 +89,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val result = sortSkipAndLimit(startPlan, query)
 
     // then
-    result should equal(Sort(startPlan, Seq(sortDescription))(PlannerQuery.empty))
+    result should equal(Sort(startPlan, Seq(sortDescription))(solved))
 
     result.solved.horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(sortItems = Seq(identifierSortItem))))
   }
@@ -109,13 +107,8 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
     // then
     result should equal(
-      planSortedLimit(startPlan, x, sortItems)
+      SortedLimit(startPlan, x, sortItems)(solved)
     )
-
-    result.solved.horizon should equal(
-      RegularQueryProjection(
-        Map.empty,
-        QueryShuffle(sortItems = sortItems, limit = Some(x))))
   }
 
   test("should add SortedLimit when query uses both ORDER BY and LIMIT, and add the SKIP value to the SortedLimit") {
@@ -131,17 +124,8 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
     // then
     result should equal(
-      planSortedSkipAndLimit(
-        startPlan,
-        y,
-        x,
-        Seq(identifierSortItem)
-      )
+      Skip(SortedLimit(startPlan, ast.Add(x, y)(pos), Seq(identifierSortItem))(solved), y)(solved)
     )
-    result.solved.horizon should equal(
-      RegularQueryProjection(
-        Map.empty,
-        QueryShuffle(sortItems = Seq(identifierSortItem), limit = Some(x), skip = Some(y))))
   }
 
   private def queryGraphWith(skip: Option[ast.Expression] = None,
@@ -162,8 +146,8 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
     val plan =
       newMockedLogicalPlanWithSolved(Set(IdName("n")),
-      PlannerQuery(QueryGraph.empty.addPatternNodes(IdName("n")))
-    )
+        CardinalityEstimation.lift(PlannerQuery(QueryGraph.empty.addPatternNodes(IdName("n"))), Cardinality(0))
+      )
 
     (query, context, plan)
   }

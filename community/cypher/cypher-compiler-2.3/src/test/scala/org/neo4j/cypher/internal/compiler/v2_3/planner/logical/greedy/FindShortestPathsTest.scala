@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.greedy
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{PatternRelationship, ShortestPathPattern, _}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanningTestSupport2, QueryGraph}
 import org.neo4j.graphdb.Direction
 
@@ -36,15 +35,15 @@ class FindShortestPathsTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
     new given {
       qg = QueryGraph
-           .empty
-           .addPatternNodes("a", "b")
-           .addShortestPath(shortestPath)
+        .empty
+        .addPatternNodes("a", "b")
+        .addShortestPath(shortestPath)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       implicit val _ = ctx
-      val left = planCartesianProduct(planAllNodesScan("a", Set.empty), planAllNodesScan("b", Set.empty))
+      val left = CartesianProduct(AllNodesScan("a", Set.empty)(solved), AllNodesScan("b", Set.empty)(solved))(solved)
       val candidates = findShortestPaths(greedyPlanTableWith(left), cfg.qg)
       candidates should equal(Seq(
-        planShortestPaths(left, shortestPath)
+        FindShortestPaths(left, shortestPath)(solved)
       ))
     }
 
@@ -58,15 +57,15 @@ class FindShortestPathsTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
     new given {
       qg = QueryGraph
-           .empty
-           .addPatternNodes("a", "b")
-           .addShortestPath(shortestPath)
+        .empty
+        .addPatternNodes("a", "b")
+        .addShortestPath(shortestPath)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       implicit val _ = ctx
-      val left = planCartesianProduct(planAllNodesScan("a", Set.empty), planAllNodesScan("b", Set.empty))
+      val left = CartesianProduct(AllNodesScan("a", Set.empty)(solved), AllNodesScan("b", Set.empty)(solved))(solved)
       val candidates = findShortestPaths(greedyPlanTableWith(left), cfg.qg)
       candidates should equal(Seq(
-        planShortestPaths(left, shortestPath)
+        FindShortestPaths(left, shortestPath)(solved)
       ))
     }
 
@@ -81,15 +80,15 @@ class FindShortestPathsTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
     new given {
       qg = QueryGraph
-           .empty
-           .addPatternNodes("a", "b")
-           .addShortestPath(shortestPath)
+        .empty
+        .addPatternNodes("a", "b")
+        .addShortestPath(shortestPath)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       implicit val _ = ctx
-      val left = planCartesianProduct(planAllNodesScan("a", Set.empty), planAllNodesScan("b", Set.empty))
+      val left = CartesianProduct(AllNodesScan("a", Set.empty)(solved), AllNodesScan("b", Set.empty)(solved))(solved)
       val candidates = findShortestPaths(greedyPlanTableWith(left), cfg.qg)
       candidates should equal(Seq(
-        planShortestPaths(left, shortestPath)
+        FindShortestPaths(left, shortestPath)(solved)
       ))
     }
 

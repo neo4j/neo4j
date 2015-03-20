@@ -30,8 +30,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   test("should consider identifiers introduced by outer list comprehensions when planning pattern predicates") {
     val plan = (new given {
       cardinality = mapCardinality {
-        case _: Expand => 10
-        case _: Argument => 1
+        // expand
+        case PlannerQuery(queryGraph, _, _) if queryGraph.patternRelationships.size == 1 => 10
+        // argument
+        case PlannerQuery(queryGraph, _, _) if containsArgumentOnly(queryGraph) => 1
         case _ => 4000000
       }
     } planFor """MATCH (a:Person)-[:KNOWS]->(b:Person) WITH a, collect(b) AS friends RETURN a, [f IN friends WHERE (f)-[:WORKS_AT]->(:ComedyClub)] AS clowns""").plan
@@ -44,10 +46,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
               Selection(
                 Seq(HasLabels(ident("  UNNAMED116"), Seq(LabelName("ComedyClub")_))_),
                 Expand(
-                  Argument(Set("f"))(PlannerQuery.empty)(),
+                  Argument(Set("f"))(solved)(),
                   "f", Direction.OUTGOING, Seq(RelTypeName("WORKS_AT")_), "  UNNAMED116", "  UNNAMED102", ExpandAll
-                )(PlannerQuery.empty)
-              )(PlannerQuery.empty)
+                )(solved)
+              )(solved)
             )
         }
     }
@@ -56,24 +58,24 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   test("should build plans containing semi apply for a single pattern predicate") {
     planFor("MATCH (a) WHERE (a)-[:X]->() RETURN a").plan should equal(
       SemiApply(
-        AllNodesScan("a", Set.empty)(PlannerQuery.empty),
+        AllNodesScan("a", Set.empty)(solved),
         Expand(
-          Argument(Set("a"))(PlannerQuery.empty)(),
+          Argument(Set("a"))(solved)(),
           "a", Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED27", "  UNNAMED20"
-        )(PlannerQuery.empty)
-      )(PlannerQuery.empty)
+        )(solved)
+      )(solved)
     )
   }
 
   test("should build plans containing anti semi apply for a single negated pattern predicate") {
     planFor("MATCH (a) WHERE NOT (a)-[:X]->() RETURN a").plan should equal(
       AntiSemiApply(
-        AllNodesScan("a", Set.empty)(PlannerQuery.empty),
+        AllNodesScan("a", Set.empty)(solved),
         Expand(
-          Argument(Set("a"))(PlannerQuery.empty)(),
+          Argument(Set("a"))(solved)(),
           "a", Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED31", "  UNNAMED24"
-        )(PlannerQuery.empty)
-      )(PlannerQuery.empty)
+        )(solved)
+      )(solved)
     )
   }
 
@@ -81,59 +83,59 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     planFor("MATCH (a) WHERE (a)-[:X]->() AND (a)-[:Y]->() RETURN a").plan should equal(
       SemiApply(
         SemiApply(
-          AllNodesScan("a", Set.empty)(PlannerQuery.empty),
+          AllNodesScan("a", Set.empty)(solved),
           Expand(
-            Argument(Set("a"))(PlannerQuery.empty)(),
+            Argument(Set("a"))(solved)(),
             "a", Direction.OUTGOING, Seq(RelTypeName("Y")_), "  UNNAMED44", "  UNNAMED37"
-          )(PlannerQuery.empty)
-        )(PlannerQuery.empty),
+          )(solved)
+        )(solved),
         Expand(
-          Argument(Set("a"))(PlannerQuery.empty)(),
+          Argument(Set("a"))(solved)(),
           "a", Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED27", "  UNNAMED20"
-        )(PlannerQuery.empty)
-      )(PlannerQuery.empty)
+        )(solved)
+      )(solved)
     )
   }
 
   test("should build plans containing select or semi apply for a pattern predicate and an expression") {
     planFor("MATCH (a) WHERE (a)-[:X]->() OR a.prop > 4 RETURN a").plan should equal(
       SelectOrSemiApply(
-        AllNodesScan("a", Set.empty)(PlannerQuery.empty),
+        AllNodesScan("a", Set.empty)(solved),
         Expand(
-          Argument(Set("a"))(PlannerQuery.empty)(),
+          Argument(Set("a"))(solved)(),
           "a", Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED27", "  UNNAMED20"
-        )(PlannerQuery.empty),
+        )(solved),
         GreaterThan(Property(Identifier("a")_, PropertyKeyName("prop")_)_, SignedDecimalIntegerLiteral("4")_)_
-      )(PlannerQuery.empty)
+      )(solved)
     )
   }
 
   test("should build plans containing select or semi apply for a pattern predicate and multiple expressions") {
     planFor("MATCH (a) WHERE a.prop2 = 9 OR (a)-[:X]->() OR a.prop > 4 RETURN a").plan should equal(
       SelectOrSemiApply(
-        AllNodesScan("a", Set.empty)(PlannerQuery.empty),
+        AllNodesScan("a", Set.empty)(solved),
         Expand(
-          Argument(Set("a"))(PlannerQuery.empty)(),
+          Argument(Set("a"))(solved)(),
           "a", Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED42", "  UNNAMED35"
-        )(PlannerQuery.empty),
+        )(solved),
         Ors(Set(
           In(Property(Identifier("a")_, PropertyKeyName("prop2")_)_, Collection(Seq(SignedDecimalIntegerLiteral("9")_))_)_,
           GreaterThan(Property(Identifier("a")_, PropertyKeyName("prop")_)_, SignedDecimalIntegerLiteral("4")_)_
         ))_
-      )(PlannerQuery.empty)
+      )(solved)
     )
   }
 
   test("should build plans containing select or anti semi apply for a single negated pattern predicate") {
     planFor("MATCH (a) WHERE a.prop = 9 OR NOT (a)-[:X]->() RETURN a").plan should equal(
       SelectOrAntiSemiApply(
-        AllNodesScan("a", Set.empty)(PlannerQuery.empty),
+        AllNodesScan("a", Set.empty)(solved),
         Expand(
-          Argument(Set("a"))(PlannerQuery.empty)(),
+          Argument(Set("a"))(solved)(),
           "a", Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED45", "  UNNAMED38"
-        )(PlannerQuery.empty),
+        )(solved),
         In(Property(Identifier("a")_, PropertyKeyName("prop")_)_, Collection(Seq(SignedDecimalIntegerLiteral("9")_))_)_
-      )(PlannerQuery.empty)
+      )(solved)
     )
   }
 
@@ -142,22 +144,22 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       Projection(
         SelectOrAntiSemiApply(
           LetSelectOrSemiApply(
-            AllNodesScan("a", Set.empty)(PlannerQuery.empty),
+            AllNodesScan("a", Set.empty)(solved),
             Expand(
-              Argument(Set("a"))(PlannerQuery.empty)(),
+              Argument(Set("a"))(solved)(),
               "a", Direction.OUTGOING,  Seq(RelTypeName("Y") _), "  UNNAMED41", "  UNNAMED34"
-            )(PlannerQuery.empty),
+            )(solved),
             "  FRESHID30",
             In(Property(Identifier("a") _, PropertyKeyName("prop") _) _, Collection(Seq(SignedDecimalIntegerLiteral("9")_))_)_
-          )(PlannerQuery.empty),
+          )(solved),
           Expand(
-            Argument(Set("a"))(PlannerQuery.empty)(),
+            Argument(Set("a"))(solved)(),
             "a", Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED61", "  UNNAMED54"
-          )(PlannerQuery.empty),
+          )(solved),
           ident("  FRESHID30")
-        )(PlannerQuery.empty),
+        )(solved),
         Map("a" -> ident("a"))
-      )(PlannerQuery.empty)
+      )(solved)
     )
   }
 
@@ -166,21 +168,21 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       Projection(
         SelectOrAntiSemiApply(
           LetSemiApply(
-            AllNodesScan("a", Set.empty)(PlannerQuery.empty),
+            AllNodesScan("a", Set.empty)(solved),
             Expand(
-              Argument(Set("a"))(PlannerQuery.empty)(),
+              Argument(Set("a"))(solved)(),
               "a", Direction.OUTGOING, Seq(RelTypeName("Y") _), "  UNNAMED27", "  UNNAMED20"
-            )(PlannerQuery.empty),
+            )(solved),
             "  FRESHID16"
-          )(PlannerQuery.empty),
+          )(solved),
           Expand(
-            Argument(Set("a"))(PlannerQuery.empty)(),
+            Argument(Set("a"))(solved)(),
             "a", Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED47", "  UNNAMED40"
-          )(PlannerQuery.empty),
+          )(solved),
           ident("  FRESHID16")
-        )(PlannerQuery.empty),
+        )(solved),
         Map("a" -> ident("a"))
-      )(PlannerQuery.empty)
+      )(solved)
     )
   }
 
@@ -189,21 +191,24 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       Projection(
         SelectOrAntiSemiApply(
           LetAntiSemiApply(
-            AllNodesScan("a", Set.empty)(PlannerQuery.empty),
+            AllNodesScan("a", Set.empty)(solved),
             Expand(
-              Argument(Set("a"))(PlannerQuery.empty)(),
+              Argument(Set("a"))(solved)(),
               "a", Direction.OUTGOING, Seq(RelTypeName("Y") _), "  UNNAMED31", "  UNNAMED24"
-            )(PlannerQuery.empty),
+            )(solved),
             "  FRESHID20"
-          )(PlannerQuery.empty),
+          )(solved),
           Expand(
-            Argument(Set("a"))(PlannerQuery.empty)(),
+            Argument(Set("a"))(solved)(),
             "a", Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED51", "  UNNAMED44"
-          )(PlannerQuery.empty),
+          )(solved),
           ident("  FRESHID20")
-        )(PlannerQuery.empty),
+        )(solved),
         Map("a" -> ident("a"))
-      )(PlannerQuery.empty)
+      )(solved)
     )
   }
+
+  private def containsArgumentOnly(queryGraph: QueryGraph): Boolean =
+    queryGraph.argumentIds.nonEmpty && queryGraph.patternNodes.size == 0 && queryGraph.patternRelationships.isEmpty
 }

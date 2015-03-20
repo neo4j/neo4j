@@ -27,9 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, Sel
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{QueryGraph, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
 
-case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics,
-                                                        semanticTable: SemanticTable,
-                                                        combiner: SelectivityCombiner)
+case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, combiner: SelectivityCombiner)
   extends QueryGraphCardinalityModel {
 
   private val expressionSelectivityEstimator = ExpressionSelectivityCalculator(stats, combiner)
@@ -40,13 +38,13 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics,
    * because no matches are limiting. So we need to calculate cardinality of all possible combinations
    * of matches, and then take the max.
    */
-  def apply(queryGraph: QueryGraph, input: QueryGraphCardinalityInput): Cardinality = {
-    val combinations: Seq[QueryGraph] = findQueryGraphCombinations(queryGraph, semanticTable)
+  def apply(queryGraph: QueryGraph, input: QueryGraphCardinalityInput, semanticTable: SemanticTable): Cardinality = {
+    val combinations: Seq[QueryGraph] = findQueryGraphCombinations(queryGraph)
     val cardinalities = combinations.map(cardinalityForQueryGraph(_, input)(semanticTable))
     cardinalities.max
   }
 
-  private def findQueryGraphCombinations(queryGraph: QueryGraph, semanticTable: SemanticTable): Seq[QueryGraph] =
+  private def findQueryGraphCombinations(queryGraph: QueryGraph): Seq[QueryGraph] =
     if (queryGraph.optionalMatches.isEmpty)
       Seq(queryGraph)
     else {
@@ -58,7 +56,7 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics,
         .map(queryGraph.withOptionalMatches(Seq.empty) ++ _)
     }
 
-  private def calculcateNumberOfPatternNodes(qg: QueryGraph) = {
+  private def calculateNumberOfPatternNodes(qg: QueryGraph) = {
     val intermediateNodes = qg.patternRelationships.map(_.length match {
       case SimplePatternLength            => 0
       case VarPatternLength(_, optMax)    => Math.max(Math.min(optMax.getOrElse(PatternSelectivityCalculator.MAX_VAR_LENGTH), PatternSelectivityCalculator.MAX_VAR_LENGTH) - 1, 0)
@@ -70,7 +68,7 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics,
   private def cardinalityForQueryGraph(qg: QueryGraph, input: QueryGraphCardinalityInput)
                                       (implicit semanticTable: SemanticTable): Cardinality = {
     val selectivity = calculateSelectivity(qg, input.labelInfo)
-    val numberOfPatternNodes = calculcateNumberOfPatternNodes(qg)
+    val numberOfPatternNodes = calculateNumberOfPatternNodes(qg)
     val numberOfGraphNodes = stats.nodesWithLabelCardinality(None)
 
     val c = if (qg.argumentIds.nonEmpty) {
@@ -98,8 +96,7 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics,
 
     val selectivity = combiner.andTogetherSelectivities(expressionSelectivities ++ patternSelectivities)
 
-    selectivity.
-      getOrElse(Selectivity(1))
+    selectivity.getOrElse(Selectivity(1))
   }
 }
 

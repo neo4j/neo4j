@@ -215,8 +215,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
           throw new CantHandleQueryException(x.toString)
       }
 
-      val cardinality = context.cardinality(plan, input)
-      result.withEstimatedCardinality(cardinality.amount)
+      result.withEstimatedCardinality(plan.solved.estimation.amount)
     }
 
     object buildPipeExpressions extends Rewriter {

@@ -24,13 +24,13 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.ManyQueryExpression
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 
-case class CardinalityCostModel(cardinality: CardinalityModel) extends CostModel {
+object CardinalityCostModel extends CostModel {
 
   /*
    * These constants are approximations derived from test runs,
    * see ActualCostCalculationTest
    */
-  private val CPU_BOUND:  CostPerRow = 0.1
+  private val CPU_BOUND: CostPerRow = 0.1
   private val FAST_STORE: CostPerRow = 1.0
   private val SLOW_STORE: CostPerRow = 10.0
   private val PROBE_BUILD_COST = FAST_STORE
@@ -49,7 +49,7 @@ case class CardinalityCostModel(cardinality: CardinalityModel) extends CostModel
 
     // Filtering on labels and properties
     case Selection(predicates, _) if predicates.exists {
-      case _:Property | _: HasLabels => true
+      case _: Property | _: HasLabels => true
       case _ => false
     }
     => FAST_STORE
@@ -86,38 +86,37 @@ case class CardinalityCostModel(cardinality: CardinalityModel) extends CostModel
     => CPU_BOUND
   }
 
-  private def cardinalityForPlan(plan: LogicalPlan, input: QueryGraphCardinalityInput): Cardinality = plan match {
-    case Selection(_, left) => cardinality(left, input)
-    case _ => plan.lhs.map(p => cardinality(p, input)).getOrElse(cardinality(plan, input))
+  private def cardinalityForPlan(plan: LogicalPlan): Cardinality = plan match {
+    case Selection(_, left) => left.solved.estimation
+    case _ => plan.lhs.map(p => p.solved.estimation).getOrElse(plan.solved.estimation)
   }
 
-  def apply(plan: LogicalPlan, input: QueryGraphCardinalityInput): Cost = plan match {
-
+  def apply(plan: LogicalPlan): Cost = plan match {
     case CartesianProduct(lhs, rhs) =>
-      apply(lhs, input) + cardinality(lhs, input) * apply(rhs, input)
+      apply(lhs) + lhs.solved.estimation * apply(rhs)
 
     case ApplyVariants(lhs, rhs) =>
-      val lhsCardinality = cardinality(lhs, input)
-      val lCost = apply(lhs, input)
-      val rCost = apply(rhs, input)
+      val lCost = apply(lhs)
+      val rCost = apply(rhs)
 
-      lCost + lhsCardinality * rCost
+      // the rCost has already been multiplied by the lhs cardinality
+      lCost + rCost
 
     case HashJoin(lhs, rhs) =>
-      val lCost = apply(lhs, input)
-      val rCost = apply(rhs, input)
+      val lCost = apply(lhs)
+      val rCost = apply(rhs)
 
-      val lhsCardinality = cardinality(lhs, input)
-      val rhsCardinality = cardinality(rhs, input)
+      val lhsCardinality = lhs.solved.estimation
+      val rhsCardinality = rhs.solved.estimation
 
       lCost + rCost +
         lhsCardinality * PROBE_BUILD_COST +
         rhsCardinality * PROBE_SEARCH_COST
 
     case _ =>
-      val lhsCost = plan.lhs.map(p => apply(p, input)).getOrElse(Cost(0))
-      val rhsCost = plan.rhs.map(p => apply(p, input)).getOrElse(Cost(0))
-      val costForThisPlan = cardinalityForPlan(plan, input) * costPerRow(plan)
+      val lhsCost = plan.lhs.map(p => apply(p)).getOrElse(Cost(0))
+      val rhsCost = plan.rhs.map(p => apply(p)).getOrElse(Cost(0))
+      val costForThisPlan = cardinalityForPlan(plan) * costPerRow(plan)
       val totalCost = costForThisPlan + lhsCost + rhsCost
       totalCost
   }

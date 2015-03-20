@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression
-import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 
 
@@ -44,7 +44,8 @@ case object predicateRemovalThroughJoins extends Rewriter {
       if (newSelection.isEmpty)
         NodeHashJoin(nodeIds, lhs, rhsLeaf)(n.solved)
       else {
-        val newRhsSolved = rhsLeaf.solved.updateGraph(_.addPredicates(newSelection:_*))
+        val newRhsPlannerQuery = rhsLeaf.solved.updateGraph(_.addPredicates(newSelection:_*))
+        val newRhsSolved = CardinalityEstimation.lift(newRhsPlannerQuery, rhsLeaf.solved.estimation)
         NodeHashJoin(nodeIds, lhs, Selection(newSelection, rhsLeaf)(newRhsSolved))(n.solved)
       }
   }

@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
 
 trait LogicalPlanningConfiguration {
   def computeSemanticTable: SemanticTable
-  def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, semanticTable: SemanticTable): Metrics.CardinalityModel
-  def costModel(cardinality: CardinalityModel): PartialFunction[LogicalPlan, Cost]
+  def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel): CardinalityModel
+  def costModel(): PartialFunction[LogicalPlan, Cost]
   def graphStatistics: GraphStatistics
   def indexes: Set[(String, String)]
   def uniqueIndexes: Set[(String, String)]
@@ -36,13 +36,14 @@ trait LogicalPlanningConfiguration {
   def knownLabels: Set[String]
   def qg: QueryGraph
 
-  protected def mapCardinality(pf: PartialFunction[LogicalPlan, Double]): PartialFunction[LogicalPlan, Cardinality] = pf.andThen(Cardinality.apply)
+  protected def mapCardinality(pf: PartialFunction[PlannerQuery, Double]): PartialFunction[PlannerQuery, Cardinality] = pf.andThen(Cardinality.apply)
 }
 
 class DelegatingLogicalPlanningConfiguration(val parent: LogicalPlanningConfiguration) extends LogicalPlanningConfiguration {
   override def computeSemanticTable = parent.computeSemanticTable
-  override def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, semanticTable: SemanticTable): CardinalityModel = parent.cardinalityModel(queryGraphCardinalityModel, semanticTable)
-  override def costModel(cardinality: CardinalityModel) = parent.costModel(cardinality)
+  override def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel): CardinalityModel =
+    parent.cardinalityModel(queryGraphCardinalityModel)
+  override def costModel() = parent.costModel()
   override def graphStatistics = parent.graphStatistics
   override def indexes = parent.indexes
   override def uniqueIndexes = parent.uniqueIndexes

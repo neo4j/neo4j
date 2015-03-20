@@ -20,25 +20,25 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner
 
 import org.neo4j.cypher.internal.compiler.v2_3.HardcodedGraphStatistics
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.{QueryGraphCardinalityInput, QueryGraphCardinalityModel}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{CardinalityCostModel, Cost, StatisticsBackedCardinalityModel, Metrics}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityInput, QueryGraphCardinalityModel}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{CardinalityCostModel, Cost, Metrics, StatisticsBackedCardinalityModel}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
 
 case class RealLogicalPlanningConfiguration()
   extends LogicalPlanningConfiguration with LogicalPlanningConfigurationAdHocSemanticTable {
 
-  def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, semanticTable: SemanticTable) = {
+  def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel) = {
     val model: Metrics.CardinalityModel = new StatisticsBackedCardinalityModel(queryGraphCardinalityModel)
     ({
-      case (plan: LogicalPlan, card: QueryGraphCardinalityInput) => model(plan, card)
+      case (pq: PlannerQuery, card: QueryGraphCardinalityInput, semanticTable: SemanticTable) => model(pq, card, semanticTable)
     })
   }
 
-  def costModel(cardinality: CardinalityModel): PartialFunction[LogicalPlan, Cost] = {
-    val model: Metrics.CostModel = new CardinalityCostModel(cardinality)
+  def costModel(): PartialFunction[LogicalPlan, Cost] = {
+    val model: Metrics.CostModel = CardinalityCostModel
     ({
-      case (plan: LogicalPlan) => model(plan, QueryGraphCardinalityInput.empty)
+      case (plan: LogicalPlan) => model(plan)
     })
   }
 

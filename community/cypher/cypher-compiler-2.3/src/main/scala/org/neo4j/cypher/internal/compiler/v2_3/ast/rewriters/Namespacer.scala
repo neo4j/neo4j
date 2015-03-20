@@ -30,7 +30,7 @@ object Namespacer {
 
   type IdentifierRenamings = Map[Ref[Identifier], Identifier]
 
-  def apply(statement: Statement, table: SemanticTable, scopeTree: Scope): Namespacer = {
+  def apply(statement: Statement, scopeTree: Scope): Namespacer = {
     val ambiguousNames = shadowedNames(scopeTree)
     val identifierDefinitions: Map[SymbolUse, SymbolUse] = scopeTree.allIdentifierDefinitions
     val protectedIdentifiers = returnAliases(statement)

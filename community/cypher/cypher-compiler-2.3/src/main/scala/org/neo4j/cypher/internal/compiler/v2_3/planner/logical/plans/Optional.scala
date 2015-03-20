@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_3.planner.PlannerQuery
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
 
-case class Optional(inputPlan: LogicalPlan)(val solved: PlannerQuery)
+case class Optional(inputPlan: LogicalPlan)
+                   (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LogicalPlanWithoutExpressions {
 
   val lhs = Some(inputPlan)

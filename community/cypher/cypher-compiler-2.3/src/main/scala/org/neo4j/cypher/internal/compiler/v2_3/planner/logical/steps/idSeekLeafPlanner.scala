@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.functions
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.graphdb.Direction.{BOTH, INCOMING, OUTGOING}
 
 object idSeekLeafPlanner extends LeafPlanner {
@@ -54,36 +53,38 @@ object idSeekLeafPlanner extends LeafPlanner {
             val seekPlan = planRelationshipByIdSeek(relationship, idValues, Seq(predicate), queryGraph.argumentIds)
             planRelTypeFilter(seekPlan, idExpr, types)
           case None =>
-            planNodeByIdSeek(IdName(idName), idValues, Seq(predicate), queryGraph.argumentIds)
+            context.logicalPlanProducer.planNodeByIdSeek(IdName(idName), idValues, Seq(predicate), queryGraph.argumentIds)
         }
     }
 
     candidatePlans
   }
 
-  private def planRelationshipByIdSeek(relationship: PatternRelationship, idValues: EntityByIdRhs, predicates: Seq[Expression], argumentIds: Set[IdName]): LogicalPlan = {
+  private def planRelationshipByIdSeek(relationship: PatternRelationship, idValues: EntityByIdRhs, predicates: Seq[Expression], argumentIds: Set[IdName])
+                                      (implicit context: LogicalPlanningContext): LogicalPlan = {
     val (left, right) = relationship.nodes
     val name = relationship.name
     relationship.dir match {
-      case BOTH     => planUndirectedRelationshipByIdSeek(name, idValues, left, right, relationship, argumentIds, predicates)
-      case INCOMING => planDirectedRelationshipByIdSeek(name, idValues, right, left, relationship, argumentIds, predicates)
-      case OUTGOING => planDirectedRelationshipByIdSeek(name, idValues, left, right, relationship, argumentIds, predicates)
+      case BOTH     => context.logicalPlanProducer.planUndirectedRelationshipByIdSeek(name, idValues, left, right, relationship, argumentIds, predicates)
+      case INCOMING => context.logicalPlanProducer.planDirectedRelationshipByIdSeek(name, idValues, right, left, relationship, argumentIds, predicates)
+      case OUTGOING => context.logicalPlanProducer.planDirectedRelationshipByIdSeek(name, idValues, left, right, relationship, argumentIds, predicates)
     }
   }
 
-  private def planRelTypeFilter(plan: LogicalPlan, idExpr: Identifier, relTypes: List[RelTypeName]): LogicalPlan = {
+  private def planRelTypeFilter(plan: LogicalPlan, idExpr: Identifier, relTypes: List[RelTypeName])
+                               (implicit context: LogicalPlanningContext): LogicalPlan = {
     relTypes match {
       case Seq(tpe) =>
         val relTypeExpr = relTypeAsStringLiteral(tpe)
         val predicate = Equals(typeOfRelExpr(idExpr), relTypeExpr)(idExpr.position)
-        planHiddenSelection(Seq(predicate), plan)
+        context.logicalPlanProducer.planHiddenSelection(Seq(predicate), plan)
 
       case tpe :: _ =>
         val relTypeExprs = relTypes.map(relTypeAsStringLiteral).toSet
         val invocation = typeOfRelExpr(idExpr)
         val idPos = idExpr.position
         val predicate = Ors(relTypeExprs.map { expr => Equals(invocation, expr)(idPos) } )(idPos)
-        planHiddenSelection(Seq(predicate), plan)
+        context.logicalPlanProducer.planHiddenSelection(Seq(predicate), plan)
 
       case _ =>
         plan

@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression
-import org.neo4j.cypher.internal.compiler.v2_3.planner.PlannerQuery
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
 
-case class UnwindCollection(left: LogicalPlan, identifier: IdName, expression: Expression)(val solved: PlannerQuery) extends LogicalPlan {
+case class UnwindCollection(left: LogicalPlan, identifier: IdName, expression: Expression)
+                           (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan {
   val lhs = Some(left)
   def rhs = None
 

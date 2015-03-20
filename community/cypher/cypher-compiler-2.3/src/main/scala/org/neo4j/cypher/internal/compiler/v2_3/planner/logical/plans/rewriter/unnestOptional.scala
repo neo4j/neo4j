@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression
-import org.neo4j.cypher.internal.compiler.v2_3.planner.PlannerQuery
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 
 case object unnestOptional extends Rewriter {
@@ -41,6 +41,6 @@ case object unnestOptional extends Rewriter {
         optionalExpand(e, lhs)(predicates)(apply.solved)
   }
 
-  private def optionalExpand(e: Expand, lhs: LogicalPlan): (Seq[Expression] => PlannerQuery => OptionalExpand) =
+  private def optionalExpand(e: Expand, lhs: LogicalPlan): (Seq[Expression] => PlannerQuery with CardinalityEstimation => OptionalExpand) =
     predicates => OptionalExpand(lhs, e.from, e.dir, e.types, e.to, e.relName, e.mode, predicates)
 }
