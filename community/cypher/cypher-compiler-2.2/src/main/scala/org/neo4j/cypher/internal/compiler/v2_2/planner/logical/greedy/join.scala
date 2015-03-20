@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalPlan}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CandidateGenerator, LogicalPlanningContext}
 
 import scala.collection.mutable.ArrayBuffer
@@ -40,8 +39,8 @@ object join extends CandidateGenerator[GreedyPlanTable] {
         val shared = left.availableSymbols & right.availableSymbols
 
         if (shared.nonEmpty && shared.forall(isApplicable)) {
-          joinPlans += planNodeHashJoin(shared, left, right)
-          joinPlans += planNodeHashJoin(shared, right, left)
+          joinPlans += context.logicalPlanProducer.planNodeHashJoin(shared, left, right)
+          joinPlans += context.logicalPlanProducer.planNodeHashJoin(shared, right, left)
         }
       }
     }

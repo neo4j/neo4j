@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.GreedyPlanTable
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 import org.neo4j.helpers.ThisShouldNotHappenError
 
@@ -40,10 +39,10 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph],
         pattern match {
           case patternExpression: PatternExpression =>
             val rhs = rhsPlan(lhs.availableSymbols, patternExpression)
-            planSemiApply(lhs, rhs, patternExpression)
+            context.logicalPlanProducer.planSemiApply(lhs, rhs, patternExpression)
           case p@Not(patternExpression: PatternExpression) =>
             val rhs = rhsPlan(lhs.availableSymbols, patternExpression)
-            planAntiSemiApply(lhs, rhs, patternExpression, p)
+            context.logicalPlanProducer.planAntiSemiApply(lhs, rhs, patternExpression, p)
           case p@Ors(exprs) =>
             val (patternExpressions, expressions) = exprs.partition {
               case _: PatternExpression => true
@@ -51,7 +50,7 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph],
               case _ => false
             }
             val (plan, solvedPredicates) = planPredicates(lhs, patternExpressions, expressions, None)
-            solvePredicate(plan, onePredicate(solvedPredicates))
+            context.logicalPlanProducer.solvePredicate(plan, onePredicate(solvedPredicates))
         }
       }
     }
@@ -61,12 +60,12 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph],
       patternExpressions.toList match {
         case (patternExpression: PatternExpression) :: Nil =>
           val rhs = rhsPlan(lhs.availableSymbols, patternExpression)
-          val plan = planSelectOrSemiApply(lhs, rhs, onePredicate(expressions ++ letExpression.toSet))
+          val plan = context.logicalPlanProducer.planSelectOrSemiApply(lhs, rhs, onePredicate(expressions ++ letExpression.toSet))
           (plan, expressions + patternExpression)
 
         case (p@Not(patternExpression: PatternExpression)) :: Nil =>
           val rhs = rhsPlan(lhs.availableSymbols, patternExpression)
-          val plan = planSelectOrAntiSemiApply(lhs, rhs, onePredicate(expressions ++ letExpression.toSet))
+          val plan = context.logicalPlanProducer.planSelectOrAntiSemiApply(lhs, rhs, onePredicate(expressions ++ letExpression.toSet))
           (plan, expressions + p)
 
         case (patternExpression: PatternExpression) :: tail =>
@@ -86,20 +85,22 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph],
       }
     }
 
-    private def createLetSemiApply(lhs: LogicalPlan, rhs: LogicalPlan, patternExpression: PatternExpression, expressions: Set[Expression], letExpression: Option[Expression]) = {
+    private def createLetSemiApply(lhs: LogicalPlan, rhs: LogicalPlan, patternExpression: PatternExpression, expressions: Set[Expression], letExpression: Option[Expression])
+                                  (implicit context: LogicalPlanningContext)= {
       val (idName, ident) = freshId(patternExpression)
       if (expressions.isEmpty && letExpression.isEmpty)
-        (planLetSemiApply(lhs, rhs, idName), ident)
+        (context.logicalPlanProducer.planLetSemiApply(lhs, rhs, idName), ident)
       else
-        (planLetSelectOrSemiApply(lhs, rhs, idName, onePredicate(expressions ++ letExpression.toSet)), ident)
+        (context.logicalPlanProducer.planLetSelectOrSemiApply(lhs, rhs, idName, onePredicate(expressions ++ letExpression.toSet)), ident)
     }
 
-    private def createLetAntiSemiApply(lhs: LogicalPlan, rhs: LogicalPlan, patternExpression: PatternExpression, predicate: Expression, expressions: Set[Expression], letExpression: Option[Expression]) = {
+    private def createLetAntiSemiApply(lhs: LogicalPlan, rhs: LogicalPlan, patternExpression: PatternExpression, predicate: Expression, expressions: Set[Expression], letExpression: Option[Expression])
+                                      (implicit context: LogicalPlanningContext) = {
       val (idName, ident) = freshId(patternExpression)
       if (expressions.isEmpty && letExpression.isEmpty)
-        (planLetAntiSemiApply(lhs, rhs, idName), ident)
+        (context.logicalPlanProducer.planLetAntiSemiApply(lhs, rhs, idName), ident)
       else
-        (planLetSelectOrAntiSemiApply(lhs, rhs, idName, onePredicate(expressions ++ letExpression.toSet)), ident)
+        (context.logicalPlanProducer.planLetSelectOrAntiSemiApply(lhs, rhs, idName, onePredicate(expressions ++ letExpression.toSet)), ident)
     }
 
     private def rhsPlan(planArguments: Set[IdName], pattern: PatternExpression)(implicit context: LogicalPlanningContext) =

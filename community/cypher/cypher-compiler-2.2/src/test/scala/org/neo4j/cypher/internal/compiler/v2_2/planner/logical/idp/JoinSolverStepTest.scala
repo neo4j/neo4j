@@ -21,13 +21,17 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.idp
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{SimplePatternLength, PatternRelationship, IdName, LogicalPlan}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanConstructionTestSupport, PlannerQuery, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{QueryGraphSolver, Metrics, LogicalPlanningContext, Cardinality}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{NodeHashJoin, SimplePatternLength, PatternRelationship, IdName, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{SemanticTable, CardinalityEstimation, LogicalPlanConstructionTestSupport, PlannerQuery, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.graphdb.Direction
 
 class JoinSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTestSupport {
 
-  import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
+  private implicit val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[CardinalityModel]), mock[Metrics], mock[SemanticTable], mock[QueryGraphSolver])
 
   val plan1 = mock[LogicalPlan]
   val plan2 = mock[LogicalPlan]
@@ -59,8 +63,8 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTest
     table.put(register(pattern2), plan2)
 
     joinSolverStep(qg)(registry, register(pattern1, pattern2), table).toSet should equal(Set(
-      planNodeHashJoin(Set('b), plan1, plan2),
-      planNodeHashJoin(Set('b), plan2, plan1)
+      NodeHashJoin(Set('b), plan1, plan2)(PlannerQuery.empty),
+      NodeHashJoin(Set('b), plan2, plan1)(PlannerQuery.empty)
     ))
   }
 
@@ -111,4 +115,7 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTest
   }
 
   def register[X](patRels: X*)(implicit registry: IdRegistry[X]) = registry.registerAll(patRels)
+
+  private implicit def lift(plannerQuery: PlannerQuery): PlannerQuery with CardinalityEstimation =
+    CardinalityEstimation.lift(plannerQuery, Cardinality(0))
 }

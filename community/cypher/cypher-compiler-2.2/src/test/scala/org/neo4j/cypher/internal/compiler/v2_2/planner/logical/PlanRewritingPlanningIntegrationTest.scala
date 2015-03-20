@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast.GetDegree
+import org.neo4j.cypher.internal.compiler.v2_2.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{AllNodesScan, Projection}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport2, PlannerQuery}
 import org.neo4j.graphdb.Direction.OUTGOING
 
 class PlanRewritingPlanningIntegrationTest  extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -37,7 +37,7 @@ class PlanRewritingPlanningIntegrationTest  extends CypherFunSuite with LogicalP
 
     result should equal(
       Projection(
-        AllNodesScan("n", Set.empty)(PlannerQuery.empty),
+        AllNodesScan("n", Set.empty)(solved),
         Map("deg" -> GetDegree(ident("n"), None, OUTGOING)_)
       )(result.solved)
     )

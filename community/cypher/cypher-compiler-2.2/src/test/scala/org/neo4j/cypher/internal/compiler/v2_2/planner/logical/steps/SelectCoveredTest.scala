@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{Identifier, SignedDecimalIntegerLiteral, PatternExpression, Expression}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{LogicalPlan, IdName}
-import org.neo4j.cypher.internal.compiler.v2_2.planner._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{Expression, Identifier, PatternExpression, SignedDecimalIntegerLiteral}
+import org.neo4j.cypher.internal.compiler.v2_2.planner._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalPlan, Selection}
 
 class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
   private implicit val planContext = newMockedPlanContext
@@ -44,7 +43,7 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = selectCovered(LogicalPlan, qg)
 
     // Then
-    result should equal(planSelection(Seq(predicate), LogicalPlan))
+    result should equal(Selection(Seq(predicate), LogicalPlan)(solved))
   }
 
   test("should not try to solve predicates with unmet dependencies") {
@@ -61,7 +60,7 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = selectCovered(LogicalPlan, qg)
 
     // Then
-    result should equal(planSelection(Seq(predicate), LogicalPlan))
+    result should equal(Selection(Seq(predicate), LogicalPlan)(solved))
   }
 
   test("when two predicates not already solved are solvable, they should be applied") {
@@ -83,14 +82,15 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = selectCovered(LogicalPlan, qg)
 
     // Then
-    result should equal(planSelection(Seq(predicate1, predicate2), LogicalPlan))
+    result should equal(Selection(Seq(predicate1, predicate2), LogicalPlan)(solved))
   }
 
   test("when a predicate is already solved, it should not be applied again") {
     // Given
     val coveredIds = Set(IdName("x"))
     val qg = QueryGraph(selections = Selections(Set(Predicate(coveredIds, SignedDecimalIntegerLiteral("1")_))))
-    val LogicalPlan = newMockedLogicalPlanWithProjections("x").updateSolved(PlannerQuery(qg))
+    val solved = CardinalityEstimation.lift(PlannerQuery(qg), 0.0)
+    val LogicalPlan = newMockedLogicalPlanWithProjections("x").updateSolved(solved)
 
     // When
     val result = selectCovered(LogicalPlan, qg)

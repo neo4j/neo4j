@@ -20,9 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.{GreedyPlanTableTransformer, GreedyPlanTable}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.{GreedyPlanTable, GreedyPlanTableTransformer}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.solveOptionalMatches.OptionalSolver
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{LogicalPlanningContext, LogicalPlanningFunction2, _}
 
@@ -36,7 +35,7 @@ case class solveOptionalMatches(solvers: Seq[OptionalSolver], pickBest: Candidat
   override def apply(planTable: GreedyPlanTable, qg: QueryGraph)(implicit context: LogicalPlanningContext): GreedyPlanTable = {
 
     val p = if (planTable.isEmpty)
-      GreedyPlanTable.empty + planSingleRow()
+      GreedyPlanTable.empty + context.logicalPlanProducer.planSingleRow()
     else
       planTable
 
@@ -81,8 +80,12 @@ case class solveOptionalMatches(solvers: Seq[OptionalSolver], pickBest: Candidat
 
 
 case object applyOptional extends OptionalSolver {
-  def apply(optionalQg: QueryGraph, lhs: LogicalPlan)(implicit context: LogicalPlanningContext) =
-    Some(planApply(lhs, planOptional(context.strategy.plan(optionalQg)(context.recurse(lhs)), lhs.availableSymbols)))
+  def apply(optionalQg: QueryGraph, lhs: LogicalPlan)(implicit context: LogicalPlanningContext) = {
+    val innerContext: LogicalPlanningContext = context.recurse(lhs)
+    val inner = context.strategy.plan(optionalQg)(innerContext)
+    val rhs = context.logicalPlanProducer.planOptional(inner, lhs.availableSymbols)(innerContext)
+    Some(context.logicalPlanProducer.planApply(lhs, rhs))
+  }
 }
 
 case object outerHashJoin extends OptionalSolver {
@@ -93,7 +96,7 @@ case object outerHashJoin extends OptionalSolver {
     if (joinNodes.nonEmpty &&
       joinNodes.forall(lhs.availableSymbols) &&
       joinNodes.forall(optionalQg.patternNodes)) {
-      Some(planOuterHashJoin(joinNodes, lhs, rhs))
+      Some(context.logicalPlanProducer.planOuterHashJoin(joinNodes, lhs, rhs))
     } else {
       None
     }

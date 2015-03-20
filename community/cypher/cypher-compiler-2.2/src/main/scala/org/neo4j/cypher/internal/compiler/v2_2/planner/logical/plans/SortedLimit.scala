@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Expression, SortItem}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.PlannerQuery
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{CardinalityEstimation, PlannerQuery}
 
-case class SortedLimit(left: LogicalPlan, limit: Expression, sortItems: Seq[SortItem])(val solved: PlannerQuery)
+case class SortedLimit(left: LogicalPlan, limit: Expression, sortItems: Seq[SortItem])
+                      (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan {
   val lhs = Some(left)
   val rhs = None

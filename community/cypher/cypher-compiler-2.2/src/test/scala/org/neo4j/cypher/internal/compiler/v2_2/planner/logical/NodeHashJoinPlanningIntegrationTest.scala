@@ -20,32 +20,29 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{Equals, Identifier, Not}
+import org.neo4j.cypher.internal.compiler.v2_2.commands.ManyQueryExpression
+import org.neo4j.cypher.internal.compiler.v2_2.{PropertyKeyId, LabelId}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{PropertyKeyToken, LabelToken, LabelName, HasLabels, StringLiteral, Collection, PropertyKeyName, Property, In, Equals, Identifier, Not}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.LazyLabel
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, LogicalPlanningTestSupport2}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport2, PlannerQuery}
 import org.neo4j.graphdb.Direction
 
 class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("should build plans containing joins") {
-    val r1 = PatternRelationship("r1", ("a", "b"), Direction.INCOMING, Seq(), SimplePatternLength)
-    val r2 = PatternRelationship("r2", ("b", "c"), Direction.OUTGOING, Seq(), SimplePatternLength)
-
-    def myCardinality(plan: LogicalPlan): Cardinality = Cardinality(plan match {
-      case _: NodeIndexSeek              => 10.0
-      case _: AllNodesScan               => 10000
-      case _: NodeHashJoin               => 42
-      case Expand(lhs, _, _, _, _, _, _) => (myCardinality(lhs) * Multiplier(10)).amount
-      case _: Selection                  => 100.04
-      case _: NodeByLabelScan            => 100
-      case _                             => Double.MaxValue
-    })
-
     val result= (new given {
-      cardinality = PartialFunction(myCardinality)
-    } planFor "MATCH (a:X)<-[r1]-(b)-[r2]->(c:X) RETURN b").plan
+      cardinality = mapCardinality {
+        // node label scan
+        case PlannerQuery(queryGraph, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.size == 1 => 100.0
+        // all node scan
+        case PlannerQuery(queryGraph, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.isEmpty => 10000.0
+        // expand
+        case PlannerQuery(queryGraph, _, _) if queryGraph.patternRelationships.size == 1 => 100.0
+        case _                             => Double.MaxValue
+      }
 
+    } planFor "MATCH (a:X)<-[r1]-(b)-[r2]->(c:X) RETURN b").plan
 
     val expected = Projection(
       Selection(
@@ -53,15 +50,46 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         NodeHashJoin(
           Set(IdName("b")),
           Expand(
-            NodeByLabelScan(IdName("a"), LazyLabel("X"), Set.empty)(PlannerQuery.empty),
-            IdName("a"), Direction.INCOMING, Seq.empty, IdName("b"), IdName("r1"))(PlannerQuery.empty),
+            NodeByLabelScan(IdName("a"), LazyLabel("X"), Set.empty)(solved),
+            IdName("a"), Direction.INCOMING, Seq.empty, IdName("b"), IdName("r1"))(solved),
           Expand(
-            NodeByLabelScan(IdName("c"), LazyLabel("X"), Set.empty)(PlannerQuery.empty),
-            IdName("c"), Direction.INCOMING, Seq.empty, IdName("b"), IdName("r2"))(PlannerQuery.empty)
-        )(PlannerQuery.empty)
-      )(PlannerQuery.empty),
-      Map("b" -> Identifier("b") _))(PlannerQuery.empty)
+            NodeByLabelScan(IdName("c"), LazyLabel("X"), Set.empty)(solved),
+            IdName("c"), Direction.INCOMING, Seq.empty, IdName("b"), IdName("r2"))(solved)
+        )(solved)
+      )(solved),
+      Map("b" -> Identifier("b") _))(solved)
 
     result should equal(expected)
+  }
+
+  test("Should build plans with leaves for both sides if that is requested by using hints") {
+    (new given {
+      cardinality = mapCardinality {
+        // node index seek
+        case PlannerQuery(queryGraph, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.nonEmpty => 1000.0
+        // expand from a
+        case PlannerQuery(queryGraph, _, _) if queryGraph.patternRelationships.size == 1 && queryGraph.patternNodeLabels(IdName("a")).nonEmpty => 100.0
+        // expand from b
+        case PlannerQuery(queryGraph, _, _) if queryGraph.patternRelationships.size == 1 && queryGraph.patternNodeLabels(IdName("b")).nonEmpty => 200.0
+        case _                                  => 10.0
+      }
+
+      indexOn("Person", "name")
+    } planFor "MATCH (a)-[r]->(b) USING INDEX a:Person(name) USING INDEX b:Person(name) WHERE a:Person AND b:Person AND a.name = 'Jakub' AND b.name = 'Andres' return r").plan should equal(
+      Projection(
+        NodeHashJoin(
+          Set(IdName("b")),
+          Selection(
+            Seq(In(Property(ident("b"), PropertyKeyName("name")_)_, Collection(Seq(StringLiteral("Andres")_))_)_, HasLabels(ident("b"), Seq(LabelName("Person")_))_),
+            Expand(
+              NodeIndexSeek("a", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(StringLiteral("Jakub") _)) _), Set.empty)(solved),
+              "a", Direction.OUTGOING, Seq.empty, "b", "r"
+            )(solved)
+          )(solved),
+          NodeIndexSeek("b", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(StringLiteral("Andres") _)) _), Set.empty)(solved)
+        )(solved),
+        Map("r" -> ident("r"))
+      )(solved)
+    )
   }
 }

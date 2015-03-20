@@ -22,23 +22,19 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{AllNodesScan, Limit, Projection}
 
 class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should build plans for simple WITH that adds a constant to the rows") {
     val result = planFor("MATCH (a) WITH a LIMIT 1 RETURN 1 as `b`").plan
     val expected =
-      planRegularProjection(
-
-         planStarProjection(
-            planLimit(
-              planAllNodesScan("a", Set.empty),
-              UnsignedDecimalIntegerLiteral("1") _
-            ),
-            Map[String, Expression]("a" -> ident("a"))
-          ),
-        Map[String, Expression]("b" -> SignedDecimalIntegerLiteral("1") _)
-      )
+      Projection(
+        Limit(
+          AllNodesScan("a", Set.empty)(solved),
+          UnsignedDecimalIntegerLiteral("1")_
+        )(solved),
+        Map[String, Expression]("b" -> SignedDecimalIntegerLiteral("1")_)
+      )(solved)
 
     result should equal(expected)
   }
@@ -57,7 +53,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WHERE r1.prop = 42 RETURN r1").plan
 
     result.toString should equal(
-      "Projection(Selection(Vector(In(Property(Identifier(r1),PropertyKeyName(prop)),Collection(List(SignedDecimalIntegerLiteral(42))))),Apply(Limit(AllNodesScan(IdName(a),Set()),UnsignedDecimalIntegerLiteral(1)),Expand(Argument(Set(IdName(a))),IdName(a),OUTGOING,List(),IdName(b),IdName(r1),ExpandAll))),Map(r1 -> Identifier(r1)))" )
+      "Projection(Selection(Vector(In(Property(Identifier(r1),PropertyKeyName(prop)),Collection(List(SignedDecimalIntegerLiteral(42))))),Apply(Limit(AllNodesScan(IdName(a),Set()),UnsignedDecimalIntegerLiteral(1)),Expand(Argument(Set(IdName(a))),IdName(a),OUTGOING,List(),IdName(b),IdName(r1),ExpandAll))),Map(r1 -> Identifier(r1)))")
   }
 
   test("should build plans for two matches separated by WITH") {

@@ -108,4 +108,7 @@ class GreedyLeafPlanTableGeneratorTest extends CypherFunSuite with LogicalPlanni
       ))
     }
   }
+
+  private implicit def lift(plannerQuery: PlannerQuery): PlannerQuery with CardinalityEstimation =
+    CardinalityEstimation.lift(plannerQuery, 0.0)
 }

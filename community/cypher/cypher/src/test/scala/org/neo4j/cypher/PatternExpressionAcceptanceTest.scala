@@ -310,4 +310,23 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     result.columnAs[Relationship]("r").toList should equal(List(r))
     result.executionPlanDescription().toString should not include "NodeByLabelScan"
   }
+
+  test("pattern expression should ensure to plan for the unique relationship constraint") {
+    val nodeA = createLabeledNode("Foo")
+    val nodeB = createLabeledNode("Bar")
+    val nodeC = createLabeledNode("Foo")
+    val nodeD = createLabeledNode("Foo")
+    val nodeE = createLabeledNode("Bar")
+    relate(nodeA, nodeB, "HAS")
+    relate(nodeC, nodeB, "HAS")
+    relate(nodeD, nodeE, "HAS")
+
+    val query = "PROFILE MATCH (a:Foo) OPTIONAL MATCH a--(b:Bar) WHERE a--(b:Bar)--() RETURN b"
+    val results = executeWithNewPlanner(query).toList
+    results should equal(List(Map("b" -> nodeB), Map("b" -> nodeB), Map("b" -> null)))
+
+    val queryNot = "PROFILE MATCH (a:Foo) OPTIONAL MATCH a--(b:Bar) WHERE NOT(a--(b:Bar)--()) RETURN b"
+    val resultsNot = executeWithNewPlanner(queryNot).toList
+    resultsNot should equal(List(Map("b" -> null), Map("b" -> null), Map("b" -> nodeE)))
+  }
 }

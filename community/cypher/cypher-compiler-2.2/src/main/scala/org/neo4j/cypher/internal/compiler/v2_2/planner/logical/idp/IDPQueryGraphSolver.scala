@@ -20,14 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v2_2.InternalException
-import org.neo4j.cypher.internal.compiler.v2_2.helpers.IteratorSupport
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.idp.expandSolverStep.planSingleProjectEndpoints
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.solveOptionalMatches.OptionalSolver
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.{applyOptional, outerHashJoin}
-import expandSolverStep.planSingleProjectEndpoints
 
 import scala.annotation.tailrec
 
@@ -45,7 +43,7 @@ case class IDPQueryGraphSolver(maxTableSize: Int = 256,
                                optionalSolvers: Seq[OptionalSolver] = Seq(applyOptional, outerHashJoin))
   extends QueryGraphSolver with PatternExpressionSolving {
 
-  import IteratorSupport.RichIterator
+  import org.neo4j.cypher.internal.compiler.v2_2.helpers.IteratorSupport.RichIterator
 
   def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = {
     implicit val kitFactory = (qg: QueryGraph) => kitWithShortestPathSupport(config.toKit(qg))
@@ -58,12 +56,12 @@ case class IDPQueryGraphSolver(maxTableSize: Int = 256,
     result
   }
 
-  private def kitWithShortestPathSupport(kit: QueryPlannerKit) =
+  private def kitWithShortestPathSupport(kit: QueryPlannerKit)(implicit context: LogicalPlanningContext) =
     kit.copy(select = selectShortestPath(kit, _))
 
-  private def selectShortestPath(kit: QueryPlannerKit, initialPlan: LogicalPlan): LogicalPlan =
+  private def selectShortestPath(kit: QueryPlannerKit, initialPlan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan =
     kit.qg.shortestPathPatterns.foldLeft(kit.select(initialPlan)) {
-      case (plan, sp) if sp.isFindableFrom(plan.availableSymbols) => kit.select(planShortestPaths(plan, sp))
+      case (plan, sp) if sp.isFindableFrom(plan.availableSymbols) => kit.select(context.logicalPlanProducer.planShortestPaths(plan, sp))
       case (plan, _) => plan
     }
 
@@ -74,7 +72,10 @@ case class IDPQueryGraphSolver(maxTableSize: Int = 256,
     }
 
   private def planEmptyComponent(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan], kitFactory: (QueryGraph) => QueryPlannerKit): Seq[LogicalPlan] = {
-    val plan = if (queryGraph.argumentIds.isEmpty) planSingleRow() else planQueryArgumentRow(queryGraph)
+    val plan = if (queryGraph.argumentIds.isEmpty)
+      context.logicalPlanProducer.planSingleRow()
+    else
+      context.logicalPlanProducer.planQueryArgumentRow(queryGraph)
     Seq(kitFactory(queryGraph).select(plan))
   }
 
@@ -113,7 +114,8 @@ case class IDPQueryGraphSolver(maxTableSize: Int = 256,
     }
   }
 
-  private def planSinglePattern(qg: QueryGraph, pattern: PatternRelationship, leaves: Iterable[LogicalPlan]): Iterable[LogicalPlan] = {
+  private def planSinglePattern(qg: QueryGraph, pattern: PatternRelationship, leaves: Iterable[LogicalPlan])
+                               (implicit context: LogicalPlanningContext): Iterable[LogicalPlan] = {
 
     import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.idp.expandSolverStep.planSinglePatternSide
 
@@ -146,7 +148,7 @@ case class IDPQueryGraphSolver(maxTableSize: Int = 256,
           rhs @ (right, rightRemaining) <- candidates.iterator if left ne right;
           remaining = if (leftRemaining.size < rightRemaining.size) leftRemaining else rightRemaining;
           oldPlans = Set(lhs, rhs);
-          newPlan = kit.select(planCartesianProduct(left, right))
+          newPlan = kit.select(context.logicalPlanProducer.planCartesianProduct(left, right))
         )
         yield newPlan ->(oldPlans, remaining)).toMap
         val bestCartesian = kit.pickBest(cartesianProducts.keys).get

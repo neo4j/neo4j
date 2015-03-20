@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{LeafPlanner, LogicalPlanningContext}
 
 object argumentLeafPlanner extends LeafPlanner {
@@ -29,6 +28,6 @@ object argumentLeafPlanner extends LeafPlanner {
     if ((qg.argumentIds intersect ids).isEmpty)
       Seq.empty
     else
-      Seq(planQueryArgumentRow(qg))
+      Seq(context.logicalPlanProducer.planQueryArgumentRow(qg))
   }
 }

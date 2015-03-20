@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.PatternConverters._
-import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{LabelPredicateNormalizer, MatchPredicateNormalizerChain, PropertyPredicateNormalizer}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.{addUniquenessPredicates, LabelPredicateNormalizer, MatchPredicateNormalizerChain, PropertyPredicateNormalizer}
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.UnNamedNameGenerator._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{PatternLength, VarPatternLength, SimplePatternLength, IdName}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{Predicate, QueryGraph}
@@ -32,8 +32,10 @@ object ExpressionConverters {
 
   implicit class PatternExpressionConverter(val exp: PatternExpression) extends AnyVal {
     def asQueryGraph: QueryGraph = {
+      val uniqueRels = addUniquenessPredicates.collectUniqueRels(exp.pattern)
+      val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, exp.pattern.position)
       val relChain: RelationshipChain = exp.pattern.element
-      val predicates: Vector[Expression] = relChain.fold(Vector.empty[Expression]) {
+      val predicates: Vector[Expression] = relChain.fold(uniquePredicates.toVector) {
         case pattern: AnyRef if normalizer.extract.isDefinedAt(pattern) => acc => acc ++ normalizer.extract(pattern)
         case _                                                          => identity
       }

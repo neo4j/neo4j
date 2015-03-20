@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{AllIterablePredicate, FilterScope, Identifier}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{CandidateGenerator, LogicalPlanningContext}
 
 object expand extends CandidateGenerator[GreedyPlanTable] {
@@ -40,7 +39,7 @@ object expand extends CandidateGenerator[GreedyPlanTable] {
 
       patternRel.length match {
         case SimplePatternLength =>
-          planSimpleExpand(plan, nodeId, dir, otherSide, patternRel, mode)
+          context.logicalPlanProducer.planSimpleExpand(plan, nodeId, dir, otherSide, patternRel, mode)
 
         case length: VarPatternLength =>
           val availablePredicates = queryGraph.selections.predicatesGiven(plan.availableSymbols + patternRel.name)
@@ -49,7 +48,7 @@ object expand extends CandidateGenerator[GreedyPlanTable] {
               if identifier == relId || !innerPredicate.dependencies(relId) =>
               (identifier, innerPredicate) -> all
           }.unzip
-          planVarExpand(plan, nodeId, dir, otherSide, patternRel, predicates, allPredicates, mode)
+          context.logicalPlanProducer.planVarExpand(plan, nodeId, dir, otherSide, patternRel, predicates, allPredicates, mode)
       }
     }
   }

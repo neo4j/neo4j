@@ -21,11 +21,17 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.idp
 
 import org.mockito.Mockito.{spy, verify}
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.ProjectingSelector
+import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{QueryGraphSolver, Metrics, LogicalPlanningContext, ProjectingSelector}
+import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 
 import scala.collection.immutable.BitSet
 
 class IDPSolverTest extends CypherFunSuite {
+
+  private implicit val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[CardinalityModel]), mock[Metrics], mock[SemanticTable], mock[QueryGraphSolver])
 
   test("Solves a small toy problem") {
     val solver = new IDPSolver[Char, String](
@@ -88,7 +94,8 @@ class IDPSolverTest extends CypherFunSuite {
   }
 
   private object stringAppendingSolverStep extends IDPSolverStep[Char, String] {
-    override def apply(registry: IdRegistry[Char], goal: Goal, table: IDPCache[String]): Iterator[String] = {
+    override def apply(registry: IdRegistry[Char], goal: Goal, table: IDPCache[String])
+                      (implicit context: LogicalPlanningContext): Iterator[String] = {
       val goalSize = goal.size
       for (
         leftGoal <- goal.subsets if leftGoal.size <= goalSize;

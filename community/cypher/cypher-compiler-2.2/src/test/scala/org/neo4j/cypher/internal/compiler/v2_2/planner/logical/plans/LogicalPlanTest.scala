@@ -20,19 +20,19 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, PlannerQuery}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{CardinalityEstimation, LogicalPlanningTestSupport, PlannerQuery}
 
 class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
-  case class TestPlan()(val solved: PlannerQuery) extends LogicalPlan with LogicalPlanWithoutExpressions {
+  case class TestPlan()(val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LogicalPlanWithoutExpressions {
     def lhs: Option[LogicalPlan] = ???
     def availableSymbols: Set[IdName] = ???
     def rhs: Option[LogicalPlan] = ???
   }
 
   test("updating the planner query works well, thank you very much") {
-    val initialPlan = TestPlan()(PlannerQuery.empty)
+    val initialPlan = TestPlan()(solved)
 
-    val updatedPlannerQuery = PlannerQuery.empty.updateGraph(_.addPatternNodes(IdName("a")))
+    val updatedPlannerQuery = CardinalityEstimation.lift(PlannerQuery.empty.updateGraph(_.addPatternNodes(IdName("a"))), 0.0)
 
     val newPlan = initialPlan.updateSolved(updatedPlannerQuery)
 
@@ -47,7 +47,7 @@ class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
 
   test("apply with two singlerows should return them both") {
     val singleRow1 = Argument(Set(IdName("a")))(solved)()
-    val singleRow2 = SingleRow()
+    val singleRow2 = SingleRow()(solved)
     val apply = Apply(singleRow1, singleRow2)(solved)
 
     apply.leafs should equal(Seq(singleRow1, singleRow2))
@@ -55,9 +55,9 @@ class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
 
   test("apply pyramid should work multiple levels deep") {
     val singleRow1 = Argument(Set(IdName("a")))(solved)()
-    val singleRow2 = SingleRow()
+    val singleRow2 = SingleRow()(solved)
     val singleRow3 = Argument(Set(IdName("b")))(solved)()
-    val singleRow4 = SingleRow()
+    val singleRow4 = SingleRow()(solved)
     val apply1 = Apply(singleRow1, singleRow2)(solved)
     val apply2 = Apply(singleRow3, singleRow4)(solved)
     val metaApply = Apply(apply1, apply2)(solved)

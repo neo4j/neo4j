@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.plannerQuery.Statemen
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{PipeBuilder, PipeInfo}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.execution.{PipeExecutionBuilderContext, PipeExecutionPlanBuilder}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.{ApplyRewriter, RewriterCondition, RewriterStepSequencer}
 import org.neo4j.helpers.Clock
@@ -69,8 +69,9 @@ case class CostBasedPipeBuilder(monitors: Monitors,
     // If we cannot handle the query, throw CantHandleQueryException and let the compiler delegate this query to another planner.
     if (!acceptQuery(unionQuery)) throw new CantHandleQueryException(s"The conservative check failed this query: $unionQuery")
 
-    val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
-    val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver, QueryGraphCardinalityInput.empty)
+    val metrics = metricsFactory.newMetrics(planContext.statistics)
+    val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
+    val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, semanticTable, queryGraphSolver)
     val plan = queryPlanner.plan(unionQuery)(context)
 
     val costPlannerName = plannerName match {
@@ -88,7 +89,7 @@ object CostBasedPipeBuilder {
   import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStep._
 
   def rewriteStatement(statement: Statement, scopeTree: Scope, semanticTable: SemanticTable, preConditions: Set[RewriterCondition], monitor: AstRewritingMonitor): (Statement, SemanticTable) = {
-    val namespacer = Namespacer(statement, semanticTable, scopeTree)
+    val namespacer = Namespacer(statement, scopeTree)
     val newStatement = rewriteStatement(namespacer, statement, preConditions, monitor)
     val newSemanticTable = namespacer.tableRewriter(semanticTable)
     (newStatement, newSemanticTable)

@@ -20,15 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{LogicalPlan, NodeHashJoin, PatternRelationship}
 
 case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelationship, LogicalPlan] {
 
-  import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer.planNodeHashJoin
-
-  private val argumentIds = qg.argumentIds
-
-  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan]): Iterator[LogicalPlan] = {
+  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan])
+                    (implicit context: LogicalPlanningContext): Iterator[LogicalPlan] = {
     val goalSize = goal.size / 2
 
     val result: Iterator[Iterator[NodeHashJoin]] =
@@ -42,8 +40,8 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
         overlap = leftNodes intersect rightNodes if overlap.nonEmpty
       ) yield {
         Iterator(
-          planNodeHashJoin(overlap, lhs, rhs),
-          planNodeHashJoin(overlap, rhs, lhs)
+          context.logicalPlanProducer.planNodeHashJoin(overlap, lhs, rhs),
+          context.logicalPlanProducer.planNodeHashJoin(overlap, rhs, lhs)
         )
       }
 
