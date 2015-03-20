@@ -74,12 +74,6 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
     }
 
     @Override
-    public void shutdown() throws Throwable
-    {
-        this.appender.close();
-    }
-
-    @Override
     public TransactionAppender getAppender()
     {
         return appender;

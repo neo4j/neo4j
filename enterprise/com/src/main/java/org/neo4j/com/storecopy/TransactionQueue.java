@@ -24,6 +24,8 @@ import java.io.IOException;
 import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.Commitment;
+import org.neo4j.kernel.impl.util.Access;
 
 /**
  * Queues {@link TransactionRepresentation} for application at a later point. Queued transactions can be visited
@@ -57,7 +59,7 @@ public class TransactionQueue
         for ( int i = 0; i < queueIndex; i++ )
         {
             Transaction tx = queue[i];
-            visitor.visit( tx.transaction, tx.txHandler );
+            visitor.visit( tx.transaction, tx.txHandler, tx );
         }
         return queueIndex;
     }
@@ -67,21 +69,29 @@ public class TransactionQueue
         queueIndex = 0;
     }
 
-    static class Transaction
+    private static class Transaction implements Access<Commitment>
     {
         private CommittedTransactionRepresentation transaction;
         private TxHandler txHandler;
+        private Commitment commitment;
 
         void set( CommittedTransactionRepresentation transaction, TxHandler txHandler )
         {
             this.transaction = transaction;
             this.txHandler = txHandler;
+            this.commitment = null; // null at this point. Access provides means of setting it
         }
-    }
 
-    interface TransactionVisitor
-    {
-        void visit( CommittedTransactionRepresentation transaction, TxHandler handler )
-                throws IOException;
+        @Override
+        public Commitment get()
+        {
+            return commitment;
+        }
+
+        @Override
+        public void set( Commitment commitment )
+        {
+            this.commitment = commitment;
+        }
     }
 }
