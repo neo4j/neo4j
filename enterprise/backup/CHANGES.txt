@@ -1,3 +1,8 @@
+2.2.0
+-----
+o Introduced 'gather-forensics' functionality which allows backup to fetch
+  all transaction logs
+
 2.2.0-M03
 ---------
 o Fix an issue where a backup could not be used to seed a slave in HA
@@ -27,7 +32,7 @@ o Backup no longer differentiates between full and incremental backup, instead a
   to use. This also handles cases where a backup is very old and can no longer be incrementally backed up.
   OnlineBackup#incremental(..) and OnlineBackup.full(..) are now deprecated, and will be removed in the next major
   release (3.0.0).
-o Fixes issue with backup client shutting down the network connection before 
+o Fixes issue with backup client shutting down the network connection before
   the backup complete
 
 2.0.1

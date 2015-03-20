@@ -1,3 +1,11 @@
+2.2.0
+-----
+o Fixed problem where undirected paths weren't being properly projected
+o Introduced DP based algorithm as a planner option
+o Ensure that the relationship unique constraint is respected when solving patterns in pattern-expressions
+o Fixed bug when constructing named paths from undirected variable length relationship patterns
+o Fixed NPEs when serializing data with missing keys through LOAD CSV
+
 2.2.0-RC1
 ---------
 o Fixes problem where eagerness was unnecessarily being introduced.

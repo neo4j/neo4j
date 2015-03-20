@@ -1,3 +1,16 @@
+2.2.0
+-----
+o Fixed issue where index wasn't properly recovered if one with the same label/property
+  had earlier been created and dropped
+o Fixed race condition where a unique constraint is being created while
+  concurrent transactions would violate the constraint
+o Fixed concurrency issue in NodeLabelsCache
+o Fixed a race between committing transaction and db shutting down
+o Removed unnecessary call to IndexingService monitor on commit if no index changes
+o Fixed inconsistent-read bugs in StandardStore
+o Introduced user-friendly error message if Lucene index limits are going to be
+  reached during a commit
+
 2.2.0-RC1
 ---------
 o Fixed race condition where constraint index would be made available before it was actually ready.
