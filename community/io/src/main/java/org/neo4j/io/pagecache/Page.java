@@ -31,82 +31,6 @@ import org.neo4j.io.fs.StoreChannel;
 public interface Page
 {
     /**
-     * Get the signed byte at the given offset into the page.
-     *
-     * May throw an AssertionError or a RuntimeException if the read is out of bounds.
-     */
-    byte getByte( int offset );
-
-    /**
-     * Set the signed byte at the given offset into the page.
-     *
-     * May throw an AssertionError or a RuntimeException if the write is out of bounds.
-     */
-    void putByte( byte value, int offset );
-
-    /**
-     * Fill the given array with bytes by reading from the page, beginning at the given
-     * offset in the page.
-     *
-     * May throw an AssertionError or a RuntimeException if the read is out of bounds.
-     * If an exception is thrown, then the array may have been partially filled with
-     * the requested bytes, if the offset starts within the page.
-     */
-    void getBytes( byte[] data, int offset );
-
-    /**
-     * Write out all the bytes of the given array into the page, beginning at the given
-     * offset in the page.
-     *
-     * May throw an AssertionError or a RuntimeException if the write is out of bounds.
-     * If an exception is thrown, then some of the bytes from the given array may have
-     * been written to the page, if the offset starts within the page.
-     */
-    void putBytes( byte[] data, int offset );
-
-    /**
-     * Get the signed short at the given offset into the page.
-     *
-     * May throw an AssertionError or a RuntimeException if the read is out of bounds.
-     */
-    short getShort( int offset );
-
-    /**
-     * Set the signed short at the given offset into the page.
-     *
-     * May throw an AssertionError or a RuntimeException if the write is out of bounds.
-     */
-    void putShort( short value, int offset );
-
-    /**
-     * Get the signed int at the given offset into the page.
-     *
-     * May throw an AssertionError or a RuntimeException if the read is out of bounds.
-     */
-    int getInt( int offset );
-
-    /**
-     * Set the signed int at the given offset into the page.
-     *
-     * May throw an AssertionError or a RuntimeException if the write is out of bounds.
-     */
-    void putInt( int value, int offset );
-
-    /**
-     * Get the signed long at the given offset into the page.
-     *
-     * May throw an AssertionError or a RuntimeException if the read is out of bounds.
-     */
-    long getLong( int offset );
-
-    /**
-     * Set the signed long at the given offset into the page.
-     *
-     * May throw an AssertionError or a RuntimeException if the write is out of bounds.
-     */
-    void putLong( long value, int offset );
-
-    /**
      * Swap a file-page into memory.
      *
      * The file-page location is given by the offset into the file represented by the StoreChannel, and the length.
@@ -151,9 +75,4 @@ public interface Page
      *                     reopened and the swapIn operation must be retried.
      */
     void swapOut( StoreChannel channel, long offset, int length ) throws IOException;
-
-    /**
-     * Get the internal id of this cache page object.
-     */
-    int getCachePageId();
 }

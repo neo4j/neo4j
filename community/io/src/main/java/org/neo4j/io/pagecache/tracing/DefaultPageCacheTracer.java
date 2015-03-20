@@ -202,7 +202,7 @@ public class DefaultPageCacheTracer implements PageCacheTracer
         }
     };
 
-    private final PinEvent pinEvent = new PinEvent()
+    private final PinEvent pinTracingEvent = new PinEvent()
     {
         @Override
         public void setCachePageId( int cachePageId )
@@ -219,6 +219,25 @@ public class DefaultPageCacheTracer implements PageCacheTracer
         public void done()
         {
             unpins.getAndIncrement();
+        }
+    };
+
+    private final PinEvent nullPinEvent = new PinEvent()
+    {
+        @Override
+        public void setCachePageId( int cachePageId )
+        {
+        }
+
+        @Override
+        public PageFaultEvent beginPageFault()
+        {
+            return pageFaultEvent;
+        }
+
+        @Override
+        public void done()
+        {
         }
     };
 
@@ -273,7 +292,7 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     @SuppressWarnings( "UnusedDeclaration" )
     private PinEvent beginNullPin()
     {
-        return PinEvent.NULL;
+        return nullPinEvent;
     }
 
     /**
@@ -283,7 +302,7 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     private PinEvent beginTracingPin()
     {
         pins.getAndIncrement();
-        return pinEvent;
+        return pinTracingEvent;
     }
 
     @Override
