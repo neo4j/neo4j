@@ -109,7 +109,7 @@ angular.module('neo4jApp.services')
             today = new Date()
             today = new Date(today.getFullYear(), today.getMonth(), today.getDay())
 
-            if (pingTime < today) || true
+            if (pingTime < today)
               @set("pingTime", today.getTime())
               return true
             else
