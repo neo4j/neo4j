@@ -19,8 +19,10 @@
  */
 package org.neo4j.com.storecopy;
 
+import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.com.ResourceReleaser;
@@ -29,6 +31,8 @@ import org.neo4j.com.TransactionObligationResponse;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
@@ -36,15 +40,25 @@ import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.Commitment;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogRotation;
+import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
+import org.neo4j.kernel.impl.util.IdOrderingQueue;
+import org.neo4j.kernel.lifecycle.LifeRule;
+import org.neo4j.test.CleanupRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertSame;
@@ -56,12 +70,15 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_TX_HANDLER;
+import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class TransactionCommittingResponseUnpackerTest
 {
@@ -83,7 +100,7 @@ public class TransactionCommittingResponseUnpackerTest
 
         when( dependencyResolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
 
-        TransactionAppender appender = mock( TransactionAppender.class );
+        TransactionAppender appender = mockedTransactionAppender();
         LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
         when( logicalTransactionStore.getAppender() ).thenReturn( appender );
         when( dependencyResolver.resolveDependency( LogicalTransactionStore.class ) )
@@ -112,7 +129,7 @@ public class TransactionCommittingResponseUnpackerTest
 
         // When
         unpacker.start();
-        long committingTransactionId = TransactionIdStore.BASE_TX_ID + 1;
+        long committingTransactionId = BASE_TX_ID + 1;
         DummyTransactionResponse response = new DummyTransactionResponse( committingTransactionId, 1, appender, maxBatchSize );
         unpacker.unpackResponse( response, stoppingTxHandler );
 
@@ -147,12 +164,7 @@ public class TransactionCommittingResponseUnpackerTest
 
         when( dependencyResolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
 
-        TransactionAppender appender = mock( TransactionAppender.class );
-        when( appender.append(
-                any( TransactionRepresentation.class ), any( LogAppendEvent.class ) ) ).thenReturn(
-                2L, 3L, 4L, 5L, 6L );
-          // Should indicate success applying the transaction
-
+        TransactionAppender appender = mockedTransactionAppender();
         LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
         when( logicalTransactionStore.getAppender() ).thenReturn( appender );
         when( dependencyResolver.resolveDependency( LogicalTransactionStore.class ) )
@@ -251,7 +263,7 @@ public class TransactionCommittingResponseUnpackerTest
         try
         {
             unpacker.unpackResponse(
-                    new DummyTransactionResponse( TransactionIdStore.BASE_TX_ID+1, 1, appender, 10 ), NO_OP_TX_HANDLER );
+                    new DummyTransactionResponse( BASE_TX_ID+1, 1, appender, 10 ), NO_OP_TX_HANDLER );
             fail( "Should have failed" );
         }
         catch ( IOException e )
@@ -273,7 +285,7 @@ public class TransactionCommittingResponseUnpackerTest
         KernelHealth kernelHealth = mock( KernelHealth.class );
         when( resolver.resolveDependency( KernelHealth.class ) ).thenReturn( kernelHealth );
         LogicalTransactionStore txStore = mock( LogicalTransactionStore.class );
-        TransactionAppender appender = mock( TransactionAppender.class );
+        TransactionAppender appender = mockedTransactionAppender();
         when( txStore.getAppender() ).thenReturn( appender );
         when( resolver.resolveDependency( LogicalTransactionStore.class ) ).thenReturn( txStore );
         TransactionRepresentationStoreApplier storeApplier = mock( TransactionRepresentationStoreApplier.class );
@@ -288,7 +300,7 @@ public class TransactionCommittingResponseUnpackerTest
         TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker( resolver );
         unpacker.start();
 
-        Response<?> response = new DummyTransactionResponse( TransactionIdStore.BASE_TX_ID + 1, 1, appender, 10 );
+        Response<?> response = new DummyTransactionResponse( BASE_TX_ID + 1, 1, appender, 10 );
 
         // When
         try
@@ -304,6 +316,67 @@ public class TransactionCommittingResponseUnpackerTest
         // Then
         verifyZeroInteractions( storeApplier );
         verify( kernelHealth ).panic( error );
+    }
+
+    @Test
+    public void shouldNotMarkTransactionsAsCommittedIfAppenderClosed() throws Throwable
+    {
+        // GIVEN an unpacker with close-to-real dependencies injected
+        DependencyResolver resolver = mock( DependencyResolver.class );
+        // (we don't want this FS in every test in this class, so just don't use EFSR)
+        FileSystemAbstraction fs = cleanup.add( new EphemeralFileSystemAbstraction() );
+        File directory = new File( "dir" );
+        fs.mkdirs( directory );
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( directory, fs );
+        TransactionIdStore transactionIdStore = spy( new DeadSimpleTransactionIdStore() );
+        LogVersionRepository logVersionRepository = mock( LogVersionRepository.class );
+        TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 10, 10 );
+        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1_000, transactionIdStore,
+                logVersionRepository, new PhysicalLogFile.Monitor.Adapter(), transactionMetadataCache ) );
+        KernelHealth health = mock( KernelHealth.class );
+        LogRotation logRotation = LogRotation.NO_ROTATION;
+        LogicalTransactionStore logicalTransactionStore = life.add( new PhysicalLogicalTransactionStore( logFile,
+                logRotation, transactionMetadataCache, transactionIdStore, IdOrderingQueue.BYPASS,
+                health, true ) );
+        IndexUpdatesValidator indexUpdatesValidator = mock( IndexUpdatesValidator.class );
+        when( indexUpdatesValidator.validate( any( TransactionRepresentation.class ),
+                any( TransactionApplicationMode.class ) ) ).thenReturn( ValidatedIndexUpdates.NONE );
+        life.start();
+        TransactionAppender appender = logicalTransactionStore.getAppender();
+        when( resolver.resolveDependency( LogicalTransactionStore.class ) ).thenReturn( logicalTransactionStore );
+        when( resolver.resolveDependency( IndexUpdatesValidator.class ) ).thenReturn( indexUpdatesValidator );
+        when( resolver.resolveDependency( TransactionIdStore.class ) ).thenReturn( transactionIdStore );
+        when( resolver.resolveDependency( TransactionObligationFulfiller.class ) ).thenReturn( null );
+        when( resolver.resolveDependency( LogFile.class ) ).thenReturn( logFile );
+        when( resolver.resolveDependency( LogRotation.class ) ).thenReturn( logRotation );
+        when( resolver.resolveDependency( KernelHealth.class ) ).thenReturn( health );
+        when( resolver.resolveDependency( TransactionObligationFulfiller.class ) ).thenThrow(
+                new IllegalArgumentException() );
+        TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker( resolver );
+        unpacker.start();
+
+        // and a closed logFile/appender
+        life.shutdown();
+
+        // WHEN packing up a transaction response
+        try
+        {
+            unpacker.unpackResponse( new DummyTransactionResponse( BASE_TX_ID+1, 1, appender, 5 ), NO_OP_TX_HANDLER );
+            fail( "Should have failed" );
+        }
+        catch ( Exception e )
+        {
+            // THEN apart from failing we don't want any committed/closed calls to TransactionIdStore
+            verify( transactionIdStore, times( 0 ) ).transactionCommitted( anyLong(), anyLong() );
+            verify( transactionIdStore, times( 0 ) ).transactionClosed( anyLong() );
+        }
+    }
+
+    private TransactionAppender mockedTransactionAppender() throws IOException
+    {
+        TransactionAppender appender = mock( TransactionAppender.class );
+        when( appender.append( any( TransactionRepresentation.class ), anyLong() ) ).thenReturn( mock( Commitment.class ) );
+        return appender;
     }
 
     private void setUpIndexUpdatesValidatorMocking( DependencyResolver dependencyResolverMock ) throws IOException
@@ -338,7 +411,7 @@ public class TransactionCommittingResponseUnpackerTest
 
         @Override
         public void done()
-        {
+        {   // Nothing to do
         }
 
         public void setUnpacker( TransactionCommittingResponseUnpacker unpacker )
@@ -381,6 +454,7 @@ public class TransactionCommittingResponseUnpackerTest
             when( mockStartEntry.checksum() ).thenReturn( id*10 );
             when( tx.getStartEntry() ).thenReturn( mockStartEntry );
             TransactionRepresentation txRepresentation = mock( TransactionRepresentation.class );
+            when( txRepresentation.additionalHeader() ).thenReturn( new byte[0] );
             when( tx.getTransactionRepresentation() ).thenReturn( txRepresentation );
             return tx;
         }
@@ -410,4 +484,7 @@ public class TransactionCommittingResponseUnpackerTest
             }
         }
     }
+
+    public final @Rule CleanupRule cleanup = new CleanupRule();
+    public final @Rule LifeRule life = new LifeRule();
 }

@@ -19,18 +19,19 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.KernelHealth;
@@ -62,8 +63,6 @@ import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.test.CleanupRule;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -73,6 +72,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -80,6 +81,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import static org.neo4j.helpers.Exceptions.contains;
 import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
@@ -248,8 +251,8 @@ public class PhysicalTransactionAppenderTest
             // THEN
             assertTrue( contains( e, failureMessage, IOException.class ) );
             verify( transactionIdStore, times( 1 ) ).nextCommittingTransactionId();
+            verify( transactionIdStore, times( 1 ) ).transactionClosed( txId );
             verify( health ).panic( failure );
-            verifyNoMoreInteractions( transactionIdStore );
         }
     }
 
@@ -317,40 +320,52 @@ public class PhysicalTransactionAppenderTest
     }
 
     @Test
-    public void shouldCloseTransactionThatWasAppendedButFailedBeforeExitingAppend() throws Exception
+    public void shouldCloseTransactionThatWasAppendedAndMarkedAsCommittedButFailedAfterThat() throws Exception
     {
         // GIVEN
         long txId = 3;
         String failureMessage = "Forces a failure";
-        WritableLogChannel channel = spy( new InMemoryLogChannel() );
-        doThrow( new IOException( failureMessage ) ).when( channel ).force();
+        WritableLogChannel channel = new InMemoryLogChannel();
         LogFile logFile = mock( LogFile.class );
         when( logFile.getWriter() ).thenReturn( channel );
         TransactionMetadataCache metadataCache = new TransactionMetadataCache( 10, 10 );
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( txId );
+        IdOrderingQueue idOrderingQueue = mock( IdOrderingQueue.class );
+        doThrow( new RuntimeException( failureMessage ) ).when( idOrderingQueue ).waitFor( anyLong() );
         TransactionAppender appender = new PhysicalTransactionAppender( logFile, LogRotation.NO_ROTATION,
-                metadataCache, transactionIdStore, BYPASS, mock( KernelHealth.class ) );
+                metadataCache, transactionIdStore, idOrderingQueue, mock( KernelHealth.class ) );
 
         // WHEN
-        TransactionRepresentation transaction = mock( TransactionRepresentation.class );
-        when( transaction.additionalHeader() ).thenReturn( new byte[0] );
+        TransactionRepresentation transaction = transactionWithLegacyIndexCommand();
         try
         {
             appender.append( transaction, logAppendEvent );
             fail( "Expected append to fail. Something is wrong with the test itself" );
         }
-        catch ( IOException e )
+        catch ( Exception e )
         {
             // THEN
-            assertTrue( contains( e, failureMessage, IOException.class ) );
+            assertTrue( contains( e, failureMessage, RuntimeException.class ) );
             verify( transactionIdStore, times( 1 ) ).nextCommittingTransactionId();
+            verify( transactionIdStore, times( 1 ) ).transactionCommitted( eq( txId ), anyLong() );
             verify( transactionIdStore, times( 1 ) ).transactionClosed( txId );
             verifyNoMoreInteractions( transactionIdStore );
         }
     }
 
-    private Long tryComplete( Future future, int millis )
+    private TransactionRepresentation transactionWithLegacyIndexCommand()
+    {
+        Collection<Command> commands = new ArrayList<>();
+        IndexDefineCommand command = new IndexDefineCommand();
+        command.init( new HashMap<String,Byte>(), new HashMap<String,Byte>() );
+        commands.add( command );
+        PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( commands );
+        transaction.setHeader( new byte[0], 0, 0, 0, 0, 0, 0 );
+        return transaction;
+    }
+
+    private Long tryComplete( Future<?> future, int millis )
     {
         try
         {

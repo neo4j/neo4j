@@ -57,6 +57,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.log.Commitment;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogRotation;
@@ -72,7 +73,6 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.CleanupRule;
 
-import static java.util.Arrays.asList;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doReturn;
@@ -81,6 +81,9 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import static java.util.Arrays.asList;
+
 import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_RESPONSE_UNPACKER;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -127,6 +130,8 @@ public class MasterClientTest
         TransactionRepresentationStoreApplier txApplier = mock( TransactionRepresentationStoreApplier.class );
         TransactionIdStore txIdStore = mock( TransactionIdStore.class );
         TransactionAppender txAppender = mock( TransactionAppender.class );
+        when( txAppender.append( any( TransactionRepresentation.class ), anyLong() ) )
+                .thenReturn( mock( Commitment.class ) );
         LogFile logFile = mock( LogFile.class );
 
         when( resolver.resolveDependency( LogicalTransactionStore.class ) ).thenReturn( txStore );

@@ -23,10 +23,10 @@ import java.io.IOException;
 
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.KernelHealth;
-import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
-import org.neo4j.kernel.impl.transaction.tracing.SerializeTransactionEvent;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterv1;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
+import org.neo4j.kernel.impl.transaction.tracing.SerializeTransactionEvent;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart.checksum;
@@ -67,14 +67,15 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
     /**
      * @return whether or not this transaction contains any legacy index changes.
      */
-    private Commitment append0( TransactionRepresentation transaction, long transactionId ) throws IOException
+    private TransactionCommitment append0( TransactionRepresentation transaction, long transactionId )
+            throws IOException
     {
         // Reset command writer so that we, after we've written the transaction, can ask it whether or
         // not any legacy index command was written. If so then there's additional ordering to care about below.
         indexCommandDetector.reset();
 
         // The outcome of this try block is either of:
-        // a) transaction successfully appended, at which point it is marked as committed
+        // a) transaction successfully appended, at which point we return a Commitment to be used after force
         // b) transaction failed to be appended, at which point a kernel panic is issued
         // The reason that we issue a kernel panic on failure in here is that at this point we're still
         // holding the logFile monitor, and a failure to append needs to be communicated with potential
@@ -98,7 +99,7 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
                 // Offer this transaction id to the queue so that the legacy index applier can take part in the ordering
                 legacyIndexTransactionOrdering.offer( transactionId );
             }
-            return new Commitment( containsLegacyIndexCommands, transactionId, transactionChecksum );
+            return new TransactionCommitment( containsLegacyIndexCommands, transactionId, transactionChecksum );
         }
         catch ( final Throwable panic )
         {
@@ -118,17 +119,17 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
         // we generate the next transaction id
         logAppendEvent.setLogRotated( logRotation.rotateLogIfNeeded( logAppendEvent ) );
 
+        TransactionCommitment commit = null;
         try
         {
-            Commitment commit;
             // Synchronized with logFile to get absolute control over concurrent rotations happening
             synchronized ( logFile )
             {
                 try ( SerializeTransactionEvent serialiseEvent = logAppendEvent.beginSerializeTransaction() )
                 {
                     transactionId = transactionIdStore.nextCommittingTransactionId();
-                    commit = append0( transaction, transactionId );
                     phase = 1;
+                    commit = append0( transaction, transactionId );
                 }
             }
 
@@ -149,7 +150,7 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
     }
 
     @Override
-    public void append( TransactionRepresentation transaction, long expectedTransactionId ) throws IOException
+    public Commitment append( TransactionRepresentation transaction, long expectedTransactionId ) throws IOException
     {
         // TODO this method is supposed to only be called from a single thread we should
         // be able to remove this synchronized block. The only reason it's here now is that LogFile exposes
@@ -166,17 +167,18 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
                         "Received " + transaction + " with txId:" + expectedTransactionId +
                         " to be applied, but appending it ended up generating an unexpected txId:" + transactionId );
             }
-            append0( transaction, transactionId ).transactionCommitted();
+            return append0( transaction, transactionId );
         }
     }
 
-    private class Commitment
+    private class TransactionCommitment implements Commitment
     {
         private final boolean hasLegacyIndexChanges;
         private final long transactionId;
         private final long transactionChecksum;
+        private boolean markedAsCommitted;
 
-        Commitment( boolean hasLegacyIndexChanges, long transactionId, long transactionChecksum )
+        TransactionCommitment( boolean hasLegacyIndexChanges, long transactionId, long transactionChecksum )
         {
             this.hasLegacyIndexChanges = hasLegacyIndexChanges;
             this.transactionId = transactionId;
@@ -189,9 +191,11 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
             coordinateMultipleThreadsApplyingLegacyIndexChanges( hasLegacyIndexChanges, transactionId );
         }
 
-        void transactionCommitted()
+        @Override
+        public void transactionCommitted()
         {
             transactionIdStore.transactionCommitted( transactionId, transactionChecksum );
+            markedAsCommitted = true;
         }
     }
 
@@ -229,10 +233,5 @@ abstract class AbstractPhysicalTransactionAppender implements TransactionAppende
                 throw new IOException( "Interrupted while waiting for applying legacy index updates", e );
             }
         }
-    }
-
-    @Override
-    public void close()
-    {   // do nothing
     }
 }
