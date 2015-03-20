@@ -194,7 +194,7 @@ public class ParallelBatchImporter implements BatchImporter
             // Stage 7 -- count label-[type]->label
             executeStages( new RelationshipCountsStage( config, nodeLabelsCache, neoStore.getRelationshipStore(),
                     neoStore.getLabelRepository().getHighId(),
-                    neoStore.getRelationshipTypeRepository().getHighId(), countsUpdater ) );
+                    neoStore.getRelationshipTypeRepository().getHighId(), countsUpdater, AUTO ) );
 
             // We're done, do some final logging about it
             long totalTimeMillis = currentTimeMillis() - startTime;
