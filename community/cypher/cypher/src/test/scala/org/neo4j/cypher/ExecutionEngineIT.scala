@@ -25,7 +25,9 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.test.TestGraphDatabaseFactory
+import org.scalatest.Ignore
 
+@Ignore
 class ExecutionEngineIT extends CypherFunSuite {
 
   test("should use smart/conservative by default in 2.2") {

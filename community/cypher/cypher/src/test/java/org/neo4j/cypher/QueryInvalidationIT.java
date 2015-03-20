@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -40,6 +41,7 @@ import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 
+@Ignore
 public class QueryInvalidationIT
 {
     public final @Rule DatabaseRule db = new ImpermanentDatabaseRule();
