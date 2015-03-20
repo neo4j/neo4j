@@ -28,7 +28,6 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.neo4j</groupId>
   <artifactId>neo4j-kernel</artifactId>
   <version>2.2-SNAPSHOT</version>
 
@@ -99,17 +98,6 @@ the relevant Commercial Agreement.
 
   <build>
     <plugins>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <skip>false</skip>
-          <argLine>-Xmx300m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=target/test-data</argLine>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>

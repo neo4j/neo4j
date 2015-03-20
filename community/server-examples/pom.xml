@@ -131,10 +131,6 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-      </plugin>
-      <plugin>
         <groupId>org.neo4j.build.plugins</groupId>
         <artifactId>docs-maven-plugin</artifactId>
         <configuration>

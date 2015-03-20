@@ -19,23 +19,29 @@
  */
 package org.neo4j.ext.udc;
 
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
+import org.junit.Test;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.TestGraphDatabaseFactory;
-
-import static org.junit.Assert.assertEquals;
 
 public class UdcSettingsIT
 {
     public static final String TEST_HOST_AND_PORT = "test.ucd.neo4j.org:8080";
 
     @Test
-    public void testUdcHostSettingIsUnchanged() throws Exception {
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .setConfig(UdcSettings.udc_host, TEST_HOST_AND_PORT).newGraphDatabase();
-        Config config = db.getDependencyResolver().resolveDependency(Config.class);
-        assertEquals(TEST_HOST_AND_PORT,config.get(UdcSettings.udc_host));
+    public void testUdcHostSettingIsUnchanged() throws Exception
+    {
+        //noinspection deprecation
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+                .newImpermanentDatabaseBuilder()
+                .setConfig( UdcSettings.udc_host, TEST_HOST_AND_PORT )
+                .newGraphDatabase();
+
+        Config config = db.getDependencyResolver().resolveDependency( Config.class );
+
+        assertEquals( TEST_HOST_AND_PORT, config.get( UdcSettings.udc_host ).toString() );
     }
 }

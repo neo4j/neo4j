@@ -37,6 +37,7 @@ import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.logging.BufferingConsoleLogger;
+import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -126,7 +127,8 @@ public class CommunityServerBuilder
         ConfigurationBuilder configurator = new PropertyFileConfigurator( configFile, console );
         Monitors monitors = new Monitors();
         Logging logging = loggingFactory().create( configurator, monitors );
-        console.replayInto( logging.getConsoleLog( getClass() ) );
+        ConsoleLogger consoleLog = logging.getConsoleLog( getClass() );
+        console.replayInto( consoleLog );
         return build( configFile, configurator, GraphDatabaseDependencies.newDependencies().logging(logging).monitors(monitors) );
     }
 

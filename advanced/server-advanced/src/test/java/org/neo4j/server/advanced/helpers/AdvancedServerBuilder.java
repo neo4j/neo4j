@@ -24,22 +24,28 @@ import java.io.IOException;
 
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.advanced.AdvancedNeoServer;
 import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.helpers.CommunityServerBuilder;
+import org.neo4j.server.helpers.LoggingFactory;
 import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.rest.web.DatabaseActions;
 
 import static org.neo4j.server.database.LifecycleManagingDatabase.EMBEDDED;
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
+import static org.neo4j.server.helpers.LoggingFactory.IMPERMANENT_LOGGING;
 import static org.neo4j.server.helpers.LoggingFactory.given;
 
 public class AdvancedServerBuilder extends CommunityServerBuilder
 {
+    private AdvancedServerBuilder( LoggingFactory loggingFactory )
+    {
+        super( loggingFactory );
+    }
+
     public AdvancedServerBuilder( Logging logging )
     {
-        super( given( logging ) );
+        this( given( logging ) );
     }
 
     public static AdvancedServerBuilder server( Logging logging )
@@ -49,7 +55,7 @@ public class AdvancedServerBuilder extends CommunityServerBuilder
 
     public static AdvancedServerBuilder server()
     {
-        return new AdvancedServerBuilder( null );
+        return new AdvancedServerBuilder( IMPERMANENT_LOGGING );
     }
 
     @Override
@@ -58,9 +64,8 @@ public class AdvancedServerBuilder extends CommunityServerBuilder
         return (AdvancedNeoServer) super.build();
     }
 
-
     @Override
-    protected CommunityNeoServer build(File configFile, ConfigurationBuilder configurator, InternalAbstractGraphDatabase.Dependencies dependencies)
+    protected AdvancedNeoServer build(File configFile, ConfigurationBuilder configurator, InternalAbstractGraphDatabase.Dependencies dependencies)
     {
         return new TestAdvancedNeoServer( configurator, configFile, dependencies );
     }

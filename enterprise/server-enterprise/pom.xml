@@ -200,12 +200,6 @@
 
 
     <plugins>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-      </plugin>
-
       <!-- Development execution -->
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
@@ -260,7 +254,6 @@
             <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
           </systemPropertyVariables>
           <useManifestOnlyJar>false</useManifestOnlyJar>
-          <argLine>-Xmx1024m</argLine>
         </configuration>
       </plugin>
 

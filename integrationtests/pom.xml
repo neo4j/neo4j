@@ -164,13 +164,6 @@
 
   <build>
     <plugins>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <argLine>-Xmx300m</argLine>
-        </configuration>
-      </plugin>
-
       <!-- Disable the ComponentVersion generation -->
       <plugin>
         <artifactId>maven-antrun-plugin</artifactId>

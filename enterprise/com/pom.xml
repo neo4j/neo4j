@@ -47,13 +47,6 @@
   <build>
     <plugins>
       <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <argLine>-Xmx300m</argLine>
-        </configuration>
-      </plugin>
-
-      <plugin>
         <groupId>org.neo4j.build.plugins</groupId>
         <artifactId>clirr-maven-plugin</artifactId>
         <executions>
