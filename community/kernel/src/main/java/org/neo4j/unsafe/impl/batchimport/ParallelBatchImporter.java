@@ -46,6 +46,7 @@ import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputCache;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+import org.neo4j.unsafe.impl.batchimport.staging.DynamicProcessorAssigner;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.IdMapperPreparationStep;
 import org.neo4j.unsafe.impl.batchimport.staging.InputIteratorBatcherStep;
@@ -61,7 +62,8 @@ import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Utils.idsOf;
 import static org.neo4j.unsafe.impl.batchimport.WriterFactories.parallel;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
-import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
+import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseExecution;
+import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 
 /**
  * {@link BatchImporter} which tries to exercise as much of the available resources to gain performance.
@@ -106,10 +108,16 @@ public class ParallelBatchImporter implements BatchImporter
         this.writerFactory = writerFactory.apply( config );
     }
 
+    /**
+     * Instantiates {@link ParallelBatchImporter} with default services and behaviour.
+     * The provided {@link ExecutionMonitor} will be decorated with {@link DynamicProcessorAssigner} for
+     * optimal assignment of processors to bottleneck steps over time.
+     */
     public ParallelBatchImporter( String storeDir, Configuration config, Logging logging,
             ExecutionMonitor executionMonitor )
     {
-        this( storeDir, new DefaultFileSystemAbstraction(), config, logging, executionMonitor, parallel(), EMPTY );
+        this( storeDir, new DefaultFileSystemAbstraction(), config, logging,
+                withDynamicProcessorAssignment( executionMonitor, config ), parallel(), EMPTY );
     }
 
     @Override
@@ -232,7 +240,7 @@ public class ParallelBatchImporter implements BatchImporter
 
     private void executeStages( Stage... stages )
     {
-        superviseDynamicExecution( executionMonitor, config, stages );
+        superviseExecution( executionMonitor, config, stages );
     }
 
     public class NodeStage extends Stage
