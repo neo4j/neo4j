@@ -25,6 +25,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.neo4j.helpers.FakeClock;
@@ -33,8 +34,10 @@ import org.neo4j.server.NeoServer;
 import org.neo4j.server.advanced.helpers.AdvancedServerBuilder;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.JaxRsResponse;
+import org.neo4j.server.rest.RESTDocsGenerator;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.management.VersionAndEditionService;
+import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.Matchers.containsString;
@@ -55,7 +58,16 @@ public class AdvancedVersionAndEditionServiceIT extends ExclusiveServerTestBase
     @ClassRule
     public static TemporaryFolder staticFolder = new TemporaryFolder();
 
+    public
+    @Rule
+    TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
     private static FakeClock clock;
+
+    @Before
+    public void setUp()
+    {
+        gen.get().setSection( "dev/rest-api/database-version" );
+    }
 
     @BeforeClass
     public static void setupServer() throws Exception
@@ -71,11 +83,11 @@ public class AdvancedVersionAndEditionServiceIT extends ExclusiveServerTestBase
             @Override
             public Void call() throws Exception
             {
-                AdvancedVersionAndEditionServiceIT.server.start();
+                server.start();
                 return null;
             }
         } );
-        functionalTestHelper = new FunctionalTestHelper( AdvancedVersionAndEditionServiceIT.server );
+        functionalTestHelper = new FunctionalTestHelper( server );
     }
 
     @Before

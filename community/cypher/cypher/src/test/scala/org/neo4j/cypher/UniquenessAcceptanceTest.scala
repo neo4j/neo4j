@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher
 
+import org.scalatest.prop.TableDrivenPropertyChecks._
+
 class UniquenessAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should_not_reuse_the_relationship_that_has_just_been_traversed") {
@@ -78,5 +80,63 @@ class UniquenessAcceptanceTest extends ExecutionEngineFunSuite {
 
     // Then
     result should have size 2
+  }
+
+
+  val planners = Table(("Prefix"), ("PLANNER COST"), ("PLANNER RULE"), (""))
+
+  test("should consider uniqueness when combining simple and variable length pattern in a match") {
+    forAll(planners) { planner =>
+      // Given
+      val leaf1 = createNode("leaf1")
+      val leaf2 = createNode("leaf2")
+
+      relate(leaf1, leaf2) // r1
+      relate(leaf2, leaf1) // r2
+
+      // When
+      val result = executeScalar[Number](s"$planner MATCH (a)-->()-[*0..4]-(c) WHERE id(a) = ${leaf1.getId} RETURN count(*)")
+
+      // Then find paths: leaf1-[r1]->(leaf2), leaf1-[r1]->(leaf2)<-[r2]-(leaf1)
+      result should equal(2)
+    }
+  }
+
+  test("should consider uniqueness when combining variable and simple length pattern in a match") {
+    forAll(planners) { planner =>
+
+      // Given
+      val leaf1 = createNode("leaf1")
+      val leaf2 = createNode("leaf2")
+
+      relate(leaf1, leaf2) // r1
+      relate(leaf2, leaf1) // r2
+
+      // When
+      val result = executeScalar[Number](s"$planner MATCH (a)-[*0..4]-()<--(c) WHERE id(a) = ${leaf1.getId} RETURN count(*)")
+
+      // Then find paths: leaf1-[r1]->(leaf2), leaf1-[r1]->(leaf2)<-[r2]-(leaf1)
+      result should equal(2)
+    }
+  }
+
+  test("should consider uniqueness when combining two variable length patterns in a match") {
+    forAll(planners) { planner =>
+      // Given
+      val leaf1 = createNode("leaf1")
+      val leaf2 = createNode("leaf2")
+
+      relate(leaf1, leaf2) // r1
+      relate(leaf2, leaf1) // r2
+
+      // When
+      val result = executeScalar[Number](s"$planner MATCH (a)-[*1..4]->()-[*0..5]-(c) WHERE id(a) = ${leaf1.getId} RETURN count(*)")
+
+      // Then find paths
+      // r1
+      // r1 >> r2
+      // r1-r2
+      result should equal(3)
+    }
   }
 }
