@@ -103,6 +103,7 @@ import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 import static org.neo4j.unsafe.impl.batchimport.WriterFactories.parallel;
+import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 
 /**
  * Migrates a neo4j kernel database from one version to the next.
@@ -336,9 +337,10 @@ public class StoreMigrator implements StoreMigrationParticipant
                 throw new IllegalStateException( "Unknown version to upgrade from: " + versionToUpgradeFrom( storeDir ) );
         }
 
+        Configuration importConfig = new Configuration.OverrideFromConfig( config );
         BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsolutePath(), fileSystem,
-                new Configuration.OverrideFromConfig( config ), logging,
-                migrationBatchImporterMonitor( legacyStore, progressMonitor ),
+                importConfig, logging, withDynamicProcessorAssignment( migrationBatchImporterMonitor(
+                        legacyStore, progressMonitor ), importConfig ),
                 parallel(), readAdditionalIds( storeDir, lastTxId, lastTxChecksum ) );
         InputIterable<InputNode> nodes = legacyNodesAsInput( legacyStore );
         InputIterable<InputRelationship> relationships = legacyRelationshipsAsInput( legacyStore );
