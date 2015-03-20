@@ -19,34 +19,26 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
-import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
-import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
+import org.neo4j.unsafe.impl.batchimport.staging.IteratorBatcherStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 /**
- * Runs through relationship input and counts relationships per node so that dense nodes can be designated.
+ * {@link IteratorBatcherStep} that is tailored to the {@link BatchImporter} as it produces {@link Batch}
+ * objects.
  */
-public class CalculateDenseNodesStep extends ProcessorStep<long[]>
+public class InputIteratorBatcherStep<T> extends IteratorBatcherStep<T>
 {
-    private final NodeRelationshipLink nodeRelationshipLink;
-
-    public CalculateDenseNodesStep( StageControl control, Configuration config,
-            NodeRelationshipLink nodeRelationshipLink )
+    public InputIteratorBatcherStep( StageControl control, Configuration config,
+            InputIterator<T> data, Class<T> itemClass )
     {
-        super( control, "CALCULATOR", config, true );
-        this.nodeRelationshipLink = nodeRelationshipLink;
+        super( control, config, data, itemClass );
     }
 
+    @SuppressWarnings( { "unchecked", "rawtypes" } )
     @Override
-    protected void process( long[] ids, BatchSender sender )
+    protected Object nextBatchOrNull( long ticket, int batchSize )
     {
-        for ( long id : ids )
-        {
-            if ( id != -1 )
-            {
-                nodeRelationshipLink.incrementCount( id );
-            }
-        }
+        Object batch = super.nextBatchOrNull( ticket, batchSize );
+        return batch != null ? new Batch( (Object[]) batch ) : null;
     }
 }

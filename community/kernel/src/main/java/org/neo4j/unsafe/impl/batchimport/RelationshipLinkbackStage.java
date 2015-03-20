@@ -33,10 +33,9 @@ public class RelationshipLinkbackStage extends Stage
     public RelationshipLinkbackStage( Configuration config, RelationshipStore store, NodeRelationshipLink cache )
     {
         super( "Relationship --> Relationship", config, false );
-        add( new ReadRelationshipRecordsBackwardsStep(
-                control(), config.batchSize(), config.movingAverageSize(), store ) );
-        add( new RecordProcessorStep<>( control(), "LINK", config.workAheadSize(),
-                config.movingAverageSize(), new RelationshipLinkbackProcessor( cache ), false ) );
-        add( new UpdateRecordsStep<>( control(), config.workAheadSize(), config.movingAverageSize(), store ) );
+        add( new ReadRelationshipRecordsBackwardsStep( control(), config, store ) );
+        add( new RecordProcessorStep<>( control(), "LINK", config,
+                new RelationshipLinkbackProcessor( cache ), false ) );
+        add( new UpdateRecordsStep<>( control(), config, store ) );
     }
 }

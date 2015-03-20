@@ -22,8 +22,6 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.unsafe.impl.batchimport.Configuration;
-
 /**
  * A stage of processing, mainly consisting of one or more {@link Step steps} that batches of data to
  * process flows through.

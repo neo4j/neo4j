@@ -44,7 +44,7 @@ public abstract class AbstractStep<T> implements Step<T>
     private final StageControl control;
     private volatile String name;
     @SuppressWarnings( "rawtypes" )
-    private volatile Step downstream;
+    protected volatile Step downstream;
     private volatile boolean endOfUpstream;
     protected volatile Throwable panic;
     private volatile boolean completed;
@@ -54,7 +54,7 @@ public abstract class AbstractStep<T> implements Step<T>
         @Override
         public boolean accept( long ticket )
         {
-            return doneBatches.get() == ticket-1;
+            return doneBatches.get() == ticket;
         }
     };
 
@@ -73,19 +73,19 @@ public abstract class AbstractStep<T> implements Step<T>
     protected long startTime, endTime;
     private final List<StatsProvider> additionalStatsProvider;
 
-    public AbstractStep( StageControl control, String name, int movingAverageSize,
+    public AbstractStep( StageControl control, String name, Configuration config,
             StatsProvider... additionalStatsProvider )
     {
         this.control = control;
         this.name = name;
-        this.totalProcessingTime = new MovingAverage( movingAverageSize );
+        this.totalProcessingTime = new MovingAverage( config.movingAverageSize() );
         this.additionalStatsProvider = asList( additionalStatsProvider );
     }
 
     @Override
     public void start( boolean orderedTickets )
     {
-        this.orderedTickets = orderedTickets;   // Do nothing by default
+        this.orderedTickets = orderedTickets;
         resetStats();
     }
 
@@ -218,22 +218,6 @@ public abstract class AbstractStep<T> implements Step<T>
         into.addAll( additionalStatsProvider );
     }
 
-    @SuppressWarnings( "unchecked" )
-    protected <BATCH> void sendDownstream( long ticket, BATCH batch )
-    {
-        if ( batch == null )
-        {
-            if ( downstream != null )
-            {
-                throw new IllegalArgumentException( "Expected a batch to send downstream" );
-            }
-        }
-        else
-        {
-            downstreamIdleTime.addAndGet( downstream.receive( ticket, batch ) );
-        }
-    }
-
     @Override
     public void endOfUpstream()
     {
@@ -260,13 +244,13 @@ public abstract class AbstractStep<T> implements Step<T>
      * Called before {@link #close()}.
      */
     protected void done()
-    {   // Do nothing by default
+    {
         endTime = currentTimeMillis();
     }
 
     @Override
     public void close()
-    {
+    {   // Do nothing by default
     }
 
     protected void changeName( String name )
