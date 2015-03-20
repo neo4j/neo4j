@@ -35,37 +35,31 @@ public class ByteBufferPage implements Page
         this.buffer = buffer;
     }
 
-    @Override
     public byte getByte( int offset )
     {
         return buffer.get( offset );
     }
 
-    @Override
     public long getLong( int offset )
     {
         return buffer.getLong( offset );
     }
 
-    @Override
     public void putLong( long value, int offset )
     {
         buffer.putLong( offset, value );
     }
 
-    @Override
     public int getInt( int offset )
     {
         return buffer.getInt(offset);
     }
 
-    @Override
     public void putInt( int value, int offset )
     {
         buffer.putInt( offset, value );
     }
 
-    @Override
     public void getBytes( byte[] data, int offset )
     {
         for (int i = 0; i < data.length; i++)
@@ -74,7 +68,6 @@ public class ByteBufferPage implements Page
         }
     }
 
-    @Override
     public void putBytes( byte[] data, int offset )
     {
         for (int i = 0; i < data.length; i++)
@@ -83,19 +76,16 @@ public class ByteBufferPage implements Page
         }
     }
 
-    @Override
     public void putByte( byte value, int offset )
     {
         buffer.put( offset, value );
     }
 
-    @Override
     public short getShort( int offset )
     {
         return buffer.getShort( offset );
     }
 
-    @Override
     public void putShort( short value, int offset )
     {
         buffer.putShort( offset, value );
@@ -131,20 +121,5 @@ public class ByteBufferPage implements Page
         duplicate.position( 0 );
         duplicate.limit( length );
         channel.writeAll( duplicate, offset );
-    }
-
-    @Override
-    public int getCachePageId()
-    {
-        return 0;
-    }
-
-    public void setAllBytesToZero()
-    {
-        buffer.clear();
-        for ( int i = 0; i < buffer.limit(); i++ )
-        {
-            buffer.put( (byte) 0 );
-        }
     }
 }

@@ -67,33 +67,187 @@ public interface PageCursor extends AutoCloseable
 {
     long UNBOUND_PAGE_ID = -1;
 
+    /**
+     * Get the signed byte at the current page offset, and then increment the offset by one.
+     *
+     * @throws IndexOutOfBoundsException
+     * if the current offset is not within the page bounds.
+     */
     byte getByte();
+
+    /**
+     * Get the signed byte at the given offset into the page.
+     * Leaves the current page offset unchanged.
+     *
+     * @throws IndexOutOfBoundsException
+     * if the given offset is not within the page bounds.
+     */
     byte getByte( int offset );
+
+    /**
+     * Set the signed byte at the current offset into the page, and then increment the offset by one.
+     *
+     * @throws IndexOutOfBoundsException
+     * if the current offset is not within the page bounds.
+     */
     void putByte( byte value );
+
+    /**
+     * Set the signed byte at the given offset into the page.
+     * Leaves the current page offset unchanged.
+     *
+     * @throws IndexOutOfBoundsException
+     * if the given offset is not within the page bounds.
+     */
     void putByte( int offset, byte value );
 
+    /**
+     * Get the signed long at the current page offset, and then increment the offset by one.
+     *
+     * @throws IndexOutOfBoundsException
+     * if the current offset is not within the page bounds.
+     */
     long getLong();
+
+    /**
+     * Get the signed long at the given offset into the page.
+     * Leaves the current page offset unchanged.
+     *
+     * @throws IndexOutOfBoundsException
+     * if the given offset is not within the page bounds.
+     */
     long getLong( int offset );
+
+    /**
+     * Set the signed long at the current offset into the page, and then increment the offset by one.
+     *
+     * @throws IndexOutOfBoundsException
+     * if the current offset is not within the page bounds.
+     */
     void putLong( long value );
+
+    /**
+     * Set the signed long at the given offset into the page.
+     * Leaves the current page offset unchanged.
+     *
+     * @throws IndexOutOfBoundsException
+     * if the given offset is not within the page bounds.
+     */
     void putLong( int offset, long value );
 
+    /**
+     * Get the signed int at the current page offset, and then increment the offset by one.
+     *
+     * @throws IndexOutOfBoundsException
+     * if the current offset is not within the page bounds.
+     */
     int getInt();
+
+    /**
+     * Get the signed int at the given offset into the page.
+     * Leaves the current page offset unchanged.
+     *
+     * @throws IndexOutOfBoundsException
+     * if the given offset is not within the page bounds.
+     */
     int getInt( int offset );
+
+    /**
+     * Set the signed int at the current offset into the page, and then increment the offset by one.
+     *
+     * @throws IndexOutOfBoundsException
+     * if the current offset is not within the page bounds.
+     */
     void putInt( int value );
+
+    /**
+     * Set the signed int at the given offset into the page.
+     * Leaves the current page offset unchanged.
+     *
+     * @throws IndexOutOfBoundsException
+     * if the given offset is not within the page bounds.
+     */
     void putInt( int offset, int value );
 
+    /**
+     * Get the unsigned int at the current page offset, and then increment the offset by one.
+     *
+     * @throws IndexOutOfBoundsException
+     * if the current offset is not within the page bounds.
+     */
     long getUnsignedInt();
+
+    /**
+     * Get the unsigned int at the given offset into the page.
+     * Leaves the current page offset unchanged.
+     *
+     * @throws IndexOutOfBoundsException
+     * if the given offset is not within the page bounds.
+     */
     long getUnsignedInt( int offset );
 
+    /**
+     * Fill the given array with bytes from the page, beginning at the current offset into the page,
+     * and then increment the current offset by the length of the array.
+     *
+     * @throws IndexOutOfBoundsException
+     * if the current offset plus the length of the array reaches beyond the end of the page.
+     */
     void getBytes( byte[] data );
+
+    /**
+     * Write out all the bytes of the given array into the page, beginning at the current offset into the page,
+     * and then increment the current offset by the length of the array.
+     *
+     * @throws IndexOutOfBoundsException
+     * if the current offset plus the length of the array reaches beyond the end of the page.
+     */
     void putBytes( byte[] data );
 
+    /**
+     * Get the signed short at the current page offset, and then increment the offset by one.
+     *
+     * @throws IndexOutOfBoundsException
+     * if the current offset is not within the page bounds.
+     */
     short getShort();
+
+    /**
+     * Get the signed short at the given offset into the page.
+     * Leaves the current page offset unchanged.
+     *
+     * @throws IndexOutOfBoundsException
+     * if the given offset is not within the page bounds.
+     */
     short getShort( int offset );
+
+    /**
+     * Set the signed short at the current offset into the page, and then increment the offset by one.
+     *
+     * @throws IndexOutOfBoundsException
+     * if the current offset is not within the page bounds.
+     */
     void putShort( short value );
+
+    /**
+     * Set the signed short at the given offset into the page.
+     * Leaves the current page offset unchanged.
+     *
+     * @throws IndexOutOfBoundsException
+     * if the given offset is not within the page bounds.
+     */
     void putShort( int offset, short value );
 
+    /**
+     * Set the current offset into the page, for interacting with the page through the read and write methods that do
+     * not take a specific offset as an argument.
+     */
     void setOffset( int offset );
+
+    /**
+     * Get the current offset into the page, which is the location on the page where the next interaction would take
+     * place through the read and write methods that do not take a specific offset as an argument.
+     */
     int getOffset();
 
     /**
