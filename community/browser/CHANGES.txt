@@ -1,3 +1,10 @@
+2.2.0
+-----
+o No longer rendering tables when objects are empty
+o Added ':help' option to show list of available commands
+o Added more help topics
+o Updated layout of welcome pane
+
 2.2.0-RC1
 ---------
 o New welcome frame.

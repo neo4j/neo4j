@@ -1,3 +1,9 @@
+2.2.0
+-----
+o Fixed issue where file without new line at end would cause it to hang
+o Now handles backslash characters inside quotes
+o Caches input data to disk to improve performance of multi passes
+
 2.2.0-RC1
 ---------
 o CSV reading code now aware of source information for better error reporting

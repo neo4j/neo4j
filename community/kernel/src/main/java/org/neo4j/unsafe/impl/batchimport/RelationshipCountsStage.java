@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
+import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 
 /**
@@ -31,11 +32,12 @@ import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 public class RelationshipCountsStage extends Stage
 {
     public RelationshipCountsStage( Configuration config, NodeLabelsCache cache, RelationshipStore relationshipStore,
-            int highLabelId, int highRelationshipTypeId, CountsAccessor.Updater countsUpdater )
+            int highLabelId, int highRelationshipTypeId, CountsAccessor.Updater countsUpdater,
+            NumberArrayFactory cacheFactory )
     {
         super( "Relationship counts", config, false );
         add( new ReadRelationshipCountsDataStep( control(), config, relationshipStore ) );
         add( new ProcessRelationshipCountsDataStep( control(), cache, config,
-                highLabelId, highRelationshipTypeId, countsUpdater ) );
+                highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory ) );
     }
 }

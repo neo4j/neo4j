@@ -27,6 +27,7 @@ import org.neo4j.unsafe.impl.batchimport.RelationshipCountsStage;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 
+import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
 
 public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
@@ -76,7 +77,7 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
             // Count relationships
             superviseDynamicExecution( new RelationshipCountsStage( Configuration.DEFAULT, cache, relationships,
                                                                     highLabelId, highRelationshipTypeId,
-                                                                    countsUpdater ) );
+                                                                    countsUpdater, AUTO ) );
         }
         finally
         {

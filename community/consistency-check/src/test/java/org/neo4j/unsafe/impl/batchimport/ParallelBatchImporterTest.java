@@ -58,16 +58,20 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.register.Register;
+import org.neo4j.register.Registers;
 import org.neo4j.test.RandomRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.input.Inputs;
 import org.neo4j.unsafe.impl.batchimport.input.SimpleInputIterator;
+import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Writer;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoQueue;
@@ -85,7 +89,7 @@ import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators.fro
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators.startingFromTheBeginning;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers.actual;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers.strings;
-import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors.invisible;
+import static org.neo4j.unsafe.impl.batchimport.staging.ProcessorAssignmentStrategies.eagerRandomSaturation;
 import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRONOUS;
 
 @RunWith(Parameterized.class)
@@ -108,6 +112,13 @@ public class ParallelBatchImporterTest
         {
             return 30;
         }
+
+        @Override
+        public int maxNumberOfProcessors()
+        {
+            // Let's really crank up the number of threads to try and flush out all and any parallelization issues.
+            return random.nextIntBetween( Runtime.getRuntime().availableProcessors(), 100 );
+        }
     };
     private final Function<Configuration,WriterFactory> writerFactory;
     private final InputIdGenerator inputIdGenerator;
@@ -119,6 +130,7 @@ public class ParallelBatchImporterTest
     public static Collection<Object[]> data()
     {
         return Arrays.<Object[]>asList(
+
                 // synchronous I/O, actual node id input
                 new Object[]{SYNCHRONOUS, new LongInputIdGenerator(), actual(), fromInput(), true},
                 // synchronous I/O, string id input
@@ -128,6 +140,7 @@ public class ParallelBatchImporterTest
                 // extra slow parallel I/O, actual node id input
                 new Object[]{new IoQueue( 4, 4, 30, synchronousSlowWriterFactory ),
                         new LongInputIdGenerator(), actual(), fromInput(), false}
+
         );
     }
 
@@ -145,19 +158,22 @@ public class ParallelBatchImporterTest
     public void shouldImportCsvData() throws Exception
     {
         // GIVEN
+        ExecutionMonitor processorAssigner = eagerRandomSaturation( config.maxNumberOfProcessors() );
         final BatchImporter inserter = new ParallelBatchImporter( directory.absolutePath(),
                 new DefaultFileSystemAbstraction(), config, new DevNullLoggingService(),
-                invisible(), writerFactory, EMPTY );
+                processorAssigner, writerFactory, EMPTY );
 
         boolean successful = false;
         int relationshipCount = NODE_COUNT * 3;
+        IdGroupDistribution groups = new IdGroupDistribution( NODE_COUNT, 5, random.random() );
         try
         {
             // WHEN
             inserter.doImport( Inputs.input(
-                    nodes( NODE_COUNT, inputIdGenerator ),
-                    relationships( relationshipCount, inputIdGenerator ),
+                    nodes( NODE_COUNT, inputIdGenerator, groups ),
+                    relationships( relationshipCount, inputIdGenerator, groups ),
                     idMapper, idGenerator, false ) );
+
             // THEN
             GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
             try ( Transaction tx = db.beginTx() )
@@ -181,11 +197,15 @@ public class ParallelBatchImporterTest
                 {
                     out.println( "Seed used in this failing run: " + random.seed() );
                     out.println( inputIdGenerator );
-                    for ( InputRelationship relationship : relationships( relationshipCount, inputIdGenerator ) )
+                    for ( InputRelationship relationship : relationships( relationshipCount, inputIdGenerator, groups ) )
                     {
                         out.println( (relationship.hasSpecificId() ? relationship.specificId() + " " : "") +
                                 relationship.startNode() + "-[:" + relationship.type() + "]->" + relationship.endNode() );
                     }
+
+                    out.println();
+                    out.println( "Processor assignments" );
+                    out.println( processorAssigner.toString() );
                 }
                 System.err.println( "Additional debug information stored in " + failureFile );
             }
@@ -207,7 +227,7 @@ public class ParallelBatchImporterTest
     {
         abstract Object nextNodeId();
 
-        abstract Object randomExisting();
+        abstract Object randomExisting( Register.Long.Out nodeIndex );
 
         String randomType()
         {
@@ -232,9 +252,11 @@ public class ParallelBatchImporterTest
         }
 
         @Override
-        Object randomExisting()
+        Object randomExisting( Register.Long.Out nodeIndex )
         {
-            return (long) random.nextInt( NODE_COUNT );
+            long index = random.nextInt( NODE_COUNT );
+            nodeIndex.write( index );
+            return index;
         }
     }
 
@@ -251,9 +273,11 @@ public class ParallelBatchImporterTest
         }
 
         @Override
-        Object randomExisting()
+        Object randomExisting( Register.Long.Out nodeIndex )
         {
-            return strings.get( random.nextInt( strings.size() ) );
+            int index = random.nextInt( strings.size() );
+            nodeIndex.write( index );
+            return strings.get( index );
         }
     }
 
@@ -334,7 +358,8 @@ public class ParallelBatchImporterTest
         }
     };
 
-    private InputIterable<InputRelationship> relationships( final long count, final InputIdGenerator idGenerator )
+    private InputIterable<InputRelationship> relationships( final long count, final InputIdGenerator idGenerator,
+            final IdGroupDistribution groups )
     {
         return new InputIterable<InputRelationship>()
         {
@@ -353,6 +378,7 @@ public class ParallelBatchImporterTest
                 return new SimpleInputIterator<InputRelationship>( "test relationships" )
                 {
                     private int cursor;
+                    private final Register.LongRegister nodeIndex = Registers.newLongRegister();
 
                     @Override
                     protected InputRelationship fetchNextOrNull()
@@ -369,12 +395,14 @@ public class ParallelBatchImporterTest
 
                             try
                             {
-                                Object startNode = idGenerator.randomExisting();
-                                Object endNode = idGenerator.randomExisting();
+                                Object startNode = idGenerator.randomExisting( nodeIndex );
+                                Group startNodeGroup = groups.groupOf( nodeIndex.read() );
+                                Object endNode = idGenerator.randomExisting( nodeIndex );
+                                Group endNodeGroup = groups.groupOf( nodeIndex.read() );
                                 return new InputRelationship(
                                         sourceDescription, itemNumber, itemNumber,
                                         properties, null,
-                                        startNode, endNode,
+                                        startNodeGroup, startNode, endNodeGroup, endNode,
                                         idGenerator.randomType(), null );
                             }
                             finally
@@ -395,7 +423,8 @@ public class ParallelBatchImporterTest
         };
     }
 
-    private InputIterable<InputNode> nodes( final long count, final InputIdGenerator inputIdGenerator )
+    private InputIterable<InputNode> nodes( final long count, final InputIdGenerator inputIdGenerator,
+            final IdGroupDistribution groups )
     {
         return new InputIterable<InputNode>()
         {
@@ -427,7 +456,8 @@ public class ParallelBatchImporterTest
 
                             try
                             {
-                                return new InputNode( sourceDescription, itemNumber, itemNumber,
+                                Group group = groups.groupOf( cursor );
+                                return new InputNode( sourceDescription, itemNumber, itemNumber, group,
                                         inputIdGenerator.nextNodeId(), properties, null, LABELS, null );
                             }
                             finally

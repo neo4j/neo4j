@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
+import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
@@ -39,16 +40,18 @@ public class ProcessRelationshipCountsDataStep extends ProcessorStep<long[]>
     private final int highLabelId;
     private final int highRelationshipTypeId;
     private final CountsAccessor.Updater countsUpdater;
+    private final NumberArrayFactory cacheFactory;
 
     public ProcessRelationshipCountsDataStep( StageControl control, NodeLabelsCache cache,
             Configuration config, int highLabelId, int highRelationshipTypeId,
-            CountsAccessor.Updater countsUpdater )
+            CountsAccessor.Updater countsUpdater, NumberArrayFactory cacheFactory )
     {
         super( control, "COUNT", config, true );
         this.cache = cache;
         this.highLabelId = highLabelId;
         this.highRelationshipTypeId = highRelationshipTypeId;
         this.countsUpdater = countsUpdater;
+        this.cacheFactory = cacheFactory;
     }
 
     @Override
@@ -68,7 +71,7 @@ public class ProcessRelationshipCountsDataStep extends ProcessorStep<long[]>
         {   // This is OK since in this step implementation we use TaskExecutor which sticks to its threads.
             // deterministically.
             processors.put( Thread.currentThread(), processor = new RelationshipCountsProcessor(
-                    cache, highLabelId, highRelationshipTypeId, countsUpdater ) );
+                    cache, highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory ) );
         }
         return processor;
     }
@@ -77,9 +80,21 @@ public class ProcessRelationshipCountsDataStep extends ProcessorStep<long[]>
     protected void done()
     {
         super.done();
+        RelationshipCountsProcessor all = null;
         for ( RelationshipCountsProcessor processor : processors.values() )
         {
-            processor.done();
+            if ( all == null )
+            {
+                all = processor;
+            }
+            else
+            {
+                all.addCountsFrom( processor );
+            }
+        }
+        if ( all != null )
+        {
+            all.done();
         }
     }
 }

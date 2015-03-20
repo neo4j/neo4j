@@ -1,5 +1,57 @@
 For Release Notes, see http://neo4j.com/release-notes/neo4j-${project.version}/
 
+2.2.0
+-----
+Browser:
+o No longer rendering tables when objects are empty
+o Added ':help' option to show list of available commands
+o Added more help topics
+o Updated layout of welcome pane
+
+Consistency Checker:
+o Made more configurable - can now enable/disable all parts of the process
+
+CSV:
+o Fixed issue where file without new line at end would cause it to hang
+o Now handles backslash characters inside quotes
+o Caches input data to disk to improve performance of multi passes
+
+Cypher:
+o Fixed problem where undirected paths weren't being properly projected
+o Introduced DP based algorithm as a planner option
+
+IO:
+o Added automatic, continuous background flushing to the PageCache.
+o Made the PageCache manage its own background threads
+o Made PageSwappers gracefully handle interrupts in force()
+
+Kernel:
+o Fixed issue where index wasn't properly recovered if one with the same label/property
+  had earlier been created and dropped
+o Fixed race condition where a unique constraint is being created while
+  concurrent transactions would violate the constraint
+o Fixed concurrency issue in NodeLabelsCache
+o Fixed a race between committing transaction and db shutting down
+o Removed unnecessary call to IndexingService monitor on commit if no index changes
+o Fixed inconsistent-read bugs in StandardStore
+o Introduced user-friendly error message if Lucene index limits are going to be
+  reached during a commit
+
+Server:
+o Fixed bug with creating default user when auth is disabled
+o Fixed NPE in Neo4jJsonCodec when serializing maps containing null keys
+o Disallow directory listings
+o Auth no longer accepts empty passwords
+o Auth returns correct 'content-type' header with auth errors
+
+Desktop:
+o Added button to launch command prompt with shell scripts for
+  Neo4jShell and Neo4jImport available.
+
+Backup:
+o Introduced 'gather-forensics' functionality which allows backup to fetch
+  all transaction logs
+
 2.2.0-RC1
 ---------
 Kernel:

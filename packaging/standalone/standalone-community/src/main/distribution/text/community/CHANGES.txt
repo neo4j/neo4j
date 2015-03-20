@@ -1,5 +1,53 @@
 For Release Notes, see http://neo4j.com/release-notes/neo4j-${project.version}/
 
+2.2.0
+-----
+Browser:
+o No longer rendering tables when objects are empty
+o Added ':help' option to show list of available commands
+o Added more help topics
+o Updated layout of welcome pane
+
+Consistency Checker:
+o Made more configurable - can now enable/disable all parts of the process
+
+CSV:
+o Fixed issue where file without new line at end would cause it to hang
+o Now handles backslash characters inside quotes
+o Caches input data to disk to improve performance of multi passes
+
+Cypher:
+o Fixed problem where undirected paths weren't being properly projected
+o Introduced DP based algorithm as a planner option
+
+IO:
+o Added automatic, continuous background flushing to the PageCache.
+o Made the PageCache manage its own background threads
+o Made PageSwappers gracefully handle interrupts in force()
+
+Kernel:
+o Fixed issue where index wasn't properly recovered if one with the same label/property
+  had earlier been created and dropped
+o Fixed race condition where a unique constraint is being created while
+  concurrent transactions would violate the constraint
+o Fixed concurrency issue in NodeLabelsCache
+o Fixed a race between committing transaction and db shutting down
+o Removed unnecessary call to IndexingService monitor on commit if no index changes
+o Fixed inconsistent-read bugs in StandardStore
+o Introduced user-friendly error message if Lucene index limits are going to be
+  reached during a commit
+
+Server:
+o Fixed bug with creating default user when auth is disabled
+o Fixed NPE in Neo4jJsonCodec when serializing maps containing null keys
+o Disallow directory listings
+o Auth no longer accepts empty passwords
+o Auth returns correct 'content-type' header with auth errors
+
+Desktop:
+o Added button to launch command prompt with shell scripts for
+  Neo4jShell and Neo4jImport available.
+
 2.2.0-RC1
 ---------
 Kernel:
@@ -422,7 +470,8 @@ o Adds support for labels in transaction event handlers
 2.0.3
 -----
 Cypher:
-o MERGE must fail when trying to create 2 nodes with same id but different labels (e.g., MERGE (a: Foo)-[r:KNOWS]->(a: Bar))
+o MERGE must fail when trying to create 2 nodes with same id but different labels
+  (e.g., MERGE (a: Foo)-[r:KNOWS]->(a: Bar))
 o Allow Cypher split() with empty separator
 o Ensure Cypher range() works with negative step values
 
@@ -544,9 +593,9 @@ o BREAKING CHANGE: Removed deprecated method org.neo4j.server.AbstractNeoServer#
   use org.neo4j.server.WrappingNeoServer.
 o BREAKING CHANGE: org.neo4j.server.database.Database is now an interface. Direct uses of the class can be replaced by
   one of its implementations.
-o Transactional endpoint status codes are now textual rather than numeric. Since the transactional endpoint was introduced
-  in the 2.0.0 series, it is not considered a breaking change. It will, however, require modifying client code that depends
-  on the numeric status codes.
+o Transactional endpoint status codes are now textual rather than numeric. Since the transactional endpoint was
+  introduced in the 2.0.0 series, it is not considered a breaking change. It will, however, require modifying client
+  code that depends on the numeric status codes.
 
 2.0.0-M06 (2013-10-15)
 ----------------------
@@ -585,7 +634,8 @@ o BREAKING CHANGE: Require Java 7
 o BREAKING CHANGE: Transactions are now required for all operations throughout Java Core API,
   read operations as well as write operations
 o Define proper equality for indexing of array properties
-o BREAKING CHANGE: Equality for indexing of number properties compares numbers independent of underlying primitive Java type
+o BREAKING CHANGE: Equality for indexing of number properties compares numbers independent of underlying primitive Java
+  type
 
 Cypher:
 o Fixes #844 - Label predicate do not work on optional nodes that are null
@@ -600,7 +650,8 @@ Cypher:
 o Fixes a concurrency problem in query parser
 
 Server:
-o Added support for extracting and returning the graph structure from the result of a Cypher query executed via the transactional endpoint
+o Added support for extracting and returning the graph structure from the result of a Cypher query executed via the
+  transactional endpoint
 
 2.0.0-M03 (2013-05-29)
 ----------------------
@@ -687,7 +738,8 @@ Cypher:
 o Fixes problems with extra columns showing up in some conditions
 
 Server:
-o Reintroduces, deprecated, the Configurator.getThirdpartyJaxRsClasses. Fixes, among other things, the authentication-extension
+o Reintroduces, deprecated, the Configurator.getThirdpartyJaxRsClasses. Fixes, among other things,
+  the authentication-extension
 o Server now properly returns the version when asked through REST
 
 Index:
@@ -922,7 +974,8 @@ Kernel:
  o Traversal framework backwards compatibility
    + Cleaned up any breaking changes
    + Removed Expander#addFilter
- o Kernel JMX bean instance identifier is now reused and can optionally be set explicitly via forced_kernel_id config setting
+ o Kernel JMX bean instance identifier is now reused and can optionally be set explicitly via forced_kernel_id config
+   setting
 
 Server:
  o Consoles in webadmin can now be disabled.
@@ -981,18 +1034,18 @@ Cypher:
 --------------------
 Kernel:
  o Additions to the traversal framework:
-   + Bidirectional traversals (with BidirectionalTraversalDescription). AllPaths/AllSimplePaths
+    Bidirectional traversals (with BidirectionalTraversalDescription). AllPaths/AllSimplePaths
      uses this feature and are now faster due to less relationships being traversed.
-   + Multiple start nodes (as well as multiple end nodes for bidirectional traversals).
-   + PathExpander (RelationshipExpander for Paths) which has the full Path passed in instead of
+    Multiple start nodes (as well as multiple end nodes for bidirectional traversals).
+    PathExpander (RelationshipExpander for Paths) which has the full Path passed in instead of
      just the end node of the path. It can also see and modify a user defined traversal branch state.
-   + Metadata about the traversal, for the time being: number of relationships traversal and
+    Metadata about the traversal, for the time being: number of relationships traversal and
      number paths returned.
-   + Added Path#reverseNodes() and Path#reverseRelationships which gives all nodes/relationships in
+    Added Path#reverseNodes() and Path#reverseRelationships which gives all nodes/relationships in
     a path in reverse order (starting from the end node going back to the start node). More relevant
   	in many scenarios as well as allowing for a more efficient implementation.
-   + Sorting of traversal results, specify with TraversalDescription#sort(Comparable).
-   + Some measure to reduce memory consumption and garbage generation during traversals.
+    Sorting of traversal results, specify with TraversalDescription#sort(Comparable).
+    Some measure to reduce memory consumption and garbage generation during traversals.
 
 Graph-algo:
  o AllPaths/AllSimplePaths uses the new bidirectional traversal feature in the traversal framework.
@@ -1077,7 +1130,8 @@ UDC:
   o Modified UDC to run one thread per DB, and to shut down background thread on unload. Closes #279
   o UDC now sends the machines MAC adress to Neo Technology, to separate between instances behind firewalls
   o UDC now sends database registration ID to Neo Technology, if one is available
-  o UDC now sends "tags" to Neo Technology, these contain information about the type of deployment, such as language, web-container, app-container, spring, ejb
+  o UDC now sends "tags" to Neo Technology, these contain information about the type of deployment, such as language,
+    web-container, app-container, spring, ejb
 
 1.7.M03 (2012-04-11)
 --------------------
@@ -1096,7 +1150,8 @@ o Fix for an issue where upgrading indices with an unclean shutdown.
 1.7.M01 (2012-03-12)
 --------------------
 o Fixed bug in PropertyStore that during recovery would throw exception if the last record was incomplete.
-o Fixes to transaction log start position caching which mitigates a performance issue and fixes a caching issue during rotation.
+o Fixes to transaction log start position caching which mitigates a performance issue and fixes a caching issue during
+  rotation.
 o Fixed a couple of issue around copying incomplete transaction to new log during a log rotation.
 o Fixed a property cache poisoning bug and some stale references leaking.
 o Fixed a data race issue between threads removing the same property while the node is evicted from cache.
@@ -1144,18 +1199,21 @@ Cypher:
 --------------------
 o Added a different aggregation logic. Makes aggregating on the same columns as sorting much faster
 o Made it possible to query on array properties
-o Fixed bugs #157,#140,#168,#170 and a bug which prevented a node sent in as a parameter unable to be returned in a result
+o Fixed bugs #157,#140,#168,#170 and a bug which prevented a node sent in as a parameter unable to be returned in a
+  result
 o Added means of introspecting locks taken by the LockManager.
 o Added a diagnostics API.
 o Added Index#putIfAbsent which ensures uniquely put key/value pair for an entity.
 o Added UniqueFactory which gets or creates entities uniquely using Index#putIfAbsent
-o Fixed an issue with upgrading an 1.5.M02 store where a "store version" record wouldn't be added and which caused problems after non-clean shutdown.
+o Fixed an issue with upgrading an 1.5.M02 store where a "store version" record wouldn't be added and which caused
+  problems after non-clean shutdown.
 o Fixed an issue where sometimes dual start entries for a transaction would be added in the logical log.
 o Upgraded to Lucene version 3.5.
 o Added request timeout, controlled with org.neo4j.server.webserver.limit.executiontime (disabled by default).
   Request header (max-execution-time) can shorten it if specified.
 o Fixed issues #113, #166, #172
-o Allow overriding of server base url for when test browser needs to access server via a different hostname from the bind address.
+o Allow overriding of server base url for when test browser needs to access server via a different hostname from the
+  bind address.
 o Exposes get-or-create-uniquely via REST in ex. POST /index/node/<name>?unique {...}
 o Added shell command mknode for creating new nodes w/o creating a relationship.
 
@@ -1168,23 +1226,27 @@ o [server] Fixed bug in how auto indexes are represented
 o [server] Max request execution time can now be limited
 o [server] Hypermedia URLs returned by the server now set their host based on the HTTP host header
 o [kernel] Lower memory usage of ImpermanentGraphDatabase.
-o [kernel] Abstracted stores that stores id/name pairs into AbstractNameStore/AbstractNameRecord and removed lots of duplicated code.
+o [kernel] Abstracted stores that stores id/name pairs into AbstractNameStore/AbstractNameRecord and removed lots of
+  duplicated code.
 o [kernel] Fixed a race condition in the property cache which cuold poison the cache.
-o [kernel] Fixed an issue where a JVM crash in the wrong place would make the next startup rename the current logical log without
-  incrementing the logVersion, making the next log rename fail.
-o [kernel] Start records in the logical log aren't written until the transaction starts preparing/committing. This fixes an issue
-  with the logical log not being rotated sometimes.
-o [kernel] Added AbstractGraphDatabase#tx() which returns a TransactionBuilder possible of configuring the transaction to be "unforced"
-  meaning that logical logs won't be forced when committing. Means better performance for small non-critical transactions.
+o [kernel] Fixed an issue where a JVM crash in the wrong place would make the next startup rename the current logical
+  log without incrementing the logVersion, making the next log rename fail.
+o [kernel] Start records in the logical log aren't written until the transaction starts preparing/committing. This
+  fixes an issue with the logical log not being rotated sometimes.
+o [kernel] Added AbstractGraphDatabase#tx() which returns a TransactionBuilder possible of configuring the transaction
+  to be "unforced" meaning that logical logs won't be forced when committing. Means better performance for small
+  non-critical transactions.
 o [kernel] Reduced number of proxy object instantiation and node record loading in general.
 o [kernel] Added a wrapping graphdb abstraction, which makes instances survive even if the underlying db restarts.
 o [kernel] Detached LogExtractor from XaLogicaLog so that it can be used without having a db running.
-o [kernel] Added an API for progress indication. With a default implementation that prints dots (every 0.5%) and percentages (every 10%) to a PrintStream.
+o [kernel] Added an API for progress indication. With a default implementation that prints dots (every 0.5%) and
+  percentages (every 10%) to a PrintStream.
 o [cypher] Added allShortestPaths
 o [cypher] Added COALESCE
 o [cypher] Added column aliasing with AS
 o [cypher] Variable length relationships can now introduce a rel-iterable
-o [cypher] BREAKING CHANGE: Changed the syntax for iterable predicated ALL/NONE/ANY/SINGLE to use WHERE instead of a colon
+o [cypher] BREAKING CHANGE: Changed the syntax for iterable predicated ALL/NONE/ANY/SINGLE to use WHERE instead of a
+  colon
 o [cypher] BREAKING CHANGE: ExecutionResult is now a read-once, forward only iterator.
 o [cypher] Fixed problems with optional graph elements
 
@@ -1216,12 +1278,13 @@ o Added the extract function in Cypher
 ----------------
 o More useful logging to messages.log to help investigating problems.
 o Fixed some issues with detection of version and the need to migrate a store.
-o In webadmin: visualization adds nodes/relationships to the view for each search and search is performed with CTRL+ENTER.
+o In webadmin: visualization adds nodes/relationships to the view for each search and search is performed with CTRLENTER.
 o Added DISTINCT to all aggregate functions in Cypher.
 
 1.5.M02 (2011-10-10)
 --------------------
-o [STORE FORMAT CHANGE] New layout of the property store(s) which results in roughly a 30% reduction in size on disk as well as fewer I/O read operations for reading properties.
+o [STORE FORMAT CHANGE] New layout of the property store(s) which results in roughly a 30% reduction in size on disk as
+  well as fewer I/O read operations for reading properties.
 o Significant performance improvements for extracting transactions from logical logs.
 o Lots of new Cypher features, f.ex: path functions, parameters, shortest path function.
 o Icons in the visualization in webadmin and added a standalone webadmin mode.
@@ -1284,9 +1347,12 @@ o Support for advanced index queries through REST.
 --------------------
 
 o Numerous updates to the Webadmin tool to make it more usable and to fix some visual bugs.
-o Removal of the properties service, replaced with a discovery service to allow third-party apps to bind to the server at runtime and discover what services are offered and where.
-o Changed the configuration file format to make it simpler and less error prone (but it is *not*) backwards compatible with earlier versions.
-o Separated out the server plugin API for easier development, making only the only development dependency for server a very thin layer and small jar.
+o Removal of the properties service, replaced with a discovery service to allow third-party apps to bind to the server
+  at runtime and discover what services are offered and where.
+o Changed the configuration file format to make it simpler and less error prone (but it is *not*) backwards compatible
+  with earlier versions.
+o Separated out the server plugin API for easier development, making only the only development dependency for server a
+  very thin layer and small jar.
 
 1.3.M02 (2011-02-10)
 --------------------
@@ -1299,7 +1365,8 @@ o server started in High Availability mode.
 1.3.M01 (2011-01-27)
 --------------------
 
-o Full online backup (no need to copy store files before hand) in HA and general support for requests with unlimited size.
+o Full online backup (no need to copy store files before hand) in HA and general support for requests with unlimited
+  size.
 o A couple of bugs fixed in lucene index.
 o More memory efficient handling of transaction streams (extracting and applying).
 o New 'eval' shell command which lets you execute JavaScript on the database.
@@ -1322,7 +1389,8 @@ o Neo4j Index API integrated in the GraphDatabaseService API
 o Neo4j Usage Data Collection
 
 - Other changes:
-o Additional services (extensions) for the Neo4j kernel are loaded automatically or can be injected in a running instance.
+o Additional services (extensions) for the Neo4j kernel are loaded automatically or can be injected in a running
+  instance.
 o Improved memory footprint and read performance.
 o A weak reference cache is now available for high load low latency workloads.
 o The old index API has been deprecated (but still included and have been updated to use Lucene version 3.0.1).
@@ -1358,9 +1426,11 @@ o Fixed bug which could close an IndexSearcher before it was supposed to when
   threads all called IndexHits#getSingle() on the result.
 
 - HA
-o When a new master is chosen, slaves throws away the id allocations they got from the previous master. This fixes a problem where occupied ids where reused.
-o Enabled (and fixed problem with) thread on master which checks for dead slave connections and rolls back those transactions, so that their locks are released.
-  This fixes a problem where an HA cluster would seem to freeze up and become unresponsive to write requests.
+o When a new master is chosen, slaves throws away the id allocations they got from the previous master. This fixes a
+  problem where occupied ids where reused.
+o Enabled (and fixed problem with) thread on master which checks for dead slave connections and rolls back those
+  transactions, so that their locks are released. This fixes a problem where an HA cluster would seem to freeze up
+  and become unresponsive to write requests.
 o Adding Log4j and Netty license information.
 o Also closes the executor containing the connections.
 o Changed dependency scopes.
@@ -1369,19 +1439,23 @@ o Shuts down databases after verifying them.
 - Server
 o Bridge OSGi LogService to server Logger. Bundle log messages and stdout pipe through correctly.
 o Refactoring of functional tests to remove static dependencies. Introduced a server builder to deal with it instead.
-o Can now add performance-tweaking properties to the database hosted by the server. It uses the same neo4j.properties file as the embedded version, but you need to add a property:
+o Can now add performance-tweaking properties to the database hosted by the server. It uses the same neo4j.properties
+  file as the embedded version, but you need to add a property:
   org.neo4j.server.db.tuning.properties into the neo4j-server.properties file.
 o Webadmin: Removed component titles, added save button to data browser, minor change to data browser layout.
 o Webadmin: Minor UI updates, added error message that shows up when server connection is lost.
 o Webadmin: Moved charts into tabbed box, minor UI updates.
-o Fixed an issue with initialization order of things in the server to make sure that RRD is initialized when it is needed.
+o Fixed an issue with initialization order of things in the server to make sure that RRD is initialized when it is
+  needed.
 o Webadmin: Added proper tab-like styling to chart tabs and scale selectors.
 o Fixed bug in RRD memory usage sampler, making rounding happen at end of calculations, instead of in the midst of.
 o Webadmin: Made 30minutes the default view in charts.
-o Webadmin: Added kernel version to dashboard, fixed bug in chart drawing (was drawing when the charts are not visible under certain conditions).
+o Webadmin: Added kernel version to dashboard, fixed bug in chart drawing (was drawing when the charts are not visible
+  under certain conditions).
 o Webadmin: Disallow self relationships in UI, and show error message explaining this.
 o Can now load 3rd party JAX-RS jars from the classpath.
-o Updated static assembly to properly include both webadmin statics and documentation. Documentation now tested and ships properly down to neo4j-standalone.
+o Updated static assembly to properly include both webadmin statics and documentation. Documentation now tested and
+  ships properly down to neo4j-standalone.
 o Webadmin: Made the current node show up by default when adding new relations in webadmin.
 o Webadmin: Dashboard shows charts with tabs, and allows switching between charts.
 o Added a basic readme with instructions for building, running, and functional testing.
