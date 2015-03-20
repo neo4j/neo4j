@@ -240,7 +240,7 @@ public class ParallelBatchImporter implements BatchImporter
         public NodeStage( InputIterable<InputNode> nodes, IdMapper idMapper, IdGenerator idGenerator,
                 BatchingNeoStore neoStore, InputCache inputCache, StatsProvider memoryUsage ) throws IOException
         {
-            super( "Nodes", config, idGenerator.dependsOnInput() );
+            super( "Nodes", config, true );
             add( new InputIteratorBatcherStep<>( control(), config.batchSize(), config.movingAverageSize(),
                     nodes.iterator(), InputNode.class ) );
             if ( !nodes.supportsMultiplePasses() )
