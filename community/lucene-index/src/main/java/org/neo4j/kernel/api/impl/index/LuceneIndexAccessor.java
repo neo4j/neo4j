@@ -57,7 +57,6 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     protected final ReferenceManager<IndexSearcher> searcherManager;
     protected final ReservingLuceneIndexWriter writer;
 
-    private final IndexWriterStatus writerStatus;
     private final Directory dir;
     private final File dirFile;
     private final int bufferSizeLimit;
@@ -76,15 +75,13 @@ abstract class LuceneIndexAccessor implements IndexAccessor
 
     LuceneIndexAccessor( LuceneDocumentStructure documentStructure,
                          IndexWriterFactory<ReservingLuceneIndexWriter> indexWriterFactory,
-                         IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile,
-                         int bufferSizeLimit ) throws IOException
+                         DirectoryFactory dirFactory, File dirFile, int bufferSizeLimit ) throws IOException
     {
         this.documentStructure = documentStructure;
         this.dirFile = dirFile;
         this.bufferSizeLimit = bufferSizeLimit;
         this.dir = dirFactory.open( dirFile );
         this.writer = indexWriterFactory.create( dir );
-        this.writerStatus = writerStatus;
         this.searcherManager = writer.createSearcherManager();
     }
 
@@ -123,7 +120,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     @Override
     public void force() throws IOException
     {
-        writerStatus.commitAsOnline( writer );
+        writer.commitAsOnline();
     }
 
     @Override
@@ -135,7 +132,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
 
     private void closeIndexResources() throws IOException
     {
-        writerStatus.close( writer );
+        writer.close();
         searcherManager.close();
     }
 

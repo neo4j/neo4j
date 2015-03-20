@@ -54,10 +54,10 @@ class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
 
     UniqueLuceneIndexPopulator( int batchSize, LuceneDocumentStructure documentStructure,
                                 IndexWriterFactory<LuceneIndexWriter> indexWriterFactory,
-                                IndexWriterStatus writerStatus, DirectoryFactory dirFactory, File dirFile,
+                                DirectoryFactory dirFactory, File dirFile,
                                 FailureStorage failureStorage, long indexId )
     {
-        super( documentStructure, indexWriterFactory, writerStatus, dirFactory, dirFile, failureStorage, indexId );
+        super( documentStructure, indexWriterFactory, dirFactory, dirFile, failureStorage, indexId );
         this.batchSize = batchSize;
     }
 
