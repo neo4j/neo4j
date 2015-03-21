@@ -529,6 +529,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
             }
             throw Exceptions.launderedException( e );
         }
+        kernelHealth.healed();
     }
 
     // Startup sequence
