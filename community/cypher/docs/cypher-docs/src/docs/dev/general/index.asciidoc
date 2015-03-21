@@ -34,3 +34,11 @@ include::parameters.asciidoc[]
 :leveloffset: 2
 
 include::compatibility.asciidoc[]
+
+:leveloffset: 3
+
+include::start-compatibility.asciidoc[]
+
+:leveloffset: 3
+
+include::versions.asciidoc[]
