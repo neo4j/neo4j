@@ -46,7 +46,7 @@ public class ProcessRelationshipCountsDataStep extends ProcessorStep<long[]>
             Configuration config, int highLabelId, int highRelationshipTypeId,
             CountsAccessor.Updater countsUpdater, NumberArrayFactory cacheFactory )
     {
-        super( control, "COUNT", config, true );
+        super( control, "COUNT", config, 0 );
         this.cache = cache;
         this.highLabelId = highLabelId;
         this.highRelationshipTypeId = highRelationshipTypeId;

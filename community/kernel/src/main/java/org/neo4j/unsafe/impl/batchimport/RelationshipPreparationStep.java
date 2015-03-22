@@ -37,7 +37,7 @@ public class RelationshipPreparationStep extends ProcessorStep<Batch<InputRelati
 
     public RelationshipPreparationStep( StageControl control, Configuration config, IdMapper idMapper )
     {
-        super( control, "PREPARE", config, true );
+        super( control, "PREPARE", config, 0 );
         this.idMapper = idMapper;
     }
 

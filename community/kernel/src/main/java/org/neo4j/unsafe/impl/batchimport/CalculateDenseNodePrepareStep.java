@@ -38,6 +38,8 @@ import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
  */
 public class CalculateDenseNodePrepareStep extends ProcessorStep<Batch<InputRelationship,RelationshipRecord>>
 {
+    public static final int RADIXES = 10;
+
     private final int batchSize;
     private final long[][] inProgressBatches;
     private final int[] cursors;
@@ -46,10 +48,10 @@ public class CalculateDenseNodePrepareStep extends ProcessorStep<Batch<InputRela
     public CalculateDenseNodePrepareStep( StageControl control, Configuration config,
             Collector<InputRelationship> badRelationships )
     {
-        super( control, "DIVIDE", config, false );
+        super( control, "DIVIDE", config, 1 );
         this.badRelationships = badRelationships;
         this.batchSize = config.batchSize() * 2; // x2 since we receive (and send) 2 ids per relationship
-        this.inProgressBatches = new long[10][batchSize];
+        this.inProgressBatches = new long[RADIXES][batchSize];
         this.cursors = new int[inProgressBatches.length];
     }
 
@@ -108,8 +110,8 @@ public class CalculateDenseNodePrepareStep extends ProcessorStep<Batch<InputRela
         }
     }
 
-    private int radixOf( long nodeId )
+    public static int radixOf( long nodeId )
     {
-        return (int) (nodeId%inProgressBatches.length);
+        return (int) (nodeId%RADIXES);
     }
 }

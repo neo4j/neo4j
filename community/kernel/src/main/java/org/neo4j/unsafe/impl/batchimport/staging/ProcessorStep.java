@@ -43,7 +43,8 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     private TaskExecutor<Sender> executor;
     private final int workAheadSize;
     private final int initialProcessorCount = 1;
-    private final boolean allowMultipleProcessors;
+    // zero for unlimited
+    private final int maxProcessors;
     private final PrimitiveLongPredicate catchUp = new PrimitiveLongPredicate()
     {
         @Override
@@ -57,19 +58,19 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     // Useful for tracking how much time we spend waiting for batches from upstream.
     private final AtomicLong lastBatchEndTime = new AtomicLong();
 
-    protected ProcessorStep( StageControl control, String name, Configuration config, boolean allowMultipleProcessors,
+    protected ProcessorStep( StageControl control, String name, Configuration config, int maxProcessors,
             StatsProvider... additionalStatsProviders )
     {
         super( control, name, config, additionalStatsProviders );
         this.workAheadSize = config.workAheadSize();
-        this.allowMultipleProcessors = allowMultipleProcessors;
+        this.maxProcessors = maxProcessors;
     }
 
     @Override
     public void start( boolean orderedTickets )
     {
         super.start( orderedTickets );
-        this.executor = new DynamicTaskExecutor<>( initialProcessorCount, workAheadSize,
+        this.executor = new DynamicTaskExecutor<>( initialProcessorCount, maxProcessors, workAheadSize,
                 DEFAULT_PARK_STRATEGY, name(), new Factory<Sender>()
                 {
                     @Override
@@ -173,7 +174,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     @Override
     public boolean incrementNumberOfProcessors()
     {
-        return allowMultipleProcessors ? executor.incrementNumberOfProcessors() : false;
+        return executor.incrementNumberOfProcessors();
     }
 
     @Override

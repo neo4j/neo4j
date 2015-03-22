@@ -19,10 +19,14 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import org.neo4j.graphdb.Resource;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
+
+import static org.neo4j.unsafe.impl.batchimport.CalculateDenseNodePrepareStep.RADIXES;
+import static org.neo4j.unsafe.impl.batchimport.CalculateDenseNodePrepareStep.radixOf;
 
 /**
  * Runs through relationship input and counts relationships per node so that dense nodes can be designated.
@@ -30,21 +34,27 @@ import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 public class CalculateDenseNodesStep extends ProcessorStep<long[]>
 {
     private final NodeRelationshipCache cache;
+    private final StripedLock lock = new StripedLock( RADIXES );
 
     public CalculateDenseNodesStep( StageControl control, Configuration config, NodeRelationshipCache cache )
     {
-        super( control, "CALCULATOR", config, true );
+        // Max 10 processors since we receive batches split by radix %10 so it doesn't make sense to have more
+        super( control, "CALCULATOR", config, RADIXES );
         this.cache = cache;
     }
 
     @Override
     protected void process( long[] ids, BatchSender sender )
     {
-        for ( long id : ids )
+        // We lock because we only want at most one processor processing ids of a certain radix.
+        try ( Resource automaticallyUnlocked = lock.lock( radixOf( ids[0] ) ) )
         {
-            if ( id != -1 )
+            for ( long id : ids )
             {
-                cache.incrementCount( id );
+                if ( id != -1 )
+                {
+                    cache.incrementCount( id );
+                }
             }
         }
     }

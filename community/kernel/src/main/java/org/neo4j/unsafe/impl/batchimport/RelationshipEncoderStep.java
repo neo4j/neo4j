@@ -60,7 +60,7 @@ public class RelationshipEncoderStep extends ProcessorStep<Batch<InputRelationsh
             NodeRelationshipCache cache,
             boolean specificIds )
     {
-        super( control, "RELATIONSHIP", config, false );
+        super( control, "RELATIONSHIP", config, 1 );
         this.relationshipTypeRepository = relationshipTypeRepository;
         this.relationshipStore = relationshipStore;
         this.cache = cache;
