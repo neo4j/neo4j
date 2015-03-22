@@ -455,20 +455,19 @@ final class MuninnPage extends StampedLock implements Page
         long filePageId = this.filePageId;
         evictionEvent.setCachePageId( getCachePageId() );
         evictionEvent.setFilePageId( filePageId );
+        PageSwapper swapper = this.swapper;
+        evictionEvent.setSwapper( swapper );
 
         flush( evictionEvent.flushEventOpportunity() );
         UnsafeUtil.setMemory( pointer, getCachePageSize(), (byte) 0 );
         this.filePageId = PageCursor.UNBOUND_PAGE_ID;
 
-        PageSwapper swapper = this.swapper;
         this.swapper = null;
-
         if ( swapper != null )
         {
             // The swapper can be null if the last page fault
             // that page threw an exception.
             swapper.evicted( filePageId, this );
-            evictionEvent.setSwapper( swapper );
         }
     }
 
