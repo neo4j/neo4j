@@ -172,6 +172,7 @@ public class ParallelBatchImporter implements BatchImporter
                     relationships.supportsMultiplePasses() ? relationships : inputCache.relationships(),
                     idMapper, neoStore, nodeRelationshipLink, input.specificRelationshipIds() );
             executeStages( relationshipStage );
+            nodeRelationshipLink.fixate();
 
             // Prepare for updating
             neoStore.flush();

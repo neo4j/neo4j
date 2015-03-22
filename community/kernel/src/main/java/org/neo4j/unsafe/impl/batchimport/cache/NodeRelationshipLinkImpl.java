@@ -29,7 +29,7 @@ public class NodeRelationshipLinkImpl implements NodeRelationshipLink
 {
     private static final long EMPTY = -1;
 
-    private final LongArray array;
+    private LongArray array;
     private final int denseNodeThreshold;
     private final RelGroupCache relGroupCache;
 
@@ -148,6 +148,13 @@ public class NodeRelationshipLinkImpl implements NodeRelationshipLink
         return IdFieldManipulator.getCount( field );
     }
 
+    @Override
+    public void fixate()
+    {
+        array = array.fixate();
+        relGroupCache.fixate();
+    }
+
     private static class RelGroupCache implements AutoCloseable, MemoryStatsVisitor.Home
     {
         private static final int ENTRY_SIZE = 4;
@@ -157,7 +164,7 @@ public class NodeRelationshipLinkImpl implements NodeRelationshipLink
         private static final int INDEX_IN = 2;
         private static final int INDEX_LOOP = 3;
 
-        private final LongArray array;
+        private LongArray array;
         private int nextFreeId = 0;
 
         RelGroupCache( NumberArrayFactory arrayFactory, long chunkSize )
@@ -339,6 +346,11 @@ public class NodeRelationshipLinkImpl implements NodeRelationshipLink
         public void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor )
         {
             array.acceptMemoryStatsVisitor( visitor );
+        }
+
+        void fixate()
+        {
+            array = array.fixate();
         }
     }
 
