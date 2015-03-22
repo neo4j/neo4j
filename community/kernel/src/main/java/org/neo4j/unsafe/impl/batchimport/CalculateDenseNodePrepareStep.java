@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import java.util.Arrays;
+
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
@@ -99,7 +101,9 @@ public class CalculateDenseNodePrepareStep extends ProcessorStep<Batch<InputRela
         {
             if ( cursors[i] > 0 )
             {
-                sender.send( inProgressBatches[i] );
+                sender.send( cursors[i] == batchSize
+                        ? inProgressBatches[i]
+                        : Arrays.copyOf( inProgressBatches[i], cursors[i] ) );
             }
         }
     }
