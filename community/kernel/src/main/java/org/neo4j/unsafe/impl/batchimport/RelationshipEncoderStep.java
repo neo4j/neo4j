@@ -22,7 +22,7 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
+import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
@@ -36,14 +36,14 @@ import static org.neo4j.graphdb.Direction.OUTGOING;
 /**
  * Creates batches of relationship records, with the "next" relationship
  * pointers set to the next relationships (previously created) in their respective chains. The previous
- * relationship ids are kept in {@link NodeRelationshipLink node cache}, which is a point of scalability issues,
+ * relationship ids are kept in {@link NodeRelationshipCache node cache}, which is a point of scalability issues,
  * although mitigated using multi-pass techniques.
  */
 public class RelationshipEncoderStep extends ProcessorStep<Batch<InputRelationship,RelationshipRecord>>
 {
     private final BatchingTokenRepository<?> relationshipTypeRepository;
     private final RelationshipStore relationshipStore;
-    private final NodeRelationshipLink nodeRelationshipLink;
+    private final NodeRelationshipCache cache;
 
     // There are two "modes" in generating relationship ids
     // - ids are decided by InputRelationship#id() (f.ex. store migration, where ids should be kept intact).
@@ -57,13 +57,13 @@ public class RelationshipEncoderStep extends ProcessorStep<Batch<InputRelationsh
             Configuration config,
             BatchingTokenRepository<?> relationshipTypeRepository,
             RelationshipStore relationshipStore,
-            NodeRelationshipLink nodeRelationshipLink,
+            NodeRelationshipCache cache,
             boolean specificIds )
     {
         super( control, "RELATIONSHIP", config, false );
         this.relationshipTypeRepository = relationshipTypeRepository;
         this.relationshipStore = relationshipStore;
-        this.nodeRelationshipLink = nodeRelationshipLink;
+        this.cache = cache;
         this.specificIds = specificIds;
     }
 
@@ -102,7 +102,7 @@ public class RelationshipEncoderStep extends ProcessorStep<Batch<InputRelationsh
 
             // Set first/second next rel
             boolean loop = startNodeId == endNodeId;
-            long firstNextRel = nodeRelationshipLink.getAndPutRelationship(
+            long firstNextRel = cache.getAndPutRelationship(
                     startNodeId, typeId, loop ? BOTH : OUTGOING, relationshipId, true );
             relationshipRecord.setFirstNextRel( firstNextRel );
             if ( loop )
@@ -111,7 +111,7 @@ public class RelationshipEncoderStep extends ProcessorStep<Batch<InputRelationsh
             }
             else
             {
-                relationshipRecord.setSecondNextRel( nodeRelationshipLink.getAndPutRelationship(
+                relationshipRecord.setSecondNextRel( cache.getAndPutRelationship(
                         endNodeId, typeId, INCOMING, relationshipId, true ) );
             }
 
