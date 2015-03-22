@@ -38,7 +38,7 @@ public class InputEntityCacherStep<INPUT extends InputEntity>
 
     public InputEntityCacherStep( StageControl control, Configuration config, Receiver<INPUT[],IOException> cacher )
     {
-        super( control, "CACHE", config, false );
+        super( control, "CACHE", config, 1 );
         this.cacher = cacher;
     }
 
