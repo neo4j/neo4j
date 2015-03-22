@@ -70,4 +70,6 @@ public interface NodeRelationshipLink extends MemoryStatsVisitor.Home
     };
 
     void close();
+
+    void fixate();
 }

@@ -100,4 +100,10 @@ public class OffHeapIntArray extends OffHeapNumberArray implements IntArray
             unsafe.putInt( toAddress, fromValue );
         }
     }
+
+    @Override
+    public IntArray fixate()
+    {
+        return this;
+    }
 }
