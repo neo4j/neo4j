@@ -22,40 +22,39 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
-import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink.GroupVisitor;
+import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
+import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache.GroupVisitor;
 
 /**
  * Sets the {@link NodeRecord#setNextRel(long) relationship field} on all {@link NodeRecord nodes}.
- * This is done after all relationships have been imported and the {@link NodeRelationshipLink node cache}
+ * This is done after all relationships have been imported and the {@link NodeRelationshipCache node cache}
  * points to the first relationship for each node.
  *
  * This step also creates {@link RelationshipGroupRecord group records} for the dense nodes as it encounters
- * dense nodes, where it gets all relationship group information from {@link NodeRelationshipLink}.
+ * dense nodes, where it gets all relationship group information from {@link NodeRelationshipCache}.
  */
 public class NodeFirstRelationshipProcessor implements RecordProcessor<NodeRecord>, GroupVisitor
 {
     private final RelationshipGroupStore relGroupStore;
-    private final NodeRelationshipLink nodeRelationshipLink;
+    private final NodeRelationshipCache cache;
 
     private long nextGroupId = -1;
 
-    public NodeFirstRelationshipProcessor( RelationshipGroupStore relGroupStore,
-            NodeRelationshipLink nodeRelationshipLink )
+    public NodeFirstRelationshipProcessor( RelationshipGroupStore relGroupStore, NodeRelationshipCache cache )
     {
         this.relGroupStore = relGroupStore;
-        this.nodeRelationshipLink = nodeRelationshipLink;
+        this.cache = cache;
     }
 
     @Override
     public boolean process( NodeRecord node )
     {
         long nodeId = node.getId();
-        long firstRel = nodeRelationshipLink.getFirstRel( nodeId, this );
+        long firstRel = cache.getFirstRel( nodeId, this );
         if ( firstRel != -1 )
         {
             node.setNextRel( firstRel );
-            if ( nodeRelationshipLink.isDense( nodeId ) )
+            if ( cache.isDense( nodeId ) )
             {
                 node.setDense( true );
             }

@@ -22,10 +22,10 @@ package org.neo4j.unsafe.impl.batchimport.cache;
 import org.neo4j.graphdb.Direction;
 
 /**
- * The default and straight forward implementation of {@link NodeRelationshipLink}.
- * Supports relationship group information in addition to node information.
+ * Caches of parts of node store and relationship group store. A crucial part of batch import where
+ * any random access must be covered by this cache. All I/O, both read and write must be sequential.
  */
-public class NodeRelationshipLinkImpl implements NodeRelationshipLink
+public class NodeRelationshipCache implements MemoryStatsVisitor.Home
 {
     private static final long EMPTY = -1;
 
@@ -33,7 +33,7 @@ public class NodeRelationshipLinkImpl implements NodeRelationshipLink
     private final int denseNodeThreshold;
     private final RelGroupCache relGroupCache;
 
-    public NodeRelationshipLinkImpl( NumberArrayFactory arrayFactory, int denseNodeThreshold )
+    public NodeRelationshipCache( NumberArrayFactory arrayFactory, int denseNodeThreshold )
     {
         int chunkSize = 1_000_000;
         this.array = arrayFactory.newDynamicLongArray( chunkSize, IdFieldManipulator.emptyField() );
@@ -41,7 +41,11 @@ public class NodeRelationshipLinkImpl implements NodeRelationshipLink
         this.relGroupCache = new RelGroupCache( arrayFactory, chunkSize );
     }
 
-    @Override
+    /**
+     * Increment relationship count for {@code nodeId}.
+     * @param nodeId node to increment relationship count for.
+     * @return count after the increment.
+     */
     public int incrementCount( long nodeId )
     {
         long field = array.get( nodeId );
@@ -50,7 +54,6 @@ public class NodeRelationshipLinkImpl implements NodeRelationshipLink
         return IdFieldManipulator.getCount( field );
     }
 
-    @Override
     public boolean isDense( long nodeId )
     {
         return fieldIsDense( array.get( nodeId ) );
@@ -66,7 +69,6 @@ public class NodeRelationshipLinkImpl implements NodeRelationshipLink
         return IdFieldManipulator.getCount( field ) >= denseNodeThreshold;
     }
 
-    @Override
     public long getAndPutRelationship( long nodeId, int type, Direction direction, long firstRelId,
             boolean incrementCount )
     {
@@ -97,7 +99,10 @@ public class NodeRelationshipLinkImpl implements NodeRelationshipLink
         return existingId;
     }
 
-    @Override
+    /**
+     * Used when setting node nextRel fields. Gets the first relationship for this node,
+     * or the first relationship group id (where it it first visits all the groups before returning the first one).
+     */
     public long getFirstRel( long nodeId, GroupVisitor visitor )
     {
         long field = array.get( nodeId );
@@ -110,7 +115,6 @@ public class NodeRelationshipLinkImpl implements NodeRelationshipLink
         return IdFieldManipulator.getId( field );
     }
 
-    @Override
     public void clearRelationships()
     {
         long length = array.length();
@@ -126,7 +130,6 @@ public class NodeRelationshipLinkImpl implements NodeRelationshipLink
         relGroupCache.clearRelationships();
     }
 
-    @Override
     public int getCount( long nodeId, int type, Direction direction )
     {
         long field = array.get( nodeId );
@@ -148,12 +151,29 @@ public class NodeRelationshipLinkImpl implements NodeRelationshipLink
         return IdFieldManipulator.getCount( field );
     }
 
-    @Override
     public void fixate()
     {
         array = array.fixate();
         relGroupCache.fixate();
     }
+
+    public interface GroupVisitor
+    {
+        /**
+         * @param nodeId
+         * @return the relationship group id created.
+         */
+        long visit( long nodeId, int type, long next, long out, long in, long loop );
+    }
+
+    public static final GroupVisitor NO_GROUP_VISITOR = new GroupVisitor()
+    {
+        @Override
+        public long visit( long nodeId, int type, long next, long out, long in, long loop )
+        {
+            return -1;
+        }
+    };
 
     private static class RelGroupCache implements AutoCloseable, MemoryStatsVisitor.Home
     {
@@ -360,7 +380,6 @@ public class NodeRelationshipLinkImpl implements NodeRelationshipLink
         return array.toString();
     }
 
-    @Override
     public void close()
     {
         array.close();

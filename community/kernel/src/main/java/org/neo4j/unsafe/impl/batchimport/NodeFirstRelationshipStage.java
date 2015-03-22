@@ -22,7 +22,7 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
+import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 
 /**
@@ -31,7 +31,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 public class NodeFirstRelationshipStage extends Stage
 {
     public NodeFirstRelationshipStage( Configuration config, NodeStore nodeStore,
-            RelationshipGroupStore relationshipGroupStore, NodeRelationshipLink cache )
+            RelationshipGroupStore relationshipGroupStore, NodeRelationshipCache cache )
     {
         super( "Node --> Relationship", config, false );
         add( new ReadNodeRecordsStep( control(), config, nodeStore ) );

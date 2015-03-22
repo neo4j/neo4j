@@ -22,7 +22,7 @@ package org.neo4j.unsafe.impl.batchimport;
 import java.util.Arrays;
 
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
+import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
@@ -32,7 +32,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 /**
  * Makes some preparations to incoming batches so that {@link CalculateDenseNodesStep} can run parallel batches.
  * Sends long[] batches downstream, where each batch is for node ids with a certain radix, such that
- * the {@link NodeRelationshipLink} cache can be updated in parallel without synchronization.
+ * the {@link NodeRelationshipCache} cache can be updated in parallel without synchronization.
  * Each id in the long[] has the 0x40000000_00000000 bit set if end node. End node on loop relationships
  * are not counted.
  */
