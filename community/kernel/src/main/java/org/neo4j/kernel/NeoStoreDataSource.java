@@ -345,21 +345,16 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
      * refactored into bigger components that wrap the very granular things we depend on here.
      */
     public NeoStoreDataSource( Config config, StoreFactory sf, StringLogger stringLogger, JobScheduler scheduler,
-            Logging logging,
-            TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver,
+            Logging logging, TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver,
             PropertyKeyTokenHolder propertyKeyTokens, LabelTokenHolder labelTokens,
-            RelationshipTypeTokenHolder relationshipTypeTokens, Locks lockManager,
-            SchemaWriteGuard schemaWriteGuard, TransactionEventHandlers transactionEventHandlers,
-            IndexingService.Monitor indexingServiceMonitor, FileSystemAbstraction fs,
-            StoreUpgrader storeMigrationProcess, TransactionMonitor transactionMonitor,
+            RelationshipTypeTokenHolder relationshipTypeTokens, Locks lockManager, SchemaWriteGuard schemaWriteGuard,
+            TransactionEventHandlers transactionEventHandlers, IndexingService.Monitor indexingServiceMonitor,
+            FileSystemAbstraction fs, StoreUpgrader storeMigrationProcess, TransactionMonitor transactionMonitor,
             KernelHealth kernelHealth, PhysicalLogFile.Monitor physicalLogMonitor,
             TransactionHeaderInformationFactory transactionHeaderInformationFactory,
-            StartupStatisticsProvider startupStatistics,
-            NodeManager nodeManager, Guard guard,
-            IndexConfigStore indexConfigStore, CommitProcessFactory commitProcessFactory,
-            PageCache pageCache,
-            Monitors monitors,
-            Tracers tracers )
+            StartupStatisticsProvider startupStatistics, NodeManager nodeManager, Guard guard,
+            IndexConfigStore indexConfigStore, CommitProcessFactory commitProcessFactory, PageCache pageCache,
+            Monitors monitors, Tracers tracers )
     {
         this.config = config;
         this.tokenNameLookup = tokenNameLookup;
@@ -421,7 +416,8 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
 
     @Override
     public void init()
-    { // We do our own internal life management:
+    {
+        // We do our own internal life management:
         // start() does life.init() and life.start(),
         // stop() does life.stop() and life.shutdown().
     }
@@ -465,16 +461,14 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
                     neoStoreModule; // TODO The only reason this is here is because of the provider-stuff for
                     // DiskLayer. Remove when possible
 
-            CacheModule cacheModule = buildCaches( neoStoreModule.neoStore(), nodeManager,
-                    labelTokens, relationshipTypeTokens, propertyKeyTokenHolder );
+            CacheModule cacheModule = buildCaches( labelTokens, relationshipTypeTokens, propertyKeyTokenHolder );
 
             IndexingModule indexingModule = buildIndexing( config, scheduler, indexProvider, lockService,
                     tokenNameLookup,
                     logging, indexingServiceMonitor, neoStoreModule.neoStore(), cacheModule.updateableSchemaState() );
 
-            StoreLayerModule storeLayerModule = buildStoreLayer( config, neoStoreModule.neoStore(),
-                    propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
-                    indexingModule.indexingService(), cacheModule.schemaCache() );
+            StoreLayerModule storeLayerModule = buildStoreLayer( neoStoreModule.neoStore(), propertyKeyTokenHolder,
+                    labelTokens, relationshipTypeTokens, indexingModule.indexingService(), cacheModule.schemaCache() );
 
             TransactionLogModule transactionLogModule =
                     buildTransactionLogs( config, logging, indexingModule.labelScanStore(),
@@ -489,8 +483,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
             KernelModule kernelModule = buildKernel( indexingModule.integrityValidator(),
                     transactionLogModule.logicalTransactionStore(), neoStoreModule.neoStore(),
                     transactionLogModule.storeApplier(), indexingModule.indexingService(),
-                    indexingModule.indexUpdatesValidator(),
-                    storeLayerModule.storeLayer(),
+                    indexingModule.indexUpdatesValidator(), storeLayerModule.storeLayer(),
                     cacheModule.updateableSchemaState(), indexingModule.labelScanStore(),
                     indexingModule.schemaIndexProviderMap() );
 
@@ -536,6 +529,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
             }
             throw Exceptions.launderedException( e );
         }
+        kernelHealth.healed();
     }
 
     // Startup sequence
@@ -585,8 +579,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
         };
     }
 
-    private CacheModule buildCaches( final NeoStore neoStore, NodeManager nodeManager,
-            LabelTokenHolder labelTokens, RelationshipTypeTokenHolder relationshipTypeTokens,
+    private CacheModule buildCaches( LabelTokenHolder labelTokens, RelationshipTypeTokenHolder relationshipTypeTokens,
             PropertyKeyTokenHolder propertyKeyTokenHolder )
     {
         final UpdateableSchemaState updateableSchemaState = new KernelSchemaStateStore( logging.getMessagesLog(
@@ -634,9 +627,9 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
     }
 
     private IndexingModule buildIndexing( Config config, JobScheduler scheduler, SchemaIndexProvider indexProvider,
-            LockService lockService, TokenNameLookup tokenNameLookup,
-            Logging logging, IndexingService.Monitor indexingServiceMonitor,
-            NeoStore neoStore, UpdateableSchemaState updateableSchemaState )
+            LockService lockService, TokenNameLookup tokenNameLookup, Logging logging,
+            IndexingService.Monitor indexingServiceMonitor, NeoStore neoStore,
+            UpdateableSchemaState updateableSchemaState )
     {
         final DefaultSchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( indexProvider );
 
@@ -691,11 +684,9 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
         };
     }
 
-    private StoreLayerModule buildStoreLayer( Config config, final NeoStore neoStore,
-            PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokens,
-            RelationshipTypeTokenHolder relationshipTypeTokens,
-            IndexingService indexingService,
-            SchemaCache schemaCache )
+    private StoreLayerModule buildStoreLayer( final NeoStore neoStore, PropertyKeyTokenHolder propertyKeyTokenHolder,
+            LabelTokenHolder labelTokens, RelationshipTypeTokenHolder relationshipTypeTokens,
+            IndexingService indexingService, SchemaCache schemaCache )
     {
         Provider<NeoStore> neoStoreProvider = new Provider<NeoStore>()
         {
@@ -721,12 +712,9 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
         };
     }
 
-    private TransactionLogModule buildTransactionLogs( Config config, Logging logging,
-            LabelScanStore labelScanStore,
-            FileSystemAbstraction fileSystemAbstraction,
-            NeoStore neoStore, CacheAccessBackDoor cacheAccess,
-            IndexingService indexingService,
-            Iterable<IndexImplementation> indexProviders )
+    private TransactionLogModule buildTransactionLogs( Config config, Logging logging, LabelScanStore labelScanStore,
+            FileSystemAbstraction fileSystemAbstraction, NeoStore neoStore, CacheAccessBackDoor cacheAccess,
+            IndexingService indexingService, Iterable<IndexImplementation> indexProviders )
     {
         File directory = config.get( GraphDatabaseSettings.store_dir );
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 1000, 100_000 );
@@ -770,7 +758,9 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
                 new PhysicalLogFileInformation( logFiles, transactionMetadataCache, neoStore, logInformation );
 
         LogPruneStrategy logPruneStrategy = LogPruneStrategyFactory.fromConfigValue( fs, logFileInformation,
-                logFiles, neoStore, config.get( config.get(InternalAbstractGraphDatabase.Configuration.ephemeral) ? InternalAbstractGraphDatabase.Configuration.ephemeral_keep_logical_logs : GraphDatabaseSettings.keep_logical_logs ) );
+                logFiles, neoStore, config.get( config.get(InternalAbstractGraphDatabase.Configuration.ephemeral) ?
+                        InternalAbstractGraphDatabase.Configuration.ephemeral_keep_logical_logs :
+                        GraphDatabaseSettings.keep_logical_logs ) );
 
         monitors.addMonitorListener( new LogPruning( logPruneStrategy, logging ) );
 
@@ -895,9 +885,9 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
     }
 
     private KernelModule buildKernel( IntegrityValidator integrityValidator,
-            LogicalTransactionStore logicalTransactionStore,
-            NeoStore neoStore, TransactionRepresentationStoreApplier storeApplier,
-            IndexingService indexingService, IndexUpdatesValidator indexUpdatesValidator, StoreReadLayer storeLayer,
+            LogicalTransactionStore logicalTransactionStore, NeoStore neoStore,
+            TransactionRepresentationStoreApplier storeApplier, IndexingService indexingService,
+            IndexUpdatesValidator indexUpdatesValidator, StoreReadLayer storeLayer,
             UpdateableSchemaState updateableSchemaState, LabelScanStore labelScanStore,
             SchemaIndexProviderMap schemaIndexProviderMap )
     {
@@ -1088,7 +1078,8 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
 
     @Override
     public void shutdown()
-    { // We do our own internal life management:
+    {
+        // We do our own internal life management:
         // start() does life.init() and life.start(),
         // stop() does life.stop() and life.shutdown().
     }
