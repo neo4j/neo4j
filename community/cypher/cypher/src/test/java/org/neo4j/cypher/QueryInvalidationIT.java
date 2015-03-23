@@ -27,9 +27,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.cypher.internal.compiler.v2_3.CypherCacheHitMonitor;
-import org.neo4j.cypher.internal.compiler.v2_3.parser.Statement;
+import org.neo4j.cypher.internal.compiler.v2_3.ast.Query;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Result;
 import org.neo4j.helpers.Pair;
@@ -41,7 +42,6 @@ import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 
-@Ignore
 public class QueryInvalidationIT
 {
     public final @Rule DatabaseRule db = new ImpermanentDatabaseRule();
@@ -93,7 +93,7 @@ public class QueryInvalidationIT
         distantFriend( random, USERS );
 
         // THEN
-        assertEquals( "Query should have been replanned.", 1, monitor.discards );
+        assertEquals( "Query should have been replanned.", 1, monitor.discards.get() );
     }
 
     private Pair<Long, ExecutionPlanDescription> distantFriend( Random random, int USERS )
@@ -105,31 +105,44 @@ public class QueryInvalidationIT
         return Pair.of( (Long) single( single( result ).values() ), result.getExecutionPlanDescription() );
     }
 
-    private static class TestMonitor implements CypherCacheHitMonitor<Statement>
+    private static class TestMonitor implements CypherCacheHitMonitor<Query>
     {
-        int hits, misses, discards;
+        private final AtomicInteger hits = new AtomicInteger();
+        private final AtomicInteger misses = new AtomicInteger();
+        private final AtomicInteger discards = new AtomicInteger();
 
         @Override
-        public synchronized void cacheHit( Statement key )
+        public synchronized void cacheHit( Query key )
         {
-            hits++;
+            hits.incrementAndGet();
         }
 
         @Override
-        public synchronized void cacheMiss( Statement key )
+        public synchronized void cacheMiss( Query key )
         {
-            misses++;
+            misses.incrementAndGet();
         }
 
         @Override
-        public synchronized void cacheDiscard( Statement key )
+        public synchronized void cacheDiscard( Query key )
         {
-            discards++;
+            discards.incrementAndGet();
+        }
+
+        @Override
+        public String toString() {
+            return "TestMonitor{" +
+                    "hits=" + hits +
+                    ", misses=" + misses +
+                    ", discards=" + discards +
+                    '}';
         }
 
         public void reset()
         {
-            hits = misses = discards = 0;
+            hits.set(0);
+            misses.set(0);
+            discards.set(0);
         }
     }
 }
