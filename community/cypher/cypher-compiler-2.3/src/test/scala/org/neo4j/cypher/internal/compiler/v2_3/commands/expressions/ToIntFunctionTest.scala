@@ -73,6 +73,31 @@ class ToIntFunctionTest extends CypherFunSuite {
     toInt(20.6f) should equal(20)
   }
 
+  test("should fail for larger integers larger that 8 bytes") {
+    evaluating { toInt("10508455564958384115") } should produce[ParameterWrongTypeException]
+  }
+
+  test("should handle floats larger than 2^31 - 1") {
+    //2^33 = 8589934592
+    toInt("8589934592.0") should equal(8589934592L)
+  }
+
+  test("should handle -2^63") {
+    toInt("-9223372036854775808") should equal(Long.MinValue)
+  }
+
+  test("cannot handle -2^63-1") {
+    evaluating { toInt("-9223372036854775809") } should produce[ParameterWrongTypeException]
+  }
+
+  test("should handle 2^63 - 1") {
+    toInt("9223372036854775807") should equal(Long.MaxValue)
+  }
+
+  test("cannot handle 2^63") {
+    evaluating { toInt("9223372036854775808") } should produce[ParameterWrongTypeException]
+  }
+
   private def toInt(orig: Any) = {
     ToIntFunction(Literal(orig))(ExecutionContext.empty)(QueryStateHelper.empty)
   }

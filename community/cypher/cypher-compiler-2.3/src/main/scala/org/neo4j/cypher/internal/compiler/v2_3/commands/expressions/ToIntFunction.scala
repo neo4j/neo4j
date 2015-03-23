@@ -37,16 +37,12 @@ case class ToIntFunction(a: Expression) extends NullInNullOutExpression(a) {
       v.longValue()
     case v: String =>
       try {
-        v.toLong
+        val d = BigDecimal(v)
+        if (d <= Long.MaxValue && d >= Long.MinValue) d.toLong
+        else throw new ParameterWrongTypeException(s"integer, $v, is too large")
       } catch {
         case e: NumberFormatException =>
-          try {
-            v.toFloat.toInt
-          } catch {
-            case e: NumberFormatException =>
-              null
-          }
-
+          null
       }
     case v =>
       throw new ParameterWrongTypeException("Expected a String or Number, got: " + v.toString)
