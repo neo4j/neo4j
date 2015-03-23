@@ -21,25 +21,47 @@ package org.neo4j.harness;
 
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.neo4j.function.Function;
+import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.harness.junit.Neo4jRule;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.test.Mute;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class JUnitRuleTest
 {
     @Rule
     public Neo4jRule neo4j = new Neo4jRule()
             .withFixture( "CREATE (u:User)" )
+            .withFixture( new Function<GraphDatabaseService, Void>()
+            {
+                @Override
+                public Void apply( GraphDatabaseService graphDatabaseService ) throws RuntimeException
+                {
+                    try ( Transaction tx = graphDatabaseService.beginTx() )
+                    {
+                        graphDatabaseService.createNode( DynamicLabel.label( "User" ));
+                        tx.success();
+                    }
+                    return null;
+                }
+            } )
             .withExtension( "/test", MyUnmanagedExtension.class );
 
     @Rule public Mute mute = Mute.muteAll();
 
     @Test
-    public void shouldWork() throws Exception
+    public void shouldExtensionWork() throws Exception
     {
         // Given the rule in the beginning of this class
 
@@ -47,5 +69,32 @@ public class JUnitRuleTest
 
         // Then
         assertThat( HTTP.GET( neo4j.httpURI().resolve("test/myExtension").toString() ).status(), equalTo( 234 ) );
+    }
+
+    @Test
+    public void shouldFixturesWork() throws Exception
+    {
+        // Given the rule in the beginning of this class
+
+        // When I run this test
+
+        // Then
+        HTTP.Response response = HTTP.POST( neo4j.httpURI().toString() + "db/data/transaction/commit",
+                quotedJson( "{'statements':[{'statement':'MATCH (n:User) RETURN n'}]}" ) );
+
+        assertThat( response.get( "results" ).get(0).get("data").size(), equalTo(2));
+    }
+
+    @Test
+    public void shouldGraphDatabaseServiceBeAccessible()
+    {
+        // Given the rule in the beginning of this class
+
+        // When I run this test
+
+        // Then
+        assertEquals(2, IteratorUtil.count(
+                neo4j.getGraphDatabaseService().execute( "MATCH (n:User) RETURN n" )
+        ));
     }
 }

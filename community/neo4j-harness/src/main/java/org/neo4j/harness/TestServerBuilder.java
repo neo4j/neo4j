@@ -21,6 +21,8 @@ package org.neo4j.harness;
 
 import java.io.File;
 
+import org.neo4j.function.Function;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 
 /**
@@ -87,4 +89,12 @@ public interface TestServerBuilder
      * @return this builder instance
      */
     public TestServerBuilder withFixture( String fixtureStatement );
+
+    /**
+     * Data fixture to inject upon server start. This should be a user implemented fixture function
+     * operating on a {@link GraphDatabaseService} instance
+     * @param fixtureFunction
+     * @return this builder instance
+     */
+    public TestServerBuilder withFixture( Function<GraphDatabaseService, Void> fixtureFunction );
 }

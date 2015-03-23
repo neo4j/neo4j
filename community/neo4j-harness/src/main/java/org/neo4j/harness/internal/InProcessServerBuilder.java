@@ -21,10 +21,14 @@ package org.neo4j.harness.internal;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import org.neo4j.function.Function;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.ServerControls;
@@ -49,6 +53,7 @@ public class InProcessServerBuilder implements TestServerBuilder
     private Logging logging;
     private final Extensions extensions = new Extensions();
     private final Fixtures fixtures = new Fixtures();
+    private final List<Function<GraphDatabaseService,Void>> fixtureFunctions = new ArrayList<>(  );
 
     /**
      * Config options for both database and server.
@@ -73,6 +78,10 @@ public class InProcessServerBuilder implements TestServerBuilder
         try
         {
             fixtures.applyTo( controls.httpURI() );
+            for ( Function<GraphDatabaseService, Void> fixtureFunction : fixtureFunctions )
+            {
+                fixtureFunction.apply( controls.getGraphDatabaseService() );
+            }
         }
         catch(RuntimeException e)
         {
@@ -104,7 +113,7 @@ public class InProcessServerBuilder implements TestServerBuilder
     @Override
     public TestServerBuilder withExtension( String mountPath, String packageName )
     {
-        extensions.add(mountPath, packageName);
+        extensions.add( mountPath, packageName );
         return this;
     }
 
@@ -119,6 +128,13 @@ public class InProcessServerBuilder implements TestServerBuilder
     public TestServerBuilder withFixture( String fixtureStatement )
     {
         fixtures.add( fixtureStatement );
+        return this;
+    }
+
+    @Override
+    public TestServerBuilder withFixture( Function<GraphDatabaseService, Void> fixtureFunction )
+    {
+        fixtureFunctions.add( fixtureFunction );
         return this;
     }
 

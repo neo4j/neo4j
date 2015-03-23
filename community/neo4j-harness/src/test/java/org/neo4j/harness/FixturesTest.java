@@ -24,6 +24,10 @@ import java.io.File;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.function.Function;
+import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.Mute;
 import org.neo4j.test.TargetDirectory;
@@ -183,6 +187,37 @@ public class FixturesTest
         {
             assertThat(e.getMessage(), equalTo("Failed to install fixtures: Invalid input 't': expected <init> " +
                     "(line 1, column 1 (offset: 0))\n\"this is not a valid cypher statement\"\n ^"));
+        }
+    }
+
+    @Test
+    public void shouldHandleFunctionFixtures() throws Exception
+    {
+        // Given two files in the root folder
+        File targetFolder = testDir.directory();
+
+        // When
+        try ( ServerControls server = newInProcessBuilder( targetFolder )
+                .withFixture( new Function<GraphDatabaseService, Void>()
+                {
+                    @Override
+                    public Void apply( GraphDatabaseService graphDatabaseService ) throws RuntimeException
+                    {
+                        try ( Transaction tx = graphDatabaseService.beginTx() )
+                        {
+                            graphDatabaseService.createNode( DynamicLabel.label( "User" ) );
+                            tx.success();
+                        }
+                        return null;
+                    }
+                } )
+                .newServer() )
+        {
+            // Then
+            HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/data/transaction/commit",
+                    quotedJson( "{'statements':[{'statement':'MATCH (n:User) RETURN n'}]}" ) );
+
+            assertThat( response.get( "results" ).get( 0 ).get( "data" ).size(), equalTo( 1 ) );
         }
     }
 }
