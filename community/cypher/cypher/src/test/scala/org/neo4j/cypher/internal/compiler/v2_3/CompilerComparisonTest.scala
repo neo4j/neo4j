@@ -372,7 +372,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
   }).toSeq
 
 
-  ignore("Working test - should be ignored") {
+  ignore("This test is a utility runner.  It should be ignored.") {
     val script = scala.xml.Unparsed( """var previousCell = null;
                                        |function setPlanTo(query, compiler) {
                                        |  var queryText = document.getElementById(query).innerHTML.
