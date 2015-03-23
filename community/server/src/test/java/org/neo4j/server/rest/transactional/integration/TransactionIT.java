@@ -608,6 +608,16 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
+    public void status_codes_should_appear_in_response() throws Exception
+    {
+        Response response = http.POST( "/db/data/transaction/commit",
+                quotedJson( "{ 'statements': [ { 'statement': 'RETURN {n}' } ] }" ) );
+
+        assertThat( response.status(), equalTo( 200 ) );
+        assertThat( response, hasErrors( Status.Statement.ParameterMissing ) );
+    }
+
+    @Test
     public void executing_single_statement_in_new_transaction_and_failing_to_read_the_output_should_interrupt()
             throws Exception
     {
