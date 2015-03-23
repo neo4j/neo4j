@@ -31,6 +31,20 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest {
     assertIsNotRewritten("MATCH (n)-[r1]->(m) MATCH (m)-[r2]->(x) RETURN x")
   }
 
+  test("uniqueness check is done between relationships of simple and variable pattern lengths") {
+    assertRewrite(
+      "MATCH (a)-[r1]->(b)-[r2*0..1]->(c) RETURN *",
+      "MATCH (a)-[r1]->(b)-[r2*0..1]->(c) WHERE NONE(r2 IN r2 WHERE r1 = r2) RETURN *")
+
+    assertRewrite(
+      "MATCH (a)-[r1*0..1]->(b)-[r2]->(c) RETURN *",
+      "MATCH (a)-[r1*0..1]->(b)-[r2]->(c) WHERE NONE(r1 IN r1 WHERE r1 = r2) RETURN *")
+
+    assertRewrite(
+      "MATCH (a)-[r1*0..1]->(b)-[r2*0..1]->(c) RETURN *",
+      "MATCH (a)-[r1*0..1]->(b)-[r2*0..1]->(c) WHERE NONE(r1 IN r1 WHERE ANY(r2 IN r2 WHERE r1 = r2)) RETURN *")
+  }
+
   test("uniqueness check is done between relationships") {
     assertRewrite(
       "MATCH (a)-[r1]->(b)-[r2]->(c) RETURN *",
