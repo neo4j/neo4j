@@ -168,9 +168,9 @@ public class PageCacheRule extends ExternalResource
         }
 
         @Override
-        public void flush() throws IOException
+        public void flushAndForce() throws IOException
         {
-            pageCache.flush();
+            pageCache.flushAndForce();
         }
 
         @Override
@@ -228,9 +228,9 @@ public class PageCacheRule extends ExternalResource
         }
 
         @Override
-        public void flush() throws IOException
+        public void flushAndForce() throws IOException
         {
-            pagedFile.flush();
+            pagedFile.flushAndForce();
         }
 
         @Override

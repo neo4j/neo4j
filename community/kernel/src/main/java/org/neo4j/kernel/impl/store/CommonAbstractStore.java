@@ -670,7 +670,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     {
         try
         {
-            storeFile.flush();
+            storeFile.flushAndForce();
         }
         catch ( IOException e )
         {

@@ -142,7 +142,7 @@ public class DataGenerator
         finally
         {
             stores.close();
-            pageCache.flush();
+            pageCache.flushAndForce();
             pageCache.close();
         }
     }

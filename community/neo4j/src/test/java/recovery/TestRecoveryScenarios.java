@@ -19,17 +19,17 @@
  */
 package recovery;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
@@ -51,10 +51,8 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
@@ -268,7 +266,7 @@ public class TestRecoveryScenarios
                     @Override
                     void flush( GraphDatabaseAPI db ) throws IOException
                     {
-                        db.getDependencyResolver().resolveDependency( PageCache.class ).flush();
+                        db.getDependencyResolver().resolveDependency( PageCache.class ).flushAndForce();
                     }
                 };
         final Object[] parameters = new Object[]{this};

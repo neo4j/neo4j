@@ -392,7 +392,7 @@ public class MuninnPageCache implements PageCache
         {
             try
             {
-                file.flush();
+                file.flushAndForce();
                 file.closeSwapper();
                 flushedAndClosed = true;
             }
@@ -415,7 +415,7 @@ public class MuninnPageCache implements PageCache
     }
 
     @Override
-    public synchronized void flush() throws IOException
+    public synchronized void flushAndForce() throws IOException
     {
         assertNotClosed();
         flushAllPages();
@@ -437,6 +437,13 @@ public class MuninnPageCache implements PageCache
                 {
                     page.unlockRead( stamp );
                 }
+            }
+
+            FileMapping fileMapping = mappedFiles;
+            while ( fileMapping != null )
+            {
+                fileMapping.pagedFile.force();
+                fileMapping = fileMapping.next;
             }
         }
     }
