@@ -98,7 +98,6 @@ trait LogicalPlanWithoutExpressions {
 abstract class LogicalLeafPlan extends LogicalPlan with LazyLogicalPlan {
   final val lhs = None
   final val rhs = None
-  final val isLazy = true
   def argumentIds: Set[IdName]
 }
 

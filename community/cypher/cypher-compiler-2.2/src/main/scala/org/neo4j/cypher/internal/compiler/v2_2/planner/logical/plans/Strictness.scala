@@ -19,7 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
-sealed trait StrictnessMode
+sealed trait StrictnessMode extends (Strictness => Boolean) {
+  self =>
+
+  def apply(havingStrictness: Strictness) = havingStrictness.strictness == self
+}
 
 case object LazyMode extends StrictnessMode
 case object EagerMode extends StrictnessMode

@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast.PatternExpression
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cost
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.graphdb.Direction
 
@@ -51,7 +52,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel()).thenReturn((plan: LogicalPlan) => plan match {
+    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
       case AllNodesScan(IdName("b"), _) => Cost(1) // Make sure we start the inner plan using b
       case _ => Cost(1000)
     })

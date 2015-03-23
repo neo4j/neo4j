@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalPlan, StrictnessMode}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
 
@@ -31,18 +31,17 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   metrics: Metrics,
                                   semanticTable: SemanticTable,
                                   strategy: QueryGraphSolver,
-                                  cardinalityInput: QueryGraphCardinalityInput = QueryGraphCardinalityInput.empty) {
-  def recurse(plan: LogicalPlan) = {
-    val newInput = cardinalityInput.recurse(plan)
-    copy(cardinalityInput = newInput)
-  }
+                                  input: QueryGraphSolverInput = QueryGraphSolverInput.empty) {
+  def withStrictness(strictness: StrictnessMode) = copy(input = input.withPreferredStrictness(strictness))
+
+  def recurse(plan: LogicalPlan) = copy(input = input.recurse(plan))
 
   def forExpressionPlanning(nodes: Iterable[Identifier], rels: Iterable[Identifier]) = {
-    val tableWithNodes = nodes.foldLeft(semanticTable) { case (table, node) => table.addNode(node)}
-    val tableWithRels = rels.foldLeft(tableWithNodes) { case (table, rel) => table.addRelationship(rel)}
+    val tableWithNodes = nodes.foldLeft(semanticTable) { case (table, node) => table.addNode(node) }
+    val tableWithRels = rels.foldLeft(tableWithNodes) { case (table, rel) => table.addRelationship(rel) }
 
     copy(
-      cardinalityInput = cardinalityInput.copy(inboundCardinality = Cardinality(1)),
+      input = input.copy(inboundCardinality = Cardinality(1)),
       semanticTable = tableWithRels
     )
   }

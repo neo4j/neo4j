@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.RelTypeId
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cost
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.idSeekLeafPlanner
 import org.neo4j.graphdb.Direction
 
@@ -52,7 +53,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel()).thenReturn((plan: LogicalPlan) => plan match {
+    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
       case _: NodeByIdSeek => Cost(1)
       case _               => Cost(Double.MaxValue)
     })
@@ -92,7 +93,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel()).thenReturn((plan: LogicalPlan) => plan match {
+    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
       case _: DirectedRelationshipByIdSeek => Cost(1)
       case _                               => Cost(Double.MaxValue)
     })
@@ -129,7 +130,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       patternRelationships = Set(patternRel))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel()).thenReturn((plan: LogicalPlan) => plan match {
+    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
       case _: UndirectedRelationshipByIdSeek => Cost(2)
       case _                                 => Cost(Double.MaxValue)
     })
@@ -172,7 +173,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       patternRelationships = Set(patternRel))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel()).thenReturn((plan: LogicalPlan) => plan match {
+    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
       case _: UndirectedRelationshipByIdSeek => Cost(2)
       case _                                 => Cost(Double.MaxValue)
     })
@@ -219,7 +220,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       patternRelationships = Set(patternRel))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel()).thenReturn((plan: LogicalPlan) => plan match {
+    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
       case _: UndirectedRelationshipByIdSeek => Cost(2)
       case _                                 => Cost(Double.MaxValue)
     })

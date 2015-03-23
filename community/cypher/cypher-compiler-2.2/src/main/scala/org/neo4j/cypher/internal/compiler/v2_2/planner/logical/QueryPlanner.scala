@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter.Lo
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.{aggregation, projection, sortSkipAndLimit, verifyBestPlan}
 
 trait QueryPlanner {
-  def plan(plannerQuery: UnionQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan
+  def plan(plannerQuery: UnionQuery)(implicit context: LogicalPlanningContext): LogicalPlan
 }
 
 class DefaultQueryPlanner(config: QueryPlannerConfiguration = QueryPlannerConfiguration.default,
@@ -34,7 +34,7 @@ class DefaultQueryPlanner(config: QueryPlannerConfiguration = QueryPlannerConfig
                           planRewriter: Rewriter = LogicalPlanRewriter)
   extends QueryPlanner {
 
-  def plan(unionQuery: UnionQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan = unionQuery match {
+  def plan(unionQuery: UnionQuery)(implicit context: LogicalPlanningContext): LogicalPlan = unionQuery match {
     case UnionQuery(queries, distinct) =>
       val plan = planQuery(queries, distinct)
       plan.endoRewrite(planRewriter)
@@ -43,7 +43,7 @@ class DefaultQueryPlanner(config: QueryPlannerConfiguration = QueryPlannerConfig
       throw new CantHandleQueryException
   }
 
-  private def planQuery(queries: Seq[PlannerQuery], distinct: Boolean)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None) = {
+  private def planQuery(queries: Seq[PlannerQuery], distinct: Boolean)(implicit context: LogicalPlanningContext) = {
     val logicalPlans: Seq[LogicalPlan] = queries.map(p => planSingleQuery(p))
     val unionPlan = logicalPlans.reduce[LogicalPlan] {
       case (p1, p2) => context.logicalPlanProducer.planUnion(p1, p2)
@@ -55,8 +55,8 @@ class DefaultQueryPlanner(config: QueryPlannerConfiguration = QueryPlannerConfig
       unionPlan
   }
 
-  protected def planSingleQuery(query: PlannerQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan = {
-    val partPlan = planPart(query, context, leafPlan)
+  protected def planSingleQuery(query: PlannerQuery)(implicit context: LogicalPlanningContext): LogicalPlan = {
+    val partPlan = planPart(query, context, None)
 
     val projectedPlan = planEventHorizon(query, partPlan)
     val projectedContext = context.recurse(projectedPlan)
@@ -89,8 +89,13 @@ class DefaultQueryPlanner(config: QueryPlannerConfiguration = QueryPlannerConfig
         pred
     }
 
-  private def planPart(query: PlannerQuery, context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan =
-    context.strategy.plan(query.graph)(context, leafPlan)
+  private def planPart(query: PlannerQuery, context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = {
+    val ctx = query.preferredStrictness match {
+      case Some(mode) if context.input.strictness.exists(mode == _) => context.withStrictness(mode)
+      case _ => context
+    }
+    ctx.strategy.plan(query.graph)(ctx, leafPlan)
+  }
 
   private def planEventHorizon(query: PlannerQuery, plan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan = {
     val selectedPlan = config.applySelections(plan, query.graph)

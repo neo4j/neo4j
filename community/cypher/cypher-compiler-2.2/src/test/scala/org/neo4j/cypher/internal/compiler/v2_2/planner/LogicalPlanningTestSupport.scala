@@ -66,7 +66,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   def newMockedPipeExecutionPlanBuilderContext: PipeExecutionBuilderContext = {
     val context = mock[PipeExecutionBuilderContext]
     val cardinality = new Metrics.CardinalityModel {
-      def apply(pq: PlannerQuery, ignored: QueryGraphCardinalityInput, ignoredAsWell: SemanticTable) = pq match {
+      def apply(pq: PlannerQuery, ignored: QueryGraphSolverInput, ignoredAsWell: SemanticTable) = pq match {
         case PlannerQuery.empty => Cardinality(1)
         case _ => Cardinality(104999.99999)
       }
@@ -110,9 +110,10 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                         new GreedyQueryGraphSolver(expandsOrJoins),
                                         new GreedyQueryGraphSolver(expandsOnly)
                                       ),
-                                      cardinality: Cardinality = Cardinality(1)): LogicalPlanningContext =
+                                      cardinality: Cardinality = Cardinality(1),
+                                      strictness: Option[StrictnessMode] = None): LogicalPlanningContext =
     LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality), metrics, semanticTable,
-      strategy, QueryGraphCardinalityInput(Map.empty, cardinality))
+      strategy, QueryGraphSolverInput(Map.empty, cardinality, strictness))
 
   def newMockedStatistics = mock[GraphStatistics]
   def hardcodedStatistics = HardcodedGraphStatistics
@@ -127,7 +128,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     val projections = RegularQueryProjection(projections = ids.map((id) => id -> ident(id)).toMap)
     FakePlan(ids.map(IdName(_)).toSet)(CardinalityEstimation.lift(PlannerQuery(
         horizon = projections,
-        graph = QueryGraph.empty.addPatternNodes(ids.map(IdName(_)).toSeq: _*)
+        graph = QueryGraph.empty.addPatternNodes(ids.map(IdName(_)): _*)
       ), Cardinality(0))
     )
   }

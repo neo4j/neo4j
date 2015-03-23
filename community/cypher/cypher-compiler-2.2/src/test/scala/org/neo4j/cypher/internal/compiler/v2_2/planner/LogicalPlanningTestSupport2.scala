@@ -68,7 +68,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     def metricsFactory = new MetricsFactory {
       def newCostModel() =
-        (plan: LogicalPlan) => config.costModel()(plan)
+        (plan: LogicalPlan, input: QueryGraphSolverInput) => config.costModel()(plan, input)
 
       def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel) =
         config.cardinalityModel(queryGraphCardinalityModel)
@@ -153,7 +153,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
           val unionQuery = ast.asUnionQuery
           val metrics = metricsFactory.newMetrics(planContext.statistics)
           val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
-          val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, newTable, queryGraphSolver, QueryGraphCardinalityInput.empty)
+          val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, newTable, queryGraphSolver, QueryGraphSolverInput.empty)
           val plannerQuery = unionQuery.queries.head
           val resultPlan = planner.internalPlan(plannerQuery)(context)
           SemanticPlan(resultPlan.endoRewrite(unnestApply), newTable)
@@ -171,12 +171,12 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
           val unionQuery = ast.asUnionQuery
           val metrics = metricsFactory.newMetrics(planContext.statistics)
           val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
-          val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, newTable, queryGraphSolver, QueryGraphCardinalityInput.empty)
+          val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, newTable, queryGraphSolver, QueryGraphSolverInput.empty)
           (planner.plan(unionQuery)(context), newTable)
       }
     }
 
-    def estimate(qg: QueryGraph, input: QueryGraphCardinalityInput = QueryGraphCardinalityInput.empty) =
+    def estimate(qg: QueryGraph, input: QueryGraphSolverInput = QueryGraphSolverInput.empty) =
       metricsFactory.newMetrics(config.graphStatistics).queryGraphCardinalityModel(qg, input, semanticTable)
 
     def withLogicalPlanningContext[T](f: (C, LogicalPlanningContext) => T): T = {
@@ -188,7 +188,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         metrics = metrics,
         semanticTable = semanticTable,
         strategy = queryGraphSolver,
-        cardinalityInput = QueryGraphCardinalityInput(Map.empty, Cardinality(1))
+        input = QueryGraphSolverInput.empty
       )
       f(config, ctx)
     }
