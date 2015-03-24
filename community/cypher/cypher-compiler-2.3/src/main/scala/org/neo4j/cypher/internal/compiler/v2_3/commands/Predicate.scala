@@ -251,46 +251,51 @@ case class PropertyExists(identifier: Expression, propertyKey: KeyToken) extends
   override def localEffects = Effects.READS_ENTITIES
 }
 
-case class LiteralRegularExpression(a: Expression, regex: Literal)(implicit converter: String => String = ((a) => a)) extends Predicate {
-  lazy val pattern = converter(regex.v.asInstanceOf[String]).r.pattern
+case class LiteralRegularExpression(lhsExpr: Expression, regexExpr: Literal)(implicit converter: String => String = identity) extends Predicate {
+  lazy val pattern = converter(regexExpr.v.asInstanceOf[String]).r.pattern
 
-  def isMatch(m: ExecutionContext)(implicit state: QueryState) = Option(a(m)).map {
-    x =>
-      val v = CastSupport.castOrFail[String](x)
+  def isMatch(m: ExecutionContext)(implicit state: QueryState) =
+    Option(lhsExpr(m)).map { lhsValue =>
+      val v = CastSupport.castOrFail[String](lhsValue)
       pattern.matcher(v).matches()
-  }
+    }
 
   def containsIsNull = false
-  def rewrite(f: (Expression) => Expression) = f(regex.rewrite(f) match {
-    case lit: Literal => LiteralRegularExpression(a.rewrite(f), lit)(converter)
-    case other        => RegularExpression(a.rewrite(f), other)(converter)
+
+  def rewrite(f: (Expression) => Expression) = f(regexExpr.rewrite(f) match {
+    case lit: Literal => LiteralRegularExpression(lhsExpr.rewrite(f), lit)(converter)
+    case other        => RegularExpression(lhsExpr.rewrite(f), other)(converter)
   })
 
-  def arguments = Seq(a, regex)
+  def arguments = Seq(lhsExpr, regexExpr)
 
-  def symbolTableDependencies = a.symbolTableDependencies ++ regex.symbolTableDependencies
+  def symbolTableDependencies = lhsExpr.symbolTableDependencies ++ regexExpr.symbolTableDependencies
 }
 
-case class RegularExpression(a: Expression, regex: Expression)(implicit converter: String => String = ((a) => a)) extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = (a(m), regex(m)) match {
-    case (null, _) => None
-    case (_, null) => None
-    case (a1, r1)  =>
-      val a2 = CastSupport.castOrFail[String](a1)
-      val r2 = converter(CastSupport.castOrFail[String](r1))
-      Some(r2.r.pattern.matcher(a2).matches())
+case class RegularExpression(lhsExpr: Expression, regexExpr: Expression)(implicit converter: String => String = identity) extends Predicate {
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = (lhsExpr(m), regexExpr(m)) match {
+    case (null, _) =>
+      None
+    case (_, null) =>
+      None
+    case (lhs, rhs)  =>
+      val lhsAsString = CastSupport.castOrFail[String](lhs)
+      val rhsAsRegexString = converter(CastSupport.castOrFail[String](rhs))
+      Some(rhsAsRegexString.r.pattern.matcher(lhsAsString).matches())
   }
 
-  override def toString: String = a.toString() + " ~= /" + regex.toString() + "/"
+  override def toString: String = lhsExpr.toString() + " ~= /" + regexExpr.toString() + "/"
+
   def containsIsNull = false
-  def rewrite(f: (Expression) => Expression) = f(regex.rewrite(f) match {
-    case lit:Literal => LiteralRegularExpression(a.rewrite(f), lit)(converter)
-    case other => RegularExpression(a.rewrite(f), other)(converter)
+
+  def rewrite(f: (Expression) => Expression) = f(regexExpr.rewrite(f) match {
+    case lit:Literal => LiteralRegularExpression(lhsExpr.rewrite(f), lit)(converter)
+    case other => RegularExpression(lhsExpr.rewrite(f), other)(converter)
   })
 
-  def arguments = Seq(a, regex)
+  def arguments = Seq(lhsExpr, regexExpr)
 
-  def symbolTableDependencies = a.symbolTableDependencies ++ regex.symbolTableDependencies
+  def symbolTableDependencies = lhsExpr.symbolTableDependencies ++ regexExpr.symbolTableDependencies
 }
 
 case class NonEmpty(collection: Expression) extends Predicate with CollectionSupport {
@@ -303,9 +308,13 @@ case class NonEmpty(collection: Expression) extends Predicate with CollectionSup
   }
 
   override def toString: String = "nonEmpty(" + collection.toString() + ")"
+
   def containsIsNull = false
+
   def rewrite(f: (Expression) => Expression) = f(NonEmpty(collection.rewrite(f)))
+
   def arguments = Seq(collection)
+
   def symbolTableDependencies = collection.symbolTableDependencies
 }
 

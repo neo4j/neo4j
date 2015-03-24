@@ -145,7 +145,7 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
   test("one letter at the end of a string") {
     val result = executeWithNewPlanner("MATCH (a) WHERE a.name LIKE 'ABCDE_' RETURN a")
 
-    result.toList should equal(Seq((Map("a" -> aNode))))
+    result.toList should equal(Seq(Map("a" -> aNode)))
   }
 
   test("first and last letter are not known") {

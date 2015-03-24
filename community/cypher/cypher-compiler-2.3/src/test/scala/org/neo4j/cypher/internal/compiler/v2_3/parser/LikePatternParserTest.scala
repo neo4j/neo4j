@@ -21,17 +21,26 @@ package org.neo4j.cypher.internal.compiler.v2_3.parser
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-class LikeParserTest extends CypherFunSuite {
+class LikePatternParserTest extends CypherFunSuite {
 
   test("parse a string containing normal characters") {
-    LikeParser("this is a string").ops should equal(List(StringSegment("this is a string")))
+    LikePatternParser("this is a string").ops should equal(List(MatchText("this is a string")))
   }
 
   test("parse a string containing wildcard") {
-    LikeParser("abcd%") should equal(ParsedLike(Seq(StringSegment("abcd"), MatchAll)))
+    LikePatternParser("abcd%") should equal(ParsedLikePattern(List(MatchText("abcd"), MatchMany)))
   }
 
   test("parse a string containing a single character match") {
-    LikeParser("ab_d").ops should equal(List(StringSegment("ab"), MatchSingleChar, StringSegment("d")))
+    LikePatternParser("ab_d").ops should equal(List(MatchText("ab"), MatchSingle, MatchText("d")))
+  }
+
+  test("parse an escaped string") {
+    LikePatternParser("the richest 1\\% of adults alone owned 40\\% of global assets").ops should
+      equal(List(MatchText("the richest 1% of adults alone owned 40% of global assets")))
+    }
+
+  test("combining wildcard and escaped percent") {
+    LikePatternParser("""%\%_%""").ops should equal(List(MatchMany, MatchText("%"), MatchSingle, MatchMany))
   }
 }

@@ -25,7 +25,7 @@ import commands.{expressions => commandexpressions, values => commandvalues, Pre
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression => CommandExpression, ProjectedPath}
 import commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{UnresolvedRelType, UnresolvedProperty}
-import org.neo4j.cypher.internal.compiler.v2_3.parser.{LikeParser, convertLikeToRegex}
+import org.neo4j.cypher.internal.compiler.v2_3.parser.{LikePatternParser, convertLikePatternToRegex}
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.graphdb.Direction
@@ -221,7 +221,7 @@ object ExpressionConverters {
         commands.RegularExpression(e.lhs.asCommandExpression, command)(translateToRegex)
     }
 
-    private def translateToRegex(s: String) = convertLikeToRegex(LikeParser(s), e.caseInsensitive)
+    private def translateToRegex(s: String) = convertLikePatternToRegex(LikePatternParser(s), e.caseInsensitive)
   }
 
   implicit class NotLikeConverter(val e: ast.NotLike) extends AnyVal {

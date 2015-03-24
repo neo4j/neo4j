@@ -22,21 +22,15 @@ package org.neo4j.cypher.internal.compiler.v2_3.parser
 import java.util.regex.Pattern.quote
 
 /**
- * Converts [[ParsedLike]] into a regular expression string
+ * Converts [[ParsedLikePattern]] into a regular expression string
  */
-case object convertLikeToRegex {
-  private val QUOTE_PATTERN = """^\\Q.*\\E$""".r.pattern
-
-  def apply(in: ParsedLike, caseInsensitive: Boolean = false): String =
+case object convertLikePatternToRegex {
+  def apply(in: ParsedLikePattern, caseInsensitive: Boolean = false): String =
     in.ops.map(convert).mkString(if (caseInsensitive) "(?i)" else "", "", "")
 
-  private def convert(in: LikeOp): String = in match {
-    case StringSegment(s) => if (isQuoted(s)) s else quote(s)
-    case RawCharacter(s) => s
-    case MatchAll => ".*"
-    case MatchSingleChar => "."
+  private def convert(in: LikePatternOp): String = in match {
+    case MatchText(s) => quote(s)
+    case MatchMany => ".*"
+    case MatchSingle => "."
   }
-
-  private def isQuoted(s: String) = QUOTE_PATTERN.matcher(s).matches()
-
 }
