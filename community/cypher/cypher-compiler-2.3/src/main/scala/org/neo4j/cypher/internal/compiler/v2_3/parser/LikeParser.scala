@@ -27,7 +27,6 @@ import org.parboiled.scala._
  * A Like expression can contain the special characters:
  *  - % wildcard
  *  - _ matches exactly one character
- *  - [XY] optionally match any of the characters
  */
 case object LikeParser extends Parser {
 
@@ -36,26 +35,22 @@ case object LikeParser extends Parser {
     case None => throw new IllegalArgumentException(s"$input is not valid to use with LIKE")
   }
 
-  /**Base rule*/
-  def LikeRule: Rule1[ParsedLike] = rule {zeroOrMore(MatchAllRule | MatchSingleCharRule | SetMatchRule | StringSegmentRule) ~~> ParsedLike ~ EOI}
+  /** Base rule */
+  def LikeRule: Rule1[ParsedLike] = rule { zeroOrMore(MatchAllRule | MatchSingleCharRule | StringSegmentRule) ~~> ParsedLike ~ EOI }
 
-  def StringSegmentRule: Rule1[LikeOp] = rule {oneOrMore(NormalChar) ~> StringSegment}
+  def StringSegmentRule: Rule1[LikeOp] = rule { oneOrMore(NormalChar) ~> StringSegment }
 
-  def RawCharacterRule: Rule1[RawCharacter] = rule {NormalChar ~> RawCharacter}
+  def RawCharacterRule: Rule1[RawCharacter] = rule { NormalChar ~> RawCharacter }
 
-  def MatchAllRule: Rule1[LikeOp] = rule {PercentChar ~ push(MatchAll)}
+  def MatchAllRule: Rule1[LikeOp] = rule { PercentChar ~ push(MatchAll) }
 
-  def MatchSingleCharRule: Rule1[LikeOp] = rule {UnderscoreChar ~ push(MatchSingleChar)}
+  def MatchSingleCharRule: Rule1[LikeOp] = rule { UnderscoreChar ~ push(MatchSingleChar) }
 
-  def SetMatchRule: Rule1[LikeOp] = rule {
-    "[" ~ zeroOrMore(RawCharacterRule) ~ "]" ~~> SetMatch
-  }
+  def PercentChar: Rule0 = rule { "%" }
 
-  def PercentChar: Rule0 = rule {"%"}
+  def UnderscoreChar: Rule0 = rule { "_" }
 
-  def UnderscoreChar: Rule0 = rule {"_"}
-
-  def NormalChar: Rule0 = noneOf("%_[]")
+  def NormalChar: Rule0 = noneOf("%_")
 }
 
 sealed trait LikeOp
@@ -71,9 +66,6 @@ case object MatchAll extends LikeOp
 
 /** Matches a _*/
 case object MatchSingleChar extends LikeOp
-
-/** Matches optional pattern, [abcd]*/
-case class SetMatch(alternatives: Seq[RawCharacter]) extends LikeOp
 
 /** Contains a sequence of parsed LIKE tokens*/
 case class ParsedLike(ops: Seq[LikeOp])

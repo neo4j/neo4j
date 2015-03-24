@@ -40,8 +40,8 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
     fNode = createLabeledNode("LABEL")
   }
 
+  // *** TESTS OF %
 
-  // ***********************  TESTS OF %
   test("finds exact matches") {
     val result = executeWithNewPlanner("MATCH (a) WHERE a.name LIKE 'ABCDEF' RETURN a")
 
@@ -134,7 +134,8 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
     result.toList shouldBe empty
   }
 
-  // ***********************  TESTS OF _
+  // *** TESTS OF _
+
   test("one letter at the start of a string") {
     val result = executeWithNewPlanner("MATCH (a) WHERE a.name LIKE '_BCDEF' RETURN a")
 
@@ -171,49 +172,15 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
     result.toList shouldBe empty
   }
 
-  // ***********************  TESTS OF []
-  test("option at the beginning of the string") {
-    val result = executeWithNewPlanner("MATCH (a) WHERE a.name LIKE '[Aa]BCDEF' RETURN a")
+  // *** TESTS OF FEATURE INTERACTION
 
-    result.toList should equal(Seq(Map("a" -> aNode)))
-  }
-
-  test("non-matching at the beginning of the string") {
-    val result = executeWithNewPlanner("MATCH (a) WHERE a.name LIKE '[XZ]BCDEF' RETURN a")
-
-    result.toList shouldBe empty
-  }
-
-  test("option at the end of the string") {
-    val result = executeWithNewPlanner("MATCH (a) WHERE a.name LIKE 'abcde[Xf]' RETURN a")
-
-    result.toList should equal(Seq(Map("a" -> cNode)))
-  }
-
-  test("non-matching option at the end of the string") {
-    val result = executeWithNewPlanner("MATCH (a) WHERE a.name LIKE 'abcde[XY]' RETURN a")
-
-    result.toList shouldBe empty
-  }
-
-  // ***********************  CO-CO-CO-COMBO
   test("combining underscore and percent") {
     val result = executeWithNewPlanner("MATCH (a) WHERE a.name LIKE 'A%C_EF' RETURN a")
 
     result.toList should equal(Seq(Map("a" -> aNode)))
   }
 
-  test("combining percent and option") {
-    val result = executeWithNewPlanner("MATCH (a) WHERE a.name LIKE '[Aa]%' RETURN a")
-
-    result.toList should equal(Seq(
-      Map("a" -> aNode),
-      Map("a" -> bNode),
-      Map("a" -> cNode),
-      Map("a" -> dNode)
-    )
-    )
-  }
+  // *** TESTS OF NOT
 
   test("NOT can be used infix for LIKE") {
     val result = executeWithNewPlanner("MATCH (a) WHERE a.name NOT LIKE '%b%' RETURN a")

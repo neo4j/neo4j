@@ -25,7 +25,11 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 
 class ConvertLikeToRegexTest extends CypherFunSuite {
 
-  val tests = Seq(
+  import org.scalatest.prop.TableDrivenPropertyChecks._
+
+  val tests = Table(
+   "LIKE Pattern" -> "Regular Expression",
+
     "%" -> ".*"
     ,
     "_" -> "."
@@ -36,12 +40,10 @@ class ConvertLikeToRegexTest extends CypherFunSuite {
     ,
     ".*" -> quote(".*")
     ,
-    "[Ab]" -> "[Ab]"
+    "[Ab]" -> quote("[Ab]")
   )
 
-  tests.foreach {
-    case (like, regexp) => test(s"$like -> $regexp") {
-      convertLikeToRegex(LikeParser(like)) should equal(regexp)
-    }
+  forAll(tests) { (like, regexp) =>
+    convertLikeToRegex(LikeParser(like)) should equal(regexp)
   }
 }

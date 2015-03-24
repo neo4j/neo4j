@@ -34,8 +34,4 @@ class LikeParserTest extends CypherFunSuite {
   test("parse a string containing a single character match") {
     LikeParser("ab_d").ops should equal(List(StringSegment("ab"), MatchSingleChar, StringSegment("d")))
   }
-
-  test("parse a string containing an option") {
-    LikeParser("[Aa]bcd").ops should equal(List(SetMatch(Seq(RawCharacter("A"), RawCharacter("a"))), StringSegment("bcd")))
-  }
 }

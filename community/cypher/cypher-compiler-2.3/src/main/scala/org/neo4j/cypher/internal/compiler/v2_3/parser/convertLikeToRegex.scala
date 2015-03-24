@@ -35,7 +35,6 @@ case object convertLikeToRegex {
     case RawCharacter(s) => s
     case MatchAll => ".*"
     case MatchSingleChar => "."
-    case SetMatch(alt) => alt.map(convert).mkString(start = "[", sep = "", end = "]")
   }
 
   private def isQuoted(s: String) = QUOTE_PATTERN.matcher(s).matches()
