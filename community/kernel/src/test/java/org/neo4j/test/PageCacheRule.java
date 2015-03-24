@@ -407,6 +407,18 @@ public class PageCacheRule extends ExternalResource
         }
 
         @Override
+        public int getCurrentPageSize()
+        {
+            return cursor.getCurrentPageSize();
+        }
+
+        @Override
+        public File getCurrentFile()
+        {
+            return cursor.getCurrentFile();
+        }
+
+        @Override
         public void rewind() throws IOException
         {
             cursor.rewind();

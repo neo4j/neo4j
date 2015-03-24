@@ -129,6 +129,12 @@ public interface PageCacheTracer extends PageCacheMonitor
         {
             return 0;
         }
+
+        @Override
+        public String toString()
+        {
+            return PageCacheTracer.class.getName() + ".NULL";
+        }
     };
 
     /**

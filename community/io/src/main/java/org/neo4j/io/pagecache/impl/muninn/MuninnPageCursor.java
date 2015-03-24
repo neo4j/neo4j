@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.concurrent.BinaryLatch;
@@ -99,6 +100,19 @@ abstract class MuninnPageCursor implements PageCursor
     public final long getCurrentPageId()
     {
         return currentPageId;
+    }
+
+    @Override
+    public final int getCurrentPageSize()
+    {
+        return currentPageId == UNBOUND_PAGE_ID?
+               UNBOUND_PAGE_SIZE : pagedFile.pageSize();
+    }
+
+    @Override
+    public final File getCurrentFile()
+    {
+        return currentPageId == UNBOUND_PAGE_ID? null : pagedFile.file();
     }
 
     /**

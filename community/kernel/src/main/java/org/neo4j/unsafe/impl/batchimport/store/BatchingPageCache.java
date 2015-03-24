@@ -496,6 +496,19 @@ public class BatchingPageCache implements PageCache
         }
 
         @Override
+        public int getCurrentPageSize()
+        {
+            return currentPageId == -1? UNBOUND_PAGE_SIZE : pageSize;
+        }
+
+        @Override
+        public File getCurrentFile()
+        {
+            // We don't need this where the BatchingPageCache is being used.
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public void rewind() throws IOException
         {
             throw new UnsupportedOperationException(

@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.function.Consumer;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
@@ -85,7 +86,7 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
         }
     };
 
-    private abstract class HEvent
+    public abstract class HEvent
     {
         final long time;
         final long threadId;
@@ -98,6 +99,7 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
             Thread thread = Thread.currentThread();
             threadId = thread.getId();
             threadName = thread.getName();
+            System.identityHashCode( this );
         }
 
         public final void print( PrintStream out, String exceptionLinePrefix )
@@ -107,6 +109,8 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
                 out.print( '-' );
             }
             out.print( getClass().getSimpleName() );
+            out.print( '#' );
+            out.print( System.identityHashCode( this ) );
             out.print( '[' );
             out.print( "time:" );
             out.print( (time - end.time) / 1000 );
@@ -154,7 +158,7 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
         }
     }
 
-    private final class EndHEvent extends HEvent
+    public final class EndHEvent extends HEvent
     {
         IntervalHEven event;
 
@@ -177,10 +181,12 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
                 classSimpleNameCache.put( eventClass, className );
             }
             out.print( className );
+            out.print( '#' );
+            out.print( System.identityHashCode( event ) );
         }
     }
 
-    private abstract class IntervalHEven extends HEvent
+    public abstract class IntervalHEven extends HEvent
     {
         public void close()
         {
@@ -188,7 +194,7 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
         }
     }
 
-    private class MappedFileHEvent extends HEvent
+    public class MappedFileHEvent extends HEvent
     {
         File file;
 
@@ -199,7 +205,7 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
         }
     }
 
-    private class UnmappedFileHEvent extends HEvent
+    public class UnmappedFileHEvent extends HEvent
     {
         File file;
 
@@ -210,7 +216,7 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
         }
     }
 
-    private class EvictionRunHEvent extends IntervalHEven implements EvictionRunEvent
+    public class EvictionRunHEvent extends IntervalHEven implements EvictionRunEvent
     {
         int pagesToEvict;
 
@@ -233,7 +239,7 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
         }
     }
 
-    private class EvictionHEvent extends IntervalHEven implements EvictionEvent, FlushEventOpportunity
+    public class EvictionHEvent extends IntervalHEven implements EvictionEvent, FlushEventOpportunity
     {
         private long filePageId;
         private File file;
@@ -288,7 +294,7 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
         }
     }
 
-    private class FlushHEvent extends IntervalHEven implements FlushEvent
+    public class FlushHEvent extends IntervalHEven implements FlushEvent
     {
         private long filePageId;
         private int cachePageId;
@@ -336,7 +342,7 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
         }
     }
 
-    private class PinHEvent extends IntervalHEven implements PinEvent
+    public class PinHEvent extends IntervalHEven implements PinEvent
     {
         private boolean exclusiveLock;
         private long filePageId;
@@ -381,7 +387,7 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
         }
     }
 
-    private class PageFaultHEvent extends IntervalHEven implements PageFaultEvent
+    public class PageFaultHEvent extends IntervalHEven implements PageFaultEvent
     {
         private int bytesRead;
         private int cachePageId;
@@ -432,7 +438,7 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
         }
     }
 
-    private class MajorFlushHEvent extends IntervalHEven implements MajorFlushEvent, FlushEventOpportunity
+    public class MajorFlushHEvent extends IntervalHEven implements MajorFlushEvent, FlushEventOpportunity
     {
         private File file;
 
@@ -467,75 +473,30 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
         return event;
     }
 
-    public synchronized void printHistory( PrintStream outputStream )
+    public synchronized boolean processHistory( Consumer<HEvent> processor )
     {
-        bufferOut.setOut( outputStream );
         HEvent events = history.getAndSet( null );
         if ( events == null )
         {
-            out.println( "No events recorded." );
+            return false;
         }
-
         events = reverse( events );
-        List<HEvent> concurrentIntervals = new LinkedList<>();
-
-        while ( events != end )
+        while ( events != null )
         {
-            String exceptionLinePrefix = exceptionLinePrefix( concurrentIntervals.size() );
-            if ( events.getClass() == EndHEvent.class )
-            {
-                EndHEvent endHEvent = (EndHEvent) events;
-                int idx = concurrentIntervals.indexOf( endHEvent.event );
-                putcs( out, '|', idx );
-                out.print( '-' );
-                int left = concurrentIntervals.size() - idx - 1;
-                putcs( out, '|', left );
-                out.print( "   " );
-                endHEvent.print( out, exceptionLinePrefix );
-                concurrentIntervals.remove( idx );
-                if ( left > 0 )
-                {
-                    out.println();
-                    putcs( out, '|', idx );
-                    putcs( out, '/', left );
-                }
-            }
-            else if ( events instanceof IntervalHEven )
-            {
-                putcs( out, '|', concurrentIntervals.size() );
-                out.print( "+   " );
-                events.print( out, exceptionLinePrefix );
-                concurrentIntervals.add( events );
-            }
-            else
-            {
-                putcs( out, '|', concurrentIntervals.size() );
-                out.print( ">   " );
-                events.print( out, exceptionLinePrefix );
-            }
-            out.println();
+            processor.accept( events );
             events = events.prev;
         }
+        return true;
+    }
+
+    public synchronized void printHistory( PrintStream outputStream )
+    {
+        bufferOut.setOut( outputStream );
+        if ( !processHistory( new HistoryPrinter() ) )
+        {
+            out.println( "No events recorded." );
+        }
         out.flush();
-    }
-
-    private String exceptionLinePrefix( int size )
-    {
-        StringBuilder sb = new StringBuilder();
-        for ( int i = 0; i < size; i++ )
-        {
-            sb.append( '|' );
-        }
-        sb.append( ":  " );
-        return sb.toString();
-    }
-
-    private void putcs( PrintStream out, char c, int count )
-    {
-        for ( int i = 0; i < count; i++ )
-        {
-            out.print( c );
-        }
     }
 
     private HEvent reverse( HEvent events )
@@ -649,5 +610,72 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
     public long countEvictionExceptions()
     {
         return 0;
+    }
+
+    private class HistoryPrinter implements Consumer<HEvent>
+    {
+        private final List<HEvent> concurrentIntervals;
+
+        public HistoryPrinter()
+        {
+            this.concurrentIntervals = new LinkedList<>();
+        }
+
+        @Override
+        public void accept( HEvent event )
+        {
+            String exceptionLinePrefix = exceptionLinePrefix( concurrentIntervals.size() );
+            if ( event.getClass() == EndHEvent.class )
+            {
+                EndHEvent endHEvent = (EndHEvent) event;
+                int idx = concurrentIntervals.indexOf( endHEvent.event );
+                putcs( out, '|', idx );
+                out.print( '-' );
+                int left = concurrentIntervals.size() - idx - 1;
+                putcs( out, '|', left );
+                out.print( "   " );
+                endHEvent.print( out, exceptionLinePrefix );
+                concurrentIntervals.remove( idx );
+                if ( left > 0 )
+                {
+                    out.println();
+                    putcs( out, '|', idx );
+                    putcs( out, '/', left );
+                }
+            }
+            else if ( event instanceof IntervalHEven )
+            {
+                putcs( out, '|', concurrentIntervals.size() );
+                out.print( "+   " );
+                event.print( out, exceptionLinePrefix );
+                concurrentIntervals.add( event );
+            }
+            else
+            {
+                putcs( out, '|', concurrentIntervals.size() );
+                out.print( ">   " );
+                event.print( out, exceptionLinePrefix );
+            }
+            out.println();
+        }
+
+        private String exceptionLinePrefix( int size )
+        {
+            StringBuilder sb = new StringBuilder();
+            for ( int i = 0; i < size; i++ )
+            {
+                sb.append( '|' );
+            }
+            sb.append( ":  " );
+            return sb.toString();
+        }
+
+        private void putcs( PrintStream out, char c, int count )
+        {
+            for ( int i = 0; i < count; i++ )
+            {
+                out.print( c );
+            }
+        }
     }
 }
