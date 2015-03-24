@@ -90,7 +90,6 @@ public class LogbackService
                     }
 
                     loggerContext.putProperty( "neo_store", storeDir.getPath() );
-                    loggerContext.putProperty( "history", config.get(GraphDatabaseSettings.log_history_size ).toString() );
                     loggerContext.putProperty( "remote_logging_enabled", config.get( GraphDatabaseSettings
                             .remote_logging_enabled ).toString() );
                     loggerContext.putProperty( "remote_logging_host", config.get( GraphDatabaseSettings
