@@ -110,6 +110,25 @@ angular.module('neo4jApp')
           q.promise
       ]
 
+    # System info
+    FrameProvider.interpreters.push
+      type: 'info'
+      templateUrl: 'views/frame-info.html'
+      matches: "#{cmdchar}sysinfo"
+      exec: ['$http', ($http) ->
+        step_number = 1
+        (input, q) ->
+          url = "content/info/sysinfo.html"
+          $http.get(url)
+          .then(
+            ->
+              q.resolve(page: url)
+          ,
+            (r)->
+              q.reject(r)
+          )
+          q.promise
+      ]
 
     # play handler
     FrameProvider.interpreters.push
