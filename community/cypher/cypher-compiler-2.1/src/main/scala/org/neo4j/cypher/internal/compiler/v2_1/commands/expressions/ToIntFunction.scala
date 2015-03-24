@@ -22,8 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.commands.expressions
 import org.neo4j.cypher.internal.compiler.v2_1._
 import pipes.QueryState
 import symbols._
-import org.neo4j.cypher.ParameterWrongTypeException
-import java.lang.NumberFormatException
+import org.neo4j.cypher.CypherTypeException
 
 case class ToIntFunction(a: Expression) extends NullInNullOutExpression(a) {
   def symbolTableDependencies: Set[String] = a.symbolTableDependencies
@@ -39,18 +38,14 @@ case class ToIntFunction(a: Expression) extends NullInNullOutExpression(a) {
       v.longValue()
     case v: String =>
       try {
-        v.toLong
+        val d = BigDecimal(v)
+        if (d <= Long.MaxValue && d >= Long.MinValue) d.toLong
+        else throw new CypherTypeException(s"integer, $v, is too large")
       } catch {
         case e: NumberFormatException =>
-          try {
-            v.toFloat.toInt
-          } catch {
-            case e: NumberFormatException =>
-              null
-          }
-
+          null
       }
     case v =>
-      throw new ParameterWrongTypeException("Expected a String or Number, got: " + v.toString)
+      throw new CypherTypeException("Expected a String or Number, got: " + v.toString)
   }
 }
