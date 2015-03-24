@@ -76,12 +76,14 @@ public class LuceneIndexAccessorTest
         // WHEN
         updateAndCommit( asList( add( nodeId, value ) ) );
         IndexReader firstReader = accessor.newReader();
-        updateAndCommit( asList( add( nodeId2, value ) ) );
+        updateAndCommit( asList( add( nodeId2, value2 ) ) );
         IndexReader secondReader = accessor.newReader();
 
         // THEN
         assertEquals( asSet( nodeId ), asUniqueSet( firstReader.lookup( value ) ) );
-        assertEquals( asSet( nodeId, nodeId2 ), asUniqueSet( secondReader.lookup( value ) ) );
+        assertEquals( asSet(  ), asUniqueSet( firstReader.lookup( value2 ) ) );
+        assertEquals( asSet( nodeId ), asUniqueSet( secondReader.lookup( value ) ) );
+        assertEquals( asSet( nodeId2 ), asUniqueSet( secondReader.lookup( value2 ) ) );
         firstReader.close();
         secondReader.close();
     }
@@ -122,14 +124,15 @@ public class LuceneIndexAccessorTest
         // GIVEN
         updateAndCommit( asList(
                 add( nodeId, value ),
-                add( nodeId2, value ) ) );
+                add( nodeId2, value2 ) ) );
 
         // WHEN
         updateAndCommit( asList( remove( nodeId, value ) ) );
         IndexReader reader = accessor.newReader();
 
         // THEN
-        assertEquals( asSet( nodeId2 ), asUniqueSet( reader.lookup( value ) ) );
+        assertEquals( asSet( nodeId2 ), asUniqueSet( reader.lookup( value2 ) ) );
+        assertEquals( asSet(  ), asUniqueSet( reader.lookup( value ) ) );
         reader.close();
     }
 
