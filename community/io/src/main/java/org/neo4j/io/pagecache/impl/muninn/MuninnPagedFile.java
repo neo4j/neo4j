@@ -31,9 +31,7 @@ import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
-
-import static org.neo4j.io.pagecache.impl.muninn.UnsafeUtil.arrayOffset;
-import static org.neo4j.io.pagecache.impl.muninn.UnsafeUtil.getAndSetObject;
+import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 final class MuninnPagedFile implements PagedFile
 {
@@ -270,7 +268,7 @@ final class MuninnPagedFile implements PagedFile
         int chunkId = computeChunkId( filePageId );
         long chunkOffset = computeChunkOffset( filePageId );
         Object[] chunk = translationTable[chunkId];
-        Object element = getAndSetObject( chunk, chunkOffset, null );
+        Object element = UnsafeUtil.getAndSetObject( chunk, chunkOffset, null );
         assert element instanceof MuninnPage: "Expected to evict a MuninnPage but found " + element;
         return (MuninnPage) element;
     }
@@ -312,6 +310,6 @@ final class MuninnPagedFile implements PagedFile
     long computeChunkOffset( long filePageId )
     {
         int index = (int) (filePageId & translationTableChunkSizeMask);
-        return arrayOffset( index, translationTableChunkArrayBase, translationTableChunkArrayScale );
+        return UnsafeUtil.arrayOffset( index, translationTableChunkArrayBase, translationTableChunkArrayScale );
     }
 }

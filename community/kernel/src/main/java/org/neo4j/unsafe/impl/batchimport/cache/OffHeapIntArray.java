@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
+import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
+
 /**
  * Off-heap version of {@link IntArray} using {@code sun.misc.Unsafe}. Supports arrays with length beyond
  * Integer.MAX_VALUE.
@@ -39,18 +41,18 @@ public class OffHeapIntArray extends OffHeapNumberArray implements IntArray
     @Override
     public int get( long index )
     {
-        return unsafe.getInt( addressOf( index ) );
+        return UnsafeUtil.getInt( addressOf( index ) );
     }
 
     @Override
     public void set( long index, int value )
     {
         long address = addressOf( index );
-        if ( unsafe.getInt( address ) == defaultValue )
+        if ( UnsafeUtil.getInt( address ) == defaultValue )
         {
             size++;
         }
-        unsafe.putInt( address, value );
+        UnsafeUtil.putInt( address, value );
         if ( index > highestSetIndex )
         {
             highestSetIndex = index;
@@ -74,13 +76,13 @@ public class OffHeapIntArray extends OffHeapNumberArray implements IntArray
     {
         if ( isByteUniform( defaultValue ) )
         {
-            unsafe.setMemory( address, length << shift, (byte)defaultValue );
+            UnsafeUtil.setMemory( address, length << shift, (byte)defaultValue );
         }
         else
         {
             for ( long i = 0, adr = address; i < length; i++, adr += stride )
             {
-                unsafe.putInt( adr, defaultValue );
+                UnsafeUtil.putInt( adr, defaultValue );
             }
         }
         highestSetIndex = -1;
@@ -95,9 +97,9 @@ public class OffHeapIntArray extends OffHeapNumberArray implements IntArray
 
         for ( int i = 0; i < numberOfEntries; i++, fromAddress += stride, toAddress += stride )
         {
-            int fromValue = unsafe.getInt( fromAddress );
-            unsafe.putInt( fromAddress, unsafe.getInt( toAddress ) );
-            unsafe.putInt( toAddress, fromValue );
+            int fromValue = UnsafeUtil.getInt( fromAddress );
+            UnsafeUtil.putInt( fromAddress, UnsafeUtil.getInt( toAddress ) );
+            UnsafeUtil.putInt( toAddress, fromValue );
         }
     }
 }

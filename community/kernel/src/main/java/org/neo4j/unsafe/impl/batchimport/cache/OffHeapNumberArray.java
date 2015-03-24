@@ -19,9 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
-import java.lang.reflect.Field;
-
-import sun.misc.Unsafe;
+import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 /**
  * Base class for common functionality for any {@link NumberArray} where the data lives off-heap.
@@ -36,10 +34,11 @@ abstract class OffHeapNumberArray implements NumberArray
 
     protected OffHeapNumberArray( long length, int shift )
     {
+        UnsafeUtil.assertHasUnsafe();
         this.length = length;
         this.shift = shift;
         this.stride = 1 << shift;
-        this.address = unsafe.allocateMemory( length << shift );
+        this.address = UnsafeUtil.malloc( length << shift );
     }
 
     @Override
@@ -81,28 +80,12 @@ abstract class OffHeapNumberArray implements NumberArray
         visitor.offHeapUsage( length * stride );
     }
 
-    protected static final Unsafe unsafe = getUnsafe();
-
-    private static Unsafe getUnsafe()
-    {
-        try
-        {
-            Field singleoneInstanceField = Unsafe.class.getDeclaredField( "theUnsafe" );
-            singleoneInstanceField.setAccessible( true );
-            return (Unsafe) singleoneInstanceField.get( null );
-        }
-        catch ( Exception e )
-        {
-            throw new Error( e );
-        }
-    }
-
     @Override
     public void close()
     {
         if ( !closed )
         {
-            unsafe.freeMemory( address );
+            UnsafeUtil.free( address );
             closed = true;
         }
     }
