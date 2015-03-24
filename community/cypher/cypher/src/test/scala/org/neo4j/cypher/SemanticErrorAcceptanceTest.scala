@@ -441,6 +441,12 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
+  test("fail when parsing larger than 64 bit integers") {
+    executeAndEnsureError(
+      "RETURN toInt('10508455564958384115')",
+      "integer, 10508455564958384115, is too large")
+  }
+
   def executeAndEnsureError(query: String, expected: String) {
     try {
       execute(query).toList
