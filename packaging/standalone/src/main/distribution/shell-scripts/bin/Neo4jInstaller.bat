@@ -11,7 +11,7 @@ set serviceStartType=auto
 set classpath="-DserverClasspath=lib/*.jar;system/lib/*.jar;plugins/**/*.jar;./conf*"
 set mainclass="-DserverMainClass=org.neo4j.server.Bootstrapper"
 set configFile="conf\neo4j-wrapper.conf"
-set loggingProperties="-Djava.util.logging.config.file=conf\windows-wrapper-logging.properties"
+set loggingProperties="-Djava.util.logging.config.file=%~dps0..\conf\windows-wrapper-logging.properties"
 set wrapperJarFilename=windows-service-wrapper-5.jar
 
 goto :main %1
