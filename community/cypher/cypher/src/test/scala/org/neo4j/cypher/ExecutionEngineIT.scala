@@ -25,13 +25,11 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.test.TestGraphDatabaseFactory
-import org.scalatest.Ignore
 
-@Ignore
 class ExecutionEngineIT extends CypherFunSuite {
 
-  test("should use smart/conservative by default in 2.2") {
-   //given
+  test("by default when using cypher 2.2 some queries should default to COST and others to RULE") {
+    //given
     val db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.2").newGraphDatabase()
@@ -45,7 +43,22 @@ class ExecutionEngineIT extends CypherFunSuite {
     plan2.getArguments().get("planner") should equal("RULE")
   }
 
-  test("should be able to set RULE as default in 2.2") {
+  test("by default when using cypher 2.3 some queries should default to COST and others to RULE") {
+    //given
+    val db = new TestGraphDatabaseFactory()
+      .newImpermanentDatabaseBuilder()
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.3").newGraphDatabase()
+
+    //when
+    val plan1 = db.execute("PROFILE MATCH (a) RETURN a").getExecutionPlanDescription
+    val plan2 = db.execute("PROFILE MATCH (a)-[:T*]-(a) RETURN a").getExecutionPlanDescription
+
+    //then
+    plan1.getArguments().get("planner") should equal("COST")
+    plan2.getArguments().get("planner") should equal("RULE")
+  }
+
+  test("should be able to set RULE as default when using cypher 2.2") {
     //given
     val db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
@@ -59,12 +72,41 @@ class ExecutionEngineIT extends CypherFunSuite {
     plan.getArguments().get("planner") should equal("RULE")
   }
 
-  test("should be able to force COST as default in 2.2") {
+  test("should be able to set RULE as default when using cypher 2.3") {
+    //given
+    val db = new TestGraphDatabaseFactory()
+      .newImpermanentDatabaseBuilder()
+      .setConfig(GraphDatabaseSettings.cypher_planner, "RULE")
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.3").newGraphDatabase()
+
+    //when
+    val plan = db.execute("PROFILE MATCH (a) RETURN a").getExecutionPlanDescription
+
+    //then
+    plan.getArguments().get("planner") should equal("RULE")
+  }
+
+  test("should be able to force COST as default when using cypher 2.2") {
     //given
     val db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
       .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.2").newGraphDatabase()
+
+    //when
+    val plan = db.execute("PROFILE MATCH (a)-[:T*]-(a) RETURN a").getExecutionPlanDescription
+
+    //then
+    plan.getArguments().get("planner") should equal("COST")
+  }
+
+
+  test("should be able to force COST as default when using cypher 2.3") {
+    //given
+    val db = new TestGraphDatabaseFactory()
+      .newImpermanentDatabaseBuilder()
+      .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.3").newGraphDatabase()
 
     //when
     val plan = db.execute("PROFILE MATCH (a)-[:T*]-(a) RETURN a").getExecutionPlanDescription

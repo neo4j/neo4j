@@ -203,7 +203,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
       graph, GraphDatabaseSettings.cypher_parser_version, CypherVersion.vDefault.name))
     val planner = PlannerName(optGraphSetting[String](
       graph, GraphDatabaseSettings.cypher_planner, PlannerName.default.name))
-    if ((version != CypherVersion.v2_2 ||version != CypherVersion.v2_3) && (planner == CostPlannerName || planner == IDPPlannerName || planner == DPPlannerName)) {
+    if ((version != CypherVersion.v2_2 && version != CypherVersion.v2_3) && (planner == CostPlannerName || planner == IDPPlannerName || planner == DPPlannerName)) {
       val message = s"Cannot combine configurations: ${GraphDatabaseSettings.cypher_parser_version.name}=${version.name} " +
         s"with ${GraphDatabaseSettings.cypher_planner.name} = ${planner.name}"
       logger.error(message)
