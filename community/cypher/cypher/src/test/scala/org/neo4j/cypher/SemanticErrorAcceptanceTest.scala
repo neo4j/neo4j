@@ -456,7 +456,7 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   test("should reject unicode versions of hyphens") {
     executeAndEnsureError(
       "RETURN 42 — 41",
-      "Invalid input '—': expected whitespace, comment, '.', node labels, '[', \"=~\", IN, IS, '^', '*', '/', '%', '+', '-', '<', '>', \"<=\", \">=\", '=', \"<>\", \"!=\", AND, XOR, OR, AS, ',', ORDER, SKIP, LIMIT, LOAD CSV, START, MATCH, UNWIND, MERGE, CREATE, SET, DELETE, REMOVE, FOREACH, WITH, RETURN, UNION, ';' or end of input (line 1, column 11 (offset: 10))")
+      "Invalid input '—': expected whitespace, comment, '.', node labels, '[', \"=~\", IN, LIKE, NOT, ILIKE, IS, '^', '*', '/', '%', '+', '-', '<', '>', \"<=\", \">=\", '=', \"<>\", \"!=\", AND, XOR, OR, AS, ',', ORDER, SKIP, LIMIT, LOAD CSV, START, MATCH, UNWIND, MERGE, CREATE, SET, DELETE, REMOVE, FOREACH, WITH, RETURN, UNION, ';' or end of input (line 1, column 11 (offset: 10))")
   }
 
   test("fail when parsing larger than 64 bit integers") {
