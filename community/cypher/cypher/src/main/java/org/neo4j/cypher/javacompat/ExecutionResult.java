@@ -22,17 +22,20 @@ package org.neo4j.cypher.javacompat;
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import org.neo4j.cypher.CypherException;
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Notification;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.QueryExecutionType;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.Notification;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
-
 import scala.collection.JavaConversions;
 
 /**
@@ -281,9 +284,19 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     }
 
     @Override
+    public void accept( ResultVisitor visitor )
+    {
+        final MapResultRow row = new MapResultRow();
+        for ( boolean cont = true; cont && iter.hasNext(); cont = visitor.visit( row ) )
+        {
+            row.setMap( iter.next() );
+        }
+    }
+
+    @Override
     public Iterable<Notification> getNotifications()
     {
-        return JavaConversions.asJavaIterable(inner.notifications());
+        return JavaConversions.asJavaIterable( inner.notifications() );
     }
 
     private static class ExceptionConversion<T> implements ResourceIterator<T>
@@ -351,5 +364,81 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     private static QueryExecutionException converted( CypherException e )
     {
         return new QueryExecutionKernelException( e ).asUserException();
+    }
+
+    private static class MapResultRow implements ResultRow
+    {
+        private Map<String, Object> map;
+
+        private <T> T get( String key, Class<T> type )
+        {
+            Object value = map.get( key );
+            if ( value == null && !map.containsKey( key ) )
+            {
+                throw new IllegalArgumentException( "No column \"" + key + "\" exists" );
+            }
+            try
+            {
+                return type.cast( value );
+            }
+            catch ( ClassCastException e )
+            {
+                throw new NoSuchElementException( "The current item in column \"" + key + "\" is not a " +
+                        type.getSimpleName() );
+            }
+        }
+
+        @Override
+        public Object get( String key )
+        {
+            return get( key, Object.class );
+        }
+
+        @Override
+        public Node getNode( String key )
+        {
+            return get( key, Node.class );
+        }
+
+        @Override
+        public Relationship getRelationship( String key )
+        {
+            return get( key, Relationship.class );
+        }
+
+        @Override
+        public String getString( String key )
+        {
+            return get( key, String.class );
+        }
+
+        @Override
+        public Long getLong( String key )
+        {
+            return get( key, Long.class );
+        }
+
+        @Override
+        public Double getDouble( String key )
+        {
+            return get( key, Double.class );
+        }
+
+        @Override
+        public Boolean getBoolean( String key )
+        {
+            return get( key, Boolean.class );
+        }
+
+        @Override
+        public Path getPath( String key )
+        {
+            return get( key, Path.class );
+        }
+
+        public void setMap( Map<String, Object> map )
+        {
+            this.map = map;
+        }
     }
 }
