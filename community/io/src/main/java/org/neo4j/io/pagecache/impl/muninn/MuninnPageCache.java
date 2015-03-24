@@ -111,7 +111,7 @@ public class MuninnPageCache implements PageCache
     // much of its time will be spent doing IO. For instance, setting the ratio to 0.3 will make the flusher task
     // spend 30% of its time doing IO, and 70% of its time sleeping.
     private static final double backgroundFlushIoRatio = getDouble(
-            "org.neo4j.io.pagecache.impl.muninn.backgroundFlushIoRatio", 0.2 );
+            "org.neo4j.io.pagecache.impl.muninn.backgroundFlushIoRatio", 0.1 );
 
     private static double getDouble( String property, double def )
     {
@@ -126,11 +126,11 @@ public class MuninnPageCache implements PageCache
     }
 
     private static final long backgroundFlushBusyBreak = Long.getLong(
-            "org.neo4j.io.pagecache.impl.muninn.backgroundFlushBusyBreak", 5000 );
+            "org.neo4j.io.pagecache.impl.muninn.backgroundFlushBusyBreak", 100 );
     private static final long backgroundFlushMediumBreak = Long.getLong(
-            "org.neo4j.io.pagecache.impl.muninn.backgroundFlushMediumBreak", 5000 );
+            "org.neo4j.io.pagecache.impl.muninn.backgroundFlushMediumBreak", 200 );
     private static final long backgroundFlushLongBreak = Long.getLong(
-            "org.neo4j.io.pagecache.impl.muninn.backgroundFlushLongBreak", 5000 );
+            "org.neo4j.io.pagecache.impl.muninn.backgroundFlushLongBreak", 1000 );
 
     // This is a pre-allocated constant, so we can throw it without allocating any objects:
     private static final IOException oomException = new IOException(
