@@ -19,13 +19,13 @@
  */
 package org.neo4j.ext.udc;
 
-import static org.junit.Assert.assertEquals;
-
 import org.junit.Test;
-import org.neo4j.helpers.HostnamePort;
+
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertEquals;
 
 public class UdcSettingsIT
 {
