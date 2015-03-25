@@ -131,9 +131,6 @@ public abstract class GraphDatabaseSettings
     @Description( "Port for remote logging using Logback SocketAppender." )
     public static final Setting<Integer> remote_logging_port = setting("remote_logging_port", INTEGER, "4560", port );
 
-    @Description( "Maximum number of history files for messages.log." )
-    public static final Setting<Integer> log_history_size = setting("logging.history", INTEGER, "7", min(1) );
-
     // Indexing
     @Description("Controls the auto indexing feature for nodes. Setting it to `false` shuts it down, " +
             "while `true` enables it by default for properties "
