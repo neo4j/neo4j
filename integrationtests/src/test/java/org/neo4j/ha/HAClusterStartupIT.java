@@ -19,11 +19,12 @@
  */
 package org.neo4j.ha;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
-
-import org.junit.Before;
-import org.junit.Test;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.Transaction;
@@ -31,6 +32,7 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.test.ha.ClusterManager;
 
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
@@ -40,12 +42,18 @@ import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
 public class HAClusterStartupIT
 {
-    private final File dir = TargetDirectory.forTest( HAClusterStartupIT.class ).makeGraphDbDir();
-    private final ClusterManager clusterManager = new ClusterManager( clusterOfSize( 3 ), dir, stringMap() );
+    public final @Rule TestDirectory dir = TargetDirectory.testDirForTest( getClass() );
+    private ClusterManager clusterManager;
     private ClusterManager.ManagedCluster cluster;
     private HighlyAvailableGraphDatabase master;
     private HighlyAvailableGraphDatabase slave1;
     private HighlyAvailableGraphDatabase slave2;
+
+    @Before
+    public void instantiateClusterManager()
+    {
+        clusterManager = new ClusterManager( clusterOfSize( 3 ), dir.directory(), stringMap() );
+    }
 
     @Before
     public void setup() throws Throwable
@@ -209,7 +217,7 @@ public class HAClusterStartupIT
         // WHEN removing all logical log files in graphdb on the slave and restarting a new cluster
         File seedDir = deleteAllLogsOn( slave1 );
 
-        File newDir = new File( dir, "new" );
+        File newDir = new File( dir.directory(), "new" );
         FileUtils.deleteRecursively( newDir );
         ClusterManager newClusterManager = new ClusterManager(
                 new ClusterManager.Builder( newDir ).withProvider( clusterOfSize( 3 ) ).withSeedDir( seedDir )
