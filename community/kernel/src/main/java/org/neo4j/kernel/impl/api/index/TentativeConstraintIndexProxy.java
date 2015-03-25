@@ -38,6 +38,25 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 
+/**
+ * What is a tentative constraint index proxy? Well, the way we build uniqueness constraints is as follows:
+ * <ol>
+ * <li>Begin a transaction T, which will be the "parent" transaction in this process</li>
+ * <li>Execute a mini transaction Tt which will create the index rule to start the index population</li>
+ * <li>Sit and wait for the index to be built</li>
+ * <li>Execute yet another mini transaction Tu which will create the constraint rule and connect the two</li>
+ * </ol>
+ *
+ * The fully populated index flips to a tentative index. The reason for that is to guard for incoming transactions
+ * that gets applied.
+ * Such incoming transactions have potentially been verified on another instance with a slightly dated view
+ * of the schema and has furthermore made it through some additional checks on this instance since the constraint
+ * transaction Tu hasn't yet committed. Transaction data gets applied to the neo store first and the index second, so at
+ * the point where the applying transaction sees that it violates the constraint it has already modified the store and
+ * cannot back out. However the constraint transaction T (and specifically Tu) can. So a violated constraint while
+ * in tentative mode does not fail the transaction violating the constraint, but keeps the failure around and will
+ * eventually fail Tu, and in extension T.
+ */
 public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
 {
     private final FlippableIndexProxy flipper;
@@ -136,6 +155,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
         }
     }
 
+    @Override
     public void activate()
     {
         if ( failures.isEmpty() )
