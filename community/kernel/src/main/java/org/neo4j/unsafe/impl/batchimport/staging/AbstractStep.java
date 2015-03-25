@@ -245,19 +245,26 @@ public abstract class AbstractStep<T> implements Step<T>
     {
         if ( !stillWorking() && !isCompleted() )
         {
-            if ( downstream != null )
+            synchronized ( this )
             {
-                downstream.endOfUpstream();
+                // Only allow a single thread to notify that we've ended our stream as well as calling done()
+                // stillWorking(), once false cannot again return true so no need to check
+                if ( !isCompleted() )
+                {
+                    if ( downstream != null )
+                    {
+                        downstream.endOfUpstream();
+                    }
+                    done();
+                    completed = true;
+                }
             }
-            done();
-            // else this is the end of the line
-            completed = true;
         }
     }
 
     /**
-     * Called when upstream has run out of batches to send and all received batches have been processed successfully.
-     * Called before {@link #close()}.
+     * Called once, when upstream has run out of batches to send and all received batches have been
+     * processed successfully.
      */
     protected void done()
     {   // Do nothing by default
