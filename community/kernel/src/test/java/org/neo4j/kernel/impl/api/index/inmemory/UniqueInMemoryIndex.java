@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -34,7 +35,7 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.UniquePropertyIndexUpdater;
 
-class UniqueInMemoryIndex extends InMemoryIndex
+class UniqueInMemoryIndex extends InMemoryIndex implements UniquePropertyIndexUpdater.Lookup
 {
     private final int propertyKeyId;
 
@@ -46,7 +47,7 @@ class UniqueInMemoryIndex extends InMemoryIndex
     @Override
     protected IndexUpdater newUpdater( final IndexUpdateMode mode, final boolean populating )
     {
-        return new UniquePropertyIndexUpdater()
+        return new UniquePropertyIndexUpdater( this )
         {
             @Override
             protected void flushUpdates( Iterable<NodePropertyUpdate> updates )
@@ -87,6 +88,13 @@ class UniqueInMemoryIndex extends InMemoryIndex
                 }
             }
         };
+    }
+
+    @Override
+    public Long currentlyIndexedNode( Object value ) throws IOException
+    {
+        PrimitiveLongIterator nodes = lookup( value );
+        return nodes.hasNext() ? nodes.next() : null;
     }
 
     @Override
