@@ -91,11 +91,11 @@ public class LinearHistoryPageCacheTracerTest
                     }
                     if ( rng.nextDouble() < 0.1 )
                     {
-                        file.flush();
+                        file.flushAndForce();
                     }
                     else if ( rng.nextBoolean() )
                     {
-                        cache.flush();
+                        cache.flushAndForce();
                     }
                 }
                 catch ( Throwable ignore )
