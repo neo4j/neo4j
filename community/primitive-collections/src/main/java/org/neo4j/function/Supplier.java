@@ -20,13 +20,14 @@
 package org.neo4j.function;
 
 /**
- * A generic factory interface for creating instances that do not need any additional dependencies or parameters.
- *
- * If the implementation is not always creating new instances, you should probably use {@link Supplier}.
- *
- * @param <T> a new instance
+ * A supplier of results.
+ * @param <T> the type of results supplied by this supplier
  */
-public interface Factory<T>
+public interface Supplier<T>
 {
-    T newInstance();
+    /**
+     * Gets a result.
+     * @return An result
+     */
+    T get();
 }

@@ -20,13 +20,24 @@
 package org.neo4j.function;
 
 /**
- * A generic factory interface for creating instances that do not need any additional dependencies or parameters.
- *
- * If the implementation is not always creating new instances, you should probably use {@link Supplier}.
- *
- * @param <T> a new instance
+ * Constructors for basic {@link Consumer} types
  */
-public interface Factory<T>
+public final class Consumers
 {
-    T newInstance();
+    private static final Consumer<?> NOOP = new Consumer() {
+        @Override
+        public void accept( Object value )
+        {
+            // noop
+        }
+    };
+
+    /**
+     * @param <T> The type to be consumed
+     * @return a {@link Consumer} that does nothing.
+     */
+    public static <T> Consumer<T> noop()
+    {
+        return (Consumer<T>) NOOP;
+    }
 }
