@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_3.{ParameterWrongTypeException, ExecutionContext}
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryStateHelper
+import org.neo4j.cypher.internal.compiler.v2_3.{CypherTypeException, ExecutionContext}
 
 class ToIntFunctionTest extends CypherFunSuite {
 
@@ -62,7 +62,7 @@ class ToIntFunctionTest extends CypherFunSuite {
   }
 
   test("should throw an exception if the argument is an object which cannot be converted to integer") {
-    evaluating { toInt(new Object) } should produce[ParameterWrongTypeException]
+    evaluating { toInt(new Object) } should produce[CypherTypeException]
   }
 
   test("given an integer should give the same value back") {
@@ -71,6 +71,31 @@ class ToIntFunctionTest extends CypherFunSuite {
 
   test("should truncate floats if given a float") {
     toInt(20.6f) should equal(20)
+  }
+
+  test("should fail for larger integers larger that 8 bytes") {
+    evaluating { toInt("10508455564958384115") } should produce[CypherTypeException]
+  }
+
+  test("should handle floats larger than 2^31 - 1") {
+    //2^33 = 8589934592
+    toInt("8589934592.0") should equal(8589934592L)
+  }
+
+  test("should handle -2^63") {
+    toInt("-9223372036854775808") should equal(Long.MinValue)
+  }
+
+  test("cannot handle -2^63-1") {
+    evaluating { toInt("-9223372036854775809") } should produce[CypherTypeException]
+  }
+
+  test("should handle 2^63 - 1") {
+    toInt("9223372036854775807") should equal(Long.MaxValue)
+  }
+
+  test("cannot handle 2^63") {
+    evaluating { toInt("9223372036854775808") } should produce[CypherTypeException]
   }
 
   private def toInt(orig: Any) = {
