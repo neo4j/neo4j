@@ -47,7 +47,7 @@ public class TestPlaceboTransaction
     public void before() throws Exception
     {
         ThreadToStatementContextBridge bridge = mock (ThreadToStatementContextBridge.class );
-        when( bridge.instance() ).thenReturn( mock( Statement.class ) );
+        when( bridge.get() ).thenReturn( mock( Statement.class ) );
         mockTopLevelTx = mock ( TopLevelTransaction.class);
         final TransactionOutcome outcome = new TransactionOutcome();
         when( mockTopLevelTx.getTransactionOutcome()).thenReturn(outcome);

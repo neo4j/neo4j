@@ -26,13 +26,13 @@ import org.junit.Test;
 
 import java.util.concurrent.Future;
 
+import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -329,7 +329,7 @@ public class RelationshipCountsTest
      */
     private long countsForRelationship( Label start, RelationshipType type, Label end )
     {
-        ReadOperations read = statementProvider.instance().readOperations();
+        ReadOperations read = statementSupplier.get().readOperations();
         int startId, typeId, endId;
         // start
         if ( start == null )
@@ -370,12 +370,12 @@ public class RelationshipCountsTest
         return read.countsForRelationship( startId, typeId, endId );
     }
 
-    private Provider<Statement> statementProvider;
+    private Supplier<Statement> statementSupplier;
 
     @Before
     public void exposeGuts()
     {
-        statementProvider = db.getGraphDatabaseAPI().getDependencyResolver()
+        statementSupplier = db.getGraphDatabaseAPI().getDependencyResolver()
                               .resolveDependency( ThreadToStatementContextBridge.class );
     }
 }

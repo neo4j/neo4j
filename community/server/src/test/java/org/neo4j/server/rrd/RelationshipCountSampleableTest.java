@@ -26,7 +26,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.server.rrd.sampler.RelationshipCountSampleable;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -68,7 +68,7 @@ public class RelationshipCountSampleableTest
     public void setUp() throws Exception
     {
         db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
-        sampleable = new RelationshipCountSampleable( db.getDependencyResolver().resolveDependency( NeoStoreProvider.class ) );
+        sampleable = new RelationshipCountSampleable( db.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ) );
     }
 
     @After

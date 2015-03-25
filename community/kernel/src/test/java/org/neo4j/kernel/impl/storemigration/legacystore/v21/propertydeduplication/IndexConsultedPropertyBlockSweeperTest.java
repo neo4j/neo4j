@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertFalse;
@@ -99,8 +99,8 @@ public class IndexConsultedPropertyBlockSweeperTest
         }
 
         DependencyResolver resolver = api.getDependencyResolver();
-        NeoStoreProvider neoStoreProvider = resolver.resolveDependency( NeoStoreProvider.class );
-        NeoStore neoStore = neoStoreProvider.evaluate();
+        NeoStoreSupplier neoStoreSupplier = resolver.resolveDependency( NeoStoreSupplier.class );
+        NeoStore neoStore = neoStoreSupplier.get();
         nodeStore = neoStore.getNodeStore();
         PropertyKeyTokenStore propertyKeyTokenStore = neoStore.getPropertyKeyTokenStore();
         propertyKeys = PropertyDeduplicatorTestUtil.indexPropertyKeys( propertyKeyTokenStore );

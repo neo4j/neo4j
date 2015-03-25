@@ -67,7 +67,7 @@ public class TxStateTransactionDataViewTest
     @Before
     public void setup()
     {
-        when(bridge.instance()).thenReturn( stmt );
+        when(bridge.get()).thenReturn( stmt );
     }
 
     @Test

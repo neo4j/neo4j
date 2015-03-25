@@ -72,7 +72,7 @@ public class LabelIT
         try ( Transaction ignore = db.beginTx() )
         {
             ThreadToStatementContextBridge bridge = threadToStatementContextBridgeFrom( db );
-            return bridge.instance().readOperations().labelGetForName( label.name() );
+            return bridge.get().readOperations().labelGetForName( label.name() );
         }
     }
 

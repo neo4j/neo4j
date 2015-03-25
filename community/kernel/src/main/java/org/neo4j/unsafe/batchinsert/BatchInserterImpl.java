@@ -119,7 +119,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
 import org.neo4j.kernel.impl.transaction.state.PropertyDeleter;
 import org.neo4j.kernel.impl.transaction.state.PropertyTraverser;
@@ -1112,12 +1112,12 @@ public class BatchInserterImpl implements BatchInserter
             {
                 return type.cast( logging );
             }
-            if ( NeoStoreProvider.class.isAssignableFrom( type ) )
+            if ( NeoStoreSupplier.class.isAssignableFrom( type ) )
             {
-                return type.cast( new NeoStoreProvider()
+                return type.cast( new NeoStoreSupplier()
                 {
                     @Override
-                    public NeoStore evaluate()
+                    public NeoStore get()
                     {
                         return neoStore;
                     }

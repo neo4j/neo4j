@@ -25,7 +25,9 @@ package org.neo4j.helpers;
  * the specific semantics work is up to the implementor.
  *
  * @param <TYPE>
+ * @deprecated Use {@link org.neo4j.function.Supplier} instead
  */
+@Deprecated
 public interface Provider<TYPE>
 {
     TYPE instance();

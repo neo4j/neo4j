@@ -28,7 +28,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.kernel.logging.Logging;
 
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.tracking;
@@ -48,7 +48,7 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
 
         FileSystemAbstraction getFileSystem();
 
-        NeoStoreProvider getNeoStoreProvider();
+        NeoStoreSupplier getNeoStoreSupplier();
 
         Logging getLogging();
     }
@@ -77,7 +77,7 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
                 directoryFactory, new File( new File( new File( storeDir, "schema" ), "label" ), "lucene" ),
 
                 dependencies.getFileSystem(), tracking(),
-                fullStoreLabelUpdateStream( dependencies.getNeoStoreProvider() ),
+                fullStoreLabelUpdateStream( dependencies.getNeoStoreSupplier() ),
                 monitor != null ? monitor : loggerMonitor( dependencies.getLogging() ) );
 
         return new LabelScanStoreProvider( scanStore, priority );

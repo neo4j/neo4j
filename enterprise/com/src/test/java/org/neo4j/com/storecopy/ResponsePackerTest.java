@@ -26,6 +26,7 @@ import org.junit.Test;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
+import org.neo4j.function.Suppliers;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -43,8 +44,6 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static org.neo4j.kernel.impl.util.Providers.singletonProvider;
-
 public class ResponsePackerTest
 {
     @Test
@@ -58,7 +57,7 @@ public class ResponsePackerTest
         final long targetTransactionId = 8L;
         final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( targetTransactionId, 0 );
         ResponsePacker packer = new ResponsePacker( transactionStore, transactionIdStore,
-                singletonProvider( new StoreId() ) );
+                Suppliers.singleton( new StoreId() ) );
 
         // WHEN
         Response<Object> response = packer.packTransactionStreamResponse( requestContextStartingAt( 5L ), null );

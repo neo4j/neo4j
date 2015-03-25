@@ -32,8 +32,8 @@ import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.com.ServerUtil;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.StoreCopyServer;
+import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.helpers.Provider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
@@ -92,10 +92,10 @@ public class OnlineBackupKernelExtension implements Lifecycle
                 LogicalTransactionStore logicalTransactionStore = resolver.resolveDependency( LogicalTransactionStore.class );
                 LogFileInformation logFileInformation = resolver.resolveDependency( LogFileInformation.class );
                 return new BackupImpl( copier, monitors,
-                        logicalTransactionStore, transactionIdStore, logFileInformation, new Provider<StoreId>()
+                        logicalTransactionStore, transactionIdStore, logFileInformation, new Supplier<StoreId>()
                         {
                             @Override
-                            public StoreId instance()
+                            public StoreId get()
                             {
                                 return graphDatabaseAPI.storeId();
                             }

@@ -220,7 +220,7 @@ public class TestNeoStore
         ds.init();
         ds.start();
 
-        NeoStore neoStore = ds.evaluate();
+        NeoStore neoStore = ds.get();
         pStore = neoStore.getPropertyStore();
         rtStore = neoStore.getRelationshipTypeTokenStore();
         storeLayer = ds.getStoreLayer();
@@ -316,7 +316,7 @@ public class TestNeoStore
 
     private long nextId( Class<?> clazz )
     {
-        NeoStore neoStore = ds.evaluate();
+        NeoStore neoStore = ds.get();
         if ( clazz.equals( PropertyKeyTokenRecord.class ) )
         {
             return neoStore.getPropertyKeyTokenStore().nextId();

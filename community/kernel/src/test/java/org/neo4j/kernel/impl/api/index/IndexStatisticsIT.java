@@ -132,7 +132,7 @@ public class IndexStatisticsIT
     {
         return ( (GraphDatabaseAPI) db ).getDependencyResolver()
                                         .resolveDependency( ThreadToStatementContextBridge.class )
-                                        .instance();
+                                        .get();
     }
 
     private void createAliens()

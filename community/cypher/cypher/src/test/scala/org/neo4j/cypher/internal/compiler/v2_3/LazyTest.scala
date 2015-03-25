@@ -201,7 +201,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     when(nodeManager.newNodeProxyById(anyLong())).thenAnswer( new Answer[NodeProxy] {
       def answer( invocation: InvocationOnMock ): NodeProxy = new NodeProxy( null, invocation.getArguments( )( 0 ).asInstanceOf[Long] )
     })
-    when(bridge.instance()).thenReturn(fakeStatement)
+    when(bridge.get()).thenReturn(fakeStatement)
     when(fakeStatement.readOperations()).thenReturn(fakeReadStatement)
     when(fakeStatement.dataWriteOperations()).thenReturn(fakeDataStatement)
     when(fakeGraph.getDependencyResolver).thenReturn(dependencies)

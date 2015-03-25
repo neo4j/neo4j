@@ -357,9 +357,9 @@ public class IndexRecoveryIT
         Set<NodePropertyUpdate> updates = new HashSet<>();
         try ( Transaction tx = db.beginTx() )
         {
-            ThreadToStatementContextBridge ctxProvider = db.getDependencyResolver().resolveDependency(
+            ThreadToStatementContextBridge ctxSupplier = db.getDependencyResolver().resolveDependency(
                     ThreadToStatementContextBridge.class );
-            try ( Statement statement = ctxProvider.instance() )
+            try ( Statement statement = ctxSupplier.get() )
             {
                 for ( int number : new int[] {4, 10} )
                 {

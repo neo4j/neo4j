@@ -28,8 +28,8 @@ import org.neo4j.com.Response;
 import org.neo4j.com.storecopy.ResponsePacker;
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.com.storecopy.StoreWriter;
+import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.helpers.Provider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -81,10 +81,10 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
         this.storeDir = new File( graphDb.getStoreDir() );
         this.txStore = dependencyResolver.resolveDependency( LogicalTransactionStore.class );
         this.txChecksumLookup = new TransactionChecksumLookup( transactionIdStore, txStore );
-        this.responsePacker = new ResponsePacker( txStore, transactionIdStore, new Provider<StoreId>()
+        this.responsePacker = new ResponsePacker( txStore, transactionIdStore, new Supplier<StoreId>()
         {
             @Override
-            public StoreId instance()
+            public StoreId get()
             {
                 return graphDb.storeId();
             }

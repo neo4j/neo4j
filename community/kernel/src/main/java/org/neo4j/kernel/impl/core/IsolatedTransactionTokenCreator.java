@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.neo4j.helpers.Provider;
+import org.neo4j.function.Supplier;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -35,19 +35,19 @@ import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 public abstract class IsolatedTransactionTokenCreator implements TokenCreator
 {
     protected final IdGeneratorFactory idGeneratorFactory;
-    private final Provider<KernelAPI> kernelProvider;
+    private final Supplier<KernelAPI> kernelSupplier;
 
-    public IsolatedTransactionTokenCreator( Provider<KernelAPI> kernelProvider,
+    public IsolatedTransactionTokenCreator( Supplier<KernelAPI> kernelSupplier,
                                             IdGeneratorFactory idGeneratorFactory )
     {
-        this.kernelProvider = kernelProvider;
+        this.kernelSupplier = kernelSupplier;
         this.idGeneratorFactory = idGeneratorFactory;
     }
 
     @Override
     public synchronized int getOrCreate( String name ) throws org.neo4j.kernel.api.exceptions.KernelException
     {
-        KernelAPI kernel = kernelProvider.instance();
+        KernelAPI kernel = kernelSupplier.get();
         try ( KernelTransaction transaction = kernel.newTransaction() )
         {
             try ( Statement statement = transaction.acquireStatement() )

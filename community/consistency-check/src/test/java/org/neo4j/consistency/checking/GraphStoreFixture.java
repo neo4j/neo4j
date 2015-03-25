@@ -61,7 +61,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.PageCacheRule;
@@ -359,7 +359,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
                     new TransactionRepresentationCommitProcess(
                             dependencyResolver.resolveDependency( LogicalTransactionStore.class ),
                             dependencyResolver.resolveDependency( KernelHealth.class ),
-                            dependencyResolver.resolveDependency( NeoStoreProvider.class ).evaluate(),
+                            dependencyResolver.resolveDependency( NeoStoreSupplier.class ).get(),
                             dependencyResolver.resolveDependency( TransactionRepresentationStoreApplier.class ),
                             dependencyResolver.resolveDependency( IndexUpdatesValidator.class ),
                             TransactionApplicationMode.EXTERNAL );

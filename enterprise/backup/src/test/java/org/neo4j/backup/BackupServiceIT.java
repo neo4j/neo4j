@@ -65,7 +65,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.DevNullLoggingService;
@@ -528,7 +528,7 @@ public class BackupServiceIT
                 barrier.awaitUninterruptibly();
 
                 createAndIndexNode( db, 1 );
-                db.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate().flush();
+                db.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get().flush();
 
                 barrier.release();
             }

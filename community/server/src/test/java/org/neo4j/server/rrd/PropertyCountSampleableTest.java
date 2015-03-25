@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.rrd.sampler.PropertyCountSampleable;
@@ -50,7 +50,7 @@ public class PropertyCountSampleableTest
     {
         db = new WrappedDatabase( (InternalAbstractGraphDatabase) new TestGraphDatabaseFactory().newImpermanentDatabase() );
         DependencyResolver dependencyResolver = db.getGraph().getDependencyResolver();
-        sampleable = new PropertyCountSampleable( dependencyResolver.resolveDependency( NeoStoreProvider.class ) );
+        sampleable = new PropertyCountSampleable( dependencyResolver.resolveDependency( NeoStoreSupplier.class ) );
 
         Transaction tx = db.getGraph().beginTx();
         referenceNodeId = db.getGraph().createNode().getId();

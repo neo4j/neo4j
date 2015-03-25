@@ -273,7 +273,7 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Statement statement = bridge.instance();
+            Statement statement = bridge.get();
             statement.dataWriteOperations().nodeDelete( nodeId );
             tx.success();
         }
@@ -283,7 +283,7 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Statement statement = bridge.instance();
+            Statement statement = bridge.get();
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyKeyName );
             statement.dataWriteOperations().nodeSetProperty( nodeId, Property.property( propertyKeyId, newValue ) );
             tx.success();
@@ -294,7 +294,7 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Statement statement = bridge.instance();
+            Statement statement = bridge.get();
             for ( String name : NAMES )
             {
                 long nodeId = createNode( statement, "Person", "name", name );
@@ -369,7 +369,7 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Statement statement = bridge.instance();
+            Statement statement = bridge.get();
             statement.schemaWriteOperations().indexDrop( index );
             tx.success();
         }
@@ -404,7 +404,7 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Statement statement = bridge.instance();
+            Statement statement = bridge.get();
             double selectivity = statement.readOperations().indexUniqueValuesSelectivity( descriptor );
             tx.success();
             return selectivity;
@@ -420,7 +420,7 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Statement statement = bridge.instance();
+            Statement statement = bridge.get();
             createNode( statement, "Person", "name", "Davide" );
             createNode( statement, "Person", "name", "Stefan" );
             createNode( statement, "Person", "name", "John" );
@@ -444,7 +444,7 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Statement statement = bridge.instance();
+            Statement statement = bridge.get();
             int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( labelName );
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyKeyName );
             IndexDescriptor index = statement.schemaWriteOperations().indexCreate( labelId, propertyKeyId );
@@ -461,7 +461,7 @@ public class IndexStatisticsTest
         {
             try ( Transaction tx = db.beginTx() )
             {
-                Statement statement = bridge.instance();
+                Statement statement = bridge.get();
                 switch ( statement.readOperations().indexGetState( index ) )
                 {
                 case ONLINE:

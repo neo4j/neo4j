@@ -71,7 +71,7 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
     {
         try ( Transaction tx = db.beginTx() )
         {
-            try ( Statement statement = bridge.instance() )
+            try ( Statement statement = bridge.get() )
             {
                 showStructure( statement, visitor );
             }

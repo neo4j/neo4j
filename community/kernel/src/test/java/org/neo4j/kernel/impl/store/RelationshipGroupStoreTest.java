@@ -46,7 +46,7 @@ import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.ImpermanentGraphDatabase;
@@ -233,7 +233,7 @@ public class RelationshipGroupStoreTest
             tx.success();
         }
 
-        NeoStore neoStore = db.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate();
+        NeoStore neoStore = db.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get();
         NodeStore nodeStore = neoStore.getNodeStore();
         NodeRecord nodeRecord = nodeStore.getRecord( node.getId() );
         long group = nodeRecord.getNextRel();
@@ -267,7 +267,7 @@ public class RelationshipGroupStoreTest
             tx.success();
         }
 
-        NeoStore neoStore = db.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate();
+        NeoStore neoStore = db.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get();
         NodeStore nodeStore = neoStore.getNodeStore();
         NodeRecord nodeRecord = nodeStore.getRecord( node.getId() );
         long group = nodeRecord.getNextRel();
@@ -300,7 +300,7 @@ public class RelationshipGroupStoreTest
         tx.success();
         tx.finish();
 
-        NeoStore neoStore = db.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate();
+        NeoStore neoStore = db.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get();
         NodeStore nodeStore = neoStore.getNodeStore();
         NodeRecord nodeRecord = nodeStore.getRecord( node.getId() );
         long group = nodeRecord.getNextRel();

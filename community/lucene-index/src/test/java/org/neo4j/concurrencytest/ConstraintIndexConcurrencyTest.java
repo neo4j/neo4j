@@ -22,11 +22,11 @@ package org.neo4j.concurrencytest;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.schema.UniqueConstraintViolationKernelException;
@@ -54,7 +54,7 @@ public class ConstraintIndexConcurrencyTest
         // Given
         GraphDatabaseAPI graphDb = db.getGraphDatabaseAPI();
 
-        Provider<Statement> statementProvider = graphDb.getDependencyResolver()
+        Supplier<Statement> statementSupplier = graphDb.getDependencyResolver()
                 .resolveDependency( ThreadToStatementContextBridge.class );
 
         Label label = label( "Foo" );
@@ -72,7 +72,7 @@ public class ConstraintIndexConcurrencyTest
         try ( Transaction tx = graphDb.beginTx() )
         {
             // create a statement and perform a lookup
-            Statement statement = statementProvider.instance();
+            Statement statement = statementSupplier.get();
             int labelId = statement.readOperations().labelGetForName( label.name() );
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
             statement.readOperations().nodesGetFromIndexLookup( new IndexDescriptor( labelId, propertyKeyId ),

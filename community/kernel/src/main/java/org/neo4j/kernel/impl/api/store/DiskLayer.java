@@ -31,12 +31,12 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Predicates;
-import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -126,7 +126,7 @@ public class DiskLayer implements StoreReadLayer
     private final PropertyLoader propertyLoader;
 
     /**
-     * A note on this taking Provider<NeoStore> rather than just neo store: This is a workaround until the cache is
+     * A note on this taking Supplier<NeoStore> rather than just neo store: This is a workaround until the cache is
      * removed. Because the neostore may be restarted while the database is running, and because lazy properties keep
      * a reference to the property store, we need a way to resolve the property store on demand for properties in the
      * cache. As such, this takes a provider, and uses that provider to provide property store references when resolving
@@ -134,14 +134,14 @@ public class DiskLayer implements StoreReadLayer
      */
     public DiskLayer( PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
                       RelationshipTypeTokenHolder relationshipTokenHolder, SchemaStorage schemaStorage,
-                      final Provider<NeoStore> neoStoreProvider, IndexingService indexService )
+                      final Supplier<NeoStore> neoStoreSupplier, IndexingService indexService )
     {
         this.relationshipTokenHolder = relationshipTokenHolder;
         this.schemaStorage = schemaStorage;
         this.indexService = indexService;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.labelTokenHolder = labelTokenHolder;
-        this.neoStore = neoStoreProvider.instance();
+        this.neoStore = neoStoreSupplier.get();
         this.nodeStore = this.neoStore.getNodeStore();
         this.relationshipStore = this.neoStore.getRelationshipStore();
         this.relationshipGroupStore = this.neoStore.getRelationshipGroupStore();

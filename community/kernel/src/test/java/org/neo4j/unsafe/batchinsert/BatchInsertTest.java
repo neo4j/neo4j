@@ -86,7 +86,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -891,7 +891,7 @@ public class BatchInsertTest
         GraphDatabaseAPI graphdb = (GraphDatabaseAPI) switchToEmbeddedGraphDatabaseService( inserter );
         try
         {
-            NeoStore neoStore = graphdb.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate();
+            NeoStore neoStore = graphdb.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get();
             SchemaStore store = neoStore.getSchemaStore();
             SchemaStorage storage = new SchemaStorage( store );
             List<Long> inUse = new ArrayList<>();
@@ -1268,8 +1268,8 @@ public class BatchInsertTest
         try
         {
             DependencyResolver dependencyResolver = db.getDependencyResolver();
-            NeoStoreProvider neoStoreProvider = dependencyResolver.resolveDependency( NeoStoreProvider.class );
-            NeoStore neoStore = neoStoreProvider.evaluate();
+            NeoStoreSupplier neoStoreSupplier = dependencyResolver.resolveDependency( NeoStoreSupplier.class );
+            NeoStore neoStore = neoStoreSupplier.get();
             NodeStore nodeStore = neoStore.getNodeStore();
             NodeRecord record = nodeStore.getRecord( 1 );
             assertTrue( "Node " + record + " should have been dense", record.isDense() );

@@ -24,7 +24,7 @@ import org.neo4j.com.Response;
 import org.neo4j.com.storecopy.ResponsePacker;
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.com.storecopy.StoreWriter;
-import org.neo4j.helpers.Provider;
+import org.neo4j.function.Supplier;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -38,13 +38,13 @@ class BackupImpl implements TheBackupInterface
     private final StoreCopyServer storeCopyServer;
     private final ResponsePacker incrementalResponsePacker;
     private final LogicalTransactionStore logicalTransactionStore;
-    private final Provider<StoreId> storeId;
+    private final Supplier<StoreId> storeId;
     private final TransactionIdStore transactionIdStore;
     private final LogFileInformation logFileInformation;
 
     public BackupImpl( StoreCopyServer storeCopyServer, Monitors monitors,
                        LogicalTransactionStore logicalTransactionStore, TransactionIdStore transactionIdStore,
-                       LogFileInformation logFileInformation, Provider<StoreId> storeId )
+                       LogFileInformation logFileInformation, Supplier<StoreId> storeId )
     {
         this.storeCopyServer = storeCopyServer;
         this.logicalTransactionStore = logicalTransactionStore;

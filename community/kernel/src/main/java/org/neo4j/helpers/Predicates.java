@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.neo4j.function.Supplier;
 import org.neo4j.helpers.collection.Iterables;
 
 /**
@@ -152,14 +153,31 @@ public class Predicates
         };
     }
 
-    public static <TYPE> void await( Provider<TYPE> provider, Predicate<TYPE> predicate, long timeout, TimeUnit unit )
+    /**
+     * @deprecated use {@link #await(Supplier, Predicate, long, TimeUnit)} instead
+     */
+    @Deprecated
+    public static <TYPE> void await( final Provider<TYPE> provider, Predicate<TYPE> predicate, long timeout, TimeUnit unit )
+            throws TimeoutException, InterruptedException
+    {
+        await( new Supplier<TYPE>()
+        {
+            @Override
+            public TYPE get()
+            {
+                return provider.instance();
+            }
+        }, predicate, timeout, unit );
+    }
+
+    public static <TYPE> void await( Supplier<TYPE> supplier, Predicate<TYPE> predicate, long timeout, TimeUnit unit )
             throws TimeoutException, InterruptedException
     {
         long sleep = Math.max( unit.toMillis( timeout ) / 100, 1 );
         long deadline = System.currentTimeMillis() + unit.toMillis( timeout );
         do
         {
-            if ( predicate.accept( provider.instance() ) )
+            if ( predicate.accept( supplier.get() ) )
             {
                 return;
             }

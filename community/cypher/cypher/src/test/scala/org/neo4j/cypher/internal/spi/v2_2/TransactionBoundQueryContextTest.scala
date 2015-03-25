@@ -75,7 +75,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val node = createMiniGraph(relTypeName)
 
     val tx = graph.beginTx()
-    val stmt = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).instance()
+    val stmt = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
     val context = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, stmt)
 
     // WHEN

@@ -85,7 +85,7 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
     /** Returns a fully initialized proxy. */
     public RelationshipProxy newRelationshipProxy( long id )
     {
-        try ( Statement statement = threadToTransactionBridge.instance() )
+        try ( Statement statement = threadToTransactionBridge.get() )
         {
             RelationshipProxy proxy = new RelationshipProxy( relationshipActions, id );
             statement.readOperations().relationshipVisit( id, proxy );

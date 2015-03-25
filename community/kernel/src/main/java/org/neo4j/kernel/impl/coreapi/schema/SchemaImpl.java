@@ -71,13 +71,13 @@ import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 public class SchemaImpl implements Schema
 {
-    private final ThreadToStatementContextBridge statementContextProvider;
+    private final ThreadToStatementContextBridge statementContextSupplier;
     private final InternalSchemaActions actions;
 
-    public SchemaImpl( ThreadToStatementContextBridge statementContextProvider )
+    public SchemaImpl( ThreadToStatementContextBridge statementContextSupplier )
     {
-        this.statementContextProvider = statementContextProvider;
-        this.actions = new GDBSchemaActions( statementContextProvider );
+        this.statementContextSupplier = statementContextSupplier;
+        this.actions = new GDBSchemaActions( statementContextSupplier );
     }
 
     @Override
@@ -93,7 +93,7 @@ public class SchemaImpl implements Schema
     {
         assertInUnterminatedTransaction();
 
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = statementContextSupplier.get() )
         {
             List<IndexDefinition> definitions = new ArrayList<>();
             int labelId = statement.readOperations().labelGetForName( label.name() );
@@ -112,7 +112,7 @@ public class SchemaImpl implements Schema
     {
         assertInUnterminatedTransaction();
 
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = statementContextSupplier.get() )
         {
             List<IndexDefinition> definitions = new ArrayList<>();
             addDefinitions( definitions, statement.readOperations(), statement.readOperations().indexesGetAll(), false );
@@ -204,7 +204,7 @@ public class SchemaImpl implements Schema
         assertInUnterminatedTransaction();
 
         String propertyKey = single( index.getPropertyKeys() );
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = statementContextSupplier.get() )
         {
             int labelId = statement.readOperations().labelGetForName( index.getLabel().name() );
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
@@ -246,7 +246,7 @@ public class SchemaImpl implements Schema
         assertInUnterminatedTransaction();
 
         String propertyKey = single( index.getPropertyKeys() );
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = statementContextSupplier.get() )
         {
             int labelId = statement.readOperations().labelGetForName( index.getLabel().name() );
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
@@ -284,7 +284,7 @@ public class SchemaImpl implements Schema
     {
         assertInUnterminatedTransaction();
 
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = statementContextSupplier.get() )
         {
             Iterator<UniquenessConstraint> constraints = statement.readOperations().constraintsGetAll();
             return asConstraintDefinitions( statement.readOperations(), constraints );
@@ -296,7 +296,7 @@ public class SchemaImpl implements Schema
     {
         assertInUnterminatedTransaction();
 
-        try ( Statement statement = statementContextProvider.instance() )
+        try ( Statement statement = statementContextSupplier.get() )
         {
             int labelId = statement.readOperations().labelGetForName( label.name() );
             if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
@@ -345,16 +345,16 @@ public class SchemaImpl implements Schema
     private static class GDBSchemaActions implements InternalSchemaActions
     {
 
-        private final ThreadToStatementContextBridge ctxProvider;
-        public GDBSchemaActions( ThreadToStatementContextBridge ctxProvider )
+        private final ThreadToStatementContextBridge ctxSupplier;
+        public GDBSchemaActions( ThreadToStatementContextBridge ctxSupplier )
         {
-            this.ctxProvider = ctxProvider;
+            this.ctxSupplier = ctxSupplier;
         }
 
         @Override
         public IndexDefinition createIndexDefinition( Label label, String propertyKey )
         {
-            try ( Statement statement = ctxProvider.instance() )
+            try ( Statement statement = ctxSupplier.get() )
             {
                 try
                 {
@@ -396,7 +396,7 @@ public class SchemaImpl implements Schema
         @Override
         public void dropIndexDefinitions( Label label, String propertyKey )
         {
-            try ( Statement statement = ctxProvider.instance() )
+            try ( Statement statement = ctxSupplier.get() )
             {
                 int labelId = statement.readOperations().labelGetForName( label.name() );
                 int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
@@ -421,7 +421,7 @@ public class SchemaImpl implements Schema
         @Override
         public ConstraintDefinition createPropertyUniquenessConstraint( Label label, String propertyKey )
         {
-            try ( Statement statement = ctxProvider.instance() )
+            try ( Statement statement = ctxSupplier.get() )
             {
                 try
                 {
@@ -463,7 +463,7 @@ public class SchemaImpl implements Schema
         @Override
         public void dropPropertyUniquenessConstraint( Label label, String propertyKey )
         {
-            try ( Statement statement = ctxProvider.instance() )
+            try ( Statement statement = ctxSupplier.get() )
             {
                 int labelId = statement.schemaWriteOperations().labelGetOrCreateForName( label.name() );
                 int propertyKeyId = statement.schemaWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
@@ -483,7 +483,7 @@ public class SchemaImpl implements Schema
         @Override
         public String getUserMessage( KernelException e )
         {
-            try ( Statement statement = ctxProvider.instance() )
+            try ( Statement statement = ctxSupplier.get() )
             {
                 return e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) );
             }
@@ -492,12 +492,12 @@ public class SchemaImpl implements Schema
         @Override
         public void assertInUnterminatedTransaction()
         {
-            ctxProvider.assertInUnterminatedTransaction();
+            ctxSupplier.assertInUnterminatedTransaction();
         }
 
     }
     private void assertInUnterminatedTransaction()
     {
-        statementContextProvider.assertInUnterminatedTransaction();
+        statementContextSupplier.assertInUnterminatedTransaction();
     }
 }

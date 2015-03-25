@@ -120,7 +120,7 @@ public class GraphDatabaseShellServer extends AbstractAppServer
 
     public Statement getStatement()
     {
-        return getThreadToStatementContextBridge().instance();
+        return getThreadToStatementContextBridge().get();
     }
 
     private ThreadToStatementContextBridge getThreadToStatementContextBridge()

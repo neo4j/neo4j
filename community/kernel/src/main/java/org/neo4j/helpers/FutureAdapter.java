@@ -19,6 +19,8 @@
  */
 package org.neo4j.helpers;
 
+import org.neo4j.function.Supplier;
+
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -77,8 +79,25 @@ public abstract class FutureAdapter<V> implements Future<V>
 
     public static final Future<Void> VOID = new Present<>( null );
 
+    /**
+     * @deprecated use {@link #latchGuardedValue(Supplier, CountDownLatch, String)} instead
+     */
+    @Deprecated
     public static <T> Future<T> latchGuardedValue( final ValueGetter<T> value, final CountDownLatch guardedByLatch,
             final String jobDescription )
+    {
+        return latchGuardedValue( new Supplier<T>()
+        {
+            @Override
+            public T get()
+            {
+                return value.get();
+            }
+        }, guardedByLatch, jobDescription );
+    }
+
+    public static <T> Future<T> latchGuardedValue( final Supplier<T> supplier, final CountDownLatch guardedByLatch,
+                                                   final String jobDescription )
     {
         return new FutureAdapter<T>()
         {
@@ -92,7 +111,7 @@ public abstract class FutureAdapter<V> implements Future<V>
             public T get() throws InterruptedException, ExecutionException
             {
                 guardedByLatch.await();
-                return value.get();
+                return supplier.get();
             }
 
             @Override
@@ -104,7 +123,7 @@ public abstract class FutureAdapter<V> implements Future<V>
                     throw new TimeoutException( jobDescription + " didn't complete within " +
                             timeout + " " + unit );
                 }
-                return value.get();
+                return supplier.get();
             }
         };
     }

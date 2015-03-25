@@ -27,9 +27,9 @@ import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.Server;
 import org.neo4j.com.ServerUtil;
 import org.neo4j.com.monitor.RequestMonitor;
+import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
@@ -59,7 +59,7 @@ public class SwitchToMaster
     private final GraphDatabaseAPI graphDb;
     private final HaIdGeneratorFactory idGeneratorFactory;
     private final Config config;
-    private final Provider<SlaveFactory> slaveFactorySupplier;
+    private final Supplier<SlaveFactory> slaveFactorySupplier;
     private final MasterImpl.Monitor masterImplMonitor;
     private final DelegateInvocationHandler<Master> masterDelegateHandler;
     private final ClusterMemberAvailability clusterMemberAvailability;
@@ -68,7 +68,7 @@ public class SwitchToMaster
     private final RequestMonitor masterRequestMonitor;
 
     public SwitchToMaster( Logging logging, ConsoleLogger console, GraphDatabaseAPI graphDb,
-            HaIdGeneratorFactory idGeneratorFactory, Config config, Provider<SlaveFactory> slaveFactorySupplier,
+            HaIdGeneratorFactory idGeneratorFactory, Config config, Supplier<SlaveFactory> slaveFactorySupplier,
             DelegateInvocationHandler<Master> masterDelegateHandler, ClusterMemberAvailability clusterMemberAvailability,
             DataSourceManager dataSourceManager, ByteCounterMonitor masterByteCounterMonitor, RequestMonitor masterRequestMonitor, MasterImpl.Monitor masterImplMonitor)
     {
@@ -132,7 +132,7 @@ public class SwitchToMaster
             clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI, neoStoreXaDataSource.getStoreId() );
             console.log( "I am " + myId() + ", successfully moved to master" );
 
-            slaveFactorySupplier.instance().setStoreId( neoStoreXaDataSource.getStoreId() );
+            slaveFactorySupplier.get().setStoreId( neoStoreXaDataSource.getStoreId() );
 
             return masterHaURI;
         }

@@ -23,7 +23,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.LastTxIdGetter;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 
 public class OnDiskLastTxIdGetter implements LastTxIdGetter
 {
@@ -50,8 +50,8 @@ public class OnDiskLastTxIdGetter implements LastTxIdGetter
         // if we cache it.
         // We avoid this problem by simply not caching it, and instead looking it up
         // every time.
-        NeoStoreProvider neoStoreProvider =
-                graphdb.getDependencyResolver().resolveDependency( NeoStoreProvider.class );
-        return neoStoreProvider.evaluate();
+        NeoStoreSupplier neoStoreSupplier =
+                graphdb.getDependencyResolver().resolveDependency( NeoStoreSupplier.class );
+        return neoStoreSupplier.get();
     }
 }

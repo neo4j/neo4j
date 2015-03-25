@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.hamcrest.Matchers.notNullValue;
@@ -101,8 +101,8 @@ public class IndexLookupTest
         }
 
         DependencyResolver resolver = api.getDependencyResolver();
-        NeoStoreProvider neoStoreProvider = resolver.resolveDependency( NeoStoreProvider.class );
-        NeoStore neoStore = neoStoreProvider.evaluate();
+        NeoStoreSupplier neoStoreSupplier = resolver.resolveDependency( NeoStoreSupplier.class );
+        NeoStore neoStore = neoStoreSupplier.get();
         SchemaStore schemaStore = neoStore.getSchemaStore();
         SchemaIndexProvider schemaIndexProvider = resolver.resolveDependency( SchemaIndexProvider.class );
         indexLookup = new IndexLookup( schemaStore, schemaIndexProvider );

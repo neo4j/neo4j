@@ -74,7 +74,7 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, sta
       val tx = graph.beginTx()
       try {
         val bridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
-        val otherStatement = bridge.instance()
+        val otherStatement = bridge.get()
         val result = try {
           work(new TransactionBoundQueryContext(graph, tx, otherStatement))
         }

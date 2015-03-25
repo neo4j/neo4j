@@ -40,7 +40,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -109,7 +109,7 @@ public class StoreHighIdInflationTest
 
     private static NeoStore neoStoreOf( GraphDatabaseService db )
     {
-        return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate();
+        return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get();
     }
 
     @Test

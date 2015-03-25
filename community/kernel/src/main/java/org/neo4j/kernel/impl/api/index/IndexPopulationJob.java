@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
+import org.neo4j.function.Suppliers;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -45,7 +46,6 @@ import org.neo4j.register.Registers;
 import static java.lang.String.format;
 import static java.lang.Thread.currentThread;
 import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
-import static org.neo4j.helpers.ValueGetter.NO_VALUE;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 /**
@@ -277,7 +277,7 @@ public class IndexPopulationJob implements Runnable
             storeScan.stop();
         }
 
-        return latchGuardedValue( NO_VALUE, doneSignal, "Index population job cancel" );
+        return latchGuardedValue( Suppliers.<Void>singleton( null ), doneSignal, "Index population job cancel" );
     }
 
     /**

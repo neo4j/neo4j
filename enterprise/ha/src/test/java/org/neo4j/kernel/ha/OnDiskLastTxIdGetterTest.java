@@ -28,7 +28,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
 import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 
 public class OnDiskLastTxIdGetterTest
 {
@@ -39,11 +39,11 @@ public class OnDiskLastTxIdGetterTest
         // We currently have to do this because of our lifecycle and construction ordering.
         InternalAbstractGraphDatabase graphdb = mock( InternalAbstractGraphDatabase.class );
         DependencyResolver resolver = mock( DependencyResolver.class );
-        NeoStoreProvider provider = mock( NeoStoreProvider.class );
+        NeoStoreSupplier supplier = mock( NeoStoreSupplier.class );
         NeoStore neoStore = mock( NeoStore.class );
         when( graphdb.getDependencyResolver() ).thenReturn( resolver );
-        when( resolver.resolveDependency( NeoStoreProvider.class ) ).thenReturn( provider );
-        when( provider.evaluate() ).thenReturn( neoStore );
+        when( resolver.resolveDependency( NeoStoreSupplier.class ) ).thenReturn( supplier );
+        when( supplier.get() ).thenReturn( neoStore );
         when( neoStore.getLastCommittedTransactionId() ).thenReturn( 13L );
 
         OnDiskLastTxIdGetter getter = new OnDiskLastTxIdGetter( graphdb );

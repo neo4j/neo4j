@@ -334,7 +334,7 @@ public class StoreUpgradeIntegrationTest
             );
             try ( Transaction ignored = db.beginTx() )
             {
-                Statement statement = bridge.instance();
+                Statement statement = bridge.get();
                 double selectivity = statement.readOperations().indexUniqueValuesSelectivity( descriptor );
                 assertEquals( store.indexSelectivity[i], selectivity, 0.0000001d );
             }
@@ -347,7 +347,7 @@ public class StoreUpgradeIntegrationTest
         {
             ThreadToStatementContextBridge bridge = db.getDependencyResolver()
                                                       .resolveDependency( ThreadToStatementContextBridge.class );
-            Statement statement = bridge.instance();
+            Statement statement = bridge.get();
             return concat(
                     statement.readOperations().indexesGetAll(),
                     statement.readOperations().uniqueIndexesGetAll()
@@ -378,7 +378,7 @@ public class StoreUpgradeIntegrationTest
 
             ThreadToStatementContextBridge bridge = db.getDependencyResolver()
                     .resolveDependency( ThreadToStatementContextBridge.class );
-            Statement statement = bridge.instance();
+            Statement statement = bridge.get();
 
             for ( Map.Entry<Label, Long> entry : counts.entrySet() )
             {
@@ -396,7 +396,7 @@ public class StoreUpgradeIntegrationTest
         {
             ThreadToStatementContextBridge bridge = db.getDependencyResolver()
                     .resolveDependency( ThreadToStatementContextBridge.class );
-            Statement statement = bridge.instance();
+            Statement statement = bridge.get();
 
             assertThat( statement.readOperations().countsForNode( -1 ), is( store.expectedNodeCount ) );
         }
@@ -461,7 +461,7 @@ public class StoreUpgradeIntegrationTest
         {
             try ( Transaction tx = db.beginTx() )
             {
-                Statement statement = bridge.instance();
+                Statement statement = bridge.get();
                 switch ( statement.readOperations().indexGetState( index ) )
                 {
                 case ONLINE:

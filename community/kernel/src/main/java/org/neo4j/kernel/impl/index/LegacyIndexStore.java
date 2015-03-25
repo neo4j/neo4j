@@ -23,12 +23,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.index.IndexImplementation;
-import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -48,9 +48,9 @@ public class LegacyIndexStore
     private final IndexConfigStore indexStore;
     private final Config config;
     private final ProviderLookup indexProviders;
-    private final Provider<KernelAPI> kernel;
+    private final Supplier<KernelAPI> kernel;
 
-    public LegacyIndexStore( Config config, IndexConfigStore indexStore, Provider<KernelAPI> kernel,
+    public LegacyIndexStore( Config config, IndexConfigStore indexStore, Supplier<KernelAPI> kernel,
             LegacyIndexApplier.ProviderLookup indexProviders )
     {
         this.config = config;
@@ -184,7 +184,7 @@ public class LegacyIndexStore
                 }
 
                 // We were the first one here, let's create this config
-                try ( KernelTransaction transaction = kernel.instance().newTransaction();
+                try ( KernelTransaction transaction = kernel.get().newTransaction();
                       Statement statement = transaction.acquireStatement() )
                 {
                     switch ( entityType )

@@ -139,17 +139,17 @@ public final class Resources implements TestRule
 
     public FileSystemAbstraction fileSystem()
     {
-        return fs.instance();
+        return fs.get();
     }
 
     public PageCache pageCache()
     {
-        return pageCache.instance();
+        return pageCache.get();
     }
 
     public File testPath()
     {
-        return testPath.instance();
+        return testPath.get();
     }
 
     public void lifeInitialises() throws LifecycleException

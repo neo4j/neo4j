@@ -89,7 +89,7 @@ public class IndexCRUDIT
         // Then, for now, this should trigger two NodePropertyUpdates
         try ( Transaction tx = db.beginTx() )
         {
-            DataWriteOperations statement = ctxProvider.instance().dataWriteOperations();
+            DataWriteOperations statement = ctxSupplier.get().dataWriteOperations();
             int propertyKey1 = statement.propertyKeyGetForName( indexProperty );
             long[] labels = new long[]{statement.labelGetForName( myLabel.name() )};
             assertThat( writer.updatesCommitted, equalTo( asSet(
@@ -128,7 +128,7 @@ public class IndexCRUDIT
         // THEN
         try ( Transaction tx = db.beginTx() )
         {
-            DataWriteOperations statement = ctxProvider.instance().dataWriteOperations();
+            DataWriteOperations statement = ctxSupplier.get().dataWriteOperations();
             int propertyKey1 = statement.propertyKeyGetForName( indexProperty );
             long[] labels = new long[]{statement.labelGetForName( myLabel.name() )};
             assertThat( writer.updatesCommitted, equalTo( asSet(
@@ -142,7 +142,7 @@ public class IndexCRUDIT
     private final SchemaIndexProvider mockedIndexProvider = mock( SchemaIndexProvider.class );
     private final KernelExtensionFactory<?> mockedIndexProviderFactory =
             singleInstanceSchemaIndexProviderFactory( "none", mockedIndexProvider );
-    private ThreadToStatementContextBridge ctxProvider;
+    private ThreadToStatementContextBridge ctxSupplier;
     private final Label myLabel = label( "MYLABEL" );
 
     private Node createNode( Map<String, Object> properties, Label ... labels )
@@ -170,7 +170,7 @@ public class IndexCRUDIT
         factory.setFileSystem( fs.get() );
         factory.addKernelExtensions( Arrays.<KernelExtensionFactory<?>>asList( mockedIndexProviderFactory ) );
         db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
-        ctxProvider = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
+        ctxSupplier = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }
 
     private GatheringIndexWriter newWriter( String propertyKey ) throws IOException
@@ -214,7 +214,7 @@ public class IndexCRUDIT
         @Override
         public void add( long nodeId, Object propertyValue )
         {
-            ReadOperations statement = ctxProvider.instance().readOperations();
+            ReadOperations statement = ctxSupplier.get().readOperations();
             updatesCommitted.add( NodePropertyUpdate.add(
                     nodeId, statement.propertyKeyGetForName( propertyKey ),
                     propertyValue, new long[]{statement.labelGetForName( myLabel.name() )} ) );

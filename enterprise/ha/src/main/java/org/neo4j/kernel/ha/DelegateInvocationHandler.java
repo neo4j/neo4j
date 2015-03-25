@@ -86,7 +86,7 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
     @SuppressWarnings( "unchecked" )
     public void harden()
     {
-        ((Concrete<T>)Proxy.getInvocationHandler( concrete.instance() )).set( delegate );
+        ((Concrete<T>)Proxy.getInvocationHandler( concrete.get() )).set( delegate );
     }
     
     @Override
@@ -118,7 +118,7 @@ public class DelegateInvocationHandler<T> implements InvocationHandler
      */
     public T cement()
     {
-        return concrete.instance();
+        return concrete.get();
     }
     
     /**

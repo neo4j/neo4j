@@ -19,20 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.neo4j.function.Supplier;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.unsafe.batchinsert.BatchInserter;
 
-public final class SimpleNeoStoreProvider implements NeoStoreProvider
+/**
+ * A provider of a {@link NeoStore}. This interface exists as a bridge between dependency resolution of
+ * both an {@link InternalAbstractGraphDatabase} and {@link BatchInserter}, since batch inserter doesn't
+ * have an {@link XaDataSourceManager} which would normally serve as a provider if a {@link NeoStore}.
+ */
+public interface NeoStoreSupplier extends Supplier<NeoStore>
 {
-    private NeoStore neoStore;
-
-    public SimpleNeoStoreProvider( NeoStore neoStore )
-    {
-        this.neoStore = neoStore;
-    }
-
-    @Override
-    public NeoStore evaluate()
-    {
-        return neoStore;
-    }
 }

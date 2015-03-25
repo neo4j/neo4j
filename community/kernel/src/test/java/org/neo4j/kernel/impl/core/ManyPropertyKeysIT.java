@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.OtherThreadExecutor;
@@ -145,7 +145,7 @@ public class ManyPropertyKeysIT
 
     private int propertyKeyCount( GraphDatabaseAPI db )
     {
-        return (int) db.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate()
+        return (int) db.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get()
                 .getPropertyKeyTokenStore().getHighId();
     }
 
