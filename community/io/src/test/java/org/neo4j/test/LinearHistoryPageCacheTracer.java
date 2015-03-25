@@ -19,14 +19,18 @@
  */
 package org.neo4j.test;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.StringReader;
+import java.util.IdentityHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.io.pagecache.PageSwapper;
@@ -49,6 +53,28 @@ import org.neo4j.io.pagecache.tracing.PinEvent;
 public final class LinearHistoryPageCacheTracer implements PageCacheTracer
 {
     private final AtomicReference<HEvent> history = new AtomicReference<>();
+
+    // The output buffering mechanics are pre-allocated in case we have to deal with low-memory situations.
+    // The output switching is guarded by the monitor lock on the LinearHistoryPageCacheTracer instance.
+    // The class name cache is similarly guarded the monitor lock. In short, only a single thread can print history
+    // at a time.
+    private final SwitchableBufferedOutputStream bufferOut = new SwitchableBufferedOutputStream();
+    private final PrintStream out = new PrintStream( bufferOut );
+    private final Map<Class<?>, String> classSimpleNameCache = new IdentityHashMap<>();
+
+    private static class SwitchableBufferedOutputStream extends BufferedOutputStream
+    {
+
+        public SwitchableBufferedOutputStream()
+        {
+            super( null ); // No output target by default. This is changed in printHistory.
+        }
+
+        public void setOut( OutputStream out )
+        {
+            super.out = out;
+        }
+    }
 
     private final HEvent end = new HEvent()
     {
@@ -78,7 +104,7 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
         {
             if ( getClass() == EndHEvent.class )
             {
-                out.append( '-' );
+                out.print( '-' );
             }
             out.print( getClass().getSimpleName() );
             out.print( '[' );
@@ -143,7 +169,14 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
             out.print( ", elapsedMicros:" );
             out.print( (time - event.time) / 1000 );
             out.print( ", endOf:" );
-            out.print( event.getClass().getSimpleName() );
+            Class<? extends IntervalHEven> eventClass = event.getClass();
+            String className = classSimpleNameCache.get( eventClass );
+            if ( className == null )
+            {
+                className = eventClass.getSimpleName();
+                classSimpleNameCache.put( eventClass, className );
+            }
+            out.print( className );
         }
     }
 
@@ -216,7 +249,7 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
         @Override
         public void setSwapper( PageSwapper swapper )
         {
-            file = swapper.file();
+            file = swapper == null? null : swapper.file();
         }
 
         @Override
@@ -240,7 +273,7 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
         @Override
         public FlushEvent beginFlush( long filePageId, int cachePageId, PageSwapper swapper )
         {
-            return add( new FlushHEvent( filePageId, cachePageId, swapper, this ) );
+            return add( new FlushHEvent( filePageId, cachePageId, swapper ) );
         }
 
         @Override
@@ -260,16 +293,14 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
         private long filePageId;
         private int cachePageId;
         private File file;
-        private HEvent cause;
         private int bytesWritten;
         private IOException exception;
 
-        public FlushHEvent( long filePageId, int cachePageId, PageSwapper swapper, HEvent cause )
+        public FlushHEvent( long filePageId, int cachePageId, PageSwapper swapper )
         {
             this.filePageId = filePageId;
             this.cachePageId = cachePageId;
             this.file = swapper.file();
-            this.cause = cause;
         }
 
         @Override
@@ -328,7 +359,7 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
         @Override
         public PageFaultEvent beginPageFault()
         {
-            return add( new PageFaultHEvent( this ) );
+            return add( new PageFaultHEvent() );
         }
 
         @Override
@@ -352,16 +383,10 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
 
     private class PageFaultHEvent extends IntervalHEven implements PageFaultEvent
     {
-        private PinHEvent cause;
         private int bytesRead;
         private int cachePageId;
         private boolean parked;
         private Throwable exception;
-
-        public PageFaultHEvent( PinHEvent cause )
-        {
-            this.cause = cause;
-        }
 
         @Override
         public void addBytesRead( int bytes )
@@ -425,7 +450,7 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
         @Override
         public FlushEvent beginFlush( long filePageId, int cachePageId, PageSwapper swapper )
         {
-            return add( new FlushHEvent( filePageId, cachePageId, swapper, this ) );
+            return add( new FlushHEvent( filePageId, cachePageId, swapper ) );
         }
 
         @Override
@@ -442,8 +467,9 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
         return event;
     }
 
-    public void printHistory( PrintStream out )
+    public synchronized void printHistory( PrintStream outputStream )
     {
+        bufferOut.setOut( outputStream );
         HEvent events = history.getAndSet( null );
         if ( events == null )
         {
@@ -469,9 +495,9 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
                 concurrentIntervals.remove( idx );
                 if ( left > 0 )
                 {
+                    out.println();
                     putcs( out, '|', idx );
                     putcs( out, '/', left );
-                    out.println();
                 }
             }
             else if ( events instanceof IntervalHEven )
@@ -480,7 +506,6 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
                 out.print( "+   " );
                 events.print( out, exceptionLinePrefix );
                 concurrentIntervals.add( events );
-                out.println();
             }
             else
             {
@@ -488,8 +513,10 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
                 out.print( ">   " );
                 events.print( out, exceptionLinePrefix );
             }
+            out.println();
             events = events.prev;
         }
+        out.flush();
     }
 
     private String exceptionLinePrefix( int size )
