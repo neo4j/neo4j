@@ -31,10 +31,8 @@ final case class CostBasedPlanningStrategy(plannerName: CostBasedPlannerName, ac
 object CostBasedPlanningStrategy {
   def default = apply(PlannerName.default)
 
-  def apply(plannerName: CostBasedPlannerName): CostBasedPlanningStrategy = plannerName match {
-    case ConservativePlannerName => CostBasedPlanningStrategy(plannerName, conservativeQueryAcceptor)
-    case _ => CostBasedPlanningStrategy(plannerName, allQueryAcceptor)
-  }
+  def apply(plannerName: CostBasedPlannerName): CostBasedPlanningStrategy =
+    CostBasedPlanningStrategy(plannerName, allQueryAcceptor)
 }
 
 object CostBasedPipeBuilderFactory {

@@ -36,7 +36,7 @@ class ExecutionEngineIT extends CypherFunSuite {
 
     //when
     val plan1 = db.execute("PROFILE MATCH (a) RETURN a").getExecutionPlanDescription
-    val plan2 = db.execute("PROFILE MATCH (a)-[:T*]-(a) RETURN a").getExecutionPlanDescription
+    val plan2 = db.execute("PROFILE MATCH (a) CREATE () RETURN a").getExecutionPlanDescription
 
     //then
     plan1.getArguments().get("planner") should equal("COST")

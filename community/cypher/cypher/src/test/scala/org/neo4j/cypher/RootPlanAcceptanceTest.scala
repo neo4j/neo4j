@@ -39,12 +39,6 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       .shouldHaveCypherVersion(CypherVersion.v2_2)
       .shouldHavePlannerName(CostPlannerName)
   }
-  test("should use Rule for varlength in 2.2") {
-    given("match (a)-[r:T1*]->(b) return a,r,b")
-      .withCypherVersion(CypherVersion.v2_2)
-      .shouldHaveCypherVersion(CypherVersion.v2_2)
-      .shouldHavePlannerName(RulePlannerName)
-  }
 
   test("should use Cost for cycles in 2.2") {
     given("match (a)-[r]->(a) return a")
