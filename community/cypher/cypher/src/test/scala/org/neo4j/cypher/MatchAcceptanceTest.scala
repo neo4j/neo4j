@@ -1926,4 +1926,10 @@ return b
 
     executeWithNewPlanner(query).toList should have size(4)
   }
+
+  test("should return empty result when there are no relationship with the given id") {
+    executeWithNewPlanner("MATCH ()-[r]->() WHERE id(r) = 42 RETURN r") shouldBe empty
+    executeWithNewPlanner("MATCH ()<-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
+    executeWithNewPlanner("MATCH ()-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
+  }
 }
