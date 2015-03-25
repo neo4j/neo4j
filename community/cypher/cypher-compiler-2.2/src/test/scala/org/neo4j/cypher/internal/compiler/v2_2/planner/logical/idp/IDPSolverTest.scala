@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.idp
 
-import org.mockito.Mockito.{spy, verify}
+import org.mockito.Mockito.{spy, verify, verifyNoMoreInteractions}
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
@@ -35,6 +35,7 @@ class IDPSolverTest extends CypherFunSuite {
 
   test("Solves a small toy problem") {
     val solver = new IDPSolver[Char, String](
+      monitor = mock[IDPSolverMonitor],
       generator = stringAppendingSolverStep,
       projectingSelector = firstLongest,
       maxTableSize = 16
@@ -54,7 +55,9 @@ class IDPSolverTest extends CypherFunSuite {
 
   test("Compacts table at size limit") {
     var table: IDPTable[String] = null
+    val monitor = mock[IDPSolverMonitor]
     val solver = new IDPSolver[Char, String](
+      monitor = monitor,
       generator = stringAppendingSolverStep,
       projectingSelector = firstLongest,
       tableFactory = (registry: IdRegistry[Char], seed: Seed[Char, String]) => {
@@ -77,13 +80,29 @@ class IDPSolverTest extends CypherFunSuite {
 
     solver(seed, Set('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'))
 
-    verify( table ).removeAllTracesOf(BitSet(0, 1))
-    verify( table ).removeAllTracesOf(BitSet(2, 8))
-    verify( table ).removeAllTracesOf(BitSet(3, 9))
-    verify( table ).removeAllTracesOf(BitSet(4, 10))
-    verify( table ).removeAllTracesOf(BitSet(5, 11))
-    verify( table ).removeAllTracesOf(BitSet(6, 12))
-    verify( table ).removeAllTracesOf(BitSet(7, 13))
+    verify(monitor).startIteration(1)
+    verify(monitor).endIteration(1, 2, 16)
+    verify(table).removeAllTracesOf(BitSet(0, 1))
+    verify(monitor).startIteration(2)
+    verify(monitor).endIteration(2, 2, 14)
+    verify(table).removeAllTracesOf(BitSet(2, 8))
+    verify(monitor).startIteration(3)
+    verify(monitor).endIteration(3, 2, 12)
+    verify(table).removeAllTracesOf(BitSet(3, 9))
+    verify(monitor).startIteration(4)
+    verify(monitor).endIteration(4, 2, 10)
+    verify(table).removeAllTracesOf(BitSet(4, 10))
+    verify(monitor).startIteration(5)
+    verify(monitor).endIteration(5, 2, 8)
+    verify(table).removeAllTracesOf(BitSet(5, 11))
+    verify(monitor).startIteration(6)
+    verify(monitor).endIteration(6, 2, 6)
+    verify(table).removeAllTracesOf(BitSet(6, 12))
+    verify(monitor).startIteration(7)
+    verify(monitor).endIteration(7, 2, 3)
+    verify(table).removeAllTracesOf(BitSet(7, 13))
+    verify(monitor).foundPlanAfter(7)
+    verifyNoMoreInteractions(monitor)
   }
 
   private object firstLongest extends ProjectingSelector[String] {
@@ -104,10 +123,11 @@ class IDPSolverTest extends CypherFunSuite {
         rhs <- table(rightGoal);
         candidate = lhs ++ rhs if isSorted(candidate)
       )
-        yield candidate
+      yield candidate
     }
 
     def isSorted(chars: String) =
-      (chars.length <= 1) || 0.to(chars.length-2).forall(i => chars.charAt(i).toInt + 1 == chars.charAt(i+1).toInt)
+      (chars.length <= 1) || 0.to(chars.length - 2).forall(i => chars.charAt(i).toInt + 1 == chars.charAt(i + 1).toInt)
   }
+
 }

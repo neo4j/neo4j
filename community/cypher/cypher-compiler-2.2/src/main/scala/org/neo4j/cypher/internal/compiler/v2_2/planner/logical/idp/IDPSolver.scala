@@ -24,6 +24,12 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{LogicalPlanningC
 
 import scala.collection.immutable.BitSet
 
+trait IDPSolverMonitor {
+  def startIteration(iteration: Int)
+  def endIteration(iteration: Int, depth: Int, tableSize: Int)
+  def foundPlanAfter(iterations: Int)
+}
+
 /**
  * Based on the main loop of the IDP1 algorithm described in the paper
  *
@@ -35,8 +41,8 @@ class IDPSolver[S, P](generator: IDPSolverStep[S, P], // generates candidates at
                       projectingSelector: ProjectingSelector[P], // pick best from a set of candidates
                       registryFactory: () => IdRegistry[S] = () => IdRegistry[S], // maps from Set[S] to BitSet
                       tableFactory: (IdRegistry[S], Seed[S, P]) => IDPTable[P] = (registry: IdRegistry[S], seed: Seed[S, P]) => IDPTable(registry, seed),
-                      maxTableSize: Int // limits computation effort by reducing result quality
-                     ) {
+                      maxTableSize: Int, // limits computation effort by reducing result quality
+                      monitor: IDPSolverMonitor) {
 
   def apply(seed: Seed[S, P], initialToDo: Set[S])(implicit context: LogicalPlanningContext): Iterator[(Set[S], P)] = {
     val registry = registryFactory()
@@ -82,13 +88,19 @@ class IDPSolver[S, P](generator: IDPSolverStep[S, P], // generates candidates at
 
     // actual algorithm
 
+    var iterations = 0
+
     while (toDo.size > 1) {
+      iterations += 1
+      monitor.startIteration(iterations)
       val largestFinished = generateBestCandidates(maxTableSize, toDo.size)
       val (bestGoal, bestInBlock) = findBestCandidateInBlock(largestFinished)
+      monitor.endIteration(iterations, largestFinished, table.size)
       compactBlock(bestGoal, bestInBlock)
     }
+    monitor.foundPlanAfter(iterations)
 
-    table.plans.map { case (k, v) => registry.explode(k) -> v }
+    table.plans.map { case (k, v) => registry.explode(k) -> v}
   }
 }
 
