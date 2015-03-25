@@ -30,4 +30,7 @@ public interface LongArray extends NumberArray
     long get( long index );
 
     void set( long index, long value );
+
+    @Override
+    LongArray fixate();
 }

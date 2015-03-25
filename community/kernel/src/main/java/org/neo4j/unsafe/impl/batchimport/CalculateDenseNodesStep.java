@@ -19,7 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
+import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
@@ -29,13 +29,12 @@ import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
  */
 public class CalculateDenseNodesStep extends ProcessorStep<long[]>
 {
-    private final NodeRelationshipLink nodeRelationshipLink;
+    private final NodeRelationshipCache cache;
 
-    public CalculateDenseNodesStep( StageControl control, Configuration config,
-            NodeRelationshipLink nodeRelationshipLink )
+    public CalculateDenseNodesStep( StageControl control, Configuration config, NodeRelationshipCache cache )
     {
         super( control, "CALCULATOR", config, true );
-        this.nodeRelationshipLink = nodeRelationshipLink;
+        this.cache = cache;
     }
 
     @Override
@@ -45,7 +44,7 @@ public class CalculateDenseNodesStep extends ProcessorStep<long[]>
         {
             if ( id != -1 )
             {
-                nodeRelationshipLink.incrementCount( id );
+                cache.incrementCount( id );
             }
         }
     }

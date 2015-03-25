@@ -20,17 +20,26 @@
 package org.neo4j.unsafe.impl.batchimport.cache;
 
 /**
- * Abstraction of a {@code int[]} so that different implementations can be plugged in, for example
- * off-heap, dynamically growing, or other implementations.
+ * Base class for common functionality for any {@link NumberArray} where the data is dynamically growing,
+ * where parts can live inside and parts off-heap.
  *
- * @see NumberArrayFactory
+ * @see NumberArrayFactory#newDynamicLongArray(long, long)
+ * @see NumberArrayFactory#newDynamicIntArray(long, int)
  */
-public interface IntArray extends NumberArray
+abstract class FixedNumberArray<N extends NumberArray> extends ChunkedNumberArray<N>
 {
-    int get( long index );
+    private final long length;
 
-    void set( long index, int value );
+    FixedNumberArray( NumberArray[] chunks, long chunkSize )
+    {
+        super( chunkSize );
+        this.chunks = chunks;
+        this.length = chunkSize*chunks.length;
+    }
 
     @Override
-    IntArray fixate();
+    public long length()
+    {
+        return length;
+    }
 }
