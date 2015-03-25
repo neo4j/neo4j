@@ -13,13 +13,24 @@ Neo4j Browser is http://github.com/neo4j/neo4j/[Neo4j's] built-in client applica
 
 == Development ==
 
+Set up your environment::
+
+  * Install https://nodejs.org/[node.js]
+  * `cd community/browser && npm install`
++
+This installs npm modules needed to build the browser code.
+  * `npm install -g grunt-cli`
++
+This puts the `grunt` command on your path.
+
 Run in development mode::
 
-  * run neo4j server
-  * npm install -g grunt-cli
-  * run grunt server in browser
+  * Run Neo4j server (from a downloaded distribution of Neo4j, or from your IDE)
+  * `cd community/browser` (this directory in the source tree)
+  * `grunt server`
 +
-This sets up localhost:9000 to run server and browser. Any local changes will be applied here immediatley by reloading the page.
+This listens on port 9000, serving up static documents, and forwarding other requests to Neo4j on port 7474. 
+Any local changes to the browser code will be applied immediatley by reloading the page.
 
 == Feedback ==
 
