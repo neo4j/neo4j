@@ -22,19 +22,3 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner
 object allQueryAcceptor extends QueryAcceptor {
   def apply(ignored: UnionQuery) = true
 }
-
-object conservativeQueryAcceptor extends QueryAcceptor {
-
-  def apply(query: UnionQuery): Boolean = {
-    !query.queries.exists(query => rejectQuery(query))
-  }
-
-  private def rejectQuery(pq: PlannerQuery): Boolean = {
-    containsVarLength(pq.graph) ||
-      pq.graph.optionalMatches.exists(containsVarLength) ||
-      pq.tail.exists(rejectQuery)
-  }
-
-  private def containsVarLength(qg: QueryGraph): Boolean = qg.patternRelationships.exists(!_.length.isSimple)
-
-}

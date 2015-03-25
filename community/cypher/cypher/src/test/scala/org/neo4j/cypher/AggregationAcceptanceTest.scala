@@ -96,7 +96,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     relate(a, b)
     relate(a, c)
 
-    val result = execute(
+    val result = executeWithNewPlanner(
       """match p = (a:Start)-[*]-> (b)
         |return b, avg(length(p))""".stripMargin)
 
