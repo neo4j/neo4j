@@ -63,6 +63,14 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
     shouldHavePlannerQueryCardinality(produceCardinalityModel)(aggregation * allNodes * relCount / (personCount * allNodes))
   }
 
+  test("aggregations should never increase cardinality") {
+    givenPattern("MATCH (a:Person)-[:REL]->() WITH a, count(*) as c MATCH (a)-[:REL]->()").
+      withGraphNodes(1).
+      withLabel('Person -> .1).
+      withRelationshipCardinality('Person -> 'REL -> 'Person -> .5).
+      shouldHavePlannerQueryCardinality(produceCardinalityModel)(2.5)
+  }
+
   def produceCardinalityModel(in: QueryGraphCardinalityModel): Metrics.CardinalityModel =
     new StatisticsBackedCardinalityModel(in)
 

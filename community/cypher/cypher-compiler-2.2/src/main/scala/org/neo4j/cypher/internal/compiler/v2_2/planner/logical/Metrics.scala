@@ -99,11 +99,11 @@ object Cardinality {
 
   implicit def lift(amount: Double): Cardinality = Cardinality(amount)
 
-  def min(l: Cardinality, r: Cardinality): Cardinality =
-    Cardinality(Math.min(l.amount, r.amount))
+  def min(l: Cardinality, r: Cardinality): Cardinality = Math.min(l.amount, r.amount)
 
-  def max(l: Cardinality, r: Cardinality): Cardinality =
-    Cardinality(Math.max(l.amount, r.amount))
+  def max(l: Cardinality, r: Cardinality): Cardinality = Math.max(l.amount, r.amount)
+
+  def sqrt(cardinality: Cardinality): Cardinality = Math.sqrt(cardinality.amount)
 
   object NumericCardinality extends Numeric[Cardinality] {
     def toDouble(x: Cardinality): Double = x.amount
@@ -112,10 +112,10 @@ object Cardinality {
     def toLong(x: Cardinality): Long = x.amount.toLong
     def fromInt(x: Int): Cardinality = Cardinality(x)
 
-    def negate(x: Cardinality): Cardinality = Cardinality(-x.amount)
-    def plus(x: Cardinality, y: Cardinality): Cardinality = Cardinality(x.amount + y.amount)
-    def times(x: Cardinality, y: Cardinality): Cardinality = Cardinality(x.amount * y.amount)
-    def minus(x: Cardinality, y: Cardinality): Cardinality = Cardinality(x.amount - y.amount)
+    def negate(x: Cardinality): Cardinality = -x.amount
+    def plus(x: Cardinality, y: Cardinality): Cardinality = x.amount + y.amount
+    def times(x: Cardinality, y: Cardinality): Cardinality = x.amount * y.amount
+    def minus(x: Cardinality, y: Cardinality): Cardinality = x.amount - y.amount
     def compare(x: Cardinality, y: Cardinality): Int = x.compare(y)
   }
 }

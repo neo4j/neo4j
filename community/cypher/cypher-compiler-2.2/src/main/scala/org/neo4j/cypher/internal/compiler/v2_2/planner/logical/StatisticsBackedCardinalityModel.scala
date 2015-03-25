@@ -40,7 +40,7 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
   private def calculateCardinalityForQueryHorizon(in: Cardinality, horizon: QueryHorizon): Cardinality = horizon match {
     // Normal projection with LIMIT
     case RegularQueryProjection(_, QueryShuffle(_, None, Some(limit: IntegerLiteral))) =>
-      Cardinality(Math.min(in.amount, limit.value.toDouble))
+      Cardinality.min(in, limit.value.toDouble)
 
     // Distinct
     case projection: AggregatingQueryProjection if projection.aggregationExpressions.isEmpty =>
@@ -48,7 +48,8 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
 
     // Aggregates
     case _: AggregatingQueryProjection =>
-      Cardinality(Math.sqrt(in.amount))
+      // if input cardinality is < 1 the sqrt is bigger than the original value which makes no sense for aggregations
+      Cardinality.min(in, Cardinality.sqrt(in))
 
     // Unwind
     case _: UnwindProjection =>
