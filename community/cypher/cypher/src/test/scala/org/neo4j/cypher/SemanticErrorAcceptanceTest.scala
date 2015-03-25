@@ -459,6 +459,12 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
       "Invalid input '—': expected whitespace, comment, '.', node labels, '[', \"=~\", IN, IS, '^', '*', '/', '%', '+', '-', '<', '>', \"<=\", \">=\", '=', \"<>\", \"!=\", AND, XOR, OR, AS, ',', ORDER, SKIP, LIMIT, LOAD CSV, START, MATCH, UNWIND, MERGE, CREATE, SET, DELETE, REMOVE, FOREACH, WITH, RETURN, UNION, ';' or end of input (line 1, column 11 (offset: 10))")
   }
 
+  test("fail when parsing larger than 64 bit integers") {
+    executeAndEnsureError(
+      "RETURN toInt('10508455564958384115')",
+      "integer, 10508455564958384115, is too large")
+  }
+
   def executeAndEnsureError(query: String, expected: String) {
     import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.StringHelper._
 
