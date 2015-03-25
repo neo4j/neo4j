@@ -19,6 +19,8 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
+import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
+
 public class LongKeyLongValueUnsafeTable extends UnsafeTable<long[]>
 {
     public LongKeyLongValueUnsafeTable( int capacity )
@@ -29,21 +31,21 @@ public class LongKeyLongValueUnsafeTable extends UnsafeTable<long[]>
     @Override
     protected long internalKey( long keyAddress )
     {
-        return unsafe.getLong( keyAddress );
+        return UnsafeUtil.getLong( keyAddress );
     }
 
     @Override
     protected void internalPut( long keyAddress, long key, long[] value )
     {
-        unsafe.putLong( keyAddress, key );
-        unsafe.putLong( keyAddress+8, value[0] );
+        UnsafeUtil.putLong( keyAddress, key );
+        UnsafeUtil.putLong( keyAddress+8, value[0] );
     }
 
     @Override
     protected long[] internalRemove( long keyAddress )
     {
-        valueMarker[0] = unsafe.getLong( keyAddress+8 );
-        unsafe.putLong( keyAddress, -1 );
+        valueMarker[0] = UnsafeUtil.getLong( keyAddress+8 );
+        UnsafeUtil.putLong( keyAddress, -1 );
         return valueMarker;
     }
 
@@ -51,8 +53,8 @@ public class LongKeyLongValueUnsafeTable extends UnsafeTable<long[]>
     public long[] putValue( int index, long[] value )
     {
         long valueAddress = valueAddress( index );
-        long oldValue = unsafe.getLong( valueAddress );
-        unsafe.putLong( valueAddress, value[0] );
+        long oldValue = UnsafeUtil.getLong( valueAddress );
+        UnsafeUtil.putLong( valueAddress, value[0] );
         return pack( oldValue );
     }
 
@@ -70,7 +72,7 @@ public class LongKeyLongValueUnsafeTable extends UnsafeTable<long[]>
     @Override
     public long[] value( int index )
     {
-        long value = unsafe.getLong( valueAddress( index ) );
+        long value = UnsafeUtil.getLong( valueAddress( index ) );
         return pack( value );
     }
 

@@ -19,14 +19,11 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
-import java.lang.reflect.Field;
 
-import sun.misc.Unsafe;
+import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 public abstract class UnsafeTable<VALUE> extends PowerOfTwoQuantizedTable<VALUE>
 {
-    protected static final Unsafe unsafe = getUnsafe();
-
     private final int bytesPerKey;
     private final int bytesPerEntry;
     private final long dataSize;
@@ -36,11 +33,12 @@ public abstract class UnsafeTable<VALUE> extends PowerOfTwoQuantizedTable<VALUE>
     protected UnsafeTable( int capacity, int bytesPerKey, VALUE valueMarker )
     {
         super( capacity, 32 );
+        UnsafeUtil.assertHasUnsafe();
         this.bytesPerKey = bytesPerKey;
         this.bytesPerEntry = 4+bytesPerKey;
         this.valueMarker = valueMarker;
         this.dataSize = (long)this.capacity*bytesPerEntry;
-        this.address = unsafe.allocateMemory( dataSize );
+        this.address = UnsafeUtil.malloc( dataSize );
         clear();
     }
 
@@ -48,7 +46,7 @@ public abstract class UnsafeTable<VALUE> extends PowerOfTwoQuantizedTable<VALUE>
     public void clear()
     {
         super.clear();
-        unsafe.setMemory( address, dataSize, (byte)-1 );
+        UnsafeUtil.setMemory( address, dataSize, (byte)-1 );
     }
 
     @Override
@@ -100,32 +98,32 @@ public abstract class UnsafeTable<VALUE> extends PowerOfTwoQuantizedTable<VALUE>
 
     protected VALUE internalRemove( long keyAddress )
     {
-        unsafe.setMemory( keyAddress, bytesPerKey, (byte)-1 );
+        UnsafeUtil.setMemory( keyAddress, bytesPerKey, (byte)-1 );
         return valueMarker;
     }
 
     @Override
     public long hopBits( int index )
     {
-        return ~(unsafe.getInt( hopBitsAddress( index ) ) | 0xFFFFFFFF00000000L);
+        return ~(UnsafeUtil.getInt( hopBitsAddress( index ) ) | 0xFFFFFFFF00000000L);
     }
 
     @Override
     public void putHopBit( int index, int hd )
     {
         long adr = hopBitsAddress( index );
-        int hopBits = unsafe.getInt( adr );
+        int hopBits = UnsafeUtil.getInt( adr );
         hopBits &= ~(1 << hd);
-        unsafe.putInt( adr, hopBits );
+        UnsafeUtil.putInt( adr, hopBits );
     }
 
     @Override
     public void moveHopBit( int index, int hd, int delta )
     {
         long adr = hopBitsAddress( index );
-        int hopBits = unsafe.getInt( adr );
+        int hopBits = UnsafeUtil.getInt( adr );
         hopBits ^= (1 << hd) | (1 << (hd+delta));
-        unsafe.putInt( adr, hopBits );
+        UnsafeUtil.putInt( adr, hopBits );
     }
 
     protected long keyAddress( int index )
@@ -142,28 +140,14 @@ public abstract class UnsafeTable<VALUE> extends PowerOfTwoQuantizedTable<VALUE>
     public void removeHopBit( int index, int hd )
     {
         long adr = hopBitsAddress( index );
-        int hopBits = unsafe.getInt( adr );
+        int hopBits = UnsafeUtil.getInt( adr );
         hopBits |= (1 << hd);
-        unsafe.putInt( adr, hopBits );
-    }
-
-    private static Unsafe getUnsafe()
-    {
-        try
-        {
-            Field singleoneInstanceField = Unsafe.class.getDeclaredField( "theUnsafe" );
-            singleoneInstanceField.setAccessible( true );
-            return (Unsafe) singleoneInstanceField.get( null );
-        }
-        catch ( Exception e )
-        {
-            throw new Error( e );
-        }
+        UnsafeUtil.putInt( adr, hopBits );
     }
 
     @Override
     public void close()
     {
-        unsafe.freeMemory( address );
+        UnsafeUtil.free( address );
     }
 }

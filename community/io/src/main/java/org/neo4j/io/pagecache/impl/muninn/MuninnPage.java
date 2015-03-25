@@ -32,9 +32,10 @@ import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.jsr166e.StampedLock;
+import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
-import static org.neo4j.io.pagecache.impl.muninn.UnsafeUtil.allowUnalignedMemoryAccess;
-import static org.neo4j.io.pagecache.impl.muninn.UnsafeUtil.storeByteOrderIsNative;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.allowUnalignedMemoryAccess;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.storeByteOrderIsNative;
 
 final class MuninnPage extends StampedLock implements Page
 {

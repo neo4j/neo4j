@@ -21,7 +21,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 /**
  * This runnable continuously flushes dirty pages in the background, such that future calls to
- * {@link MuninnPageCache#flush()} have less work to do.
+ * {@link MuninnPageCache#flushAndForce()} have less work to do.
  */
 final class FlushTask extends BackgroundTask
 {

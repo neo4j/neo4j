@@ -19,6 +19,8 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
+import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
+
 public class IntKeyUnsafeTable<VALUE> extends UnsafeTable<VALUE>
 {
     public IntKeyUnsafeTable( int capacity, VALUE valueMarker )
@@ -29,7 +31,7 @@ public class IntKeyUnsafeTable<VALUE> extends UnsafeTable<VALUE>
     @Override
     protected long internalKey( long keyAddress )
     {
-        return unsafe.getInt( keyAddress );
+        return UnsafeUtil.getInt( keyAddress );
     }
 
     @Override
@@ -38,7 +40,7 @@ public class IntKeyUnsafeTable<VALUE> extends UnsafeTable<VALUE>
         assert (int)key == key : "Illegal key " + key + ", it's bigger than int";
 
         // We can "safely" cast to int here, assuming that this call trickles in via a PrimitiveIntCollection
-        unsafe.putInt( keyAddress, (int) key );
+        UnsafeUtil.putInt( keyAddress, (int) key );
     }
 
     @Override

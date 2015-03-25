@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
+import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
+
 /**
  * Off-heap version of {@link LongArray} using {@code sun.misc.Unsafe}. Supports arrays with length beyond
  * Integer.MAX_VALUE.
@@ -39,18 +41,18 @@ public class OffHeapLongArray extends OffHeapNumberArray implements LongArray
     @Override
     public long get( long index )
     {
-        return unsafe.getLong( addressOf( index ) );
+        return UnsafeUtil.getLong( addressOf( index ) );
     }
 
     @Override
     public void set( long index, long value )
     {
         long address = addressOf( index );
-        if ( unsafe.getLong( address ) == defaultValue )
+        if ( UnsafeUtil.getLong( address ) == defaultValue )
         {
             size++;
         }
-        unsafe.putLong( address, value );
+        UnsafeUtil.putLong( address, value );
         if ( index > highestSetIndex )
         {
             highestSetIndex = index;
@@ -74,13 +76,13 @@ public class OffHeapLongArray extends OffHeapNumberArray implements LongArray
     {
         if ( isByteUniform( defaultValue ) )
         {
-            unsafe.setMemory( address, length << shift, (byte)defaultValue );
+            UnsafeUtil.setMemory( address, length << shift, (byte)defaultValue );
         }
         else
         {
             for ( long i = 0, adr = address; i < length; i++, adr += stride )
             {
-                unsafe.putLong( adr, defaultValue );
+                UnsafeUtil.putLong( adr, defaultValue );
             }
         }
         highestSetIndex = -1;
@@ -95,9 +97,9 @@ public class OffHeapLongArray extends OffHeapNumberArray implements LongArray
 
         for ( int i = 0; i < numberOfEntries; i++, fromAddress += stride, toAddress += stride )
         {
-            long fromValue = unsafe.getLong( fromAddress );
-            unsafe.putLong( fromAddress, unsafe.getLong( toAddress ) );
-            unsafe.putLong( toAddress, fromValue );
+            long fromValue = UnsafeUtil.getLong( fromAddress );
+            UnsafeUtil.putLong( fromAddress, UnsafeUtil.getLong( toAddress ) );
+            UnsafeUtil.putLong( toAddress, fromValue );
         }
     }
 }

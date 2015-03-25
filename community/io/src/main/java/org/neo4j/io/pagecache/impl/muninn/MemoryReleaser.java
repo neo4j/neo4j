@@ -21,6 +21,8 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
+
 final class MemoryReleaser extends AtomicInteger
 {
     private final long[] rawPointers;

@@ -35,6 +35,7 @@ import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
+import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 /**
  * The Muninn {@link org.neo4j.io.pagecache.PageCache page cache} implementation.
@@ -255,10 +256,7 @@ public class MuninnPageCache implements PageCache
     private static void verifyHacks()
     {
         // Make sure that we have access to theUnsafe.
-        if ( !UnsafeUtil.hasUnsafe() )
-        {
-            throw new AssertionError( "MuninnPageCache requires access to sun.misc.Unsafe" );
-        }
+        UnsafeUtil.assertHasUnsafe();
     }
 
     private static void verifyCachePageSizeIsPowerOfTwo( int cachePageSize )

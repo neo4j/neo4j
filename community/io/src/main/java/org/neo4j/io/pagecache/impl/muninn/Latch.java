@@ -21,7 +21,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.util.concurrent.locks.LockSupport;
 
-import static org.neo4j.io.pagecache.impl.muninn.UnsafeUtil.getAndSetObject;
+import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 /**
  * This class is similar in many ways to a CountDownLatch(1).
@@ -61,7 +61,7 @@ final class Latch
         // Waiters might accidentally remove the released sentinel from the stack for brief periods of time, but then
         // they are required to fix the situation and put it back.
         // Atomically swapping the release sentinel onto the stack will give us back all the waiters, if any.
-        Node waiters = (Node) getAndSetObject( this, stackOffset, released );
+        Node waiters = (Node) UnsafeUtil.getAndSetObject( this, stackOffset, released );
         if ( waiters == null )
         {
             // There are no waiters to unpark, so don't bother.
@@ -84,14 +84,14 @@ final class Latch
             // The latch hasn't obviously already been released, so we want to add a waiter to the stack. Trouble is,
             // we might race with release here, so we need to re-check for release after we've modified the stack.
             Waiter waiter = new Waiter();
-            state = (Node) getAndSetObject( this, stackOffset, waiter );
+            state = (Node) UnsafeUtil.getAndSetObject( this, stackOffset, waiter );
             if ( state == released )
             {
                 // If we get 'released' back from the swap, then we raced with release, and it is our job to put the
                 // released sentinel back. Doing so can, however, return more waiters that have added themselves in
                 // the mean time. If we find such waiters, then we must make sure to unpark them. Note that we will
                 // never get a null back from this swap, because we at least added our own waiter earlier.
-                Node others = (Node) getAndSetObject( this, stackOffset, released );
+                Node others = (Node) UnsafeUtil.getAndSetObject( this, stackOffset, released );
                 // Set our next pointer to 'released' as a signal to other threads who might be going through the
                 // stack in the isReleased check.
                 waiter.next = released;

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.impl.muninn;
+package org.neo4j.unsafe.impl.internal.dragons;
 
 import sun.misc.Unsafe;
 
@@ -32,13 +32,20 @@ import java.nio.ByteOrder;
 import java.security.AccessController;
 import java.security.PrivilegedExceptionAction;
 
+/**
+ * Always check that the Unsafe utilities are available with the {@link UnsafeUtil#assertHasUnsafe} method, before
+ * calling any of the other methods.
+ *
+ * Avoid `import static` for these individual methods. Always qualify method usages with `UnsafeUtil` so use sites
+ * show up in code greps.
+ */
 public final class UnsafeUtil
 {
     private static final Unsafe unsafe;
     private static final MethodHandle getAndAddInt;
     private static final MethodHandle getAndSetObject;
     private static final String allowUnalignedMemoryAccessProperty =
-            "org.neo4j.io.pagecache.impl.muninn.UnsafeUtil.allowUnalignedMemoryAccess";
+            "org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.allowUnalignedMemoryAccess";
 
     private static final Class<?> directByteBufferClass;
     private static final Constructor<?> directByteBufferCtor;
@@ -46,7 +53,6 @@ public final class UnsafeUtil
     private static final long directByteBufferLimitOffset;
     private static final long directByteBufferMarkOffset;
     private static final long directByteBufferAddressOffset;
-
 
     public static final boolean allowUnalignedMemoryAccess;
     public static final boolean storeByteOrderIsNative;
@@ -155,6 +161,17 @@ public final class UnsafeUtil
         }
     }
 
+    /**
+     * @throws java.lang.LinkageError if the Unsafe tools are not available on in this JVM.
+     */
+    public static void assertHasUnsafe()
+    {
+        if ( unsafe == null )
+        {
+            throw new LinkageError( "Unsafe not available" );
+        }
+    }
+
     private static MethodHandle getGetAndAddIntMethodHandle(
             MethodHandles.Lookup lookup )
     {
@@ -185,6 +202,9 @@ public final class UnsafeUtil
         }
     }
 
+    /**
+     * Get the object-relative field offset.
+     */
     public static long getFieldOffset( Class<?> type, String field )
     {
         try
@@ -198,6 +218,11 @@ public final class UnsafeUtil
         }
     }
 
+    /**
+     * Atomically add the given delta to the int field, and return its previous value.
+     *
+     * This has the memory visibility semantics of a volatile read followed by a volatile write.
+     */
     public static int getAndAddInt( Object obj, long offset, int delta )
     {
         if ( getAndAddInt != null )
@@ -231,18 +256,31 @@ public final class UnsafeUtil
         return x;
     }
 
+    /**
+     * Atomically compare the current value of the given long field with the expected value, and if they are the
+     * equal, set the field to the updated value and return true. Otherwise return false.
+     *
+     * If this method returns true, then it has the memory visibility semantics of a volatile read followed by a
+     * volatile write.
+     */
     public static boolean compareAndSwapLong(
             Object obj, long offset, long expected, long update )
     {
         return unsafe.compareAndSwapLong( obj, offset, expected, update );
     }
 
+    /**
+     * Same as compareAndSwapLong, but for object references.
+     */
     public static boolean compareAndSwapObject(
             Object obj, long offset, Object expected, Object update )
     {
         return unsafe.compareAndSwapObject( obj, offset, expected, update );
     }
 
+    /**
+     * Same as getAndAddInt, but for object references.
+     */
     public static Object getAndSetObject( Object obj, long offset, Object newValue )
     {
         if ( getAndSetObject != null )
@@ -276,6 +314,11 @@ public final class UnsafeUtil
         return current;
     }
 
+    /**
+     * Allocate a slab of memory of the given size in bytes, and return a pointer to that memory.
+     *
+     * The memory is aligned such that it can be used for any data type. The memory is cleared, so all bytes are zero.
+     */
     public static long malloc( long sizeInBytes )
     {
         long pointer = unsafe.allocateMemory( sizeInBytes );
@@ -283,6 +326,9 @@ public final class UnsafeUtil
         return pointer;
     }
 
+    /**
+     * Free the memory that was allocated with {@link #malloc}.
+     */
     public static void free( long pointer )
     {
         unsafe.freeMemory( pointer );
@@ -338,11 +384,6 @@ public final class UnsafeUtil
         unsafe.putShort( address, value );
     }
 
-    public static boolean hasUnsafe()
-    {
-        return unsafe != null;
-    }
-
     public static void putLong( Object obj, long offset, long value )
     {
         unsafe.putLong( obj, offset, value );
@@ -388,11 +429,19 @@ public final class UnsafeUtil
         return base + index * scale;
     }
 
+    /**
+     * Set the given number of bytes to the given value, starting from the given address.
+     */
     public static void setMemory( long address, long bytes, byte value )
     {
         unsafe.setMemory( address, bytes, value );
     }
 
+    /**
+     * Create a new DirectByteBuffer that wraps the given address and has the given capacity.
+     *
+     * The ByteBuffer does NOT create a Cleaner, or otherwise register the pointer for freeing.
+     */
     public static ByteBuffer newDirectByteBuffer( long addr, int cap ) throws Exception
     {
         if ( directByteBufferCtor == null )
