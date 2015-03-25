@@ -106,14 +106,16 @@ trait Expressions extends Parser
       | "[" ~~ optional(Expression) ~~ ".." ~~ optional(Expression) ~~ "]" ~~>> (ast.CollectionSlice(_: ast.Expression, _, _))
       | group(operator("=~") ~~ Expression2) ~~>> (ast.RegexMatch(_: ast.Expression, _))
       | group(keyword("IN") ~~ Expression2) ~~>> (ast.In(_: ast.Expression, _))
-      | group(keyword("LIKE") ~~ Expression2) ~~>> (ast.Like(_: ast.Expression, _))
-      | group(keyword("NOT LIKE") ~~ Expression2) ~~>> (ast.NotLike(_: ast.Expression, _))
-      | group(keyword("ILIKE") ~~ Expression2) ~~>> (ast.Like(_: ast.Expression, _, true))
-      | group(keyword("NOT ILIKE") ~~ Expression2) ~~>> (ast.NotLike(_: ast.Expression, _, true))
+      | group(keyword("LIKE") ~~ LikePattern) ~~>> (ast.Like(_: ast.Expression, _))
+      | group(keyword("NOT LIKE") ~~ LikePattern) ~~>> (ast.NotLike(_: ast.Expression, _))
+      | group(keyword("ILIKE") ~~ LikePattern) ~~>> (ast.Like(_: ast.Expression, _, true))
+      | group(keyword("NOT ILIKE") ~~ LikePattern) ~~>> (ast.NotLike(_: ast.Expression, _, true))
       | keyword("IS NULL") ~~>> (ast.IsNull(_: ast.Expression))
       | keyword("IS NOT NULL") ~~>> (ast.IsNotNull(_: ast.Expression))
     ): ReductionRule1[ast.Expression, ast.Expression])
   }
+
+  private def LikePattern: Rule1[ast.LikePattern] = Expression2 ~~> (expr => ast.LikePattern(expr))
 
   private def Expression2: Rule1[ast.Expression] = rule("an expression") {
     Expression1 ~ zeroOrMore(WS ~ (

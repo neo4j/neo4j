@@ -226,7 +226,7 @@ object ExpressionConverters {
 
   implicit class NotLikeConverter(val e: ast.NotLike) extends AnyVal {
     def asCommandNegatedRegex =
-      commands.Not(ast.Like(e.lhs, e.rhs, e.caseInsensitive)(e.position).asCommandPredicate)
+      commands.Not(ast.Like(e.lhs, e.pattern, e.caseInsensitive)(e.position).asCommandPredicate)
     }
 
   implicit class InConverter(val e: ast.In) extends AnyVal {
