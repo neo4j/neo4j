@@ -70,10 +70,20 @@ if "%REPO%"=="" set REPO=%BASEDIR%\lib
 
 rem Setup the classpath
 set LIBPATH=""
+:GATHER_LIBPATH_1
+IF NOT EXIST %REPO% GOTO GATHER_LIBPATH_2
 pushd "%REPO%"
 for %%G in (*.jar) do call:APPEND_TO_LIBPATH %%G
 popd
-set REPO=%BASEDIR%\system\coordinator\lib
+:GATHER_LIBPATH_2
+set REPO=%BASEDIR%\system\lib
+IF NOT EXIST %REPO% GOTO GATHER_LIBPATH_3
+pushd "%REPO%"
+for %%G in (*.jar) do call:APPEND_TO_LIBPATH %%G
+popd
+:GATHER_LIBPATH_3
+set REPO=%BASEDIR%\bin
+IF NOT EXIST %REPO% GOTO LIBPATH_END
 pushd "%REPO%"
 for %%G in (*.jar) do call:APPEND_TO_LIBPATH %%G
 popd
