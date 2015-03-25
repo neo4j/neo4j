@@ -8,24 +8,21 @@
   </parent>
 
   <properties>
-    <short-name>primitive-collections</short-name>
-    <bundle.namespace>org.neo4j.collection.primitive</bundle.namespace>
+    <short-name>unsafe</short-name>
+    <bundle.namespace>org.neo4j.unsafe</bundle.namespace>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>neo4j-primitive-collections</artifactId>
+  <artifactId>neo4j-unsafe</artifactId>
   <version>2.3-SNAPSHOT</version>
 
   <packaging>jar</packaging>
-  <name>Neo4j - Primitive Collections</name>
-  <description>Efficient collections for sets and maps that has primitive types as keys.</description>
+  <name>Neo4j - Unsafe Access</name>
+  <description>Internal component that provides access to unsafe memory
+    intrinsics</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
-
-  <scm>
-    <url>https://github.com/neo4j/neo4j/tree/master/community/primitive-collections</url>
-  </scm>
 
   <licenses>
     <license>
@@ -49,11 +46,6 @@ the relevant Commercial Agreement.
 
   <dependencies>
     <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-unsafe</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
@@ -61,11 +53,6 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-all</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-all</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

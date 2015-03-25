@@ -25,10 +25,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PinEvent;
-
-import static org.neo4j.io.pagecache.impl.muninn.UnsafeUtil.compareAndSwapObject;
-import static org.neo4j.io.pagecache.impl.muninn.UnsafeUtil.getObjectVolatile;
-import static org.neo4j.io.pagecache.impl.muninn.UnsafeUtil.putObjectVolatile;
+import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 abstract class MuninnPageCursor implements PageCursor
 {
@@ -133,12 +130,12 @@ abstract class MuninnPageCursor implements PageCursor
         Object item;
         do
         {
-            item = getObjectVolatile( chunk, chunkOffset );
+            item = UnsafeUtil.getObjectVolatile( chunk, chunkOffset );
             if ( item == null )
             {
                 // Looks like there's no mapping, so we'd like to do a page fault.
                 Latch latch = new Latch();
-                if ( compareAndSwapObject( chunk, chunkOffset, null, latch ) )
+                if ( UnsafeUtil.compareAndSwapObject( chunk, chunkOffset, null, latch ) )
                 {
                     // We managed to inject our latch, so we now own the right to perform the page fault. We also
                     // have a duty to eventually release and remove the latch, no matter what happens now.
@@ -200,7 +197,7 @@ abstract class MuninnPageCursor implements PageCursor
         catch ( Throwable throwable )
         {
             // Make sure to unstuck the page fault latch.
-            putObjectVolatile( chunk, chunkOffset, null );
+            UnsafeUtil.putObjectVolatile( chunk, chunkOffset, null );
             latch.release();
             faultEvent.done( throwable );
             pinEvent.done();
@@ -223,14 +220,14 @@ abstract class MuninnPageCursor implements PageCursor
             // Make sure to unlock the page, so the eviction thread can pick up our trash.
             page.unlockWrite( stamp );
             // Make sure to unstuck the page fault latch.
-            putObjectVolatile( chunk, chunkOffset, null );
+            UnsafeUtil.putObjectVolatile( chunk, chunkOffset, null );
             latch.release();
             faultEvent.done( throwable );
             pinEvent.done();
             throw throwable;
         }
         convertPageFaultLock( page, stamp );
-        putObjectVolatile( chunk, chunkOffset, page );
+        UnsafeUtil.putObjectVolatile( chunk, chunkOffset, page );
         latch.release();
         faultEvent.done();
         return page;

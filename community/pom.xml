@@ -30,6 +30,7 @@
   </scm>
 
   <modules>
+    <module>unsafe</module>
     <module>primitive-collections</module>
     <module>io</module>
     <module>csv</module>

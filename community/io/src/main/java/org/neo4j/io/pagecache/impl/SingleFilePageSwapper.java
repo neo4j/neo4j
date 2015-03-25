@@ -29,7 +29,7 @@ import org.neo4j.io.pagecache.Page;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
-import org.neo4j.io.pagecache.impl.muninn.UnsafeUtil;
+import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 /**
  * A simple PageSwapper implementation that directs all page swapping to a
