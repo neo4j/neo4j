@@ -39,8 +39,8 @@ class ExecutionEngineIT extends CypherFunSuite {
     val plan2 = db.execute("PROFILE MATCH (a)-[:T*]-(a) RETURN a").getExecutionPlanDescription
 
     //then
-    plan1.getArguments().get("planner") should equal("COST")
-    plan2.getArguments().get("planner") should equal("RULE")
+    plan1.getArguments.get("planner") should equal("COST")
+    plan2.getArguments.get("planner") should equal("COST")
   }
 
   test("should be able to set RULE as default in 2.2") {
@@ -54,7 +54,7 @@ class ExecutionEngineIT extends CypherFunSuite {
     val plan = db.execute("PROFILE MATCH (a) RETURN a").getExecutionPlanDescription
 
     //then
-    plan.getArguments().get("planner") should equal("RULE")
+    plan.getArguments.get("planner") should equal("RULE")
   }
 
   test("should be able to force COST as default in 2.2") {
@@ -68,7 +68,7 @@ class ExecutionEngineIT extends CypherFunSuite {
     val plan = db.execute("PROFILE MATCH (a)-[:T*]-(a) RETURN a").getExecutionPlanDescription
 
     //then
-    plan.getArguments().get("planner") should equal("COST")
+    plan.getArguments.get("planner") should equal("COST")
   }
 
   test("should throw error if using COST for older versions") {
