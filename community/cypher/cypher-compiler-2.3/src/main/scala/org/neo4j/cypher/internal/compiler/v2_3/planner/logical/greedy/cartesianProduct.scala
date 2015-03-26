@@ -33,7 +33,7 @@ object cartesianProduct extends CandidateGenerator[GreedyPlanTable] {
       if (cartesianProducts.isEmpty) {
         usablePlans
       } else {
-        val worstCartesianProduct = cartesianProducts.minBy(p => context.cost(p))
+        val worstCartesianProduct = cartesianProducts.minBy(p => context.cost(p, context.input))
         usablePlans - worstCartesianProduct.left - worstCartesianProduct.right + worstCartesianProduct
       }
     }(planTable.plans.toSet)

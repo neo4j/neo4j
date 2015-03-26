@@ -23,7 +23,7 @@ import org.mockito.Matchers.any
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.ast
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.QueryGraphCardinalityInput
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, LogicalPlanningContext, QueryPlannerConfiguration}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, LogicalPlanningTestSupport, PlannerQuery, QueryGraph, SemanticTable}
@@ -62,7 +62,7 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
     val lhs = newMockedLogicalPlan("a")
 
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any())).thenReturn((plan: PlannerQuery, _: QueryGraphCardinalityInput, _: SemanticTable) => plan match {
+    when(factory.newCardinalityEstimator(any())).thenReturn((plan: PlannerQuery, _: QueryGraphSolverInput, _: SemanticTable) => plan match {
       case PlannerQuery(queryGraph, _, _) if queryGraph.patternNodes == Set(IdName("a")) &&
                                              queryGraph.patternRelationships.isEmpty => Cardinality(1.0)
       case _            => Cardinality(1000.0)
@@ -270,7 +270,7 @@ class SolveOptionalMatchesTest extends CypherFunSuite with LogicalPlanningTestSu
              withAddedOptionalMatch(qgForAtoB.addPredicates(labelPredicate))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any())).thenReturn((plan: PlannerQuery, _: QueryGraphCardinalityInput, _: SemanticTable) => plan match {
+    when(factory.newCardinalityEstimator(any())).thenReturn((plan: PlannerQuery, _: QueryGraphSolverInput, _: SemanticTable) => plan match {
       case PlannerQuery(queryGraph, _, _) if queryGraph.argumentIds == Set(IdName("a")) &&
                                              queryGraph.patternNodes == Set(IdName("a")) &&
                                              queryGraph.patternRelationships.isEmpty  => Cardinality(1.0)

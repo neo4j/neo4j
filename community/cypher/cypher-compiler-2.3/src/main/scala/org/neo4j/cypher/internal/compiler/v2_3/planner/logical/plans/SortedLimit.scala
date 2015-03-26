@@ -24,9 +24,10 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, P
 
 case class SortedLimit(left: LogicalPlan, limit: Expression, sortItems: Seq[SortItem])
                       (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan {
+  extends LogicalPlan with EagerLogicalPlan {
   val lhs = Some(left)
   val rhs = None
+
   def availableSymbols = left.availableSymbols
 
   override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =

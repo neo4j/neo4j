@@ -19,16 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.triplet
 
-import org.neo4j.cypher.internal.compiler.v2_3.{LabelId, RelTypeId}
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{LabelName, RelTypeName}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.{LabelInfo, QueryGraphCardinalityInput}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.{LabelInfo, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.TokenSpec
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.TokenSpec.{LabelSpecs, RelTypeSpecs}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, PatternRelationship}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.{Selections, SemanticTable, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{QueryGraph, Selections, SemanticTable}
+import org.neo4j.cypher.internal.compiler.v2_3.{LabelId, RelTypeId}
 import org.neo4j.graphdb.Direction
 
-case class TripletConverter(qg: QueryGraph, input: QueryGraphCardinalityInput, semanticTable: SemanticTable)
+case class TripletConverter(qg: QueryGraph, input: QueryGraphSolverInput, semanticTable: SemanticTable)
   extends (PatternRelationship => Triplet) {
 
   val labelSpecs = findLabelSpecsForGraph(qg, input)
@@ -50,7 +50,7 @@ case class TripletConverter(qg: QueryGraph, input: QueryGraphCardinalityInput, s
     )
   }
 
-  private def findLabelSpecsForGraph(qg: QueryGraph, input: QueryGraphCardinalityInput): LabelSpecs = {
+  private def findLabelSpecsForGraph(qg: QueryGraph, input: QueryGraphSolverInput): LabelSpecs = {
     val selections = qg.selections
     val labelInfo = input.labelInfo
     qg.patternNodes.collect {

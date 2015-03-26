@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.assumeIndependence
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast.LabelName
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.{QueryGraphCardinalityInput, QueryGraphCardinalityModel}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.{QueryGraphCardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.{ExpressionSelectivityCalculator, SelectivityCombiner}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{VarPatternLength, SimplePatternLength, IdName}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, SimplePatternLength, VarPatternLength}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{QueryGraph, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
@@ -38,7 +38,7 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
    * because no matches are limiting. So we need to calculate cardinality of all possible combinations
    * of matches, and then take the max.
    */
-  def apply(queryGraph: QueryGraph, input: QueryGraphCardinalityInput, semanticTable: SemanticTable): Cardinality = {
+  def apply(queryGraph: QueryGraph, input: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality = {
     val combinations: Seq[QueryGraph] = findQueryGraphCombinations(queryGraph)
     val cardinalities = combinations.map(cardinalityForQueryGraph(_, input)(semanticTable))
     cardinalities.max
@@ -65,7 +65,7 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
     qg.patternNodes.count(!qg.argumentIds.contains(_)) + intermediateNodes
   }
 
-  private def cardinalityForQueryGraph(qg: QueryGraph, input: QueryGraphCardinalityInput)
+  private def cardinalityForQueryGraph(qg: QueryGraph, input: QueryGraphSolverInput)
                                       (implicit semanticTable: SemanticTable): Cardinality = {
     val selectivity = calculateSelectivity(qg, input.labelInfo)
     val numberOfPatternNodes = calculateNumberOfPatternNodes(qg)

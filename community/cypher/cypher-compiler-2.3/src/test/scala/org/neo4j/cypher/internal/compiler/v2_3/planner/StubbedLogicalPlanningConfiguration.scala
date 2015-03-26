@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner
 
 import org.neo4j.cypher.internal.compiler.v2_3.LabelId
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{Expression, HasLabels}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityInput, QueryGraphCardinalityModel}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, Cost, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
@@ -33,7 +33,7 @@ class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration)
 
   var knownLabels: Set[String] = Set.empty
   var cardinality: PartialFunction[PlannerQuery, Cardinality] = PartialFunction.empty
-  var cost: PartialFunction[LogicalPlan, Cost] = PartialFunction.empty
+  var cost: PartialFunction[(LogicalPlan, QueryGraphSolverInput), Cost] = PartialFunction.empty
   var selectivity: PartialFunction[Expression, Selectivity] = PartialFunction.empty
   var labelCardinality: Map[String, Cardinality] = Map.empty
   var statistics = null
@@ -50,11 +50,10 @@ class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration)
     uniqueIndexes = uniqueIndexes + (label -> property)
   }
 
-  def costModel() =
-    cost.orElse(parent.costModel())
+  def costModel() = cost.orElse(parent.costModel())
 
   def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel): CardinalityModel = {
-    (pq: PlannerQuery, input: QueryGraphCardinalityInput, semanticTable: SemanticTable) => {
+    (pq: PlannerQuery, input: QueryGraphSolverInput, semanticTable: SemanticTable) => {
       val labelIdCardinality: Map[LabelId, Cardinality] = labelCardinality.map {
         case (name: String, cardinality: Cardinality) =>
           semanticTable.resolvedLabelIds(name) -> cardinality

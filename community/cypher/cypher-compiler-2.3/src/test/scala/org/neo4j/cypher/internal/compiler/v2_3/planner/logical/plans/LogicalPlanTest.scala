@@ -27,6 +27,7 @@ class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
     def lhs: Option[LogicalPlan] = ???
     def availableSymbols: Set[IdName] = ???
     def rhs: Option[LogicalPlan] = ???
+    def strictness = ???
   }
 
   test("updating the planner query works well, thank you very much") {

@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
 
 case class Union(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LogicalPlanWithoutExpressions {
+  extends LogicalPlan with LogicalPlanWithoutExpressions with LazyLogicalPlan {
 
-  def lhs: Option[LogicalPlan] = Some(left)
-  def rhs: Option[LogicalPlan] = Some(right)
+  val lhs = Some(left)
+  val rhs = Some(right)
 
   def availableSymbols: Set[IdName] = left.availableSymbols
 }

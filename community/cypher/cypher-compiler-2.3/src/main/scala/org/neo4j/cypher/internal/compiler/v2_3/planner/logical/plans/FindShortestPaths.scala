@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, P
 
 case class FindShortestPaths(left: LogicalPlan, shortestPath: ShortestPathPattern)
                             (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LogicalPlanWithoutExpressions {
+  extends LogicalPlan with LogicalPlanWithoutExpressions with LazyLogicalPlan {
 
   val lhs = Some(left)
   def rhs = None

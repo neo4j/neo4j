@@ -23,7 +23,6 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.compiler.v2_3.{EntityNotFoundException, FailedIndexException}
-import JavaConversionSupport._
 import org.neo4j.graphdb.DynamicRelationshipType._
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -128,7 +127,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   }
 
   def exactIndexSearch(index: IndexDescriptor, value: Any) =
-    mapToScala(statement.readOperations().nodesGetFromIndexLookup(index, value))(nodeOps.getById)
+    JavaConversionSupport.mapToScala(statement.readOperations().nodesGetFromIndexLookup(index, value))(nodeOps.getById)
 
   def exactUniqueIndexSearch(index: IndexDescriptor, value: Any): Option[Node] = {
     val nodeId: Long = statement.readOperations().nodeGetUniqueFromIndexLookup(index, value)
@@ -141,7 +140,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   }
 
   def getNodesByLabel(id: Int): Iterator[Node] =
-    mapToScala(statement.readOperations().nodesGetForLabel(id))(nodeOps.getById)
+    JavaConversionSupport.mapToScala(statement.readOperations().nodesGetForLabel(id))(nodeOps.getById)
 
   def nodeGetDegree(node: Long, dir: Direction): Int = statement.readOperations().nodeGetDegree(node, dir)
 
@@ -180,7 +179,6 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       graph.getNodeById(id)
     } catch {
       case e: NotFoundException => throw new EntityNotFoundException(s"Node with id $id", e)
-      case e: RuntimeException  => throw e
     }
 
     def all: Iterator[Node] = GlobalGraphOperations.at(graph).getAllNodes.iterator().asScala
@@ -217,7 +215,11 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       statement.dataWriteOperations().relationshipSetProperty(id, properties.Property.property(propertyKeyId, value) )
     }
 
-    def getById(id: Long) = graph.getRelationshipById(id)
+    def getById(id: Long) = try {
+      graph.getRelationshipById(id)
+    } catch {
+      case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $id", e)
+    }
 
     def all: Iterator[Relationship] =
       GlobalGraphOperations.at(graph).getAllRelationships.iterator().asScala

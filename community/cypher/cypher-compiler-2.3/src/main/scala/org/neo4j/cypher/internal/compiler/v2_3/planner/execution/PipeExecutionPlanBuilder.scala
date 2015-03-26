@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{PipeInfo, PlanFing
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{LazyTypes, _}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.QueryGraphCardinalityInput
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantHandleQueryException, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{InstrumentedGraphStatistics, PlanContext}
@@ -52,9 +52,8 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
     implicit val table: SemanticTable = context.semanticTable
     val updating = false
 
-    def buildPipe(plan: LogicalPlan, input: QueryGraphCardinalityInput): Pipe = {
+    def buildPipe(plan: LogicalPlan, input: QueryGraphSolverInput): Pipe = {
       implicit val monitor = monitors.newMonitor[PipeMonitor]()
-      implicit val c = context.cardinality
 
       val result: Pipe with RonjaPipe = plan match {
         case Projection(left, expressions) =>
@@ -222,7 +221,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
       val instance = Rewriter.lift {
         case ast.NestedPlanExpression(patternPlan, pattern) =>
           val pos = pattern.position
-          val pipe = buildPipe(patternPlan, QueryGraphCardinalityInput.empty)
+          val pipe = buildPipe(patternPlan, QueryGraphSolverInput.empty)
           val step = projectNamedPaths.patternPartPathExpression(ast.EveryPath(pattern.pattern.element))
           val result = ast.NestedPipeExpression(pipe, ast.PathExpression(step)(pos))(pos)
           result
@@ -243,7 +242,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
       rewrittenExpr.asCommandPredicate.rewrite(resolver.resolveExpressions(_, planContext)).asInstanceOf[CommandPredicate]
     }
 
-    val topLevelPipe = buildPipe(plan, QueryGraphCardinalityInput.empty)
+    val topLevelPipe = buildPipe(plan, QueryGraphSolverInput.empty)
 
     val fingerprint = planContext.statistics match {
       case igs: InstrumentedGraphStatistics =>

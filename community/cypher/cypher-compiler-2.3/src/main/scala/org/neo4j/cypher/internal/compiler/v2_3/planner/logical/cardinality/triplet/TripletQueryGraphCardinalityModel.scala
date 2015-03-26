@@ -36,7 +36,7 @@ object TripletQueryGraphCardinalityModel {
 case class TripletQueryGraphCardinalityModel(stats: GraphStatistics, combiner: SelectivityCombiner)
   extends QueryGraphCardinalityModel {
 
-  def apply(qg: QueryGraph, input: QueryGraphCardinalityInput, semanticTable: SemanticTable): Cardinality = {
+  def apply(qg: QueryGraph, input: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality = {
     if (qg.optionalMatches.nonEmpty)
       throw new IllegalArgumentException("OPTIONAL MATCH is unsupported in this cardinality model")
 

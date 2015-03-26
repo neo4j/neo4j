@@ -307,7 +307,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate(b, c, "rel")
     relate(c, d, "rel")
 
-    val result = execute("match p = pA-[:rel*3..3]->pB WHERE all(i in nodes(p) where i.foo = 'bar') return pB")
+    val result = executeWithNewPlanner("match p = pA-[:rel*3..3]->pB WHERE all(i in nodes(p) where i.foo = 'bar') return pB")
 
     result.columnAs("pB").toList should equal(List(d))
   }
@@ -320,7 +320,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val r1 = relate(a, b, "rel")
     val r2 = relate(b, c, "rel")
 
-    val result = execute("match p = a-[:rel*2..2]->(b:End) return RELATIONSHIPS(p)")
+    val result = executeWithNewPlanner("match p = a-[:rel*2..2]->(b:End) return RELATIONSHIPS(p)")
 
     result.columnAs[Node]("RELATIONSHIPS(p)").toList.head should equal(List(r1, r2))
   }
@@ -333,7 +333,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val r1 = relate(a, b, "rel")
     val r2 = relate(b, c, "rel")
 
-    val result = execute("match p = (a:Start)-[:rel*2..2]->b return RELATIONSHIPS(p)")
+    val result = executeWithNewPlanner("match p = (a:Start)-[:rel*2..2]->b return RELATIONSHIPS(p)")
 
     result.columnAs[Node]("RELATIONSHIPS(p)").toList.head should equal(List(r1, r2))
   }
@@ -346,7 +346,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val r1 = relate(a, b, "rel")
     val r2 = relate(b, c, "rel")
 
-    val result = execute("match a-[r:rel*2..2]->(b:End) return r")
+    val result = executeWithNewPlanner("match a-[r:rel*2..2]->(b:End) return r")
 
     result.columnAs[List[Relationship]]("r").toList.head should equal(List(r1, r2))
   }
@@ -359,7 +359,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val r1 = relate(a, b, "rel")
     val r2 = relate(b, c, "rel")
 
-    val result = execute("match a-[r:rel*2..2]-(b:End) return r")
+    val result = executeWithNewPlanner("match a-[r:rel*2..2]-(b:End) return r")
 
     val relationships = result.columnAs[List[Relationship]]("r").toSet
     relationships should equal(Set(List(r1, r2), List(r2, r1)))
@@ -373,7 +373,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val r1 = relate(a, b, "rel")
     val r2 = relate(b, c, "rel")
 
-    val result = execute("match (a:Start)-[r:rel*2..2]->b return r")
+    val result = executeWithNewPlanner("match (a:Start)-[r:rel*2..2]->b return r")
 
     result.columnAs[List[Relationship]]("r").toList.head should equal(List(r1, r2))
   }
@@ -383,7 +383,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val r1 = relate("A" -> "KNOWS" -> "B")
     val r2 = relate("B" -> "KNOWS" -> "C")
 
-    val result = execute("match p=(n {name:'A'})-[:KNOWS*1..2]->x return p")
+    val result = executeWithNewPlanner("match p=(n {name:'A'})-[:KNOWS*1..2]->x return p")
 
     graph.inTx {
       result.columnAs("p").toList should equal(List(
@@ -397,7 +397,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val b = createNode()
     relate(a, b)
 
-    val result = execute("match p=a-[*0..1]->b return a,b, length(p) as l")
+    val result = executeWithNewPlanner("match p=a-[*0..1]->b return a,b, length(p) as l")
 
     result.toSet should equal(
       Set(
@@ -411,7 +411,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val r1 = relate("A" -> "KNOWS" -> "B")
     val r2 = relate("B" -> "FRIEND" -> "C")
 
-    val result = execute("match p=(a {name:'A'})-[:KNOWS*0..1]->b-[:FRIEND*0..1]->c return p,a,b,c")
+    val result = executeWithNewPlanner("match p=(a {name:'A'})-[:KNOWS*0..1]->b-[:FRIEND*0..1]->c return p,a,b,c")
 
     graph.inTx {
       result.columnAs[Path]("p").toList should equal(
@@ -428,7 +428,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate("A" -> "CONTAINS" -> "B")
     relate("B" -> "FRIEND" -> "C")
 
-    val result = execute("match (a {name:'A'})-[:CONTAINS*0..1]->b-[:FRIEND*0..1]->c return a,b,c")
+    val result = executeWithNewPlanner("match (a {name:'A'})-[:CONTAINS*0..1]->b-[:FRIEND*0..1]->c return a,b,c")
 
     result.toSet should equal(
       Set(
@@ -445,7 +445,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate("C" -> "CONTAINS" -> "D")
 
 
-    val result = execute("match (a {name:'A'})-[*]->x return x")
+    val result = executeWithNewPlanner("match (a {name:'A'})-[*]->x return x")
 
     result.toSet should equal(
       Set(
@@ -460,7 +460,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val r1 = relate("A" -> "KNOWS" -> "B")
     val r2 = relate("B" -> "KNOWS" -> "C")
 
-    val result = execute("match p=(n {name:'A'})-[:KNOWS*..2]->x return p")
+    val result = executeWithNewPlanner("match p=(n {name:'A'})-[:KNOWS*..2]->x return p")
 
     result.columnAs[Path]("p").toList should equal(List(
       PathImpl(node("A"), r1, node("B")),
@@ -473,7 +473,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val r1 = relate("A" -> "KNOWS" -> "B")
     val r2 = relate("B" -> "KNOWS" -> "C")
 
-    val result = execute("match p=(n {name:'A'})-[:KNOWS*..]->x return p")
+    val result = executeWithNewPlanner("match p=(n {name:'A'})-[:KNOWS*..]->x return p")
 
     result.columnAs[Path]("p").toList should equal(List(
       PathImpl(node("A"), r1, node("B")),
@@ -740,7 +740,7 @@ return x, p""").toSet
     val b = createNode("B")
     relate(a, b, "X")
 
-    val result = execute( """
+    val result = executeWithNewPlanner( """
 match (a {name:'A'})
 optional match p = a-->b-[*]->c
 return p""")
@@ -755,7 +755,7 @@ return p""")
     val b = createNode("B")
     relate(a, b, "X")
 
-    val result = execute( """
+    val result = executeWithNewPlanner( """
 match (a {name:'A'})
 optional match p = a-->b-[*]->c
 return p""")
@@ -771,7 +771,7 @@ return p""")
     val c = createNode("C")
     val r = relate(a, b, "X")
 
-    val result = execute( """
+    val result = executeWithNewPlanner( """
 match (a {name:'A'}), (x) where x.name in ['B', 'C']
 optional match p = (a)-[r*]->(x)
 return r, x, p""")
@@ -789,7 +789,7 @@ return r, x, p""")
     val r1 = relate(a, b)
     val r2 = relate(b, c)
 
-    val result = execute( """
+    val result = executeWithNewPlanner( """
 match (a) where id(a) = 0
 match a-[r*2]->c
 return r""")
@@ -817,7 +817,7 @@ return p""")
     val rac = relate(a, c)
     val rcd = relate(c, d)
 
-    val result = execute( """
+    val result = executeWithNewPlanner( """
 match p = root-[*]->leaf
 where id(root) = 0 and not(leaf-->())
 return p, leaf""")
@@ -946,7 +946,7 @@ RETURN a.name""")
     createNode()
     val b = createNode()
 
-    val result = execute("""
+    val result = executeWithNewPlanner("""
 match (a), (b) where id(a) = 0 and id(b) = 1
 optional match a-[r*]-b where r is null and a <> b
 return b
@@ -1317,7 +1317,7 @@ return b
     val b = createNode()
     val r = relate(a, b)
 
-    val result = execute("match (a)-[r*1..1]->(b) return r")
+    val result = executeWithNewPlanner("match (a)-[r*1..1]->(b) return r")
     result.toList should equal (List(Map("r" -> List(r))))
   }
 
@@ -1396,7 +1396,7 @@ return b
     val node = createNode()
 
     // when
-    val result = execute("match p = (a)-[r*0..]->(b) return p")
+    val result = executeWithNewPlanner("match p = (a)-[r*0..]->(b) return p")
 
     // should give us a single, empty path starting at one end
     result.toList should equal (List(Map("p"-> new PathImpl(node))))
@@ -1576,7 +1576,7 @@ return b
     relate(node2, node3, "Y")
 
     // when
-    val result = execute("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs, a AS first, b AS second LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second")
+    val result = executeWithNewPlanner("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs, a AS first, b AS second LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second")
 
     val actual = result.toList
 
@@ -1593,7 +1593,7 @@ return b
     relate(node2, node3, "Y")
 
     // when
-    val result = execute("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs, a AS second, b AS first LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second")
+    val result = executeWithNewPlanner("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs, a AS second, b AS first LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second")
 
     val actual = result.toList
 
@@ -1665,7 +1665,7 @@ return b
     relate(a, b, "WORKED_WITH", Map("year" -> 1987))
     relate(b, c, "WORKED_WITH", Map("year" -> 1988))
 
-    val result = execute("MATCH (a:Artist)-[:WORKED_WITH* { year: 1988 }]->(b:Artist) RETURN *")
+    val result = executeWithNewPlanner("MATCH (a:Artist)-[:WORKED_WITH* { year: 1988 }]->(b:Artist) RETURN *")
     result.toList should equal(List(
       Map("a" -> b, "b" -> c)
     ))
@@ -1925,5 +1925,11 @@ return b
     val query = "PLANNER COST MATCH topRoute = (db1:Start)<-[:CONNECTED_TO]-()-[:CONNECTED_TO*3..3]-(db2:End) RETURN topRoute"
 
     executeWithNewPlanner(query).toList should have size(4)
+  }
+
+  test("should return empty result when there are no relationship with the given id") {
+    executeWithNewPlanner("MATCH ()-[r]->() WHERE id(r) = 42 RETURN r") shouldBe empty
+    executeWithNewPlanner("MATCH ()<-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
+    executeWithNewPlanner("MATCH ()-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
   }
 }

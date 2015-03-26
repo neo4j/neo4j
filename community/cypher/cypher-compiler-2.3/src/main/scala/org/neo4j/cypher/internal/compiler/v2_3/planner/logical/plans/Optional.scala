@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, P
 
 case class Optional(inputPlan: LogicalPlan)
                    (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LogicalPlanWithoutExpressions {
+  extends LogicalPlan with LogicalPlanWithoutExpressions with LazyLogicalPlan {
 
   val lhs = Some(inputPlan)
   val rhs = None

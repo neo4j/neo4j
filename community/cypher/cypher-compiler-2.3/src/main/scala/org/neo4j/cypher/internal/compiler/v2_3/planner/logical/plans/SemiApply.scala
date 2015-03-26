@@ -27,7 +27,8 @@ case class SemiApply(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQ
 case class AntiSemiApply(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)
   extends AbstractSemiApply(left, right, solved) with LogicalPlanWithoutExpressions
 
-abstract class AbstractSemiApply(left: LogicalPlan, right: LogicalPlan, solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan {
+abstract class AbstractSemiApply(left: LogicalPlan, right: LogicalPlan, solved: PlannerQuery with CardinalityEstimation)
+  extends LogicalPlan with LazyLogicalPlan {
   val lhs = Some(left)
   val rhs = Some(right)
 

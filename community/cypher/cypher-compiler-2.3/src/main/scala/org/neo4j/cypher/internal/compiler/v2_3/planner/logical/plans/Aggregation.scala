@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, P
 case class Aggregation(left: LogicalPlan,
                        groupingExpressions: Map[String, Expression],
                        aggregationExpression: Map[String, Expression])
-                      (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan {
+                      (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with EagerLogicalPlan {
 
   def ap(newSolved: PlannerQuery with CardinalityEstimation) = copy()(newSolved)
 
@@ -37,7 +37,6 @@ case class Aggregation(left: LogicalPlan,
   val groupingKeys = groupingExpressions.keySet.map(IdName(_))
 
   val availableSymbols = groupingKeys ++ aggregationExpression.keySet.map(IdName(_))
-
 
   override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
     copy(

@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{LabelName, UsingIndexHint}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.QueryGraphCardinalityInput
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.{LogicalPlanProducer, pickBestPlanUsingHintsAndCost}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, LogicalPlanningTestSupport2, PlannerQuery}
@@ -44,8 +43,8 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
 
     assertTopPlan(winner = b, a, b)(new given {
       cost = {
-        case p if p == a => Cost(100)
-        case p if p == b => Cost(50)
+        case (p, _) if p == a => Cost(100)
+        case (p, _) if p == b => Cost(50)
       }
     })
   }
@@ -56,8 +55,8 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
 
     val GIVEN = new given {
       cost = {
-        case p if p == ab => Cost(100)
-        case p if p == b => Cost(50)
+        case (p, _) if p == ab => Cost(100)
+        case (p, _) if p == b => Cost(50)
       }
     }
 
@@ -100,7 +99,7 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
   private def assertTopPlan(winner: LogicalPlan, candidates: LogicalPlan*)(GIVEN: given) {
     val environment = LogicalPlanningEnvironment(GIVEN)
     val metrics: Metrics = environment.metricsFactory.newMetrics(GIVEN.graphStatistics)
-    implicit val context = LogicalPlanningContext(null, LogicalPlanProducer(metrics.cardinality), metrics, null, null, QueryGraphCardinalityInput(Map.empty, Cardinality(1)))
+    implicit val context = LogicalPlanningContext(null, LogicalPlanProducer(metrics.cardinality), metrics, null, null)
     pickBestPlanUsingHintsAndCost(context)(candidates) should equal(Some(winner))
     pickBestPlanUsingHintsAndCost(context)(candidates.reverse) should equal(Some(winner))
   }

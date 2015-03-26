@@ -33,8 +33,9 @@ object CardinalityCostModel extends CostModel {
   private val CPU_BOUND: CostPerRow = 0.1
   private val FAST_STORE: CostPerRow = 1.0
   private val SLOW_STORE: CostPerRow = 10.0
-  private val PROBE_BUILD_COST = FAST_STORE
-  private val PROBE_SEARCH_COST = PROBE_BUILD_COST * .5
+  private val PROBE_BUILD_COST: CostPerRow = FAST_STORE
+  private val PROBE_SEARCH_COST: CostPerRow = PROBE_BUILD_COST * .5
+  private val EAGERNESS_MULTIPLIER: Multiplier = 3.0
 
   private def costPerRow(plan: LogicalPlan): CostPerRow = plan match {
 
@@ -91,34 +92,41 @@ object CardinalityCostModel extends CostModel {
     case _ => plan.lhs.map(p => p.solved.estimation).getOrElse(plan.solved.estimation)
   }
 
-  def apply(plan: LogicalPlan): Cost = plan match {
-    case CartesianProduct(lhs, rhs) =>
-      apply(lhs) + lhs.solved.estimation * apply(rhs)
+  def apply(plan: LogicalPlan, input: QueryGraphSolverInput): Cost = {
+    val cost = plan match {
+      case CartesianProduct(lhs, rhs) =>
+        apply(lhs, input) + lhs.solved.estimation * apply(rhs, input)
 
-    case ApplyVariants(lhs, rhs) =>
-      val lCost = apply(lhs)
-      val rCost = apply(rhs)
+      case ApplyVariants(lhs, rhs) =>
+        val lCost = apply(lhs, input)
+        val rCost = apply(rhs, input)
 
-      // the rCost has already been multiplied by the lhs cardinality
-      lCost + rCost
+        // the rCost has already been multiplied by the lhs cardinality
+        lCost + rCost
 
-    case HashJoin(lhs, rhs) =>
-      val lCost = apply(lhs)
-      val rCost = apply(rhs)
+      case HashJoin(lhs, rhs) =>
+        val lCost = apply(lhs, input)
+        val rCost = apply(rhs, input)
 
-      val lhsCardinality = lhs.solved.estimation
-      val rhsCardinality = rhs.solved.estimation
+        val lhsCardinality = lhs.solved.estimation
+        val rhsCardinality = rhs.solved.estimation
 
-      lCost + rCost +
-        lhsCardinality * PROBE_BUILD_COST +
-        rhsCardinality * PROBE_SEARCH_COST
+        lCost + rCost +
+          lhsCardinality * PROBE_BUILD_COST +
+          rhsCardinality * PROBE_SEARCH_COST
 
-    case _ =>
-      val lhsCost = plan.lhs.map(p => apply(p)).getOrElse(Cost(0))
-      val rhsCost = plan.rhs.map(p => apply(p)).getOrElse(Cost(0))
-      val costForThisPlan = cardinalityForPlan(plan) * costPerRow(plan)
-      val totalCost = costForThisPlan + lhsCost + rhsCost
-      totalCost
+      case _ =>
+        val lhsCost = plan.lhs.map(p => apply(p, input)).getOrElse(Cost(0))
+        val rhsCost = plan.rhs.map(p => apply(p, input)).getOrElse(Cost(0))
+        val costForThisPlan = cardinalityForPlan(plan) * costPerRow(plan)
+        val totalCost = costForThisPlan + lhsCost + rhsCost
+        totalCost
+    }
+
+    input.strictness match {
+      case Some(LazyMode) if !LazyMode(plan) => cost * EAGERNESS_MULTIPLIER
+      case _ => cost
+    }
   }
 
   object HashJoin {

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner
 
 import org.neo4j.cypher.internal.compiler.v2_3.HardcodedGraphStatistics
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.{QueryGraphCardinalityInput, QueryGraphCardinalityModel}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.{QueryGraphCardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{CardinalityCostModel, Cost, Metrics, StatisticsBackedCardinalityModel}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
@@ -28,25 +28,25 @@ import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
 case class RealLogicalPlanningConfiguration()
   extends LogicalPlanningConfiguration with LogicalPlanningConfigurationAdHocSemanticTable {
 
-  def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel) = {
+  override def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel) = {
     val model: Metrics.CardinalityModel = new StatisticsBackedCardinalityModel(queryGraphCardinalityModel)
     ({
-      case (pq: PlannerQuery, card: QueryGraphCardinalityInput, semanticTable: SemanticTable) => model(pq, card, semanticTable)
+      case (pq: PlannerQuery, card: QueryGraphSolverInput, semanticTable: SemanticTable) => model(pq, card, semanticTable)
     })
   }
 
-  def costModel(): PartialFunction[LogicalPlan, Cost] = {
+  override def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput), Cost] = {
     val model: Metrics.CostModel = CardinalityCostModel
     ({
-      case (plan: LogicalPlan) => model(plan)
+      case (plan: LogicalPlan, input: QueryGraphSolverInput) => model(plan, input)
     })
   }
 
-  def graphStatistics: GraphStatistics = HardcodedGraphStatistics
-  def indexes = Set.empty
-  def uniqueIndexes = Set.empty
-  def labelCardinality = Map.empty
-  def knownLabels = Set.empty
+  override def graphStatistics: GraphStatistics = HardcodedGraphStatistics
+  override def indexes = Set.empty
+  override def uniqueIndexes = Set.empty
+  override def labelCardinality = Map.empty
+  override def knownLabels = Set.empty
 
-  def qg: QueryGraph = ???
+  override def qg: QueryGraph = ???
 }

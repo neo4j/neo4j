@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast.GetDegree
 import org.neo4j.cypher.internal.compiler.v2_3.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{AllNodesScan, Projection}
 import org.neo4j.graphdb.Direction.OUTGOING
+import org.scalatest.path
 
 class PlanRewritingPlanningIntegrationTest  extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

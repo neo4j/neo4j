@@ -17,24 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.planner
+package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
-object allQueryAcceptor extends QueryAcceptor {
-  def apply(ignored: UnionQuery) = true
+sealed trait StrictnessMode extends (Strictness => Boolean) {
+  self =>
+
+  def apply(havingStrictness: Strictness) = havingStrictness.strictness == self
 }
 
-object conservativeQueryAcceptor extends QueryAcceptor {
+case object LazyMode extends StrictnessMode
 
-  def apply(query: UnionQuery): Boolean = {
-    !query.queries.exists(query => rejectQuery(query))
-  }
+case object EagerMode extends StrictnessMode
 
-  private def rejectQuery(pq: PlannerQuery): Boolean = {
-    containsVarLength(pq.graph) ||
-      pq.graph.optionalMatches.exists(containsVarLength) ||
-      pq.tail.exists(rejectQuery)
-  }
+trait Strictness {
+  def strictness: StrictnessMode
+}
 
-  private def containsVarLength(qg: QueryGraph): Boolean = qg.patternRelationships.exists(!_.length.isSimple)
+trait LazyLogicalPlan {
+  self: LogicalPlan =>
 
+  override def strictness: StrictnessMode = LazyMode
+}
+
+trait EagerLogicalPlan {
+  self: LogicalPlan =>
+
+  override def strictness: StrictnessMode = EagerMode
 }

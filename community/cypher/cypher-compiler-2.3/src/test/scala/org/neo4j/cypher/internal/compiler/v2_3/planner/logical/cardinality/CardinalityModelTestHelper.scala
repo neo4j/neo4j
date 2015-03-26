@@ -41,8 +41,9 @@ trait CardinalityModelTestHelper extends CardinalityTestHelper {
       val (statistics, semanticTable) = testUnit.prepareTestContext
 
       val (queryGraph, rewrittenSemanticTable) = testUnit.createQueryGraph(semanticTable)
-      val cardinalityModel: QueryGraphCardinalityModel = createCardinalityModel(statistics)
-      val result = cardinalityModel(queryGraph, QueryGraphCardinalityInput(Map.empty, testUnit.inboundCardinality), rewrittenSemanticTable)
+      val cardinalityModel = createCardinalityModel(statistics)
+      val input = QueryGraphSolverInput(Map.empty, testUnit.inboundCardinality, testUnit.strictness)
+      val result = cardinalityModel(queryGraph, input, rewrittenSemanticTable)
       result should equal(Cardinality(number))
     }
 
@@ -54,7 +55,7 @@ trait CardinalityModelTestHelper extends CardinalityTestHelper {
       val graphCardinalityModel = createCardinalityModel(statistics)
       val cardinalityModelUnderTest = f(graphCardinalityModel)
       val (plannerQuery, _) = producePlannerQueryForPattern(testUnit.query)
-      cardinalityModelUnderTest(plannerQuery, QueryGraphCardinalityInput.empty, semanticTable) should equal(Cardinality(number))
+      cardinalityModelUnderTest(plannerQuery, QueryGraphSolverInput.empty, semanticTable) should equal(Cardinality(number))
     }
   }
 

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
 
 case class Apply(left: LogicalPlan, right: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LogicalPlanWithoutExpressions {
+  extends LogicalPlan with LogicalPlanWithoutExpressions with LazyLogicalPlan {
 
   val lhs = Some(left)
   val rhs = Some(right)

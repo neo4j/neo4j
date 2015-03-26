@@ -41,10 +41,8 @@ case class CostBasedPipeBuilder(monitors: Monitors,
                                 tokenResolver: SimpleTokenResolver,
                                 executionPlanBuilder: PipeExecutionPlanBuilder,
                                 queryPlanner: QueryPlanner,
-                                acceptQuery: UnionQuery => Boolean,
                                 queryGraphSolver: QueryGraphSolver,
-                                plannerName: CostBasedPlannerName
-                               )
+                                plannerName: CostBasedPlannerName)
   extends PipeBuilder {
 
   def producePlan(inputQuery: PreparedQuery, planContext: PlanContext): PipeInfo = {
@@ -65,9 +63,6 @@ case class CostBasedPipeBuilder(monitors: Monitors,
   def produceLogicalPlan(ast: Query, semanticTable: SemanticTable)(planContext: PlanContext): (LogicalPlan, PipeExecutionBuilderContext) = {
     tokenResolver.resolve(ast)(semanticTable, planContext)
     val unionQuery = ast.asUnionQuery
-
-    // If we cannot handle the query, throw CantHandleQueryException and let the compiler delegate this query to another planner.
-    if (!acceptQuery(unionQuery)) throw new CantHandleQueryException(s"The conservative check failed this query: $unionQuery")
 
     val metrics = metricsFactory.newMetrics(planContext.statistics)
     val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)

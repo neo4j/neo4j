@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
 trait LogicalPlanningConfiguration {
   def computeSemanticTable: SemanticTable
   def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel): CardinalityModel
-  def costModel(): PartialFunction[LogicalPlan, Cost]
+  def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput), Cost]
   def graphStatistics: GraphStatistics
   def indexes: Set[(String, String)]
   def uniqueIndexes: Set[(String, String)]

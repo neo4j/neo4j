@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.triplet
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.{SpecifiedButUnknown, Unspecified, SpecifiedAndKnown}
-import org.neo4j.cypher.internal.compiler.v2_3.{RelTypeId, LabelId}
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Cardinality
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.QueryGraphCardinalityInput
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, SimplePatternLength, PatternRelationship}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Cardinality
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.{SpecifiedAndKnown, SpecifiedButUnknown, Unspecified}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
+import org.neo4j.cypher.internal.compiler.v2_3.{LabelId, RelTypeId}
 import org.neo4j.graphdb.Direction
 
 class TripletConverterTest extends CypherFunSuite with LogicalPlanningTestSupport2 with AstConstructionTestSupport {
@@ -47,7 +47,7 @@ class TripletConverterTest extends CypherFunSuite with LogicalPlanningTestSuppor
       .addPatternRelationship(patRel)
       .addSelections(Selections(Set(Predicate(Set("a"), HasLabels(ident("a"), Seq(LabelName("Animal")_))_))))
 
-    val input = QueryGraphCardinalityInput(Map(IdName("a") -> Set(LabelName("Person")_)), Cardinality.SINGLE)
+    val input = QueryGraphSolverInput(Map(IdName("a") -> Set(LabelName("Person")_)), Cardinality.SINGLE, strictness = None)
 
     val table = SemanticTable(ASTAnnotationMap.empty)
     table.resolvedLabelIds.put("Person", LabelId(1))

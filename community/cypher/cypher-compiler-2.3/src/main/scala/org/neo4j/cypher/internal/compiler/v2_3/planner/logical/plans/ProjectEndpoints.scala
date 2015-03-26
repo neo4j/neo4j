@@ -31,7 +31,7 @@ case class ProjectEndpoints(left: LogicalPlan,
                             types: Option[Seq[RelTypeName]],
                             directed: Boolean,
                             length: PatternLength)(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LogicalPlanWithoutExpressions {
+  extends LogicalPlan with LogicalPlanWithoutExpressions with LazyLogicalPlan {
 
   val lhs = Some(left)
   def rhs = None

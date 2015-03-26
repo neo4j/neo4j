@@ -28,7 +28,7 @@ object pickBestPlanUsingHintsAndCost extends LogicalPlanningFunction0[CandidateS
   override def apply(implicit context: LogicalPlanningContext): CandidateSelector = new CandidateSelector {
     override def apply[X](projector: (X) => LogicalPlan, input: Iterable[X]): Option[X] = {
       val costs = context.cost
-      val comparePlans = (plan: LogicalPlan) => (-plan.solved.numHints, costs(plan), -plan.availableSymbols.size)
+      val comparePlans = (plan: LogicalPlan) => (-plan.solved.numHints, costs(plan, context.input), -plan.availableSymbols.size)
       val compareInput = projector andThen comparePlans
 
       if (VERBOSE) {
@@ -38,13 +38,13 @@ object pickBestPlanUsingHintsAndCost extends LogicalPlanningFunction0[CandidateS
           println("- Get best of:")
           for (plan <- sortedPlans) {
             println(s"\t* ${plan.toString}")
-            println(s"\t\t${costs(plan)}")
+            println(s"\t\t${costs(plan, context.input)}")
           }
 
           val best = sortedPlans.head
           println("- Best is:")
           println(s"\t${best.toString}")
-          println(s"\t\t${costs(best)}")
+          println(s"\t\t${costs(best, context.input)}")
           println()
         }
       }
