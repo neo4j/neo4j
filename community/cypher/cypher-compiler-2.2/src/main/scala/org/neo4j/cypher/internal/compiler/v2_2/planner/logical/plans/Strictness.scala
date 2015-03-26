@@ -19,14 +19,28 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{CardinalityEstimation, PlannerQuery}
+sealed trait StrictnessMode extends (Strictness => Boolean) {
+  self =>
 
-case class FindShortestPaths(left: LogicalPlan, shortestPath: ShortestPathPattern)
-                            (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LogicalPlanWithoutExpressions with LazyLogicalPlan {
-
-  val lhs = Some(left)
-  def rhs = None
-
-  def availableSymbols = left.availableSymbols ++ shortestPath.availableSymbols
+  def apply(havingStrictness: Strictness) = havingStrictness.strictness == self
 }
+
+case object LazyMode extends StrictnessMode
+case object EagerMode extends StrictnessMode
+
+trait Strictness {
+  def strictness: StrictnessMode
+}
+
+trait LazyLogicalPlan {
+  self: LogicalPlan =>
+
+  override def strictness: StrictnessMode =  LazyMode
+}
+
+trait EagerLogicalPlan {
+  self: LogicalPlan =>
+
+  override def strictness: StrictnessMode =  EagerMode
+}
+

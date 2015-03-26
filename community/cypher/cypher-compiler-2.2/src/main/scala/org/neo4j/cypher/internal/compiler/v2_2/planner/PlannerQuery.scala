@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.InternalException
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{Hint, LabelName}
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cardinality
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, PatternRelationship}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{StrictnessMode, IdName, PatternRelationship}
 
 import scala.annotation.tailrec
 
@@ -37,6 +37,9 @@ case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
 
   //  def toDefaultPrettyString(formatter: DocFormatter) =
   //    toPrettyString(formatter)(InternalDocHandler.docGen)
+
+  def preferredStrictness: Option[StrictnessMode] =
+    horizon.preferredStrictness orElse tail.flatMap(_.preferredStrictness)
 
   def lastQueryGraph: QueryGraph = tail.map(_.lastQueryGraph).getOrElse(graph)
 

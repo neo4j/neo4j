@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality
 
 import org.mockito.Mockito
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.ast.{Expression, LabelName, HasLabels}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
+import org.neo4j.cypher.internal.compiler.v2_2.ast.{Expression, HasLabels, LabelName}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{Predicate, Selections, LogicalPlanningTestSupport2, QueryGraph}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Selectivity, Cardinality}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Selectivity}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport2, Predicate, QueryGraph, Selections}
 
 class NodeCardinalityEstimatorTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -33,7 +33,7 @@ class NodeCardinalityEstimatorTest extends CypherFunSuite with LogicalPlanningTe
 
   val allNodes = Cardinality(1000)
   val inputCardinality = Cardinality(100)
-  val qgInput = QueryGraphCardinalityInput(Map.empty, inputCardinality)
+  val qgInput = QueryGraphSolverInput(Map.empty, inputCardinality, None)
 
   val combiner = IndependenceCombiner
   val selectivityEstimator = mock[SelectivityEstimator]

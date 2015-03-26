@@ -31,7 +31,7 @@ case class LetAntiSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdNam
 
 abstract class AbstractLetSemiApply(left: LogicalPlan, right: LogicalPlan,
                                     idName: IdName, solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan {
+  extends LogicalPlan with LazyLogicalPlan {
   val lhs = Some(left)
   val rhs = Some(right)
 

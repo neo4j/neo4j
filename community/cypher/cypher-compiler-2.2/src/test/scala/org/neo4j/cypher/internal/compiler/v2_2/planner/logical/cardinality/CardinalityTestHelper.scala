@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.MapSupport._
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.SemanticTableHelper
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cardinality.NumericCardinality
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{StrictnessMode, IdName}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, QueryGraphProducer, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport, QueryGraph, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
@@ -56,7 +56,8 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
                       knownNodeNames: Set[String] = Set.empty,
                       knownRelNames: Set[String] = Set.empty,
                       queryGraphArgumentIds: Set[IdName] = Set.empty,
-                      inboundCardinality: Cardinality = Cardinality(1)) {
+                      inboundCardinality: Cardinality = Cardinality(1),
+                      strictness: Option[StrictnessMode] = None) {
 
     self =>
 

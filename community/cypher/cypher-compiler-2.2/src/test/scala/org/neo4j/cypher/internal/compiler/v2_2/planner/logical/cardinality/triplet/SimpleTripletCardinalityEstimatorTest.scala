@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.trip
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Cardinality
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphCardinalityInput
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.triplet.TripletQueryGraphCardinalityModel.NodeCardinalities
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
@@ -38,7 +38,7 @@ class SimpleTripletCardinalityEstimatorTest
   with ForumPostsCardinalityData {
 
   private val TOLERANCE = 0.0001d
-  private implicit val input = QueryGraphCardinalityInput.empty
+  private implicit val input = QueryGraphSolverInput.empty
 
   test("(a)-[r]->(b)") {
     import ForumPosts._
@@ -127,7 +127,7 @@ class SimpleTripletCardinalityEstimatorTest
   }
 
   implicit class RichCardinalityData(cardinalityData: CardinalityData) {
-    def asTriplets(q: String, nodeCardinalities: NodeCardinalities)(implicit input: QueryGraphCardinalityInput): Map[IdName, Cardinality] = {
+    def asTriplets(q: String, nodeCardinalities: NodeCardinalities)(implicit input: QueryGraphSolverInput): Map[IdName, Cardinality] = {
       val testUnit: CardinalityTestHelper#TestUnit = cardinalityData.forQuery(TestUnit(s"MATCH $q"))
       val (stats, semanticTable) = testUnit.prepareTestContext
       val (qg, rewrittenTable) = testUnit.createQueryGraph(semanticTable)

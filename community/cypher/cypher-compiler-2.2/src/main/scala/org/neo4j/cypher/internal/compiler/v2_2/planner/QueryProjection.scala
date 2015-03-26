@@ -22,18 +22,18 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner
 import org.neo4j.cypher.internal.compiler.v2_2.InternalException
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.perty._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{LazyMode, StrictnessMode, IdName}
 
-sealed trait QueryHorizon
+sealed trait QueryHorizon extends PageDocFormatting { // with ToPrettyString[QueryHorizon] {
 
-  extends PageDocFormatting { // with ToPrettyString[QueryHorizon] {
-
-//  def toDefaultPrettyString(formatter: DocFormatter) =
-//    toPrettyString(formatter)(InternalDocHandler.docGen)
+  //  def toDefaultPrettyString(formatter: DocFormatter) =
+  //    toPrettyString(formatter)(InternalDocHandler.docGen)
 
   def exposedSymbols: Set[IdName]
 
   def dependingExpressions: Seq[Expression]
+
+  def preferredStrictness: Option[StrictnessMode]
 
   def dependencies: Set[IdName] = dependingExpressions.treeFold(Set.empty[IdName]) {
     case id: Identifier =>
@@ -45,12 +45,14 @@ sealed abstract class QueryProjection extends QueryHorizon { // with internalDoc
   def projections: Map[String, Expression]
   def shuffle: QueryShuffle
   def keySet: Set[String]
-  def updateShuffle(f: QueryShuffle => QueryShuffle) = withShuffle(f(shuffle))
   def withProjections(projections: Map[String, Expression]): QueryProjection
   def withShuffle(shuffle: QueryShuffle): QueryProjection
 
-  def dependingExpressions: Seq[Expression] =
-    shuffle.sortItems.map(_.expression)
+  override def dependingExpressions: Seq[Expression] = shuffle.sortItems.map(_.expression)
+  override def preferredStrictness: Option[StrictnessMode] =
+    if (shuffle.limit.isDefined && shuffle.sortItems.isEmpty) Some(LazyMode) else None
+
+  def updateShuffle(f: QueryShuffle => QueryShuffle) = withShuffle(f(shuffle))
 }
 
 object QueryProjection {
@@ -153,4 +155,6 @@ case class UnwindProjection(identifier: IdName, exp: Expression) extends QueryHo
   def exposedSymbols: Set[IdName] = Set(identifier)
 
   override def dependingExpressions = Seq(exp)
+
+  override def preferredStrictness = None
 }

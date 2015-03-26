@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_2.ast.LabelName
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.MapSupport._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{IdName, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{StrictnessMode, IdName, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{PlannerQuery, QueryGraph, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
 
@@ -30,31 +30,33 @@ import scala.language.implicitConversions
 
 object Metrics {
 
-  object QueryGraphCardinalityInput {
-    def empty = QueryGraphCardinalityInput(Map.empty, Cardinality(1))
+  object QueryGraphSolverInput {
+    def empty = QueryGraphSolverInput(Map.empty, Cardinality(1), strictness = None)
   }
 
-  case class QueryGraphCardinalityInput(labelInfo: LabelInfo, inboundCardinality: Cardinality) {
-    def withCardinality(c: Cardinality): QueryGraphCardinalityInput =
+  case class QueryGraphSolverInput(labelInfo: LabelInfo, inboundCardinality: Cardinality, strictness: Option[StrictnessMode]) {
+    def withCardinality(c: Cardinality): QueryGraphSolverInput =
       copy(inboundCardinality = c)
 
-    def recurse(fromPlan: LogicalPlan): QueryGraphCardinalityInput = {
+    def recurse(fromPlan: LogicalPlan): QueryGraphSolverInput = {
       val newCardinalityInput = fromPlan.solved.estimation
       val newLabels = (labelInfo fuse fromPlan.solved.labelInfo)(_ ++ _)
       copy(labelInfo = newLabels, inboundCardinality = newCardinalityInput)
     }
+
+    def withPreferredStrictness(strictness: StrictnessMode): QueryGraphSolverInput = copy(strictness = Some(strictness))
   }
 
   // This metric calculates how expensive executing a logical plan is.
   // (e.g. by looking at cardinality, expression selectivity and taking into account the effort
   // required to execute a step)
-  type CostModel = LogicalPlan => Cost
+  type CostModel = (LogicalPlan, QueryGraphSolverInput) => Cost
 
   // This metric estimates how many rows of data a logical plan produces
   // (e.g. by asking the database for statistics)
-  type CardinalityModel = (PlannerQuery, QueryGraphCardinalityInput, SemanticTable) => Cardinality
+  type CardinalityModel = (PlannerQuery, QueryGraphSolverInput, SemanticTable) => Cardinality
 
-  type QueryGraphCardinalityModel = (QueryGraph, QueryGraphCardinalityInput, SemanticTable) => Cardinality
+  type QueryGraphCardinalityModel = (QueryGraph, QueryGraphSolverInput, SemanticTable) => Cardinality
 
   type LabelInfo = Map[IdName, Set[LabelName]]
 }
@@ -160,14 +162,14 @@ case class Selectivity(factor: Double) extends Ordered[Selectivity] {
 }
 
 object Selectivity {
-  def of( value: Double ): Option[Selectivity] = if ( value.isInfinite || value.isNaN ) None else Some(value)
+  def of(value: Double): Option[Selectivity] = if (value.isInfinite || value.isNaN) None else Some(value)
 
   val ZERO = Selectivity(0.0d)
   val ONE = Selectivity(1.0d)
 
   implicit def lift(amount: Double): Selectivity = Selectivity(amount)
 
-  implicit def turnSeqIntoSingleSelectivity(p: Seq[Selectivity]):Selectivity =
+  implicit def turnSeqIntoSingleSelectivity(p: Seq[Selectivity]): Selectivity =
     p.reduceOption(_ * _).getOrElse(Selectivity(1))
 }
 

@@ -37,6 +37,7 @@ further up. Thus, the edges of a tree represent data flow from bottom to top, i.
 to data in the database, to the root, which is the final operator producing the query answer. */
 abstract class LogicalPlan
   extends Product
+  with Strictness
   with Rewritable
   with PageDocFormatting {
 
@@ -94,7 +95,7 @@ trait LogicalPlanWithoutExpressions {
   override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan = self
 }
 
-abstract class LogicalLeafPlan extends LogicalPlan {
+abstract class LogicalLeafPlan extends LogicalPlan with LazyLogicalPlan {
   final val lhs = None
   final val rhs = None
   def argumentIds: Set[IdName]

@@ -32,11 +32,11 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   test("should build plans containing joins") {
     (new given {
       cost =  {
-        case _: AllNodesScan => 2000000.0
-        case _: NodeByLabelScan => 20.0
-        case _: Expand => 10.0
-        case _: OuterHashJoin => 20.0
-        case _: SingleRow => 1.0
+        case (_: AllNodesScan, _) => 2000000.0
+        case (_: NodeByLabelScan, _) => 20.0
+        case (_: Expand, _) => 10.0
+        case (_: OuterHashJoin, _) => 20.0
+        case (_: SingleRow, _) => 1.0
         case _ => Double.MaxValue
       }
     } planFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b").plan should equal(

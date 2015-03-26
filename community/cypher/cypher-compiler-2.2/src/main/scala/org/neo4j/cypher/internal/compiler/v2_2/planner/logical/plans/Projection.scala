@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.{CardinalityEstimation, P
 import org.neo4j.cypher.internal.helpers.Eagerly
 
 case class Projection(left: LogicalPlan, expressions: Map[String, Expression])
-                     (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan {
+                     (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
   val lhs = Some(left)
   val rhs = None
 
