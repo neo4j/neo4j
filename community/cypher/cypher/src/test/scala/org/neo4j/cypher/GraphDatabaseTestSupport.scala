@@ -214,7 +214,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     (a, b, c, d)
   }
 
-  def statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).instance()
+  def statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
 
   def kernelMonitors = graph.getDependencyResolver.resolveDependency(classOf[monitoring.Monitors])
 

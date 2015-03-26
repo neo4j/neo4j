@@ -28,7 +28,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.TestLabels;
@@ -46,7 +46,7 @@ public class NoChangeWriteTransactionTest
         // GIVEN a transaction that has seen some changes, where all those changes result in a net 0 change set
         // a good way of producing such state is to add a label to an existing node, and then remove it.
         GraphDatabaseAPI db = dbr.getGraphDatabaseAPI();
-        NeoStore neoStore = db.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate();
+        NeoStore neoStore = db.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get();
         long startTxId = neoStore.getLastCommittedTransactionId();
         Node node = createEmptyNode( db );
         try ( Transaction tx = db.beginTx() )
@@ -67,7 +67,7 @@ public class NoChangeWriteTransactionTest
         // GIVEN a transaction that has seen some changes, where all those changes result in a net 0 change set
         // a good way of producing such state is to add a label to an existing node, and then remove it.
         GraphDatabaseAPI db = dbr.getGraphDatabaseAPI();
-        NeoStore neoStore = db.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate();
+        NeoStore neoStore = db.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get();
         long startTxId = neoStore.getLastCommittedTransactionId();
         Node node = createEmptyNode( db );
         Index<Node> index = createNodeIndex( db );

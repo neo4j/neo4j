@@ -20,7 +20,6 @@
 package org.neo4j.graphdb.traversal;
 
 import org.neo4j.graphdb.Path;
-import org.neo4j.helpers.Predicate;
 
 /**
  * An evaluator which can "cut off" relationships so that they will not be
@@ -29,7 +28,7 @@ import org.neo4j.helpers.Predicate;
  * position or not.
  *
  * @deprecated because of the introduction of {@link Evaluator} which combines
- * {@link PruneEvaluator} and filtering ({@link Predicate} of {@link Path}s).
+ * {@link PruneEvaluator} and filtering ({@link org.neo4j.function.Predicate} of {@link Path}s).
  */
 public interface PruneEvaluator
 {

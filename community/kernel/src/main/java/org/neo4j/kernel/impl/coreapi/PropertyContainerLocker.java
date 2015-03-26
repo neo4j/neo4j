@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
+import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
@@ -33,14 +33,14 @@ import org.neo4j.kernel.impl.locking.ResourceTypes;
  */
 public class PropertyContainerLocker
 {
-    public Lock exclusiveLock( Provider<Statement> stmtProvider, PropertyContainer container )
+    public Lock exclusiveLock( Supplier<Statement> stmtSupplier, PropertyContainer container )
     {
-        try(Statement statement = stmtProvider.instance())
+        try(Statement statement = stmtSupplier.get())
         {
             if(container instanceof Node )
             {
                 statement.readOperations().acquireExclusive( ResourceTypes.NODE, ((Node) container).getId() );
-                return new CoreAPILock(stmtProvider, ResourceTypes.NODE, ((Node) container).getId())
+                return new CoreAPILock(stmtSupplier, ResourceTypes.NODE, ((Node) container).getId())
                 {
                     @Override
                     void release( Statement statement, Locks.ResourceType type, long resourceId )
@@ -52,7 +52,7 @@ public class PropertyContainerLocker
             else if(container instanceof Relationship )
             {
                 statement.readOperations().acquireExclusive( ResourceTypes.RELATIONSHIP, ((Relationship) container).getId() );
-                return new CoreAPILock(stmtProvider, ResourceTypes.RELATIONSHIP, ((Relationship) container).getId())
+                return new CoreAPILock(stmtSupplier, ResourceTypes.RELATIONSHIP, ((Relationship) container).getId())
                 {
                     @Override
                     void release( Statement statement, Locks.ResourceType type, long resourceId )
@@ -68,9 +68,9 @@ public class PropertyContainerLocker
         }
     }
 
-    public Lock sharedLock( Provider<Statement> stmtProvider, PropertyContainer container )
+    public Lock sharedLock( Supplier<Statement> stmtProvider, PropertyContainer container )
     {
-        try(Statement statement = stmtProvider.instance())
+        try(Statement statement = stmtProvider.get())
         {
             if(container instanceof Node )
             {
@@ -105,12 +105,12 @@ public class PropertyContainerLocker
 
     private static abstract class CoreAPILock implements Lock
     {
-        private final Provider<Statement> stmtProvider;
+        private final Supplier<Statement> stmtProvider;
         private final Locks.ResourceType type;
         private final long resourceId;
         private boolean released = false;
 
-        public CoreAPILock( Provider<Statement> stmtProvider, Locks.ResourceType type, long resourceId )
+        public CoreAPILock( Supplier<Statement> stmtProvider, Locks.ResourceType type, long resourceId )
         {
             this.stmtProvider = stmtProvider;
             this.type = type;
@@ -125,7 +125,7 @@ public class PropertyContainerLocker
                 throw new IllegalStateException( "Already released" );
             }
             released = true;
-            try(Statement statement = stmtProvider.instance())
+            try(Statement statement = stmtProvider.get())
             {
                 release( statement, type, resourceId );
             }

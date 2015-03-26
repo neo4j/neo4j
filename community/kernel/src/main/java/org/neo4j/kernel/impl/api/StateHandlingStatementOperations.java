@@ -29,8 +29,8 @@ import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.LegacyIndexHits;
@@ -480,7 +480,7 @@ public class StateHandlingStatementOperations implements
         Predicate<IndexDescriptor> predicate = new Predicate<IndexDescriptor>()
         {
             @Override
-            public boolean accept( IndexDescriptor item )
+            public boolean test( IndexDescriptor item )
             {
                 return item.getPropertyKeyId() == propertyKey;
             }

@@ -26,7 +26,9 @@ package org.neo4j.helpers;
  * expression until forced at a later time.
  * 
  * @param <T>
+ * @deprecated Use {@link org.neo4j.function.Supplier} instead
  */
+@Deprecated
 public interface Thunk<T>
 {
     T evaluate();

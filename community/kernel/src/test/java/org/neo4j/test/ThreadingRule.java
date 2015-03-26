@@ -30,12 +30,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.function.Consumer;
+import org.neo4j.function.Predicate;
+import org.neo4j.function.Predicates;
 import org.neo4j.function.RawFunction;
 import org.neo4j.helpers.Cancelable;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.ConcurrentTransfer;
-import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.Predicates;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.function.Functions.swallow;
@@ -129,7 +129,7 @@ public class ThreadingRule extends ExternalResource
         return new Predicate<Thread>()
         {
             @Override
-            public boolean accept( Thread thread )
+            public boolean test( Thread thread )
             {
                 StackTraceElement[] stackTrace = thread.getStackTrace();
                 return stackTrace.length > depth &&

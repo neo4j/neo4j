@@ -38,7 +38,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -218,7 +218,7 @@ public class TestMigrateToDenseNodeSupport
     private void verifyDenseRepresentation( GraphDatabaseService db, Node node, boolean dense )
     {
         NeoStore neoStore = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(
-                NeoStoreProvider.class ).evaluate();
+                NeoStoreSupplier.class ).get();
         NodeRecord record = neoStore.getNodeStore().getRecord( node.getId() );
         assertEquals( dense, record.isDense() );
     }

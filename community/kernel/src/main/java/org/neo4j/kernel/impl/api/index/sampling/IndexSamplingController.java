@@ -23,7 +23,7 @@ import java.util.Iterator;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.neo4j.helpers.Predicate;
+import org.neo4j.function.Predicate;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.api.index.IndexMap;
@@ -88,7 +88,7 @@ public class IndexSamplingController
             while ( descriptors.hasNext() )
             {
                 IndexDescriptor descriptor = descriptors.next();
-                if ( indexRecoveryCondition.accept( descriptor ) )
+                if ( indexRecoveryCondition.test( descriptor ) )
                 {
                     sampleIndexOnCurrentThread( indexMap, descriptor );
                 }

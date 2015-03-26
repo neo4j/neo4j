@@ -45,8 +45,8 @@ import org.neo4j.cluster.protocol.election.NotElectableElectionCredentials;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.cluster.timeout.Timeouts;
+import org.neo4j.function.Predicate;
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.logging.Logging;
 
 public class ElectionContextImpl
@@ -269,7 +269,7 @@ public class ElectionContextImpl
         return filter( new Predicate<String>() // Only include roles that are not elected
         {
             @Override
-            public boolean accept( String role )
+            public boolean test( String role )
             {
                 return clusterContext.getConfiguration().getElected( role ) == null;
             }
@@ -461,7 +461,7 @@ public class ElectionContextImpl
         return toList( filter( new Predicate<Vote>()
         {
             @Override
-            public boolean accept( Vote item )
+            public boolean test( Vote item )
             {
                 return !(item.getCredentials() instanceof NotElectableElectionCredentials);
             }

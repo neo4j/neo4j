@@ -28,6 +28,8 @@ import java.util.Set;
 
 import org.apache.lucene.search.Sort;
 
+import org.neo4j.function.Predicate;
+import org.neo4j.function.Predicates;
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.GraphAlgoFactory;
@@ -60,8 +62,6 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.Predicates;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.index.lucene.QueryContext;
@@ -1578,7 +1578,7 @@ public class DatabaseActions
     {
         return filter(new Predicate<ConstraintDefinition>(){
             @Override
-            public boolean accept( ConstraintDefinition item )
+            public boolean test( ConstraintDefinition item )
             {
                 return item.isConstraintType( type );
             }
@@ -1590,7 +1590,7 @@ public class DatabaseActions
         return new Predicate<ConstraintDefinition>()
         {
             @Override
-            public boolean accept( ConstraintDefinition item )
+            public boolean test( ConstraintDefinition item )
             {
                 return item.isConstraintType( ConstraintType.UNIQUENESS ) &&
                         propertyKeysSet.equals( asSet( item.getPropertyKeys() ) );
@@ -1607,7 +1607,7 @@ public class DatabaseActions
     public ListRepresentation getLabelConstraints( String labelName )
     {
         return new ListRepresentation( CONSTRAINT_DEFINITION, map( CONSTRAINT_DEF_TO_REPRESENTATION,
-                filteredConstraints( labelName, Predicates.<ConstraintDefinition>TRUE() ) ) );
+                filteredConstraints( labelName, Predicates.<ConstraintDefinition>alwaysTrue() ) ) );
     }
 
     public Representation getLabelUniquenessConstraints( String labelName )

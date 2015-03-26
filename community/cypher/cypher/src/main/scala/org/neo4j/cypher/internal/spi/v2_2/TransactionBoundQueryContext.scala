@@ -82,7 +82,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       val isTopLevelTx = !txBridge.hasTransaction
       val tx = graph.beginTx()
       try {
-        val otherStatement = txBridge.instance()
+        val otherStatement = txBridge.get()
         val result = try {
           work(new TransactionBoundQueryContext(graph, tx, isTopLevelTx, otherStatement))
         }
@@ -307,6 +307,6 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     tx.close()
 
     tx = graph.beginTx()
-    statement = txBridge.instance()
+    statement = txBridge.get()
   }
 }

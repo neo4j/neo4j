@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.traversal;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -30,7 +31,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.helpers.Predicate;
 
 import static org.neo4j.graphdb.traversal.Evaluators.includeIfAcceptedByAny;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
@@ -71,8 +71,9 @@ public class TestMultipleFilters extends TraversalTestBase
         {
             this.node = node;
         }
-        
-        public boolean accept( Path item )
+
+        @Override
+        public boolean test( Path item )
         {
             for ( Relationship rel : item.endNode().getRelationships( Direction.OUTGOING ) )
             {
@@ -86,7 +87,7 @@ public class TestMultipleFilters extends TraversalTestBase
 
         public Evaluation evaluate( Path path )
         {
-            return accept( path ) ? Evaluation.INCLUDE_AND_CONTINUE : Evaluation.EXCLUDE_AND_CONTINUE;
+            return test( path ) ? Evaluation.INCLUDE_AND_CONTINUE : Evaluation.EXCLUDE_AND_CONTINUE;
         }
     }
 

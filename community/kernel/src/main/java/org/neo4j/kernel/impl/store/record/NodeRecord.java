@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
+import org.neo4j.function.Predicate;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
-import org.neo4j.helpers.Predicate;
 
 import static java.util.Collections.emptyList;
 
@@ -166,7 +166,7 @@ public class NodeRecord extends PrimitiveRecord
     private static final Predicate<DynamicRecord> RECORDS_IN_USE = new Predicate<DynamicRecord>()
     {
         @Override
-        public boolean accept( DynamicRecord item )
+        public boolean test( DynamicRecord item )
         {
             return item.inUse();
         }

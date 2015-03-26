@@ -24,6 +24,7 @@ import java.util.List;
 
 import org.junit.Test;
 
+import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -40,7 +41,6 @@ import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
-import org.neo4j.kernel.impl.util.Providers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -75,7 +75,7 @@ public class ConstraintIndexCreatorTest
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( 2468l ) ).thenReturn( indexProxy );
 
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( Providers.<KernelAPI>singletonProvider(kernel), indexingService );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( Suppliers.<KernelAPI>singleton( kernel ), indexingService );
 
         // when
         long indexId = creator.createUniquenessConstraintIndex( state, constraintCreationContext.schemaReadOperations(), 123, 456 );
@@ -110,7 +110,7 @@ public class ConstraintIndexCreatorTest
         doThrow( new IndexPopulationFailedKernelException( descriptor, "some index", cause) )
                 .when(indexProxy).awaitStoreScanCompleted();
 
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( Providers.<KernelAPI>singletonProvider(kernel), indexingService );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( Suppliers.<KernelAPI>singleton( kernel ), indexingService );
 
         // when
         try
@@ -145,7 +145,7 @@ public class ConstraintIndexCreatorTest
 
         IndexDescriptor descriptor = new IndexDescriptor( 123, 456 );
 
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( Providers.<KernelAPI>singletonProvider(kernel), indexingService );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( Suppliers.<KernelAPI>singleton( kernel ), indexingService );
 
         // when
         creator.dropUniquenessConstraintIndex( descriptor );

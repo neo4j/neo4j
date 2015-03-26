@@ -29,8 +29,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.function.IOFunction;
+import org.neo4j.function.Predicate;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.test.ThreadingRule;
@@ -376,7 +376,7 @@ public class AbstractKeyValueStoreTest
         Future<Long> rotation = threading.executeAndAwait( store.rotation, 3l, new Predicate<Thread>()
         {
             @Override
-            public boolean accept( Thread thread )
+            public boolean test( Thread thread )
             {
                 switch ( thread.getState() )
                 {

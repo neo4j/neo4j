@@ -30,6 +30,7 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
+import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.config.Setting;
@@ -37,7 +38,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -127,7 +127,7 @@ import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContextSupplier;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.transaction.state.RecoveryVisitor;
@@ -149,7 +149,7 @@ import org.neo4j.kernel.monitoring.tracing.Tracers;
 import static org.neo4j.helpers.collection.Iterables.toList;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 
-public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexProviders
+public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexProviders
 {
     public interface Monitor
     {
@@ -697,10 +697,10 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
             IndexingService indexingService,
             SchemaCache schemaCache )
     {
-        Provider<NeoStore> neoStoreProvider = new Provider<NeoStore>()
+        Supplier<NeoStore> neoStoreSupplier = new Supplier<NeoStore>()
         {
             @Override
-            public NeoStore instance()
+            public NeoStore get()
             {
                 return neoStoreModule.neoStore();
             }
@@ -708,7 +708,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
 
         final StoreReadLayer storeLayer;
         storeLayer = new CacheLayer( new DiskLayer( propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
-                new SchemaStorage( neoStore.getSchemaStore() ), neoStoreProvider, indexingService ),
+                new SchemaStorage( neoStore.getSchemaStore() ), neoStoreSupplier, indexingService ),
                 indexingService, schemaCache );
 
         return new StoreLayerModule()
@@ -910,10 +910,10 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
          * This is used by legacy indexes and constraint indexes whenever a transaction is to be spawned
          * from within an existing transaction. It smells, and we should look over alternatives when time permits.
          */
-        Provider<KernelAPI> kernelProvider = new Provider<KernelAPI>()
+        Supplier<KernelAPI> kernelProvider = new Supplier<KernelAPI>()
         {
             @Override
-            public KernelAPI instance()
+            public KernelAPI get()
             {
                 return kernelModule.kernelAPI();
             }
@@ -1139,7 +1139,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
     }
 
     @Override
-    public NeoStore evaluate()
+    public NeoStore get()
     {
         return neoStoreModule.neoStore();
     }

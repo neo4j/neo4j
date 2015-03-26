@@ -44,7 +44,7 @@ public class KernelTest
 
         try ( Transaction ignored = db.beginTx() )
         {
-            Statement statement = stmtBridge.instance();
+            Statement statement = stmtBridge.get();
 
             try
             {

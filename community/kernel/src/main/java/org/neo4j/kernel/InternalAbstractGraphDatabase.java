@@ -145,7 +145,7 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValidator;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
 import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -698,7 +698,7 @@ public abstract class InternalAbstractGraphDatabase
             @Override
             public Statement statement()
             {
-                return threadToTransactionBridge.instance();
+                return threadToTransactionBridge.get();
             }
         };
     }
@@ -728,7 +728,7 @@ public abstract class InternalAbstractGraphDatabase
             @Override
             public Statement statement()
             {
-                return threadToTransactionBridge.instance();
+                return threadToTransactionBridge.get();
             }
 
             @Override
@@ -760,7 +760,7 @@ public abstract class InternalAbstractGraphDatabase
             @Override
             public Statement statement()
             {
-                return threadToTransactionBridge.instance();
+                return threadToTransactionBridge.get();
             }
 
             @Override
@@ -985,7 +985,7 @@ public abstract class InternalAbstractGraphDatabase
     @Override
     public Node createNode()
     {
-        try ( Statement statement = threadToTransactionBridge.instance() )
+        try ( Statement statement = threadToTransactionBridge.get() )
         {
             return nodeManager.newNodeProxyById( statement.dataWriteOperations().nodeCreate() );
         }
@@ -998,7 +998,7 @@ public abstract class InternalAbstractGraphDatabase
     @Override
     public Node createNode( Label... labels )
     {
-        try ( Statement statement = threadToTransactionBridge.instance() )
+        try ( Statement statement = threadToTransactionBridge.get() )
         {
             long nodeId = statement.dataWriteOperations().nodeCreate();
             for ( Label label : labels )
@@ -1036,7 +1036,7 @@ public abstract class InternalAbstractGraphDatabase
         {
             throw new NotFoundException( format( "Node %d not found", id ) );
         }
-        try ( Statement statement = threadToTransactionBridge.instance() )
+        try ( Statement statement = threadToTransactionBridge.get() )
         {
             if ( !statement.readOperations().nodeExists( id ) )
             {
@@ -1054,7 +1054,7 @@ public abstract class InternalAbstractGraphDatabase
         {
             throw new NotFoundException( format( "Relationship %d not found", id ) );
         }
-        try ( Statement statement = threadToTransactionBridge.instance() )
+        try ( Statement statement = threadToTransactionBridge.get() )
         {
             if ( !statement.readOperations().relationshipExists( id ) )
             {
@@ -1170,7 +1170,7 @@ public abstract class InternalAbstractGraphDatabase
 
     private ResourceIterator<Node> nodesByLabelAndProperty( Label myLabel, String key, Object value )
     {
-        Statement statement = threadToTransactionBridge.instance();
+        Statement statement = threadToTransactionBridge.get();
 
         ReadOperations readOps = statement.readOperations();
         int propertyId = readOps.propertyKeyGetForName( key );
@@ -1230,7 +1230,7 @@ public abstract class InternalAbstractGraphDatabase
 
     private ResourceIterator<Node> allNodesWithLabel( final Label myLabel )
     {
-        Statement statement = threadToTransactionBridge.instance();
+        Statement statement = threadToTransactionBridge.get();
 
         int labelId = statement.readOperations().labelGetForName( myLabel.name() );
         if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
@@ -1524,7 +1524,7 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return type.cast( neoDataSource.getLabelScanStore() );
             }
-            else if ( NeoStoreProvider.class.isAssignableFrom( type ) )
+            else if ( NeoStoreSupplier.class.isAssignableFrom( type ) )
             {
                 return type.cast( neoDataSource );
             }

@@ -24,6 +24,7 @@ import org.junit.Before;
 
 import java.util.Map;
 
+import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -41,12 +42,11 @@ import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.kernel.impl.util.Providers.singletonProvider;
 
 /**
  * Base class for disk layer tests, which test read-access to committed data.
@@ -66,13 +66,13 @@ public class DiskLayerTest
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
         DependencyResolver resolver = db.getDependencyResolver();
         IndexingService indexingService = resolver.resolveDependency( IndexingService.class );
-        NeoStore neoStore = resolver.resolveDependency( NeoStoreProvider.class ).evaluate();
+        NeoStore neoStore = resolver.resolveDependency( NeoStoreSupplier.class ).get();
         this.disk = new DiskLayer(
                 resolver.resolveDependency( PropertyKeyTokenHolder.class ),
                 resolver.resolveDependency( LabelTokenHolder.class ),
                 resolver.resolveDependency( RelationshipTypeTokenHolder.class ),
                 new SchemaStorage( neoStore.getSchemaStore() ),
-                singletonProvider( neoStore ),
+                Suppliers.singleton( neoStore ),
                 indexingService );
         this.state = new KernelStatement( null, new IndexReaderFactory.Caching( indexingService ),
                 resolver.resolveDependency( LabelScanStore.class ), null,

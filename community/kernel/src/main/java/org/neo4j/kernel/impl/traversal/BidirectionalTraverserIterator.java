@@ -23,6 +23,7 @@ import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -38,7 +39,6 @@ import org.neo4j.graphdb.traversal.SideSelectorPolicy;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalContext;
 import org.neo4j.graphdb.traversal.UniquenessFilter;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.FilteringIterator;
 
 class BidirectionalTraverserIterator extends AbstractTraverserIterator
@@ -51,7 +51,7 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
     private final Predicate<Path> uniquenessPredicate = new Predicate<Path>()
     {
         @Override
-        public boolean accept( Path path )
+        public boolean test( Path path )
         {
             return uniqueness.checkFull( path );
         }

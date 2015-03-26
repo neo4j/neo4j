@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
+import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -35,7 +36,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilderTestTools;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Provider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.Statement;
@@ -47,7 +47,7 @@ public abstract class DatabaseRule extends ExternalResource
     GraphDatabaseBuilder databaseBuilder;
     GraphDatabaseAPI database;
     private String storeDir;
-    private Provider<Statement> statementProvider;
+    private Supplier<Statement> statementSupplier;
 
     public <T> T when( Function<GraphDatabaseService, T> function )
     {
@@ -209,7 +209,7 @@ public abstract class DatabaseRule extends ExternalResource
         {
             database = (GraphDatabaseAPI) databaseBuilder.newGraphDatabase();
             storeDir = database.getStoreDir();
-            statementProvider = resolveDependency( ThreadToStatementContextBridge.class );
+            statementSupplier = resolveDependency( ThreadToStatementContextBridge.class );
         }
     }
 
@@ -248,7 +248,7 @@ public abstract class DatabaseRule extends ExternalResource
 
     private void shutdown( boolean deleteResources )
     {
-        statementProvider = null;
+        statementSupplier = null;
         try
         {
             if ( database != null )
@@ -272,7 +272,7 @@ public abstract class DatabaseRule extends ExternalResource
         {
             database.shutdown();
             database = null;
-            statementProvider = null;
+            statementSupplier = null;
         }
     }
 
@@ -284,6 +284,6 @@ public abstract class DatabaseRule extends ExternalResource
     public Statement statement()
     {
         ensureStarted();
-        return statementProvider.instance();
+        return statementSupplier.get();
     }
 }

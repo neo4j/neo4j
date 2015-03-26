@@ -25,13 +25,13 @@ import org.junit.runners.model.Statement;
 
 import java.io.File;
 
-import org.neo4j.helpers.Provider;
+import org.neo4j.function.Supplier;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 
-public abstract class ResourceRule<RESOURCE> implements TestRule, Provider<RESOURCE>
+public abstract class ResourceRule<RESOURCE> implements TestRule, Supplier<RESOURCE>
 {
-    public static ResourceRule<File> fileInExistingDirectory( final Provider<? extends FileSystemAbstraction> fs )
+    public static ResourceRule<File> fileInExistingDirectory( final Supplier<? extends FileSystemAbstraction> fs )
     {
         return new ResourceRule<File>()
         {
@@ -39,13 +39,13 @@ public abstract class ResourceRule<RESOURCE> implements TestRule, Provider<RESOU
             protected File createResource( Description description )
             {
                 File path = path( description );
-                fs.instance().mkdir( path.getParentFile() );
+                fs.get().mkdir( path.getParentFile() );
                 return path;
             }
         };
     }
 
-    public static ResourceRule<File> existingDirectory( final Provider<? extends FileSystemAbstraction> fs )
+    public static ResourceRule<File> existingDirectory( final Supplier<? extends FileSystemAbstraction> fs )
     {
         return new ResourceRule<File>()
         {
@@ -53,7 +53,7 @@ public abstract class ResourceRule<RESOURCE> implements TestRule, Provider<RESOU
             protected File createResource( Description description )
             {
                 File path = path( description );
-                fs.instance().mkdir( path );
+                fs.get().mkdir( path );
                 return path;
             }
         };
@@ -71,7 +71,7 @@ public abstract class ResourceRule<RESOURCE> implements TestRule, Provider<RESOU
         };
     }
 
-    public static ResourceRule<PageCache> pageCache( final Provider<? extends FileSystemAbstraction> fs )
+    public static ResourceRule<PageCache> pageCache( final Supplier<? extends FileSystemAbstraction> fs )
     {
         return new ResourceRule<PageCache>()
         {
@@ -80,7 +80,7 @@ public abstract class ResourceRule<RESOURCE> implements TestRule, Provider<RESOU
             @Override
             protected PageCache createResource( Description description )
             {
-                return pageCache.getPageCache( fs.instance() );
+                return pageCache.getPageCache( fs.get() );
             }
 
             @Override
@@ -98,13 +98,8 @@ public abstract class ResourceRule<RESOURCE> implements TestRule, Provider<RESOU
 
     private RESOURCE resource;
 
-    public final RESOURCE get()
-    {
-        return instance();
-    }
-
     @Override
-    public final RESOURCE instance()
+    public final RESOURCE get()
     {
         return resource;
     }

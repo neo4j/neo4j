@@ -34,8 +34,8 @@ import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.cluster.timeout.Timeouts;
+import org.neo4j.function.Predicate;
 import org.neo4j.helpers.Listeners;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.logging.Logging;
 
@@ -195,7 +195,7 @@ class HeartbeatContextImpl
         return Iterables.filter( new Predicate<InstanceId>()
         {
             @Override
-            public boolean accept( InstanceId item )
+            public boolean test( InstanceId item )
             {
                 return !isFailed( item );
             }

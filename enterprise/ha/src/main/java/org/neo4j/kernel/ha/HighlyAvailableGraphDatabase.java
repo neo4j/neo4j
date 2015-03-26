@@ -43,13 +43,12 @@ import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.function.Factory;
+import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
@@ -125,10 +124,10 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 {
     private final LifeSupport paxosLife = new LifeSupport();
     private final org.neo4j.kernel.impl.util.Dependencies dependencies =
-            new org.neo4j.kernel.impl.util.Dependencies( new Provider<DependencyResolver>()
+            new org.neo4j.kernel.impl.util.Dependencies( new Supplier<DependencyResolver>()
             {
                 @Override
-                public DependencyResolver instance()
+                public DependencyResolver get()
                 {
                     return HighlyAvailableGraphDatabase.this.dependencyResolver;
                 }
@@ -145,7 +144,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     private HighAvailabilityModeSwitcher highAvailabilityModeSwitcher;
     private long stateSwitchTimeoutMillis;
     private TransactionCommittingResponseUnpacker responseUnpacker;
-    private Provider<KernelAPI> kernelProvider;
+    private Supplier<KernelAPI> kernelProvider;
     private InvalidEpochExceptionHandler invalidEpochHandler;
 
     public HighlyAvailableGraphDatabase( String storeDir, Map<String,String> params,
@@ -185,10 +184,10 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         this.responseUnpacker = dependencies.satisfyDependency(
                 new TransactionCommittingResponseUnpacker( getDependencyResolver() ) );
 
-        kernelProvider = new Provider<KernelAPI>()
+        kernelProvider = new Supplier<KernelAPI>()
         {
             @Override
-            public KernelAPI instance()
+            public KernelAPI get()
             {
                 return neoDataSource.getKernel();
             }
@@ -317,10 +316,10 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                         electionCredentialsProvider,
                         objectStreamFactory, objectStreamFactory ) );
         PaxosClusterMemberEvents localClusterEvents = new PaxosClusterMemberEvents( clusterClient, clusterClient,
-                clusterClient, clusterClient, logging, new Predicate<PaxosClusterMemberEvents.ClusterMembersSnapshot>()
+                clusterClient, clusterClient, logging, new org.neo4j.function.Predicate<PaxosClusterMemberEvents.ClusterMembersSnapshot>()
         {
             @Override
-            public boolean accept( PaxosClusterMemberEvents.ClusterMembersSnapshot item )
+            public boolean test( PaxosClusterMemberEvents.ClusterMembersSnapshot item )
             {
                 for ( MemberIsAvailable member : item.getCurrentAvailableMembers() )
                 {

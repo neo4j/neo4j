@@ -26,7 +26,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.neo4j.helpers.Predicate;
+import org.neo4j.function.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.NestingIterable;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -110,7 +110,7 @@ public class SchemaCache
         return filter( new Predicate<UniquenessConstraint>()
         {
             @Override
-            public boolean accept( UniquenessConstraint item )
+            public boolean test( UniquenessConstraint item )
             {
                 return item.label() == label;
             }
@@ -122,7 +122,7 @@ public class SchemaCache
         return filter( new Predicate<UniquenessConstraint>()
         {
             @Override
-            public boolean accept( UniquenessConstraint item )
+            public boolean test( UniquenessConstraint item )
             {
                 return item.label() == label && item.propertyKeyId() == property;
             }

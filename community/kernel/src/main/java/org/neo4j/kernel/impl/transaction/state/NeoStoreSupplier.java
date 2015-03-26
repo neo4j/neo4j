@@ -17,15 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.kernel.impl.transaction.state;
 
-import org.neo4j.helpers.Predicate;
+import org.neo4j.function.Supplier;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.impl.store.NeoStore;
+import org.neo4j.unsafe.batchinsert.BatchInserter;
 
 /**
- * A condition that either {@link #evaluate() evaluates} to {@code true} or {@code false},
- * like {@link Predicate}, but without an argument passed to it.
+ * A provider of a {@link NeoStore}. This interface exists as a bridge between dependency resolution of
+ * both an {@link InternalAbstractGraphDatabase} and {@link BatchInserter}, since batch inserter doesn't
+ * have an {@link XaDataSourceManager} which would normally serve as a provider if a {@link NeoStore}.
  */
-public interface Condition
+public interface NeoStoreSupplier extends Supplier<NeoStore>
 {
-    boolean evaluate();
 }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import org.neo4j.function.Predicate;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -30,8 +32,6 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.neo4j.helpers.Predicate;
 
 import static java.lang.reflect.Modifier.isPublic;
 import static java.lang.reflect.Modifier.isStatic;
@@ -72,7 +72,7 @@ public class DebugUtil
     {
         for ( StackTraceElement element : Thread.currentThread().getStackTrace() )
         {
-            if ( predicate.accept( element ) )
+            if ( predicate.test( element ) )
             {
                 return true;
             }
@@ -85,7 +85,7 @@ public class DebugUtil
         return new Predicate<StackTraceElement>()
         {
             @Override
-            public boolean accept( StackTraceElement item )
+            public boolean test( StackTraceElement item )
             {
                 return item.getClassName().equals( className );
             }
@@ -97,7 +97,7 @@ public class DebugUtil
         return new Predicate<StackTraceElement>()
         {
             @Override
-            public boolean accept( StackTraceElement item )
+            public boolean test( StackTraceElement item )
             {
                 return item.getClassName().contains( classNamePart );
             }
@@ -109,7 +109,7 @@ public class DebugUtil
         return new Predicate<StackTraceElement>()
         {
             @Override
-            public boolean accept( StackTraceElement item )
+            public boolean test( StackTraceElement item )
             {
                 return item.getClassName().equals( cls.getName() );
             }
@@ -122,7 +122,7 @@ public class DebugUtil
         return new Predicate<StackTraceElement>()
         {
             @Override
-            public boolean accept( StackTraceElement item )
+            public boolean test( StackTraceElement item )
             {
                 return item.getClassName().equals( className ) && item.getMethodName().equals( methodName );
             }
@@ -134,7 +134,7 @@ public class DebugUtil
         return new Predicate<StackTraceElement>()
         {
             @Override
-            public boolean accept( StackTraceElement item )
+            public boolean test( StackTraceElement item )
             {
                 return item.getClassName().equals( cls.getName() ) && item.getMethodName().equals( methodName );
             }

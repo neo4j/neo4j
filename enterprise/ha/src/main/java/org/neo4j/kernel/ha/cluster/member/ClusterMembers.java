@@ -31,7 +31,7 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.heartbeat.Heartbeat;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
-import org.neo4j.helpers.Predicate;
+import org.neo4j.function.Predicate;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
@@ -45,7 +45,7 @@ public class ClusterMembers
     public static final Predicate<ClusterMember> ALIVE = new Predicate<ClusterMember>()
     {
         @Override
-        public boolean accept( ClusterMember item )
+        public boolean test( ClusterMember item )
         {
             return item.isAlive();
         }
@@ -58,7 +58,7 @@ public class ClusterMembers
         return new Predicate<ClusterMember>()
         {
             @Override
-            public boolean accept( ClusterMember item )
+            public boolean test( ClusterMember item )
             {
                 return item.hasRole( role );
             }

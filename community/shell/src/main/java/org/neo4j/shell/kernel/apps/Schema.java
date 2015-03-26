@@ -23,11 +23,11 @@ import java.rmi.RemoteException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.function.Function;
+import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -301,7 +301,7 @@ public class Schema extends TransactionProvidingApp
             indexes = filter( new Predicate<IndexDefinition>()
             {
                 @Override
-                public boolean accept( IndexDefinition index )
+                public boolean test( IndexDefinition index )
                 {
                     return indexOf( property, index.getPropertyKeys() ) != -1;
                 }
@@ -317,7 +317,7 @@ public class Schema extends TransactionProvidingApp
         return filter( new Predicate<ConstraintDefinition>()
         {
             @Override
-            public boolean accept( ConstraintDefinition constraint )
+            public boolean test( ConstraintDefinition constraint )
             {
                 return hasLabel( constraint, labels ) && isMatchingConstraint( constraint, property );
             }
@@ -360,7 +360,7 @@ public class Schema extends TransactionProvidingApp
             indexes = filter( new Predicate<IndexDefinition>()
             {
                 @Override
-                public boolean accept( IndexDefinition item )
+                public boolean test( IndexDefinition item )
                 {
                     return item.getLabel().name().equals( label.name() );
                 }

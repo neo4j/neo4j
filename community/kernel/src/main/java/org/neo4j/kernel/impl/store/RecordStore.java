@@ -24,7 +24,7 @@ import java.util.Collection;
 import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.helpers.Predicate;
+import org.neo4j.function.Predicate;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.progress.ProgressListener;
@@ -77,7 +77,7 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
     Predicate<AbstractBaseRecord> IN_USE = new Predicate<AbstractBaseRecord>()
     {
         @Override
-        public boolean accept( AbstractBaseRecord item )
+        public boolean test( AbstractBaseRecord item )
         {
             return item.inUse();
         }
@@ -191,7 +191,7 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
                                 R record = store.forceGetRecord( ids.next() );
                                 for ( Predicate<? super R> filter : filters )
                                 {
-                                    if ( !filter.accept( record ) )
+                                    if ( !filter.test( record ) )
                                     {
                                         continue scan;
                                     }

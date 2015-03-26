@@ -19,11 +19,12 @@
  */
 package org.neo4j.helpers.collection;
 
+import org.neo4j.function.Predicate;
+import org.neo4j.function.Predicates;
+
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
-
-import org.neo4j.helpers.Predicate;
 
 /**
  * An iterable which filters another iterable, only letting items with certain
@@ -36,11 +37,20 @@ public class FilteringIterable<T> implements Iterable<T>
 	private final Iterable<T> source;
 	private final Predicate<T> predicate;
 
-	public FilteringIterable( Iterable<T> source, Predicate<T> predicate )
+    /**
+     * @deprecated use {@link #FilteringIterable(Iterable, Predicate)} instead
+     */
+    @Deprecated
+	public FilteringIterable( Iterable<T> source, org.neo4j.helpers.Predicate<T> predicate )
 	{
-		this.source = source;
-		this.predicate = predicate;
-	}
+        this( source, org.neo4j.helpers.Predicates.upgrade( predicate ) );
+    }
+
+    public FilteringIterable( Iterable<T> source, Predicate<T> predicate )
+    {
+        this.source = source;
+        this.predicate = predicate;
+    }
 
 	public Iterator<T> iterator()
 	{
@@ -49,17 +59,21 @@ public class FilteringIterable<T> implements Iterable<T>
 
     public static <T> Iterable<T> notNull( Iterable<T> source )
     {
-        return new FilteringIterable<T>( source, FilteringIterable.<T>notNullPredicate() );
+        return new FilteringIterable<T>( source, Predicates.<T>notNull() );
     }
     
     public static <T> Iterable<T> noDuplicates( Iterable<T> source )
     {
-        return new FilteringIterable<T>( source, FilteringIterable.<T>noDuplicatesPredicate() );
+        return new FilteringIterable<T>( source, Predicates.<T>noDuplicates() );
     }
-    
-    public static <T> Predicate<T> noDuplicatesPredicate()
+
+    /**
+     * @deprecated use {@link Predicates#noDuplicates()} instead
+     */
+    @Deprecated
+    public static <T> org.neo4j.helpers.Predicate<T> noDuplicatesPredicate()
     {
-        return new Predicate<T>()
+        return new org.neo4j.helpers.Predicate<T>()
         {
             private final Set<T> visitedItems = new HashSet<T>();
             
@@ -70,14 +84,18 @@ public class FilteringIterable<T> implements Iterable<T>
         };
     }
 
+    /**
+     * @deprecated use {@link Predicates#notNull()} instead
+     */
+    @Deprecated
     @SuppressWarnings("unchecked")
-    public static <T> Predicate<T> notNullPredicate()
+    public static <T> org.neo4j.helpers.Predicate<T> notNullPredicate()
     {
-        return (Predicate<T>) NOT_NULL_PREDICATE;
+        return (org.neo4j.helpers.Predicate<T>) NOT_NULL_PREDICATE;
     }
     
     @SuppressWarnings("unchecked")
-    private static final Predicate NOT_NULL_PREDICATE = new Predicate()
+    private static final org.neo4j.helpers.Predicate NOT_NULL_PREDICATE = new org.neo4j.helpers.Predicate()
     {
         public boolean accept( Object item )
         {

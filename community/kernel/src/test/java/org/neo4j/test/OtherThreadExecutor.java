@@ -32,7 +32,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.neo4j.helpers.Predicate;
+import org.neo4j.function.Predicate;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
 
@@ -71,7 +71,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
         }
 
         @Override
-        public boolean accept( Thread thread )
+        public boolean test( Thread thread )
         {
             State threadState = thread.getState();
             seenStates.add( threadState );
@@ -95,9 +95,9 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
         return new Predicate<Thread>()
         {
             @Override
-            public boolean accept( Thread thread )
+            public boolean test( Thread thread )
             {
-                return actual.accept( thread ) || executionState == ExecutionState.EXECUTED;
+                return actual.test( thread ) || executionState == ExecutionState.EXECUTED;
             }
 
             @Override
@@ -241,7 +241,7 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Visitor<LineLogger
     {
         long end = System.currentTimeMillis() + timeout;
         Thread thread = getThread();
-        while ( !condition.accept( thread ) || executionState == ExecutionState.REQUESTED_EXECUTION )
+        while ( !condition.test( thread ) || executionState == ExecutionState.REQUESTED_EXECUTION )
         {
             try
             {

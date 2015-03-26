@@ -212,7 +212,7 @@ public class NeoStoreIndexStoreViewTest
             ThreadToStatementContextBridge bridge =
                     graphDb.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
 
-            try ( Statement statement = bridge.instance() )
+            try ( Statement statement = bridge.get() )
             {
                 labelId = statement.dataWriteOperations().labelGetOrCreateForName( "Person" );
                 propertyKeyId = statement.dataWriteOperations().propertyKeyGetOrCreateForName( "name" );

@@ -36,10 +36,10 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
+import org.neo4j.function.Predicate;
+import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.Predicates;
 import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.TestData.Producer;
@@ -410,7 +410,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         }
         for ( Pair<String,Predicate<String>> headerField : headerFields )
         {
-            assertTrue( "wrong headers: " + response.getHeaders(), headerField.other().accept( response.getHeaders()
+            assertTrue( "wrong headers: " + response.getHeaders(), headerField.other().test( response.getHeaders()
                     .getFirst( headerField.first() ) ) );
         }
         if ( noDoc )

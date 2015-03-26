@@ -281,7 +281,7 @@ public class GraphDbStructureGuideTest
 
     private Statement statement()
     {
-        return bridge.instance();
+        return bridge.get();
     }
 
     private ReadOperations read()

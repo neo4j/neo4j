@@ -61,7 +61,7 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
@@ -582,7 +582,7 @@ public class IndexPopulationJobTest
     private final String name = "name";
     private final String age = "age";
 
-    private ThreadToStatementContextBridge ctxProvider;
+    private ThreadToStatementContextBridge ctxSupplier;
     private CountsTracker counts;
     private NeoStoreIndexStoreView indexStoreView;
     private KernelSchemaStateStore stateHolder;
@@ -594,14 +594,14 @@ public class IndexPopulationJobTest
     public void before() throws Exception
     {
         db = (ImpermanentGraphDatabase) new TestGraphDatabaseFactory().newImpermanentDatabase();
-        ctxProvider = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-        counts = db.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate().getCounts();
+        ctxSupplier = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
+        counts = db.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get().getCounts();
         stateHolder = new KernelSchemaStateStore( DevNullLoggingService.DEV_NULL.getMessagesLog( KernelSchemaStateStore.class ) );
         indexStoreView = newStoreView();
 
         try ( Transaction tx = db.beginTx() )
         {
-            Statement statement = ctxProvider.instance();
+            Statement statement = ctxSupplier.get();
             labelId = statement.schemaWriteOperations().labelGetOrCreateForName( FIRST.name() );
 
             statement.schemaWriteOperations().labelGetOrCreateForName( SECOND.name() );
@@ -654,7 +654,7 @@ public class IndexPopulationJobTest
         IndexDescriptor descriptor;
         try ( Transaction tx = db.beginTx() )
         {
-            ReadOperations statement = ctxProvider.instance().readOperations();
+            ReadOperations statement = ctxSupplier.get().readOperations();
             descriptor = new IndexDescriptor( statement.labelGetForName( label.name() ),
                     statement.propertyKeyGetForName( propertyKey ) );
             tx.success();
@@ -666,7 +666,7 @@ public class IndexPopulationJobTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            ReadOperations statement = ctxProvider.instance().readOperations();
+            ReadOperations statement = ctxSupplier.get().readOperations();
             int labelId = statement.labelGetForName( label.name() );
             int propertyKeyId = statement.propertyKeyGetForName( propertyKey );
             DoubleLongRegister result =
@@ -680,7 +680,7 @@ public class IndexPopulationJobTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            ReadOperations statement = ctxProvider.instance().readOperations();
+            ReadOperations statement = ctxSupplier.get().readOperations();
             DoubleLongRegister result = Registers.newDoubleLongRegister();
             counts.indexSample( statement.labelGetForName( label.name() ),
                     statement.propertyKeyGetForName( propertyKey ),
@@ -715,7 +715,7 @@ public class IndexPopulationJobTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            int result = ctxProvider.instance().readOperations().propertyKeyGetForName( name );
+            int result = ctxSupplier.get().readOperations().propertyKeyGetForName( name );
             tx.success();
             return result;
         }
@@ -724,6 +724,6 @@ public class IndexPopulationJobTest
     private NeoStoreIndexStoreView newStoreView()
     {
         return new NeoStoreIndexStoreView( mock( LockService.class, RETURNS_MOCKS ),
-                db.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate() );
+                db.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get() );
     }
 }

@@ -29,10 +29,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager.Builder;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;

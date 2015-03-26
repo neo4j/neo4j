@@ -33,7 +33,7 @@ import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.synthetic.CountsEntry;
-import org.neo4j.helpers.Predicate;
+import org.neo4j.function.Predicate;
 import org.neo4j.helpers.collection.MultiSet;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
@@ -203,7 +203,7 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
                            CheckerEngine<NodeRecord,NodeConsistencyReport> engine,
                            RecordAccess records )
         {
-            if ( countUpdateCondition.accept( record ) )
+            if ( countUpdateCondition.test( record ) )
             {
                 if ( record.inUse() )
                 {
@@ -259,7 +259,7 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
                            CheckerEngine<RelationshipRecord,RelationshipConsistencyReport> engine,
                            RecordAccess records )
         {
-            if (countUpdateCondition.accept( record ))
+            if (countUpdateCondition.test( record ))
             {
                 if ( record.inUse() )
                 {
@@ -312,7 +312,7 @@ class CountsBuilderDecorator extends CheckDecorator.Adapter
         private boolean started = false, done = false;
 
         @Override
-        public boolean accept( T record )
+        public boolean test( T record )
         {
             if ( done )
             {

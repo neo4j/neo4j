@@ -25,8 +25,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.function.Predicate;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.IOCursor;
@@ -86,7 +86,7 @@ public class LogTestUtils
     public static final LogHook<Pair<Byte, List<byte[]>>> NO_FILTER = new LogHookAdapter<Pair<Byte,List<byte[]>>>()
     {
         @Override
-        public boolean accept( Pair<Byte, List<byte[]>> item )
+        public boolean test( Pair<Byte, List<byte[]>> item )
         {
             return true;
         }
@@ -97,7 +97,7 @@ public class LogTestUtils
         private int count;
 
         @Override
-        public boolean accept( RECORD item )
+        public boolean test( RECORD item )
         {
             count++;
             return true;
@@ -202,7 +202,7 @@ public class LogTestUtils
             LogEntry entry;
             while ( (entry = entryReader.readLogEntry( inBuffer )) != null )
             {
-                if ( filter.accept( entry ) )
+                if ( filter.test( entry ) )
                 {   // TODO allright, write to outBuffer
                 }
             }

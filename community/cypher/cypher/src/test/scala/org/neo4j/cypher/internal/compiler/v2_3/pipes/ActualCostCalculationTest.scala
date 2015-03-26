@@ -146,7 +146,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
     }
 
   implicit class RichGraph(graph: GraphDatabaseService) {
-    def statement = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).instance()
+    def statement = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
 
     def withTx[T](f: Transaction => T): T = {
       val tx = graph.beginTx()

@@ -143,7 +143,7 @@ public class NodeGetUniqueFromIndexLookupIT extends KernelIntegrationTest
                 latch.awaitStart();
                 try ( Transaction tx = db.beginTx() )
                 {
-                    try ( Statement statement = statementContextProvider.instance() )
+                    try ( Statement statement = statementContextSupplier.get() )
                     {
                         statement.readOperations().nodeGetUniqueFromIndexLookup( index, value );
                     }

@@ -79,7 +79,7 @@ public class RelationshipCreatorTest
     private NeoStore flipToNeoStore()
     {
         return dbRule.getGraphDatabaseAPI().getDependencyResolver().resolveDependency(
-                NeoStoreProvider.class ).evaluate();
+                NeoStoreSupplier.class ).get();
     }
 
     private long createNodeWithRelationships( int count )

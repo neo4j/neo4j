@@ -52,7 +52,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 public class GlobalGraphOperations
 {
     private final NodeManager nodeManager;
-    private final ThreadToStatementContextBridge statementCtxProvider;
+    private final ThreadToStatementContextBridge statementCtxSupplier;
     private final RelationshipTypeTokenHolder relationshipTypes;
 
     private GlobalGraphOperations( GraphDatabaseService db )
@@ -60,7 +60,7 @@ public class GlobalGraphOperations
         GraphDatabaseAPI dbApi = (GraphDatabaseAPI) db;
         DependencyResolver resolver = dbApi.getDependencyResolver();
         this.nodeManager = resolver.resolveDependency( NodeManager.class );
-        this.statementCtxProvider = resolver.resolveDependency( ThreadToStatementContextBridge.class );
+        this.statementCtxSupplier = resolver.resolveDependency( ThreadToStatementContextBridge.class );
         this.relationshipTypes = resolver.resolveDependency( RelationshipTypeTokenHolder.class );
     }
 
@@ -88,7 +88,7 @@ public class GlobalGraphOperations
             @Override
             public ResourceIterator<Node> iterator()
             {
-                final Statement statement = statementCtxProvider.instance();
+                final Statement statement = statementCtxSupplier.get();
                 final PrimitiveLongIterator ids = statement.readOperations().nodesGetAll();
                 return new PrefetchingResourceIterator<Node>()
                 {
@@ -123,7 +123,7 @@ public class GlobalGraphOperations
             @Override
             public ResourceIterator<Relationship> iterator()
             {
-                final Statement statement = statementCtxProvider.instance();
+                final Statement statement = statementCtxSupplier.get();
                 final PrimitiveLongIterator ids = statement.readOperations().relationshipsGetAll();
                 return new PrefetchingResourceIterator<Relationship>()
                 {
@@ -177,7 +177,7 @@ public class GlobalGraphOperations
             @Override
             public ResourceIterator<Label> iterator()
             {
-                Statement statement = statementCtxProvider.instance();
+                Statement statement = statementCtxSupplier.get();
                 return ResourceClosingIterator.newResourceIterator( statement, map( new Function<Token, Label>()
                         {
 
@@ -209,7 +209,7 @@ public class GlobalGraphOperations
             @Override
             public ResourceIterator<String> iterator()
             {
-                Statement statement = statementCtxProvider.instance();
+                Statement statement = statementCtxSupplier.get();
                 return ResourceClosingIterator.newResourceIterator( statement, map( new Function<Token, String>() {
 
                             @Override
@@ -248,7 +248,7 @@ public class GlobalGraphOperations
 
     private ResourceIterator<Node> allNodesWithLabel( String label )
     {
-        Statement statement = statementCtxProvider.instance();
+        Statement statement = statementCtxSupplier.get();
 
         int labelId = statement.readOperations().labelGetForName( label );
         if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
@@ -270,6 +270,6 @@ public class GlobalGraphOperations
 
     private void assertInUnterminatedTransaction()
     {
-        statementCtxProvider.assertInUnterminatedTransaction();
+        statementCtxSupplier.assertInUnterminatedTransaction();
     }
 }

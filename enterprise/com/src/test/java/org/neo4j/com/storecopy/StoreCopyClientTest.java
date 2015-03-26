@@ -30,10 +30,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
+import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.CancellationRequest;
-import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
@@ -257,10 +257,10 @@ public class StoreCopyClientTest
                     final StoreId storeId = original.getDependencyResolver().resolveDependency( StoreId.class );
 
                     ResponsePacker responsePacker = new ResponsePacker( logicalTransactionStore,
-                            transactionIdStore, new Provider<StoreId>()
+                            transactionIdStore, new Supplier<StoreId>()
                     {
                         @Override
-                        public StoreId instance()
+                        public StoreId get()
                         {
                             return storeId;
                         }

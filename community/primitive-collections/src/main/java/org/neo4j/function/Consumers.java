@@ -17,18 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.state;
-
-import org.neo4j.helpers.Thunk;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.unsafe.batchinsert.BatchInserter;
+package org.neo4j.function;
 
 /**
- * A provider of a {@link NeoStore}. This interface exists as a bridge between dependency resolution of
- * both an {@link InternalAbstractGraphDatabase} and {@link BatchInserter}, since batch inserter doesn't
- * have an {@link XaDataSourceManager} which would normally serve as a provider if a {@link NeoStore}.
+ * Constructors for basic {@link Consumer} types
  */
-public interface NeoStoreProvider extends Thunk<NeoStore>
+public final class Consumers
 {
+    private static final Consumer<?> NOOP = new Consumer() {
+        @Override
+        public void accept( Object value )
+        {
+            // noop
+        }
+    };
+
+    /**
+     * @param <T> The type to be consumed
+     * @return a {@link Consumer} that does nothing.
+     */
+    public static <T> Consumer<T> noop()
+    {
+        return (Consumer<T>) NOOP;
+    }
 }

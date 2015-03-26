@@ -24,13 +24,17 @@ import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.neo4j.function.Supplier;
 import org.neo4j.helpers.collection.Iterables;
 
 /**
  * Common predicates
+ * @deprecated use {@link org.neo4j.function.Predicates} instead
  */
+@Deprecated
 public class Predicates
 {
+    @Deprecated
     public static <T> Predicate<T> TRUE()
     {
         return new Predicate<T>()
@@ -43,6 +47,7 @@ public class Predicates
         };
     }
 
+    @Deprecated
     public static <T> Predicate<T> not( final Predicate<T> specification )
     {
         return new Predicate<T>()
@@ -55,26 +60,31 @@ public class Predicates
         };
     }
 
+    @Deprecated
     public static <T> AndPredicate<T> and( final Predicate<T>... predicates )
     {
         return and( Arrays.asList( predicates ) );
     }
 
+    @Deprecated
     public static <T> AndPredicate<T> and( final Iterable<Predicate<T>> predicates )
     {
         return new AndPredicate<T>( predicates );
     }
 
+    @Deprecated
     public static <T> OrPredicate<T> or( final Predicate<T>... predicates )
     {
         return or( Arrays.asList( predicates ) );
     }
 
+    @Deprecated
     public static <T> OrPredicate<T> or( final Iterable<Predicate<T>> predicates )
     {
         return new OrPredicate<T>( predicates );
     }
 
+    @Deprecated
     public static <T> Predicate<T> equalTo( final T allowed )
     {
         return new Predicate<T>()
@@ -87,11 +97,13 @@ public class Predicates
         };
     }
 
+    @Deprecated
     public static <T> Predicate<T> in( final T... allowed )
     {
         return in( Arrays.asList( allowed ) );
     }
 
+    @Deprecated
     public static <T> Predicate<T> in( final Iterable<T> allowed )
     {
         return new Predicate<T>()
@@ -111,6 +123,7 @@ public class Predicates
         };
     }
 
+    @Deprecated
     public static <T> Predicate<T> in( final Collection<T> allowed )
     {
         return new Predicate<T>()
@@ -133,12 +146,14 @@ public class Predicates
         }
     };
 
+    @Deprecated
     @SuppressWarnings( "unchecked" )
     public static <T> Predicate<T> notNull()
     {
         return NOT_NULL;
     }
 
+    @Deprecated
     public static <FROM, TO> Predicate<FROM> translate( final Function<FROM, TO> function,
                                                         final Predicate<? super TO> specification )
     {
@@ -152,14 +167,35 @@ public class Predicates
         };
     }
 
-    public static <TYPE> void await( Provider<TYPE> provider, Predicate<TYPE> predicate, long timeout, TimeUnit unit )
+    /**
+     * @deprecated use {@link #await(Supplier, Predicate, long, TimeUnit)} instead
+     */
+    @Deprecated
+    public static <TYPE> void await( final Provider<TYPE> provider, Predicate<TYPE> predicate, long timeout, TimeUnit unit )
+            throws TimeoutException, InterruptedException
+    {
+        await( new Supplier<TYPE>()
+        {
+            @Override
+            public TYPE get()
+            {
+                return provider.instance();
+            }
+        }, predicate, timeout, unit );
+    }
+
+    /**
+     * @deprecated use {@link org.neo4j.function.Predicates#await(Supplier, org.neo4j.function.Predicate, long, TimeUnit)} instead
+     */
+    @Deprecated
+    public static <TYPE> void await( Supplier<TYPE> supplier, Predicate<TYPE> predicate, long timeout, TimeUnit unit )
             throws TimeoutException, InterruptedException
     {
         long sleep = Math.max( unit.toMillis( timeout ) / 100, 1 );
         long deadline = System.currentTimeMillis() + unit.toMillis( timeout );
         do
         {
-            if ( predicate.accept( provider.instance() ) )
+            if ( predicate.accept( supplier.get() ) )
             {
                 return;
             }
@@ -169,6 +205,7 @@ public class Predicates
         throw new TimeoutException( "Waited for " + timeout + " " + unit + ", but " + predicate + " was not accepted." );
     }
 
+    @Deprecated
     public static class AndPredicate<T> implements Predicate<T>
     {
         private final Iterable<Predicate<T>> predicates;
@@ -205,6 +242,7 @@ public class Predicates
         }
     }
 
+    @Deprecated
     public static class OrPredicate<T> implements Predicate<T>
     {
         private final Iterable<Predicate<T>> predicates;
@@ -241,6 +279,7 @@ public class Predicates
         }
     }
 
+    @Deprecated
     public static Predicate<String> stringContains( final String string )
     {
         return new Predicate<String>()
@@ -253,6 +292,7 @@ public class Predicates
         };
     }
 
+    @Deprecated
     public static <T> Predicate<T> instanceOf( final Class clazz)
     {
         return new Predicate<T>()
@@ -261,6 +301,18 @@ public class Predicates
             public boolean accept( T item )
             {
                 return item != null && clazz.isInstance( item );
+            }
+        };
+    }
+
+    public static <T> org.neo4j.function.Predicate<T> upgrade( final Predicate<T> oldPredicate )
+    {
+        return new org.neo4j.function.Predicate<T>()
+        {
+            @Override
+            public boolean test( T item )
+            {
+                return oldPredicate.accept( item );
             }
         };
     }

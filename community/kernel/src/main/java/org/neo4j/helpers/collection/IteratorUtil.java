@@ -37,13 +37,13 @@ import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.function.Predicate;
+import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.CloneableInPublic;
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.Predicates;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 
@@ -526,7 +526,7 @@ public abstract class IteratorUtil
 
     public static <T> int count( Iterator<T> iterator )
     {
-        return count( iterator, Predicates.<T>TRUE() );
+        return count( iterator, Predicates.<T>alwaysTrue() );
     }
 
     /**
@@ -541,7 +541,7 @@ public abstract class IteratorUtil
         int result = 0;
         while ( iterator.hasNext() )
         {
-            if ( filter.accept( iterator.next() ) )
+            if ( filter.test( iterator.next() ) )
             {
                 result++;
             }
@@ -551,7 +551,19 @@ public abstract class IteratorUtil
 
     public static <T> int count( Iterable<T> iterable )
     {
-        return count( iterable, Predicates.<T>TRUE() );
+        return count( iterable, Predicates.<T>alwaysTrue() );
+    }
+
+    /**
+     * Counts the number of items in the {@code iterable} by looping through it.
+     *
+     * @param <T> the type of items in the iterator.
+     * @param iterable the {@link Iterable} to count items in.
+     * @return the number of found in {@code iterator}.
+     */
+    public static <T> int count( Iterable<T> iterable, org.neo4j.helpers.Predicate<T> filter )
+    {
+        return count( iterable.iterator(), org.neo4j.helpers.Predicates.upgrade( filter ) );
     }
 
     /**

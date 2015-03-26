@@ -35,7 +35,7 @@ object QueryStateHelper {
     QueryState(db = db, query = query, resources = resources, params = params, decorator = decorator)
 
   def queryStateFrom(db: GraphDatabaseAPI, tx: Transaction): QueryState = {
-    val statement: Statement = db.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).instance()
+    val statement: Statement = db.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
     val context = new TransactionBoundQueryContext(db, tx, isTopLevelTx = true, statement)
     emptyWith(db = db, query = context)
   }

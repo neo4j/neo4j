@@ -20,7 +20,6 @@
 package org.neo4j.graphdb;
 
 import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.Traversal;
 
 /**
@@ -54,7 +53,7 @@ import org.neo4j.kernel.Traversal;
  * @deprecated because of the introduction of a new traversal framework,
  * see more information at {@link TraversalDescription} and
  * {@link Traversal} and the new traversal framework's equivalent
- * {@link Predicate}.
+ * {@link org.neo4j.function.Predicate}.
  */
 public interface ReturnableEvaluator
 {

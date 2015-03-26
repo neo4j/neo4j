@@ -17,21 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.kernel.impl.transaction.state;
 
-import org.neo4j.helpers.Provider;
+import org.neo4j.kernel.impl.store.NeoStore;
 
-public class Providers
+public final class SimpleNeoStoreSupplier implements NeoStoreSupplier
 {
-    public static <T> Provider<T> singletonProvider( final T value )
+    private NeoStore neoStore;
+
+    public SimpleNeoStoreSupplier( NeoStore neoStore )
     {
-        return new Provider<T>()
-        {
-            @Override
-            public T instance()
-            {
-                return value;
-            }
-        };
+        this.neoStore = neoStore;
+    }
+
+    @Override
+    public NeoStore get()
+    {
+        return neoStore;
     }
 }

@@ -181,7 +181,7 @@ public class HaCountsIT
     {
         return db.getDependencyResolver()
                  .resolveDependency( ThreadToStatementContextBridge.class )
-                 .instance();
+                 .get();
     }
 
     private IndexDescriptor awaitOnline( HighlyAvailableGraphDatabase db, IndexDescriptor index )

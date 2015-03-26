@@ -26,10 +26,10 @@ import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Listeners;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
@@ -189,7 +189,7 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
         }
 
         @Override
-        public boolean accept( Object extension )
+        public boolean test( Object extension )
         {
             return type.isInstance( extension );
         }

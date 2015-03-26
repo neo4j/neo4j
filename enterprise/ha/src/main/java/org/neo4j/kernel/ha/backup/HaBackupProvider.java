@@ -38,11 +38,11 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterEntryDeniedException;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
+import org.neo4j.function.Predicate;
+import org.neo4j.function.Predicates;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.Predicates;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.HANewSnapshotFunction;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -117,7 +117,7 @@ public final class HaBackupProvider //extends BackupExtensionService
                 new NotElectableElectionCredentialsProvider(), objectStreamFactory, objectStreamFactory ) );
         ClusterMemberEvents events = life.add( new PaxosClusterMemberEvents( clusterClient, clusterClient,
                 clusterClient, clusterClient, new SystemOutLogging(),
-                Predicates.<PaxosClusterMemberEvents.ClusterMembersSnapshot>TRUE(), new HANewSnapshotFunction(),
+                Predicates.<PaxosClusterMemberEvents.ClusterMembersSnapshot>alwaysTrue(), new HANewSnapshotFunction(),
                 objectStreamFactory, objectStreamFactory, monitors.newMonitor( NamedThreadFactory.Monitor.class ) ) );
 
         // Refresh the snapshot once we join
@@ -179,7 +179,7 @@ public final class HaBackupProvider //extends BackupExtensionService
         }
         catch ( LifecycleException e )
         {
-            Throwable ex = Exceptions.peel( e, Exceptions.exceptionsOfType( LifecycleException.class ) );
+            Throwable ex = Exceptions.peel( e, Predicates.<Throwable>instanceOf( LifecycleException.class ) );
 
             if ( ex != null && ex instanceof ClusterEntryDeniedException )
             {
@@ -188,7 +188,7 @@ public final class HaBackupProvider //extends BackupExtensionService
                         " are not allowed" );
             }
 
-            ex = Exceptions.peel( e, Exceptions.exceptionsOfType( TimeoutException.class ) );
+            ex = Exceptions.peel( e, Predicates.<Throwable>instanceOf( TimeoutException.class ) );
             if ( ex != null )
             {
                 throw new RuntimeException( "Could not find backup server in cluster " + clusterName + " at " + from
@@ -200,7 +200,7 @@ public final class HaBackupProvider //extends BackupExtensionService
                 throw new RuntimeException( Exceptions.peel( e, new Predicate<Throwable>()
                 {
                     @Override
-                    public boolean accept( Throwable item )
+                    public boolean test( Throwable item )
                     {
                         return !(item instanceof LifecycleException);
                     }

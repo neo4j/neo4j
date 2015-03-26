@@ -64,7 +64,7 @@ import static org.junit.Assert.assertNotNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import static org.neo4j.cluster.protocol.cluster.ClusterConfiguration.COORDINATOR;
-import static org.neo4j.helpers.Predicates.not;
+import static org.neo4j.function.Predicates.not;
 import static org.neo4j.test.ReflectionUtil.getPrivateField;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;

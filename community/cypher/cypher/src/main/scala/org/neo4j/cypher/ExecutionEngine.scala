@@ -133,7 +133,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
       var touched = false
       val isTopLevelTx = !txBridge.hasTransaction
       val tx = graph.beginTx()
-      val kernelStatement = txBridge.instance()
+      val kernelStatement = txBridge.get()
 
       val (plan: ExecutionPlan, extractedParameters) = try {
         // fetch plan cache
@@ -175,7 +175,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
         // to either a schema data or a schema statement, so that the locks are "handed over".
         kernelStatement.close()
         val preparedPlanExecution = PreparedPlanExecution(plan, executionMode, extractedParameters)
-        val txInfo = TransactionInfo(tx, isTopLevelTx, txBridge.instance())
+        val txInfo = TransactionInfo(tx, isTopLevelTx, txBridge.get())
         return (preparedPlanExecution, txInfo)
       }
 

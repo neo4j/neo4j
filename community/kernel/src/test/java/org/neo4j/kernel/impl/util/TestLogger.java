@@ -24,7 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import org.neo4j.helpers.Predicate;
+import org.neo4j.function.Predicate;
 import org.neo4j.helpers.collection.Visitable;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.logging.LogMarker;
@@ -35,7 +35,7 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import static org.neo4j.helpers.Predicates.equalTo;
+import static org.neo4j.function.Predicates.equalTo;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
@@ -362,7 +362,7 @@ public class TestLogger extends StringLogger
     {
         return new Predicate<LogCall>(){
             @Override
-            public boolean accept( LogCall item )
+            public boolean test( LogCall item )
             {
                 return item.level == level;
             }

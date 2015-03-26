@@ -41,7 +41,7 @@ import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -116,8 +116,8 @@ public class DeferredIndexedConflictResolutionTest
         }
 
         DependencyResolver resolver = api.getDependencyResolver();
-        NeoStoreProvider neoStoreProvider = resolver.resolveDependency( NeoStoreProvider.class );
-        NeoStore neoStore = neoStoreProvider.evaluate();
+        NeoStoreSupplier neoStoreSupplier = resolver.resolveDependency( NeoStoreSupplier.class );
+        NeoStore neoStore = neoStoreSupplier.get();
         nodeStore = neoStore.getNodeStore();
         propertyStore = neoStore.getPropertyStore();
         Map<String,Integer> propertyKeys =

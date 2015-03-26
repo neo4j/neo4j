@@ -29,6 +29,7 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
+import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
@@ -40,7 +41,6 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.cluster.client.ClusterClient.adapt;
-import static org.neo4j.helpers.Exceptions.exceptionsOfType;
 import static org.neo4j.helpers.Exceptions.peel;
 import static org.neo4j.helpers.collection.MapUtil.loadStrictly;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -113,7 +113,7 @@ public class StandaloneClusterClient
         catch ( LifecycleException e )
         {
             @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
-            Throwable cause = peel( e, exceptionsOfType( LifecycleException.class ) );
+            Throwable cause = peel( e, Predicates.<Throwable>instanceOf( LifecycleException.class ) );
             if ( cause instanceof ChannelException )
             {
                 System.err.println( "ERROR: " + cause.getMessage() +

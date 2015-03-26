@@ -23,8 +23,8 @@ import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.Predicates;
+import org.neo4j.function.Predicate;
+import org.neo4j.function.Predicates;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
@@ -39,8 +39,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.Predicates.TRUE;
-import static org.neo4j.helpers.Predicates.not;
 import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
@@ -356,12 +354,12 @@ public class IndexSamplingControllerTest
 
 
 
-    private static final Predicate<IndexDescriptor> TRUE = Predicates.TRUE();
-    private static final Predicate<IndexDescriptor> FALSE = not( TRUE );
+    private static final Predicate<IndexDescriptor> TRUE = Predicates.alwaysTrue();
+    private static final Predicate<IndexDescriptor> FALSE = Predicates.alwaysFalse();
 
     private final IndexSamplingConfig samplingConfig = mock( IndexSamplingConfig.class );
     private final IndexSamplingJobFactory jobFactory = mock( IndexSamplingJobFactory.class );
-    private final IndexSamplingJobQueue<IndexDescriptor> jobQueue = new IndexSamplingJobQueue<>( TRUE() );
+    private final IndexSamplingJobQueue<IndexDescriptor> jobQueue = new IndexSamplingJobQueue<>( TRUE );
     private final IndexSamplingJobTracker tracker = mock( IndexSamplingJobTracker.class );
     private final JobScheduler scheduler = mock( JobScheduler.class );
     private final IndexMapSnapshotProvider snapshotProvider = mock( IndexMapSnapshotProvider.class );

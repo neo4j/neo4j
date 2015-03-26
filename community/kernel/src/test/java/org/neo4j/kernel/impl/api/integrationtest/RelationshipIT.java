@@ -297,7 +297,7 @@ public class RelationshipIT extends KernelIntegrationTest
             {
                 try ( Transaction tx = db.beginTx() )
                 {
-                    ReadOperations stmt = statementContextProvider.instance().readOperations();
+                    ReadOperations stmt = statementContextSupplier.get().readOperations();
                     assertRels( stmt.nodeGetRelationships( refNode, both ), longs );
                 }
                 return true;

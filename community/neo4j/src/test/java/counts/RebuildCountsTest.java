@@ -139,7 +139,7 @@ public class RebuildCountsTest
         {
             return ((GraphDatabaseAPI) db).getDependencyResolver()
                                           .resolveDependency( ThreadToStatementContextBridge.class )
-                                          .instance().readOperations().labelGetForName( alien.name() );
+                                          .get().readOperations().labelGetForName( alien.name() );
         }
     }
 

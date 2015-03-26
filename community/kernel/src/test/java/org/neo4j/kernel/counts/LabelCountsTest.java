@@ -23,11 +23,11 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -170,7 +170,7 @@ public class LabelCountsTest
     /** @param label the label to get the number of nodes of, or {@code null} to get the total number of nodes. */
     private long countsForNode( Label label )
     {
-        ReadOperations read = statementProvider.instance().readOperations();
+        ReadOperations read = statementSupplier.get().readOperations();
         int labelId;
         if ( label == null )
         {
@@ -186,12 +186,12 @@ public class LabelCountsTest
         return read.countsForNode( labelId );
     }
 
-    private Provider<Statement> statementProvider;
+    private Supplier<Statement> statementSupplier;
 
     @Before
     public void exposeGuts()
     {
-        statementProvider = db.getGraphDatabaseAPI().getDependencyResolver()
+        statementSupplier = db.getGraphDatabaseAPI().getDependencyResolver()
                               .resolveDependency( ThreadToStatementContextBridge.class );
     }
 }

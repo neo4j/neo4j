@@ -32,11 +32,11 @@ import java.util.Map;
 
 import javax.servlet.Filter;
 
+import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.RunCarefully;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
@@ -757,10 +757,10 @@ public abstract class AbstractNeoServer implements NeoServer
         return dependencyResolver.resolveDependency( type );
     }
 
-    private final Dependencies dependencyResolver = new Dependencies(new Provider<DependencyResolver>()
+    private final Dependencies dependencyResolver = new Dependencies(new Supplier<DependencyResolver>()
     {
         @Override
-        public DependencyResolver instance()
+        public DependencyResolver get()
         {
             Database db = dependencyResolver.resolveDependency( Database.class );
             return db.getGraph().getDependencyResolver();

@@ -23,7 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.neo4j.helpers.Predicate;
+import org.neo4j.function.Predicate;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -230,7 +230,7 @@ public enum StoreFile
         Predicate<StoreFile> predicate = new Predicate<StoreFile>()
         {
             @Override
-            public boolean accept( StoreFile item )
+            public boolean test( StoreFile item )
             {
                 return version.compareTo( item.sinceVersion ) >= 0;
             }

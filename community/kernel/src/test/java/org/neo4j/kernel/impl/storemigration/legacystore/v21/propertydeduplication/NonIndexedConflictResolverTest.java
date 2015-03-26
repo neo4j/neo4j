@@ -42,7 +42,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.hamcrest.Matchers.contains;
@@ -100,8 +100,8 @@ public class NonIndexedConflictResolverTest
         }
 
         DependencyResolver resolver = api.getDependencyResolver();
-        NeoStoreProvider neoStoreProvider = resolver.resolveDependency( NeoStoreProvider.class );
-        NeoStore neoStore = neoStoreProvider.evaluate();
+        NeoStoreSupplier neoStoreSupplier = resolver.resolveDependency( NeoStoreSupplier.class );
+        NeoStore neoStore = neoStoreSupplier.get();
         nodeStore = neoStore.getNodeStore();
         propertyStore = neoStore.getPropertyStore();
         propertyKeyTokenStore = neoStore.getPropertyKeyTokenStore();

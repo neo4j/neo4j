@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.PropertyLookup;
@@ -32,8 +33,6 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-
-import static org.neo4j.kernel.impl.util.Providers.singletonProvider;
 
 public class PropertyReader implements PropertyLookup
 {
@@ -62,7 +61,7 @@ public class PropertyReader implements PropertyLookup
 
     public DefinedProperty propertyValue( PropertyBlock block )
     {
-        return block.getType().readProperty( block.getKeyIndexId(), block, singletonProvider(propertyStore) );
+        return block.getType().readProperty( block.getKeyIndexId(), block, Suppliers.singleton( propertyStore ) );
     }
 
     @Override

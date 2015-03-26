@@ -26,10 +26,10 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -204,15 +204,15 @@ public class NodeCountsTest
 
     private long countsForNode()
     {
-        return statementProvider.instance().readOperations().countsForNode( ReadOperations.ANY_LABEL );
+        return statementSupplier.get().readOperations().countsForNode( ReadOperations.ANY_LABEL );
     }
 
-    private Provider<Statement> statementProvider;
+    private Supplier<Statement> statementSupplier;
 
     @Before
     public void exposeGuts()
     {
-        statementProvider = db.getGraphDatabaseAPI().getDependencyResolver()
+        statementSupplier = db.getGraphDatabaseAPI().getDependencyResolver()
                               .resolveDependency( ThreadToStatementContextBridge.class );
     }
 }

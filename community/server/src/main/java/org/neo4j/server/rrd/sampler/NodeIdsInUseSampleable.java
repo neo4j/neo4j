@@ -19,15 +19,15 @@
  */
 package org.neo4j.server.rrd.sampler;
 
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.server.rrd.UnableToSampleException;
 
 public class NodeIdsInUseSampleable extends DatabasePrimitivesSampleableBase
 {
 
-    public NodeIdsInUseSampleable( NeoStoreProvider neoStore )
+    public NodeIdsInUseSampleable( NeoStoreSupplier neoStoreSupplier )
     {
-        super( neoStore );
+        super( neoStoreSupplier );
     }
 
     @Override public String getName()

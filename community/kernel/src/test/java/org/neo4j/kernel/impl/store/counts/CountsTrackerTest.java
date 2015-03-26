@@ -28,7 +28,7 @@ import org.junit.Test;
 
 import org.neo4j.function.Function;
 import org.neo4j.function.IOFunction;
-import org.neo4j.helpers.Predicate;
+import org.neo4j.function.Predicate;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.CountsOracle;
@@ -304,7 +304,7 @@ public class CountsTrackerTest
         Future<Long> rotated = threading.executeAndAwait( new Rotation( 2 ), tracker, new Predicate<Thread>()
         {
             @Override
-            public boolean accept( Thread thread )
+            public boolean test( Thread thread )
             {
                 switch ( thread.getState() )
                 {

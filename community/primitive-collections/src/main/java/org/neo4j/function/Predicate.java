@@ -17,22 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.state;
+package org.neo4j.function;
 
-import org.neo4j.kernel.impl.store.NeoStore;
-
-public final class SimpleNeoStoreProvider implements NeoStoreProvider
+/**
+ * Represents a predicate (boolean-valued function) of one argument.
+ * @param <T> type of items
+ */
+public interface Predicate<T>
 {
-    private NeoStore neoStore;
-
-    public SimpleNeoStoreProvider( NeoStore neoStore )
-    {
-        this.neoStore = neoStore;
-    }
-
-    @Override
-    public NeoStore evaluate()
-    {
-        return neoStore;
-    }
+    /**
+     * Evaluates this predicate on the given argument.
+     * @return true if the input argument matches the predicate, otherwise false
+     */
+    boolean test( T item );
 }

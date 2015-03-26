@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -117,7 +117,7 @@ public class LabelScanStoreProvider extends LifecycleAdapter implements Comparab
         long highestNodeId();
     }
 
-    public static FullStoreChangeStream fullStoreLabelUpdateStream( final NeoStoreProvider neoStoreProvider )
+    public static FullStoreChangeStream fullStoreLabelUpdateStream( final NeoStoreSupplier neoStoreSupplier )
     {
         return new FullStoreChangeStream()
         {
@@ -127,7 +127,7 @@ public class LabelScanStoreProvider extends LifecycleAdapter implements Comparab
                 return new PrefetchingIterator<NodeLabelUpdate>()
                 {
                     private final long[] NO_LABELS = new long[0];
-                    private final NodeStore nodeStore = neoStoreProvider.evaluate().getNodeStore();
+                    private final NodeStore nodeStore = neoStoreSupplier.get().getNodeStore();
                     private final long highId = nodeStore.getHighestPossibleIdInUse();
                     private long current;
 
@@ -154,7 +154,7 @@ public class LabelScanStoreProvider extends LifecycleAdapter implements Comparab
             @Override
             public PrimitiveLongIterator labelIds()
             {
-                final Token[] labels = neoStoreProvider.evaluate().getLabelTokenStore().getTokens( MAX_VALUE );
+                final Token[] labels = neoStoreSupplier.get().getLabelTokenStore().getTokens( MAX_VALUE );
                 return new PrimitiveLongBaseIterator()
                 {
                     int index;
@@ -170,7 +170,7 @@ public class LabelScanStoreProvider extends LifecycleAdapter implements Comparab
             @Override
             public long highestNodeId()
             {
-                return neoStoreProvider.evaluate().getNodeStore().getHighestPossibleIdInUse();
+                return neoStoreSupplier.get().getNodeStore().getHighestPossibleIdInUse();
             }
         };
     }

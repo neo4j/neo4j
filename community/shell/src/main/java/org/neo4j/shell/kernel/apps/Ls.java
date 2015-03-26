@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -37,7 +38,6 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.traversal.BranchState;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.kernel.impl.util.SingleNodePath;
@@ -336,7 +336,7 @@ public class Ls extends TransactionProvidingApp
         }
 
         @Override
-        public boolean accept( Relationship item )
+        public boolean test( Relationship item )
         {
             AtomicInteger counter = encounteredRelationships.get( item.getType().name() );
             int count = counter.get();

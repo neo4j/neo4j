@@ -25,24 +25,25 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.concurrent.TimeUnit;
 
+import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
+import org.neo4j.function.Predicate;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-import static org.neo4j.helpers.Predicates.and;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 import static org.neo4j.kernel.impl.util.StringLogger.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.util.StringLogger.DEFAULT_THRESHOLD_FOR_ROTATION;
@@ -160,11 +161,11 @@ public class StringLoggerTest
 
         // THEN
         File logFile = new File( target, DEFAULT_NAME );
-        assertTrue( "Should have contained " + firstMessage, fileContains( logFile, stringContaining( firstMessage ) ) );
-        assertTrue( "Should have contained " + secondMessage, fileContains( logFile, stringContaining( secondMessage ) ) );
-        assertTrue( "Should have contained " + thirdMessage, fileContains( logFile, stringContaining( thirdMessage ) ) );
-        assertTrue( "Should have contained stack trace from " + thirdMessage, fileContains( logFile, and(
-                stringContaining( "at " ), stringContaining( testName.getMethodName() ) ) ) );
+        assertTrue( "Should have contained " + firstMessage, fileContains( logFile, containsString( firstMessage ) ) );
+        assertTrue( "Should have contained " + secondMessage, fileContains( logFile, containsString( secondMessage ) ) );
+        assertTrue( "Should have contained " + thirdMessage, fileContains( logFile, containsString( thirdMessage ) ) );
+        assertTrue( "Should have contained stack trace from " + thirdMessage, fileContains( logFile, allOf(
+                containsString( "at " ), containsString( testName.getMethodName() ) ) ) );
     }
 
     @Test
@@ -193,7 +194,7 @@ public class StringLoggerTest
         return new Predicate<String>()
         {
             @Override
-            public boolean accept( String item )
+            public boolean test( String item )
             {
                 return item.contains( string );
             }
@@ -208,7 +209,7 @@ public class StringLoggerTest
         return result;
     }
 
-    private boolean fileContains( File file, Predicate<String> predicate ) throws IOException
+    private boolean fileContains( File file, Matcher<String> matcher ) throws IOException
     {
         BufferedReader reader = new BufferedReader( fileSystem.openAsReader( file, Charset.defaultCharset().name() ) );
         try
@@ -216,7 +217,7 @@ public class StringLoggerTest
             String line = null;
             while ( (line = reader.readLine()) != null )
             {
-                if ( predicate.accept( line ) )
+                if ( matcher.matches( line ) )
                 {
                     return true;
                 }

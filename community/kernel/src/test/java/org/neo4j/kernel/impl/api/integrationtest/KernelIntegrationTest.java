@@ -36,7 +36,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.store.NeoStore;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.test.TestGraphDatabaseBuilder;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -44,7 +44,7 @@ public abstract class KernelIntegrationTest
 {
     @SuppressWarnings("deprecation")
     protected GraphDatabaseAPI db;
-    protected ThreadToStatementContextBridge statementContextProvider;
+    protected ThreadToStatementContextBridge statementContextSupplier;
     protected KernelAPI kernel;
     protected IndexingService indexingService;
 
@@ -132,7 +132,7 @@ public abstract class KernelIntegrationTest
         db = (GraphDatabaseAPI) graphDatabaseFactory.newGraphDatabase();
         kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
         indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
-        statementContextProvider = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
+        statementContextSupplier = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }
 
     protected void dbWithNoCache() throws TransactionFailureException
@@ -158,6 +158,6 @@ public abstract class KernelIntegrationTest
 
     protected NeoStore neoStore()
     {
-        return db.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate();
+        return db.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get();
     }
 }
