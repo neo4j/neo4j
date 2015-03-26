@@ -40,9 +40,9 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should build plans for label scans without compile-time label id") {
     (new given {
       cost =  {
-        case _: AllNodesScan => 1000.0
-        case _: NodeByIdSeek => 2.0
-        case _: NodeByLabelScan => 1.0
+        case (_: AllNodesScan, _) => 1000.0
+        case (_: NodeByIdSeek, _) => 2.0
+        case (_: NodeByLabelScan, _) => 1.0
         case _ => Double.MaxValue
       }
     } planFor "MATCH (n:Awesome) RETURN n").plan should equal(
@@ -53,9 +53,9 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should build plans for label scans with compile-time label id") {
     implicit val plan = new given {
       cost =  {
-        case _: AllNodesScan => 1000.0
-        case _: NodeByIdSeek => 2.0
-        case _: NodeByLabelScan => 1.0
+        case (_: AllNodesScan, _) => 1000.0
+        case (_: NodeByIdSeek, _) => 2.0
+        case (_: NodeByLabelScan, _) => 1.0
         case _ => Double.MaxValue
       }
       knownLabels = Set("Awesome")

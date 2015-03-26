@@ -24,15 +24,12 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.GetDegree
 import org.neo4j.cypher.internal.compiler.v2_2.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{AllNodesScan, Projection}
 import org.neo4j.graphdb.Direction.OUTGOING
+import org.scalatest.path
 
 class PlanRewritingPlanningIntegrationTest  extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("should use GetDegree to compute the degree of a node") {
     val result = (new given {
-      cardinality = mapCardinality {
-        case _: AllNodesScan => 1
-        case _               => Double.MaxValue
-      }
     } planFor "MATCH (n) RETURN length((n)-->()) AS deg").plan
 
     result should equal(
