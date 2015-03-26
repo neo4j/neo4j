@@ -180,7 +180,6 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       graph.getNodeById(id)
     } catch {
       case e: NotFoundException => throw new EntityNotFoundException(s"Node with id $id", e)
-      case e: RuntimeException  => throw e
     }
 
     def all: Iterator[Node] = GlobalGraphOperations.at(graph).getAllNodes.iterator().asScala
@@ -217,7 +216,11 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       statement.dataWriteOperations().relationshipSetProperty(id, properties.Property.property(propertyKeyId, value) )
     }
 
-    def getById(id: Long) = graph.getRelationshipById(id)
+    def getById(id: Long) = try {
+      graph.getRelationshipById(id)
+    } catch {
+      case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $id", e)
+    }
 
     def all: Iterator[Relationship] =
       GlobalGraphOperations.at(graph).getAllRelationships.iterator().asScala
