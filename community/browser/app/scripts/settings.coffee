@@ -48,6 +48,7 @@ angular.module('neo4jApp.settings', ['neo4jApp.utils'])
     enableMotd: true
     initCmd: ":play start"
     refreshInterval: 10 # in seconds
+    userName: "Graph Friend"
   })
 
 angular.module('neo4jApp.settings')
