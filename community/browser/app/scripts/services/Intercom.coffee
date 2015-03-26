@@ -47,10 +47,11 @@ angular.module('neo4jApp.services')
           angular.extend(intercomSettings, userData)
           if not @booted
             @do('boot', intercomSettings)
-            @do('onShow', () ->
+            @_Intercom('hide')
+            @_Intercom('onShow', () =>
               @isShowing = true
               )
-            @do('onHide', () ->
+            @_Intercom('onHide', () =>
               @isShowing = false
               # TODO intercom should only run on demand. figure out how/when to shutdown&re-boot
               # @_Intercom('shutdown')
@@ -62,6 +63,7 @@ angular.module('neo4jApp.services')
           if @isShowing
             @do('hide')
           else
+            @isShowing = true
             @do('show')
 
         newMessage: (message) ->

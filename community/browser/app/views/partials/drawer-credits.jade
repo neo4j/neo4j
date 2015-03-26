@@ -29,20 +29,24 @@ h4 About Neo4j
     
   h5 Feedback
   p 
-    b Suggestions:
+    a.fa.fa-envelope-o(ng-click="toggleMessenger()") &nbsp;
+      b Messages
   p What do you want to do? How did you try to do it? What would you suggest?
     form(ng-submit="newMessage(suggestion)")
-      .form-group
-        input.form-control(type='text', placeholder='{{suggestionPlaceholder}}', ng-model='suggestion')    
-      button.btn.btn-default.btn-xs(type="submit") Compose
-
+      .form-group.form-group-sm
+        input.form-control.input-sm(type='text', placeholder='{{suggestionPlaceholder}}', ng-model='suggestion')    
+      .form-group.form-group-sm
+        button.btn.btn-default.btn-xs(type="submit") New Message
+   
   p 
     b Options:
     ul(ng-controller="SettingsCtrl")  
+      li.form-group-sm Name
+        input.form-control.input-sm(type='text', ng-model="settings.userName", ng-change="save()")
       li Share non-sensitive data? &nbsp;
         input(type="checkbox", ng-model="settings.shouldReportUdc", ng-change="save()")
-      li Accept replies from us? &nbsp;
-        input(type="checkbox", ng-model="settings.acceptsReplies", ng-change="save()")
+      //- li Accept replies from us? &nbsp;
+      //-   input(type="checkbox", ng-model="settings.acceptsReplies", ng-change="save()")
         
   h5 Thanks
   p Neo4j wouldn't be possible without a fantastic community. Thanks for all the feedback, discussions and contributions.
