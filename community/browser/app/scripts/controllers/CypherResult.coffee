@@ -62,34 +62,12 @@ angular.module('neo4jApp.controllers')
 
     $scope.resultStatistics = (frame) ->
       if frame?.response
-        stats = frame.response.table.stats
-        fields = [
-          {plural: 'constraints', singular: 'constraint', verb: 'added', field: 'constraints_added' }
-          {plural: 'constraints', singular: 'constraint', verb: 'removed', field: 'constraints_removed' }
-          {plural: 'indexes', singular: 'index', verb: 'added', field: 'indexes_added' }
-          {plural: 'indexes', singular: 'index', verb: 'removed', field: 'indexes_removed' }
-          {plural: 'labels', singular: 'label', verb: 'added', field: 'labels_added' }
-          {plural: 'labels', singular: 'label', verb: 'removed', field: 'labels_removed' }
-          {plural: 'nodes', singular: 'node', verb: 'created', field: 'nodes_created' }
-          {plural: 'nodes', singular: 'node', verb: 'deleted', field: 'nodes_deleted' }
-          {plural: 'properties', singular: 'property', verb: 'set', field: 'properties_set' }
-          {plural: 'relationships', singular: 'relationship', verb: 'deleted', field: 'relationship_deleted' }
-          {plural: 'relationships', singular: 'relationship', verb: 'created', field: 'relationships_created' }
-        ]
-        nonZeroFields = []
-        nonZeroFields.push(field) for field in fields when stats[field.field] > 0
-
-        messages = ("#{field.verb} #{stats[field.field]} #{if stats[field.field] is 1 then field.singular else field.plural}" for field in nonZeroFields)
+        updatesMessages = []
         if frame.response.table._response.columns.length
-          messages.push "returned #{frame.response.table.size} #{if frame.response.table.size is 1 then 'row' else 'rows'}"
-        if messages.length is 0
-          messages.push "statement executed"
-        messages[messages.length - 1] += " in #{frame.response.responseTime} ms"
-        if (frame.response.table.size > frame.response.table.displayedSize)
-          messages.push "displaying first #{frame.response.table.displayedSize} rows"
-
-        joinedMessages = messages.join(', ')
-        "#{joinedMessages.substring(0, 1).toUpperCase()}#{joinedMessages.substring(1)}."
+          updatesMessages = $scope.updatesStatistics frame
+        rowsStatistics = $scope.returnedRowsStatistics frame
+        messages = [].concat(updatesMessages, rowsStatistics)
+        $scope.formatStatisticsOutput messages
 
     $scope.graphStatistics = (frame) ->
       if frame?.response
@@ -116,6 +94,61 @@ angular.module('neo4jApp.controllers')
         if collectHits(root)
           message += " #{collectHits(root)} total db hits in #{frame.response.responseTime} ms."
         message
+
+    $scope.formatStatisticsOutput = (messages) ->
+      joinedMessages = messages.join(', ')
+      "#{joinedMessages.substring(0, 1).toUpperCase()}#{joinedMessages.substring(1)}."
+
+    $scope.returnedRowsStatistics = (frame) ->
+      messages = []
+      if frame?.response
+        messages.push "returned #{frame.response.table.size} #{if frame.response.table.size is 1 then 'row' else 'rows'}"
+        messages = getTimeString frame, messages, 'returnedRows'
+        if (frame.response.table.size > frame.response.table.displayedSize)
+          messages.push "displaying first #{frame.response.table.displayedSize} rows"
+      messages
+
+    $scope.updatesStatistics = (frame) ->
+      messages = []
+      if frame?.response
+        stats = frame.response.table.stats
+        nonZeroFields = $scope.getNonZeroStatisticsFields frame
+        messages = ("#{field.verb} #{stats[field.field]} #{if stats[field.field] is 1 then field.singular else field.plural}" for field in nonZeroFields)
+        messages = getTimeString frame, messages, 'updates'
+      messages
+
+    $scope.getNonZeroStatisticsFields = (frame) ->
+      nonZeroFields = []
+      if frame?.response
+        stats = frame.response.table.stats
+        fields = [
+          {plural: 'constraints', singular: 'constraint', verb: 'added', field: 'constraints_added' }
+          {plural: 'constraints', singular: 'constraint', verb: 'removed', field: 'constraints_removed' }
+          {plural: 'indexes', singular: 'index', verb: 'added', field: 'indexes_added' }
+          {plural: 'indexes', singular: 'index', verb: 'removed', field: 'indexes_removed' }
+          {plural: 'labels', singular: 'label', verb: 'added', field: 'labels_added' }
+          {plural: 'labels', singular: 'label', verb: 'removed', field: 'labels_removed' }
+          {plural: 'nodes', singular: 'node', verb: 'created', field: 'nodes_created' }
+          {plural: 'nodes', singular: 'node', verb: 'deleted', field: 'nodes_deleted' }
+          {plural: 'properties', singular: 'property', verb: 'set', field: 'properties_set' }
+          {plural: 'relationships', singular: 'relationship', verb: 'deleted', field: 'relationship_deleted' }
+          {plural: 'relationships', singular: 'relationship', verb: 'created', field: 'relationships_created' }
+        ]
+        nonZeroFields.push(field) for field in fields when stats[field.field] > 0
+      nonZeroFields
+
+    getTimeString = (frame, messages, context) ->
+      timeMessage = " in #{frame.response.responseTime} ms"
+      if context is 'updates'
+        if messages.length and !frame.response.table._response.columns.length
+          messages.push "statement executed"
+          messages[messages.length - 1] += timeMessage
+
+      if context is 'returnedRows'
+        if frame.response.table._response.columns.length or (!frame.response.table._response.columns.length and !$scope.getNonZeroStatisticsFields(frame).length)
+          messages[messages.length - 1] += timeMessage
+      messages
+
 
     # Listen for export events bubbling up the controller hierarchy
     # and forward them down to the child controller that has access to

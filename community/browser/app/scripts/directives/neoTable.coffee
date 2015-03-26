@@ -35,13 +35,16 @@ angular.module('neo4jApp.directives')
         escapeHtml = (string) ->
           String(string).replace(/[&<>"'\/]/g, (s) -> entityMap[s])
 
+        emptyMarker = ->
+          '<em>(empty)</em>'
+
         unbind = scope.$watch attr.tableData, (result) ->
           return unless result
           elm.html(render(result))
           unbind()
 
         json2html = (obj) ->
-          return '' unless Object.keys(obj).length
+          return emptyMarker() unless Object.keys(obj).length
           html  = "<table class='json-object'><tbody>"
           html += "<tr><th>#{k}</th><td>#{cell2html(v)}</td></tr>" for own k, v of obj
           html += "</tbody></table>"
@@ -49,6 +52,7 @@ angular.module('neo4jApp.directives')
 
         cell2html = (cell) ->
           if angular.isString(cell)
+            return emptyMarker() unless cell.length
             escapeHtml(cell)
           else if angular.isArray(cell)
             "["+((cell2html(el) for el in cell).join(', '))+"]"
