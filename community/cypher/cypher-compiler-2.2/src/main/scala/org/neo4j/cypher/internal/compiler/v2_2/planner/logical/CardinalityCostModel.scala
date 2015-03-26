@@ -88,14 +88,14 @@ object CardinalityCostModel extends CostModel {
   }
 
   private def cardinalityForPlan(plan: LogicalPlan): Cardinality = plan match {
-    case Selection(_, left) => left.solved.estimation
-    case _ => plan.lhs.map(p => p.solved.estimation).getOrElse(plan.solved.estimation)
+    case Selection(_, left) => left.solved.estimatedCardinality
+    case _ => plan.lhs.map(p => p.solved.estimatedCardinality).getOrElse(plan.solved.estimatedCardinality)
   }
 
   def apply(plan: LogicalPlan, input: QueryGraphSolverInput): Cost = {
     val cost = plan match {
       case CartesianProduct(lhs, rhs) =>
-        apply(lhs, input) + lhs.solved.estimation * apply(rhs, input)
+        apply(lhs, input) + lhs.solved.estimatedCardinality * apply(rhs, input)
 
       case ApplyVariants(lhs, rhs) =>
         val lCost = apply(lhs, input)
@@ -108,8 +108,8 @@ object CardinalityCostModel extends CostModel {
         val lCost = apply(lhs, input)
         val rCost = apply(rhs, input)
 
-        val lhsCardinality = lhs.solved.estimation
-        val rhsCardinality = rhs.solved.estimation
+        val lhsCardinality = lhs.solved.estimatedCardinality
+        val rhsCardinality = rhs.solved.estimatedCardinality
 
         lCost + rCost +
           lhsCardinality * PROBE_BUILD_COST +
