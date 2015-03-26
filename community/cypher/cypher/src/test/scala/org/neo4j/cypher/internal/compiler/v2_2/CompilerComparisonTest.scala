@@ -288,7 +288,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     val planBuilderMonitor = monitors.newMonitor[NewLogicalPlanSuccessRateMonitor](monitorTag)
     val planningMonitor = monitors.newMonitor[PlanningMonitor](monitorTag)
     val metricsFactory = CachedMetricsFactory(metricsFactoryInput)
-    val planner = CostBasedPipeBuilderFactory(monitors = monitors, metricsFactory = metricsFactory, monitor = planningMonitor, clock = clock, planningStrategy = CostBasedPlanningStrategy(plannerName))
+    val planner = CostBasedPipeBuilderFactory(monitors = monitors, metricsFactory = metricsFactory, monitor = planningMonitor, clock = clock, plannerName = plannerName)
     val pipeBuilder = new LegacyVsNewPipeBuilder(new LegacyPipeBuilder(monitors), planner, planBuilderMonitor)
     val execPlanBuilder = new ExecutionPlanBuilder(graph, statsDivergenceThreshold, queryPlanTTL, clock, pipeBuilder)
     val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](100)

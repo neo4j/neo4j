@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ExecutionPlan => E
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.{DbHits, Planner, Rows, Version}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.MapToPublicExceptions
-import org.neo4j.cypher.internal.compiler.v2_2.{CypherException => CypherException_v2_2, CostBasedPlannerName, DPPlannerName, IDPPlannerName, CostPlannerName, CypherCompilerFactory, ConservativePlannerName, InfoLogger, PlannerName, Monitors}
+import org.neo4j.cypher.internal.compiler.v2_2.{CostBasedPlannerName, CypherCompilerFactory, CypherException => CypherException_v2_2, InfoLogger, Monitors, PlannerName}
 import org.neo4j.cypher.internal.spi.v2_2.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
 import org.neo4j.cypher.{ArithmeticException, CypherTypeException, EntityNotFoundException, FailedIndexException, IncomparableValuesException, IndexHintException, InternalException, InvalidArgumentException, InvalidSemanticsException, LabelScanHintException, LoadCsvStatusWrapCypherException, LoadExternalResourceException, MergeConstraintConflictException, NodeStillHasRelationshipsException, ParameterNotFoundException, ParameterWrongTypeException, PatternException, PeriodicCommitInOpenTransactionException, ProfilerStatisticsNotReadyException, SyntaxException, UniquePathNotUniqueException, UnknownLabelException, _}

@@ -26,17 +26,6 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.{expandsOr
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.idp.{IDPQueryGraphSolverMonitor, IDPQueryGraphSolver}
 import org.neo4j.helpers.Clock
 
-final case class CostBasedPlanningStrategy(plannerName: CostBasedPlannerName, acceptQuery: QueryAcceptor)
-
-object CostBasedPlanningStrategy {
-  def default = apply(PlannerName.default)
-
-  def apply(plannerName: CostBasedPlannerName): CostBasedPlanningStrategy = plannerName match {
-    case ConservativePlannerName => CostBasedPlanningStrategy(plannerName, conservativeQueryAcceptor)
-    case _ => CostBasedPlanningStrategy(plannerName, allQueryAcceptor)
-  }
-}
-
 object CostBasedPipeBuilderFactory {
 
   def apply(monitors: Monitors,
@@ -46,13 +35,12 @@ object CostBasedPipeBuilderFactory {
             tokenResolver: SimpleTokenResolver = new SimpleTokenResolver(),
             maybeExecutionPlanBuilder: Option[PipeExecutionPlanBuilder] = None,
             queryPlanner: QueryPlanner = new DefaultQueryPlanner(),
-            planningStrategy: CostBasedPlanningStrategy = CostBasedPlanningStrategy.default
+            plannerName: CostBasedPlannerName = PlannerName.default
            ) = {
 
     val executionPlanBuilder: PipeExecutionPlanBuilder =
       maybeExecutionPlanBuilder.getOrElse(new PipeExecutionPlanBuilder(clock, monitors))
 
-    val plannerName = planningStrategy.plannerName
     val queryGraphSolver = plannerName match {
       case IDPPlannerName =>
         IDPQueryGraphSolver(monitors.newMonitor[IDPQueryGraphSolverMonitor]())
@@ -68,6 +56,6 @@ object CostBasedPipeBuilderFactory {
         )
     }
 
-    CostBasedPipeBuilder(monitors, metricsFactory, monitor, clock, tokenResolver, executionPlanBuilder, queryPlanner, planningStrategy.acceptQuery, queryGraphSolver, plannerName)
+    CostBasedPipeBuilder(monitors, metricsFactory, monitor, clock, tokenResolver, executionPlanBuilder, queryPlanner, queryGraphSolver, plannerName)
   }
 }

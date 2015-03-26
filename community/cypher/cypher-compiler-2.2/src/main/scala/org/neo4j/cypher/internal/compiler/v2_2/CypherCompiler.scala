@@ -72,7 +72,7 @@ object CypherCompilerFactory {
     val planBuilderMonitor = monitors.newMonitor[NewLogicalPlanSuccessRateMonitor](monitorTag)
     val planningMonitor = monitors.newMonitor[PlanningMonitor](monitorTag)
     val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
-    val planner = CostBasedPipeBuilderFactory(monitors, metricsFactory, planningMonitor, clock, planningStrategy = CostBasedPlanningStrategy(plannerName))
+    val planner = CostBasedPipeBuilderFactory(monitors, metricsFactory, planningMonitor, clock, plannerName = plannerName)
     val pipeBuilder = new LegacyVsNewPipeBuilder(new LegacyPipeBuilder(monitors), planner, planBuilderMonitor)
     val execPlanBuilder = new ExecutionPlanBuilder(graph, statsDivergenceThreshold, queryPlanTTL, clock, pipeBuilder)
     val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](queryCacheSize)
