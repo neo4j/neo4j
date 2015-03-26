@@ -24,7 +24,7 @@ import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.helpers.Predicate;
+import org.neo4j.function.Predicate;
 
 /**
  * Super class of diff sets where use of {@link PrimitiveLongIterator} can be parameterized

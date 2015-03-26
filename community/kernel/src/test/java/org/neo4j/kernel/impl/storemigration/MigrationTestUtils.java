@@ -24,9 +24,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
+import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
@@ -270,7 +270,7 @@ public class MigrationTestUtils
     private static final Predicate<StoreFile> ALL_EXCEPT_COUNTS_STORE = new Predicate<StoreFile>()
     {
         @Override
-        public boolean accept( StoreFile item )
+        public boolean test( StoreFile item )
         {
             return item != StoreFile.COUNTS_STORE_LEFT && item != StoreFile.COUNTS_STORE_RIGHT;
         }

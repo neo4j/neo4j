@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -38,7 +39,6 @@ import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
@@ -488,7 +488,7 @@ public class GraphDbHelper
             {
 
                 @Override
-                public boolean accept( ConstraintDefinition item )
+                public boolean test( ConstraintDefinition item )
                 {
                     if ( item.isConstraintType( ConstraintType.UNIQUENESS ) )
                     {

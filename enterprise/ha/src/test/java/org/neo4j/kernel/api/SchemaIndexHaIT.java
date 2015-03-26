@@ -30,6 +30,8 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.neo4j.function.Predicate;
+import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -40,8 +42,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
-import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.Predicates;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.impl.index.DirectoryFactory;
@@ -313,7 +313,7 @@ public class SchemaIndexHaIT
     public static final Predicate<GraphDatabaseService> IS_MASTER = new Predicate<GraphDatabaseService>()
     {
         @Override
-        public boolean accept( GraphDatabaseService item )
+        public boolean test( GraphDatabaseService item )
         {
             return item instanceof HighlyAvailableGraphDatabase && ((HighlyAvailableGraphDatabase) item).isMaster();
         }
@@ -551,7 +551,7 @@ public class SchemaIndexHaIT
         @Override
         public Lifecycle newKernelExtension( SchemaIndexHaIT.IndexProviderDependencies deps ) throws Throwable
         {
-            if(injectLatchPredicate.accept( deps.db() ))
+            if(injectLatchPredicate.test( deps.db() ))
             {
                 ControlledSchemaIndexProvider provider = new ControlledSchemaIndexProvider(
                         new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, deps.config() ) );
@@ -572,7 +572,7 @@ public class SchemaIndexHaIT
 
         public ControlledGraphDatabaseFactory()
         {
-            factory = new ControllingIndexProviderFactory(perDbIndexProvider, Predicates.<GraphDatabaseService>TRUE());
+            factory = new ControllingIndexProviderFactory(perDbIndexProvider, Predicates.<GraphDatabaseService>alwaysTrue());
         }
 
         private ControlledGraphDatabaseFactory( Predicate<GraphDatabaseService> dbsToControlIndexingOn )

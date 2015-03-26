@@ -31,12 +31,12 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.function.Predicate;
+import org.neo4j.function.Predicates;
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.Predicates;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -522,7 +522,7 @@ public class DiskLayer implements StoreReadLayer
         {
 
             @Override
-            public boolean accept( SchemaRule rule )
+            public boolean test( SchemaRule rule )
             {
                 return rule.getLabel() == labelId && rule.getKind() == SchemaRule.Kind.INDEX_RULE;
             }
@@ -535,7 +535,7 @@ public class DiskLayer implements StoreReadLayer
         {
 
             @Override
-            public boolean accept( SchemaRule rule )
+            public boolean test( SchemaRule rule )
             {
                 return rule.getLabel() == labelId && rule.getKind() == SchemaRule.Kind.CONSTRAINT_INDEX_RULE;
             }
@@ -546,7 +546,7 @@ public class DiskLayer implements StoreReadLayer
     {
 
         @Override
-        public boolean accept( SchemaRule rule )
+        public boolean test( SchemaRule rule )
         {
             return rule.getKind() == SchemaRule.Kind.INDEX_RULE;
         }
@@ -554,7 +554,7 @@ public class DiskLayer implements StoreReadLayer
     {
 
         @Override
-        public boolean accept( SchemaRule rule )
+        public boolean test( SchemaRule rule )
         {
             return rule.getKind() == SchemaRule.Kind.CONSTRAINT_INDEX_RULE;
         }
@@ -638,7 +638,7 @@ public class DiskLayer implements StoreReadLayer
                 labelId, new Predicate<UniquenessConstraintRule>()
         {
             @Override
-            public boolean accept( UniquenessConstraintRule rule )
+            public boolean test( UniquenessConstraintRule rule )
             {
                 return rule.containsPropertyKeyId( propertyKeyId );
             }
@@ -649,14 +649,14 @@ public class DiskLayer implements StoreReadLayer
     public Iterator<UniquenessConstraint> constraintsGetForLabel( int labelId )
     {
         return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, UniquenessConstraintRule.class,
-                labelId, Predicates.<UniquenessConstraintRule>TRUE() );
+                labelId, Predicates.<UniquenessConstraintRule>alwaysTrue() );
     }
 
     @Override
     public Iterator<UniquenessConstraint> constraintsGetAll()
     {
         return schemaStorage.schemaRules( UNIQUENESS_CONSTRAINT_TO_RULE, SchemaRule.Kind.UNIQUENESS_CONSTRAINT,
-                Predicates.<UniquenessConstraintRule>TRUE() );
+                Predicates.<UniquenessConstraintRule>alwaysTrue() );
     }
 
     @Override

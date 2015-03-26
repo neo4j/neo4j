@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.store;
 import java.util.Collection;
 import java.util.Iterator;
 
+import org.neo4j.function.Predicate;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Functions;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
@@ -97,7 +97,7 @@ public class SchemaStorage implements SchemaRuleAccess
                 new Predicate<IndexRule>()
                 {
                     @Override
-                    public boolean accept( IndexRule item )
+                    public boolean test( IndexRule item )
                     {
                         return item.getPropertyKey() == propertyKeyId;
                     }
@@ -141,11 +141,11 @@ public class SchemaStorage implements SchemaRuleAccess
         {
             @SuppressWarnings("unchecked")
             @Override
-            public boolean accept( SchemaRule rule )
+            public boolean test( SchemaRule rule )
             {
                 return rule.getLabel() == labelId &&
                        rule.getKind().getRuleClass() == ruleType &&
-                       predicate.accept( (R) rule );
+                       predicate.test( (R) rule );
             }
         }, loadAllSchemaRules() ) );
     }
@@ -160,10 +160,10 @@ public class SchemaStorage implements SchemaRuleAccess
         {
             @SuppressWarnings("unchecked")
             @Override
-            public boolean accept( SchemaRule rule )
+            public boolean test( SchemaRule rule )
             {
                 return rule.getKind() == kind &&
-                       predicate.accept( (R) rule );
+                       predicate.test( (R) rule );
             }
         }, loadAllSchemaRules() ) );
     }
@@ -174,7 +174,7 @@ public class SchemaStorage implements SchemaRuleAccess
         Iterator<R> result = (Iterator)filter( new Predicate<SchemaRule>()
         {
             @Override
-            public boolean accept( SchemaRule rule )
+            public boolean test( SchemaRule rule )
             {
                 return ruleClass.isInstance( rule );
             }
@@ -253,7 +253,7 @@ public class SchemaStorage implements SchemaRuleAccess
                 new Predicate<UniquenessConstraintRule>()
                 {
                     @Override
-                    public boolean accept( UniquenessConstraintRule item )
+                    public boolean test( UniquenessConstraintRule item )
                     {
                         return item.containsPropertyKeyId( propertyKeyId );
                     }

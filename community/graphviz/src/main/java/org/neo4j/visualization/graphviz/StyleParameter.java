@@ -24,10 +24,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.visualization.PropertyType;
 
 /**
@@ -334,7 +335,7 @@ public interface StyleParameter
         {
             configuration.setRelationshipReverseOrderPredicate( new Predicate<Relationship>()
             {
-                public boolean accept( Relationship item )
+                public boolean test( Relationship item )
                 {
                     return reversedOrder( item );
                 }

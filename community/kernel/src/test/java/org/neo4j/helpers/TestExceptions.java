@@ -39,10 +39,10 @@ public class TestExceptions
                                                 new LevelFourException( "" ) ) ) ) );
 
         // when
-        Throwable peeled = Exceptions.peel( exception, new Predicate<Throwable>()
+        Throwable peeled = Exceptions.peel( exception, new org.neo4j.function.Predicate<Throwable>()
         {
             @Override
-            public boolean accept( Throwable item )
+            public boolean test( Throwable item )
             {
                 return !(item instanceof LevelThreeException) || !item.getMessage().contains( "include" );
             }
@@ -65,7 +65,7 @@ public class TestExceptions
                                                 new LevelFourException( "" ) ) ) ) );
 
         // when
-        Throwable peeled = Exceptions.peel( exception, Exceptions.exceptionsOfType( RuntimeException.class, LevelFourException.class ) );
+        Throwable peeled = Exceptions.peel( exception, org.neo4j.function.Predicates.<Throwable>instanceOfAny( RuntimeException.class, LevelFourException.class ) );
 
         // then
         assertEquals( expected, peeled );

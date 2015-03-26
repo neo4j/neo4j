@@ -24,7 +24,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.helpers.Predicate;
+import org.neo4j.function.Predicate;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 
 public interface ReadableRelationshipDiffSets<T> extends SuperReadableDiffSets<T,RelationshipIterator>

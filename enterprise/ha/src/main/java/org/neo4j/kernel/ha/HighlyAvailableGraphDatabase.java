@@ -49,7 +49,6 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
@@ -317,10 +316,10 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                         electionCredentialsProvider,
                         objectStreamFactory, objectStreamFactory ) );
         PaxosClusterMemberEvents localClusterEvents = new PaxosClusterMemberEvents( clusterClient, clusterClient,
-                clusterClient, clusterClient, logging, new Predicate<PaxosClusterMemberEvents.ClusterMembersSnapshot>()
+                clusterClient, clusterClient, logging, new org.neo4j.function.Predicate<PaxosClusterMemberEvents.ClusterMembersSnapshot>()
         {
             @Override
-            public boolean accept( PaxosClusterMemberEvents.ClusterMembersSnapshot item )
+            public boolean test( PaxosClusterMemberEvents.ClusterMembersSnapshot item )
             {
                 for ( MemberIsAvailable member : item.getCurrentAvailableMembers() )
                 {

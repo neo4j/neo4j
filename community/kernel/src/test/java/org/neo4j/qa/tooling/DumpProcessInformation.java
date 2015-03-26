@@ -26,15 +26,15 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.hamcrest.Matcher;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SystemOutLogging;
 
+import static org.hamcrest.Matchers.isIn;
 import static org.neo4j.helpers.Format.time;
-import static org.neo4j.helpers.Predicates.in;
 
 public class DumpProcessInformation
 {
@@ -64,7 +64,7 @@ public class DumpProcessInformation
             throws Exception
     {
         outputDirectory.mkdirs();
-        for ( Pair<Long, String> pid : getJPids( in( javaPidsContainingClassNames ) ) )
+        for ( Pair<Long, String> pid : getJPids( isIn( javaPidsContainingClassNames ) ) )
         {
             doThreadDump( pid );
             if ( includeHeapDump )
@@ -92,7 +92,7 @@ public class DumpProcessInformation
         Runtime.getRuntime().exec( cmdarray ).waitFor();
     }
     
-    public void doThreadDump( Predicate<String> processFilter ) throws Exception
+    public void doThreadDump( Matcher<String> processFilter ) throws Exception
     {
         for ( Pair<Long,String> pid : getJPids( processFilter ) )
         {
@@ -100,7 +100,7 @@ public class DumpProcessInformation
         }
     }
     
-    public Collection<Pair<Long, String>> getJPids( Predicate<String> filter ) throws Exception
+    public Collection<Pair<Long, String>> getJPids( Matcher<String> filter ) throws Exception
     {
         Process process = Runtime.getRuntime().exec( new String[] { "jps", "-l" } );
         BufferedReader reader = new BufferedReader( new InputStreamReader( process.getInputStream() ) );
@@ -124,7 +124,7 @@ public class DumpProcessInformation
             if ( name.contains( DumpProcessInformation.class.getSimpleName() ) ||
                     name.contains( "Jps" ) ||
                     name.contains( "eclipse.equinox" ) ||
-                    !filter.accept( name ) )
+                    !filter.matches( name ) )
             {
                 excludedJPids.add( pid );
                 continue;

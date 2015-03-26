@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
-import org.neo4j.helpers.Predicate;
+import org.neo4j.function.Predicate;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
@@ -70,7 +70,7 @@ public class IndexSamplingControllerFactory
             private final DoubleLongRegister output = newDoubleLongRegister();
 
             @Override
-            public boolean accept( IndexDescriptor descriptor )
+            public boolean test( IndexDescriptor descriptor )
             {
                 storeView.indexUpdatesAndSize( descriptor, output );
                 long updates = output.readFirst();
@@ -90,7 +90,7 @@ public class IndexSamplingControllerFactory
             private final DoubleLongRegister register = newDoubleLongRegister();
 
             @Override
-            public boolean accept( IndexDescriptor descriptor )
+            public boolean test( IndexDescriptor descriptor )
             {
                 boolean result = storeView.indexSample( descriptor, register ).readSecond() == 0;
                 if ( result )

@@ -24,7 +24,7 @@ import java.util.Iterator;
 
 import org.junit.Test;
 
-import org.neo4j.helpers.Predicate;
+import org.neo4j.function.Predicate;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 
 import static java.util.Arrays.asList;
@@ -250,7 +250,7 @@ public class DiffSetsTest
     private static final Predicate<Long> ODD_FILTER = new Predicate<Long>()
     {
         @Override
-        public boolean accept( Long item )
+        public boolean test( Long item )
         {
             return item % 2 == 1l;
         }

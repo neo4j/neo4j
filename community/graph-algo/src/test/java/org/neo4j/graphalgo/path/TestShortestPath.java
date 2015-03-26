@@ -30,6 +30,7 @@ import common.Neo4jAlgoTestCase;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import org.neo4j.function.Predicate;
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.impl.path.ShortestPath;
@@ -42,7 +43,6 @@ import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.traversal.BranchState;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.StandardExpander;
 import org.neo4j.kernel.Traversal;
 
@@ -273,7 +273,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         Predicate<Node> filter = new Predicate<Node>()
         {
             @Override
-            public boolean accept( Node item )
+            public boolean test( Node item )
             {
                 boolean skip = (Boolean) item.getProperty( "skip", false );
                 return !skip;

@@ -53,7 +53,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.helpers.Predicate;
+import org.neo4j.function.Predicate;
 import org.neo4j.test.ProcessStreamHandler;
 
 @SuppressWarnings( "serial" )
@@ -204,7 +204,7 @@ public abstract class SubProcess<T, P> implements Serializable
         StringBuilder result = new StringBuilder();
         for ( String part : parentClasspath.split( File.pathSeparator ) )
         {
-            if ( classPathFilter.accept( part ) )
+            if ( classPathFilter.test( part ) )
             {
                 result.append( result.length() > 0 ? File.pathSeparator : "" ).append( part );
             }

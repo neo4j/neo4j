@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import org.neo4j.helpers.Predicate;
-
 /**
  * A condition that either {@link #evaluate() evaluates} to {@code true} or {@code false},
- * like {@link Predicate}, but without an argument passed to it.
+ * like {@link org.neo4j.function.Predicate}, but without an argument passed to it.
  */
 public interface Condition
 {

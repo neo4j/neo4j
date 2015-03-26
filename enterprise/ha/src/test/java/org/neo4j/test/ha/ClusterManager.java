@@ -20,6 +20,7 @@
 package org.neo4j.test.ha;
 
 import ch.qos.logback.classic.LoggerContext;
+import org.neo4j.function.Predicate;
 import org.w3c.dom.Document;
 
 import java.io.File;
@@ -64,7 +65,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
@@ -262,7 +262,7 @@ public class ClusterManager
         return new Predicate<ClusterManager.ManagedCluster>()
         {
             @Override
-            public boolean accept( ManagedCluster cluster )
+            public boolean test( ManagedCluster cluster )
             {
                 return count( cluster.getMaster().getDependencyResolver().resolveDependency( Slaves.class ).getSlaves
                         () ) >= count;
@@ -285,7 +285,7 @@ public class ClusterManager
         return new Predicate<ClusterManager.ManagedCluster>()
         {
             @Override
-            public boolean accept( ManagedCluster cluster )
+            public boolean test( ManagedCluster cluster )
             {
                 return count( cluster.getMaster().getDependencyResolver().resolveDependency( Slaves.class ).getSlaves
                         () ) >= cluster.size() - 1;
@@ -309,7 +309,7 @@ public class ClusterManager
         return new Predicate<ClusterManager.ManagedCluster>()
         {
             @Override
-            public boolean accept( ManagedCluster cluster )
+            public boolean test( ManagedCluster cluster )
             {
                 for ( HighlyAvailableGraphDatabase graphDatabaseService : cluster.getAllMembers() )
                 {
@@ -342,7 +342,7 @@ public class ClusterManager
         return new Predicate<ClusterManager.ManagedCluster>()
         {
             @Override
-            public boolean accept( ManagedCluster cluster )
+            public boolean test( ManagedCluster cluster )
             {
                 ClusterMembers members =
                         cluster.getMaster().getDependencyResolver().resolveDependency( ClusterMembers.class );
@@ -362,9 +362,9 @@ public class ClusterManager
         return new Predicate<ManagedCluster>()
         {
             @Override
-            public boolean accept( ManagedCluster cluster )
+            public boolean test( ManagedCluster cluster )
             {
-                if ( !allSeesAllAsJoined().accept( cluster ) )
+                if ( !allSeesAllAsJoined().test( cluster ) )
                 {
                     return false;
                 }
@@ -404,7 +404,7 @@ public class ClusterManager
         return new Predicate<ManagedCluster>()
         {
             @Override
-            public boolean accept( ManagedCluster cluster )
+            public boolean test( ManagedCluster cluster )
             {
                 int nrOfMembers = cluster.size();
 
@@ -443,7 +443,7 @@ public class ClusterManager
         return new Predicate<ManagedCluster>()
         {
             @Override
-            public boolean accept( ManagedCluster item )
+            public boolean test( ManagedCluster item )
             {
                 for ( HighlyAvailableGraphDatabaseProxy member : item.members.values() )
                 {
@@ -1063,7 +1063,7 @@ public class ClusterManager
             long end = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis( maxSeconds );
             while ( System.currentTimeMillis() < end )
             {
-                if ( predicate.accept( this ) )
+                if ( predicate.test( this ) )
                 {
                     return;
                 }

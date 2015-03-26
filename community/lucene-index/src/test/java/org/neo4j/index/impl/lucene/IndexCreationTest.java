@@ -30,10 +30,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -171,7 +171,7 @@ public class IndexCreationTest
                             new Predicate<Command>()
                             {
                                 @Override
-                                public boolean accept( Command item )
+                                public boolean test( Command item )
                                 {
                                     return item instanceof IndexDefineCommand;
 

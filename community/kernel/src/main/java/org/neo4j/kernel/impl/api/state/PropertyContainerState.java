@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.api.state;
 
 import java.util.Iterator;
 
+import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.CombiningIterator;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -72,7 +72,7 @@ interface PropertyContainerState
         private final Predicate<DefinedProperty> excludePropertiesWeKnowAbout = new Predicate<DefinedProperty>()
         {
             @Override
-            public boolean accept( DefinedProperty item )
+            public boolean test( DefinedProperty item )
             {
                 return (removedProperties == null || !removedProperties.containsKey( item.propertyKeyId() ))
                        && (addedProperties == null || !addedProperties.containsKey( item.propertyKeyId() ))

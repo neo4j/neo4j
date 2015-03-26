@@ -19,9 +19,9 @@
  */
 package org.neo4j.visualization.graphviz;
 
+import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.helpers.Predicate;
 
 interface StyleConfiguration
 {
@@ -51,7 +51,13 @@ interface StyleConfiguration
 
 	void setRelationshipPropertyFomatter( PropertyFormatter format );
 
-    void setRelationshipReverseOrderPredicate( Predicate<Relationship> reversed );
+	/**
+	 * @deprecated use {@link #setRelationshipReverseOrderPredicate(Predicate)} instead
+	 */
+    @Deprecated
+    void setRelationshipReverseOrderPredicate( org.neo4j.helpers.Predicate<Relationship> reversed );
+
+	void setRelationshipReverseOrderPredicate( Predicate<Relationship> reversed );
 
     String escapeLabel( String label );
 }

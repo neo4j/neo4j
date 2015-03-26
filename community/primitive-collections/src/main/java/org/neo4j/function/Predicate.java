@@ -17,21 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.helpers;
+package org.neo4j.function;
 
 /**
- * Predicate useful for filtering.
- *
+ * Represents a predicate (boolean-valued function) of one argument.
  * @param <T> type of items
- * @deprecated use {@link org.neo4j.function.Predicate} instead
  */
-@Deprecated
 public interface Predicate<T>
 {
     /**
-     * @return whether or not to accept the {@code item}, where {@code true}
-     * means that the {@code item} is accepted and {@code false} means that
-     * it's not (i.e. didn't pass the filter).
+     * Evaluates this predicate on the given argument.
+     * @return true if the input argument matches the predicate, otherwise false
      */
-    boolean accept( T item );
+    boolean test( T item );
 }

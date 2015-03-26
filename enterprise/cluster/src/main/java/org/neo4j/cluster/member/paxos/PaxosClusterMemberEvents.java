@@ -45,10 +45,10 @@ import org.neo4j.cluster.protocol.heartbeat.Heartbeat;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.cluster.protocol.snapshot.Snapshot;
 import org.neo4j.cluster.protocol.snapshot.SnapshotProvider;
+import org.neo4j.function.Predicate;
 import org.neo4j.helpers.Function2;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -181,7 +181,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
         {
             clusterMembersSnapshot = ClusterMembersSnapshot.class.cast( input.readObject() );
 
-            if ( !snapshotValidator.accept( clusterMembersSnapshot ) )
+            if ( !snapshotValidator.test( clusterMembersSnapshot ) )
             {
                 executor.submit( new Runnable()
                 {
@@ -222,7 +222,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
             return Iterables.append( newMessage, Iterables.filter( new Predicate<MemberIsAvailable>()
             {
                 @Override
-                public boolean accept( MemberIsAvailable item )
+                public boolean test( MemberIsAvailable item )
                 {
                     return not( in( newMessage.getInstanceId() ) ).accept( item.getInstanceId() );
                 }
@@ -254,7 +254,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
             availableMembers = toList( filter( new Predicate<MemberIsAvailable>()
             {
                 @Override
-                public boolean accept( MemberIsAvailable item )
+                public boolean test( MemberIsAvailable item )
                 {
                     return !item.getInstanceId().equals( member );
                 }
@@ -266,7 +266,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
             availableMembers = toList( filter( new Predicate<MemberIsAvailable>()
             {
                 @Override
-                public boolean accept( MemberIsAvailable item )
+                public boolean test( MemberIsAvailable item )
                 {
                     boolean matchByUriOrId = item.getClusterUri().equals( member ) || item.getInstanceId().equals( id );
                     boolean matchByRole = item.getRole().equals( role );
@@ -286,7 +286,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
             return toList( Iterables.filter( new Predicate<MemberIsAvailable>()
             {
                 @Override
-                public boolean accept( MemberIsAvailable item )
+                public boolean test( MemberIsAvailable item )
                 {
                     return item.getInstanceId().equals( memberId );
                 }

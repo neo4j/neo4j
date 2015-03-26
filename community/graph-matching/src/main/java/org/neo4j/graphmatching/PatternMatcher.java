@@ -26,12 +26,12 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphmatching.filter.AbstractFilterExpression;
 import org.neo4j.graphmatching.filter.FilterBinaryNode;
 import org.neo4j.graphmatching.filter.FilterExpression;
 import org.neo4j.graphmatching.filter.FilterValueGetter;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.FilteringIterable;
 
 /**
@@ -269,7 +269,7 @@ public class PatternMatcher
         {
             super( source, new Predicate<PatternMatch>()
             {
-                public boolean accept( PatternMatch item )
+                public boolean test( PatternMatch item )
                 {
                     Set<PatternGroup> calculatedGroups = new HashSet<PatternGroup>();
                     for ( PatternElement element : item.getElements() )

@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.helpers.Predicate;
+import org.neo4j.function.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 
 import static org.neo4j.helpers.collection.Iterables.append;
@@ -137,7 +137,7 @@ public class Monitors
                 monitorListeners.put( new Predicate<Method>()
                 {
                     @Override
-                    public boolean accept( Method item )
+                    public boolean test( Method item )
                     {
                         return method.equals( item );
                     }
@@ -198,7 +198,7 @@ public class Monitors
         for ( Map.Entry<Predicate<Method>, MonitorListenerInvocationHandler> handlerEntry : monitorListeners
                 .entrySet() )
         {
-            if ( handlerEntry.getKey().accept( method ) )
+            if ( handlerEntry.getKey().test( method ) )
             {
                 listeners.add( handlerEntry.getValue() );
             }

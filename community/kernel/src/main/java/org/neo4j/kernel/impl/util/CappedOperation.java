@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.util;
 
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.function.Predicate;
 import org.neo4j.helpers.Clock;
-import org.neo4j.helpers.Predicate;
 
 public abstract class CappedOperation<T>
 {
@@ -40,7 +40,7 @@ public abstract class CappedOperation<T>
 
     public void event( T event )
     {
-        if ( opener.accept( event ) )
+        if ( opener.test( event ) )
         {
             triggered( event );
         }
@@ -60,13 +60,13 @@ public abstract class CappedOperation<T>
         {
             @SuppressWarnings( "unchecked" )
             @Override
-            public synchronized boolean accept( T item )
+            public synchronized boolean test( T item )
             {
                 boolean accepted = false;
                 // Pass it through all since they are probably stateful
                 for ( Switch<T> filter : filters )
                 {
-                    if ( filter.accept( item ) )
+                    if ( filter.test( item ) )
                     {
                         accepted = true;
                     }
@@ -104,7 +104,7 @@ public abstract class CappedOperation<T>
             private long lastSeen;
 
             @Override
-            public boolean accept( T item )
+            public boolean test( T item )
             {
                 return clock.currentTimeMillis()-lastSeen >= timeMillis;
             }
@@ -124,7 +124,7 @@ public abstract class CappedOperation<T>
             private long count;
 
             @Override
-            public boolean accept( T item )
+            public boolean test( T item )
             {
                 return ++count >= maxCount;
             }
@@ -144,7 +144,7 @@ public abstract class CappedOperation<T>
             private T lastSeenItem;
 
             @Override
-            public boolean accept( T item )
+            public boolean test( T item )
             {
                 boolean accepted = lastSeenItem == null || !lastSeenItem.equals( item );
                 lastSeenItem = item;
@@ -165,7 +165,7 @@ public abstract class CappedOperation<T>
             private Class lastSeenItemClass;
 
             @Override
-            public boolean accept( T item )
+            public boolean test( T item )
             {
                 boolean accepted = lastSeenItemClass == null || !lastSeenItemClass.equals( item.getClass() );
                 lastSeenItemClass = item.getClass();

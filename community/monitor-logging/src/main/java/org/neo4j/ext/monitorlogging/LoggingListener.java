@@ -22,7 +22,7 @@ package org.neo4j.ext.monitorlogging;
 import java.lang.reflect.Method;
 import java.util.Map;
 
-import org.neo4j.helpers.Predicate;
+import org.neo4j.function.Predicate;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.MonitorListenerInvocationHandler;
 
@@ -35,7 +35,7 @@ public class LoggingListener implements MonitorListenerInvocationHandler
     public final Predicate<Method> predicate = new Predicate<Method>()
     {
         @Override
-        public boolean accept( Method item )
+        public boolean test( Method item )
         {
             Class<?> clazz = item.getDeclaringClass();
             return classes.containsKey( clazz );

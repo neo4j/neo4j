@@ -35,10 +35,10 @@ import org.neo4j.test.TargetDirectory;
 import static java.lang.Runtime.getRuntime;
 import static java.lang.System.getProperty;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import static org.neo4j.helpers.Predicates.stringContains;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
@@ -57,7 +57,7 @@ public class DumpProcessInformationTest
         // WHEN
         // dumping process information for that spawned process (knowing it's in the expected position)
         DumpProcessInformation dumper = new DumpProcessInformation( new DevNullLoggingService(), directory );
-        Pair<Long, String> pid = single( dumper.getJPids( stringContains( DumpableProcess.class.getSimpleName() ) ) );
+        Pair<Long, String> pid = single( dumper.getJPids( containsString( DumpableProcess.class.getSimpleName() ) ) );
         File threaddumpFile = dumper.doThreadDump( pid );
         process.destroy();
 

@@ -30,8 +30,8 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Function;
+import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -915,7 +915,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
             new Predicate<UniquenessConstraint>()
             {
                 @Override
-                public boolean accept( UniquenessConstraint item )
+                public boolean test( UniquenessConstraint item )
                 {
                     return item.propertyKeyId() == propertyKey;
                 }

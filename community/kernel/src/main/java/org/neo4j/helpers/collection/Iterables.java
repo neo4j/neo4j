@@ -31,10 +31,10 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
+import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.function.Function;
-import org.neo4j.helpers.Predicate;
 
 import static java.util.Arrays.asList;
 
@@ -216,9 +216,27 @@ public final class Iterables
         return c;
     }
 
+    /**
+     * @deprecated use {@link #filter(Predicate, Iterable)} instead
+     */
+    @Deprecated
+    public static <X> Iterable<X> filter( org.neo4j.helpers.Predicate<? super X> specification, Iterable<X> i )
+    {
+        return new FilterIterable<>( i, org.neo4j.helpers.Predicates.upgrade( specification ) );
+    }
+
     public static <X> Iterable<X> filter( Predicate<? super X> specification, Iterable<X> i )
     {
         return new FilterIterable<>( i, specification );
+    }
+
+    /**
+     * @deprecated use {@link #filter(Predicate, Iterator)} instead
+     */
+    @Deprecated
+    public static <X> Iterator<X> filter( org.neo4j.helpers.Predicate<? super X> specification, Iterator<X> i )
+    {
+        return new FilterIterable.FilterIterator<>( i, org.neo4j.helpers.Predicates.upgrade( specification ) );
     }
 
     public static <X> Iterator<X> filter( Predicate<? super X> specification, Iterator<X> i )
@@ -683,9 +701,9 @@ public final class Iterables
     {
         private final Iterable<T> iterable;
 
-        private final Predicate<? super T> specification;
+        private final org.neo4j.function.Predicate<? super T> specification;
 
-        public FilterIterable( Iterable<T> iterable, Predicate<? super T> specification )
+        public FilterIterable( Iterable<T> iterable, org.neo4j.function.Predicate<? super T> specification )
         {
             this.iterable = iterable;
             this.specification = specification;
@@ -720,7 +738,7 @@ public final class Iterables
                 while ( !found && iterator.hasNext() )
                 {
                     T currentValue = iterator.next();
-                    boolean satisfies = specification.accept( currentValue );
+                    boolean satisfies = specification.test( currentValue );
 
                     if ( satisfies )
                     {

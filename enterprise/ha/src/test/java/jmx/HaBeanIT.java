@@ -40,11 +40,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.jmx.Kernel;
@@ -302,7 +302,7 @@ public class HaBeanIT
         return first( filter( new Predicate<URI>()
         {
             @Override
-            public boolean accept( URI item )
+            public boolean test( URI item )
             {
                 return item.getScheme().equals( scheme );
             }
@@ -355,7 +355,7 @@ public class HaBeanIT
         boolean conditionMet = false;
         while ( System.currentTimeMillis() < end )
         {
-            conditionMet = predicate.accept( member( ha.getInstancesInCluster(), 2 ) );
+            conditionMet = predicate.test( member( ha.getInstancesInCluster(), 2 ) );
             if ( conditionMet )
             {
                 return;
@@ -370,7 +370,7 @@ public class HaBeanIT
         return new Predicate<ClusterMemberInfo>()
         {
             @Override
-            public boolean accept( ClusterMemberInfo item )
+            public boolean test( ClusterMemberInfo item )
             {
                 return item.isAvailable() == available;
             }
@@ -382,7 +382,7 @@ public class HaBeanIT
         return new Predicate<ClusterMemberInfo>()
         {
             @Override
-            public boolean accept( ClusterMemberInfo item )
+            public boolean test( ClusterMemberInfo item )
             {
                 return item.isAlive() == alive;
             }

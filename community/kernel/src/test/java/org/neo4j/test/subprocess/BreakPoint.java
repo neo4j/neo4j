@@ -19,13 +19,13 @@
  */
 package org.neo4j.test.subprocess;
 
+import org.neo4j.function.Predicate;
+
 import java.io.PrintStream;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.neo4j.helpers.Predicate;
 
 public abstract class BreakPoint implements DebuggerDeadlockCallback
 {
@@ -198,7 +198,7 @@ public abstract class BreakPoint implements DebuggerDeadlockCallback
     public static final Predicate<StackTraceElement[]> ALL = new Predicate<StackTraceElement[]>()
     {
         @Override
-        public boolean accept( StackTraceElement[] item )
+        public boolean test( StackTraceElement[] item )
         {
             return true;
         }
@@ -209,9 +209,9 @@ public abstract class BreakPoint implements DebuggerDeadlockCallback
         return new Predicate<StackTraceElement[]>()
         {
             @Override
-            public boolean accept( StackTraceElement[] item )
+            public boolean test( StackTraceElement[] item )
             {
-                return !predicate.accept( item );
+                return !predicate.test( item );
             }
         };
     }
@@ -221,7 +221,7 @@ public abstract class BreakPoint implements DebuggerDeadlockCallback
         return new Predicate<StackTraceElement[]>()
         {
             @Override
-            public boolean accept( StackTraceElement[] item )
+            public boolean test( StackTraceElement[] item )
             {
                 for ( StackTraceElement element : item )
                     if ( element.getClassName().equals( cls.getName() ) )
@@ -256,7 +256,7 @@ public abstract class BreakPoint implements DebuggerDeadlockCallback
                 if ( ++numberOfCalls <= letNumberOfCallsPass )
                     return;
 
-                if ( !stackTraceMustContain.accept( debug.thread().getStackTrace() ) )
+                if ( !stackTraceMustContain.test( debug.thread().getStackTrace() ) )
                     return;
                 
                 debug.thread().suspend( null );

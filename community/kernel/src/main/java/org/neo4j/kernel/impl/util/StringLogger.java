@@ -256,7 +256,7 @@ public abstract class StringLogger
             @Override
             public void logLongMessage( String msg, Visitor<LineLogger, RuntimeException> source, boolean flush )
             {
-                if ( capSwitch.accept( msg ) )
+                if ( capSwitch.test( msg ) )
                 {
                     delegate.logLongMessage( msg, source, flush );
                 }
@@ -265,7 +265,7 @@ public abstract class StringLogger
             @Override
             public void logMessage( String msg, boolean flush )
             {
-                if ( capSwitch.accept( msg ) )
+                if ( capSwitch.test( msg ) )
                 {
                     delegate.logMessage( msg, flush );
                     capSwitch.reset();
@@ -275,7 +275,7 @@ public abstract class StringLogger
             @Override
             public void logMessage( String msg, LogMarker marker )
             {
-                if ( capSwitch.accept( msg ) )
+                if ( capSwitch.test( msg ) )
                 {
                     delegate.logMessage( msg, marker );
                 }
@@ -284,7 +284,7 @@ public abstract class StringLogger
             @Override
             public void logMessage( String msg, Throwable cause, boolean flush )
             {
-                if ( capSwitch.accept( msg ) )
+                if ( capSwitch.test( msg ) )
                 {
                     delegate.logMessage( msg, cause, flush );
                 }
@@ -311,7 +311,7 @@ public abstract class StringLogger
             @Override
             protected void logLine( String line )
             {
-                if ( capSwitch.accept( line ) )
+                if ( capSwitch.test( line ) )
                 {
                     delegate.logLine( line );
                 }

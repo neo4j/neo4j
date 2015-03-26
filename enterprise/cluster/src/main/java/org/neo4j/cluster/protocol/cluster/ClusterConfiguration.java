@@ -29,8 +29,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.function.Predicate;
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -209,7 +209,7 @@ public class ClusterConfiguration
         }, Iterables.filter( new Predicate<Map.Entry<String, InstanceId>>()
         {
             @Override
-            public boolean accept( Map.Entry<String, InstanceId> item )
+            public boolean test( Map.Entry<String, InstanceId> item )
             {
                 return item.getValue().equals( node );
             }

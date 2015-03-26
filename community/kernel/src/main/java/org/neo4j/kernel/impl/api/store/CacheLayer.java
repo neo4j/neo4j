@@ -43,9 +43,9 @@ import java.util.Iterator;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -159,7 +159,7 @@ public class CacheLayer implements StoreReadLayer
         Iterator<SchemaRule> filteredRules = filter( new Predicate<SchemaRule>()
         {
             @Override
-            public boolean accept( SchemaRule item )
+            public boolean test( SchemaRule item )
             {
                 return item.getKind() == kind;
             }
