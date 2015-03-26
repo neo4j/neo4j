@@ -33,6 +33,8 @@ angular.module('neo4jApp.controllers')
       'UsageDataCollectionService'
       ($scope, $window, Server, Frame, AuthService, Settings, motdService, UDC) ->
         refresh = ->
+          return '' if $scope.unauthorized || $scope.offline
+
           $scope.labels = Server.labels()
           $scope.relationships = Server.relationships()
           $scope.propertyKeys = Server.propertyKeys()
@@ -63,7 +65,6 @@ angular.module('neo4jApp.controllers')
             type: "GPLv3"
             url: "http://www.gnu.org/licenses/gpl.html"
             edition: "Enterprise" # TODO: determine edition via REST
-            hasData: Server.hasData()
 
         $scope.$on 'db:changed:labels', refresh
 
@@ -100,6 +101,7 @@ angular.module('neo4jApp.controllers')
         )
 
         $scope.$watch 'server', (val) ->
+          return '' if not val
           $scope.neo4j.version = val.neo4j_version
 
           if val.neo4j_version then $scope.motd.setCallToActionVersion(val.neo4j_version)
@@ -112,6 +114,7 @@ angular.module('neo4jApp.controllers')
     '$rootScope'
     'Editor'
     ($scope, Editor) ->
+      $scope.unauthorized = yes
       # everything should be assembled
       # Editor.setContent(":play intro")
       # Editor.execScript(":play intro")
