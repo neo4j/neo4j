@@ -17,13 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.function;
 
 /**
- * A condition that either {@link #evaluate() evaluates} to {@code true} or {@code false},
- * like {@link org.neo4j.function.Predicate}, but without an argument passed to it.
+ * Represents a supplier of boolean-valued results. This is the boolean-producing primitive specialization of Supplier.
+ * There is no requirement that a new or distinct result be returned each time the supplier is invoked.
  */
-public interface Condition
+public interface BooleanSupplier
 {
-    boolean evaluate();
+    /**
+     * Gets a result.
+     * @return a result
+     */
+    boolean getAsBoolean();
 }

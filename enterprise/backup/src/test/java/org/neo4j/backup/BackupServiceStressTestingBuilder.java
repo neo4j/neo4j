@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.function.BooleanSupplier;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
@@ -42,7 +43,6 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.transaction.log.LogRotation;
-import org.neo4j.kernel.impl.util.Condition;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -54,26 +54,26 @@ import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 public class BackupServiceStressTestingBuilder
 {
-    private Condition untilCondition;
+    private BooleanSupplier untilCondition;
     private File storeDir;
     private File workingDirectory;
     private String backupHostname = "localhost";
     private int backupPort = 8200;
 
-    public static Condition untilTimeExpired( long duration, TimeUnit unit )
+    public static BooleanSupplier untilTimeExpired( long duration, TimeUnit unit )
     {
         final long endTimeInMilliseconds = currentTimeMillis() + unit.toMillis( duration );
-        return new Condition()
+        return new BooleanSupplier()
         {
             @Override
-            public boolean evaluate()
+            public boolean getAsBoolean()
             {
                 return currentTimeMillis() <= endTimeInMilliseconds;
             }
         };
     }
 
-    public BackupServiceStressTestingBuilder until( Condition untilCondition )
+    public BackupServiceStressTestingBuilder until( BooleanSupplier untilCondition )
     {
         Objects.requireNonNull( untilCondition );
         this.untilCondition = untilCondition;
@@ -116,14 +116,14 @@ public class BackupServiceStressTestingBuilder
     {
         private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
 
-        private final Condition until;
+        private final BooleanSupplier until;
         private final File storeDir;
         private final String backupHostname;
         private final int backupPort;
         private final File backupDir;
         private final File brokenDir;
 
-        private RunTest( Condition until, File storeDir, File workingDir, String backupHostname, int backupPort )
+        private RunTest( BooleanSupplier until, File storeDir, File workingDir, String backupHostname, int backupPort )
         {
             this.until = until;
             this.storeDir = storeDir;
@@ -175,7 +175,7 @@ public class BackupServiceStressTestingBuilder
                     @Override
                     public void run()
                     {
-                        while ( keepGoing.get() && until.evaluate() )
+                        while ( keepGoing.get() && until.getAsBoolean() )
                         {
                             createSomeData( db );
                         }
@@ -191,7 +191,7 @@ public class BackupServiceStressTestingBuilder
                     @Override
                     public void run()
                     {
-                        while ( keepGoing.get() && until.evaluate() )
+                        while ( keepGoing.get() && until.getAsBoolean() )
                         {
                             cleanup( backupDir );
                             BackupService.BackupOutcome backupOutcome =
@@ -237,7 +237,7 @@ public class BackupServiceStressTestingBuilder
 
                 } );
 
-                while ( keepGoing.get() && until.evaluate() )
+                while ( keepGoing.get() && until.getAsBoolean() )
                 {
                     Thread.sleep( 500 );
                 }
