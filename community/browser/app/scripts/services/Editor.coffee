@@ -49,6 +49,7 @@ angular.module('neo4jApp.services')
           else
             @addToHistory(input) unless (Settings.filemode and @document?.id)
             @maximize(no)
+            @document = null
 
         execCurrent: ->
           @execScript(@content)
