@@ -235,17 +235,17 @@ public abstract class AbstractNeoServer implements NeoServer
         }
         catch ( Throwable t )
         {
+            // Make sure we don't leak rrd db files
+            stopRrdDb();
+
+            // If the database has been started, attempt to cleanly shut it down to avoid unclean shutdowns.
+            life.shutdown();
+
             // Guard against poor operating systems that don't clear interrupt flags
             // after having handled interrupts (looking at you, Bill).
             Thread.interrupted();
             if ( interruptStartupTimer.wasTriggered() )
             {
-                // Make sure we don't leak rrd db files
-                stopRrdDb();
-
-                // If the database has been started, attempt to cleanly shut it down to avoid unclean shutdowns.
-                life.shutdown();
-
                 throw new ServerStartupException(
                         "Startup took longer than " + interruptStartupTimer.getTimeoutMillis() + "ms, " +
                                 "and was stopped. You can disable this behavior by setting '" + ServerInternalSettings.startup_timeout.name() + "' to 0.",
