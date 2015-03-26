@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 
-case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelationship, LogicalPlan] {
+case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
 
   import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.idp.expandSolverStep._
 

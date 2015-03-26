@@ -50,7 +50,7 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
                                maxTableSize: Int = 256,
                                leafPlanFinder: LogicalLeafPlan.Finder = leafPlanOptions,
                                config: QueryPlannerConfiguration = QueryPlannerConfiguration.default,
-                               solvers: Seq[QueryGraph => IDPSolverStep[PatternRelationship, LogicalPlan]] = Seq(joinSolverStep(_), expandSolverStep(_)),
+                               solvers: Seq[QueryGraph => IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext]] = Seq(joinSolverStep(_), expandSolverStep(_)),
                                optionalSolvers: Seq[OptionalSolver] = Seq(applyOptional, outerHashJoin))
   extends QueryGraphSolver with PatternExpressionSolving {
 
@@ -103,9 +103,9 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
 
       val generators = solvers.map(_(qg))
       val selectingGenerators = generators.map(_.map(kit.select))
-      val generator = selectingGenerators.foldLeft(IDPSolverStep.empty[PatternRelationship, LogicalPlan])(_ ++ _)
+      val generator = selectingGenerators.foldLeft(IDPSolverStep.empty[PatternRelationship, LogicalPlan, LogicalPlanningContext])(_ ++ _)
 
-      val solver = new IDPSolver[PatternRelationship, LogicalPlan](
+      val solver = new IDPSolver[PatternRelationship, LogicalPlan, LogicalPlanningContext](
         generator = generator,
         projectingSelector = kit.pickBest,
         maxTableSize = maxTableSize,

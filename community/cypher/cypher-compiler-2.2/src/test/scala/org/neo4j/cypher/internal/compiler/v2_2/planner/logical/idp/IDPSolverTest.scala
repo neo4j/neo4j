@@ -31,10 +31,10 @@ import scala.collection.immutable.BitSet
 
 class IDPSolverTest extends CypherFunSuite {
 
-  private implicit val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[CardinalityModel]), mock[Metrics], mock[SemanticTable], mock[QueryGraphSolver])
+  private implicit val context = ()
 
   test("Solves a small toy problem") {
-    val solver = new IDPSolver[Char, String](
+    val solver = new IDPSolver[Char, String, Unit](
       monitor = mock[IDPSolverMonitor],
       generator = stringAppendingSolverStep,
       projectingSelector = firstLongest,
@@ -56,7 +56,7 @@ class IDPSolverTest extends CypherFunSuite {
   test("Compacts table at size limit") {
     var table: IDPTable[String] = null
     val monitor = mock[IDPSolverMonitor]
-    val solver = new IDPSolver[Char, String](
+    val solver = new IDPSolver[Char, String, Unit](
       monitor = monitor,
       generator = stringAppendingSolverStep,
       projectingSelector = firstLongest,
@@ -112,9 +112,9 @@ class IDPSolverTest extends CypherFunSuite {
     }
   }
 
-  private object stringAppendingSolverStep extends IDPSolverStep[Char, String] {
+  private object stringAppendingSolverStep extends IDPSolverStep[Char, String, Unit] {
     override def apply(registry: IdRegistry[Char], goal: Goal, table: IDPCache[String])
-                      (implicit context: LogicalPlanningContext): Iterator[String] = {
+                      (implicit context: Unit): Iterator[String] = {
       val goalSize = goal.size
       for (
         leftGoal <- goal.subsets if leftGoal.size <= goalSize;
