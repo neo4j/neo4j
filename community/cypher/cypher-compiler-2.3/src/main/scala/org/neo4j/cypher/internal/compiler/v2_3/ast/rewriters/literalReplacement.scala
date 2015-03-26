@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{Parameter, ASTNode, Literal}
+import org.neo4j.cypher.internal.compiler.v2_3.ast._
 
 object literalReplacement {
   type LiteralReplacements = IdentityMap[Literal, Parameter]
@@ -43,6 +43,8 @@ object literalReplacement {
       (acc, _) => n.properties.treeFold(acc)(literalMatcher)
     case r: ast.RelationshipPattern =>
       (acc, _) => r.properties.treeFold(acc)(literalMatcher)
+    case ast.LikePattern(_: ast.StringLiteral) =>
+      (acc, _) => acc
     case l: ast.StringLiteral =>
       (acc, _) => acc + (l -> ast.Parameter(s"  AUTOSTRING${acc.size}")(l.position))
     case l: ast.IntegerLiteral =>
@@ -54,6 +56,7 @@ object literalReplacement {
   }
 
   def apply(term: ASTNode): (Rewriter, Map[String, Any]) = {
+    // TODO: Replace with .exists
     val containsParameter: Boolean = term.treeFold(false) {
       case term: Parameter =>
         (acc, _) => true

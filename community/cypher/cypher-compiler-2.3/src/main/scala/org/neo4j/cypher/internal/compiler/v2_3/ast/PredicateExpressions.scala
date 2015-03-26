@@ -82,7 +82,7 @@ case class InvalidNotEquals(lhs: Expression, rhs: Expression)(val position: Inpu
   override def canonicalOperatorSymbol = "!="
 }
 
-case class RegexMatch(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression  with InfixFunctionTyping {
+case class RegexMatch(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
@@ -97,6 +97,26 @@ case class In(lhs: Expression, rhs: Expression)(val position: InputPosition) ext
     rhs.semanticCheck(ctx) chain
     rhs.expectType(lhs.types(_).wrapInCollection) chain
     specifyType(CTBoolean)
+}
+
+final case class LikePattern(expr: Expression) extends ASTNode {
+  def position = expr.position
+}
+
+case class Like(lhs: Expression, pattern: LikePattern, caseInsensitive: Boolean = false)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
+  def rhs = pattern.expr
+
+  val signatures = Vector(
+    Signature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
+  )
+}
+
+case class NotLike(lhs: Expression, pattern: LikePattern, caseInsensitive: Boolean = false)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
+  def rhs = pattern.expr
+
+  val signatures = Vector(
+    Signature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
+  )
 }
 
 case class IsNull(lhs: Expression)(val position: InputPosition) extends Expression with RightUnaryOperatorExpression with PostfixFunctionTyping {
