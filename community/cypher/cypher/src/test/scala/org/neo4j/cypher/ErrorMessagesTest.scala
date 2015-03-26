@@ -62,6 +62,26 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
     )
   }
 
+  test("should consider extra offset in syntax error messages when there are pre-parsing options") {
+    expectSyntaxError("PROFILE XX", "", 8)
+  }
+
+  test("should consider extra offset in semantic error messages when there are pre-parsing options") {
+    expectSyntaxError(
+      "explain match (a) where id(a) = 0 return dontDoIt(a)",
+      "Unknown function 'dontDoIt' (line 1, column 42 (offset: 41))",
+      41
+    )
+  }
+
+  test("should consider extra offset in semantic error messages when there are pre-parsing options - multiline") {
+    expectSyntaxError(
+      "explain\nmatch (a) where id(a) = 0 return dontDoIt(a)",
+      "Unknown function 'dontDoIt' (line 2, column 34 (offset: 41))",
+      41
+    )
+  }
+
   test("noIndexName") {
     expectSyntaxError(
       "start a = node(name=\"sebastian\") match a-[:WORKED_ON]-b return b",

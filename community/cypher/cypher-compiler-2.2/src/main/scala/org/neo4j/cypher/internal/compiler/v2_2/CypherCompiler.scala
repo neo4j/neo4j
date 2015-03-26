@@ -100,7 +100,7 @@ object CypherCompilerFactory {
 
   private def logStalePlanRemovalMonitor(log: InfoLogger) = new AstCacheMonitor {
     override def cacheDiscard(key: Statement) {
-      log.info(s"Discarded stale query from the query cache: ${key}")
+      log.info(s"Discarded stale query from the query cache: $key")
     }
   }
 }
@@ -114,17 +114,17 @@ case class CypherCompiler(parser: CypherParser,
                           cacheMonitor: CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan]],
                           monitors: Monitors) {
 
-  def planQuery(queryText: String, context: PlanContext): (ExecutionPlan, Map[String, Any]) =
-    planPreparedQuery(prepareQuery(queryText), context)
+  def planQuery(queryText: String, context: PlanContext, offset: Option[InputPosition] = None): (ExecutionPlan, Map[String, Any]) =
+    planPreparedQuery(prepareQuery(queryText, offset), context)
 
-  def prepareQuery(queryText: String): PreparedQuery = {
-    val parsedStatement = parser.parse(queryText)
+  def prepareQuery(queryText: String, offset: Option[InputPosition] = None): PreparedQuery = {
+    val parsedStatement = parser.parse(queryText, offset)
 
     val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
-    val originalSemanticState = semanticChecker.check(queryText, cleanedStatement)
+    val originalSemanticState = semanticChecker.check(queryText, cleanedStatement, offset)
 
     val (rewrittenStatement, extractedParams, postConditions) = astRewriter.rewrite(queryText, cleanedStatement, originalSemanticState)
-    val postRewriteSemanticState = semanticChecker.check(queryText, rewrittenStatement)
+    val postRewriteSemanticState = semanticChecker.check(queryText, rewrittenStatement, offset)
 
     val table = SemanticTable(types = postRewriteSemanticState.typeTable, recordedScopes = postRewriteSemanticState.recordedScopes)
     PreparedQuery(rewrittenStatement, queryText, extractedParams)(table, postConditions, postRewriteSemanticState.scopeTree)

@@ -38,7 +38,8 @@ object CypherCompiler {
   val STATISTICS_DIVERGENCE_THRESHOLD = 0.5
 }
 
-case class PreParsedQuery(statement: String, version: CypherVersion, executionMode: ExecutionMode, planner: PlannerName) {
+case class PreParsedQuery(statement: String, version: CypherVersion, executionMode: ExecutionMode, planner: PlannerName)
+                         (val offset: InputPosition) {
   val statementWithVersionAndPlanner = s"CYPHER ${version.name} PLANNER ${planner.name} $statement"
 }
 
@@ -65,7 +66,7 @@ class CypherCompiler(graph: GraphDatabaseService,
   @throws(classOf[SyntaxException])
   def preParseQuery(queryText: String): PreParsedQuery = {
     val queryWithOptions = optionParser(queryText)
-    val preParsedQuery: PreParsedQuery = preParse(queryWithOptions)
+    val preParsedQuery = preParse(queryWithOptions)
     preParsedQuery
   }
 
@@ -74,14 +75,15 @@ class CypherCompiler(graph: GraphDatabaseService,
     val version = preParsedQuery.version
     val planner = preParsedQuery.planner
     val statementAsText = preParsedQuery.statement
+    val offset = preParsedQuery.offset
 
     (version, planner) match {
-      case (CypherVersion.v2_2, ConservativePlannerName) => compatibilityFor2_2.produceParsedQuery(statementAsText)
-      case (CypherVersion.v2_2, CostPlannerName)         => compatibilityFor2_2Cost.produceParsedQuery(statementAsText)
-      case (CypherVersion.v2_2, IDPPlannerName)          => compatibilityFor2_2IDP.produceParsedQuery(statementAsText)
-      case (CypherVersion.v2_2, DPPlannerName)           => compatibilityFor2_2DP.produceParsedQuery(statementAsText)
-      case (CypherVersion.v2_2, RulePlannerName)         => compatibilityFor2_2Rule.produceParsedQuery(statementAsText)
-      case (CypherVersion.v2_2, _)                   => compatibilityFor2_2.produceParsedQuery(statementAsText)
+      case (CypherVersion.v2_2, ConservativePlannerName) => compatibilityFor2_2.produceParsedQuery(statementAsText, offset)
+      case (CypherVersion.v2_2, CostPlannerName)         => compatibilityFor2_2Cost.produceParsedQuery(statementAsText, offset)
+      case (CypherVersion.v2_2, IDPPlannerName)          => compatibilityFor2_2IDP.produceParsedQuery(statementAsText, offset)
+      case (CypherVersion.v2_2, DPPlannerName)           => compatibilityFor2_2DP.produceParsedQuery(statementAsText, offset)
+      case (CypherVersion.v2_2, RulePlannerName)         => compatibilityFor2_2Rule.produceParsedQuery(statementAsText, offset)
+      case (CypherVersion.v2_2, _)                   => compatibilityFor2_2.produceParsedQuery(statementAsText, offset)
       case (CypherVersion.v2_1, _)                   => compatibilityFor2_1.parseQuery(statementAsText)
       case (CypherVersion.v2_0, _)                   => compatibilityFor2_0.parseQuery(statementAsText)
       case (CypherVersion.v1_9, _)                   => compatibilityFor1_9.parseQuery(statementAsText)
@@ -103,12 +105,11 @@ class CypherCompiler(graph: GraphDatabaseService,
 
     val executionMode: ExecutionMode = calculateExecutionMode(queryWithOption.options)
     val planner = calculatePlanner(queryWithOption.options, cypherVersion)
-    if (executionMode == ExplainMode &&
-      cypherVersion != CypherVersion.v2_2) {
+    if (executionMode == ExplainMode && cypherVersion != CypherVersion.v2_2) {
       throw new InvalidArgumentException("EXPLAIN not supported in versions older than Neo4j v2.2")
     }
 
-    PreParsedQuery(queryWithOption.statement, cypherVersion, executionMode, planner)
+    PreParsedQuery(queryWithOption.statement, cypherVersion, executionMode, planner)(queryWithOption.offset)
   }
 
   private def calculateExecutionMode(options: Seq[CypherOption]) = {

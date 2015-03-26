@@ -30,8 +30,8 @@ class CypherParser(monitor: ParserMonitor[ast.Statement]) extends Parser
 
 
   @throws(classOf[SyntaxException])
-  def parse(queryText: String): ast.Statement =
-    parseOrThrow(queryText, CypherParser.Statements, Some(monitor))
+  def parse(queryText: String, offset: Option[InputPosition] = None): ast.Statement =
+    parseOrThrow(queryText, offset, CypherParser.Statements, Some(monitor))
 }
 
 object CypherParser extends Parser with Statement with Expressions {
