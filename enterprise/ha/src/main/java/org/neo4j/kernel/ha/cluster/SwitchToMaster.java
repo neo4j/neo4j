@@ -52,20 +52,20 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.MASTER;
 
-public class SwitchToMaster
+public class SwitchToMaster implements AutoCloseable
 {
-    private final Logging logging;
-    private final ConsoleLogger console;
-    private final GraphDatabaseAPI graphDb;
-    private final HaIdGeneratorFactory idGeneratorFactory;
-    private final Config config;
-    private final Provider<SlaveFactory> slaveFactorySupplier;
-    private final MasterImpl.Monitor masterImplMonitor;
-    private final DelegateInvocationHandler<Master> masterDelegateHandler;
-    private final ClusterMemberAvailability clusterMemberAvailability;
-    private final DataSourceManager dataSourceManager;
-    private final ByteCounterMonitor masterByteCounterMonitor;
-    private final RequestMonitor masterRequestMonitor;
+    private Logging logging;
+    private ConsoleLogger console;
+    private GraphDatabaseAPI graphDb;
+    private HaIdGeneratorFactory idGeneratorFactory;
+    private Config config;
+    private Provider<SlaveFactory> slaveFactorySupplier;
+    private MasterImpl.Monitor masterImplMonitor;
+    private DelegateInvocationHandler<Master> masterDelegateHandler;
+    private ClusterMemberAvailability clusterMemberAvailability;
+    private DataSourceManager dataSourceManager;
+    private ByteCounterMonitor masterByteCounterMonitor;
+    private RequestMonitor masterRequestMonitor;
 
     public SwitchToMaster( Logging logging, ConsoleLogger console, GraphDatabaseAPI graphDb,
             HaIdGeneratorFactory idGeneratorFactory, Config config, Provider<SlaveFactory> slaveFactorySupplier,
@@ -183,5 +183,22 @@ public class SwitchToMaster
     private InstanceId myId()
     {
         return config.get( ClusterSettings.server_id );
+    }
+
+    @Override
+    public void close() throws Exception
+    {
+        logging = null;
+        console = null;
+        graphDb = null;
+        idGeneratorFactory = null;
+        config = null;
+        slaveFactorySupplier = null;
+        masterImplMonitor = null;
+        masterDelegateHandler = null;
+        clusterMemberAvailability = null;
+        dataSourceManager = null;
+        masterByteCounterMonitor = null;
+        masterRequestMonitor = null;
     }
 }
