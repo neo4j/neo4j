@@ -87,32 +87,33 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
         for ( int i = 0; i < records.length; i++ )
         {
             RECORD record = records[i];
-            if ( record == null )
-            {   // Here we have a relationship that refers to missing nodes. It's within the tolerance levels
-                // of number of bad relationships. Just don't import this relationship.
-                continue;
-            }
-
-            INPUT input = batch.input[i];
-            if ( input.hasFirstPropertyId() )
+            int propertyBlockCount = batch.propertyBlocksLengths[i];
+            if ( record != null )
             {
-                record.setNextProp( input.firstPropertyId() );
+                INPUT input = batch.input[i];
+                if ( input.hasFirstPropertyId() )
+                {
+                    record.setNextProp( input.firstPropertyId() );
+                }
+                else
+                {
+                    if ( propertyBlockCount > 0 )
+                    {
+                        reassignDynamicRecordIds( batch.propertyBlocks, propertyBlockCursor, propertyBlockCount );
+                        long firstProp = propertyCreator.createPropertyChain( record,
+                                blockIterator.dressArray( batch.propertyBlocks, propertyBlockCursor, propertyBlockCount ),
+                                propertyRecords );
+                        record.setNextProp( firstProp );
+                    }
+                }
+                highestId = max( highestId, record.getId() );
+                entityStore.updateRecord( record );
             }
             else
-            {
-                int propertyBlockCount = batch.propertyBlocksLengths[i];
-                if ( propertyBlockCount > 0 )
-                {
-                    reassignDynamicRecordIds( batch.propertyBlocks, propertyBlockCursor, propertyBlockCount );
-                    long firstProp = propertyCreator.createPropertyChain( record,
-                            blockIterator.dressArray( batch.propertyBlocks, propertyBlockCursor, propertyBlockCount ),
-                            propertyRecords );
-                    record.setNextProp( firstProp );
-                    propertyBlockCursor += propertyBlockCount;
-                }
+            {   // Here we have a relationship that refers to missing nodes. It's within the tolerance levels
+                // of number of bad relationships. Just don't import this relationship.
             }
-            highestId = max( highestId, record.getId() );
-            entityStore.updateRecord( record );
+            propertyBlockCursor += propertyBlockCount;
         }
         entityStore.setHighestPossibleIdInUse( highestId );
 
