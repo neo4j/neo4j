@@ -80,8 +80,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
     private URI availableMasterId;
 
-    private final SwitchToSlave switchToSlave;
-    private final SwitchToMaster switchToMaster;
+    private SwitchToSlave switchToSlave;
+    private SwitchToMaster switchToMaster;
     private final Election election;
     private final ClusterMemberAvailability clusterMemberAvailability;
     private final InstanceId instanceId;
@@ -150,6 +150,10 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
         modeSwitcherExecutor.awaitTermination( 60, TimeUnit.SECONDS );
 
         haCommunicationLife.shutdown();
+
+        switchToMaster.close();
+        switchToMaster = null;
+        switchToSlave = null;
     }
 
     @Override
