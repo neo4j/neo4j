@@ -31,74 +31,127 @@ public class InputEntityTest
     public void shouldAddProperties() throws Exception
     {
         // GIVEN
-        InputNode node = new InputNode( "source", 1, 0, "id", new Object[] {
+        InputEntity entity = entity(
                 "first", "Yeah",
-                "second", "Yo"
-        }, null, InputEntity.NO_LABELS, null );
+                "second", "Yo" );
 
         // WHEN
-        node.updateProperties( ADD, "third", "Yee" );
+        entity.updateProperties( ADD, "third", "Yee" );
 
         // THEN
         assertArrayEquals( new Object[] {
                 "first", "Yeah",
                 "second", "Yo",
                 "third", "Yee"
-        }, node.properties() );
+        }, entity.properties() );
     }
 
     @Test
     public void shouldAddToExistingProperty() throws Exception
     {
         // GIVEN
-        InputNode node = new InputNode( "source", 1, 0, "id", new Object[] {
+        InputEntity entity = entity(
                 "first", "Yeah",
-                "second", "Yo"
-        }, null, InputEntity.NO_LABELS, null );
+                "second", "Yo" );
 
         // WHEN
-        node.updateProperties( ADD, "second", "Ya" );
+        entity.updateProperties( ADD, "second", "Ya" );
 
         // THEN
         assertArrayEquals( new Object[] {
                 "first", "Yeah",
                 "second", new String[] {"Yo", "Ya"},
-        }, node.properties() );
+        }, entity.properties() );
     }
 
     @Test
     public void shouldAddToExistingArrayProperty() throws Exception
     {
         // GIVEN
-        InputNode node = new InputNode( "source", 1, 0, "id", new Object[] {
+        InputEntity entity = entity(
                 "first", "Yeah",
-                "second", "Yo"
-        }, null, InputEntity.NO_LABELS, null );
+                "second", "Yo" );
 
         // WHEN
-        node.updateProperties( ADD, "second", "Ya" );
-        node.updateProperties( ADD, "second", "Yi" );
+        entity.updateProperties( ADD, "second", "Ya" );
+        entity.updateProperties( ADD, "second", "Yi" );
 
         // THEN
         assertArrayEquals( new Object[] {
                 "first", "Yeah",
                 "second", new String[] {"Yo", "Ya", "Yi"},
-        }, node.properties() );
+        }, entity.properties() );
     }
 
     @Test
     public void shouldSetProperties() throws Exception
     {
         // GIVEN
-        InputNode node = new InputNode( "source", 1, 0, "id", new Object[] {
+        InputEntity entity = entity(
                 "first", "Yeah",
-                "second", "Yo"
-        }, null, InputEntity.NO_LABELS, null );
+                "second", "Yo" );
 
         // WHEN
-        node.setProperties( "third", "Yee" );
+        entity.setProperties( "third", "Yee" );
 
         // THEN
-        assertArrayEquals( new Object[] { "third", "Yee" }, node.properties() );
+        assertArrayEquals( new Object[] { "third", "Yee" }, entity.properties() );
+    }
+
+    @Test
+    public void shouldRemovePropertyInTheMiddle() throws Exception
+    {
+        // GIVEN
+        InputEntity entity = entity(
+                "first", "Yeah",
+                "second", "Yo",
+                "third", "Hey" );
+
+        // WHEN
+        entity.removeProperty( "second" );
+
+        // THEN
+        assertArrayEquals( new Object[] {
+                "first", "Yeah",
+                "third", "Hey",
+        }, entity.properties() );
+    }
+
+    @Test
+    public void shouldRemovePropertyInTheEnd() throws Exception
+    {
+        // GIVEN
+        InputEntity entity = entity(
+                "first", "Yeah",
+                "second", "Yo",
+                "third", "Hey" );
+
+        // WHEN
+        entity.removeProperty( "third" );
+
+        // THEN
+        assertArrayEquals( new Object[] {
+                "first", "Yeah",
+                "second", "Yo",
+        }, entity.properties() );
+    }
+
+    @Test
+    public void shouldRemoveLastProperty() throws Exception
+    {
+        // GIVEN
+        InputEntity entity = entity(
+                "first", "Yeah" );
+
+        // WHEN
+        entity.removeProperty( "first" );
+
+        // THEN
+        assertArrayEquals( new Object[] {}, entity.properties() );
+    }
+
+    private InputEntity entity( Object... properties )
+    {
+        return new InputNode( "source", 1, 0, "id", properties, null, InputEntity.NO_LABELS, null );
     }
 }

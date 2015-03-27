@@ -87,6 +87,33 @@ public abstract class InputEntity implements SourceTraceability
         }
     }
 
+    public void removeProperty( String key )
+    {
+        if ( properties == null || properties.length == 0 )
+        {
+            return;
+        }
+
+        int maxI = (properties.length >> 1) - 1;
+        for ( int i = 0; i <= maxI; i++ )
+        {
+            String existingKey = (String) properties[i << 1];
+            if ( existingKey.equals( key ) )
+            {   // Found it
+                if ( i < maxI )
+                {   // There are more after this one, move the last one in to take this place
+                    System.arraycopy( properties, maxI << 1, properties, i << 1, 2 );
+                    properties = Arrays.copyOf( properties, properties.length-2 );
+                }
+                else
+                {   // We're the last one in the array
+                    properties = i > 0 ? Arrays.copyOf( properties, properties.length-2 ) : NO_PROPERTIES;
+                }
+                maxI--;
+            }
+        }
+    }
+
     private int collectiveNumberOfKeys( Object[] properties, Object[] otherProperties )
     {
         int collidingKeys = 0;
