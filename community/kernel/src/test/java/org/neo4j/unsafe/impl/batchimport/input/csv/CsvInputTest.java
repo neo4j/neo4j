@@ -680,6 +680,28 @@ public class CsvInputTest
         }
     }
 
+    @Test
+    public void shouldNotIncludeEmptyArraysInEntities() throws Exception
+    {
+        // GIVEN
+        Iterable<DataFactory<InputNode>> data = DataFactories.nodeData( CsvInputTest.<InputNode>data(
+                ":ID,sprop:String[],lprop:long[]\n" +
+                "1,,\n" +
+                "2,a;b,10;20"
+                ) );
+        Input input = new CsvInput( data, defaultFormatNodeFileHeader(), null, null, IdType.INTEGER, COMMAS,
+                badRelationships( 0 ) );
+
+        // WHEN/THEN
+        try ( InputIterator<InputNode> nodes = input.nodes().iterator() )
+        {
+            assertNode( nodes.next(), 1L, NO_PROPERTIES, labels() );
+            assertNode( nodes.next(), 2L, properties( "sprop", new String[] {"a", "b"}, "lprop", new long[] {10, 20} ),
+                    labels() );
+            assertFalse( nodes.hasNext() );
+        }
+    }
+
     private Configuration customConfig( final char delimiter, final char arrayDelimiter, final char quote )
     {
         return new Configuration.Default()
