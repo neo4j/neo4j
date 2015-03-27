@@ -43,9 +43,9 @@ case class LimitPipe(source: Pipe, exp: Expression)
     new HeadAndTail(first, input).take(count)
   }
 
-  override def planDescription = source
+  def planDescriptionWithoutCardinality = source
     .planDescription
-    .andThen(this, "Limit", identifiers, LegacyExpression(exp))
+    .andThen(this.id, "Limit", identifiers, LegacyExpression(exp))
 
   def symbols: SymbolTable = source.symbols
 

@@ -106,7 +106,7 @@ case class ExtractPipe(source: Pipe, expressions: Map[String, Expression], hack_
   override def planDescription = {
     val arguments = expressions.map(_._1).toSeq
 
-    new PlanDescriptionImpl(this, "Extract", SingleChild(source.planDescription), Seq(KeyNames(arguments)), identifiers)
+    new PlanDescriptionImpl(this.id, "Extract", SingleChild(source.planDescription), Seq(KeyNames(arguments)), identifiers)
   }
 
   def dup(sources: List[Pipe]): Pipe = {

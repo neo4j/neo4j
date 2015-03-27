@@ -32,8 +32,8 @@ case class ArgumentPipe(symbols: SymbolTable)
 
   def withEstimatedCardinality(estimated: Double): Pipe with RonjaPipe = copy()(Some(estimated))
 
-  def planDescription: InternalPlanDescription =
-    new PlanDescriptionImpl(this, "Argument", NoChildren, Seq.empty, identifiers)
+  def planDescriptionWithoutCardinality: InternalPlanDescription =
+    new PlanDescriptionImpl(this.id, "Argument", NoChildren, Seq.empty, identifiers)
 
   private val typeAssertions =
     SymbolTypeAssertionCompiler.compile(

@@ -94,7 +94,8 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
     }
   }
 
-  def planDescription = source.planDescription.andThen(this, "EagerAggregation", identifiers, Arguments.KeyNames(keyExpressions.toSeq))
+  def planDescriptionWithoutCardinality = source.planDescription.
+                        andThen(this.id, "EagerAggregation", identifiers, Arguments.KeyNames(keyExpressions.toSeq))
 
   override def effects = Effects.NONE
 

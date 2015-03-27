@@ -97,8 +97,8 @@ case class VarLengthExpandPipe(source: Pipe,
   def fetchFromContext(row: ExecutionContext, name: String): Any =
     row.getOrElse(name, throw new InternalException(s"Expected to find a node at $name but found nothing"))
 
-  def planDescription = source.planDescription.
-    andThen(this, s"VarLengthExpand(${if (nodeInScope) "Into" else "All"})", identifiers, ExpandExpression(fromName, relName, types.names, toName, projectedDir, varLength = true))
+  def planDescriptionWithoutCardinality = source.planDescription.
+    andThen(this.id, s"VarLengthExpand(${if (nodeInScope) "Into" else "All"})", identifiers, ExpandExpression(fromName, relName, types.names, toName, projectedDir, varLength = true))
 
   def symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
 

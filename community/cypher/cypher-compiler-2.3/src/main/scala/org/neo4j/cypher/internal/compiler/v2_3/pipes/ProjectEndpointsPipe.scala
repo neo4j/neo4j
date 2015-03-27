@@ -45,9 +45,9 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =
     input.flatMap(projector(state.query))
 
-  override def planDescription =
+  def planDescriptionWithoutCardinality =
     source.planDescription
-          .andThen(this, "ProjectEndpoints", identifiers, KeyNames(Seq(relName, start, end)))
+          .andThen(this.id, "ProjectEndpoints", identifiers, KeyNames(Seq(relName, start, end)))
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources

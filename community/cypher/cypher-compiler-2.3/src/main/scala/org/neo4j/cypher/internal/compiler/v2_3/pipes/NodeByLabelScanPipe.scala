@@ -44,7 +44,7 @@ case class NodeByLabelScanPipe(ident: String, label: LazyLabel)
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  def planDescription = new PlanDescriptionImpl(this, "NodeByLabelScan", NoChildren, Seq(LabelName(label.name)), identifiers)
+  def planDescriptionWithoutCardinality = new PlanDescriptionImpl(this.id, "NodeByLabelScan", NoChildren, Seq(LabelName(label.name)), identifiers)
 
   def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
 

@@ -56,12 +56,12 @@ case class NodeHashJoinPipe(nodeIdentifiers: Set[String], left: Pipe, right: Pip
     result.flatten
   }
 
-  def planDescription: InternalPlanDescription =
+  def planDescriptionWithoutCardinality: InternalPlanDescription =
     new PlanDescriptionImpl(
-      pipe = this,
+      id = id,
       name = "NodeHashJoin",
       children = TwoChildren(left.planDescription, right.planDescription),
-      _arguments = Seq(KeyNames(nodeIdentifiers.toSeq)),
+      arguments = Seq(KeyNames(nodeIdentifiers.toSeq)),
       identifiers
     )
 

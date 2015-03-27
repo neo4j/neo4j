@@ -89,9 +89,9 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
     }
   }
 
-  def planDescription =
+  def planDescriptionWithoutCardinality =
     source.planDescription.
-      andThen(this, "OptionalExpand(Into)", identifiers, ExpandExpression(fromName, relName, types.names, toName, dir))
+      andThen(this.id, "OptionalExpand(Into)", identifiers, ExpandExpression(fromName, relName, types.names, toName, dir))
 
   def symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
 

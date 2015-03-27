@@ -46,11 +46,11 @@ case class LetSelectOrSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: Strin
 
   private def name = if (negated) "LetSelectOrAntiSemiApply" else "LetSelectOrSemiApply"
 
-  def planDescription = PlanDescriptionImpl(
-    pipe = this,
+  def planDescriptionWithoutCardinality = PlanDescriptionImpl(
+    id = id,
     name = name,
     children = TwoChildren(source.planDescription, inner.planDescription),
-    _arguments = Seq(LegacyExpression(predicate)),
+    arguments = Seq(LegacyExpression(predicate)),
     identifiers)
 
   def symbols: SymbolTable = source.symbols.add(letVarName, CTBoolean)

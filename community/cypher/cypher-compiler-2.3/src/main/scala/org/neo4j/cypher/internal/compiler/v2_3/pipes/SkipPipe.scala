@@ -43,9 +43,9 @@ case class SkipPipe(source: Pipe, exp: Expression)
     new HeadAndTail(first, input).drop(count)
   }
 
-  override def planDescription = source
+  def planDescriptionWithoutCardinality = source
     .planDescription
-    .andThen(this, "Skip", identifiers, LegacyExpression(exp))
+    .andThen(this.id, "Skip", identifiers, LegacyExpression(exp))
 
   def symbols: SymbolTable = source.symbols
 

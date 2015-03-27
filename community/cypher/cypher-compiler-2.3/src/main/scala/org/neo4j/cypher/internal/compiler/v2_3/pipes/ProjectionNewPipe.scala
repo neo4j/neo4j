@@ -50,9 +50,9 @@ case class ProjectionNewPipe(source: Pipe, expressions: Map[String, Expression])
     }
   }
 
-  override def planDescription =
+  def planDescriptionWithoutCardinality =
     source.planDescription
-      .andThen(this, "Projection", identifiers, expressions.values.toSeq.map(LegacyExpression):_*)
+      .andThen(this.id, "Projection", identifiers, expressions.values.toSeq.map(LegacyExpression):_*)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources

@@ -60,8 +60,8 @@ case class ShortestPathPipe(source: Pipe, ast: ShortestPath)
     }
   }
 
-  override def planDescription =
-    source.planDescription.andThen(this, "ShortestPath", identifiers)
+  override def planDescriptionWithoutCardinality =
+    source.planDescription.andThen(this.id, "ShortestPath", identifiers)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources

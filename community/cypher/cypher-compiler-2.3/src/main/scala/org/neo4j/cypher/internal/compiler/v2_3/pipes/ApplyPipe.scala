@@ -36,8 +36,8 @@ case class ApplyPipe(source: Pipe, inner: Pipe)(val estimatedCardinality: Option
         innerResults.map { context => context ++ original }
     }
 
-  def planDescription =
-    PlanDescriptionImpl(this, "Apply", TwoChildren(source.planDescription, inner.planDescription), Seq.empty, identifiers)
+  def planDescriptionWithoutCardinality =
+    PlanDescriptionImpl(this.id, "Apply", TwoChildren(source.planDescription, inner.planDescription), Seq.empty, identifiers)
 
   def symbols: SymbolTable = source.symbols.add(inner.symbols.identifiers)
 

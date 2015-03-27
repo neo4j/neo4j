@@ -83,7 +83,7 @@ case class LoadCSVPipe(source: Pipe,
   }
 
   def planDescription: InternalPlanDescription =
-    source.planDescription.andThen(this, "LoadCSV", identifiers)
+    source.planDescription.andThen(this.id, "LoadCSV", identifiers)
 
   def symbols: SymbolTable = format match {
     case HasHeaders => source.symbols.add(identifier, MapType.instance)

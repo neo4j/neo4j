@@ -37,7 +37,7 @@ case class SortPipe(source: Pipe, orderBy: Seq[SortDescription])
     input.toList.
       sortWith((a, b) => compareBy(a, b, orderBy)(state)).iterator
 
-  def planDescription = source.planDescription.andThen(this, "Sort", identifiers, KeyNames(orderBy.map(_.id)))
+  def planDescriptionWithoutCardinality = source.planDescription.andThen(this.id, "Sort", identifiers, KeyNames(orderBy.map(_.id)))
 
   // since we load the whole input in memory this Pipe has no effects
   override val localEffects = Effects.NONE

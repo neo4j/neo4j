@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planDescription
 
 import org.neo4j.cypher.internal.compiler.v2_3.commands
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.{Pipe, RonjaPipe, EntityByIdRhs => PipeEntityByIdRhs}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{EntityByIdRhs => PipeEntityByIdRhs, Pipe}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.graphdb.Direction
 
@@ -32,7 +32,8 @@ sealed trait InternalPlanDescription {
 
   def arguments: Seq[Argument]
   def cd(name: String): InternalPlanDescription = children.find(name).head
-  def pipe: Pipe
+
+  def id: Id
   def name: String
   def children: Children
   def map(f: InternalPlanDescription => InternalPlanDescription): InternalPlanDescription
@@ -48,8 +49,8 @@ sealed trait InternalPlanDescription {
     flattenAcc(Seq.empty, this)
   }
 
-  def andThen(pipe: Pipe, name: String, identifiers: Set[String], arguments: Argument*) =
-    PlanDescriptionImpl(pipe, name, SingleChild(this), arguments, identifiers)
+  def andThen(id: Id, name: String, identifiers: Set[String], arguments: Argument*) =
+    PlanDescriptionImpl(id, name, SingleChild(this), arguments, identifiers)
 
   def identifiers: Set[String]
   def orderedIdentifiers: Seq[String] = identifiers.toSeq.sorted
@@ -64,6 +65,8 @@ sealed trait InternalPlanDescription {
     }
   }
 }
+
+class Id
 
 sealed abstract class Argument extends Product {
   def name = productPrefix
@@ -120,18 +123,13 @@ final case class TwoChildren(lhs: InternalPlanDescription, rhs: InternalPlanDesc
   def map(f: InternalPlanDescription => InternalPlanDescription) = TwoChildren(lhs = lhs.map(f), rhs = rhs.map(f))
 }
 
-final case class PlanDescriptionImpl(pipe: Pipe,
+final case class PlanDescriptionImpl(id: Id,
                                      name: String,
                                      children: Children,
-                                     _arguments: Seq[Argument],
+                                     arguments: Seq[Argument],
                                      identifiers: Set[String]) extends InternalPlanDescription {
 
   self =>
-
-  def arguments: Seq[Argument] = _arguments ++ (pipe match {
-    case r: RonjaPipe => r.estimatedCardinality.map(EstimatedRows.apply)
-    case _            => None
-  })
 
   def find(name: String): Seq[InternalPlanDescription] =
     children.find(name) ++ (if (this.name == name)
@@ -140,7 +138,7 @@ final case class PlanDescriptionImpl(pipe: Pipe,
       None
     })
 
-  def addArgument(argument: Argument): InternalPlanDescription = copy(_arguments = _arguments :+ argument)
+  def addArgument(argument: Argument): InternalPlanDescription = copy(arguments = arguments :+ argument)
 
   def map(f: InternalPlanDescription => InternalPlanDescription): InternalPlanDescription = f(copy(children = children.map(f)))
 
@@ -158,9 +156,9 @@ final case class PlanDescriptionImpl(pipe: Pipe,
   def render( builder: StringBuilder ) { ??? }
 }
 
-final case class SingleRowPlanDescription(pipe: Pipe, arguments: Seq[Argument] = Seq.empty, identifiers: Set[String]) extends InternalPlanDescription {
-  override def andThen(pipe: Pipe, name: String, identifiers: Set[String], newArguments: Argument*) =
-    new PlanDescriptionImpl(pipe = pipe, name = name, children = NoChildren, _arguments = newArguments, identifiers = identifiers)
+final case class SingleRowPlanDescription(id: Id, arguments: Seq[Argument] = Seq.empty, identifiers: Set[String]) extends InternalPlanDescription {
+  override def andThen(id: Id, name: String, identifiers: Set[String], newArguments: Argument*) =
+    new PlanDescriptionImpl(id, name, NoChildren, newArguments, identifiers)
 
   def children = NoChildren
 

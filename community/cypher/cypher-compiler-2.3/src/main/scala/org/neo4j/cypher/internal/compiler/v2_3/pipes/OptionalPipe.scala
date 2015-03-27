@@ -34,9 +34,9 @@ case class OptionalPipe(nullableIdentifiers: Set[String], source: Pipe)
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     if (input.isEmpty) Iterator(notFoundExecutionContext) else input
 
-  def planDescription: InternalPlanDescription =
+  def planDescriptionWithoutCardinality: InternalPlanDescription =
     new PlanDescriptionImpl(
-      this,
+      this.id,
       "Optional",
       SingleChild(source.planDescription),
       Seq.empty,
