@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
+import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.util.register.NeoRegister;
 import org.neo4j.register.Register;
 
@@ -265,7 +266,7 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction,
+    public RelationshipIterator nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction,
             int[] relTypes ) throws EntityNotFoundException
     {
         guard.check();
@@ -273,7 +274,7 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public PrimitiveLongIterator nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction )
+    public RelationshipIterator nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction )
             throws EntityNotFoundException
     {
         guard.check();

@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.util.register.NeoRegister;
 import org.neo4j.register.Register;
 
@@ -117,10 +118,10 @@ public interface EntityReadOperations
 
     Iterator<DefinedProperty> graphGetAllProperties( KernelStatement state );
 
-    PrimitiveLongIterator nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction,
+    RelationshipIterator nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction,
                                                 int[] relTypes ) throws EntityNotFoundException;
 
-    PrimitiveLongIterator nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction ) throws EntityNotFoundException;
+    RelationshipIterator nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction ) throws EntityNotFoundException;
 
     int nodeGetDegree( KernelStatement statement, long nodeId, Direction direction, int relType ) throws EntityNotFoundException;
 
