@@ -80,5 +80,25 @@ class CypherOptionParserTest extends CypherFunSuite {
     parse("explainmatch") should equal(CypherQueryWithOptions("explainmatch", Seq.empty, (1, 1, 0)))
   }
 
+  test("should allow different runtime options") {
+    parse("RUNTIME INTERPRETED RETURN") should equal(CypherQueryWithOptions("RETURN", Seq(InterpretedRuntimeOption), (1, 21, 20)))
+    parse("RUNTIME COMPILED RETURN") should equal(CypherQueryWithOptions("RETURN", Seq(CompiledRuntimeOption), (1, 18, 17)))
+  }
+
+  test("should parse version, planner and runtime") {
+    parse("CYPHER 2.3 PLANNER COST RUNTIME INTERPRETED RETURN") should equal(CypherQueryWithOptions("RETURN", Seq(VersionOption("2.3"), CostPlannerOption, InterpretedRuntimeOption), (1, 45, 44)))
+    parse("CYPHER 2.3 PLANNER COST RUNTIME COMPILED RETURN") should equal(CypherQueryWithOptions("RETURN", Seq(VersionOption("2.3"), CostPlannerOption, CompiledRuntimeOption), (1, 42, 41)))
+    parse("CYPHER 2.3 PLANNER DP RUNTIME INTERPRETED RETURN") should equal(CypherQueryWithOptions("RETURN", Seq(VersionOption("2.3"), DPPlannerOption, InterpretedRuntimeOption), (1, 43, 42)))
+    parse("CYPHER 2.3 PLANNER DP RUNTIME COMPILED RETURN") should equal(CypherQueryWithOptions("RETURN", Seq(VersionOption("2.3"), DPPlannerOption, CompiledRuntimeOption), (1, 40, 39)))
+    parse("CYPHER 2.3 PLANNER IDP RUNTIME INTERPRETED RETURN") should equal(CypherQueryWithOptions("RETURN", Seq(VersionOption("2.3"), IDPPlannerOption, InterpretedRuntimeOption), (1 , 44, 43)))
+    parse("CYPHER 2.3 PLANNER IDP RUNTIME COMPILED RETURN") should equal(CypherQueryWithOptions("RETURN", Seq(VersionOption("2.3"), IDPPlannerOption, CompiledRuntimeOption), (1, 41, 40)))
+    parse("PLANNER COST RUNTIME INTERPRETED RETURN") should equal(CypherQueryWithOptions("RETURN", Seq(CostPlannerOption, InterpretedRuntimeOption), (1, 34, 33)))
+    parse("PLANNER COST RUNTIME COMPILED RETURN") should equal(CypherQueryWithOptions("RETURN", Seq(CostPlannerOption, CompiledRuntimeOption), (1, 31, 30)))
+    parse("PLANNER DP RUNTIME INTERPRETED RETURN") should equal(CypherQueryWithOptions("RETURN", Seq(DPPlannerOption, InterpretedRuntimeOption), (1, 32, 31)))
+    parse("PLANNER DP RUNTIME COMPILED RETURN") should equal(CypherQueryWithOptions("RETURN", Seq(DPPlannerOption, CompiledRuntimeOption), (1, 29, 28)))
+    parse("PLANNER IDP RUNTIME INTERPRETED RETURN") should equal(CypherQueryWithOptions("RETURN", Seq(IDPPlannerOption, InterpretedRuntimeOption), (1, 33, 32)))
+    parse("PLANNER IDP RUNTIME COMPILED RETURN") should equal(CypherQueryWithOptions("RETURN", Seq(IDPPlannerOption, CompiledRuntimeOption), (1, 30, 29)))
+  }
+
   private implicit def lift(pos: (Int, Int, Int)): InputPosition = InputPosition(pos._3, pos._1, pos._2)
 }

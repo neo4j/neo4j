@@ -126,7 +126,7 @@ class CypherCompilerStringCacheMonitoringAcceptanceTest extends ExecutionEngineF
     engine.execute(query).toList
 
     // then
-    logger.assertAtLeastOnce(LogCall.info(s"Discarded stale query from the query cache: CYPHER 2.3 PLANNER CONSERVATIVE $query"))
+    logger.assertAtLeastOnce(LogCall.info(s"Discarded stale query from the query cache: CYPHER 2.3 PLANNER CONSERVATIVE RUNTIME INTERPRETED $query"))
   }
 }
 
