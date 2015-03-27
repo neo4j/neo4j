@@ -188,4 +188,56 @@ public interface Result extends ResourceIterator<Map<String, Object>>
      * @return an iterable of all notifications created when running the query.
      */
     Iterable<Notification> getNotifications();
+
+    /**
+     * Visits all rows in this Result by iterating over them.
+     *
+     * This is an alternative to using the iterator form of Result. Using the visitor is better from a object
+     * creation perspective.
+     *
+     * @param visitor the ResultVisitor instance that will see the results of the visit.
+     */
+    void accept( ResultVisitor visitor );
+
+    /**
+     * Describes a row of a result. The contents of this object is only stable during the
+     * {@linkplain ResultVisitor#visit(ResultRow) visit} call. The data it contains can change between calls to
+     * {@linkplain ResultVisitor#visit(ResultRow) the visit method}. Instances of this type should thus not be saved
+     * for later, or shared with other threads, rather the content should be copied.
+     */
+    interface ResultRow
+    {
+        // TODO: Figure out type coercion around primitives
+        // TODO: Type safe getters for collections and maps?
+        Node getNode( String key );
+
+        Relationship getRelationship( String key );
+
+        Object get( String key );
+
+        String getString( String key );
+
+        Long getLong( String key );
+
+        Double getDouble( String key );
+
+        Boolean getBoolean( String key );
+
+        Path getPath( String key );
+    }
+
+    /**
+     * This is the visitor interface you need to implement to use the {@link Result#accept(ResultVisitor)} method.
+     */
+    interface ResultVisitor
+    {
+        /**
+         * Visits the specified row.
+         * @param row the row to visit. The row object is only guaranteed to be stable until flow of control has
+         *            returned from this method.
+         * @return true if the next row should also be visited. Returning false will terminate the iteration of
+         * result rows.
+         */
+        boolean visit( ResultRow row );
+    }
 }
