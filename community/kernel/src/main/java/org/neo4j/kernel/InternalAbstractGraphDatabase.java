@@ -279,6 +279,7 @@ public abstract class InternalAbstractGraphDatabase
     protected DataSourceManager dataSourceManager;
     private StartupStatisticsProvider startupStatistics;
     private QueryExecutionEngine queryExecutor = QueryEngineProvider.noEngine();
+    protected RelationshipActions relationshipActions;
 
     protected InternalAbstractGraphDatabase( String storeDir, Map<String,String> params, Dependencies dependencies )
     {
@@ -473,9 +474,11 @@ public abstract class InternalAbstractGraphDatabase
 
         threadToTransactionBridge = life.add( new ThreadToStatementContextBridge() );
 
+        relationshipActions = createRelationshipActions();
+
         nodeManager = createNodeManager();
 
-        transactionEventHandlers = new TransactionEventHandlers( createNodeActions(), createRelationshipActions(),
+        transactionEventHandlers = new TransactionEventHandlers( createNodeActions(), relationshipActions,
                 threadToTransactionBridge );
 
         indexStore = life.add( new IndexConfigStore( this.storeDir, fileSystem ) );
@@ -1571,6 +1574,10 @@ public abstract class InternalAbstractGraphDatabase
             else if ( PageCacheMonitor.class.isAssignableFrom( type ) )
             {
                 return type.cast( tracers.pageCacheTracer );
+            }
+            else if ( RelationshipActions.class.isAssignableFrom( type ) )
+            {
+                return type.cast( relationshipActions );
             }
             return null;
         }

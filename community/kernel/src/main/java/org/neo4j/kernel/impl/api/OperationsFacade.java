@@ -65,6 +65,7 @@ import org.neo4j.kernel.impl.api.operations.LegacyIndexWriteOperations;
 import org.neo4j.kernel.impl.api.operations.LockOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
+import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.util.register.NeoRegister;
@@ -220,7 +221,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public PrimitiveLongIterator nodeGetRelationships( long nodeId, Direction direction, int[] relTypes )
+    public RelationshipIterator nodeGetRelationships( long nodeId, Direction direction, int[] relTypes )
             throws EntityNotFoundException
     {
         statement.assertOpen();
@@ -228,7 +229,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public PrimitiveLongIterator nodeGetRelationships( long nodeId, Direction direction )
+    public RelationshipIterator nodeGetRelationships( long nodeId, Direction direction )
             throws EntityNotFoundException
     {
         statement.assertOpen();

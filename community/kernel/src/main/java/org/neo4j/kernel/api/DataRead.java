@@ -32,6 +32,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.util.register.NeoRegister;
 import org.neo4j.register.Register;
 
@@ -62,9 +63,9 @@ interface DataRead
      */
     PrimitiveLongIterator relationshipsGetAll();
 
-    PrimitiveLongIterator nodeGetRelationships( long nodeId, Direction direction, int... relTypes ) throws EntityNotFoundException;
+    RelationshipIterator nodeGetRelationships( long nodeId, Direction direction, int... relTypes ) throws EntityNotFoundException;
 
-    PrimitiveLongIterator nodeGetRelationships( long nodeId, Direction direction ) throws EntityNotFoundException;
+    RelationshipIterator nodeGetRelationships( long nodeId, Direction direction ) throws EntityNotFoundException;
 
     /**
      * Returns node id of unique node found in the given unique index for value or

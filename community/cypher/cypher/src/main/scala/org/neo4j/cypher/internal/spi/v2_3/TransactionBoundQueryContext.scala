@@ -35,9 +35,10 @@ import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase}
 import org.neo4j.tooling.GlobalGraphOperations
-
 import scala.collection.JavaConverters._
 import scala.collection.{Iterator, mutable}
+import org.neo4j.kernel.impl.core.RelationshipProxy
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.BeansAPIRelationshipIterator
 
 final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
                                          var tx: Transaction,
@@ -49,8 +50,8 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   private val txBridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
 
   val nodeOps = new NodeOperations
-
   val relationshipOps = new RelationshipOperations
+  val relationshipActions = graph.getDependencyResolver.resolveDependency(classOf[RelationshipProxy.RelationshipActions])
 
   def isOpen = open
 
@@ -122,8 +123,8 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     statement.tokenWriteOperations().labelGetOrCreateForName(labelName)
 
   def getRelationshipsForIds(node: Node, dir: Direction, types: Option[Seq[Int]]): Iterator[Relationship] = types match {
-    case None => JavaConversionSupport.asScala(statement.readOperations().nodeGetRelationships(node.getId, dir)).map(relationshipOps.getById)
-    case Some(typeIds) => JavaConversionSupport.asScala(statement.readOperations().nodeGetRelationships(node.getId, dir, typeIds: _* )).map(relationshipOps.getById)
+    case None => new BeansAPIRelationshipIterator(statement.readOperations().nodeGetRelationships(node.getId, dir), relationshipActions)
+    case Some(typeIds) => new BeansAPIRelationshipIterator(statement.readOperations().nodeGetRelationships(node.getId, dir, typeIds: _* ), relationshipActions)
   }
 
   def exactIndexSearch(index: IndexDescriptor, value: Any) =

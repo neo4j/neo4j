@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
