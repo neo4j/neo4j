@@ -1,6 +1,6 @@
-[[execution-plans-starting-query]]
+[[execution-plans-leaf-nodes]]
 
-== Starting a query operators ==
+== Leaf node operators ==
 
 These operators find parts of the graph from which to start a query.
 
