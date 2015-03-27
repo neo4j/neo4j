@@ -41,6 +41,8 @@ public class LockTransaction implements Transaction
 
     private final long id = IDS.getAndIncrement();
 
+    static final Transaction NO_TRANSACTION = new LockTransaction();
+
     @Override
     public void commit() throws HeuristicMixedException, HeuristicRollbackException, RollbackException, SecurityException, SystemException
     {

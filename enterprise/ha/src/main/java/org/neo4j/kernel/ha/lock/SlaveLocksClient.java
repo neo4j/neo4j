@@ -24,6 +24,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.transaction.Transaction;
+
 import org.neo4j.com.Response;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DeadlockDetectedException;
@@ -55,6 +57,7 @@ class SlaveLocksClient implements Locks.Client
     // Using atomic ints to avoid creating garbage through boxing.
     private final Map<Locks.ResourceType, Map<Long, AtomicInteger>> sharedLocks;
     private final Map<Locks.ResourceType, Map<Long, AtomicInteger>> exclusiveLocks;
+    private Transaction tx;
 
     public SlaveLocksClient(
             Master master,
@@ -239,11 +242,24 @@ class SlaveLocksClient implements Locks.Client
     }
 
     @Override
+    public void setTx( Transaction tx )
+    {
+        this.tx = tx;
+    }
+
+    @Override
     public void close()
     {
         sharedLocks.clear();
         exclusiveLocks.clear();
         client.close();
+        tx = null;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "SlaveLocksClient[tx=%s,target=%s]", tx, client );
     }
 
     private boolean getReadLockOnMaster( Locks.ResourceType resourceType, long ... resourceId )

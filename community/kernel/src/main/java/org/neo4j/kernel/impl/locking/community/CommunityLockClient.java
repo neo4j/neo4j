@@ -22,12 +22,14 @@ package org.neo4j.kernel.impl.locking.community;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.transaction.Transaction;
+
 import org.neo4j.kernel.impl.locking.Locks;
 
 public class CommunityLockClient implements Locks.Client
 {
     private final LockManagerImpl manager;
-    private final LockTransaction lockTransaction = new LockTransaction();
+    private Transaction tx = LockTransaction.NO_TRANSACTION;
 
     private final Map<Locks.ResourceType, Map<Long, LockResource>> sharedLocks = new HashMap<>();
     private final Map<Locks.ResourceType, Map<Long, LockResource>> exclusiveLocks = new HashMap<>();
@@ -51,7 +53,7 @@ public class CommunityLockClient implements Locks.Client
             }
 
             resource = new LockResource( resourceType, resourceId );
-            manager.getReadLock( resource, lockTransaction );
+            manager.getReadLock( resource, tx );
             localLocks.put(resourceId, resource);
         }
     }
@@ -70,7 +72,7 @@ public class CommunityLockClient implements Locks.Client
             }
 
             resource = new LockResource( resourceType, resourceId );
-            manager.getWriteLock( resource, lockTransaction );
+            manager.getWriteLock( resource, tx );
             localLocks.put(resourceId, resource);
         }
     }
@@ -89,7 +91,7 @@ public class CommunityLockClient implements Locks.Client
             }
 
             resource = new LockResource( resourceType, resourceId );
-            if(manager.tryWriteLock( resource, lockTransaction ))
+            if(manager.tryWriteLock( resource, tx ))
             {
                 localLocks.put(resourceId, resource);
             }
@@ -115,7 +117,7 @@ public class CommunityLockClient implements Locks.Client
             }
 
             resource = new LockResource( resourceType, resourceId );
-            if(manager.tryReadLock( resource, lockTransaction ))
+            if(manager.tryReadLock( resource, tx ))
             {
                 localLocks.put(resourceId, resource);
             }
@@ -140,7 +142,7 @@ public class CommunityLockClient implements Locks.Client
             }
             localLocks.remove( resourceId );
 
-            manager.releaseReadLock( new LockResource( resourceType, resourceId ), lockTransaction );
+            manager.releaseReadLock( new LockResource( resourceType, resourceId ), tx );
         }
     }
 
@@ -157,7 +159,7 @@ public class CommunityLockClient implements Locks.Client
             }
             localLocks.remove( resourceId );
 
-            manager.releaseWriteLock( new LockResource( resourceType, resourceId ), lockTransaction );
+            manager.releaseWriteLock( new LockResource( resourceType, resourceId ), tx );
         }
     }
 
@@ -168,7 +170,7 @@ public class CommunityLockClient implements Locks.Client
         {
             for ( LockResource resource : map.values() )
             {
-                manager.releaseReadLock( resource, lockTransaction );
+                manager.releaseReadLock( resource, tx );
             }
         }
         sharedLocks.clear();
@@ -181,7 +183,7 @@ public class CommunityLockClient implements Locks.Client
         {
             for ( LockResource resource : map.values() )
             {
-                manager.releaseWriteLock( resource, lockTransaction );
+                manager.releaseWriteLock( resource, tx );
             }
         }
         exclusiveLocks.clear();
@@ -195,9 +197,16 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
+    public void setTx( Transaction tx )
+    {
+        this.tx = tx;
+    }
+
+    @Override
     public void close()
     {
         releaseAll();
+        setTx( LockTransaction.NO_TRANSACTION );
     }
 
     private Map<Long, LockResource> localShared( Locks.ResourceType resourceType )

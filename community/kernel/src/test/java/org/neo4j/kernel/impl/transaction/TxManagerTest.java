@@ -29,6 +29,8 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
 import static org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier.ALWAYS_VALID;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
@@ -105,7 +107,10 @@ public class TxManagerTest
         TxIdGenerator txIdGenerator = mock( TxIdGenerator.class );
         doThrow( RuntimeException.class ).when( txIdGenerator )
                 .committed( any( XaDataSource.class ), anyInt(), anyLong(), any( Integer.class ) );
-        stateFactory.setDependencies( mock( Locks.class ),
+        Locks mockLocks = mock( Locks.class );
+        Locks.Client mockLock = mock( Locks.Client.class );
+        when( mockLocks.newClient() ).thenReturn( mockLock );
+        stateFactory.setDependencies( mockLocks,
                 mock( NodeManager.class ), mock( RemoteTxHook.class ), txIdGenerator );
         XaDataSourceManager xaDataSourceManager = life.add( new XaDataSourceManager( DEV_NULL ) );
         KernelHealth kernelHealth = new KernelHealth( panicGenerator, logging );
