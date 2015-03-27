@@ -28,8 +28,8 @@ case class CartesianProductPipe(lhs: Pipe, rhs: Pipe)(val estimatedCardinality: 
                                (implicit pipeMonitor: PipeMonitor) extends Pipe with RonjaPipe {
   def exists(pred: (Pipe) => Boolean): Boolean = lhs.exists(pred) || rhs.exists(pred)
 
-  def planDescription: InternalPlanDescription =
-    new PlanDescriptionImpl(this, "CartesianProduct", TwoChildren(lhs.planDescription, rhs.planDescription), Seq.empty,
+  def planDescriptionWithoutCardinality =
+    new PlanDescriptionImpl(this.id, "CartesianProduct", TwoChildren(lhs.planDescription, rhs.planDescription), Seq.empty,
       identifiers)
 
   def symbols: SymbolTable = lhs.symbols.add(rhs.symbols.identifiers)

@@ -77,7 +77,7 @@ case class NamedPathPipe(source: Pipe, pathName: String, entities: Seq[AbstractP
   val symbols = source.symbols.add(pathName, CTPath)
 
   override def planDescription =
-    source.planDescription.andThen(this, "ExtractPath", identifiers)
+    source.planDescription.andThen(this.id, "ExtractPath", identifiers)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources

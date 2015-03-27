@@ -38,8 +38,8 @@ case class SemiApplyPipe(source: Pipe, inner: Pipe, negated: Boolean)
 
   private def name = if (negated) "AntiSemiApply" else "SemiApply"
 
-  def planDescription =
-    PlanDescriptionImpl(this, name, TwoChildren(source.planDescription, inner.planDescription), Seq.empty, identifiers)
+  def planDescriptionWithoutCardinality =
+    PlanDescriptionImpl(this.id, name, TwoChildren(source.planDescription, inner.planDescription), Seq.empty, identifiers)
 
   def symbols: SymbolTable = source.symbols
 

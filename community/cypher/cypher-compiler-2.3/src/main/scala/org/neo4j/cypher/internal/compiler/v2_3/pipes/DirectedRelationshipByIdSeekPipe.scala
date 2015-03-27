@@ -44,11 +44,11 @@ case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: EntityById
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  def planDescription = new PlanDescriptionImpl(
-    pipe = this,
+  def planDescriptionWithoutCardinality = new PlanDescriptionImpl(
+    id = id,
     name = "DirectedRelationshipByIdSeekPipe",
     children = NoChildren,
-    _arguments = Seq(Arguments.EntityByIdRhs(relIdExpr)),
+    arguments = Seq(Arguments.EntityByIdRhs(relIdExpr)),
     identifiers
   )
 

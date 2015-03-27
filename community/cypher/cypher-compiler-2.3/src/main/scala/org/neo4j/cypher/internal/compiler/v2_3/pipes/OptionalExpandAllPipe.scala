@@ -66,9 +66,9 @@ case class OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String
   def getFromNode(row: ExecutionContext): Any =
     row.getOrElse(fromName, throw new InternalException(s"Expected to find a node at $fromName but found nothing"))
 
-  def planDescription =
+  def planDescriptionWithoutCardinality =
     source.planDescription.
-      andThen(this, "OptionalExpand(All)", identifiers, ExpandExpression(fromName, relName, types.names, toName, dir))
+      andThen(this.id, "OptionalExpand(All)", identifiers, ExpandExpression(fromName, relName, types.names, toName, dir))
 
   def symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
 

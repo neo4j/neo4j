@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_3.mutation.Effectful
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{InternalPlanDescription, SingleRowPlanDescription}
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Id, InternalPlanDescription, SingleRowPlanDescription}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
 
@@ -83,6 +83,9 @@ trait Pipe extends Effectful {
   def exists(pred: Pipe => Boolean): Boolean
 
   def identifiers: immutable.Set[String] = symbols.identifiers.keySet.toSet
+
+  // Used by profiling to identify where to report dbhits and rows
+  val id = new Id
 }
 
 case class SingleRowPipe()(implicit val monitor: PipeMonitor) extends Pipe with RonjaPipe {
@@ -94,7 +97,7 @@ case class SingleRowPipe()(implicit val monitor: PipeMonitor) extends Pipe with 
 
   def exists(pred: Pipe => Boolean) = pred(this)
 
-  def planDescription: InternalPlanDescription = new SingleRowPlanDescription(this, Seq.empty, identifiers)
+  def planDescriptionWithoutCardinality: InternalPlanDescription = new SingleRowPlanDescription(this.id, Seq.empty, identifiers)
 
   override def localEffects = Effects.NONE
 

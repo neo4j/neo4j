@@ -146,11 +146,11 @@ class ProfilerTest extends CypherFunSuite {
     val pipeArgs: Seq[Argument] = result.find(name).flatMap(_.arguments)
     pipeArgs shouldNot be(empty)
     pipeArgs.collect {
-      case DbHits(count) => count should equal(expectedDbHits)
+      case DbHits(count) => withClue("DbHits:")(count should equal(expectedDbHits))
     }
 
     pipeArgs.collect {
-      case Rows(seenRows) => seenRows should equal(expectedRows)
+      case Rows(seenRows) => withClue("Rows:")(seenRows should equal(expectedRows))
     }
   }
 
@@ -161,7 +161,7 @@ class ProfilerTest extends CypherFunSuite {
 
 case class ProfilerTestPipe(source: Pipe, name: String, rows: Int, dbAccess: Int)  // MATCH a, ()-[r]->() WHERE id(r) = length(a-->())
                   (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
-  def planDescription: InternalPlanDescription = source.planDescription.andThen(this, name, Set())
+  def planDescription: InternalPlanDescription = source.planDescription.andThen(this.id, name, Set())
 
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.size

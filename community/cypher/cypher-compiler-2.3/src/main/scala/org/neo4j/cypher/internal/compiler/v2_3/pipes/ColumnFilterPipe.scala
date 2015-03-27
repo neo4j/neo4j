@@ -52,7 +52,7 @@ case class ColumnFilterPipe(source: Pipe, returnItems: Seq[ReturnItem])
   }
 
   def planDescription =
-    new PlanDescriptionImpl(this, "ColumnFilter", SingleChild(source.planDescription),
+    new PlanDescriptionImpl(this.id, "ColumnFilter", SingleChild(source.planDescription),
       Seq(Arguments.ColumnsLeft(returnItemNames.toList)), identifiers)
 
   def dependencies = Seq()

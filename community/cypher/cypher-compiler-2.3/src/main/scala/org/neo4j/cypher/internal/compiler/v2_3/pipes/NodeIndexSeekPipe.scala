@@ -58,9 +58,9 @@ case class NodeIndexSeekPipe(ident: String,
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  def planDescription = {
+  def planDescriptionWithoutCardinality = {
     val name = if (unique) "NodeUniqueIndexSeek" else "NodeIndexSeek"
-    new PlanDescriptionImpl(this, name, NoChildren, Seq(Index(label.name, propertyKey.name)), identifiers)
+    new PlanDescriptionImpl(this.id, name, NoChildren, Seq(Index(label.name, propertyKey.name)), identifiers)
   }
 
   def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))

@@ -19,9 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.EstimatedRows
+
 // Marks a pipe being used by Ronja
-trait RonjaPipe {
-  self: Pipe =>
+trait RonjaPipe extends Pipe {
+
+  def planDescriptionWithoutCardinality:InternalPlanDescription
+  override def planDescription: InternalPlanDescription = estimatedCardinality.foldLeft(planDescriptionWithoutCardinality){
+    case (planDescription, cardinality) => planDescription.addArgument(EstimatedRows(cardinality))
+  }
 
   def estimatedCardinality: Option[Double]
   def withEstimatedCardinality(estimated: Double): Pipe with RonjaPipe

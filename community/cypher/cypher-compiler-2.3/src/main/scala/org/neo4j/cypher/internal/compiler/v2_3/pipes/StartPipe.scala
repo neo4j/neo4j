@@ -41,9 +41,9 @@ sealed abstract class StartPipe[T <: PropertyContainer](source: Pipe,
     })
   }
 
-  override def planDescription =
+  def planDescriptionWithoutCardinality =
     source.planDescription
-      .andThen(this, s"${createSource.producerType}", identifiers, createSource.arguments: _*)
+      .andThen(this.id, s"${createSource.producerType}", identifiers, createSource.arguments: _*)
 }
 
 case class NodeStartPipe(source: Pipe, name: String, createSource: EntityProducer[Node])(val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)

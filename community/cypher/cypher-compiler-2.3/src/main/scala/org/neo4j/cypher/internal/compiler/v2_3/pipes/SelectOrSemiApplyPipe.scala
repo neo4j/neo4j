@@ -45,11 +45,11 @@ case class SelectOrSemiApplyPipe(source: Pipe, inner: Pipe, predicate: Predicate
 
   private def name = if (negated) "SelectOrAntiSemiApply" else "SelectOrSemiApply"
 
-  def planDescription = PlanDescriptionImpl(
-    pipe = this,
+  def planDescriptionWithoutCardinality = PlanDescriptionImpl(
+    id = id,
     name = name,
     children = TwoChildren(source.planDescription, inner.planDescription),
-    _arguments = Seq(LegacyExpression(predicate)),
+    arguments = Seq(LegacyExpression(predicate)),
     identifiers = identifiers)
 
   def symbols: SymbolTable = source.symbols

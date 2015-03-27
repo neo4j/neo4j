@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 case class EagerPipe(src: Pipe)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(src, pipeMonitor) {
   def symbols: SymbolTable = src.symbols
 
-  def planDescription = src.planDescription.andThen(this, "Eager", identifiers)
+  def planDescription = src.planDescription.andThen(this.id, "Eager", identifiers)
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.toList.toIterator

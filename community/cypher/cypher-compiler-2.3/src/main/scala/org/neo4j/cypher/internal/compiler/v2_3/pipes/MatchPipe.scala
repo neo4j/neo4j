@@ -49,7 +49,7 @@ case class MatchPipe(source: Pipe,
   override def localEffects = Effects.READS_ENTITIES
 
   override def planDescription =
-    source.planDescription.andThen(this, matchingContext.builder.name, identifiers)
+    source.planDescription.andThen(this.id, matchingContext.builder.name, identifiers)
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources

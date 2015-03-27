@@ -61,8 +61,8 @@ case class NodeOuterHashJoinPipe(nodeIdentifiers: Set[String], source: Pipe, inn
 
   private def addNulls(in:ExecutionContext): ExecutionContext = in.newWith(nullColumns)
 
-  def planDescription: InternalPlanDescription =
-    new PlanDescriptionImpl(this,
+  def planDescriptionWithoutCardinality: InternalPlanDescription =
+    new PlanDescriptionImpl(this.id,
       "NodeOuterHashJoin",
       TwoChildren(source.planDescription, inner.planDescription),
       Seq.empty,

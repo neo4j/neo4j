@@ -35,7 +35,7 @@ class FakePipe(val data: Iterator[Map[String, Any]], newIdentifiers: (String, Cy
 
   def internalCreateResults(state: QueryState) = data.map(m => ExecutionContext(collection.mutable.Map(m.toSeq: _*)))
 
-  def planDescription = SingleRowPlanDescription(this, identifiers = identifiers)
+  def planDescription = SingleRowPlanDescription(this.id, identifiers = identifiers)
 
   def exists(pred: Pipe => Boolean) = ???
 

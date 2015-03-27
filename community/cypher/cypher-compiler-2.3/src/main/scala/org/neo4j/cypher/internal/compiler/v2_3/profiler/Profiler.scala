@@ -31,22 +31,22 @@ import scala.collection.mutable
 class Profiler extends PipeDecorator {
   outerProfiler =>
 
-  val dbHitsStats: mutable.Map[Pipe, ProfilingQueryContext] = mutable.Map.empty
-  val rowStats: mutable.Map[Pipe, ProfilingIterator] = mutable.Map.empty
+  val dbHitsStats: mutable.Map[Object, ProfilingQueryContext] = mutable.Map.empty
+  val rowStats: mutable.Map[Object, ProfilingIterator] = mutable.Map.empty
   private var parentPipe: Option[Pipe] = None
 
 
   def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = {
 
-    val oldCount = rowStats.get(pipe).map(_.count).getOrElse(0L)
+    val oldCount = rowStats.get(pipe.id).map(_.count).getOrElse(0L)
     val resultIter = new ProfilingIterator(iter, oldCount)
 
-    rowStats(pipe) = resultIter
+    rowStats(pipe.id) = resultIter
     resultIter
   }
 
   def decorate(pipe: Pipe, state: QueryState): QueryState = {
-    val decoratedContext = dbHitsStats.getOrElseUpdate(pipe, state.query match {
+    val decoratedContext = dbHitsStats.getOrElseUpdate(pipe.id, state.query match {
       case p: ProfilingQueryContext => new ProfilingQueryContext(p.inner, pipe)
       case _ => new ProfilingQueryContext(state.query, pipe)
     })
@@ -61,13 +61,12 @@ class Profiler extends PipeDecorator {
 
     plan map {
       input: InternalPlanDescription =>
-        val pipe = input.pipe
-        val rows = rowStats.get(pipe).map(_.count).getOrElse(0L)
-        val dbhits = dbHitsStats.get(pipe).map(_.count).getOrElse(0L)
+        val rows = rowStats.get(input.id).map(_.count).getOrElse(0L)
+        val dbHits = dbHitsStats.get(input.id).map(_.count).getOrElse(0L)
 
         input
           .addArgument(Arguments.Rows(rows))
-          .addArgument(Arguments.DbHits(dbhits))
+          .addArgument(Arguments.DbHits(dbHits))
     }
   }
 
@@ -78,7 +77,6 @@ class Profiler extends PipeDecorator {
 
     def decorate(pipe: Pipe, state: QueryState): QueryState =
       outerProfiler.decorate(parentPipe.getOrElse(throw new IllegalStateException("Missing parent pipe")), state)
-
 
     def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = iter
 

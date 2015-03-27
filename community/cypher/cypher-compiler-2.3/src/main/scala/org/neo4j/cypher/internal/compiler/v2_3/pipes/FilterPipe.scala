@@ -34,7 +34,7 @@ case class FilterPipe(source: Pipe, predicate: Predicate)(val estimatedCardinali
     input.filter(ctx => predicate.isTrue(ctx)(state))
   }
 
-  def planDescription = source.planDescription.andThen(this, "Filter", identifiers, LegacyExpression(predicate))
+  def planDescriptionWithoutCardinality = source.planDescription.andThen(this.id, "Filter", identifiers, LegacyExpression(predicate))
 
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources

@@ -48,9 +48,10 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
   test("single node is represented nicely") {
     val arguments = Seq(
       Rows(42),
-      DbHits(33))
+      DbHits(33),
+      EstimatedRows(1))
 
-    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n"))
+    val plan = PlanDescriptionImpl(new Id, "NAME", NoChildren, arguments, Set("n"))
 
     renderDetails(plan) should equal(
       """+----------+---------------+------+--------+-------------+-------+
@@ -64,9 +65,10 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
   test("extra identifiers are not a problem") {
     val arguments = Seq(
       Rows(42),
-      DbHits(33))
+      DbHits(33),
+      EstimatedRows(1))
 
-    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("a", "b", "c"))
+    val plan = PlanDescriptionImpl(new Id, "NAME", NoChildren, arguments, Set("a", "b", "c"))
 
     renderDetails(plan) should equal(
       """+----------+---------------+------+--------+-------------+-------+
@@ -80,9 +82,10 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
   test("super many identifiers stretches the column") {
     val arguments = Seq(
       Rows(42),
-      DbHits(33))
+      DbHits(33),
+      EstimatedRows(1))
 
-    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("a", "b", "c", "d", "e", "f"))
+    val plan = PlanDescriptionImpl(new Id, "NAME", NoChildren, arguments, Set("a", "b", "c", "d", "e", "f"))
 
     renderDetails(plan) should equal(
       """+----------+---------------+------+--------+------------------+-------+
@@ -94,9 +97,9 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
   }
 
   test("execution plan without profiler stats are not shown") {
-    val arguments = Seq()
+    val arguments = Seq(EstimatedRows(1))
 
-    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n"))
+    val plan = PlanDescriptionImpl(new Id, "NAME", NoChildren, arguments, Set("n"))
 
     renderDetails(plan) should equal(
       """+----------+---------------+-------------+-------+
@@ -108,11 +111,11 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
   }
 
   test("two plans with the same name get unique-ified names") {
-    val args1 = Seq(Rows(42), DbHits(33))
-    val args2 = Seq(Rows(2), DbHits(633), Index("Label", "Prop"))
+    val args1 = Seq(Rows(42), DbHits(33), EstimatedRows(1))
+    val args2 = Seq(Rows(2), DbHits(633), Index("Label", "Prop"), EstimatedRows(1))
 
-    val plan1 = PlanDescriptionImpl(pipe, "NAME", NoChildren, args1, Set("a"))
-    val plan2 = PlanDescriptionImpl(pipe, "NAME", SingleChild(plan1), args2, Set("b"))
+    val plan1 = PlanDescriptionImpl(new Id, "NAME", NoChildren, args1, Set("a"))
+    val plan2 = PlanDescriptionImpl(new Id, "NAME", SingleChild(plan1), args2, Set("b"))
 
     renderDetails(plan2) should equal(
       """+----------+---------------+------+--------+-------------+--------------+
@@ -126,9 +129,6 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
 
 
   test("Expand contains information about its relations") {
-    val arguments = Seq(
-      Rows(42),
-      DbHits(33))
     val expandPipe = ExpandAllPipe(pipe, "from", "rel", "to", Direction.INCOMING, LazyTypes.empty)(Some(1L))(mock[PipeMonitor])
 
     renderDetails(expandPipe.planDescription) should equal(
@@ -143,7 +143,7 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
   test("Label scan should be just as pretty as you would expect") {
     val pipe = NodeByLabelScanPipe("n", LazyLabel("Foo"))(Some(1L))(mock[PipeMonitor])
 
-    renderDetails( pipe.planDescription ) should equal(
+    renderDetails(pipe.planDescription) should equal(
       """+-----------------+---------------+-------------+-------+
         ||        Operator | EstimatedRows | Identifiers | Other |
         |+-----------------+---------------+-------------+-------+
@@ -153,9 +153,6 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
   }
 
   test("Var length expand contains information about its relations") {
-    val arguments = Seq(
-      Rows(42),
-      DbHits(33))
     val expandPipe = VarLengthExpandPipe(pipe, "from", "rel", "to", Direction.INCOMING, Direction.OUTGOING, LazyTypes.empty, 0, None, nodeInScope = false)(Some(1L))(mock[PipeMonitor])
 
     renderDetails(expandPipe.planDescription) should equal(
@@ -171,10 +168,10 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
     val arguments = Seq(
       Rows(42),
       DbHits(33),
-      ExpandExpression("  UNNAMED123", "R", Seq("WHOOP"), "  UNNAMED24", Direction.OUTGOING)
-    )
+      ExpandExpression("  UNNAMED123", "R", Seq("WHOOP"), "  UNNAMED24", Direction.OUTGOING),
+      EstimatedRows(1))
 
-    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  FRESHID12", "  AGGREGATION255"))
+    val plan = PlanDescriptionImpl(new Id, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  FRESHID12", "  AGGREGATION255"))
     renderDetails(plan) should equal(
       """+----------+---------------+------+--------+-----------------------------------+------------------+
         || Operator | EstimatedRows | Rows | DbHits |                       Identifiers |            Other |
@@ -188,10 +185,10 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
     val arguments = Seq(
       Rows(42),
       DbHits(33),
-      ExpandExpression("source", "through", Seq("SOME","OTHER","THING"), "target", Direction.OUTGOING)
-    )
+      ExpandExpression("source", "through", Seq("SOME","OTHER","THING"), "target", Direction.OUTGOING),
+      EstimatedRows(1))
 
-    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n"))
+    val plan = PlanDescriptionImpl(new Id, "NAME", NoChildren, arguments, Set("n"))
     renderDetails(plan) should equal(
       """+----------+---------------+------+--------+-------------+-------------------------------------------------+
         || Operator | EstimatedRows | Rows | DbHits | Identifiers |                                           Other |
@@ -205,9 +202,10 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
     val arguments = Seq(
       Rows(42),
       DbHits(33),
-      LegacyExpression(Not(Equals(Identifier("  UNNAMED123"), Identifier("  UNNAMED321")))))
+      LegacyExpression(Not(Equals(Identifier("  UNNAMED123"), Identifier("  UNNAMED321")))),
+      EstimatedRows(1))
 
-    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n"))
+    val plan = PlanDescriptionImpl(new Id, "NAME", NoChildren, arguments, Set("n"))
     renderDetails(plan) should equal(
       """+----------+---------------+------+--------+-------------+-----------------------------+
         || Operator | EstimatedRows | Rows | DbHits | Identifiers |                       Other |
@@ -222,9 +220,10 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
     val arguments = Seq(
       Rows(42),
       DbHits(33),
-      LegacyExpression(HasLabel(Identifier("x"), KeyToken.Resolved("Artist", 5, TokenType.Label))))
+      LegacyExpression(HasLabel(Identifier("x"), KeyToken.Resolved("Artist", 5, TokenType.Label))),
+      EstimatedRows(1))
 
-    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n"))
+    val plan = PlanDescriptionImpl(new Id, "NAME", NoChildren, arguments, Set("n"))
     renderDetails(plan) should equal(
       """+----------+---------------+------+--------+-------------+----------+
         || Operator | EstimatedRows | Rows | DbHits | Identifiers |    Other |
@@ -239,9 +238,10 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
     val arguments = Seq(
       Rows(42),
       DbHits(33),
-      LegacyExpression(LengthFunction(Identifier("n"))))
+      LegacyExpression(LengthFunction(Identifier("n"))),
+      EstimatedRows(1))
 
-    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n"))
+    val plan = PlanDescriptionImpl(new Id, "NAME", NoChildren, arguments, Set("n"))
     renderDetails(plan) should equal(
       """+----------+---------------+------+--------+-------------+-----------+
         || Operator | EstimatedRows | Rows | DbHits | Identifiers |     Other |
@@ -256,9 +256,10 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
     val arguments = Seq(
       Rows(42),
       DbHits(33),
-      LegacyExpression(Identifier("  id@23")))
+      LegacyExpression(Identifier("  id@23")),
+      EstimatedRows(1))
 
-    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("  n@76"))
+    val plan = PlanDescriptionImpl(new Id, "NAME", NoChildren, arguments, Set("  n@76"))
 
     val details = renderDetails(plan)
     details should equal(
@@ -276,9 +277,10 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
       Rows(42),
       DbHits(33),
       Planner("COST"),
-      LegacyExpression(Identifier("  id@23")))
+      LegacyExpression(Identifier("  id@23")),
+      EstimatedRows(1))
 
-    val plan = PlanDescriptionImpl(pipe, "NAME", NoChildren, arguments, Set("n"))
+    val plan = PlanDescriptionImpl(new Id, "NAME", NoChildren, arguments, Set("n"))
     renderDetails(plan) should equal(
       """+----------+---------------+------+--------+-------------+-------+
         || Operator | EstimatedRows | Rows | DbHits | Identifiers | Other |
@@ -313,9 +315,10 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
     val arguments = Seq(
       Rows( 42 ),
       DbHits( 33 ),
-      LegacyExpression( Property(Identifier( "x" ), KeyToken.Resolved( "Artist", 5, TokenType.PropertyKey ))))
+      LegacyExpression( Property(Identifier( "x" ), KeyToken.Resolved( "Artist", 5, TokenType.PropertyKey ))),
+      EstimatedRows(1))
 
-    val plan = PlanDescriptionImpl( pipe, "NAME", NoChildren, arguments, Set( "n") )
+    val plan = PlanDescriptionImpl( new Id, "NAME", NoChildren, arguments, Set( "n") )
     renderDetails(plan) should equal(
                  """+----------+---------------+------+--------+-------------+----------+
                    || Operator | EstimatedRows | Rows | DbHits | Identifiers |    Other |
@@ -329,9 +332,10 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
     val arguments = Seq(
       Rows( 42 ),
       DbHits( 33 ),
-      LegacyExpression( PropertyExists(Identifier("x"), KeyToken.Resolved("prop", 42, TokenType.PropertyKey))))
+      LegacyExpression( PropertyExists(Identifier("x"), KeyToken.Resolved("prop", 42, TokenType.PropertyKey))),
+      EstimatedRows(1))
 
-    val plan = PlanDescriptionImpl( pipe, "NAME", NoChildren, arguments, Set( "n") )
+    val plan = PlanDescriptionImpl( new Id, "NAME", NoChildren, arguments, Set( "n") )
     renderDetails(plan) should equal(
       """+----------+---------------+------+--------+-------------+-----------------+
         || Operator | EstimatedRows | Rows | DbHits | Identifiers |           Other |
@@ -343,17 +347,14 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite with BeforeAndAfte
 
   test("don't show unnamed identifiers in key names") {
     val joinPipe = NodeHashJoinPipe(Set("a", "  UNNAMED45", "  FRESHID77"), pipe, pipe)(Some(42))(mock[PipeMonitor])
-    val arguments = Seq(
-      Rows( 42 ),
-      DbHits( 33 ))
 
     renderDetails(joinPipe.planDescription) should equal(
       """+--------------+---------------+-------------+-----------------------+
         ||     Operator | EstimatedRows | Identifiers |                 Other |
         |+--------------+---------------+-------------+-----------------------+
         || NodeHashJoin |            42 |             | a, anon[45], anon[77] |
-        ||  Argument(1) |             - |             |                       |
-        ||  Argument(1) |             - |             |                       |
+        ||  Argument(1) |             1 |             |                       |
+        ||  Argument(1) |             1 |             |                       |
         |+--------------+---------------+-------------+-----------------------+
         |""".stripMargin )
   }

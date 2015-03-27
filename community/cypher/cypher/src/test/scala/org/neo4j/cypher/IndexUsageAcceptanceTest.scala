@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes.NodeIndexSeekPipe
 
 class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport{
   test("should be able to use indexes") {
-    given()
+    setUpDatabaseForTests()
 
     // When
     val result = executeWithNewPlanner("MATCH (n:Crew) WHERE n.name = 'Neo' RETURN n")
@@ -33,7 +33,7 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
   }
 
   test("should not forget predicates") {
-    given()
+    setUpDatabaseForTests()
 
     // When
     val result = executeWithNewPlanner("MATCH (n:Crew) WHERE n.name = 'Neo' AND n.name = 'Morpheus' RETURN n")
@@ -44,7 +44,7 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
   }
 
   test("should use index when there are multiple labels on the node") {
-    given()
+    setUpDatabaseForTests()
 
     // When
     val result = executeWithNewPlanner("MATCH (n:Matrix:Crew) WHERE n.name = 'Neo' RETURN n")
@@ -91,16 +91,13 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
 
     val result = executeWithNewPlanner("MATCH (l:L {l: 9})-[:REL]->(r:R {r: 23}) RETURN l, r")
     result.toList should have size 100
-    val found = result.executionPlanDescription().pipe.exists {
-      case p: NodeIndexSeekPipe =>
-        p.ident == "l"
-      case _ =>
-        false
-    }
-    found shouldBe true
+
+    val found = result.executionPlanDescription().find("NodeIndexSeek")
+
+    found.map(_.identifiers).toList should equal(List(Set("l")))
   }
 
-  private def given() {
+  private def setUpDatabaseForTests() {
     execute(
       """CREATE (architect:Matrix { name:'The Architect' }),
         |       (smith:Matrix { name:'Agent Smith' }),

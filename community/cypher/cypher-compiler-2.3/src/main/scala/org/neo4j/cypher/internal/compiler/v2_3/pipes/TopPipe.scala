@@ -112,9 +112,9 @@ case class TopPipe(source: Pipe, sortDescription: List[SortItem], countExpressio
     }
   }
 
-  def planDescription =
+  def planDescriptionWithoutCardinality =
     source.planDescription
-      .andThen(this, "Top", identifiers, LegacyExpression(countExpression), KeyExpressions(sortDescription.map(_.expression)))
+      .andThen(this.id, "Top", identifiers, LegacyExpression(countExpression), KeyExpressions(sortDescription.map(_.expression)))
 
   def symbols = source.symbols
 

@@ -58,7 +58,7 @@ case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: EntityByIdRhs)
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  def planDescription = new PlanDescriptionImpl(this, "NodeByIdSeek", NoChildren, Seq(), identifiers)
+  def planDescriptionWithoutCardinality = new PlanDescriptionImpl(this.id, "NodeByIdSeek", NoChildren, Seq(), identifiers)
 
   def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
 
