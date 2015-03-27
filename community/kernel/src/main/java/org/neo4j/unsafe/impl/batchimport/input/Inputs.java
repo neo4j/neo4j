@@ -29,6 +29,8 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 
+import static java.nio.charset.Charset.defaultCharset;
+
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_NODE_DECORATOR;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_RELATIONSHIP_DECORATOR;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.data;
@@ -87,8 +89,8 @@ public class Inputs
             Configuration configuration )
     {
         return new CsvInput(
-                nodeData( data( NO_NODE_DECORATOR, nodes ) ), defaultFormatNodeFileHeader(),
-                relationshipData( data( NO_RELATIONSHIP_DECORATOR, relationships ) ),
+                nodeData( data( NO_NODE_DECORATOR, defaultCharset(), nodes ) ), defaultFormatNodeFileHeader(),
+                relationshipData( data( NO_RELATIONSHIP_DECORATOR, defaultCharset(), relationships ) ),
                 defaultFormatRelationshipFileHeader(), idType, configuration,
                 Collectors.badRelationships( 0 ) );
     }

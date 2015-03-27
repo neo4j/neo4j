@@ -65,7 +65,7 @@ public class MultiReadableTest
 
         // WHEN
         RawIterator<Reader,IOException> readers = readerIteratorFromStrings( data, '\n' );
-        CharSeeker seeker = CharSeekers.charSeeker( Readables.multipleSources( readers ), 200, true, '"' );
+        CharSeeker seeker = CharSeekers.charSeeker( Readables.sources( readers ), 200, true, '"' );
 
         // WHEN/THEN
         for ( String[] line : data )
@@ -85,7 +85,7 @@ public class MultiReadableTest
                 {"where this", "is the second line"}, // 28+delimiter+newline = 30 characters
         };
         RawIterator<Reader,IOException> readers = readerIteratorFromStrings( data, '\n' );
-        CharReadable reader = Readables.multipleSources( readers );
+        CharReadable reader = Readables.sources( readers );
         assertEquals( 0L, reader.position() );
         SectionedCharBuffer buffer = new SectionedCharBuffer( 15 );
 

@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.Thread.UncaughtExceptionHandler;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map.Entry;
@@ -385,7 +386,7 @@ public class ImportTool
             @Override
             protected DataFactory<InputRelationship> underlyingObjectToObject( Option<File[]> group )
             {
-                return data( defaultRelationshipType( group.metadata() ), group.value() );
+                return data( defaultRelationshipType( group.metadata() ), Charset.defaultCharset(), group.value() );
             }
         };
     }
@@ -400,7 +401,7 @@ public class ImportTool
                 Function<InputNode,InputNode> decorator = input.metadata() != null
                         ? additiveLabels( input.metadata().split( ":" ) )
                         : NO_NODE_DECORATOR;
-                return data( decorator, input.value() );
+                return data( decorator, Charset.defaultCharset(), input.value() );
             }
         };
     }

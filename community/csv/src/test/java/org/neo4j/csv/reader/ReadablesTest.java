@@ -26,7 +26,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.StringReader;
+import java.io.Writer;
+import java.nio.charset.Charset;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -106,7 +109,7 @@ public class ReadablesTest
         CharReadable readable;
         try
         {
-            readable = Readables.file( compressed );
+            readable = Readables.files( Charset.defaultCharset(), compressed );
             fail( "Should fail since there are multiple suitable files in the zip archive" );
         }
         catch ( IOException e )
@@ -138,6 +141,49 @@ public class ReadablesTest
 
         // and THEN
         assertEquals( data.toCharArray().length, expected );
+    }
+
+    @Test
+    public void shouldComplyWithUtf8CharsetForExample() throws Exception
+    {
+        shouldComplyWithSpecifiedCharset( Charset.forName( "utf-8" ) );
+    }
+
+    @Test
+    public void shouldComplyWithIso88591CharsetForExample() throws Exception
+    {
+        shouldComplyWithSpecifiedCharset( Charset.forName( "iso-8859-1" ) );
+    }
+
+    private void shouldComplyWithSpecifiedCharset( Charset charset ) throws Exception
+    {
+        // GIVEN
+        String data = "abcåäö[]{}";
+        File file = writeToFile( data, charset );
+
+        // WHEN
+        CharReadable reader = Readables.files( charset, file );
+        SectionedCharBuffer buffer = new SectionedCharBuffer( 100 );
+        buffer = reader.read( buffer, buffer.front() );
+
+        // THEN
+        char[] expected = data.toCharArray();
+        char[] array = buffer.array();
+        assertEquals( expected.length, buffer.available() );
+        for ( int i = 0; i < expected.length; i++ )
+        {
+            assertEquals( expected[i], array[buffer.pivot()+i] );
+        }
+    }
+
+    private File writeToFile( String data, Charset charset ) throws IOException
+    {
+        File file = new File( directory.directory(), "text-" + charset.name() );
+        try ( Writer writer = new OutputStreamWriter( new FileOutputStream( file ), charset ) )
+        {
+            writer.append( data );
+        }
+        return file;
     }
 
     private File write( String text ) throws IOException
@@ -180,7 +226,7 @@ public class ReadablesTest
 
     private void assertReadText( File file, String text ) throws IOException
     {
-        CharReadable readable = Readables.file( file );
+        CharReadable readable = Readables.files( Charset.defaultCharset(), file );
         SectionedCharBuffer readText = new SectionedCharBuffer( text.toCharArray().length );
         readable.read( readText, readText.front() );
         assertArrayEquals( text.toCharArray(), copyOfRange( readText.array(), readText.pivot(), readText.front() ) );
