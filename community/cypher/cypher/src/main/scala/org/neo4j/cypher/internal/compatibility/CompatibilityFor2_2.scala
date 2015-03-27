@@ -116,17 +116,17 @@ object exceptionHandlerFor2_2 extends MapToPublicExceptions[CypherException] {
   def failedIndexException(indexName: String): CypherException = throw new FailedIndexException(indexName)
 }
 
-//import scala.reflect.ClassTag
-//
-//case class WrappedMonitors2_2(kernelMonitors: KernelMonitors) extends Monitors {
-//  def addMonitorListener[T](monitor: T, tags: String*) {
-//    kernelMonitors.addMonitorListener(monitor, tags: _*)
-//  }
-//  def newMonitor[T <: AnyRef : ClassTag](tags: String*): T = {
-//    val clazz = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
-//    kernelMonitors.newMonitor(clazz, tags: _*)
-//  }
-//}
+import scala.reflect.ClassTag
+
+case class WrappedMonitors2_2(kernelMonitors: KernelMonitors) extends Monitors {
+  def addMonitorListener[T](monitor: T, tags: String*) {
+    kernelMonitors.addMonitorListener(monitor, tags: _*)
+  }
+  def newMonitor[T <: AnyRef : ClassTag](tags: String*): T = {
+    val clazz = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
+    kernelMonitors.newMonitor(clazz, tags: _*)
+  }
+}
 
 trait CompatibilityFor2_2 {
   import org.neo4j.cypher.internal.compatibility.helpers._
@@ -310,11 +310,11 @@ case class CompatibilityPlanDescription(inner: InternalPlanDescription, version:
   }
 }
 
-//class StringInfoLogger2_2(stringLogger: StringLogger) extends InfoLogger {
-//  def info(message: String) {
-//    stringLogger.info(message)
-//  }
-//}
+case class StringInfoLogger2_2(stringLogger: StringLogger) extends InfoLogger {
+  def info(message: String) {
+    stringLogger.info(message)
+  }
+}
 
 case class CompatibilityFor2_2Cost(graph: GraphDatabaseService,
                                    queryCacheSize: Int,
@@ -326,7 +326,7 @@ case class CompatibilityFor2_2Cost(graph: GraphDatabaseService,
                                    logger: StringLogger,
                                    plannerName: CostBasedPlannerName) extends CompatibilityFor2_2 {
   protected val compiler = CypherCompilerFactory.costBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors, logger, plannerName
+    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, WrappedMonitors2_2(kernelMonitors), StringInfoLogger2_2(logger), plannerName
   )
 }
 
@@ -338,6 +338,6 @@ case class CompatibilityFor2_2Rule(graph: GraphDatabaseService,
                                    kernelMonitors: KernelMonitors,
                                    kernelAPI: KernelAPI) extends CompatibilityFor2_2 {
   protected val compiler = CypherCompilerFactory.ruleBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, kernelMonitors
+    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, WrappedMonitors2_2(kernelMonitors)
   )
 }

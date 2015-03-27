@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.CypherVersion._
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compatibility._
-import org.neo4j.cypher.internal.compiler.v2_2.{ConservativePlanner => ConservativePlanner2_2, IDPPlanner => IDPPlanner2_2, CostPlanner => CostPlanner2_2}
+import org.neo4j.cypher.internal.compiler.v2_2.{ConservativePlannerName => ConservativePlanner2_2, IDPPlannerName => IDPPlanner2_2, CostPlannerName => CostPlanner2_2}
 import org.neo4j.cypher.internal.compiler.v2_3.{DPPlannerName, RulePlannerName, CostPlannerName, IDPPlannerName, ConservativePlannerName, PlannerName, InternalNotificationLogger, RecordingNotificationLogger, devNullLogger}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
