@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
+import java.lang.reflect.Array;
 import java.util.Arrays;
 
 import org.neo4j.csv.reader.SourceTraceability;
@@ -66,6 +67,13 @@ public abstract class InputEntityDeserialization<ENTITY extends InputEntity> imp
         switch ( entry.type() )
         {
         case PROPERTY:
+            if ( value != null && value.getClass().isArray() && Array.getLength( value ) == 0 )
+            {
+                // Extractor will return empty arrays for fields that are empty. We don't need to
+                // store empty arrays as properties on entities since queries handle this while reading
+                // instead, more efficient overall.
+                break;
+            }
             addProperty( entry.name(), value );
             break;
         case IGNORE: // value ignored. The call stack shouldn't have come this far, but there's no harm
