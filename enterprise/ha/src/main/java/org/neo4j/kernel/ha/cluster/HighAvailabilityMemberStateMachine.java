@@ -99,11 +99,13 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         context.setAvailableHaMasterId( null );
     }
 
+    @Override
     public void addHighAvailabilityMemberListener( HighAvailabilityMemberListener toAdd )
     {
         memberListeners = Listeners.addListener( toAdd, memberListeners );
     }
 
+    @Override
     public void removeHighAvailabilityMemberListener( HighAvailabilityMemberListener toRemove )
     {
         memberListeners = Listeners.removeListener( toRemove, memberListeners );
@@ -156,8 +158,8 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                         availabilityGuard.deny(HighAvailabilityMemberStateMachine.this);
                     }
 
-                    logger.debug( "Got masterIsElected(" + coordinatorId + "), changed " + oldState + " -> " +
-                            state + ". Previous elected master is " + previousElected );
+                    logger.debug( "Got masterIsElected(" + coordinatorId + "), moved to " + state + " from " + oldState
+                            + ". Previous elected master is " + previousElected );
                 }
             }
             catch ( Throwable t )
@@ -237,7 +239,13 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                  HighAvailabilityModeSwitcher.SLAVE.equals( role ) &&
                  state == HighAvailabilityMemberState.SLAVE )
             {
+                HighAvailabilityMemberState oldState = state;
                 changeStateToPending();
+                logger.debug( "Got memberIsUnavailable(" + unavailableId + "), moved to " + state + " from " + oldState );
+            }
+            else
+            {
+                logger.debug( "Got memberIsUnavailable(" + unavailableId + ")" );
             }
         }
 
@@ -246,7 +254,14 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         {
             if ( !isQuorum( getAliveCount(), getTotalCount() ) )
             {
+                HighAvailabilityMemberState oldState = state;
                 changeStateToPending();
+                logger.debug( "Got memberIsFailed(" + instanceId + ") and cluster lost quorum to continue, moved to "
+                        + state + " from " + oldState );
+            }
+            else
+            {
+                logger.debug( "Got memberIsFailed(" + instanceId + ")" );
             }
         }
 
