@@ -61,7 +61,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
+import static org.neo4j.test.EphemeralFileSystemRule.shutdownDbAction;
 
 public class ConsistencyCheckToolTest
 {
@@ -231,7 +231,7 @@ public class ConsistencyCheckToolTest
             tx.success();
         }
 
-        fs.snapshot( shutdownDb( db ) );
+        fs.snapshot( shutdownDbAction( db ) );
     }
 
     private ConsistencyCheckTool newConsistencyCheckToolWith( Monitors monitors, StoreRecoverer storeRecoverer,

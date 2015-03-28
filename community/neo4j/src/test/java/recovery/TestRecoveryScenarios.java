@@ -55,7 +55,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
-import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
+import static org.neo4j.test.EphemeralFileSystemRule.shutdownDbAction;
+
 
 /**
  * Arbitrary recovery scenarios boiled down to as small tests as possible
@@ -331,7 +332,7 @@ public class TestRecoveryScenarios
     @SuppressWarnings("deprecation")
     private void crashAndRestart( InMemoryIndexProvider indexProvider )
     {
-        FileSystemAbstraction uncleanFs = fsRule.snapshot( shutdownDb( db ) );
+        FileSystemAbstraction uncleanFs = fsRule.snapshot( shutdownDbAction( db ) );
         db = (GraphDatabaseAPI) databaseFactory( uncleanFs, indexProvider ).newImpermanentDatabase();
     }
 }
