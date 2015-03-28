@@ -45,7 +45,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static org.junit.Assert.assertEquals;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
+import static org.neo4j.test.EphemeralFileSystemRule.shutdownDbAction;
 
 public class CountsStoreRecoveryTest
 {
@@ -105,7 +105,7 @@ public class CountsStoreRecoveryTest
 
     private void crashAndRestart()
     {
-        FileSystemAbstraction uncleanFs = fsRule.snapshot( shutdownDb( db ) );
+        FileSystemAbstraction uncleanFs = fsRule.snapshot( shutdownDbAction( db ) );
         db = databaseFactory( uncleanFs, indexProvider ).newImpermanentDatabase();
     }
 

@@ -32,7 +32,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
+import static org.neo4j.test.EphemeralFileSystemRule.shutdownDbAction;
 
 public class TestTxEntries
 {
@@ -49,7 +49,7 @@ public class TestTxEntries
     {
         final GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
         createSomeTransactions( db );
-        EphemeralFileSystemAbstraction snapshot = fs.snapshot( shutdownDb( db ) );
+        EphemeralFileSystemAbstraction snapshot = fs.snapshot( shutdownDbAction( db ) );
 
         new TestGraphDatabaseFactory().setFileSystem( snapshot ).newImpermanentDatabase( storeDir ).shutdown();
     }
