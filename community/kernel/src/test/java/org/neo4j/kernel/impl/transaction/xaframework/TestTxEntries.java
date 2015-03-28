@@ -39,7 +39,7 @@ import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
+import static org.neo4j.test.EphemeralFileSystemRule.shutdownDbAction;
 
 public class TestTxEntries
 {
@@ -62,7 +62,7 @@ public class TestTxEntries
     {
         final GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
         createSomeTransactions( db );
-        EphemeralFileSystemAbstraction snapshot = fs.snapshot( shutdownDb( db ) );
+        EphemeralFileSystemAbstraction snapshot = fs.snapshot( shutdownDbAction( db ) );
 
         new TestGraphDatabaseFactory().setFileSystem( snapshot ).newImpermanentDatabase( storeDir ).shutdown();
     }

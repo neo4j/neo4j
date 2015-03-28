@@ -60,7 +60,7 @@ public class EphemeralFileSystemRule extends ExternalResource
         fs = new EphemeralFileSystemAbstraction();
     }
 
-    public static Runnable shutdownDb( final GraphDatabaseService db )
+    public static Runnable shutdownDbAction( final GraphDatabaseService db )
     {
         return new Runnable()
         {

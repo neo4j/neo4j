@@ -42,8 +42,8 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
-import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogMatchers.logEntries;
+import static org.neo4j.test.EphemeralFileSystemRule.shutdownDbAction;
 import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
 
 public class TestApplyTransactions
@@ -74,7 +74,7 @@ public class TestApplyTransactions
         XaDataSource destNeoDataSource = xaDs( dest );
         destNeoDataSource.applyCommittedTransaction( latestTxId, theTx );
         origin.shutdown();
-        EphemeralFileSystemAbstraction snapshot = fs.snapshot( shutdownDb( dest ) );
+        EphemeralFileSystemAbstraction snapshot = fs.snapshot( shutdownDbAction( dest ) );
 
         /*
          * Open crashed db, try to extract the transaction it reports as latest. It should be there.
