@@ -46,7 +46,7 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
+import static org.neo4j.test.EphemeralFileSystemRule.shutdownDbAction;
 
 /**
  * Test for making sure that slow id generator rebuild is exercised and also a problem
@@ -61,7 +61,7 @@ public class TestCrashWithRebuildSlow
         final GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
                 .setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
         produceNonCleanDefraggedStringStore( db );
-        EphemeralFileSystemAbstraction snapshot = fs.snapshot( shutdownDb( db ) );
+        EphemeralFileSystemAbstraction snapshot = fs.snapshot( shutdownDbAction( db ) );
 
         // Recover with rebuild_idgenerators_fast=false
         assertNumberOfFreeIdsEquals( storeDir, snapshot, 0 );

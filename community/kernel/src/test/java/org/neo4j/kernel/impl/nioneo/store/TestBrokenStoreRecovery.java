@@ -19,56 +19,96 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import org.junit.Rule;
+
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.channels.FileChannel;
-import org.junit.Test;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.test.ProcessStreamHandler;
-import org.neo4j.test.TargetDirectory;
 
-import static org.junit.Assert.*;
+import org.junit.Test;
+
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.test.EphemeralFileSystemRule.shutdownDbAction;
 
 public class TestBrokenStoreRecovery
 {
-    private void trimFileToSize( File theFile, int toSize )
-            throws IOException
-    {
-        FileChannel theChannel = new RandomAccessFile( theFile, "rw" ).getChannel();
-        theChannel.truncate( toSize );
-        theChannel.force( false );
-        theChannel.close();
-    }
+    public final @Rule EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private File storeDir = new File( "dir" );
 
     /**
      * Creates a store with a truncated property store file that remains like
      * that during recovery by truncating the logical log as well. Id
      * regeneration should proceed without exceptions, even though the last
      * property record is incomplete.
-     * 
-     * @throws Exception
      */
     @Test
     public void testTruncatedPropertyStore() throws Exception
     {
-        File storeDir = TargetDirectory.forTest(
-                TestBrokenStoreRecovery.class ).cleanDirectory( "propertyStore"
-        );
-        Process process = Runtime.getRuntime().exec(
-            new String[]{
-                "java", "-cp",
-                System.getProperty( "java.class.path" ),
-                ProduceUncleanStore.class.getName(),
-                storeDir.getAbsolutePath()
-            } );
-
-        assertEquals(
-            0,
-            new ProcessStreamHandler( process, true ).waitForResult() );
-        trimFileToSize( new File( storeDir, "neostore.propertystore.db" ), 42 );
+        EphemeralFileSystemAbstraction snapshot = produceUncleanStore();
+        File propertyStoreFile = new File( storeDir, "neostore.propertystore.db" );
+        trimFileToSize( snapshot, propertyStoreFile, 42 );
         File log = new File( storeDir, "nioneo_logical.log.1" );
-        trimFileToSize( log, 78 );
-        new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsolutePath() ).shutdown();
+        trimFileToSize( snapshot, log, 78 );
+
+        // Previously recovery threw exception, it shouldn't.
+        GraphDatabaseService db = newDb();
+        try
+        {
+            // Also assert that the id generator now has the right high id.
+            assertEquals( 0L, ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency(
+                    XaDataSourceManager.class ).getNeoStoreDataSource().getNeoStore().getPropertyStore().getHighId() );
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+
+    private GraphDatabaseService newDb()
+    {
+        return new TestGraphDatabaseFactory().setFileSystem( fsRule.get() )
+                .newImpermanentDatabase( storeDir.getAbsolutePath() );
+    }
+
+    private EphemeralFileSystemAbstraction produceUncleanStore()
+    {
+        GraphDatabaseService db = newDb();
+        Transaction tx = db.beginTx();
+        try
+        {
+            db.createNode().setProperty( "name", "Something" );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+
+        // We simulate a crash here
+        return fsRule.snapshot( shutdownDbAction( db ) );
+    }
+
+    private static void trimFileToSize( FileSystemAbstraction fs, File theFile, int toSize )
+            throws IOException
+    {
+        assertTrue( fs.fileExists( theFile.getAbsoluteFile() ) );
+        StoreChannel channel = fs.open( theFile.getAbsoluteFile(), "rw" );
+        try
+        {
+            channel.truncate( toSize );
+        }
+        finally
+        {
+            channel.close();
+        }
     }
 }
