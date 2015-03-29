@@ -19,8 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import java.util.Arrays;
-
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -31,6 +29,9 @@ import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
+
+import static java.lang.Math.max;
+import static java.util.Arrays.copyOf;
 
 /**
  * Encodes property data into {@link PropertyBlock property blocks}, attaching them to each
@@ -81,7 +82,7 @@ public class PropertyEncoderStep<RECORD extends PrimitiveRecord,INPUT extends In
                 int count = input.properties().length >> 1;
                 if ( blockCursor+count > propertyBlocks.length )
                 {
-                    propertyBlocks = Arrays.copyOf( propertyBlocks, propertyBlocks.length << 1 );
+                    propertyBlocks = copyOf( propertyBlocks, max( propertyBlocks.length << 1, blockCursor+count ) );
                 }
                 propertyKeyHolder.propertyKeysAndValues( propertyBlocks, blockCursor,
                         input.properties(), propertyCreator );
