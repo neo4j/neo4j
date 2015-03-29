@@ -20,7 +20,7 @@
 package org.neo4j.register;
 
 import org.neo4j.function.Function2;
-import org.neo4j.jsr166e.StampedLock;
+import org.neo4j.concurrent.jsr166e.StampedLock;
 import org.neo4j.register.Register.CopyableDoubleLongRegister;
 
 public class ConcurrentRegisters

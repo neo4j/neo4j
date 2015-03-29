@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.impl.muninn;
+package org.neo4j.concurrent;
 
 import java.util.concurrent.locks.LockSupport;
 
@@ -26,13 +26,13 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 /**
  * This class is similar in many ways to a CountDownLatch(1).
  *
- * The main difference is that instances of this specialized Latch implementation are much quicker to allocate and
+ * The main difference is that instances of this specialized latch implementation are much quicker to allocate and
  * construct. Each instance also takes up less memory on the heap, and enqueueing wait nodes on the latch is faster.
  *
  * There are two reasons why this class is faster to construct: 1. it performs no volatile write during its
  * construction, and 2. it does not need to allocate an internal Sync object, like CountDownLatch does.
  */
-final class Latch
+public final class BinaryLatch
 {
     private static class Node
     {
@@ -45,7 +45,7 @@ final class Latch
     }
 
     private static final long stackOffset =
-            UnsafeUtil.getFieldOffset( Latch.class, "stack" );
+            UnsafeUtil.getFieldOffset( BinaryLatch.class, "stack" );
     private static final Node end = new Node();
     private static final Node released = new Node();
 

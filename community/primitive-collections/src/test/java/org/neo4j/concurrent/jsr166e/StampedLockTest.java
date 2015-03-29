@@ -27,7 +27,7 @@
 
 // Based on revision 1.1: http://gee.cs.oswego.edu/cgi-bin/viewcvs.cgi/jsr166/src/test/tck-jsr166e/StampedLockTest.java?revision=1.1&view=markup
 
-package org.neo4j.jsr166e;
+package org.neo4j.concurrent.jsr166e;
 
 import java.util.concurrent.CountDownLatch;
 
