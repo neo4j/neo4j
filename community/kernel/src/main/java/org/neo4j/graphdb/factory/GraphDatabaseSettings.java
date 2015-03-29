@@ -94,6 +94,11 @@ public abstract class GraphDatabaseSettings
             "dbms.cypher.planner",
             options( "COST", "RULE"), NO_DEFAULT );
 
+    @Internal
+    public static final Setting<String> cypher_runtime = setting(
+            "dbms.cypher.runtime",
+            options( "INTERPRETED", "COMPILED" ), NO_DEFAULT );
+
     @Description( "The number of Cypher query execution plans that are cached." )
     public static Setting<Integer> query_cache_size = setting( "query_cache_size", INTEGER, "1000", min( 0 ) );
 
