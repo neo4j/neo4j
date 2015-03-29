@@ -42,12 +42,15 @@ public final class BinaryLatch
     private static final class Waiter extends Node
     {
         final Thread waitingThread = Thread.currentThread();
+        volatile byte state;
     }
 
     private static final long stackOffset =
             UnsafeUtil.getFieldOffset( BinaryLatch.class, "stack" );
     private static final Node end = new Node();
     private static final Node released = new Node();
+    private static final byte waiterStateSuccessor = 1;
+    private static final byte waiterStateReleased = 2;
 
     @SuppressWarnings( "unused" )
     private volatile Node stack; // written to via unsafe
@@ -67,7 +70,17 @@ public final class BinaryLatch
             // There are no waiters to unpark, so don't bother.
             return;
         }
-        unparkAll( waiters );
+        unparkSuccessor( waiters );
+    }
+
+    private void unparkSuccessor( Node waiters )
+    {
+        if ( waiters.getClass() == Waiter.class )
+        {
+            Waiter waiter = (Waiter) waiters;
+            waiter.state = waiterStateSuccessor;
+            LockSupport.unpark( waiter.waitingThread );
+        }
     }
 
     /**
@@ -109,21 +122,36 @@ public final class BinaryLatch
                     // stack, that the latch has been released.
                     LockSupport.park( this );
                 }
-                while ( !isReleased() );
+                while ( !isReleased( waiter ) );
             }
         }
     }
 
-    private boolean isReleased()
+    private boolean isReleased( Waiter waiter )
     {
-        // We have to go through the entire stack and look for the 'released' sentinel, since we might be racing with
-        // the 'state == released' branch in await.
+        // If we are the most recently enqueued waiter on the stack before the release, then that makes us the
+        // successor. As the successor, it is our job to wake up all the other threads. We can *only* become the
+        // successor if the latch has been released, so there's no need to check anything else in this case.
+        if ( waiter.state == waiterStateSuccessor )
+        {
+            unparkAll( waiter.next );
+            return true;
+        }
+
+        // Otherwise we have to go through the entire stack and look for the 'released' sentinel, since we might be
+        // racing with the 'state == released' branch in await.
         Node state = stack;
         do
         {
             if ( state == released )
             {
                 // We've been released!
+                if ( waiter.state != waiterStateReleased )
+                {
+                    // But it doesn't look like someone else is unparking the threads, so let's do that.
+                    // This can happen if we missed the signal to become the successor.
+                    unparkAll( waiter.next );
+                }
                 return true;
             }
 
@@ -150,6 +178,7 @@ public final class BinaryLatch
         while ( waiters.getClass() == Waiter.class )
         {
             Waiter waiter = (Waiter) waiters;
+            waiter.state = waiterStateReleased;
             LockSupport.unpark( waiter.waitingThread );
             Node next;
             do
