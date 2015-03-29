@@ -555,6 +555,14 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
             }
             throw Exceptions.launderedException( e );
         }
+        /*
+         * At this point recovery has completed and the datasource is ready for use. Whatever panic might have
+         * happened before has been healed. So we can safely set the kernel health to ok.
+         * This right now has any real effect only in the case of internal restarts (for example, after a store copy
+         * in the case of HA). Standalone instances will have to be restarted by the user, as is proper for all
+         * kernel panics.
+         */
+        kernelHealth.healed();
     }
 
     // Startup sequence
