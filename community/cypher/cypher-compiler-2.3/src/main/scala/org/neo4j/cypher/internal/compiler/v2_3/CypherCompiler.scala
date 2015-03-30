@@ -123,7 +123,7 @@ case class CypherCompiler(parser: CypherParser,
   def prepareQuery(queryText: String, executionMode: ExecutionMode, offset: Option[InputPosition] = None): PreparedQuery = {
 
     val notificationLogger = notificationLoggerBuilder(executionMode)
-    val parsedStatement = parser.parse(queryText)
+    val parsedStatement = parser.parse(queryText, offset)
 
     val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
     val originalSemanticState = semanticChecker.check(queryText, cleanedStatement, notificationLogger, offset)

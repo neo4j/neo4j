@@ -63,7 +63,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
   }
 
   test("should consider extra offset in syntax error messages when there are pre-parsing options") {
-    expectSyntaxError("PROFILE XX", "", 0) // TODO: This looks wrong.
+    expectSyntaxError("PROFILE XX", "", 8)
   }
 
   test("should consider extra offset in semantic error messages when there are pre-parsing options") {
