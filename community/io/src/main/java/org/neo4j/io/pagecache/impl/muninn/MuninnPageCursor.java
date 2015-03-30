@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.IOException;
 
+import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
@@ -134,7 +135,7 @@ abstract class MuninnPageCursor implements PageCursor
             if ( item == null )
             {
                 // Looks like there's no mapping, so we'd like to do a page fault.
-                Latch latch = new Latch();
+                BinaryLatch latch = new BinaryLatch();
                 if ( UnsafeUtil.compareAndSwapObject( chunk, chunkOffset, null, latch ) )
                 {
                     // We managed to inject our latch, so we now own the right to perform the page fault. We also
@@ -142,11 +143,11 @@ abstract class MuninnPageCursor implements PageCursor
                     item = pageFault( filePageId, swapper, chunkOffset, chunk, latch );
                 }
             }
-            else if ( item.getClass() == Latch.class )
+            else if ( item.getClass() == BinaryLatch.class )
             {
                 // We found a latch, so someone else is already doing a page fault for this page. So we'll just wait
                 // for them to finish, and grab the page then.
-                Latch latch = (Latch) item;
+                BinaryLatch latch = (BinaryLatch) item;
                 latch.await();
                 item = null;
             }
@@ -170,7 +171,7 @@ abstract class MuninnPageCursor implements PageCursor
     }
 
     private MuninnPage pageFault(
-            long filePageId, PageSwapper swapper, long chunkOffset, Object[] chunk, Latch latch )
+            long filePageId, PageSwapper swapper, long chunkOffset, Object[] chunk, BinaryLatch latch )
             throws IOException
     {
         // We are page faulting. This is a critical time, because we currently have the given latch in the chunk array
