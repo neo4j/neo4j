@@ -1,6 +1,0 @@
-[[rest-api-relationship-types]]
-== Relationship types ==
-
-include::get-relationship-types.asciidoc[]
-
-

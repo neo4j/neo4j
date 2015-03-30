@@ -1,3 +1,0 @@
-
-// totally forget to end the script with a ;
-create ()

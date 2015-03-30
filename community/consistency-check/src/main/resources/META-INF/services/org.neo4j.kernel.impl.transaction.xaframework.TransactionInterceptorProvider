@@ -1,2 +1,0 @@
-org.neo4j.consistency.checking.incremental.intercept.VerifyingTransactionInterceptorProvider
-org.neo4j.consistency.checking.incremental.intercept.InconsistencyLoggingTransactionInterceptorProvider

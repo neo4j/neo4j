@@ -1,4 +1,0 @@
-This file contains the full license text of the included third party
-libraries. For an overview of the licenses see the NOTICE.txt file.
-
-

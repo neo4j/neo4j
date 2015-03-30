@@ -1,5 +1,0 @@
-2.2.0
------
-o Added automatic, continuous background flushing to the PageCache.
-o Made the PageCache manage its own background threads
-o Made PageSwappers gracefully handle interrupts in force()

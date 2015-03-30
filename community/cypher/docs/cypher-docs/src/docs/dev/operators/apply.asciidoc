@@ -1,4 +1,0 @@
-[[operator-apply]]
-= Apply =
-
-Apply runs an 'inner plan' for every row of the 'outer plan'.
