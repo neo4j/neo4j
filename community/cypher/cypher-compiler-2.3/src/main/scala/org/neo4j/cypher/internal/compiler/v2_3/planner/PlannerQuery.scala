@@ -152,12 +152,12 @@ object PlannerQuery {
 trait CardinalityEstimation {
   self: PlannerQuery =>
 
-  def estimation: Cardinality
+  def estimatedCardinality: Cardinality
 }
 
 object CardinalityEstimation {
   def lift(plannerQuery: PlannerQuery, cardinality: Cardinality) =
     new PlannerQuery(plannerQuery.graph, plannerQuery.horizon, plannerQuery.tail) with CardinalityEstimation {
-      val estimation = cardinality
+      val estimatedCardinality = cardinality
     }
 }

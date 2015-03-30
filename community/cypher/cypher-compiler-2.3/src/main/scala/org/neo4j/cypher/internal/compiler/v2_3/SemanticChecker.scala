@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_3
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
 
 class SemanticChecker(semanticCheckMonitor: SemanticCheckMonitor) {
-  def check(queryText: String, statement: Statement, notificationLogger: InternalNotificationLogger = devNullLogger): SemanticState = {
+  def check(queryText: String, statement: Statement,
+            notificationLogger: InternalNotificationLogger = devNullLogger, offset: Option[InputPosition]): SemanticState = {
     semanticCheckMonitor.startSemanticCheck(queryText)
     val SemanticCheckResult(semanticState, semanticErrors) = statement.semanticCheck(SemanticState.clean.withNotificationLogger(notificationLogger))
 
@@ -37,7 +38,8 @@ class SemanticChecker(semanticCheckMonitor: SemanticCheckMonitor) {
     }
     semanticErrors.map {
       error =>
-        throw new SyntaxException(s"${error.msg} (${error.position})", queryText, error.position.offset)
+        val position = error.position.withOffset(offset)
+        throw new SyntaxException(s"${error.msg} ($position)", queryText, position.offset)
     }
 
     semanticState

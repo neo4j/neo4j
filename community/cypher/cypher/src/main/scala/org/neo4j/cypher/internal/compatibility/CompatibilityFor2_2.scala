@@ -191,17 +191,17 @@ case class ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, planner:
     new ResourceIterator[util.Map[String, Any]] {
       def close() = exceptionHandlerFor2_2.runSafely {
         endQueryExecution()
-        innerJavaIterator.close
+        innerJavaIterator.close()
       }
       def next() = exceptionHandlerFor2_2.runSafely {innerJavaIterator.next}
-      def hasNext() = exceptionHandlerFor2_2.runSafely{
+      def hasNext = exceptionHandlerFor2_2.runSafely{
         val next = innerJavaIterator.hasNext
         if (!next) {
           endQueryExecution()
         }
         next
       }
-      def remove() =  exceptionHandlerFor2_2.runSafely{innerJavaIterator.remove}
+      def remove() =  exceptionHandlerFor2_2.runSafely{innerJavaIterator.remove()}
     }
 
   }

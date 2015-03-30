@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.LazyIterable
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LogicalPlanningContext, Selector, ProjectingSelector}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{ProjectingSelector, Selector}
 
 import scala.collection.immutable.BitSet
 
@@ -37,22 +37,20 @@ trait IDPSolverMonitor {
  *
  * written by Donald Kossmann and Konrad Stocker
  */
-class IDPSolver[S, P](generator: IDPSolverStep[S, P], // generates candidates at each step
-                      projectingSelector: ProjectingSelector[P], // pick best from a set of candidates
-                      registryFactory: () => IdRegistry[S] = () => IdRegistry[S], // maps from Set[S] to BitSet
-                      tableFactory: (IdRegistry[S], Seed[S, P]) => IDPTable[P] = (registry: IdRegistry[S], seed: Seed[S, P]) => IDPTable(registry, seed),
-                      maxTableSize: Int, // limits computation effort by reducing result quality
-                      monitor: IDPSolverMonitor) {
+class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Result, Context], // generates candidates at each step
+                         projectingSelector: ProjectingSelector[Result], // pick best from a set of candidates
+                         registryFactory: () => IdRegistry[Solvable] = () => IdRegistry[Solvable], // maps from Set[S] to BitSet
+                         tableFactory: (IdRegistry[Solvable], Seed[Solvable, Result]) => IDPTable[Result] = (registry: IdRegistry[Solvable], seed: Seed[Solvable, Result]) => IDPTable(registry, seed),
+                         maxTableSize: Int, // limits computation effort by reducing result quality
+                         monitor: IDPSolverMonitor) {
 
-  def apply(seed: Seed[S, P], initialToDo: Set[S])(implicit context: LogicalPlanningContext): Iterator[(Set[S], P)] = {
+  def apply(seed: Seed[Solvable, Result], initialToDo: Set[Solvable])(implicit context: Context): Iterator[(Set[Solvable], Result)] = {
     val registry = registryFactory()
     val table = tableFactory(registry, seed)
     var toDo = registry.registerAll(initialToDo)
 
     // utility functions
-
-    val identitySelector: Selector[P] = projectingSelector(_)
-    val goalSelector: Selector[(Goal, P)] = projectingSelector.apply[(Goal, P)](_._2, _)
+    val goalSelector: Selector[(Goal, Result)] = projectingSelector.apply[(Goal, Result)](_._2, _)
 
     def generateBestCandidates(maxTableSize: Int, maxBlockSize: Int): Int = {
       var lastStarted = 1
@@ -73,15 +71,15 @@ class IDPSolver[S, P](generator: IDPSolverStep[S, P], // generates candidates at
       lastStarted - 1
     }
 
-    def findBestCandidateInBlock(blockSize: Int): (Goal, P) = {
-      val blockCandidates: Iterable[(Goal, P)] = LazyIterable(table.plansOfSize(blockSize)).toSeq
+    def findBestCandidateInBlock(blockSize: Int): (Goal, Result) = {
+      val blockCandidates: Iterable[(Goal, Result)] = LazyIterable(table.plansOfSize(blockSize)).toSeq
       val bestInBlock = goalSelector(blockCandidates)
       bestInBlock.getOrElse(throw new IllegalStateException("Found no solution for block"))
     }
 
-    def compactBlock(original: Goal, product: P): Unit = {
+    def compactBlock(original: Goal, candidate: Result): Unit = {
       val newId = registry.compact(original)
-      table.put(BitSet.empty + newId, product)
+      table.put(BitSet.empty + newId, candidate)
       toDo = toDo -- original + newId
       table.removeAllTracesOf(original)
     }

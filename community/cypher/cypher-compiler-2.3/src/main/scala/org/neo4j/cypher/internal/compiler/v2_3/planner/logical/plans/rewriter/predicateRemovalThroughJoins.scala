@@ -45,7 +45,7 @@ case object predicateRemovalThroughJoins extends Rewriter {
         NodeHashJoin(nodeIds, lhs, rhsLeaf)(n.solved)
       else {
         val newRhsPlannerQuery = rhsLeaf.solved.updateGraph(_.addPredicates(newSelection:_*))
-        val newRhsSolved = CardinalityEstimation.lift(newRhsPlannerQuery, rhsLeaf.solved.estimation)
+        val newRhsSolved = CardinalityEstimation.lift(newRhsPlannerQuery, rhsLeaf.solved.estimatedCardinality)
         NodeHashJoin(nodeIds, lhs, Selection(newSelection, rhsLeaf)(newRhsSolved))(n.solved)
       }
   }

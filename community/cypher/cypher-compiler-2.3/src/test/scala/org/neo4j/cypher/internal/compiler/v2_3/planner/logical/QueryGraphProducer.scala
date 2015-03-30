@@ -36,7 +36,7 @@ trait QueryGraphProducer extends MockitoSugar {
     val ast = parser.parse(q)
     val semanticChecker = new SemanticChecker(mock[SemanticCheckMonitor])
     val cleanedStatement: Statement = ast.endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
-    val semanticState = semanticChecker.check(query, cleanedStatement)
+    val semanticState = semanticChecker.check(query, cleanedStatement, devNullLogger, None)
 
     val (firstRewriteStep, _, postConditions) = astRewriter.rewrite(query, cleanedStatement, semanticState)
     val semanticTable = SemanticTable(types = semanticState.typeTable, recordedScopes = semanticState.recordedScopes)

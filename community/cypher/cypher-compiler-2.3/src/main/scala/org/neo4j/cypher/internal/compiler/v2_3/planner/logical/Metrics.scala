@@ -39,7 +39,7 @@ object Metrics {
       copy(inboundCardinality = c)
 
     def recurse(fromPlan: LogicalPlan): QueryGraphSolverInput = {
-      val newCardinalityInput = fromPlan.solved.estimation
+      val newCardinalityInput = fromPlan.solved.estimatedCardinality
       val newLabels = (labelInfo fuse fromPlan.solved.labelInfo)(_ ++ _)
       copy(labelInfo = newLabels, inboundCardinality = newCardinalityInput, strictness = strictness)
     }

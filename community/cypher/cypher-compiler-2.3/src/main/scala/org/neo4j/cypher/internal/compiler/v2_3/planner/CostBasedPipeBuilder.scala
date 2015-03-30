@@ -46,7 +46,10 @@ case class CostBasedPipeBuilder(monitors: Monitors,
   extends PipeBuilder {
 
   def producePlan(inputQuery: PreparedQuery, planContext: PlanContext): PipeInfo = {
-    CostBasedPipeBuilder.rewriteStatement(inputQuery.statement, inputQuery.scopeTree, inputQuery.semanticTable, inputQuery.conditions, monitors.newMonitor[AstRewritingMonitor]()) match {
+    val statement = CostBasedPipeBuilder.rewriteStatement(inputQuery.statement, inputQuery.scopeTree,
+                                                          inputQuery.semanticTable, inputQuery.conditions,
+                                                          monitors.newMonitor[AstRewritingMonitor]())
+    statement match {
       case (ast: Query, rewrittenSemanticTable) =>
         monitor.startedPlanning(inputQuery.queryText)
         val (logicalPlan, pipeBuildContext) = produceLogicalPlan(ast, rewrittenSemanticTable)(planContext)

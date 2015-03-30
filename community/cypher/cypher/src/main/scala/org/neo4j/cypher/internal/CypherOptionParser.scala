@@ -19,16 +19,18 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.internal.compiler.v2_3.InputPosition
 import org.neo4j.cypher.internal.compiler.v2_3.parser._
 import org.parboiled.scala._
 
-final case class CypherQueryWithOptions(statement: String, options: Seq[CypherOption] = Seq.empty)
+final case class CypherQueryWithOptions(statement: String, options: Seq[CypherOption], offset: InputPosition)
 
 case class CypherOptionParser(monitor: ParserMonitor[CypherQueryWithOptions]) extends Parser with Base {
-  def apply(input: String): CypherQueryWithOptions = parseOrThrow(input, QueryWithOptions, Some(monitor))
+  def apply(input: String): CypherQueryWithOptions = parseOrThrow(input, None, QueryWithOptions, Some(monitor))
 
   def QueryWithOptions: Rule1[Seq[CypherQueryWithOptions]] =
-    AllOptions ~ optional(WS) ~ AnySomething ~~> ( (options: Seq[CypherOption], text: String) => Seq(CypherQueryWithOptions(text, options)))
+    AllOptions ~ optional(WS) ~ AnySomething ~~>>
+      ( (options: Seq[CypherOption], text: String) => pos => Seq(CypherQueryWithOptions(text, options, pos)))
 
   def AllOptions: Rule1[Seq[CypherOption]] = zeroOrMore(AnyCypherOption, WS)
 
@@ -36,23 +38,22 @@ case class CypherOptionParser(monitor: ParserMonitor[CypherQueryWithOptions]) ex
 
   def AnySomething: Rule1[String] = rule("Query") { oneOrMore(org.parboiled.scala.ANY) ~> identity }
 
-  def Version: Rule1[VersionOption] =
-    rule("CYPHER") {
+  def Version: Rule1[VersionOption] = rule("CYPHER") {
       keyword("CYPHER") ~ WS ~ VersionNumber
     }
 
-  def Planner =rule("PLANNER") (
+  def Planner = rule("PLANNER") (
     keyword("PLANNER COST") ~ push(CostPlannerOption)
       | keyword("PLANNER IDP") ~ push(IDPPlannerOption)
       | keyword("PLANNER DP") ~ push(DPPlannerOption)
       | keyword("PLANNER RULE") ~ push(RulePlannerOption)
   )
 
-  def VersionNumber =
-    rule("Version") { group(Digits ~ "." ~ Digits) ~> VersionOption }
+  def VersionNumber = rule("Version") {
+    group(Digits ~ "." ~ Digits) ~> VersionOption
+  }
 
-  def Digits =
-    oneOrMore("0" - "9")
+  def Digits = oneOrMore("0" - "9")
 
   def Profile = keyword("PROFILE") ~ push(ProfileOption)
 

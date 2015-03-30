@@ -102,7 +102,7 @@ object CypherCompilerFactory {
 
   private def logStalePlanRemovalMonitor(log: InfoLogger) = new AstCacheMonitor {
     override def cacheDiscard(key: Statement) {
-      log.info(s"Discarded stale query from the query cache: ${key}")
+      log.info(s"Discarded stale query from the query cache: $key")
     }
   }
 }
@@ -117,19 +117,19 @@ case class CypherCompiler(parser: CypherParser,
                           monitors: Monitors,
                           notificationLoggerBuilder: (ExecutionMode => InternalNotificationLogger)) {
 
-  def planQuery(queryText: String, context: PlanContext, executionMode: ExecutionMode): (ExecutionPlan, Map[String, Any]) =
+  def planQuery(queryText: String, context: PlanContext, executionMode: ExecutionMode, offset: Option[InputPosition] = None): (ExecutionPlan, Map[String, Any]) =
     planPreparedQuery(prepareQuery(queryText, executionMode), context)
 
-  def prepareQuery(queryText: String, executionMode: ExecutionMode): PreparedQuery = {
+  def prepareQuery(queryText: String, executionMode: ExecutionMode, offset: Option[InputPosition] = None): PreparedQuery = {
 
     val notificationLogger = notificationLoggerBuilder(executionMode)
     val parsedStatement = parser.parse(queryText)
 
     val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
-    val originalSemanticState = semanticChecker.check(queryText, cleanedStatement, notificationLogger)
+    val originalSemanticState = semanticChecker.check(queryText, cleanedStatement, notificationLogger, offset)
 
     val (rewrittenStatement, extractedParams, postConditions) = astRewriter.rewrite(queryText, cleanedStatement, originalSemanticState)
-    val postRewriteSemanticState = semanticChecker.check(queryText, rewrittenStatement)
+    val postRewriteSemanticState = semanticChecker.check(queryText, rewrittenStatement, devNullLogger, offset)
 
     val table = SemanticTable(types = postRewriteSemanticState.typeTable, recordedScopes = postRewriteSemanticState.recordedScopes)
     PreparedQuery(rewrittenStatement, queryText, extractedParams)(table, postConditions, postRewriteSemanticState.scopeTree, notificationLogger)

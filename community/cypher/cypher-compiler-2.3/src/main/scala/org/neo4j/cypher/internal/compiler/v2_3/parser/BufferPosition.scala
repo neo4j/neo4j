@@ -22,11 +22,12 @@ package org.neo4j.cypher.internal.compiler.v2_3.parser
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.parboiled.buffers.InputBuffer
 import org.parboiled.Context
+import org.parboiled.buffers.InputBuffer
 
 object BufferPosition {
   def apply(buffer: InputBuffer, offset: Int): InputPosition = {
     val position = buffer.getPosition(offset)
-    new InputPosition(offset, position.line, position.column)
+    InputPosition(offset, position.line, position.column)
   }
 }
 

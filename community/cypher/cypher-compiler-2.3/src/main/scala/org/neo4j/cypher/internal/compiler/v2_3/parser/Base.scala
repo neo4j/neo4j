@@ -112,7 +112,7 @@ trait Base extends Parser {
     ) memoMismatches) ~~> (_.reduce(_ + '`' + _))
   }
 
-  def parseOrThrow[T](input: String, rule: Rule1[Seq[T]], monitor: Option[ParserMonitor[T]]): T = {
+  def parseOrThrow[T](input: String, initialOffset: Option[InputPosition], rule: Rule1[Seq[T]], monitor: Option[ParserMonitor[T]]): T = {
     monitor.foreach(_.startParsing(input))
     val parsingResults = ReportingParseRunner(rule).run(input)
     parsingResults.result match {
@@ -137,7 +137,9 @@ trait Base extends Parser {
               case _ => error.getClass.getSimpleName
             }
           }
-          val position = BufferPosition(error.getInputBuffer, error.getStartIndex)
+
+          val bufferPosition = BufferPosition(error.getInputBuffer, error.getStartIndex)
+          val position = bufferPosition.withOffset(initialOffset)
           throw new SyntaxException(s"$message ($position)", input, position.offset)
         }
 

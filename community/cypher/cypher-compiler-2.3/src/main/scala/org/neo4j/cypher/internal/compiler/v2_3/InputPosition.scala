@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3
 
 case class InputPosition(offset: Int, line: Int, column: Int) {
+  self =>
 
   override def hashCode = 41 * offset
 
@@ -36,7 +37,12 @@ case class InputPosition(offset: Int, line: Int, column: Int) {
 
   def toOffsetString = offset.toString
 
-  def bumped() = new InputPosition(offset + 1, line, column)  // HACKISH
+  def withOffset(pos: Option[InputPosition]) = pos match {
+    case Some(p) => copy(offset + p.offset, line + p.line - 1, column + p.column - 1)
+    case None => self
+  }
+
+  def bumped() = copy(offset = offset + 1) // HACKISH
 }
 
 object InputPosition {
