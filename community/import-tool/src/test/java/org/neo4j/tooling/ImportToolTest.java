@@ -42,6 +42,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.util.Validator;
@@ -336,8 +337,46 @@ public class ImportToolTest
         catch ( Exception e )
         {
             // THEN
-            assertExceptionContains( e, nodeData1.getPath() + ":" + 1, IllegalStateException.class );
-            assertExceptionContains( e, nodeData2.getPath() + ":" + 3, IllegalStateException.class );
+            assertExceptionContains( e, nodeData1.getPath() + ":" + 1, InputException.class );
+            assertExceptionContains( e, nodeData2.getPath() + ":" + 3, InputException.class );
+        }
+    }
+
+    @Test
+    public void shouldSkipDuplicateNodesIfToldTo() throws Exception
+    {
+        // GIVEN
+        List<String> nodeIds = asList( "a", "b", "c", "d", "e", "f", "a", "g" );
+        Configuration config = Configuration.COMMAS;
+        File nodeHeaderFile = nodeHeader( config );
+        File nodeData1 = nodeData( false, config, nodeIds, lines( 0, 4 ) );
+        File nodeData2 = nodeData( false, config, nodeIds, lines( 4, nodeIds.size() ) );
+
+        // WHEN
+        importTool(
+                "--into",  dbRule.getStoreDir().getAbsolutePath(),
+                "--skip-duplicate-nodes",
+                "--nodes", nodeHeaderFile.getAbsolutePath() + MULTI_FILE_DELIMITER +
+                nodeData1.getAbsolutePath() + MULTI_FILE_DELIMITER +
+                nodeData2.getAbsolutePath() );
+
+        // THEN
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        try ( Transaction tx = db.beginTx() )
+        {
+            Iterator<Node> nodes = GlobalGraphOperations.at( db ).getAllNodes().iterator();
+            Iterator<String> expectedIds = FilteringIterator.noDuplicates( nodeIds.iterator() );
+            while ( expectedIds.hasNext() )
+            {
+                assertTrue( nodes.hasNext() );
+                assertEquals( expectedIds.next(), nodes.next().getProperty( "id" ) );
+            }
+            assertFalse( nodes.hasNext() );
+            tx.success();
+        }
+        finally
+        {
+            db.shutdown();
         }
     }
 
@@ -410,6 +449,39 @@ public class ImportToolTest
         {
             // THEN
             assertExceptionContains( e, relationshipData2.getAbsolutePath() + ":3", InputException.class );
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToDisableSkippingOfBadRelationships() throws Exception
+    {
+        // GIVEN
+        List<String> nodeIds = asList( "a", "b", "c" );
+        Configuration config = Configuration.COMMAS;
+        File nodeData = nodeData( true, config, nodeIds, alwaysTrue() );
+        List<RelationshipDataLine> relationships = Arrays.asList(
+                // header                                     line 1 of file1
+                relationship( "a", "b", "TYPE" ), //          line 2 of file1
+                relationship( "c", "bogus", "TYPE" ) ); //    line 3 of file1
+        File relationshipData1 = relationshipData( true, config, relationships.iterator(), lines( 0, 2 ), true );
+        File relationshipData2 = relationshipData( false, config, relationships.iterator(), lines( 2, 5 ), true );
+        File bad = file( "bad.log" );
+
+        // WHEN importing data where some relationships refer to missing nodes
+        try
+        {
+            importTool(
+                    "--into",          dbRule.getStoreDir().getAbsolutePath(),
+                    "--nodes",         nodeData.getAbsolutePath(),
+                    "--bad",           bad.getAbsolutePath(),
+                    "--skip-bad-relationships", "false",
+                    "--relationships", relationshipData1.getAbsolutePath() + MULTI_FILE_DELIMITER +
+                    relationshipData2.getAbsolutePath() ) ;
+        }
+        catch ( Exception e )
+        {
+            // THEN
+            assertExceptionContains( e, relationshipData1.getAbsolutePath() + ":3", InputException.class );
         }
     }
 

@@ -46,7 +46,6 @@ import org.neo4j.kernel.logging.ClassicLoggingService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
-import org.neo4j.unsafe.impl.batchimport.input.Collectors;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
@@ -62,6 +61,8 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
+import static org.neo4j.unsafe.impl.batchimport.input.Collectors.badCollector;
+import static org.neo4j.unsafe.impl.batchimport.input.Collectors.collect;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_NODE_DECORATOR;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.additiveLabels;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.defaultRelationshipType;
@@ -128,7 +129,7 @@ public class ImportTool
                         + "is no lower bound for this value. For optimal performance this value shouldn't be "
                         + "greater than the number of available processors." ),
         STACKTRACE( "stacktrace", null,
-                "",
+                "<true/false>",
                 "Enable printing of error stack traces." ),
         BAD( "bad", null,
                 "<file name>",
@@ -139,7 +140,21 @@ public class ImportTool
                 "<max number of bad entries>",
                 "Number of bad entries before the import is considered failed. This tolerance threshold is "
                         + "about relationships refering to missing nodes. Format errors in input data are "
-                        + "still treated as errors" );
+                        + "still treated as errors" ),
+        SKIP_BAD_RELATIONSHIPS( "skip-bad-relationships", Boolean.TRUE,
+                "<true/false>",
+                "Whether or not to skip importing relationships that refers to missing node ids, i.e. either "
+                        + "start or end node id/group referring to node that wasn't specified by the "
+                        + "node input data. "
+                        + "Skipped nodes will be logged into file specified by " + BAD.key()
+                        + ", containing at most number of entites specified by " + BAD_TOLERANCE.key() + "." ),
+        SKIP_DUPLICATE_NODES( "skip-duplicate-nodes", Boolean.FALSE,
+                "<true/false>",
+                "Whether or not to skip importing nodes that have the same id/group. In the event of multiple "
+                        + "nodes within the same group having the same id, the first encountered will be imported "
+                        + "whereas consecutive such nodes will be skipped. "
+                        + "Skipped nodes will be logged into file specified by " + BAD.key()
+                        + ", containing at most number of entites specified by " + BAD_TOLERANCE.key() + "." );
 
         private final String key;
         private final Object defaultValue;
@@ -244,6 +259,7 @@ public class ImportTool
         Input input = null;
         String badFileName;
         int badTolerance;
+        boolean skipBadRelationships, skipDuplicateNodes;
         try
         {
             storeDir = args.interpretOption( Options.STORE_DIR.key(), Converters.<File>mandatory(),
@@ -257,11 +273,15 @@ public class ImportTool
             badTolerance = args.getNumber( Options.BAD_TOLERANCE.key,
                     (Number) Options.BAD_TOLERANCE.defaultValue() ).intValue();
             badFileName = args.get( Options.BAD.key );
+            skipBadRelationships = args.getBoolean( Options.SKIP_BAD_RELATIONSHIPS.key(),
+                    (Boolean)Options.SKIP_BAD_RELATIONSHIPS.defaultValue(), true );
+            skipDuplicateNodes = args.getBoolean( Options.SKIP_DUPLICATE_NODES.key(),
+                    (Boolean)Options.SKIP_DUPLICATE_NODES.defaultValue(), true );
             input = new CsvInput(
                     nodeData( nodesFiles ), defaultFormatNodeFileHeader(),
                     relationshipData( relationshipsFiles ), defaultFormatRelationshipFileHeader(),
                     idType, csvConfiguration( args, defaultSettingsSuitableForTests ),
-                    Collectors.badRelationships( badTolerance ) );
+                    badCollector( badTolerance, collect( skipBadRelationships, skipDuplicateNodes ) ) );
         }
         catch ( IllegalArgumentException e )
         {
@@ -290,11 +310,11 @@ public class ImportTool
         }
         finally
         {
-            File badRelationships = config.badFile( storeDir );
-            if ( badRelationships.exists() )
+            File badFile = config.badFile( storeDir );
+            if ( badFile.exists() )
             {
-                out.println("There were bad relationships which were skipped " +
-                            "and logged into " + badRelationships.getAbsolutePath());
+                out.println( "There were bad entries which were skipped and logged into " +
+                        badFile.getAbsolutePath() );
             }
 
             life.shutdown();
