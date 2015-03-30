@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 The map of logical plan and ids is used to allow profiling to connect to the right part in the logical plan
 to report db hits and rows passed through.
  */
-object LogicalPlanIdentificationBuilder {
+object LogicalPlanIdentificationBuilder extends (LogicalPlan => Map[LogicalPlan, Id]) {
   def apply(plan: LogicalPlan): Map[LogicalPlan, Id] = {
 
     def build(input: Map[LogicalPlan, Id], plan: LogicalPlan): Map[LogicalPlan, Id] = {
