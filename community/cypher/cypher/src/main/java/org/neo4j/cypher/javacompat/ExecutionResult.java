@@ -19,21 +19,21 @@
  */
 package org.neo4j.cypher.javacompat;
 
+import scala.collection.JavaConversions;
+
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 
 import org.neo4j.cypher.CypherException;
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.Notification;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
-
-import scala.collection.JavaConversions;
 
 /**
  * Holds Cypher query result sets, in tabular form. Each row of the result is a map
@@ -281,9 +281,15 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     }
 
     @Override
+    public void accept( ResultVisitor visitor )
+    {
+        inner.accept( visitor );
+    }
+
+    @Override
     public Iterable<Notification> getNotifications()
     {
-        return JavaConversions.asJavaIterable(inner.notifications());
+        return JavaConversions.asJavaIterable( inner.notifications() );
     }
 
     private static class ExceptionConversion<T> implements ResourceIterator<T>
