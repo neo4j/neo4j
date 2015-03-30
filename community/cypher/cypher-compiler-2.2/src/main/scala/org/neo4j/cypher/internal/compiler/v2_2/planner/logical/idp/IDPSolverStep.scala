@@ -19,32 +19,27 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.idp
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.LogicalPlanningContext
-
 object IDPSolverStep {
-  def empty[S, P] = new IDPSolverStep[S, P] {
-    override def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P])
-                      (implicit context: LogicalPlanningContext): Iterator[P] =
+  def empty[S, P, C] = new IDPSolverStep[S, P, C] {
+    override def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P])(implicit context: C): Iterator[P] =
       Iterator.empty
   }
 }
 
-trait SolverStep[S, P] {
-  def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P])(implicit context: LogicalPlanningContext):  Iterator[P]
+trait SolverStep[S, P, C] {
+  def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P])(implicit context: C):  Iterator[P]
 }
 
-trait IDPSolverStep[S, P] extends SolverStep[S, P] {
+trait IDPSolverStep[S, P, C] extends SolverStep[S, P, C] {
   self =>
 
-  def map(f: P => P) = new IDPSolverStep[S, P] {
-    override def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P])
-                      (implicit context: LogicalPlanningContext): Iterator[P] =
+  def map(f: P => P) = new IDPSolverStep[S, P, C] {
+    override def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P])(implicit context: C): Iterator[P] =
       self(registry, goal, cache).map(f)
   }
 
-  def ++(next: IDPSolverStep[S, P]) = new IDPSolverStep[S, P] {
-    override def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P])
-                      (implicit context: LogicalPlanningContext): Iterator[P] =
+  def ++(next: IDPSolverStep[S, P, C]) = new IDPSolverStep[S, P, C] {
+    override def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P])(implicit context: C): Iterator[P] =
       self(registry, goal, cache) ++ next(registry, goal, cache)
   }
 }

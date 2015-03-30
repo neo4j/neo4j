@@ -214,7 +214,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
           throw new CantHandleQueryException(x.toString)
       }
 
-      result.withEstimatedCardinality(plan.solved.estimation.amount)
+      result.withEstimatedCardinality(plan.solved.estimatedCardinality.amount)
     }
 
     object buildPipeExpressions extends Rewriter {
