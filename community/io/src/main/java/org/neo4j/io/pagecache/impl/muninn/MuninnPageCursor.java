@@ -143,15 +143,7 @@ abstract class MuninnPageCursor implements PageCursor
                     item = pageFault( filePageId, swapper, chunkOffset, chunk, latch );
                 }
             }
-            else if ( item.getClass() == BinaryLatch.class )
-            {
-                // We found a latch, so someone else is already doing a page fault for this page. So we'll just wait
-                // for them to finish, and grab the page then.
-                BinaryLatch latch = (BinaryLatch) item;
-                latch.await();
-                item = null;
-            }
-            else
+            else if ( item.getClass() == MuninnPage.class )
             {
                 // We got *a* page, but we might be racing with eviction. To cope with that, we have to take some
                 // kind of lock on the page, and check that it is indeed bound to what we expect. If not, then it has
@@ -164,6 +156,14 @@ abstract class MuninnPageCursor implements PageCursor
                     unlockPage( page );
                     item = null;
                 }
+            }
+            else
+            {
+                // We found a latch, so someone else is already doing a page fault for this page. So we'll just wait
+                // for them to finish, and grab the page then.
+                BinaryLatch latch = (BinaryLatch) item;
+                latch.await();
+                item = null;
             }
         }
         while ( item == null );

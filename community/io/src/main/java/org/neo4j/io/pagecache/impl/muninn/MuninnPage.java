@@ -113,10 +113,13 @@ final class MuninnPage extends StampedLock implements Page
     {
         // This is intentionally left benignly racy for performance.
         byte usage = UnsafeUtil.getByteVolatile( this, usageStampOffset );
-        usage <<= 1;
-        usage++; // Raise at least one bit in case it was all zeros.
-        usage &= 0x0F;
-        UnsafeUtil.putByteVolatile( this, usageStampOffset, usage );
+        if ( usage < 4 ) // avoid cache sloshing by not doing a write if counter is already maxed out
+        {
+            usage <<= 1;
+            usage++; // Raise at least one bit in case it was all zeros.
+            usage &= 0x0F;
+            UnsafeUtil.putByteVolatile( this, usageStampOffset, usage );
+        }
     }
 
     /** Decrement the usage stamp. Returns true if it reaches 0. */
