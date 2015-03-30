@@ -269,12 +269,11 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("should fail when reduce used with wrong separator") {
-    executeAndEnsureError("""
-        |MATCH topRoute = (s)<-[:CONNECTED_TO*1..3]-(e)
-        |WHERE id(s) = 1 AND id(e) = 2
-        |RETURN reduce(weight=0, r in relationships(topRoute) : weight+r.cost) AS score
-        |ORDER BY score ASC LIMIT 1
-      """.stripMargin,
+    executeAndEnsureError("""MATCH topRoute = (s)<-[:CONNECTED_TO*1..3]-(e)
+                            |WHERE id(s) = 1 AND id(e) = 2
+                            |RETURN reduce(weight=0, r in relationships(topRoute) : weight+r.cost) AS score
+                            |ORDER BY score ASC LIMIT 1
+                          """.stripMargin,
       "reduce(...) requires '| expression' (an accumulation expression) (line 3, column 8 (offset: 84))"
     )
   }

@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ExecutionPlan => E
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.{DbHits, Planner, Rows, Version}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.MapToPublicExceptions
-import org.neo4j.cypher.internal.compiler.v2_2.{CostBasedPlannerName, CypherCompilerFactory, CypherException => CypherException_v2_2, InfoLogger, Monitors, PlannerName}
+import org.neo4j.cypher.internal.compiler.v2_2.{CypherException => CypherException_v2_2, _}
 import org.neo4j.cypher.internal.spi.v2_2.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
 import org.neo4j.cypher.{ArithmeticException, CypherTypeException, EntityNotFoundException, FailedIndexException, IncomparableValuesException, IndexHintException, InternalException, InvalidArgumentException, InvalidSemanticsException, LabelScanHintException, LoadCsvStatusWrapCypherException, LoadExternalResourceException, MergeConstraintConflictException, NodeStillHasRelationshipsException, ParameterNotFoundException, ParameterWrongTypeException, PatternException, PeriodicCommitInOpenTransactionException, ProfilerStatisticsNotReadyException, SyntaxException, UniquePathNotUniqueException, UnknownLabelException, _}
@@ -141,8 +141,8 @@ trait CompatibilityFor2_2 {
   protected val compiler: v2_2.CypherCompiler
   implicit val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
-  def produceParsedQuery(statementAsText: String) = new ParsedQuery {
-    val preparedQueryForV_2_2 = Try(compiler.prepareQuery(statementAsText))
+  def produceParsedQuery(statementAsText: String, offset: InputPosition) = new ParsedQuery {
+    val preparedQueryForV_2_2 = Try(compiler.prepareQuery(statementAsText, Some(offset)))
 
     def isPeriodicCommit = preparedQueryForV_2_2.map(_.isPeriodicCommit).getOrElse(false)
 
@@ -193,17 +193,17 @@ case class ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, planner:
     new ResourceIterator[util.Map[String, Any]] {
       def close() = exceptionHandlerFor2_2.runSafely {
         endQueryExecution()
-        innerJavaIterator.close
+        innerJavaIterator.close()
       }
       def next() = exceptionHandlerFor2_2.runSafely {innerJavaIterator.next}
-      def hasNext() = exceptionHandlerFor2_2.runSafely{
+      def hasNext = exceptionHandlerFor2_2.runSafely{
         val next = innerJavaIterator.hasNext
         if (!next) {
           endQueryExecution()
         }
         next
       }
-      def remove() =  exceptionHandlerFor2_2.runSafely{innerJavaIterator.remove}
+      def remove() =  exceptionHandlerFor2_2.runSafely{innerJavaIterator.remove()}
     }
   }
 

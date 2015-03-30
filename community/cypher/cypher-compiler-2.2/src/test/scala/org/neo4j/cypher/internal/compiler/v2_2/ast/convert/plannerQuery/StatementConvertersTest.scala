@@ -50,8 +50,10 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         ast
 
     val semanticChecker = new SemanticChecker(mock[SemanticCheckMonitor])
-    val semanticState = semanticChecker.check(query, cleanedStatement)
-    val (rewrittenAst: Statement, _) = CostBasedPipeBuilder.rewriteStatement(astRewriter.rewrite(query, cleanedStatement, semanticState)._1, semanticState.scopeTree, SemanticTable(types = semanticState.typeTable), Set.empty, mock[AstRewritingMonitor])
+    val semanticState = semanticChecker.check(query, cleanedStatement, None)
+    val statement = astRewriter.rewrite(query, cleanedStatement, semanticState)._1
+    val semanticTable: SemanticTable = SemanticTable(types = semanticState.typeTable)
+    val (rewrittenAst: Statement, _) = CostBasedPipeBuilder.rewriteStatement(statement, semanticState.scopeTree, semanticTable, Set.empty, mock[AstRewritingMonitor])
 
     // This fakes pattern expression naming for testing purposes
     // In the actual code path, this renaming happens as part of planning
