@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.Thread.UncaughtExceptionHandler;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map.Entry;
@@ -57,6 +58,7 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
 import static java.lang.System.out;
+import static java.nio.charset.Charset.defaultCharset;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.Exceptions.launderedException;
@@ -139,7 +141,12 @@ public class ImportTool
                 "<max number of bad entries>",
                 "Number of bad entries before the import is considered failed. This tolerance threshold is "
                         + "about relationships refering to missing nodes. Format errors in input data are "
-                        + "still treated as errors" );
+                        + "still treated as errors" ),
+        INPUT_ENCODING( "input-encoding", null,
+                "<character set>",
+                "Character set that input data is encoded in. Provided value must be one out of the available "
+                        + "character sets in the JVM, as provided by Charset#availableCharsets(). "
+                        + "If no input encoding is provided, the default character set of the JVM will be used." );
 
         private final String key;
         private final Object defaultValue;
@@ -244,6 +251,7 @@ public class ImportTool
         Input input = null;
         String badFileName;
         int badTolerance;
+        Charset inputEncoding;
         try
         {
             storeDir = args.interpretOption( Options.STORE_DIR.key(), Converters.<File>mandatory(),
@@ -254,12 +262,13 @@ public class ImportTool
             processors = args.getNumber( Options.PROCESSORS.key(), null );
             IdType idType = args.interpretOption( Options.ID_TYPE.key(),
                     withDefault( (IdType)Options.ID_TYPE.defaultValue() ), TO_ID_TYPE );
-            badTolerance = args.getNumber( Options.BAD_TOLERANCE.key,
+            badTolerance = args.getNumber( Options.BAD_TOLERANCE.key(),
                     (Number) Options.BAD_TOLERANCE.defaultValue() ).intValue();
-            badFileName = args.get( Options.BAD.key );
+            badFileName = args.get( Options.BAD.key() );
+            inputEncoding = Charset.forName( args.get( Options.INPUT_ENCODING.key(), defaultCharset().name() ) );
             input = new CsvInput(
-                    nodeData( nodesFiles ), defaultFormatNodeFileHeader(),
-                    relationshipData( relationshipsFiles ), defaultFormatRelationshipFileHeader(),
+                    nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
+                    relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(),
                     idType, csvConfiguration( args, defaultSettingsSuitableForTests ),
                     Collectors.badRelationships( badTolerance ) );
         }
@@ -378,19 +387,20 @@ public class ImportTool
     }
 
     private static Iterable<DataFactory<InputRelationship>>
-            relationshipData( Collection<Option<File[]>> relationshipsFiles )
+            relationshipData( final Charset encoding, Collection<Option<File[]>> relationshipsFiles )
     {
         return new IterableWrapper<DataFactory<InputRelationship>,Option<File[]>>( relationshipsFiles )
         {
             @Override
             protected DataFactory<InputRelationship> underlyingObjectToObject( Option<File[]> group )
             {
-                return data( defaultRelationshipType( group.metadata() ), group.value() );
+                return data( defaultRelationshipType( group.metadata() ), encoding, group.value() );
             }
         };
     }
 
-    private static Iterable<DataFactory<InputNode>> nodeData( Collection<Option<File[]>> nodesFiles )
+    private static Iterable<DataFactory<InputNode>> nodeData( final Charset encoding,
+            Collection<Option<File[]>> nodesFiles )
     {
         return new IterableWrapper<DataFactory<InputNode>,Option<File[]>>( nodesFiles )
         {
@@ -400,7 +410,7 @@ public class ImportTool
                 Function<InputNode,InputNode> decorator = input.metadata() != null
                         ? additiveLabels( input.metadata().split( ":" ) )
                         : NO_NODE_DECORATOR;
-                return data( decorator, input.value() );
+                return data( decorator, encoding, input.value() );
             }
         };
     }

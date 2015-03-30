@@ -23,13 +23,12 @@ import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.Iterator;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
@@ -122,8 +121,15 @@ public class Readables
         };
     }
 
-    private static final IOFunction<File, Reader> FROM_FILE = new IOFunction<File, Reader>()
+    private static class FromFile implements IOFunction<File, Reader>
     {
+        private final Charset charset;
+
+        FromFile( Charset charset )
+        {
+            this.charset = charset;
+        }
+
         @Override
         public Reader apply( final File file ) throws IOException
         {
@@ -132,7 +138,7 @@ public class Readables
             {   // ZIP file
                 ZipFile zipFile = new ZipFile( file );
                 ZipEntry entry = getSingleSuitableEntry( zipFile );
-                return new InputStreamReader( zipFile.getInputStream( entry ) )
+                return new InputStreamReader( zipFile.getInputStream( entry ), charset )
                 {
                     @Override
                     public String toString()
@@ -148,7 +154,7 @@ public class Readables
                 // the data will look like garbage and the reader will fail for whatever it will be used for.
                 // TODO add tar support
                 GZIPInputStream zipStream = new GZIPInputStream( new FileInputStream( file ) );
-                return new InputStreamReader( zipStream )
+                return new InputStreamReader( zipStream, charset )
                 {
                     @Override
                     public String toString()
@@ -158,7 +164,7 @@ public class Readables
                 };
             }
 
-            return new FileReader( file )
+            return new InputStreamReader( new FileInputStream( file ), charset )
             {
                 @Override
                 public String toString()
@@ -211,7 +217,7 @@ public class Readables
                 return -1;
             }
         }
-    };
+    }
 
     private static boolean invalidZipEntry( String name )
     {
@@ -229,54 +235,25 @@ public class Readables
         }
     };
 
-    public static CharReadable file( File file ) throws IOException
+    public static CharReadable files( Charset charset, File... files ) throws IOException
     {
-        return wrap( FROM_FILE.apply( file ) );
+        IOFunction<File,Reader> opener = new FromFile( charset );
+        switch ( files.length )
+        {
+        case 0:  return EMPTY;
+        case 1:  return wrap( opener.apply( files[0] ) );
+        default: return new MultiReadable( iterator( files, opener ) );
+        }
     }
 
-    public static CharReadable multipleFiles( File... files ) throws IOException
-    {
-        return new MultiReadable( iterator( files, FROM_FILE ) );
-    }
-
-    public static CharReadable multipleSources( Reader... sources ) throws IOException
+    public static CharReadable sources( Reader... sources ) throws IOException
     {
         return new MultiReadable( iterator( sources, IDENTITY ) );
     }
 
-    public static CharReadable multipleFiles( Iterator<File> files ) throws IOException
-    {
-        return new MultiReadable( iterator( files, FROM_FILE ) );
-    }
-
-    public static CharReadable multipleSources( RawIterator<Reader,IOException> sources ) throws IOException
+    public static CharReadable sources( RawIterator<Reader,IOException> sources ) throws IOException
     {
         return new MultiReadable( sources );
-    }
-
-    private static <IN,OUT> RawIterator<OUT,IOException> iterator( final Iterator<IN> items,
-            final RawFunction<IN,OUT,IOException> converter )
-    {
-        return new RawIterator<OUT,IOException>()
-        {
-            @Override
-            public boolean hasNext()
-            {
-                return items.hasNext();
-            }
-
-            @Override
-            public OUT next() throws IOException
-            {
-                return converter.apply( items.next() );
-            }
-
-            @Override
-            public void remove()
-            {
-                items.remove();
-            }
-        };
     }
 
     private static <IN,OUT> RawIterator<OUT,IOException> iterator( final IN[] items,
