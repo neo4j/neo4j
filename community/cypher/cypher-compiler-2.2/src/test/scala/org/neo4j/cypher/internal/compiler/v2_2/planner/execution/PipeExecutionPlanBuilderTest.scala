@@ -184,7 +184,4 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
       ExpandAllPipe( AllNodesScanPipe("c")(), "c", "r2", "b", Direction.INCOMING, LazyTypes.empty)()
     )())
   }
-
-  def solvedWithEstimation(estimantion: Cardinality): PlannerQuery with CardinalityEstimation =
-    CardinalityEstimation.lift(PlannerQuery.empty, estimantion)
 }
