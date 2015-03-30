@@ -20,7 +20,13 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.PathImpl
-import org.neo4j.graphdb.Relationship
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.NestedPipeExpression
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.{LazyTypes, ArgumentPipe, ExpandAllPipe}
+import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.{EstimatedRows, LegacyExpression}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.BeLikeMatcher._
+import org.neo4j.cypher.internal.compiler.v2_2.symbols
+import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
+import org.neo4j.graphdb.{Direction, Relationship}
 import org.scalatest.Matchers
 
 class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Matchers with NewPlannerTestSupport {
@@ -328,5 +334,48 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     val queryNot = "PROFILE MATCH (a:Foo) OPTIONAL MATCH a--(b:Bar) WHERE NOT(a--(b:Bar)--()) RETURN b"
     val resultsNot = executeWithNewPlanner(queryNot).toList
     resultsNot should equal(List(Map("b" -> null), Map("b" -> null), Map("b" -> nodeE)))
+  }
+
+  test("should consider cardinality input when planning pattern expression in where clause") {
+    // given
+    val node = createLabeledNode("A")
+    createLabeledNode("A")
+    createLabeledNode("A")
+    relate(node, createNode(), "HAS")
+
+    val result = executeWithNewPlanner("MATCH (n:A) WHERE (n)-[:HAS]->() RETURN n")
+
+    result.toList should equal(Seq(Map("n" -> node)))
+    val argumentPLan = result.executionPlanDescription().cd("Argument")
+    val estimatedRows = argumentPLan.arguments.collect {case n : EstimatedRows => n}.head
+    estimatedRows should equal(EstimatedRows(3.0))
+  }
+
+  test("should consider cardinality input when planning in return") {
+    // given
+    val node = createLabeledNode("A")
+    createLabeledNode("A")
+    createLabeledNode("A")
+    val endNode = createNode()
+    val rel = relate(node, endNode, "HAS")
+
+    val result = executeWithNewPlanner("MATCH (n:A) RETURN (n)-[:HAS]->() as p")
+
+    graph.inTx {
+      result.toList should equal(Seq(
+        Map("p" -> Seq(PathImpl(node, rel, endNode))),
+        Map("p" -> Seq()),
+        Map("p" -> Seq()))
+      )
+    }
+
+    val legacyExpression = result.executionPlanDescription().arguments.collect {case n: LegacyExpression => n}.head
+    val pipe = legacyExpression.value.asInstanceOf[NestedPipeExpression].pipe
+
+    pipe should beLike {
+      case ExpandAllPipe(_: ArgumentPipe, "n", _, _, Direction.OUTGOING, LazyTypes(List("HAS"))) => ()
+    }
+
+    pipe.sources.head.asInstanceOf[ArgumentPipe].estimatedCardinality should equal(Some(3.0))
   }
 }
