@@ -41,10 +41,22 @@
 
   <properties>
     <version-package>cypher.internal</version-package>
+    <scala.version>2.10.5</scala.version>
+    <scala.binary.version>2.10</scala.binary.version>
   </properties>
 
   <build>
     <plugins>
+
+      <plugin>
+        <groupId>net.alchim31.maven</groupId>
+        <artifactId>scala-maven-plugin</artifactId>
+        <configuration>
+          <scalaVersion>${scala.version}</scalaVersion>
+          <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
+        </configuration>
+      </plugin>
+
       <plugin>
         <groupId>org.scalastyle</groupId>
         <artifactId>scalastyle-maven-plugin</artifactId>
@@ -55,6 +67,50 @@
   <dependencies>
 
     <!-- shared versions are defined in the parent pom -->
+
+    <!-- scala -->
+
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+      <version>${scala.version}</version>
+    </dependency>
+
+    <dependency>
+      <artifactId>scala-reflect</artifactId>
+      <groupId>org.scala-lang</groupId>
+      <version>${scala.version}</version>
+    </dependency>
+
+    <!-- scala test dependencies -->
+
+    <dependency>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest_2.10</artifactId>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>scala-library</artifactId>
+          <groupId>org.scala-lang</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.scalautils</groupId>
+      <artifactId>scalautils_2.10</artifactId>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>scala-library</artifactId>
+          <groupId>org.scala-lang</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.scalacheck</groupId>
+      <artifactId>scalacheck_2.10</artifactId>
+      <scope>test</scope>
+    </dependency>
 
     <!-- neo4j -->
 
@@ -231,7 +287,7 @@
           <groupId>org.scala-lang</groupId>
           <artifactId>scala-library</artifactId>
         </exclusion>
-	<exclusion>
+	      <exclusion>
           <artifactId>scala-reflect</artifactId>
           <groupId>org.scala-lang</groupId>
         </exclusion>
@@ -243,10 +299,10 @@
           <groupId>net.sf.opencsv</groupId>
           <artifactId>opencsv</artifactId>
         </exclusion>
-	<exclusion>
+	      <exclusion>
           <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
           <artifactId>concurrentlinkedhashmap-lru</artifactId>
-	</exclusion>
+	      </exclusion>
       </exclusions>
     </dependency>
 
@@ -262,10 +318,6 @@
 
     <!-- neo4j-cypher re-include excluded (with correct version) -->
 
-    <dependency>
-      <artifactId>scala-reflect</artifactId>
-      <groupId>org.scala-lang</groupId>
-    </dependency>
     <dependency>
       <groupId>org.parboiled</groupId>
       <artifactId>parboiled-scala_2.10</artifactId>

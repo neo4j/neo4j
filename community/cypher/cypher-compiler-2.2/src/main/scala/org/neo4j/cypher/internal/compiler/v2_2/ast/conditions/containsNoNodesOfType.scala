@@ -29,5 +29,5 @@ case class containsNoNodesOfType[T <: ASTNode](implicit tag: ClassTag[T]) extend
     node => s"Expected none but found ${node.getClass.getSimpleName} at position ${node.position}"
   }
 
-  override def name() = s"$productPrefix[${tag.runtimeClass.getSimpleName}]"
+  override def name = s"$productPrefix[${tag.runtimeClass.getSimpleName}]"
 }

@@ -172,7 +172,7 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
           oldPlans = Set(lhs, rhs);
           newPlan = kit.select(context.logicalPlanProducer.planCartesianProduct(left, right))
         )
-        yield newPlan ->(oldPlans, remaining)).toMap
+        yield newPlan -> (oldPlans -> remaining)).toMap
         val bestCartesian = kit.pickBest(cartesianProducts.keys).get
         val (oldPlans, remaining) = cartesianProducts(bestCartesian)
         val newPlans = plans.filterNot(oldPlans.contains) :+ (bestCartesian -> remaining)
@@ -184,7 +184,7 @@ case class IDPQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor,
     def applyApplicableOptionalMatches(todo: (LogicalPlan, Seq[QueryGraph])): (/* new plan*/ LogicalPlan, /* remaining */ Seq[QueryGraph]) = {
       todo match {
         case (plan, allRemaining @ Seq(nextOptional, nextRemaining@_*)) => withOptionalMatch(plan, nextOptional) match {
-          case Some(newPlan) => applyApplicableOptionalMatches(newPlan, nextRemaining)
+          case Some(newPlan) => applyApplicableOptionalMatches(newPlan -> nextRemaining)
           case None          => (plan, allRemaining)
         }
 
