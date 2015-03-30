@@ -102,7 +102,7 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     val result = executeWithNewPlanner("match (n) return extract(x IN (n)-->() | head(nodes(x)) )  as p")
       .toList.head("p").asInstanceOf[Seq[_]]
 
-    result should equal(List(start,start))
+    result should equal(List(start, start))
   }
 
   test("match (n) return case when n:A then (n)-->(:C) when n:B then (n)-->(:D) else 42 end as p") {
@@ -309,7 +309,7 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
       }
     }
 
-    val r = relate(createNode(),  createLabeledNode("A"), "T")
+    val r = relate(createNode(), createLabeledNode("A"), "T")
 
     val result = executeWithNewPlanner("PROFILE MATCH ()-[r]->() WHERE ()-[r]-(:A) RETURN r")
 
@@ -377,5 +377,17 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     }
 
     pipe.sources.head.asInstanceOf[ArgumentPipe].estimatedCardinality should equal(Some(3.0))
+  }
+
+  test("should be able to execute aggregating-functions on pattern expressions") {
+    // given
+    val node = createLabeledNode("A")
+    createLabeledNode("A")
+    createLabeledNode("A")
+    relate(node, createNode(), "HAS")
+
+    val result = executeWithNewPlanner("MATCH (n:A) RETURN count((n)-[:HAS]->()) as c").toList
+
+    result should equal(List(Map("c" -> 3)))
   }
 }
