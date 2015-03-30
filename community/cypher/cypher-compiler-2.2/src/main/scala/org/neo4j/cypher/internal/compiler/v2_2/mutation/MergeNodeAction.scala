@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import commands.expressions.Expression
 import commands.Predicate
 import commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ReadsNodes, WritesNodes, Effects}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.Argument
 import pipes.{QueryState, EntityProducer}
 import symbols._
@@ -168,7 +168,7 @@ case class MergeNodeAction(identifier: String,
       ++ onCreate.flatMap(_.symbolTableDependencies)
       ++ onMatch.flatMap(_.symbolTableDependencies)).toSet - identifier
 
-  def localEffects(symbols: SymbolTable) = Effects.READS_NODES | Effects.WRITES_NODES
+  def localEffects(symbols: SymbolTable) = Effects(WritesNodes, ReadsNodes)
 
   override def updateSymbols(symbol: SymbolTable): SymbolTable = symbol.add(identifiers.toMap)
 }

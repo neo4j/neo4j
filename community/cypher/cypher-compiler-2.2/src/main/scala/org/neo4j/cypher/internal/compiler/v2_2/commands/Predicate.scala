@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.commands
 import org.neo4j.cypher.internal.compiler.v2_2._
 import commands.expressions.{Literal, Expression}
 import commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ReadsRelationshipProperty, ReadsLabel, ReadsNodeProperty, Effects}
 import pipes.QueryState
 import symbols._
 import org.neo4j.cypher.internal.helpers._
@@ -248,7 +248,7 @@ case class PropertyExists(identifier: Expression, propertyKey: KeyToken) extends
 
   def symbolTableDependencies = identifier.symbolTableDependencies
 
-  override def localEffects = Effects.READS_ENTITIES
+  override def localEffects(symbols: SymbolTable) = Effects.propertyRead(identifier, symbols)(propertyKey.name)
 }
 
 case class LiteralRegularExpression(a: Expression, regex: Literal) extends Predicate {
@@ -341,7 +341,7 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
 
   def containsIsNull = false
 
-  override def localEffects = Effects.READS_NODES
+  override def localEffects(symbols: SymbolTable) = Effects(ReadsLabel(label.name))
 }
 
 case class CoercedPredicate(inner:Expression) extends Predicate with CollectionSupport {

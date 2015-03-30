@@ -194,7 +194,7 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
   def rewriteFromTheTail(f: PartiallySolvedQuery => PartiallySolvedQuery): PartiallySolvedQuery =
     f(copy(tail = tail.map(_.rewriteFromTheTail(f))))
 
-  def localEffects = Effects.NONE
+  def localEffects(symbols: SymbolTable) = Effects()
 }
 
 case class ExecutionPlanInProgress(query: PartiallySolvedQuery, pipe: Pipe, isUpdating: Boolean = false)

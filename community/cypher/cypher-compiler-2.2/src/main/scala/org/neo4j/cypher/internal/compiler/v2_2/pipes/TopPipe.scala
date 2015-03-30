@@ -24,7 +24,6 @@ import java.util.Comparator
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.SortItem
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.{KeyExpressions, LegacyExpression}
 
 import scala.math._
@@ -35,7 +34,7 @@ import scala.math._
  */
 case class TopPipe(source: Pipe, sortDescription: List[SortItem], countExpression: Expression)
                   (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) with Comparer with RonjaPipe {
+  extends PipeWithSource(source, pipeMonitor) with Comparer with RonjaPipe with NoEffectsPipe {
 
   val sortItems = sortDescription.toArray
   val sortItemsCount = sortItems.size
@@ -117,10 +116,6 @@ case class TopPipe(source: Pipe, sortDescription: List[SortItem], countExpressio
       .andThen(this, "Top", identifiers, LegacyExpression(countExpression), KeyExpressions(sortDescription.map(_.expression)))
 
   def symbols = source.symbols
-
-  // the top pipe has no effects since it is at the top
-  override val localEffects = Effects.NONE
-  override val effects = Effects.NONE
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources

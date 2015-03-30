@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{Effects, ReadsNodes, ReadsRelationships}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
@@ -63,7 +63,7 @@ case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: EntityById
 
   def sources: Seq[Pipe] = Seq.empty
 
-  override def localEffects = Effects.READS_ENTITIES
+  override def localEffects = Effects(ReadsNodes, ReadsRelationships)
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

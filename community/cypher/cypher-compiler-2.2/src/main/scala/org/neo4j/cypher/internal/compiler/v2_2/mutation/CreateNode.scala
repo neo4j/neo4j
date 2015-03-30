@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.mutation
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Expression, Literal}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.cypher.internal.helpers.CollectionSupport
@@ -34,7 +34,12 @@ case class CreateNode(key: String, properties: Map[String, Expression], labels: 
   with GraphElementPropertyFunctions
   with CollectionSupport {
 
-  def localEffects(ignored: SymbolTable) = properties.values.foldLeft(Effects.WRITES_NODES)(_ | _.effects)
+  def localEffects(symbols: SymbolTable) = {
+    val propertyEffects = properties.values.foldLeft(Effects())(_ | _.effects(symbols))
+    val labelEffects = Effects(labels.map(kt => WritesLabel(kt.name)).toSet[Effect])
+
+    Effects(WritesNodes) | propertyEffects | labelEffects
+  }
 
   def exec(context: ExecutionContext, state: QueryState): Iterator[ExecutionContext] = {
     def fromAnyToLiteral(x: Map[String, Any]): Map[String, Expression] = x.map {

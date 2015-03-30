@@ -23,18 +23,22 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
-case class EagerPipe(src: Pipe)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(src, pipeMonitor) {
+trait NoEffectsPipe {
+  self: Pipe =>
+
+  // reset effects to empty by loading all input data in memory
+  override val localEffects = Effects()
+
+  override val effects = Effects()
+}
+
+case class EagerPipe(src: Pipe)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(src, pipeMonitor) with NoEffectsPipe {
   def symbols: SymbolTable = src.symbols
 
   def planDescription = src.planDescription.andThen(this, "Eager", identifiers)
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.toList.toIterator
-
-  // reset effects to NONE by loading all input data in memory
-  override val localEffects = Effects.NONE
-
-  override val effects = Effects.NONE
 
   def dup(sources: List[Pipe]): Pipe = {
     val (src :: Nil) = sources

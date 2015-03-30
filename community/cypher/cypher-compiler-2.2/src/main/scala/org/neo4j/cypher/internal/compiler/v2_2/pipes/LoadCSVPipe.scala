@@ -90,7 +90,7 @@ case class LoadCSVPipe(source: Pipe,
     case NoHeaders => source.symbols.add(identifier, CollectionType(AnyType.instance))
   }
 
-  override def localEffects = Effects.NONE
+  override def localEffects = Effects()
 
   def dup(sources: List[Pipe]): Pipe = {
     val (head :: Nil) = sources

@@ -53,5 +53,5 @@ class ConstraintOperationPipe(op: UniqueConstraintOperation, label: KeyToken, pr
 
   def sources: Seq[Pipe] = Seq.empty
 
-  override val localEffects = Effects.NONE
+  override val localEffects = Effects()
 }

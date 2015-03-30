@@ -20,15 +20,17 @@
 package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.commands.values.UnresolvedLabel
-import org.neo4j.cypher.internal.compiler.v2_2.commands.{ReturnItem, True, HasLabel}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Identifier, Literal}
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_2.commands.values.UnresolvedLabel
+import org.neo4j.cypher.internal.compiler.v2_2.commands.{HasLabel, ReturnItem, True}
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_2.mutation.{CreateNode, CreateRelationship, MergeNodeAction, RelationshipEndpoint}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.matching.{PatternGraph, Trail, TraversalMatcher}
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.graphdb.Node
 import org.scalatest.prop.TableDrivenPropertyChecks
-import org.neo4j.cypher.internal.compiler.v2_2.symbols._
+import org.mockito.Mockito._
+import org.mockito.Matchers._
 
 class PipeEffectsTest extends CypherFunSuite with TableDrivenPropertyChecks {
 
@@ -36,66 +38,69 @@ class PipeEffectsTest extends CypherFunSuite with TableDrivenPropertyChecks {
 
   val EFFECTS: Map[Pipe, Effects] = Map[Pipe, Effects](
     SingleRowPipe()
-    -> Effects.NONE,
+    -> Effects(),
 
     ExecuteUpdateCommandsPipe(SingleRowPipe(), Seq(CreateNode("n", Map.empty, Seq.empty)))
-    -> Effects.WRITES_NODES,
+    -> Effects(WritesNodes),
 
     ExecuteUpdateCommandsPipe(SingleRowPipe(), Seq(CreateRelationship("r", RelationshipEndpoint("a"), RelationshipEndpoint("b"), "TYPE", Map.empty)))
-    -> Effects.WRITES_RELATIONSHIPS,
+    -> Effects(WritesRelationships),
 
     ExecuteUpdateCommandsPipe(SingleRowPipe(), Seq(
       CreateNode("n", Map.empty, Seq.empty),
       CreateRelationship("r", RelationshipEndpoint("a"), RelationshipEndpoint("b"), "TYPE", Map.empty)))
-    -> Effects.WRITES_ENTITIES,
+    -> Effects(WritesNodes, WritesRelationships),
 
     ExecuteUpdateCommandsPipe(SingleRowPipe(), Seq(MergeNodeAction("n", Map.empty, Seq.empty, Seq.empty, Seq.empty, Seq.empty, None)))
-      -> (Effects.READS_NODES | Effects.WRITES_NODES),
+      -> Effects(ReadsNodes, WritesNodes),
 
     NodeStartPipe(SingleRowPipe(), "n", mock[EntityProducer[Node]])()
-      -> Effects.READS_NODES,
+      -> Effects(ReadsNodes),
 
     LoadCSVPipe(SingleRowPipe(), null, Literal("apa"), "line", None)
-      -> Effects.NONE,
+      -> Effects(),
 
     EmptyResultPipe(SingleRowPipe())
-      -> Effects.NONE,
+      -> Effects(),
 
     FilterPipe(SingleRowPipe(), True())()
-      -> Effects.NONE,
+      -> Effects(),
 
     FilterPipe(SingleRowPipe(), HasLabel(Identifier("a"), UnresolvedLabel("Apa")))()
-      -> Effects.READS_NODES,
+      -> Effects(ReadsLabel("Apa")),
 
     ColumnFilterPipe(SingleRowPipe(), Seq(ReturnItem(Literal(42), "a")))
-      -> Effects.NONE,
+      -> Effects(),
 
-    TraversalMatchPipe(SingleRowPipe(), mock[TraversalMatcher], mock[Trail])
-      -> Effects.READS_ENTITIES,
+    {
+      val trail: Trail = mock[Trail]
+      when(trail.predicates).thenReturn(Seq.empty)
+      TraversalMatchPipe(SingleRowPipe(), mock[TraversalMatcher], trail) -> Effects(ReadsNodes, ReadsRelationships)
+    },
 
     SlicePipe(SingleRowPipe(), Some(Literal(10)), None)
-      -> Effects.NONE,
+      -> Effects(),
 
     MatchPipe(
       new FakePipe(Iterator(Map("x" -> null)), "x" -> CTNode), Seq.empty,
       new PatternGraph(Map.empty, Map.empty, Seq.empty, Seq.empty),
       Set("x", "r", "z")
-    ) -> Effects.READS_ENTITIES,
+    ) -> AllReadEffects,
 
     EmptyResultPipe(SingleRowPipe())
-      -> Effects.NONE,
+      -> Effects(),
 
     EagerPipe(NodeStartPipe(SingleRowPipe(), "n", mock[EntityProducer[Node]])())
-      -> Effects.NONE,
+      -> Effects(),
 
     DistinctPipe(NodeStartPipe(SingleRowPipe(), "n", mock[EntityProducer[Node]])(), Map.empty)()
-      -> Effects.READS_NODES,
+      -> Effects(ReadsNodes),
 
     DistinctPipe(SingleRowPipe(), Map.empty)()
-      -> Effects.NONE,
+      -> Effects(),
 
     OptionalMatchPipe(SingleRowPipe(), NodeStartPipe(SingleRowPipe(), "n", mock[EntityProducer[Node]])(), SymbolTable())
-      -> Effects.READS_NODES
+      -> Effects(ReadsNodes)
   )
 
   EFFECTS.foreach { case (pipe: Pipe, effects: Effects) =>

@@ -48,7 +48,7 @@ case class ForeachAction(collection: Expression, id: String, actions: Seq[Update
 
   override def updateSymbols(symbol: SymbolTable) = addInnerIdentifier(symbol)
 
-  def localEffects(symbols: SymbolTable) = Effects.NONE
+  def localEffects(symbols: SymbolTable) = Effects()
 
   def children = collection +: actions
 

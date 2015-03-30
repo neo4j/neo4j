@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.commands
 
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.AllReadEffects
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders.PatternGraphBuilder
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.UnNamedNameGenerator.isNamed
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
@@ -59,7 +59,7 @@ case class PathExpression(pathPattern: Seq[Pattern], predicate:Predicate=True())
   }
 
 
-  override def localEffects = Effects.READS_ENTITIES
+  override def localEffects(symbols: SymbolTable) = AllReadEffects
 
   override def children = pathPattern :+ predicate
 

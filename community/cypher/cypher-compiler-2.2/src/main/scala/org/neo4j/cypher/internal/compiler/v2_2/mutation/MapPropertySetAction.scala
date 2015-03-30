@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_2.mutation
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Identifier, Expression}
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Expression, Identifier}
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.{IsMap, MapSupport}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_2.spi.{Operations, QueryContext}
@@ -105,15 +105,13 @@ case class MapPropertySetAction(element: Expression, mapExpression: Expression, 
     case r: Relationship => r.getId
   }
 
-  def localEffects(symbols: SymbolTable) = mapExpression.effects | element.effects | {
-    element match {
-      case i: Identifier => symbols.identifiers(i.entityName) match {
-        case _: NodeType => Effects.WRITES_NODES
-        case _: RelationshipType => Effects.WRITES_RELATIONSHIPS
-        case _ => Effects.NONE
-      }
-      case _ => Effects.WRITES_ENTITIES
+  def localEffects(symbols: SymbolTable) = element match {
+    case i: Identifier => symbols.identifiers(i.entityName) match {
+      case _: NodeType => Effects(WritesAnyNodeProperty)
+      case _: RelationshipType => Effects(WritesAnyRelationshipProperty)
+      case _ => Effects()
     }
+    case _ => Effects(WritesAnyNodeProperty, WritesAnyRelationshipProperty)
   }
 
 }

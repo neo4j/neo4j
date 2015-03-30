@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v2_2.mutation.Effectful
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{InternalPlanDescription, SingleRowPlanDescription}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
@@ -33,6 +32,11 @@ trait PipeMonitor {
   def stopSetup(queryId: AnyRef, pipe: Pipe)
   def startStep(queryId: AnyRef, pipe: Pipe)
   def stopStep(queryId: AnyRef, pipe: Pipe)
+}
+
+trait Effectful {
+  def effects: Effects
+  def localEffects: Effects
 }
 
 /**
@@ -96,7 +100,7 @@ case class SingleRowPipe()(implicit val monitor: PipeMonitor) extends Pipe with 
 
   def planDescription: InternalPlanDescription = new SingleRowPlanDescription(this, Seq.empty, identifiers)
 
-  override def localEffects = Effects.NONE
+  override def localEffects = Effects()
 
   def dup(sources: List[Pipe]): Pipe = this
 

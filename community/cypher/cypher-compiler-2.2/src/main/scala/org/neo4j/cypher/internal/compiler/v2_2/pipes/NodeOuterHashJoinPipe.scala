@@ -78,7 +78,7 @@ case class NodeOuterHashJoinPipe(nodeIdentifiers: Set[String], source: Pipe, inn
     copy(source = source, inner = inner)(estimatedCardinality)
   }
 
-  override def localEffects = Effects.NONE
+  override def localEffects = Effects()
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 
