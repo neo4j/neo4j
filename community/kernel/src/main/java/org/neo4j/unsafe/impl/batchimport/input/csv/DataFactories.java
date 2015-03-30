@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,7 +32,6 @@ import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Mark;
-import org.neo4j.csv.reader.Readables;
 import org.neo4j.function.Factory;
 import org.neo4j.function.Function;
 import org.neo4j.helpers.collection.Iterables;
@@ -44,7 +44,7 @@ import org.neo4j.unsafe.impl.batchimport.input.MissingHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
-import static org.neo4j.csv.reader.Readables.multipleFiles;
+import static org.neo4j.csv.reader.Readables.files;
 
 /**
  * Provides common implementations of factories required by f.ex {@link CsvInput}.
@@ -52,53 +52,13 @@ import static org.neo4j.csv.reader.Readables.multipleFiles;
 public class DataFactories
 {
     /**
-     * Creates a {@link DataFactory} where all data exists in one file. If the first line is a header,
-     * {@link #defaultFormatNodeFileHeader()} can be used to extract that.
-     *
-     * @return {@link DataFactory} that returns a {@link CharSeeker} over the supplied {@code file}.
-     */
-    public static <ENTITY extends InputEntity> DataFactory<ENTITY> data( final Function<ENTITY,ENTITY> decorator,
-            final File file )
-    {
-        return new DataFactory<ENTITY>()
-        {
-            @Override
-            public Data<ENTITY> create( final Configuration config )
-            {
-                return new Data<ENTITY>()
-                {
-                    @Override
-                    public CharSeeker stream()
-                    {
-                        try
-                        {
-                            return charSeeker( Readables.file( file ), config.bufferSize(),
-                                    true, config.quotationCharacter() );
-                        }
-                        catch ( IOException e )
-                        {
-                            throw new InputException( e.getMessage(), e );
-                        }
-                    }
-
-                    @Override
-                    public Function<ENTITY,ENTITY> decorator()
-                    {
-                        return decorator;
-                    }
-                };
-            }
-        };
-    }
-
-    /**
      * Creates a {@link DataFactory} where data exists in multiple files. If the first line of the first file is a header,
      * {@link #defaultFormatNodeFileHeader()} can be used to extract that.
      *
      * @return {@link DataFactory} that returns a {@link CharSeeker} over all the supplied {@code files}.
      */
     public static <ENTITY extends InputEntity> DataFactory<ENTITY> data( final Function<ENTITY,ENTITY> decorator,
-            final File... files )
+            final Charset charset, final File... files )
     {
         if ( files.length == 0 )
         {
@@ -117,7 +77,7 @@ public class DataFactories
                     {
                         try
                         {
-                            return charSeeker( multipleFiles( files ), config.bufferSize(),
+                            return charSeeker( files( charset, files ), config.bufferSize(),
                                                true, config.quotationCharacter() );
                         }
                         catch ( IOException e )

@@ -41,7 +41,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-import static org.neo4j.csv.reader.Readables.multipleSources;
+import static org.neo4j.csv.reader.Readables.sources;
 import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.helpers.collection.IteratorUtil.array;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.data;
@@ -210,7 +210,7 @@ public class DataFactoriesTest
             {
                 try
                 {
-                    return multipleSources( firstSource, secondSource );
+                    return sources( firstSource, secondSource );
                 }
                 catch ( IOException e )
                 {

@@ -23,7 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -87,7 +86,7 @@ public class ImportToolTest
         importTool(
                 "--into",          dbRule.getStoreDir().getAbsolutePath(),
                 "--nodes",         nodeData( true, config, nodeIds, alwaysTrue() ).getAbsolutePath(),
-                "--relationships", relationshipData( true, config, nodeIds, alwaysTrue() ).getAbsolutePath() );
+                "--relationships", relationshipData( true, config, nodeIds, alwaysTrue(), true ).getAbsolutePath() );
 
         // THEN
         verifyData();
@@ -110,7 +109,7 @@ public class ImportToolTest
                     nodeData( false, config, nodeIds, alwaysTrue() ).getAbsolutePath(),
                 "--relationships",
                     relationshipHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
-                    relationshipData( false, config, nodeIds, alwaysTrue() ).getAbsolutePath() );
+                    relationshipData( false, config, nodeIds, alwaysTrue(), true ).getAbsolutePath() );
 
         // THEN
         verifyData();
@@ -135,7 +134,7 @@ public class ImportToolTest
                     nodeData( false, config, nodeIds, lines( NODE_COUNT * 3 / 4, NODE_COUNT ) ).getAbsolutePath(),
                 "--relationships",
                     relationshipHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
-                    relationshipData( false, config, nodeIds, alwaysTrue() ).getAbsolutePath() );
+                    relationshipData( false, config, nodeIds, alwaysTrue(), true ).getAbsolutePath() );
 
         // THEN
         verifyData();
@@ -427,7 +426,7 @@ public class ImportToolTest
                 "--into", dbRule.getStoreDir().getAbsolutePath(),
                 "--nodes:My First Label:My Other Label",
                         nodeData( true, config, nodeIds, alwaysTrue() ).getAbsolutePath(),
-                "--relationships", relationshipData( true, config, nodeIds, alwaysTrue() ).getAbsolutePath() );
+                "--relationships", relationshipData( true, config, nodeIds, alwaysTrue(), true ).getAbsolutePath() );
 
         // THEN
         verifyData( new Validator<Node>()
@@ -439,6 +438,26 @@ public class ImportToolTest
                 assertTrue( node.hasLabel( label2 ) );
             }
         }, Validators.<Relationship>emptyValidator() );
+    }
+
+    @Test
+    public void shouldImportFromInputDataEncodedWithSpecificCharset() throws Exception
+    {
+        // GIVEN
+        List<String> nodeIds = nodeIds();
+        Configuration config = Configuration.COMMAS;
+        Charset charset = Charset.forName( "UTF-16" );
+
+        // WHEN
+        importTool(
+                "--into",           dbRule.getStoreDir().getAbsolutePath(),
+                "--input-encoding", charset.name(),
+                "--nodes",          nodeData( true, config, nodeIds, alwaysTrue(), charset ).getAbsolutePath(),
+                "--relationships",  relationshipData( true, config, nodeIds, alwaysTrue(), true, charset )
+                                           .getAbsolutePath() );
+
+        // THEN
+        verifyData();
     }
 
     protected void assertNodeHasLabels( Node node, String[] names )
@@ -554,10 +573,16 @@ public class ImportToolTest
     }
 
     private File nodeData( boolean includeHeader, Configuration config, List<String> nodeIds,
-                           PrimitiveIntPredicate linePredicate ) throws FileNotFoundException
+            PrimitiveIntPredicate linePredicate ) throws Exception
+    {
+        return nodeData( includeHeader, config, nodeIds, linePredicate, Charset.defaultCharset() );
+    }
+
+    private File nodeData( boolean includeHeader, Configuration config, List<String> nodeIds,
+            PrimitiveIntPredicate linePredicate, Charset encoding ) throws Exception
     {
         File file = file( fileName( "nodes.csv" ) );
-        try ( PrintStream writer = new PrintStream( file ) )
+        try ( PrintStream writer = writer( file, encoding ) )
         {
             if ( includeHeader )
             {
@@ -568,15 +593,25 @@ public class ImportToolTest
         return file;
     }
 
-    private File nodeHeader( Configuration config ) throws FileNotFoundException
+    private PrintStream writer( File file, Charset encoding ) throws Exception
+    {
+        return new PrintStream( file, encoding.name() );
+    }
+
+    private File nodeHeader( Configuration config ) throws Exception
     {
         return nodeHeader( config, null );
     }
 
-    private File nodeHeader( Configuration config, String idGroup ) throws FileNotFoundException
+    private File nodeHeader( Configuration config, String idGroup ) throws Exception
+    {
+        return nodeHeader( config, idGroup, Charset.defaultCharset() );
+    }
+
+    private File nodeHeader( Configuration config, String idGroup, Charset encoding ) throws Exception
     {
         File file = file( fileName( "nodes-header.csv" ) );
-        try ( PrintStream writer = new PrintStream( file ) )
+        try ( PrintStream writer = writer( file, encoding ) )
         {
             writeNodeHeader( writer, config, idGroup );
         }
@@ -636,23 +671,31 @@ public class ImportToolTest
     }
 
     private File relationshipData( boolean includeHeader, Configuration config, List<String> nodeIds,
-            PrimitiveIntPredicate linePredicate ) throws FileNotFoundException
+            PrimitiveIntPredicate linePredicate, boolean specifyType ) throws Exception
     {
-        return relationshipData( includeHeader, config, nodeIds, linePredicate, true );
+        return relationshipData( includeHeader, config, nodeIds, linePredicate, specifyType, Charset.defaultCharset() );
     }
 
     private File relationshipData( boolean includeHeader, Configuration config, List<String> nodeIds,
-            PrimitiveIntPredicate linePredicate, boolean specifyType ) throws FileNotFoundException
+            PrimitiveIntPredicate linePredicate, boolean specifyType, Charset encoding ) throws Exception
     {
-        return relationshipData( includeHeader, config, randomRelationships( nodeIds ), linePredicate, specifyType );
+        return relationshipData( includeHeader, config, randomRelationships( nodeIds ), linePredicate,
+                specifyType, encoding );
     }
 
     private File relationshipData( boolean includeHeader, Configuration config,
             Iterator<RelationshipDataLine> data, PrimitiveIntPredicate linePredicate,
-            boolean specifyType ) throws FileNotFoundException
+            boolean specifyType ) throws Exception
+    {
+        return relationshipData( includeHeader, config, data, linePredicate, specifyType, Charset.defaultCharset() );
+    }
+
+    private File relationshipData( boolean includeHeader, Configuration config,
+            Iterator<RelationshipDataLine> data, PrimitiveIntPredicate linePredicate,
+            boolean specifyType, Charset encoding ) throws Exception
     {
         File file = file( fileName( "relationships.csv" ) );
-        try ( PrintStream writer = new PrintStream( file ) )
+        try ( PrintStream writer = writer( file, encoding ) )
         {
             if ( includeHeader )
             {
@@ -663,16 +706,27 @@ public class ImportToolTest
         return file;
     }
 
-    private File relationshipHeader( Configuration config ) throws FileNotFoundException
+    private File relationshipHeader( Configuration config ) throws Exception
     {
-        return relationshipHeader( config, null, null, true );
+        return relationshipHeader( config, Charset.defaultCharset() );
+    }
+
+    private File relationshipHeader( Configuration config, Charset encoding ) throws Exception
+    {
+        return relationshipHeader( config, null, null, true, encoding );
     }
 
     private File relationshipHeader( Configuration config, String startIdGroup, String endIdGroup, boolean specifyType )
-            throws FileNotFoundException
+            throws Exception
+    {
+        return relationshipHeader( config, startIdGroup, endIdGroup, specifyType, Charset.defaultCharset() );
+    }
+
+    private File relationshipHeader( Configuration config, String startIdGroup, String endIdGroup, boolean specifyType,
+            Charset encoding ) throws Exception
     {
         File file = file( fileName( "relationships-header.csv" ) );
-        try ( PrintStream writer = new PrintStream( file ) )
+        try ( PrintStream writer = writer( file, encoding ) )
         {
             writeRelationshipHeader( writer, config, startIdGroup, endIdGroup, specifyType );
         }
@@ -722,11 +776,6 @@ public class ImportToolTest
             return "RelationshipDataLine [startNodeId=" + startNodeId + ", endNodeId=" + endNodeId + ", type=" + type
                     + ", name=" + name + "]";
         }
-    }
-
-    private static RelationshipDataLine relationship( String startNodeId, String endNodeId )
-    {
-        return relationship( startNodeId, endNodeId, null );
     }
 
     private static RelationshipDataLine relationship( String startNodeId, String endNodeId, String type )
