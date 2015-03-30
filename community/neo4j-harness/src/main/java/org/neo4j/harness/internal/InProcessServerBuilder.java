@@ -60,7 +60,25 @@ public class InProcessServerBuilder implements TestServerBuilder
      */
     private final Map<String, String> config = new HashMap<>();
 
+    public InProcessServerBuilder()
+    {
+        this(new File( System.getProperty( "java.io.tmpdir" )));
+    }
+
     public InProcessServerBuilder( File workingDir )
+    {
+        this(workingDir, true);
+    }
+
+    public InProcessServerBuilder( File workingDirectory, boolean createSubDirectory )
+    {
+        File storeDir = createSubDirectory ?
+            new File(workingDirectory, randomFolderName()).getAbsoluteFile() :
+                workingDirectory;
+        init(storeDir);
+    }
+
+    private void init( File workingDir )
     {
         setDirectory( workingDir );
         withConfig( ServerSettings.auth_enabled, "false" );
@@ -140,7 +158,7 @@ public class InProcessServerBuilder implements TestServerBuilder
 
     private TestServerBuilder setDirectory( File dir )
     {
-        this.serverFolder = new File(dir, randomFolderName()).getAbsoluteFile();
+        this.serverFolder = dir;
         config.put( DATABASE_LOCATION_PROPERTY_KEY, serverFolder.getAbsolutePath() );
         logging = new ClassicLoggingService( new Config( stringMap( store_dir.name(), serverFolder.getAbsolutePath() ) ) );
         return this;

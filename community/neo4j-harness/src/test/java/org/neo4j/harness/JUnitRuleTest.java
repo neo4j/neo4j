@@ -19,23 +19,31 @@
  */
 package org.neo4j.harness;
 
+import java.util.List;
+
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runners.model.Statement;
 
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.harness.junit.Neo4jRule;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.test.Mute;
+import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 
+import static org.neo4j.test.TargetDirectory.testDirForTest;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class JUnitRuleTest
@@ -57,6 +65,9 @@ public class JUnitRuleTest
                 }
             } )
             .withExtension( "/test", MyUnmanagedExtension.class );
+
+    @Rule
+    public TargetDirectory.TestDirectory testDirectory = testDirForTest( getClass() );
 
     @Rule public Mute mute = Mute.muteAll();
 
@@ -93,8 +104,38 @@ public class JUnitRuleTest
         // When I run this test
 
         // Then
-        assertEquals(2, IteratorUtil.count(
+        assertEquals( 2, IteratorUtil.count(
                 neo4j.getGraphDatabaseService().execute( "MATCH (n:User) RETURN n" )
-        ));
+        ) );
+    }
+
+    @Test
+    public void shouldRuleWorkWithExsitingDirectory()
+    {
+        // given
+
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( testDirectory.absolutePath() );
+        try {
+            db.execute( "create ()" );
+        } finally {
+            db.shutdown();
+        }
+
+        // When a rule with an pre-populated graph db directory is used
+        final Neo4jRule ruleWithDirectory = new Neo4jRule(testDirectory.directory(), false);
+        ruleWithDirectory.apply( new Statement()
+        {
+            @Override
+            public void evaluate() throws Throwable
+            {
+                // Then the database is not empty
+                Result result = ruleWithDirectory.getGraphDatabaseService().execute( "match (n) return count(n) as " +
+                        "count" );
+
+                List<Object> column = IteratorUtil.asList( result.columnAs( "count" ) );
+                assertEquals(1, column.size());
+                assertEquals(1, column.get(0));
+            }
+        }, null );
     }
 }

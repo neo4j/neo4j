@@ -38,11 +38,23 @@ public final class TestServerBuilders
     }
 
     /**
-     * Create a builder capable of starting an in-process Neo4j instance, running in the specified directory.
+     * Create a builder capable of starting an in-process Neo4j instance, running in a subdirectory of the specified directory.
      */
     public static TestServerBuilder newInProcessBuilder(File workingDirectory)
     {
         return new InProcessServerBuilder(workingDirectory );
+    }
+
+    /**
+     * Create a builder capable of starting an in-process Neo4j instance. Depending on a boolean flag a fresh subdirectory
+     * is created beforehand.
+     *
+     * @param workingDirectory base directory
+     * @param createSubDirectory if false, a pre-existing graph db can be used. If true, a subfolder will be created inside.
+     */
+    public static TestServerBuilder newInProcessBuilder(File workingDirectory, boolean createSubDirectory)
+    {
+        return new InProcessServerBuilder(workingDirectory, createSubDirectory );
     }
 
     private TestServerBuilders(){}

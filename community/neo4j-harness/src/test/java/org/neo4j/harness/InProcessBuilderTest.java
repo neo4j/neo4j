@@ -36,18 +36,26 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.Mute;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.server.HTTP;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.harness.TestServerBuilders.newInProcessBuilder;
 
@@ -107,7 +115,8 @@ public class InProcessBuilderTest
                 .newServer())
         {
             // Then
-            assertThat( HTTP.GET( server.httpURI().toString() + "path/to/my/extension/myExtension" ).status(), equalTo( 234 ) );
+            assertThat( HTTP.GET( server.httpURI().toString() + "path/to/my/extension/myExtension" ).status(),
+                    equalTo( 234 ) );
         }
     }
 
@@ -135,6 +144,33 @@ public class InProcessBuilderTest
             {
                 // Then
                 assertThat( secondServer.httpURI().getPort(), not( firstServer.httpURI().getPort() ) );
+            }
+        }
+    }
+
+    @Test
+    public void shouldRunBuilderOnExistingStoreDir() throws Exception
+    {
+        // When
+        // create graph db with one node upfront
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( testDir.absolutePath() );
+        try {
+            db.execute( "create ()" );
+        } finally {
+            db.shutdown();
+        }
+
+        try ( ServerControls server = newInProcessBuilder( testDir.directory(), false )
+                .newServer() )
+        {
+            // Then
+            try ( Transaction tx = server.getGraphDatabaseService().beginTx() )
+            {
+                ResourceIterable<Node> allNodes = GlobalGraphOperations.at(
+                        server.getGraphDatabaseService() ).getAllNodes();
+
+                assertTrue( IteratorUtil.count( allNodes ) > 0 );
+                tx.success();
             }
         }
     }

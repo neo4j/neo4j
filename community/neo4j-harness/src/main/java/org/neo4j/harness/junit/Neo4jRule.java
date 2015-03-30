@@ -53,7 +53,12 @@ public class Neo4jRule implements TestRule, TestServerBuilder
 
     public Neo4jRule(File workingDirectory)
     {
-        builder = TestServerBuilders.newInProcessBuilder( workingDirectory );
+        this(workingDirectory, true);
+    }
+
+    public Neo4jRule( File workingDirectory, boolean createSubFolder )
+    {
+        builder = TestServerBuilders.newInProcessBuilder( workingDirectory, createSubFolder );
     }
 
     @Override
