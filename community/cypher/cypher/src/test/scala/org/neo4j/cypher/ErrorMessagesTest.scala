@@ -22,6 +22,7 @@ package org.neo4j.cypher
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.StringHelper
+import org.neo4j.helpers.Platforms
 
 class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
 
@@ -422,8 +423,10 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
     import StringHelper._
     val error = intercept[SyntaxException](executeQuery(query))
     assertThat(error.getMessage(), containsString(expectedError.fixPosition))
-    assertThat(error.offset, equalTo(Some(expectedOffset): Option[Int]))
+    assertThat(error.offset, equalTo(Some(fixPosition(expectedOffset)): Option[Int]))
   }
+
+  private def fixPosition(i: Int): Int = if (Platforms.platformIsWindows()) i - 1 else i
 
   def executeQuery(query: String) {
     execute(query).toList
