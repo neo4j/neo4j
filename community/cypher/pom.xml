@@ -24,6 +24,7 @@
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <docs-plugin.skip>true</docs-plugin.skip>
+    <componentversion.skip>true</componentversion.skip>
   </properties>
 
   <scm>

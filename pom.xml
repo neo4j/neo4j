@@ -64,7 +64,7 @@
             <id>generate-version</id>
             <phase>generate-sources</phase>
             <configuration>
-              <target if="version-package">
+              <target if="version-package" unless="componentversion.skip">
                 <macrodef name="generate-version">
                   <attribute name="package" />
                   <sequential>
