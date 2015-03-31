@@ -191,7 +191,7 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
           EagerAggregationPipe(
             buildPipe(source, input),
             groupingExpressions.keySet,
-            Eagerly.immutableMapValues[String, ast.Expression, AggregationExpression](aggregatingExpressions, x => x.asCommandExpression.asInstanceOf[AggregationExpression])
+            Eagerly.immutableMapValues[String, ast.Expression, AggregationExpression](aggregatingExpressions, buildExpression(_).asInstanceOf[AggregationExpression])
           )()
 
         case FindShortestPaths(source, shortestPath) =>
