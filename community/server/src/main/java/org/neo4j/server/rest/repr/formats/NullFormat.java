@@ -30,6 +30,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.neo4j.server.rest.repr.BadInputException;
+import org.neo4j.server.rest.repr.InvalidArgumentsException;
 import org.neo4j.server.rest.repr.ListWriter;
 import org.neo4j.server.rest.repr.MappingWriter;
 import org.neo4j.server.rest.repr.MediaTypeNotSupportedException;
@@ -75,7 +76,7 @@ public class NullFormat extends RepresentationFormat
             if ( requiredKeys.length != 0 )
             {
                 String missingKeys = Arrays.toString( requiredKeys );
-                throw new BadInputException( "Missing required keys: " + missingKeys );
+                throw new InvalidArgumentsException( "Missing required keys: " + missingKeys );
             }
             return Collections.emptyMap();
         }

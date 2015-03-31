@@ -19,22 +19,24 @@
  */
 package org.neo4j.server.rest.domain;
 
-@SuppressWarnings( "serial" )
-public class JsonParseException extends org.neo4j.server.rest.web.PropertyValueException
-{
+import org.neo4j.kernel.api.exceptions.Status;
 
+@SuppressWarnings( "serial" )
+public class JsonParseException extends Exception implements Status.HasStatus
+{
     public JsonParseException( String message, Throwable cause )
     {
         super( message, cause );
     }
 
-    public JsonParseException( String message )
-    {
-        super( message );
-    }
-
     public JsonParseException( Throwable cause )
     {
         super( cause );
+    }
+
+    @Override
+    public Status status()
+    {
+        return Status.Request.InvalidFormat;
     }
 }

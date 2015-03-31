@@ -145,7 +145,7 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
     @Documented
     @Test
     @GraphDescription.Graph( nodes = { @NODE( name = "Clint Eastwood", labels = { @LABEL( "Actor" ), @LABEL( "Director" ) }, setNameProperty = true ) } )
-    public void listing_node_labels() throws PropertyValueException
+    public void listing_node_labels() throws JsonParseException
     {
         Map<String, Node> nodes = data.get();
         String nodeUri = getNodeUri( nodes.get( "Clint Eastwood" ) );
@@ -239,7 +239,7 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
             @NODE( name = "Donald Sutherland",   labels={ @LABEL( "Person" )} ),
             @NODE( name = "Clint Eastwood", labels={ @LABEL( "Person" )}, properties = { @PROP( key = "name", value = "Clint Eastwood" )}),
             @NODE( name = "Steven Spielberg", labels={ @LABEL( "Person" )}, properties = { @PROP( key = "name", value = "Steven Spielberg" )})})
-    public void get_nodes_with_label_and_property() throws PropertyValueException, UnsupportedEncodingException
+    public void get_nodes_with_label_and_property() throws JsonParseException, UnsupportedEncodingException
     {
         data.get();
 
@@ -264,7 +264,7 @@ public class LabelsDocIT extends AbstractRestFunctionalTestBase
                     {@PROP(key = "names", value = "Clint,Eastwood", type = ARRAY, componentType = STRING)}),
             @NODE(name = "Steven Spielberg", labels = {@LABEL("Person")}, properties =
                     {@PROP(key = "names", value = "Steven,Spielberg", type = ARRAY, componentType = STRING)})})
-    public void get_nodes_with_label_and_array_property() throws PropertyValueException, UnsupportedEncodingException
+    public void get_nodes_with_label_and_array_property() throws JsonParseException, UnsupportedEncodingException
     {
         data.get();
 

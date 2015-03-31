@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.rest.web.PropertyValueException;
+import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.GraphDescription;
 
 import static java.util.Arrays.asList;
@@ -57,7 +57,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     @Documented
     @Test
     @GraphDescription.Graph( nodes = {} )
-    public void createPropertyUniquenessConstraint() throws PropertyValueException
+    public void createPropertyUniquenessConstraint() throws JsonParseException
     {
         data.get();
 
@@ -80,7 +80,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     @Documented
     @Test
     @GraphDescription.Graph( nodes = {} )
-    public void getLabelUniquenessPropertyConstraint() throws PropertyValueException
+    public void getLabelUniquenessPropertyConstraint() throws JsonParseException
     {
         data.get();
 
@@ -105,7 +105,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     @Documented
     @Test
     @GraphDescription.Graph( nodes = {} )
-    public void getLabelUniquenessPropertyConstraints() throws PropertyValueException
+    public void getLabelUniquenessPropertyConstraints() throws JsonParseException
     {
         data.get();
 
@@ -139,7 +139,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     @Documented
     @Test
     @GraphDescription.Graph( nodes = {} )
-    public void getLabelPropertyConstraints() throws PropertyValueException
+    public void getLabelPropertyConstraints() throws JsonParseException
     {
         data.get();
 
@@ -173,7 +173,7 @@ public class SchemaConstraintsDocIT extends AbstractRestFunctionalTestBase
     @Documented
     @Test
     @GraphDescription.Graph( nodes = {} )
-    public void get_constraints() throws PropertyValueException
+    public void get_constraints() throws JsonParseException
     {
         data.get();
 

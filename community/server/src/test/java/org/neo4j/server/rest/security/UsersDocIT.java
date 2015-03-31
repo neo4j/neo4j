@@ -37,6 +37,7 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.rest.RESTDocsGenerator;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
@@ -65,7 +66,7 @@ public class UsersDocIT extends ExclusiveServerTestBase
      */
     @Test
     @Documented
-    public void user_status() throws PropertyValueException, IOException
+    public void user_status() throws JsonParseException, IOException
     {
         // Given
         startServerWithConfiguredUser();
@@ -91,7 +92,7 @@ public class UsersDocIT extends ExclusiveServerTestBase
      */
     @Test
     @Documented
-    public void user_status_first_access() throws PropertyValueException, IOException
+    public void user_status_first_access() throws JsonParseException, IOException
     {
         // Given
         startServer( true );
@@ -118,7 +119,7 @@ public class UsersDocIT extends ExclusiveServerTestBase
      */
     @Test
     @Documented
-    public void change_password() throws PropertyValueException, IOException
+    public void change_password() throws JsonParseException, IOException
     {
         // Given
         startServer( true );

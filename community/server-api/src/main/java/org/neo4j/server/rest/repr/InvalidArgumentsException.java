@@ -17,15 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.web;
+package org.neo4j.server.rest.repr;
 
-public class OperationFailureException extends Exception
+import org.neo4j.kernel.api.exceptions.Status;
+
+public class InvalidArgumentsException extends BadInputException
 {
-    public OperationFailureException( String message )
+    public InvalidArgumentsException( String message )
     {
         super( message );
     }
 
-    private static final long serialVersionUID = -4594462038185850546L;
-
+    @Override
+    public Status status()
+    {
+        return Status.Statement.InvalidArguments;
+    }
 }

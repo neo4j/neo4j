@@ -33,7 +33,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Pair;
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.web.PropertyValueException;
+import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphHolder;
 import org.neo4j.test.TestData;
@@ -198,10 +198,10 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         Collection<?> hits;
         try
         {
-            hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
+            hits = (Collection<?>) JsonHelper.readJson( entity );
             assertEquals( expectedSize, hits.size() );
         }
-        catch ( PropertyValueException e )
+        catch ( JsonParseException e )
         {
             throw new RuntimeException( e );
         }

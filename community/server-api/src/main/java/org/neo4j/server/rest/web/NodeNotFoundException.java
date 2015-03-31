@@ -23,14 +23,14 @@ import org.neo4j.graphdb.NotFoundException;
 
 public class NodeNotFoundException extends Exception
 {
-    public NodeNotFoundException( String message )
+    public NodeNotFoundException( String message, NotFoundException e )
     {
-        super(message);
+        super( message, e );
     }
 
     public NodeNotFoundException( NotFoundException e )
     {
-        super(e);
+        super( e );
     }
 
     private static final long serialVersionUID = 7292603734007524712L;
