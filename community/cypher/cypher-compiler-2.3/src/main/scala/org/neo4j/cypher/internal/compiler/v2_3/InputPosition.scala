@@ -38,7 +38,9 @@ case class InputPosition(offset: Int, line: Int, column: Int) {
   def toOffsetString = offset.toString
 
   def withOffset(pos: Option[InputPosition]) = pos match {
-    case Some(p) => copy(offset + p.offset, line + p.line - 1, column + p.column - 1)
+    case Some(p) =>
+      val newColumn = if (line == p.line) column + p.column - 1 else column
+      copy(offset + p.offset, line + p.line - 1, newColumn)
     case None => self
   }
 

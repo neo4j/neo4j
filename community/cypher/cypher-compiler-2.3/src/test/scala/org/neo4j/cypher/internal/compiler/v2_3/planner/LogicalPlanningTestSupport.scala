@@ -46,7 +46,9 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   val astRewriter = new ASTRewriter(mock[AstRewritingMonitor], shouldExtractParameters = false)
   val mockRel = newPatternRelationship("a", "b", "r")
   val tokenResolver = new SimpleTokenResolver()
-  val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(0))
+  val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
+
+  def solvedWithEstimation(cardinality: Cardinality) = CardinalityEstimation.lift(PlannerQuery.empty, cardinality)
 
   def newPatternRelationship(start: IdName, end: IdName, rel: IdName, dir: Direction = Direction.OUTGOING, types: Seq[RelTypeName] = Seq.empty, length: PatternLength = SimplePatternLength) = {
     PatternRelationship(rel, (start, end), dir, types, length)
@@ -133,9 +135,9 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     )
   }
 
-  def newMockedLogicalPlan(idNames: Set[IdName]): LogicalPlan = {
+  def newMockedLogicalPlan(idNames: Set[IdName], cardinality: Cardinality = Cardinality(1)): LogicalPlan = {
     val qg = QueryGraph.empty.addPatternNodes(idNames.toSeq: _*)
-    FakePlan(idNames)(CardinalityEstimation.lift(PlannerQuery(qg), Cardinality(0)))
+    FakePlan(idNames)(CardinalityEstimation.lift(PlannerQuery(qg), cardinality))
   }
 
   def newMockedLogicalPlan(ids: String*): LogicalPlan =
