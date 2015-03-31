@@ -20,12 +20,10 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.PathImpl
-import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.NestedPipeExpression
-import org.neo4j.cypher.internal.compiler.v2_2.pipes.{LazyTypes, ArgumentPipe, ExpandAllPipe}
-import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.{EstimatedRows, LegacyExpression}
-import org.neo4j.cypher.internal.compiler.v2_2.planner.BeLikeMatcher._
-import org.neo4j.cypher.internal.compiler.v2_2.symbols
-import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.NestedPipeExpression
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{ArgumentPipe, ExpandAllPipe, LazyTypes}
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{EstimatedRows, LegacyExpression}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.BeLikeMatcher._
 import org.neo4j.graphdb.{Direction, Relationship}
 import org.scalatest.Matchers
 
