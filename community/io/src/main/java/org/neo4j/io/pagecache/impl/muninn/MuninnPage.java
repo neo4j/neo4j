@@ -31,7 +31,7 @@ import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
-import org.neo4j.jsr166e.StampedLock;
+import org.neo4j.concurrent.jsr166e.StampedLock;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.allowUnalignedMemoryAccess;
@@ -113,10 +113,13 @@ final class MuninnPage extends StampedLock implements Page
     {
         // This is intentionally left benignly racy for performance.
         byte usage = UnsafeUtil.getByteVolatile( this, usageStampOffset );
-        usage <<= 1;
-        usage++; // Raise at least one bit in case it was all zeros.
-        usage &= 0x0F;
-        UnsafeUtil.putByteVolatile( this, usageStampOffset, usage );
+        if ( usage < 4 ) // avoid cache sloshing by not doing a write if counter is already maxed out
+        {
+            usage <<= 1;
+            usage++; // Raise at least one bit in case it was all zeros.
+            usage &= 0x0F;
+            UnsafeUtil.putByteVolatile( this, usageStampOffset, usage );
+        }
     }
 
     /** Decrement the usage stamp. Returns true if it reaches 0. */
