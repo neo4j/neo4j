@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast.{SortItem, UnsignedDecimalInt
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{LazyMode, IdName}
 
 class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
-  test("reverse pair map") {
+  test("pair map") {
 
     val qg1 = QueryGraph.empty
     val qg2 = QueryGraph.empty
@@ -37,23 +37,23 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
     var seenOnPos1 = List.empty[PlannerQuery]
     var seenOnPos2 = List.empty[PlannerQuery]
 
-    val result = pq1.reverseFoldMap {
+    val result = pq1.foldMap {
       case (pq1: PlannerQuery, pq2: PlannerQuery) =>
         seenOnPos1 = seenOnPos1 :+ pq1
         seenOnPos2 = seenOnPos2 :+ pq2
         pq2
     }
 
-    seenOnPos1 should equal(List(pq2, pq1))
-    seenOnPos2 should equal(List(pq3, pq2))
+    seenOnPos1 should equal(List(pq1, pq2))
+    seenOnPos2 should equal(List(pq2, pq3))
     result should equal(pq1)
   }
 
-  test("reverseFoldMap on single plannerQuery returns that PQ") {
+  test("foldMap on single plannerQuery returns that PQ") {
 
     val input = PlannerQuery(graph = QueryGraph.empty, tail = None)
 
-    val result = input.reverseFoldMap {
+    val result = input.foldMap {
       case (pq1: PlannerQuery, pq2: PlannerQuery) =>
         fail("should not pass through here")
     }
@@ -61,14 +61,14 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
     result should equal(input)
   }
 
-  test("reverseFoldMap plannerQuery with tail should change when reverseMapped") {
+  test("foldMap plannerQuery with tail should change when reverseMapped") {
 
     val tail = PlannerQuery(graph = QueryGraph.empty)
     val firstQueryGraph = QueryGraph.empty
     val secondQueryGraph = QueryGraph(patternNodes = Set(IdName("a")))
     val input = PlannerQuery(graph = firstQueryGraph, tail = Some(tail))
 
-    val result = input.reverseFoldMap {
+    val result = input.foldMap {
       case (pq1: PlannerQuery, pq2: PlannerQuery) =>
         pq2.withGraph(secondQueryGraph)
     }

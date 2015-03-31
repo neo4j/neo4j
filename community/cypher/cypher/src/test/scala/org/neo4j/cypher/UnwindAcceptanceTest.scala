@@ -113,4 +113,40 @@ class UnwindAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSu
       Map("collection" -> List(1, 2, 3), "x" -> 3)
     ))
   }
+
+  test("unwind does not remove identifiers from scope") {
+    val s1 = createLabeledNode("Start")
+    val n2 = createNode()
+    relate(s1, n2, "X")
+    relate(s1, n2, "Y")
+    relate(createNode(), n2, "Y")
+
+    val result = executeWithNewPlanner("""MATCH (a:Start)-[:X]->(b1)
+                                         |WITH a, COLLECT(b1) AS bees
+                                         |UNWIND bees as b2
+                                         |MATCH (a)-[:Y]->(b2)
+                                         |RETURN a, b2""".stripMargin)
+    result.toList should equal(List(Map("a" -> s1, "b2" -> n2)))
+  }
+
+  test("multiple unwinds after each other work like expected") {
+    val result =
+      executeWithNewPlanner( """WITH [1,2] as XS, [3,4] as YS, [5,6] as ZS
+                             |UNWIND XS as X
+                             |UNWIND YS as Y
+                             |UNWIND ZS as Z
+                             |RETURN *""".stripMargin)
+
+    result.toList should equal(
+      List(
+        Map("X" -> 1, "Y" -> 3, "Z" -> 5, "ZS" -> List(5, 6), "YS" -> List(3, 4), "XS" -> List(1, 2)),
+        Map("X" -> 1, "Y" -> 3, "Z" -> 6, "ZS" -> List(5, 6), "YS" -> List(3, 4), "XS" -> List(1, 2)),
+        Map("X" -> 1, "Y" -> 4, "Z" -> 5, "ZS" -> List(5, 6), "YS" -> List(3, 4), "XS" -> List(1, 2)),
+        Map("X" -> 1, "Y" -> 4, "Z" -> 6, "ZS" -> List(5, 6), "YS" -> List(3, 4), "XS" -> List(1, 2)),
+        Map("X" -> 2, "Y" -> 3, "Z" -> 5, "ZS" -> List(5, 6), "YS" -> List(3, 4), "XS" -> List(1, 2)),
+        Map("X" -> 2, "Y" -> 3, "Z" -> 6, "ZS" -> List(5, 6), "YS" -> List(3, 4), "XS" -> List(1, 2)),
+        Map("X" -> 2, "Y" -> 4, "Z" -> 5, "ZS" -> List(5, 6), "YS" -> List(3, 4), "XS" -> List(1, 2)),
+        Map("X" -> 2, "Y" -> 4, "Z" -> 6, "ZS" -> List(5, 6), "YS" -> List(3, 4), "XS" -> List(1, 2)))
+    )
+  }
 }
