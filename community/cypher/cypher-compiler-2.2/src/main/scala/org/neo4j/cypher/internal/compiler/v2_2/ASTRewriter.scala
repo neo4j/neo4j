@@ -40,6 +40,7 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters
       enableCondition(noReferenceEqualityAmongIdentifiers),
       enableCondition(containsNoNodesOfType[UnaliasedReturnItem]),
       enableCondition(orderByOnlyOnIdentifiers),
+      enableCondition(noDuplicatesInReturnItems),
       expandStar(semanticState),
       enableCondition(containsNoReturnAll),
       foldConstants,
