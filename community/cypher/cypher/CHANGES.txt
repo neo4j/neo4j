@@ -2,6 +2,7 @@
 -----
 o Fixes #4315 - UNWIND not binding to identifier
 o Fixes #4341 - START clause ignores associated WHERE
+o Fixes #4331 - Alleged duplicate result column names
 
 2.2.0
 -----
