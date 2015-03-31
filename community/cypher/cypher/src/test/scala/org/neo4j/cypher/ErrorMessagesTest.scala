@@ -429,7 +429,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
   private def fixPosition(q: String, originalOffset: Int): Int = if (Platforms.platformIsWindows()) {
     val subString = q.replaceAll("\n\r", "\n").substring(0, originalOffset)
     val numberOfNewLines = subString.filter(_ == '\n').length
-    originalOffset - numberOfNewLines
+    originalOffset + numberOfNewLines
   } else originalOffset
 
   def executeQuery(query: String) {
