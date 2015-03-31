@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_3.parser.{CypherParser, ParserMonitor}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 
-class LegacyVsNewPipeBuilderTest extends CypherFunSuite {
+class LegacyVsNewExecutablePlanBuilderTest extends CypherFunSuite {
 
   val parser = new CypherParser(mock[ParserMonitor[Statement]])
 
@@ -54,17 +54,17 @@ class LegacyVsNewPipeBuilderTest extends CypherFunSuite {
   class uses(queryText: String) {
     // given
     val planContext = mock[PlanContext]
-    val oldBuilder = mock[PipeBuilder]
-    val newBuilder = mock[PipeBuilder]
-    val pipeBuilder = new LegacyVsNewPipeBuilder(oldBuilder, newBuilder, mock[NewLogicalPlanSuccessRateMonitor])
+    val oldBuilder = mock[ExecutablePlanBuilder]
+    val newBuilder = mock[ExecutablePlanBuilder]
+    val pipeBuilder = new LegacyVsNewExecutablePlanBuilder(oldBuilder, newBuilder, mock[NewLogicalPlanSuccessRateMonitor])
     val preparedQuery = PreparedQuery(parser.parse(queryText), queryText, Map.empty)(null, Set.empty, null, null)
     val pipeInfo = mock[PipeInfo]
-    when( oldBuilder.producePlan(preparedQuery, planContext ) ).thenReturn(pipeInfo)
-    when( newBuilder.producePlan(preparedQuery, planContext ) ).thenReturn(pipeInfo)
+    when( oldBuilder.producePlan(preparedQuery, planContext ) ).thenReturn(Right(pipeInfo))
+    when( newBuilder.producePlan(preparedQuery, planContext ) ).thenReturn(Right(pipeInfo))
 
-    def result = pipeBuilder.producePlan(preparedQuery, planContext)
+    def result = pipeBuilder.producePlan(preparedQuery, planContext).right.toOption.get
 
-    def assertUsed(used: PipeBuilder) = {
+    def assertUsed(used: ExecutablePlanBuilder) = {
       val notUsed = if (used == oldBuilder) newBuilder else oldBuilder
       verify( used ).producePlan(preparedQuery, planContext)
       verifyNoMoreInteractions( used )

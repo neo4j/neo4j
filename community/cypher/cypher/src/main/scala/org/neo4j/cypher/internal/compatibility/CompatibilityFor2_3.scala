@@ -165,7 +165,7 @@ trait CompatibilityFor2_3 {
     def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, executionMode: ExecutionMode, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
       implicit val s = session
       exceptionHandlerFor2_3.runSafely {
-        ExecutionResultWrapperFor2_3(inner.run(queryContext(graph, txInfo), executionMode, params), inner.plannerUsed)
+        ExecutionResultWrapperFor2_3(inner.run(queryContext(graph, txInfo), txInfo.statement, executionMode, params), inner.plannerUsed)
       }
     }
 

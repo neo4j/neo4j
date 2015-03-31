@@ -45,7 +45,7 @@ import org.scalatest.mock.MockitoSugar
 
 import scala.collection.Seq
 
-class RulePipeBuilderTest
+class RuleExecutablePlanBuilderTest
   extends CypherFunSuite
   with GraphDatabaseTestSupport
   with Timed
@@ -69,7 +69,7 @@ class RulePipeBuilderTest
     val planContext = mock[PlanContext]
 
     val exception = intercept[ExecutionException](timeoutAfter(5) {
-      val pipeBuilder = new LegacyPipeBuilderWithCustomPlanBuilders(Seq(new BadBuilder), new WrappedMonitors2_3(kernelMonitors))
+      val pipeBuilder = new LegacyExecutablePlanBuilderWithCustomPlanBuilders(Seq(new BadBuilder), new WrappedMonitors2_3(kernelMonitors))
       val query = new FakePreparedQuery(q)
       pipeBuilder.producePlan(query, planContext)
     })
@@ -91,14 +91,14 @@ class RulePipeBuilderTest
         .updates(DeletePropertyAction(identifier, PropertyKey("foo")))
         .returns(ReturnItem(Identifier("x"), "x"))
 
-      val pipeBuilder = new LegacyPipeBuilder(new WrappedMonitors2_3(kernelMonitors))
+      val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors2_3(kernelMonitors))
       val queryContext = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, statement)
       val pkId = queryContext.getPropertyKeyId("foo")
       val parsedQ = new FakePreparedQuery(q)
 
       // when
 
-      val commands = pipeBuilder.producePlan(parsedQ, planContext).pipe.asInstanceOf[ExecuteUpdateCommandsPipe].commands
+      val commands = pipeBuilder.producePlan(parsedQ, planContext).right.toOption.get.pipe.asInstanceOf[ExecuteUpdateCommandsPipe].commands
 
       assertTrue("Property was not resolved", commands == Seq(DeletePropertyAction(identifier, PropertyKey("foo", pkId))))
     } finally {
@@ -117,13 +117,13 @@ class RulePipeBuilderTest
         .where(HasLabel(Identifier("x"), Label("Person")))
         .returns(ReturnItem(Identifier("x"), "x"))
 
-      val execPlanBuilder = new LegacyPipeBuilder(new WrappedMonitors2_3(kernelMonitors))
+      val execPlanBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors2_3(kernelMonitors))
       val queryContext = new TransactionBoundQueryContext(graph, tx, isTopLevelTx = true, statement)
       val labelId = queryContext.getLabelId("Person")
       val parsedQ = new FakePreparedQuery(q)
 
       // when
-      val predicate = execPlanBuilder.producePlan(parsedQ, planContext).pipe.asInstanceOf[FilterPipe].predicate
+      val predicate = execPlanBuilder.producePlan(parsedQ, planContext).right.toOption.get.pipe.asInstanceOf[FilterPipe].predicate
 
       assertTrue("Label was not resolved", predicate == HasLabel(Identifier("x"), Label("Person", labelId)))
     } finally {
@@ -147,8 +147,8 @@ class RulePipeBuilderTest
         .returns(AllIdentifiers())
       val parsedQ = new FakePreparedQuery(q)
 
-      val pipeBuilder = new LegacyPipeBuilder(new WrappedMonitors2_3(kernelMonitors))
-      val pipe = pipeBuilder.producePlan(parsedQ, planContext).pipe
+      val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors2_3(kernelMonitors))
+      val pipe = pipeBuilder.producePlan(parsedQ, planContext).right.toOption.get.pipe
 
       toSeq(pipe) should equal (Seq(
         classOf[EmptyResultPipe],
@@ -173,8 +173,8 @@ class RulePipeBuilderTest
       val parsedQ = new FakePreparedQuery(q)
 
 
-      val execPlanBuilder = new LegacyPipeBuilder(new WrappedMonitors2_3(kernelMonitors))
-      val pipe = execPlanBuilder.producePlan(parsedQ, planContext).pipe
+      val execPlanBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors2_3(kernelMonitors))
+      val pipe = execPlanBuilder.producePlan(parsedQ, planContext).right.toOption.get.pipe
 
       toSeq(pipe) should equal (Seq(
         classOf[EmptyResultPipe],
@@ -197,10 +197,10 @@ class RulePipeBuilderTest
       )
       val parsedQ = new FakePreparedQuery(q)
 
-      val pipeBuilder = new LegacyPipeBuilder(new WrappedMonitors2_3(kernelMonitors))
+      val pipeBuilder = new LegacyExecutablePlanBuilder(new WrappedMonitors2_3(kernelMonitors))
 
       // when
-      val periodicCommit = pipeBuilder.producePlan(parsedQ, planContext).periodicCommit
+      val periodicCommit = pipeBuilder.producePlan(parsedQ, planContext).right.toOption.get.periodicCommit
 
       assert(periodicCommit === Some(PeriodicCommitInfo(None)))
     } finally {
@@ -209,7 +209,7 @@ class RulePipeBuilderTest
   }
 }
 
-class LegacyPipeBuilderWithCustomPlanBuilders(builders: Seq[PlanBuilder], monitors:Monitors) extends LegacyPipeBuilder(monitors) {
+class LegacyExecutablePlanBuilderWithCustomPlanBuilders(builders: Seq[PlanBuilder], monitors:Monitors) extends LegacyExecutablePlanBuilder(monitors) {
   override val phases = new Phase { def myBuilders: Seq[PlanBuilder] = builders }
 }
 

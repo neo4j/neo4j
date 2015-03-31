@@ -32,10 +32,10 @@ import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.{devNullLogger, Scope, Monitors, PreparedQuery}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
-class RulePipeBuilderTest extends CypherFunSuite {
+class RuleExecutablePlanBuilderTest extends CypherFunSuite {
   val planContext: PlanContext = mock[PlanContext]
   val parser = new CypherParser(mock[ParserMonitor[Statement]])
-  val planBuilder = new LegacyPipeBuilder(mock[Monitors])
+  val planBuilder = new LegacyExecutablePlanBuilder(mock[Monitors])
 
   test("should_use_distinct_pipe_for_distinct") {
     val pipe = buildExecutionPipe("MATCH n RETURN DISTINCT n")
@@ -109,6 +109,6 @@ class RulePipeBuilderTest extends CypherFunSuite {
   private def buildExecutionPipe(q: String): Pipe = {
     val statement = parser.parse(q)
     val parsedQ = PreparedQuery(statement, q, Map.empty)(mock[SemanticTable], Set.empty, mock[Scope], devNullLogger)
-    planBuilder.producePlan(parsedQ, planContext).pipe
+    planBuilder.producePlan(parsedQ, planContext).right.toOption.get.pipe
   }
 }

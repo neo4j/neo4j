@@ -96,7 +96,7 @@ class StagesTimingListener(monitors: Monitors, monitor: StagesTimingMonitor) {
       start(query)
     }
 
-    def successfulPlanning(query: String, p: PipeInfo) {
+    def successfulPlanning(query: String) {
       end(query, monitor.executionPlanBuilding)
     }
   }

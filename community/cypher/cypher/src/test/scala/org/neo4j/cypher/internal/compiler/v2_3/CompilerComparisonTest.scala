@@ -290,7 +290,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     val planningMonitor = monitors.newMonitor[PlanningMonitor](monitorTag)
     val metricsFactory = CachedMetricsFactory(metricsFactoryInput)
     val planner = CostBasedPipeBuilderFactory(monitors = monitors, metricsFactory = metricsFactory, monitor = planningMonitor, clock = clock, plannerName = plannerName)
-    val pipeBuilder = new LegacyVsNewPipeBuilder(new LegacyPipeBuilder(monitors), planner, planBuilderMonitor)
+    val pipeBuilder = new LegacyVsNewExecutablePlanBuilder(new LegacyExecutablePlanBuilder(monitors), planner, planBuilderMonitor)
     val execPlanBuilder = new ExecutionPlanBuilder(graph, statsDivergenceThreshold, queryPlanTTL, clock, pipeBuilder)
     val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](100)
     val cacheHitMonitor = monitors.newMonitor[CypherCacheHitMonitor[Statement]](monitorTag)
@@ -306,7 +306,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     val parser = new CypherParser(monitors.newMonitor[ParserMonitor[ast.Statement]](monitorTag))
     val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
     val rewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag))
-    val pipeBuilder = new LegacyPipeBuilder(monitors)
+    val pipeBuilder = new LegacyExecutablePlanBuilder(monitors)
     val execPlanBuilder = new ExecutionPlanBuilder(graph, statsDivergenceThreshold, queryPlanTTL, clock, pipeBuilder)
     val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](100)
     val cacheHitMonitor = monitors.newMonitor[CypherCacheHitMonitor[Statement]](monitorTag)
@@ -535,7 +535,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     db.withTx {
       tx =>
         val queryContext = new TransactionBoundQueryContext(db, tx, true, db.statement)
-        val result = plan.run(queryContext, ProfileMode, parameters)
+        val result = plan.run(queryContext, statement, ProfileMode, parameters)
         (result.toList, result)
     }
   }
