@@ -29,7 +29,7 @@ sealed trait QueryHorizon extends PageDocFormatting { // with ToPrettyString[Que
   //  def toDefaultPrettyString(formatter: DocFormatter) =
   //    toPrettyString(formatter)(InternalDocHandler.docGen)
 
-  def exposedSymbols: Set[IdName]
+  def exposedSymbols(qg: QueryGraph): Set[IdName]
 
   def dependingExpressions: Seq[Expression]
 
@@ -119,7 +119,7 @@ final case class RegularQueryProjection(projections: Map[String, Expression] = M
   def withShuffle(shuffle: QueryShuffle) =
     copy(shuffle = shuffle)
 
-  def exposedSymbols: Set[IdName] = projections.keys.map(IdName.apply).toSet
+  override def exposedSymbols(qg: QueryGraph) = projections.keys.map(IdName.apply).toSet
 
   override def dependingExpressions = super.dependingExpressions ++ projections.values
 }
@@ -148,11 +148,11 @@ final case class AggregatingQueryProjection(groupingKeys: Map[String, Expression
   def withShuffle(shuffle: QueryShuffle) =
     copy(shuffle = shuffle)
 
-  def exposedSymbols: Set[IdName] = (groupingKeys.keys ++  aggregationExpressions.keys).map(IdName.apply).toSet
+  override def exposedSymbols(qg: QueryGraph) = (groupingKeys.keys ++  aggregationExpressions.keys).map(IdName.apply).toSet
 }
 
 case class UnwindProjection(identifier: IdName, exp: Expression) extends QueryHorizon {
-  def exposedSymbols: Set[IdName] = Set(identifier)
+  override def exposedSymbols(qg: QueryGraph) = qg.allCoveredIds + identifier
 
   override def dependingExpressions = Seq(exp)
 

@@ -59,11 +59,11 @@ case class PlannerQueryBuilder(private val q: PlannerQuery)
         .updateTail(fixArgumentIdsOnOptionalMatch)
     }
 
-    val fixedArgumentIds = q.reverseFoldMap {
-      case (headPQ, tailPQ) =>
-        val inputIds = headPQ.graph.allCoveredIds ++ headPQ.horizon.exposedSymbols
-        val argumentIds = inputIds intersect (tailPQ.graph.allCoveredIds ++ tailPQ.horizon.dependencies)
-        tailPQ.updateGraph(_.withArgumentIds(argumentIds))
+    val fixedArgumentIds = q.foldMap {
+      case (head, tail) =>
+        val symbols = head.horizon.exposedSymbols(head.graph)
+        val newTailGraph = tail.graph.withArgumentIds(symbols)
+        tail.withGraph(newTailGraph)
     }
 
     fixArgumentIdsOnOptionalMatch(fixedArgumentIds)

@@ -111,15 +111,11 @@ case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
                    horizon: QueryHorizon = horizon,
                    tail: Option[PlannerQuery] = tail) = PlannerQuery(graph, horizon, tail)
 
-  /*
-  Used to rewrite the PlannerQuery from the last PQ to the first, scanning pair wise
-   */
-  def reverseFoldMap(f: (PlannerQuery, PlannerQuery) => PlannerQuery): PlannerQuery = tail match {
+  def foldMap(f: (PlannerQuery, PlannerQuery) => PlannerQuery): PlannerQuery = tail match {
     case None => this
     case Some(oldTail) =>
-      val mappedTail = oldTail.reverseFoldMap(f)
-      val newTail = f(this, mappedTail)
-      copy(tail = Some(newTail))
+      val newTail = f(this, oldTail)
+      copy(tail = Some(newTail.foldMap(f)))
   }
 
   def fold[A](in: A)(f: (A, PlannerQuery) => A): A = {

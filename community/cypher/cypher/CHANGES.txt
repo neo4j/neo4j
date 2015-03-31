@@ -1,3 +1,7 @@
+2.2.1
+-----
+o Fixes #4315 - UNWIND not binding to identifier
+
 2.2.0
 -----
 o Fixed problem where undirected paths weren't being properly projected
