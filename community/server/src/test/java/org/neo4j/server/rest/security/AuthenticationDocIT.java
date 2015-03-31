@@ -38,7 +38,6 @@ import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.rest.RESTDocsGenerator;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
@@ -68,7 +67,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
      */
     @Test
     @Documented
-    public void missing_authorization() throws PropertyValueException, IOException
+    public void missing_authorization() throws JsonParseException, IOException
     {
         // Given
         startServerWithConfiguredUser();
@@ -96,7 +95,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
      */
     @Test
     @Documented
-    public void successful_authentication() throws PropertyValueException, IOException
+    public void successful_authentication() throws JsonParseException, IOException
     {
         // Given
         startServerWithConfiguredUser();
@@ -122,7 +121,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
      */
     @Test
     @Documented
-    public void incorrect_authentication() throws PropertyValueException, IOException
+    public void incorrect_authentication() throws JsonParseException, IOException
     {
         // Given
         startServerWithConfiguredUser();
@@ -152,7 +151,7 @@ public class AuthenticationDocIT extends ExclusiveServerTestBase
      */
     @Test
     @Documented
-    public void password_change_required() throws PropertyValueException, IOException
+    public void password_change_required() throws JsonParseException, IOException
     {
         // Given
         startServer( true );

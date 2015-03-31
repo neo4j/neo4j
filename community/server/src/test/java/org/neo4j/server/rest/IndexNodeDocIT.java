@@ -48,7 +48,6 @@ import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.URIHelper;
-import org.neo4j.server.rest.web.PropertyValueException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -95,7 +94,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
      */
     @Documented
     @Test
-    public void shouldGetListOfNodeIndexesWhenOneExist() throws PropertyValueException
+    public void shouldGetListOfNodeIndexesWhenOneExist() throws JsonParseException
     {
         String indexName = "favorites";
         helper.createNodeIndex( indexName );
@@ -206,7 +205,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
                 functionalTestHelper.indexNodeUri( indexName, key,
                         URIHelper.encode( value ) ) );
         String entity = response.getEntity();
-        Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
+        Collection<?> hits = (Collection<?>) JsonHelper.readJson( entity );
         assertEquals( 1, hits.size() );
     }
 
@@ -243,7 +242,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
                 .expectedStatus( 200 )
                 .get( functionalTestHelper.indexNodeUri( indexName, key, URIHelper.encode( value ) ) )
                 .entity();
-        Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
+        Collection<?> hits = (Collection<?>) JsonHelper.readJson( entity );
         assertEquals( 1, hits.size() );
     }
 
@@ -268,7 +267,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
      */
     @Documented
     @Test
-    public void shouldAddToIndexAndRetrieveItByQuery() throws PropertyValueException
+    public void shouldAddToIndexAndRetrieveItByQuery() throws JsonParseException
     {
         String indexName = "bobTheIndex";
         String key = "Name";
@@ -282,7 +281,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
                 .get( functionalTestHelper.indexNodeUri( indexName ) + "?query=Name:Build~0.1%20AND%20Gender:Male" )
                 .entity();
 
-        Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
+        Collection<?> hits = (Collection<?>) JsonHelper.readJson( entity );
         assertEquals( 1, hits.size() );
         LinkedHashMap<String, String> nodeMap = (LinkedHashMap) hits.iterator().next();
         assertNull( "score should not be present when not explicitly ordering",
@@ -304,7 +303,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
                 functionalTestHelper.indexNodeUri( indexName )
                         + "?query=Name:Build~0.1%20AND%20Gender:Male" ).entity();
 
-        Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
+        Collection<?> hits = (Collection<?>) JsonHelper.readJson( entity );
         LinkedHashMap<String, String> nodeMapUnordered = (LinkedHashMap) hits.iterator().next();
 
         // When
@@ -312,7 +311,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
                 functionalTestHelper.indexNodeUri( indexName )
                         + "?query=Name:Build~0.1%20AND%20Gender:Male&order=score" ).entity();
 
-        hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
+        hits = (Collection<?>) JsonHelper.readJson( entity );
         LinkedHashMap<String, String> nodeMapOrdered = (LinkedHashMap) hits.iterator().next();
 
         // Then
@@ -328,7 +327,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
 
     @Test
     public void shouldAddToIndexAndRetrieveItByQuerySorted()
-            throws PropertyValueException
+            throws JsonParseException
     {
         String indexName = "bobTheIndex";
         String key = "Name";
@@ -343,7 +342,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
                 functionalTestHelper.indexNodeUri( indexName )
                         + "?query=Name:Build~0.1%20AND%20Gender:Male&order=relevance" ).entity();
 
-        Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
+        Collection<?> hits = (Collection<?>) JsonHelper.readJson( entity );
         assertEquals( 2, hits.size() );
         Iterator<LinkedHashMap<String, Object>> it = (Iterator<LinkedHashMap<String, Object>>) hits.iterator();
 
@@ -367,7 +366,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
                 functionalTestHelper.indexNodeUri( indexName )
                         + "?query=Name:Build~0.1%20AND%20Gender:Male&order=index" ).entity();
 
-        hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
+        hits = (Collection<?>) JsonHelper.readJson( entity );
         assertEquals( 2, hits.size() );
         it = (Iterator<LinkedHashMap<String, Object>>) hits.iterator();
 
@@ -390,7 +389,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
                 functionalTestHelper.indexNodeUri( indexName )
                         + "?query=Name:Build~0.1%20AND%20Gender:Male&order=score" ).entity();
 
-        hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
+        hits = (Collection<?>) JsonHelper.readJson( entity );
         assertEquals( 2, hits.size() );
         it = (Iterator<LinkedHashMap<String, Object>>) hits.iterator();
 
@@ -477,7 +476,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldGet200AndArrayOfNodeRepsWhenGettingFromIndex() throws PropertyValueException
+    public void shouldGet200AndArrayOfNodeRepsWhenGettingFromIndex() throws JsonParseException
     {
         String key = "myKey";
         String value = "myValue";
@@ -516,7 +515,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
         JaxRsResponse response = RestRequest.req()
                 .get( functionalTestHelper.indexNodeUri( indexName, key, value ) );
         assertEquals( 200, response.getStatus() );
-        Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( response.getEntity() );
+        Collection<?> items = (Collection<?>) JsonHelper.readJson( response.getEntity() );
         int counter = 0;
         for ( Object item : items )
         {
@@ -676,14 +675,14 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
         response.close();
         response = request.get( functionalTestHelper.indexNodeUri( indexName, key, URIHelper.encode( value ) ) );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
-        Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue( response.getEntity() );
+        Collection<?> hits = (Collection<?>) JsonHelper.readJson( response.getEntity() );
         assertEquals( 1, hits.size() );
         response.close();
 
         CLIENT.resource( location )
                 .delete();
         response = request.get( functionalTestHelper.indexNodeUri( indexName, key, URIHelper.encode( value ) ) );
-        hits = (Collection<?>) JsonHelper.jsonToSingleValue( response.getEntity() );
+        hits = (Collection<?>) JsonHelper.readJson( response.getEntity() );
         assertEquals( 0, hits.size() );
     }
 
@@ -904,7 +903,7 @@ public class IndexNodeDocIT extends AbstractRestFunctionalTestBase
         JaxRsResponse response = RestRequest.req()
                 .get( functionalTestHelper.indexNodeUri( indexName, key, URIHelper.encode( value ) ) );
         String entity = response.getEntity();
-        Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
+        Collection<?> hits = (Collection<?>) JsonHelper.readJson( entity );
         assertEquals( 1, hits.size() );
     }
 

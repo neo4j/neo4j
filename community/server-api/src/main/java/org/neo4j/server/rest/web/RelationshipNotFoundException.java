@@ -24,4 +24,8 @@ public class RelationshipNotFoundException extends Exception
 {
     private static final long serialVersionUID = -1177555212368703516L;
 
+    public RelationshipNotFoundException( Throwable cause )
+    {
+        super( cause );
+    }
 }

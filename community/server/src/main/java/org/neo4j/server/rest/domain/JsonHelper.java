@@ -78,25 +78,21 @@ public class JsonHelper
         }
     }
 
-    public static Object jsonToSingleValue( String json ) throws org.neo4j.server.rest.web.PropertyValueException
+    public static Object assertSupportedPropertyValue( Object jsonObject ) throws PropertyValueException
     {
-        Object jsonObject = readJson( json );
-        return jsonObject instanceof Collection<?> ? jsonObject : assertSupportedPropertyValue( jsonObject );
-    }
-
-    private static Object assertSupportedPropertyValue( Object jsonObject ) throws PropertyValueException
-    {
+        if ( jsonObject instanceof Collection<?> )
+        {
+            return jsonObject;
+        }
         if ( jsonObject == null )
         {
-            throw new org.neo4j.server.rest.web.PropertyValueException( "null value not supported" );
-
+            throw new PropertyValueException( "null value not supported" );
         }
-
         if ( !(jsonObject instanceof String ||
                jsonObject instanceof Number ||
                jsonObject instanceof Boolean) )
         {
-            throw new org.neo4j.server.rest.web.PropertyValueException(
+            throw new PropertyValueException(
                     "Unsupported value type " + jsonObject.getClass() + "."
                     + " Supported value types are all java primitives (byte, char, short, int, "
                     + "long, float, double) and String, as well as arrays of all those types" );

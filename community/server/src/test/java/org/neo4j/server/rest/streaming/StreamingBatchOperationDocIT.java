@@ -359,7 +359,7 @@ public class StreamingBatchOperationDocIT extends AbstractRestFunctionalTestBase
     @Test
     @Graph("Peter likes Jazz")
     public void shouldHandleEscapedStrings() throws ClientHandlerException,
-            UniformInterfaceException, JSONException, PropertyValueException {
+            UniformInterfaceException, JSONException, JsonParseException {
     	String string = "Jazz";
         Node gnode = getNode( string );
         assertThat( gnode, inTx(graphdb(), Neo4jMatchers.hasProperty( "name" ).withValue(string)) );

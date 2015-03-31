@@ -100,7 +100,7 @@ public class ExtensionService
         }
         catch ( NotFoundException e )
         {
-            throw new RelationshipNotFoundException();
+            throw new RelationshipNotFoundException( e );
         }
     }
 

@@ -37,6 +37,7 @@ import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.CypherResultRepresentation;
 import org.neo4j.server.rest.repr.InputFormat;
+import org.neo4j.server.rest.repr.InvalidArgumentsException;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.transactional.CommitOnSuccessfulStatusCodeRepresentationWriteHandler;
 
@@ -81,7 +82,7 @@ public class CypherService
         Map<String,Object> command = input.readMap( body );
 
         if( !command.containsKey(QUERY_KEY) ) {
-            return output.badRequest(new BadInputException( "You have to provide the 'query' parameter." ));
+            return output.badRequest( new InvalidArgumentsException( "You have to provide the 'query' parameter." ) );
         }
 
         String query = (String) command.get( QUERY_KEY );

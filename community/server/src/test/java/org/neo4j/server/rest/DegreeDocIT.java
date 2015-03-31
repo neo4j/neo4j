@@ -25,7 +25,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.web.PropertyValueException;
+import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.GraphDescription;
 
 import static junit.framework.TestCase.assertEquals;
@@ -40,7 +40,7 @@ public class DegreeDocIT extends AbstractRestFunctionalTestBase
     @Documented
     @Test
     @GraphDescription.Graph( {"Root knows Mattias", "Root knows Johan"} )
-    public void get_degree() throws PropertyValueException
+    public void get_degree() throws JsonParseException
     {
         Map<String,Node> nodes = data.get();
         String nodeUri = getNodeUri( nodes.get( "Root" ) );
@@ -63,7 +63,7 @@ public class DegreeDocIT extends AbstractRestFunctionalTestBase
     @Documented
     @Test
     @GraphDescription.Graph( {"Root knows Mattias", "Root knows Johan"} )
-    public void get_degree_by_direction() throws PropertyValueException
+    public void get_degree_by_direction() throws JsonParseException
     {
         Map<String,Node> nodes = data.get();
         String nodeUri = getNodeUri( nodes.get( "Root" ) );
@@ -86,7 +86,7 @@ public class DegreeDocIT extends AbstractRestFunctionalTestBase
     @Documented
     @Test
     @GraphDescription.Graph( {"Root KNOWS Mattias", "Root KNOWS Johan", "Root LIKES Cookie"} )
-    public void get_degree_by_direction_and_type() throws PropertyValueException
+    public void get_degree_by_direction_and_type() throws JsonParseException
     {
         Map<String,Node> nodes = data.get();
         String nodeUri = getNodeUri( nodes.get( "Root" ) );

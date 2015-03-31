@@ -29,8 +29,8 @@ import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
+import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.util.RFC1123;
-import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -54,7 +54,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
      */
     @Test
     @Documented
-    public void begin_a_transaction() throws PropertyValueException
+    public void begin_a_transaction() throws JsonParseException
     {
         // Document
         ResponseEntity response = gen.get()
@@ -79,7 +79,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
      */
     @Test
     @Documented
-    public void execute_statements_in_an_open_transaction() throws PropertyValueException
+    public void execute_statements_in_an_open_transaction() throws JsonParseException
     {
         // Given
         String location = POST( getDataUri() + "transaction" ).location();
@@ -105,7 +105,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
      */
     @Test
     @Documented
-    public void execute_statements_in_an_open_transaction_using_REST() throws PropertyValueException
+    public void execute_statements_in_an_open_transaction_using_REST() throws JsonParseException
     {
         // Given
         String location = POST( getDataUri() + "transaction" ).location();
@@ -138,7 +138,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
     @Test
     @Documented
     public void reset_transaction_timeout_of_an_open_transaction()
-            throws PropertyValueException, ParseException, InterruptedException
+            throws JsonParseException, ParseException, InterruptedException
     {
         // Given
         HTTP.Response initialResponse = POST( getDataUri() + "transaction" );
@@ -175,7 +175,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
      */
     @Test
     @Documented
-    public void commit_an_open_transaction() throws PropertyValueException
+    public void commit_an_open_transaction() throws JsonParseException
     {
         // Given
         String location = POST( getDataUri() + "transaction" ).location();
@@ -203,7 +203,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
      */
     @Test
     @Documented
-    public void begin_and_commit_a_transaction_in_one_request() throws PropertyValueException
+    public void begin_and_commit_a_transaction_in_one_request() throws JsonParseException
     {
         // Document
         ResponseEntity response = gen.get()
@@ -230,7 +230,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
      */
     @Test
     @Documented
-    public void return_results_in_graph_format() throws PropertyValueException
+    public void return_results_in_graph_format() throws JsonParseException
     {
         // Document
         ResponseEntity response = gen.get()
@@ -263,7 +263,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
      */
     @Test
     @Documented
-    public void rollback_an_open_transaction() throws PropertyValueException
+    public void rollback_an_open_transaction() throws JsonParseException
     {
         // Given
         HTTP.Response firstReq = POST( getDataUri() + "transaction",
@@ -303,7 +303,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
      */
     @Test
     @Documented
-    public void handling_errors() throws PropertyValueException
+    public void handling_errors() throws JsonParseException
     {
         // Given
         String location = POST( getDataUri() + "transaction" ).location();
