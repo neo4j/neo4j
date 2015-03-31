@@ -35,4 +35,27 @@ class ReturnItemsTest extends CypherFunSuite with AstConstructionTestSupport {
     result.errors should have size 1
     result.errors.head.msg should startWith("Multiple result columns with the same name are not supported")
   }
+
+  test("should forbid unaliased projections collisions, e.g., projecting more than one value to the same id") {
+    val item1 = UnaliasedReturnItem(StringLiteral("a")_, "a")_
+    val item2 = UnaliasedReturnItem(StringLiteral("a")_, "a")_
+
+    val items = ReturnItems(includeExisting = false, Seq(item1, item2))_
+
+    val result = items.semanticCheck(SemanticState.clean)
+
+    result.errors should have size 1
+    result.errors.head.msg should startWith("Multiple result columns with the same name are not supported")
+  }
+
+  test("should not forbid aliased projections of the same expression with different names") {
+    val item1 = AliasedReturnItem(StringLiteral("a")_, ident("n"))_
+    val item2 = AliasedReturnItem(StringLiteral("a")_, ident("m"))_
+
+    val items = ReturnItems(includeExisting = false, Seq(item1, item2))_
+
+    val result = items.semanticCheck(SemanticState.clean)
+
+    result.errors shouldBe empty
+  }
 }
