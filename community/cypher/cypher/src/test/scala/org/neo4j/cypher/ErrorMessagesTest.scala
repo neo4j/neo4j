@@ -423,10 +423,14 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
     import StringHelper._
     val error = intercept[SyntaxException](executeQuery(query))
     assertThat(error.getMessage(), containsString(expectedError.fixPosition))
-    assertThat(error.offset, equalTo(Some(fixPosition(expectedOffset)): Option[Int]))
+    assertThat(error.offset, equalTo(Some(fixPosition(query, expectedOffset)): Option[Int]))
   }
 
-  private def fixPosition(i: Int): Int = if (Platforms.platformIsWindows()) i - 1 else i
+  private def fixPosition(q: String, originalOffset: Int): Int = if (Platforms.platformIsWindows()) {
+    val subString = q.replaceAll("\n\r", "\n").substring(0, originalOffset)
+    val numberOfNewLines = subString.filter(_ == '\n').length
+    originalOffset + numberOfNewLines
+  } else originalOffset
 
   def executeQuery(query: String) {
     execute(query).toList
