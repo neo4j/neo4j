@@ -327,7 +327,7 @@ neo.queryPlan = (element)->
                     else
                       ['EstimatedRows', 'estimated row']
                     [
-                      { x: x, y: y, text: formatNumber(source[key]) + ' ', anchor: 'end' }
+                      { x: x, y: y, text: formatNumber(source[key]) + '\u00A0', anchor: 'end' }
                       { x: x, y: y, text: plural(caption, source[key]), anchor: 'start' }
                     ]
                   else
@@ -343,7 +343,6 @@ neo.queryPlan = (element)->
                   .attr('x', (d) -> d.x)
                   .attr('y', (d) -> d.y)
                   .attr('text-anchor', (d) -> d.anchor)
-                  .attr('xml:space', 'preserve')
                   .text((d) -> d.text)
 
       'g.layer.operators':
@@ -480,7 +479,7 @@ neo.queryPlan = (element)->
                     data: (d) ->
                       if d.key
                         [
-                          { text: d.value + ' ', anchor: 'end', x: operatorWidth / 2 }
+                          { text: d.value + '\u00A0', anchor: 'end', x: operatorWidth / 2 }
                           { text: d.key, anchor: 'start', x: operatorWidth / 2 }
                         ]
                       else
@@ -495,7 +494,6 @@ neo.queryPlan = (element)->
                       update
                       .attr('x', (d) -> d.x)
                       .attr('text-anchor', (d) -> d.anchor)
-                      .attr('xml:space', 'preserve')
                       .attr('fill', 'black')
                       .transition()
                       .each('end', ->
@@ -568,7 +566,7 @@ neo.queryPlan = (element)->
                   if d.alwaysShowCost
                     y = d.height - d.costHeight + operatorDetailHeight
                     [
-                      { text: formatNumber(d.DbHits) + ' ', anchor: 'end', y: y }
+                      { text: formatNumber(d.DbHits) + '\u00A0', anchor: 'end', y: y }
                       { text: 'db hits', anchor: 'start', y: y }
                     ]
                   else
@@ -584,7 +582,6 @@ neo.queryPlan = (element)->
                   update
                   .attr('x', operatorWidth / 2)
                   .attr('text-anchor', (d) -> d.anchor)
-                  .attr('xml:space', 'preserve')
                   .transition()
                   .attr('y', (d) -> d.y)
                   .each('end', ->
