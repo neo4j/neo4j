@@ -225,7 +225,10 @@ object ClauseConverters {
 
           val nodeIds = hints.collect { case n: NodeHint => IdName(n.identifier.name)}
 
+          val selections = clause.where.asSelections
+
           qg.addPatternNodes(nodeIds: _*)
+            .addSelections(selections)
             .addHints(hints)
         }
     }
