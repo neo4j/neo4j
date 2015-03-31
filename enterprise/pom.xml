@@ -19,6 +19,7 @@
 
   <properties>
     <short-name>enterprise-build</short-name>
+    <componentversion.skip>true</componentversion.skip>
   </properties>
 
   <scm>

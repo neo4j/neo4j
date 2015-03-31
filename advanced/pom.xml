@@ -20,6 +20,7 @@
   <properties>
     <short-name>advanced-build</short-name>
     <docs-plugin.skip>true</docs-plugin.skip>
+    <componentversion.skip>true</componentversion.skip>
   </properties>
 
   <scm>
