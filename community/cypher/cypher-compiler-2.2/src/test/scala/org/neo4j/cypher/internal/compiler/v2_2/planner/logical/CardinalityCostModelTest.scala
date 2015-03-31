@@ -92,6 +92,4 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     val pleaseLazy = QueryGraphSolverInput.empty.withPreferredStrictness(LazyMode)
     CardinalityCostModel(lazyPlan, pleaseLazy) should be < CardinalityCostModel(eagerPlan, pleaseLazy)
   }
-
-  private def solvedWithEstimation(cardinality: Cardinality) = CardinalityEstimation.lift(PlannerQuery.empty, cardinality)
 }

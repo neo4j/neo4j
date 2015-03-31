@@ -63,6 +63,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
   val realConfig = new RealLogicalPlanningConfiguration
 
+  def solvedWithEstimation(cardinality: Cardinality) = CardinalityEstimation.lift(PlannerQuery.empty, cardinality)
+
   implicit class LogicalPlanningEnvironment[C <: LogicalPlanningConfiguration](config: C) {
     lazy val semanticTable = config.computeSemanticTable
 
