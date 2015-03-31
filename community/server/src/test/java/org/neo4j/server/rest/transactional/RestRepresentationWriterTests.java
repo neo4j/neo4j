@@ -59,9 +59,8 @@ public class RestRepresentationWriterTests
     {
         json.writeStartObject();
         // RETURN {one:{two:[true, {three: 42}]}}
-        resultDataContentWriter.write( json, asList( "the column" ), map( "the column", map( "one", map( "two",
-                asList( true,
-                        map( "three", 42 ) ) ) ) ) );
+        resultDataContentWriter.write( json, asList( "the column" ), new MapRow(
+                map( "the column", map( "one", map( "two", asList( true, map( "three", 42 ) ) ) ) ) ) );
         json.writeEndObject();
         json.flush();
         json.close();

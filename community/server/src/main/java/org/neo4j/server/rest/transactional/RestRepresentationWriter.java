@@ -28,6 +28,7 @@ import org.codehaus.jackson.JsonGenerator;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Result;
 import org.neo4j.server.rest.repr.NodeRepresentation;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.PathRepresentation;
@@ -46,7 +47,7 @@ class RestRepresentationWriter implements ResultDataContentWriter
     }
 
     @Override
-    public void write( JsonGenerator out, Iterable<String> columns, Map<String, Object> row ) throws IOException
+    public void write( JsonGenerator out, Iterable<String> columns, Result.ResultRow row ) throws IOException
     {
         RepresentationFormat format = new StreamingJsonFormat.StreamingRepresentationFormat( out, null );
         out.writeArrayFieldStart( "rest" );

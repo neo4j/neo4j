@@ -19,9 +19,6 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import org.codehaus.jackson.JsonFactory;
-import org.codehaus.jackson.JsonGenerator;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
@@ -30,11 +27,13 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import org.codehaus.jackson.JsonFactory;
+import org.codehaus.jackson.JsonGenerator;
+
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryStatistics;
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -426,25 +425,29 @@ public class ExecutionResultSerializer
         }
     }
 
-    private void writeRows( Iterable<String> columns, ResourceIterator<Map<String, Object>> data,
-                            ResultDataContentWriter writer ) throws IOException
+    private void writeRows( final Iterable<String> columns, Result data, final ResultDataContentWriter writer )
+            throws IOException
     {
         out.writeArrayFieldStart( "data" );
         try
         {
-            while ( data.hasNext() )
+            data.accept( new Result.ResultVisitor<IOException>()
             {
-                Map<String, Object> row = data.next();
-                out.writeStartObject();
-                try
+                @Override
+                public boolean visit( Result.ResultRow row ) throws IOException
                 {
-                    writer.write( out, columns, row );
+                    out.writeStartObject();
+                    try
+                    {
+                        writer.write( out, columns, row );
+                    }
+                    finally
+                    {
+                        out.writeEndObject();
+                    }
+                    return true;
                 }
-                finally
-                {
-                    out.writeEndObject();
-                }
-            }
+            } );
         }
         finally
         {

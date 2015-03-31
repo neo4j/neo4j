@@ -159,7 +159,7 @@ class CodeGenerator {
        |$fields
        |
        |@Override
-       |public void accept(final ResultVisitor visitor)
+       |public <E extends Exception> void accept(final ResultVisitor<E> visitor)
        |{
        |final ResultRowImpl row = new ResultRowImpl(db);
        |$init

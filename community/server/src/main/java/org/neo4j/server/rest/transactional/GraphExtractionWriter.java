@@ -31,15 +31,17 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Result;
+import org.neo4j.helpers.collection.IterableWrapper;
 
 class GraphExtractionWriter implements ResultDataContentWriter
 {
     @Override
-    public void write( JsonGenerator out, Iterable<String> columns, Map<String, Object> row ) throws IOException
+    public void write( JsonGenerator out, Iterable<String> columns, Result.ResultRow row ) throws IOException
     {
         Set<Node> nodes = new HashSet<>();
         Set<Relationship> relationships = new HashSet<>();
-        extract( nodes, relationships, row.values() );
+        extract( nodes, relationships, map( columns, row ) );
 
         out.writeObjectFieldStart( "graph" );
         try
@@ -170,5 +172,17 @@ class GraphExtractionWriter implements ResultDataContentWriter
                 extract( nodes, relationships, (Iterable<?>) item );
             }
         }
+    }
+
+    private static Iterable<?> map( Iterable<String> columns, final Result.ResultRow row )
+    {
+        return new IterableWrapper<Object, String>( columns )
+        {
+            @Override
+            protected Object underlyingObjectToObject( String key )
+            {
+                return row.get( key );
+            }
+        };
     }
 }

@@ -23,10 +23,11 @@ import org.neo4j.graphdb.{Path, Relationship, Node}
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 
 import scala.collection.Map
+import scala.collection.JavaConverters._
 
 object iteratorToVisitable {
 
-  def accept(iterator: Iterator[Map[String, Any]], visitor: ResultVisitor) = {
+  def accept[EX <: Exception](iterator: Iterator[Map[String, Any]], visitor: ResultVisitor[EX]) = {
     val row = new MapResultRow()
     var continue = true
     while (continue && iterator.hasNext) {
@@ -58,11 +59,16 @@ object iteratorToVisitable {
         case None =>
           throw new IllegalArgumentException("No column \"" + key + "\" exists")
         case Some(value) if clazz.isInstance(value) || value == null =>
-          clazz.cast(value)
+          clazz.cast(javaValue(value))
         case Some(value) =>
           throw new NoSuchElementException("The current item in column \"" + key + "\" is not a " + clazz + ": \"" + value + "\"")
       }
     }
 
+    private def javaValue( value: Any ): Any = value match {
+      case iter: Seq[_] => iter.map( javaValue ).asJava
+      case iter: Map[_, _] => Eagerly.immutableMapValues( iter, javaValue ).asJava
+      case x => x
+    }
   }
 }

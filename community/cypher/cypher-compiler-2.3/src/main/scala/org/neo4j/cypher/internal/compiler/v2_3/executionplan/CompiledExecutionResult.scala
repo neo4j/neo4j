@@ -99,7 +99,7 @@ abstract class CompiledExecutionResult extends InternalExecutionResult {
   private def ensureIterator() = {
     if (innerIterator == null) {
       val res = Seq.newBuilder[Map[String, Any]]
-      accept(new ResultVisitor {
+      accept(new ResultVisitor[RuntimeException] {
         private val cols = columns
         override def visit(row: ResultRow): Boolean = {
           val map = new mutable.HashMap[String, Any]()

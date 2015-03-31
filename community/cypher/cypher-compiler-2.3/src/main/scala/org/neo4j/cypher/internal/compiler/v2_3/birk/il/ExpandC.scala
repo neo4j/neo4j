@@ -22,35 +22,21 @@ package org.neo4j.cypher.internal.compiler.v2_3.birk.il
 import org.neo4j.graphdb.Direction
 
 case class ExpandC(fromVar: String, relVar: String, dir: Direction, types: Map[String, String], toVar: String, inner: Instruction) extends LoopDataGenerator {
-  private val visitMethod =
+  private val theBody =
     if (dir == Direction.OUTGOING)
-      s"""@Override
-         |public void visit( long relId, int type, long startNode, long $toVar ) throws KernelException
-         |{
-         |${inner.generateCode()}
-         |}
+      s"""$toVar = rel.endNode();
        """.stripMargin
     else if (dir == Direction.INCOMING)
-      s"""@Override
-         |public void visit( long relId, int type, long $toVar, long endNode ) throws KernelException
-         |{
-         |${inner.generateCode()}
-         |}
+      s"""$toVar = rel.startNode();
        """.stripMargin
     else {
-      s"""@Override
-         |public void visit( long relId, int type, long startNode, long endNode ) throws KernelException
+      s"""if ( $fromVar == rel.startNode() )
          |{
-         |long $toVar;
-         |if ( $fromVar == startNode )
-         |{
-         |$toVar = endNode;
+         |$toVar = rel.endNode();
          |}
          |else
          |{
-         |$toVar = startNode;
-         |}
-         |${inner.generateCode()}
+         |$toVar = rel.startNode();
          |}
        """.stripMargin
     }
@@ -62,16 +48,19 @@ case class ExpandC(fromVar: String, relVar: String, dir: Direction, types: Map[S
       s"ro.nodeGetRelationships( $fromVar, Direction.$dir, ${types.map(_._1).mkString(",")} )"
 
   def generateVariablesAndAssignment() =
-    s"""ro.relationshipVisit( $relVar, new RelationshipVisitor<KernelException>()
+    s"""long $toVar;
        |{
-       |$visitMethod
-       |});""".stripMargin
+       |RelationshipDataExtractor rel = new RelationshipDataExtractor();
+       |ro.relationshipVisit( $relVar, rel );
+       |$theBody
+       |}
+       |${inner.generateCode()}""".stripMargin
 
   override def _importedClasses() =  Set(
     "org.neo4j.graphdb.Direction",
     "org.neo4j.collection.primitive.PrimitiveLongIterator",
     "org.neo4j.kernel.api.exceptions.KernelException",
-    "org.neo4j.kernel.impl.api.RelationshipVisitor")
+    "org.neo4j.kernel.impl.api.RelationshipDataExtractor")
 
   def javaType = "org.neo4j.kernel.impl.api.store.RelationshipIterator"
 

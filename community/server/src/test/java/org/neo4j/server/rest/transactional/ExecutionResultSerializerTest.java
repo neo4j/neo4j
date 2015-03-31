@@ -19,12 +19,6 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import org.codehaus.jackson.JsonNode;
-import org.junit.Test;
-import org.mockito.internal.stubbing.answers.ThrowsException;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -42,15 +36,21 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import org.codehaus.jackson.JsonNode;
+import org.junit.Test;
+import org.mockito.internal.stubbing.answers.ThrowsException;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.impl.notification.NotificationCode;
-import org.neo4j.graphdb.Notification;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.TestLogger;
@@ -60,14 +60,18 @@ import org.neo4j.test.mocking.GraphMock;
 import org.neo4j.test.mocking.Link;
 
 import static java.util.Arrays.asList;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
@@ -379,6 +383,7 @@ public class ExecutionResultSerializerTest
                 "column1", "value1",
                 "column2", "value2" );
         Result executionResult = mock( Result.class );
+        mockAccept( executionResult );
         when( executionResult.columns() ).thenReturn( new ArrayList<>( data.keySet() ) );
         when( executionResult.hasNext() ).thenReturn( true, true, false );
         when( executionResult.next() ).thenReturn( data ).thenThrow( new RuntimeException( "Stuff went wrong!" ) );
@@ -414,6 +419,7 @@ public class ExecutionResultSerializerTest
                 "column1", "value1",
                 "column2", "value2" );
         Result executionResult = mock( Result.class );
+        mockAccept( executionResult );
         when( executionResult.columns() ).thenReturn( new ArrayList<>( data.keySet() ) );
         when( executionResult.hasNext() ).thenReturn( true ).thenThrow(
                 new RuntimeException( "Stuff went wrong!" ) );
@@ -775,6 +781,7 @@ public class ExecutionResultSerializerTest
         ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, null );
         RuntimeException onCloseException = new IllegalStateException("Iterator closed");
         Result result = mock( Result.class );
+        mockAccept( result );
         when( result.hasNext() ).thenReturn( true );
         when( result.next() ).thenThrow( onCloseException );
 
@@ -792,6 +799,8 @@ public class ExecutionResultSerializerTest
 
         // then
         verify( result, times( 1 ) ).columns();
+        verify( result, times( 1 ) ).accept(
+                (Result.ResultVisitor<RuntimeException>) any( Result.ResultVisitor.class ) );
         verify( result, times( 1 ) ).hasNext();
         verify( result, times( 1 ) ).next();
         verify( result, times( 1 ) ).close();
@@ -944,10 +953,30 @@ public class ExecutionResultSerializerTest
         {
             when( executionResult.getExecutionPlanDescription() ).thenReturn( planDescription );
         }
+        mockAccept( executionResult );
 
-        when(executionResult.getNotifications()).thenReturn( notifications );
+        when( executionResult.getNotifications() ).thenReturn( notifications );
 
         return executionResult;
+    }
+
+    private static void mockAccept( Result mock )
+    {
+        doAnswer( new Answer<Void>()
+        {
+            @Override
+            public Void answer( InvocationOnMock invocation ) throws Throwable
+            {
+                Result result = (Result) invocation.getMock();
+                Result.ResultVisitor visitor = (Result.ResultVisitor) invocation.getArguments()[0];
+                while ( result.hasNext() )
+                {
+                    visitor.visit( new MapRow( result.next() ) );
+                }
+                return null;
+            }
+        } ).when( mock )
+           .accept( (Result.ResultVisitor<RuntimeException>) any( Result.ResultVisitor.class ) );
     }
 
     private static Path mockPath( Map<String, Object> startNodeProperties, Map<String, Object> relationshipProperties,

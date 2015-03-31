@@ -140,7 +140,7 @@ class ExecutionResultWrapperFor2_2Test extends CypherFunSuite {
     val objectUnderTest = createInnerExecutionResult("a", Long.box(1), Long.box(2), Long.box(3), Long.box(4))
 
     val result = ListBuffer[Any]()
-    val visitor = new ResultVisitor {
+    val visitor = new ResultVisitor[RuntimeException] {
       override def visit(row: ResultRow) = {
         result += row.getNumber("a")
         false
@@ -196,7 +196,7 @@ class ExecutionResultWrapperFor2_2Test extends CypherFunSuite {
     new ExecutionResultWrapperFor2_2(mockObj, mock[PlannerName])(mock[QueryExecutionMonitor], mock[QuerySession])
   }
 
-  private class CapturingResultVisitor(f: ResultRow => Any) extends ResultVisitor {
+  private class CapturingResultVisitor(f: ResultRow => Any) extends ResultVisitor[RuntimeException] {
 
     val results = ListBuffer[Any]()
 
