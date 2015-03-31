@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.impl.muninn;
+package org.neo4j.concurrent;
 
 import java.util.concurrent.locks.LockSupport;
 
@@ -26,13 +26,13 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 /**
  * This class is similar in many ways to a CountDownLatch(1).
  *
- * The main difference is that instances of this specialized Latch implementation are much quicker to allocate and
+ * The main difference is that instances of this specialized latch implementation are much quicker to allocate and
  * construct. Each instance also takes up less memory on the heap, and enqueueing wait nodes on the latch is faster.
  *
  * There are two reasons why this class is faster to construct: 1. it performs no volatile write during its
  * construction, and 2. it does not need to allocate an internal Sync object, like CountDownLatch does.
  */
-final class Latch
+public final class BinaryLatch
 {
     private static class Node
     {
@@ -42,12 +42,15 @@ final class Latch
     private static final class Waiter extends Node
     {
         final Thread waitingThread = Thread.currentThread();
+        volatile byte state;
     }
 
     private static final long stackOffset =
-            UnsafeUtil.getFieldOffset( Latch.class, "stack" );
+            UnsafeUtil.getFieldOffset( BinaryLatch.class, "stack" );
     private static final Node end = new Node();
     private static final Node released = new Node();
+    private static final byte waiterStateSuccessor = 1;
+    private static final byte waiterStateReleased = 2;
 
     @SuppressWarnings( "unused" )
     private volatile Node stack; // written to via unsafe
@@ -67,7 +70,17 @@ final class Latch
             // There are no waiters to unpark, so don't bother.
             return;
         }
-        unparkAll( waiters );
+        unparkSuccessor( waiters );
+    }
+
+    private void unparkSuccessor( Node waiters )
+    {
+        if ( waiters.getClass() == Waiter.class )
+        {
+            Waiter waiter = (Waiter) waiters;
+            waiter.state = waiterStateSuccessor;
+            LockSupport.unpark( waiter.waitingThread );
+        }
     }
 
     /**
@@ -109,21 +122,36 @@ final class Latch
                     // stack, that the latch has been released.
                     LockSupport.park( this );
                 }
-                while ( !isReleased() );
+                while ( !isReleased( waiter ) );
             }
         }
     }
 
-    private boolean isReleased()
+    private boolean isReleased( Waiter waiter )
     {
-        // We have to go through the entire stack and look for the 'released' sentinel, since we might be racing with
-        // the 'state == released' branch in await.
+        // If we are the most recently enqueued waiter on the stack before the release, then that makes us the
+        // successor. As the successor, it is our job to wake up all the other threads. We can *only* become the
+        // successor if the latch has been released, so there's no need to check anything else in this case.
+        if ( waiter.state == waiterStateSuccessor )
+        {
+            unparkAll( waiter.next );
+            return true;
+        }
+
+        // Otherwise we have to go through the entire stack and look for the 'released' sentinel, since we might be
+        // racing with the 'state == released' branch in await.
         Node state = stack;
         do
         {
             if ( state == released )
             {
                 // We've been released!
+                if ( waiter.state != waiterStateReleased )
+                {
+                    // But it doesn't look like someone else is unparking the threads, so let's do that.
+                    // This can happen if we missed the signal to become the successor.
+                    unparkAll( waiter.next );
+                }
                 return true;
             }
 
@@ -150,6 +178,7 @@ final class Latch
         while ( waiters.getClass() == Waiter.class )
         {
             Waiter waiter = (Waiter) waiters;
+            waiter.state = waiterStateReleased;
             LockSupport.unpark( waiter.waitingThread );
             Node next;
             do

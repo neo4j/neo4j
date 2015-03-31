@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.impl.muninn;
+package org.neo4j.concurrent;
 
 import org.junit.AfterClass;
 import org.junit.Test;
@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.fail;
 
-public class LatchTest
+public class BinaryLatchTest
 {
     private static final ExecutorService executor = Executors.newCachedThreadPool();
 
@@ -45,7 +45,7 @@ public class LatchTest
     @Test(timeout = 3000)
     public void releaseThenAwaitDoesNotBlock() throws Exception
     {
-        Latch latch = new Latch();
+        BinaryLatch latch = new BinaryLatch();
         latch.release();
         latch.await();
     }
@@ -53,7 +53,7 @@ public class LatchTest
     @Test(timeout = 3000)
     public void releaseMustUnblockAwaiters() throws Exception
     {
-        final Latch latch = new Latch();
+        final BinaryLatch latch = new BinaryLatch();
         Runnable awaiter = new Runnable()
         {
             @Override
@@ -88,13 +88,13 @@ public class LatchTest
     @Test(timeout = 60000)
     public void stressLatch() throws Exception
     {
-        final AtomicReference<Latch> latchRef = new AtomicReference<>( new Latch() );
+        final AtomicReference<BinaryLatch> latchRef = new AtomicReference<>( new BinaryLatch() );
         Runnable awaiter = new Runnable()
         {
             @Override
             public void run()
             {
-                Latch latch;
+                BinaryLatch latch;
                 while ( (latch = latchRef.get()) != null )
                 {
                     latch.await();
@@ -112,7 +112,7 @@ public class LatchTest
         ThreadLocalRandom rng = ThreadLocalRandom.current();
         for ( int i = 0; i < 500000; i++ )
         {
-            latchRef.getAndSet( new Latch() ).release();
+            latchRef.getAndSet( new BinaryLatch() ).release();
             spinwaitu( rng.nextLong( 0, 10 ) );
         }
 
