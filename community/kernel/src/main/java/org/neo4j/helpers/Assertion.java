@@ -17,17 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_2.ast.conditions
+package org.neo4j.helpers;
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast.ASTNode
-import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.Condition
 
-import scala.reflect.ClassTag
+public class Assertion
+{
+    private static boolean assertionEnabled = false;
 
-case class containsNoNodesOfType[T <: ASTNode](implicit tag: ClassTag[T]) extends Condition {
-  def apply(that: Any): Seq[String] = collectNodesOfType[T].apply(that).map {
-    node => s"Expected none but found ${node.getClass.getSimpleName} at position ${node.position}"
-  }
+    static
+    {
+        assert assertionEnabled = true;
+    }
 
-  override def name = s"$productPrefix[${tag.runtimeClass.getSimpleName}]"
+
+    public static boolean assertionsEnabled()
+    {
+        return assertionEnabled;
+    }
+
+    private Assertion()
+    {
+        // no instance allowed
+    }
 }
