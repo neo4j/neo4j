@@ -24,7 +24,6 @@ import org.junit.Test;
 import java.util.Arrays;
 
 import org.neo4j.unsafe.impl.batchimport.Configuration;
-import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.spy;
@@ -44,13 +43,8 @@ public class DynamicProcessorAssignerTest
         Configuration config = movingAverageConfig( 10 );
         DynamicProcessorAssigner assigner = new DynamicProcessorAssigner( config, 5 );
 
-        ControlledStep<?> slowStep = new ControlledStep<>( "slow", true );
-        slowStep.setStat( Keys.avg_processing_time, 10 );
-        slowStep.setStat( Keys.done_batches, 10 );
-
-        ControlledStep<?> fastStep = new ControlledStep<>( "fast", true );
-        fastStep.setStat( Keys.avg_processing_time, 2 );
-        fastStep.setStat( Keys.done_batches, 10 );
+        ControlledStep<?> slowStep = stepWithStats( "slow", 0, avg_processing_time, 10L, done_batches, 10L );
+        ControlledStep<?> fastStep = stepWithStats( "fast", 0, avg_processing_time, 2L, done_batches, 10L );
 
         StageExecution[] execution = executionOf( config, slowStep, fastStep );
         assigner.start( execution );
@@ -72,22 +66,41 @@ public class DynamicProcessorAssignerTest
         // and it rounds down. So there's room for assigning one more.
         DynamicProcessorAssigner assigner = new DynamicProcessorAssigner( config, 3 );
 
-        ControlledStep<?> slowStep = spy( new ControlledStep<>( "slow", true ) );
-        slowStep.setStat( Keys.avg_processing_time, 10 );
-        slowStep.setStat( Keys.done_batches, 10 );
-
-        ControlledStep<?> fastStep = spy( new ControlledStep<>( "fast", true, 2 ) );
-        fastStep.setStat( Keys.avg_processing_time, 2 );
-        fastStep.setStat( Keys.done_batches, 10 );
+        ControlledStep<?> slowStep = spy( stepWithStats( "slow", 1, avg_processing_time, 10L, done_batches, 10L ) );
+        ControlledStep<?> fastStep = spy( stepWithStats( "fast", 0, avg_processing_time, 2L, done_batches, 10L )
+                .setNumberOfProcessors( 2 ) );
 
         StageExecution[] execution = executionOf( config, slowStep, fastStep );
         assigner.start( execution );
 
-        // WHEN first checking
+        // WHEN checking
         assigner.check( execution );
-        // THEN one additional processor will be added to the slow step
+
+        // THEN one processor should be removed from the fast step
         verify( fastStep, times( 0 ) ).incrementNumberOfProcessors();
         verify( fastStep, times( 1 ) ).decrementNumberOfProcessors();
+    }
+
+    @Test
+    public void shouldRemoveCPUsButNotSoThatTheFastStepBecomesBottleneck() throws Exception
+    {
+        // GIVEN
+        Configuration config = movingAverageConfig( 10 );
+        DynamicProcessorAssigner assigner = new DynamicProcessorAssigner( config, 3 );
+
+        ControlledStep<?> slowStep = spy( stepWithStats( "slow", 1, avg_processing_time, 10L, done_batches, 10L ) );
+        ControlledStep<?> fastStep = spy( stepWithStats( "fast", 0, avg_processing_time, 7L, done_batches, 10L )
+                .setNumberOfProcessors( 3 ) );
+
+        StageExecution[] execution = executionOf( config, slowStep, fastStep );
+        assigner.start( execution );
+
+        // WHEN checking the first time
+        assigner.check( execution );
+
+        // THEN one processor should be removed from the fast step
+        verify( fastStep, times( 0 ) ).incrementNumberOfProcessors();
+        verify( fastStep, times( 0 ) ).decrementNumberOfProcessors();
     }
 
     @Test
@@ -97,13 +110,8 @@ public class DynamicProcessorAssignerTest
         Configuration config = movingAverageConfig( 10 );
         DynamicProcessorAssigner assigner = new DynamicProcessorAssigner( config, 5 );
 
-        ControlledStep<?> aStep = new ControlledStep<>( "slow", true );
-        aStep.setStat( Keys.avg_processing_time, 0 );
-        aStep.setStat( Keys.done_batches, 0 );
-
-        ControlledStep<?> anotherStep = new ControlledStep<>( "fast", true );
-        anotherStep.setStat( Keys.avg_processing_time, 0 );
-        anotherStep.setStat( Keys.done_batches, 0 );
+        ControlledStep<?> aStep = stepWithStats( "slow", 0, avg_processing_time, 0L, done_batches, 0L );
+        ControlledStep<?> anotherStep = stepWithStats( "fast", 0, avg_processing_time, 0L, done_batches, 0L );
 
         StageExecution[] execution = executionOf( config, aStep, anotherStep );
         assigner.start( execution );
@@ -127,9 +135,10 @@ public class DynamicProcessorAssignerTest
         // GIVEN
         Configuration config = movingAverageConfig( 10 );
         DynamicProcessorAssigner assigner = new DynamicProcessorAssigner( config, 5 );
-        Step<?> wayFastest = stepWithStats( avg_processing_time, 0L, done_batches, 20L );
-        Step<?> fast =  spy( stepWithStats( avg_processing_time, 100L, done_batches, 20L ).setNumberOfProcessors( 3 ) );
-        Step<?> slow = stepWithStats( avg_processing_time, 200L, done_batches, 20L );
+        Step<?> wayFastest = stepWithStats( "wayFastest", 0, avg_processing_time, 0L, done_batches, 20L );
+        Step<?> fast = spy( stepWithStats( "fast", 0, avg_processing_time, 100L, done_batches, 20L )
+                .setNumberOfProcessors( 3 ) );
+        Step<?> slow = stepWithStats( "slow", 1, avg_processing_time, 220L, done_batches, 20L );
         StageExecution[] execution = executionOf( config, slow, wayFastest, fast );
         assigner.start( execution );
 
