@@ -17,16 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal
+package org.neo4j.cypher.internal.compiler.v2_3
 
-sealed trait CypherOption
+sealed abstract class RuntimeName {
+  def name: String
+}
 
-final case class VersionOption(version: String) extends CypherOption
-case object ProfileOption extends CypherOption
-case object ExplainOption extends CypherOption
-case object CostPlannerOption extends CypherOption
-case object RulePlannerOption extends CypherOption
-case object IDPPlannerOption extends CypherOption
-case object DPPlannerOption extends CypherOption
-case object InterpretedRuntimeOption extends CypherOption
-case object CompiledRuntimeOption extends CypherOption
+case object InterpretedRuntimeName extends RuntimeName {
+  override val name = "INTERPRETED"
+}
+
+case object CompiledRuntimeName extends RuntimeName {
+  override val name = "COMPILED"
+}
+
+object RuntimeName {
+
+  val default = InterpretedRuntimeName
+
+  def apply(name: String): RuntimeName = name.toUpperCase match {
+    case InterpretedRuntimeName.name => InterpretedRuntimeName
+    case CompiledRuntimeName.name => CompiledRuntimeName
+
+    case n => throw new IllegalArgumentException(
+      s"$n is not a a valid runtime, valid options are ${InterpretedRuntimeName.name} and ${CompiledRuntimeName.name}")
+  }
+}
