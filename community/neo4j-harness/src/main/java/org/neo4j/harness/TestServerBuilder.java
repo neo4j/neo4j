@@ -97,4 +97,11 @@ public interface TestServerBuilder
      * @return this builder instance
      */
     public TestServerBuilder withFixture( Function<GraphDatabaseService, Void> fixtureFunction );
+
+    /**
+     * prepopulate the server with a full copy of the supplied directory
+     * @param sourceDirectory
+     * @return
+     */
+    public TestServerBuilder copyFrom( File sourceDirectory );
 }

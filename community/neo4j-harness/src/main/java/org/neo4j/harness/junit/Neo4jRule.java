@@ -53,12 +53,7 @@ public class Neo4jRule implements TestRule, TestServerBuilder
 
     public Neo4jRule(File workingDirectory)
     {
-        this(workingDirectory, true);
-    }
-
-    public Neo4jRule( File workingDirectory, boolean createSubFolder )
-    {
-        builder = TestServerBuilders.newInProcessBuilder( workingDirectory, createSubFolder );
+        builder = TestServerBuilders.newInProcessBuilder( workingDirectory );
     }
 
     @Override
@@ -129,6 +124,13 @@ public class Neo4jRule implements TestRule, TestServerBuilder
     public Neo4jRule withFixture( Function<GraphDatabaseService, Void> fixtureFunction )
     {
         builder = builder.withFixture( fixtureFunction );
+        return this;
+    }
+
+    @Override
+    public Neo4jRule copyFrom( File sourceDirectory )
+    {
+        builder = builder.copyFrom( sourceDirectory );
         return this;
     }
 

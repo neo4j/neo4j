@@ -122,7 +122,7 @@ public class JUnitRuleTest
         }
 
         // When a rule with an pre-populated graph db directory is used
-        final Neo4jRule ruleWithDirectory = new Neo4jRule(testDirectory.directory(), false);
+        final Neo4jRule ruleWithDirectory = new Neo4jRule(testDirectory.directory()).copyFrom( testDirectory.directory());
         ruleWithDirectory.apply( new Statement()
         {
             @Override

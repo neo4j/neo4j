@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import org.apache.commons.io.FileUtils;
+
 import org.neo4j.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
@@ -62,20 +64,13 @@ public class InProcessServerBuilder implements TestServerBuilder
 
     public InProcessServerBuilder()
     {
-        this(new File( System.getProperty( "java.io.tmpdir" )));
+        this( new File( System.getProperty( "java.io.tmpdir" ) ) );
     }
 
     public InProcessServerBuilder( File workingDir )
     {
-        this(workingDir, true);
-    }
-
-    public InProcessServerBuilder( File workingDirectory, boolean createSubDirectory )
-    {
-        File storeDir = createSubDirectory ?
-            new File(workingDirectory, randomFolderName()).getAbsoluteFile() :
-                workingDirectory;
-        init(storeDir);
+        File storeDir = new File(workingDir, randomFolderName()).getAbsoluteFile();
+        init( storeDir );
     }
 
     private void init( File workingDir )
@@ -85,6 +80,21 @@ public class InProcessServerBuilder implements TestServerBuilder
         withConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
         withConfig( WEBSERVER_PORT_PROPERTY_KEY, Integer.toString( freePort() ) );
     }
+
+
+    @Override
+    public InProcessServerBuilder copyFrom( File originalStoreDir ) {
+        try
+        {
+            FileUtils.copyDirectory( originalStoreDir, serverFolder );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+        return this;
+    }
+
 
     @Override
     public ServerControls newServer()
