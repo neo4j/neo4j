@@ -23,7 +23,7 @@ import org.neo4j.cypher.CypherVersion._
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compiler.v2_3.InputPosition
-import org.neo4j.cypher.internal.compiler.v2_2.{ConservativePlannerName => ConservativePlanner2_2, IDPPlannerName => IDPPlanner2_2, CostPlannerName => CostPlanner2_2}
+import org.neo4j.cypher.internal.compiler.v2_2.{ConservativePlannerName => ConservativePlanner2_2, IDPPlannerName => IDPPlanner2_2, DPPlannerName => DPPlanner2_2,  CostPlannerName => CostPlanner2_2}
 import org.neo4j.cypher.internal.compiler.v2_3.{DPPlannerName, RulePlannerName, CostPlannerName, IDPPlannerName, ConservativePlannerName, PlannerName, InternalNotificationLogger, RecordingNotificationLogger, devNullLogger}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -72,7 +72,7 @@ class CypherCompiler(graph: GraphDatabaseService,
   private val compatibilityFor2_2Rule = CompatibilityFor2_2Rule(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI)
   private val compatibilityFor2_2Cost = CompatibilityFor2_2Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, CostPlanner2_2)
   private val compatibilityFor2_2IDP = CompatibilityFor2_2Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, IDPPlanner2_2)
-  //TODO: Remember to add back DP planner once 2.2 GA is available
+  private val compatibilityFor2_2DP = CompatibilityFor2_2Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, DPPlanner2_2)
   private val compatibilityFor2_2 = CompatibilityFor2_2Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, ConservativePlanner2_2)
 
   private val compatibilityFor2_3Rule = CompatibilityFor2_3Rule(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, notificationLoggerBuilder)
@@ -106,6 +106,7 @@ class CypherCompiler(graph: GraphDatabaseService,
       case (CypherVersion.v2_2, ConservativePlannerName) => compatibilityFor2_2.produceParsedQuery(statementAsText)
       case (CypherVersion.v2_2, CostPlannerName)         => compatibilityFor2_2Cost.produceParsedQuery(statementAsText)
       case (CypherVersion.v2_2, IDPPlannerName)          => compatibilityFor2_2IDP.produceParsedQuery(statementAsText)
+      case (CypherVersion.v2_2, DPPlannerName)          => compatibilityFor2_2DP.produceParsedQuery(statementAsText)
       case (CypherVersion.v2_2, RulePlannerName)         => compatibilityFor2_2Rule.produceParsedQuery(statementAsText)
       case (CypherVersion.v2_2, _)                       => compatibilityFor2_2.produceParsedQuery(statementAsText)
       case (CypherVersion.v2_1, _)                       => compatibilityFor2_1.parseQuery(preParsedQuery.statement)
