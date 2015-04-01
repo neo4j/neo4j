@@ -1,3 +1,15 @@
+2.1.8
+-----
+o Fixes an issue in the batch inserter, where writing multiple labels would not
+  sort them correctly, and writing the same label twice could introduce
+  duplicate label records.
+o Fixes an issue where we would fail to delete the index files of a uniqueness
+  constraint, if the database crashed during the commit of the transaction that
+  created said constraint _and_ the constraint cannot be brought online because
+  duplicates have since been committed.
+o Fixes an issue where recovery of transactions that creates, drops and recreates
+  an index, could leave it in a state where it wouldn't accept new writes.
+
 2.1.7
 -----
 o It is now possible to define the amount of memory to dedicate to

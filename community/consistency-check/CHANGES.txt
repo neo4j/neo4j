@@ -1,3 +1,11 @@
+2.1.8
+-----
+o Fixes an issue where the consistency checker would report very large indexed
+  long valued properties as duplicates, even though they were distinct.
+o Add a "consistency_check_graph" setting (for the "-config" properties file)
+  that allows you to turn off consistency checking of the store files, and only
+  check the indexes and the schema.
+
 2.1.6
 -----
 o Fixes bug that could lead to false positives when checking for property

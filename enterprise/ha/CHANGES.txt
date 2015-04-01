@@ -1,3 +1,10 @@
+2.1.8
+-----
+o Fixes an issue where store copying could get a NullPointerException when it was
+  cancelled, because it deleted the downloaded files too quickly.
+o Fixes an issue where creating a uniqueness constraint could race with a
+  violating transaction, and allow both transactions to commit.
+
 2.1.7
 -----
 o Slaves receiving IllegalEpochException will from now on

@@ -1,3 +1,8 @@
+2.1.8
+-----
+o Add a "-gather-forensics" flag that will include the transaction log files in
+  the backup.
+
 2.1.7
 -----
 o Fixes bug where the backup process would result in stores
