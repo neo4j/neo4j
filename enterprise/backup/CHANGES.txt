@@ -12,6 +12,17 @@ o Fix an issue where a backup could not be taken from a slave in HA, after maste
 ---------
 o Backup tool exits with error if consistency check fails.
 
+2.1.8
+-----
+o Add a "-gather-forensics" flag that will include the transaction log files in
+  the backup.
+
+2.1.7
+-----
+o Fixes bug where the backup process would result in stores
+  inappropriate for use as slave instances in HA clusters,
+  because of improper last txid information
+
 2.1.6
 -----
 o Fixes an issue with backup, where it could happen that the backup
