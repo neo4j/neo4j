@@ -55,8 +55,8 @@ case object isolateAggregation extends Rewriter {
         case clause =>
           val originalExpressions = getExpressions(clause)
 
-          val expressionsToGoToWith: Seq[Expression] = iterateUntilConverged {
-            (expressions: Seq[Expression]) => expressions.flatMap {
+          val expressionsToGoToWith: Set[Expression] = iterateUntilConverged {
+            (expressions: Set[Expression]) => expressions.flatMap {
               case e if hasAggregateButIsNotAggregate(e) =>
                 e match {
                   case ReduceExpression(_, init, coll) => Seq(init, coll)
@@ -76,12 +76,12 @@ case object isolateAggregation extends Rewriter {
             case expr => true
           }
 
-          val withReturnItems: Seq[ReturnItem] = expressionsToGoToWith.map {
+          val withReturnItems: Set[ReturnItem] = expressionsToGoToWith.map {
             case id: Identifier => AliasedReturnItem(id.copyId, id.copyId)(id.position)
             case e              => AliasedReturnItem(e, Identifier(AggregationNameGenerator.name(e.position))(e.position))(e.position)
           }
           val pos = clause.position
-          val withClause = With(distinct = false, ReturnItems(includeExisting = false, withReturnItems)(pos), None, None, None, None)(pos)
+          val withClause = With(distinct = false, ReturnItems(includeExisting = false, withReturnItems.toSeq)(pos), None, None, None, None)(pos)
 
           val resultClause = clause.endoRewrite(bottomUp(Rewriter.lift {
             case e: Expression =>
@@ -99,10 +99,10 @@ case object isolateAggregation extends Rewriter {
       replacer.expand(astNode)
   })
 
-  private def getExpressions(c: Clause): Seq[Expression] = c match {
-    case clause: Return => clause.returnItems.items.map(_.expression)
-    case clause: With => clause.returnItems.items.map(_.expression)
-    case _ => Seq.empty
+  private def getExpressions(c: Clause): Set[Expression] = c match {
+    case clause: Return => clause.returnItems.items.map(_.expression).toSet
+    case clause: With => clause.returnItems.items.map(_.expression).toSet
+    case _ => Set.empty
   }
 
   private def clauseNeedingWork(c: Clause): Boolean = c.exists {

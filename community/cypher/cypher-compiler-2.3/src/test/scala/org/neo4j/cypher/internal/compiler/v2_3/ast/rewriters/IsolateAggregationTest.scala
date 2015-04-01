@@ -90,7 +90,6 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest {
       "UNWIND [1,2,3] AS a WITH collect(a) AS `  AGGREGATION33` RETURN [x IN `  AGGREGATION33` | x] AS z")
   }
 
-
   test("MATCH n WITH 60/60/count(*) AS x RETURN x AS x") {
     assertRewrite(
       "MATCH n WITH 60/60/count(*) AS x RETURN x AS x",
@@ -129,6 +128,12 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest {
     assertRewrite(
       "MATCH a RETURN count(a) > {param} AS bool",
       "MATCH a WITH count(a) AS `  AGGREGATION15` RETURN `  AGGREGATION15` > {param} AS bool")
+  }
+
+  test("should not introduce multiple return items for the same expression") {
+    assertRewrite(
+      "WITH 1 AS x, 2 AS y RETURN sum(x)*y AS a, sum(x)*y AS b",
+      "WITH 1 AS x, 2 AS y WITH sum(x) as `  AGGREGATION27`, y as y RETURN `  AGGREGATION27`*y AS a, `  AGGREGATION27`*y AS b")
   }
 
   override protected def parseForRewriting(queryText: String) =

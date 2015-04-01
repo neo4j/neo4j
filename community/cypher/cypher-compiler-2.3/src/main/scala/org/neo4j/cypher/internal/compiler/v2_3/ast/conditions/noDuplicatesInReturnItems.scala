@@ -19,15 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.ast.conditions
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.ASTNode
+import org.neo4j.cypher.internal.compiler.v2_3.ast.ReturnItems
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.Condition
 
-import scala.reflect.ClassTag
-
-case class containsNoNodesOfType[T <: ASTNode](implicit tag: ClassTag[T]) extends Condition {
-  def apply(that: Any): Seq[String] = collectNodesOfType[T].apply(that).map {
-    node => s"Expected none but found ${node.getClass.getSimpleName} at position ${node.position}"
+case object noDuplicatesInReturnItems extends Condition {
+  def apply(that: Any): Seq[String] = {
+    val returnItems = collectNodesOfType[ReturnItems].apply(that)
+    returnItems.collect {
+      case ris@ReturnItems(_, items) if items.toSet.size != items.size =>
+        s"ReturnItems at ${ris.position} contain duplicate return item: $ris"
+    }
   }
 
-  override def name = s"$productPrefix[${tag.runtimeClass.getSimpleName}]"
+  override def name: String = productPrefix
 }

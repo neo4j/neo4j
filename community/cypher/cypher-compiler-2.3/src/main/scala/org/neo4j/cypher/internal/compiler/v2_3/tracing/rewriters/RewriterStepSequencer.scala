@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.helpers.Assertion
+import org.neo4j.helpers.Assertion.assertionsEnabled
 
 import collection.mutable
 
@@ -29,7 +31,7 @@ case class RewriterContract(childRewriters: Seq[Rewriter], postConditions: Set[R
 
 object RewriterStepSequencer {
   def newDefault(sequenceName: String): RewriterStepSequencer =
-    if (getClass.desiredAssertionStatus())
+    if (assertionsEnabled())
       newValidating(sequenceName)
     else
       newPlain(sequenceName)
@@ -44,13 +46,13 @@ object RewriterStepSequencer {
     ValidatingRewriterStepSequencer(sequenceName, TracingRewriterTaskProcessor(sequenceName, onlyIfChanged))
 }
 
-trait RewriterStepSequencer extends ((RewriterStep*) => RewriterContract) {
+trait RewriterStepSequencer extends ((RewriterStep *) => RewriterContract) {
   self =>
 
   private val _steps: mutable.Builder[RewriterStep, Seq[RewriterStep]] = Seq.newBuilder
 
   def withPrecondition(conditions: Set[RewriterCondition]) = {
-    conditions.foldLeft(_steps) { (acc, cond) => acc += EnableRewriterCondition(cond)}
+    conditions.foldLeft(_steps) { (acc, cond) => acc += EnableRewriterCondition(cond) }
     self
   }
 
