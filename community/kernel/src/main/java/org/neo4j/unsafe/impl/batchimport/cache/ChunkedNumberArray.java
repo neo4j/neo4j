@@ -39,38 +39,12 @@ abstract class ChunkedNumberArray<N extends NumberArray> implements NumberArray
     }
 
     @Override
-    public long size()
-    {
-        long size = 0;
-        for ( int i = 0; i < chunks.length; i++ )
-        {
-            size += chunks[i].size();
-        }
-        return size;
-    }
-
-    @Override
     public void clear()
     {
         for ( NumberArray chunk : chunks )
         {
             chunk.clear();
         }
-    }
-
-    @Override
-    public long highestSetIndex()
-    {
-        for ( int i = chunks.length-1; i >= 0; i-- )
-        {
-            NumberArray chunk = chunks[i];
-            long highestSetInChunk = chunk.highestSetIndex();
-            if ( highestSetInChunk > -1 )
-            {
-                return i*chunkSize + highestSetInChunk;
-            }
-        }
-        return -1;
     }
 
     @Override

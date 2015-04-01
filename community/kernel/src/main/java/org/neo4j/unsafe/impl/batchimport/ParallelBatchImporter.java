@@ -165,13 +165,14 @@ public class ParallelBatchImporter implements BatchImporter
                 // the node and calc dense node stages in parallel.
                 executeStages( nodeStage, calculateDenseNodesStage );
             }
+            nodeRelationshipCache.fixateNodes();
 
             // Stage 3 -- relationships, properties
             final RelationshipStage relationshipStage = new RelationshipStage( config, writeMonitor, writerFactory,
                     relationships.supportsMultiplePasses() ? relationships : inputCache.relationships(),
                     idMapper, neoStore, nodeRelationshipCache, input.specificRelationshipIds() );
             executeStages( relationshipStage );
-            nodeRelationshipCache.fixate();
+            nodeRelationshipCache.fixateGroups();
 
             // Prepare for updating
             neoStore.flush();
