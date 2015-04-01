@@ -21,7 +21,14 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.unsafe.impl.batchimport.staging.Stage;
+import org.neo4j.unsafe.impl.batchimport.staging.Step;
 
+/**
+ * Batch object flowing through several {@link Stage stages} in a {@link ParallelBatchImporter batch import}.
+ * Typically each {@link Step} populates or manipulates certain fields and passes the same {@link Batch} instance
+ * downstream.
+ */
 public class Batch<INPUT,RECORD extends PrimitiveRecord>
 {
     public final INPUT[] input;
@@ -32,8 +39,12 @@ public class Batch<INPUT,RECORD extends PrimitiveRecord>
     // using the same index as the record. So it's a collective size suitable for complete looping
     // over the batch.
     public PropertyBlock[] propertyBlocks;
+    // Used by ParallelizeByNodeIdStep to help determine any two batches have any id in common
+    public long[] sortedIds;
     // Used by relationship staged to query idMapper and store ids here
     public long[] ids;
+    public boolean parallelizableWithPrevious;
+    public long firstRecordId;
 
     public Batch( INPUT[] input )
     {

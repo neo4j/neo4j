@@ -29,6 +29,7 @@ import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 import static org.junit.Assert.assertEquals;
 
 import static org.neo4j.unsafe.impl.batchimport.staging.Configuration.DEFAULT;
+import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
 
 public class StageTest
 {
@@ -50,7 +51,7 @@ public class StageTest
                 return 20;
             }
         };
-        Stage stage = new Stage( "Test stage", config, true );
+        Stage stage = new Stage( "Test stage", config, ORDER_SEND_DOWNSTREAM );
         long batches = 1000;
         final long items = batches*config.batchSize();
         stage.add( new ProducerStep( stage.control(), "Producer", config )
@@ -77,11 +78,15 @@ public class StageTest
         {
             stage.add( new ReceiveOrderAssertingStep( stage.control(), "Step" + i, config, i, false ) );
         }
-
         stage.add( new ReceiveOrderAssertingStep( stage.control(), "Final step", config, 0, true ) );
 
         // WHEN
         StageExecution execution = stage.execute();
+        for ( Step<?> step : execution.steps() )
+        {
+            // we start off with two in each step
+            step.incrementNumberOfProcessors();
+        }
         new ExecutionSupervisor( ExecutionMonitors.invisible() ).supervise( execution );
 
         // THEN
@@ -104,8 +109,6 @@ public class StageTest
             super( control, name, config, 1 );
             this.processingTime = processingTime;
             this.endOfLine = endOfLine;
-            start( true );
-            incrementNumberOfProcessors(); // we start off with two
         }
 
         @Override

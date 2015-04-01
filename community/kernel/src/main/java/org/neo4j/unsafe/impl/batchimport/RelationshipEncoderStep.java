@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -44,6 +45,7 @@ public class RelationshipEncoderStep extends ProcessorStep<Batch<InputRelationsh
     private final BatchingTokenRepository<?> relationshipTypeRepository;
     private final RelationshipStore relationshipStore;
     private final NodeRelationshipCache cache;
+    private final ParallelizationCoordinator parallelization = new ParallelizationCoordinator();
 
     // There are two "modes" in generating relationship ids
     // - ids are decided by InputRelationship#id() (f.ex. store migration, where ids should be kept intact).
@@ -51,7 +53,6 @@ public class RelationshipEncoderStep extends ProcessorStep<Batch<InputRelationsh
     // - ids are incremented for each one, starting at a specific id (0 on empty db)
     //   nextRelationshipId is used and _no_ id from InputRelationship is used, rather no id is allowed to be specified.
     private final boolean specificIds;
-    private long nextRelationshipId;
 
     public RelationshipEncoderStep( StageControl control,
             Configuration config,
@@ -60,7 +61,7 @@ public class RelationshipEncoderStep extends ProcessorStep<Batch<InputRelationsh
             NodeRelationshipCache cache,
             boolean specificIds )
     {
-        super( control, "RELATIONSHIP", config, 1 );
+        super( control, "RELATIONSHIP", config, 0 );
         this.relationshipTypeRepository = relationshipTypeRepository;
         this.relationshipStore = relationshipStore;
         this.cache = cache;
@@ -68,11 +69,18 @@ public class RelationshipEncoderStep extends ProcessorStep<Batch<InputRelationsh
     }
 
     @Override
-    protected void process( Batch<InputRelationship,RelationshipRecord> batch, BatchSender sender )
+    protected Resource permit( Batch<InputRelationship,RelationshipRecord> batch )
+    {
+        return parallelization.coordinate( batch.parallelizableWithPrevious );
+    }
+
+    @Override
+    protected void process( Batch<InputRelationship,RelationshipRecord> batch, BatchSender sender ) throws Throwable
     {
         InputRelationship[] input = batch.input;
         batch.records = new RelationshipRecord[input.length];
         long[] ids = batch.ids;
+        long nextRelationshipId = batch.firstRecordId;
         for ( int i = 0; i < input.length; i++ )
         {
             InputRelationship batchRelationship = input[i];

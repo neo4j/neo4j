@@ -131,6 +131,56 @@ public class Utils
         };
     }
 
+    // Values in the arrays are assumed to be sorted
+    public static boolean anyIdCollides( long[] first, int firstLength, long[] other, int otherLength )
+    {
+        int f = 0, o = 0;
+        while( f < firstLength && o < otherLength )
+        {
+            if ( first[f] == other[o] )
+            {
+                return true;
+            }
+
+            if ( first[f] < other[o] )
+            {
+                while ( ++f < firstLength && first[f] < other[o] );
+            }
+            else
+            {
+                while ( ++o < otherLength && first[f] > other[o] );
+            }
+        }
+
+        return false;
+    }
+
+    public static void mergeSortedInto( long[] values, long[] into, int intoLengthBefore )
+    {
+        int v = values.length-1;
+        int i = intoLengthBefore-1;
+        int t = i+values.length;
+        while ( v >= 0 || i >= 0 )
+        {
+            if ( i == -1 )
+            {
+                into[t--] = values[v--];
+            }
+            else if ( v == -1 )
+            {
+                into[t--] = into[i--];
+            }
+            else if ( values[v] >= into[i] )
+            {
+                into[t--] = values[v--];
+            }
+            else
+            {
+                into[t--] = into[i--];
+            }
+        }
+    }
+
     private Utils()
     {   // No instances allowed
     }
