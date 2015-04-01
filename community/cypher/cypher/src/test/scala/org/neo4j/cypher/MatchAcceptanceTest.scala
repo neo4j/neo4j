@@ -882,7 +882,7 @@ RETURN a.name""")
     val a = createNode()
     val b = createNode()
 
-    val result = executeWithNewPlanner("match n return n")
+    val result = executeWithNewRuntime("match n return n")
     result.columnAs[Node]("n").toSet should equal (Set(a, b))
   }
 
@@ -1924,7 +1924,7 @@ return b
     // when
     val query = "PLANNER COST MATCH topRoute = (db1:Start)<-[:CONNECTED_TO]-()-[:CONNECTED_TO*3..3]-(db2:End) RETURN topRoute"
 
-    executeWithNewPlanner(query).toList should have size(4)
+    executeWithNewPlanner(query).toList should have size 4
   }
 
   test("should return empty result when there are no relationship with the given id") {

@@ -20,11 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan
 
 import org.neo4j.cypher.internal.ExecutionMode
-import org.neo4j.cypher.internal.compiler.v2_3.PlannerName
+import org.neo4j.cypher.internal.compiler.v2_3.{RuntimeName, PlannerName}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{GraphStatistics, QueryContext}
-import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.Statement
-import org.neo4j.kernel.impl.api.KernelStatement
 
 abstract class ExecutionPlan {
   //TODO run should not have direct access to statement?
@@ -32,4 +30,5 @@ abstract class ExecutionPlan {
   def isPeriodicCommit: Boolean
   def plannerUsed: PlannerName
   def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean
+  def runtimeUsed: RuntimeName
 }

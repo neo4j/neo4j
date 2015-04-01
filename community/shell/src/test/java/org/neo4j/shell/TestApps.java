@@ -1183,17 +1183,6 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
-    public void shouldAllowCombiningRuntimeAndProfile() throws Exception
-    {
-        executeCommand( "RUNTIME COMPILED PROFILE MATCH (n) RETURN n;");
-    }
-
-    @Test
-    public void shouldAllowCombiningProfileAndRuntime() throws Exception
-    {
-        executeCommand( "PROFILE RUNTIME COMPILED MATCH (n) RETURN n;");
-    }
-    @Test
     public void canListAllConfiguration() throws Exception
     {
         executeCommand( "dbinfo -g Configuration", "\"ephemeral\": \"true\"" );

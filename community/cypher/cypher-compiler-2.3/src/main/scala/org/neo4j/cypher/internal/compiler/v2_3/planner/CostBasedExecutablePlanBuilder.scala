@@ -19,19 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner
 
-import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.conditions.containsNamedPathOnlyForShortestPath
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.ExecutablePlanBuilder
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutablePlanBuilder, NewRuntimeSuccessRateMonitor}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.execution.{PipeExecutionBuilderContext, PipeExecutionPlanBuilder}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{LogicalPlan, ProduceResult}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.{ApplyRewriter, RewriterCondition, RewriterStepSequencer}
+import org.neo4j.cypher.internal.compiler.v2_3.{CompiledRuntimeName, InterpretedRuntimeName, _}
 import org.neo4j.helpers.Clock
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
@@ -43,27 +43,31 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
                                 executionPlanBuilder: PipeExecutionPlanBuilder,
                                 queryPlanner: QueryPlanner,
                                 queryGraphSolver: QueryGraphSolver,
-                                plannerName: CostBasedPlannerName)
+                                plannerName: CostBasedPlannerName,
+                                runtimeName: RuntimeName)
   extends ExecutablePlanBuilder {
 
-  //todo make configurable
-  private val useCompiledPlans = false
+
 
   def producePlan(inputQuery: PreparedQuery, planContext: PlanContext) = {
     val statement = CostBasedExecutablePlanBuilder.rewriteStatement(inputQuery.statement, inputQuery.scopeTree,
                                                           inputQuery.semanticTable, inputQuery.conditions,
                                                           monitors.newMonitor[AstRewritingMonitor]())
+    //monitor success of compilation
+    val planBuilderMonitor = monitors.newMonitor[NewRuntimeSuccessRateMonitor](CypherCompilerFactory.monitorTag)
     statement match {
       case (ast: Query, rewrittenSemanticTable) =>
         monitor.startedPlanning(inputQuery.queryText)
         val (logicalPlan, pipeBuildContext) = produceLogicalPlan(ast, rewrittenSemanticTable)(planContext)
         monitor.foundPlan(inputQuery.queryText, logicalPlan)
         try {
-          val res = produceCompiledPlan(logicalPlan, inputQuery, rewrittenSemanticTable,  planContext, pipeBuildContext)
+          val res = produceCompiledPlan(logicalPlan, inputQuery, rewrittenSemanticTable,
+            planContext, pipeBuildContext, planBuilderMonitor)
           monitor.successfulPlanning(inputQuery.queryText)
           res
         } catch {//fallback on interpreted plans
           case e: CantCompileQueryException =>
+            planBuilderMonitor.unableToHandlePlan(logicalPlan, e)
             val res = Right(executionPlanBuilder.build(logicalPlan)(pipeBuildContext, planContext))
             monitor.successfulPlanning(inputQuery.queryText)
             res
@@ -75,22 +79,25 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
 
   private def produceCompiledPlan(logicalPlan: LogicalPlan, inputQuery: PreparedQuery,
                                   semanticTable: SemanticTable, planContext: PlanContext,
-                                  pipeBuildContext: PipeExecutionBuilderContext) = {
-
-    if (!useCompiledPlans) Right(executionPlanBuilder.build(logicalPlan)(pipeBuildContext, planContext))
-    else {
-      val returnIdentifiers = inputQuery.statement.treeFold(Seq.empty[Identifier]) {
-        case Return(_, returnItems, _, _, _) =>
-          val identifiers = returnItems.items.collect {
-            case AliasedReturnItem(_, identifier) => identifier
-          }
-          (acc, children) => children(acc ++ identifiers)
-      }
-      val nodes = returnIdentifiers.filter(semanticTable.isNode).map(_.name)
-      val relationships = returnIdentifiers.filter(semanticTable.isRelationship).map(_.name)
-      val finalPlan = ProduceResult(nodes, relationships, logicalPlan)
-      val codeGen = new CodeGenerator
-      Left(codeGen.generate(finalPlan, planContext, clock))
+                                  pipeBuildContext: PipeExecutionBuilderContext,
+                                   monitor: NewRuntimeSuccessRateMonitor) = {
+    //only return compiled plans if asked for
+    runtimeName match {
+      case InterpretedRuntimeName => Right(executionPlanBuilder.build(logicalPlan)(pipeBuildContext, planContext))
+      case CompiledRuntimeName    =>
+        monitor.newPlanSeen(logicalPlan)
+        val returnIdentifiers = inputQuery.statement.treeFold(Seq.empty[Identifier]) {
+          case Return(_, returnItems, _, _, _) =>
+            val identifiers = returnItems.items.collect {
+              case AliasedReturnItem(_, identifier) => identifier
+            }
+            (acc, children) => children(acc ++ identifiers)
+        }
+        val nodes = returnIdentifiers.filter(semanticTable.isNode).map(_.name)
+        val relationships = returnIdentifiers.filter(semanticTable.isRelationship).map(_.name)
+        val finalPlan = ProduceResult(nodes, relationships, logicalPlan)
+        val codeGen = new CodeGenerator
+        Left(codeGen.generate(finalPlan, planContext, clock))
     }
   }
 

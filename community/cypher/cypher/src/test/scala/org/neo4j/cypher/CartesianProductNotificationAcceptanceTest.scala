@@ -24,7 +24,7 @@ import org.mockito.Mockito.{verify, _}
 import org.neo4j.cypher.internal.NormalMode
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compatibility.{StringInfoLogger2_3, WrappedMonitors2_3}
-import org.neo4j.cypher.internal.compiler.v2_3.{InputPosition, CostPlannerName, CypherCompilerFactory, InternalNotificationLogger}
+import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.notification.CartesianProductNotification
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.impl.util.StringLogger._
@@ -89,5 +89,6 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
       new WrappedMonitors2_3(kernelMonitors),
       new StringInfoLogger2_3(DEV_NULL),
       _ => notificationLogger,
-      plannerName = CostPlannerName)
+      plannerName = CostPlannerName,
+      runtimeName = InterpretedRuntimeName)
 }

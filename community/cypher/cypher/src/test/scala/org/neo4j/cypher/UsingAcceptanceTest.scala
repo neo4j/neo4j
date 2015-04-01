@@ -68,7 +68,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
   }
 
   test("scan hints are handled by ronja") {
-    executeWithNewPlanner("match (n:Person) using scan n:Person return n").toList
+    executeWithNewRuntime("match (n:Person) using scan n:Person return n").toList
   }
 
   test("fail when equality checks are done with OR") {

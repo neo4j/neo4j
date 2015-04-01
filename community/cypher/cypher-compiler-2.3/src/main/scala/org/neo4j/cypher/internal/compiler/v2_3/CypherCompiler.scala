@@ -67,14 +67,15 @@ object CypherCompilerFactory {
                         queryPlanTTL: Long, clock: Clock, monitors: Monitors,
                         logger: InfoLogger,
                         notificationLoggerBuilder: (ExecutionMode => InternalNotificationLogger),
-                        plannerName: CostBasedPlannerName): CypherCompiler = {
+                        plannerName: CostBasedPlannerName,
+                        runtimeName: RuntimeName): CypherCompiler = {
     val parser = new CypherParser(monitors.newMonitor[ParserMonitor[Statement]](monitorTag))
     val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
     val rewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag))
     val planBuilderMonitor = monitors.newMonitor[NewLogicalPlanSuccessRateMonitor](monitorTag)
     val planningMonitor = monitors.newMonitor[PlanningMonitor](monitorTag)
     val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
-    val planner = CostBasedPipeBuilderFactory(monitors, metricsFactory, planningMonitor, clock, plannerName = plannerName)
+    val planner = CostBasedPipeBuilderFactory(monitors, metricsFactory, planningMonitor, clock, plannerName = plannerName, runtimeName = runtimeName)
     val pipeBuilder = new LegacyVsNewExecutablePlanBuilder(new LegacyExecutablePlanBuilder(monitors), planner, planBuilderMonitor)
     val execPlanBuilder = new ExecutionPlanBuilder(graph, statsDivergenceThreshold, queryPlanTTL, clock, pipeBuilder)
     val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](queryCacheSize)

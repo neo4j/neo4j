@@ -20,7 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.compatibility.ExecutionResultWrapperFor2_3
-import org.neo4j.cypher.internal.compiler.v2_3.PlannerName
+import org.neo4j.cypher.internal.compiler.v2_3.{RuntimeName, PlannerName}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession, QueryEngineProvider}
 import org.scalatest.Assertions
@@ -42,7 +42,7 @@ trait QueryStatisticsTestSupport {
         override def endFailure(session: QuerySession, throwable: Throwable){}
       }
       implicit val session = QueryEngineProvider.embeddedSession
-      val r = new ExecutionResultWrapperFor2_3(actual, PlannerName.default)
+      val r = new ExecutionResultWrapperFor2_3(actual, PlannerName.default, RuntimeName.default)
       apply(r.queryStatistics())
     }
   }
