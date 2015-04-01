@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.commons.CustomMatchers
 
 class OrderByAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers with NewPlannerTestSupport {
   test("should support ORDER BY") {
-    createNode(Map("prop" -> 1))
-    createNode(Map("prop" -> 3))
-    createNode(Map("prop" -> -5))
+    createNode("prop" -> 1)
+    createNode("prop" -> 3)
+    createNode("prop" -> -5)
     val result = executeWithNewPlanner("match (n) return n.prop AS prop ORDER BY n.prop")
     result.toList should equal(List(
       Map("prop" -> -5),
@@ -35,14 +35,32 @@ class OrderByAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers 
   }
 
   test("should support ORDER BY DESC") {
-    createNode(Map("prop" -> 1))
-    createNode(Map("prop" -> 3))
-    createNode(Map("prop" -> -5))
+    createNode("prop" -> 1)
+    createNode("prop" -> 3)
+    createNode("prop" -> -5)
     val result = executeWithNewPlanner("match (n) return n.prop AS prop ORDER BY n.prop DESC")
     result.toList should equal(List(
       Map("prop" -> 3),
       Map("prop" -> 1),
       Map("prop" -> -5)
     ))
+  }
+
+  test("ORDER BY of an column introduced in RETURN should work well") {
+    executeWithNewPlanner("WITH 1 AS p, rand() AS rng RETURN p ORDER BY rng").toList should
+      equal(List(Map("p" -> 1)))
+ }
+
+  test("renaming columns before ORDER BY is not confusing") {
+    createNode("prop" -> 1)
+    createNode("prop" -> 3)
+    createNode("prop" -> -5)
+
+    executeWithNewPlanner("MATCH n RETURN n.prop AS n ORDER BY n + 2").toList should
+      equal(List(
+        Map("n" -> -5),
+        Map("n" -> 1),
+        Map("n" -> 3)
+      ))
   }
 }
