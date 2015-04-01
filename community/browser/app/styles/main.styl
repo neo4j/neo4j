@@ -52,7 +52,7 @@ svg
   &.no-icon
     &:before
       padding-right: 0
-      content: ''
+      content: '' !important
 
 [play-topic], [server-topic]
   &:before
@@ -62,7 +62,7 @@ svg
   &:before
     content: "\f05a"
 
-a[target]
+a[target]:not(.no-out-symbol)
   &:before
     content: "\f14c"
 
