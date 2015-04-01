@@ -19,50 +19,12 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
+import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb._
 
 trait ExtendedExecutionResult extends ExecutionResult {
   def planDescriptionRequested: Boolean
   def executionType: QueryExecutionType
   def notifications: Iterable[Notification]
-
-  def accept(visitor: ResultVisitor): Unit = {
-    val row = new MapResultRow()
-    var continue = true
-    while (continue && hasNext) {
-      row.map = next()
-      continue = visitor.visit(row)
-    }
-  }
-}
-
-private class MapResultRow extends ResultRow {
-
-  var map: Map[String, Any] = Map.empty
-
-  override def getNode(key: String): Node = getWithType(key, classOf[Node])
-
-  override def getRelationship(key: String): Relationship = getWithType(key, classOf[Relationship])
-
-  override def get(key: String): Object = getWithType(key, classOf[Object])
-
-  override def getNumber(key: String): Number = getWithType(key, classOf[Number])
-
-  override def getBoolean(key: String): java.lang.Boolean = getWithType(key, classOf[java.lang.Boolean])
-
-  override def getPath(key: String): Path = getWithType(key, classOf[Path])
-
-  override def getString(key: String): String = getWithType(key, classOf[String])
-
-  private def getWithType[T](key: String, clazz: Class[T]): T = {
-    map.get(key) match {
-      case None =>
-        throw new IllegalArgumentException("No column \"" + key + "\" exists")
-      case Some(value) if clazz.isInstance(value) || value == null =>
-        clazz.cast(value)
-      case Some(value) =>
-        throw new NoSuchElementException("The current item in column \"" + key + "\" is not a " + clazz + ": \"" + value + "\"")
-    }
-  }
+  def accept(visitor: ResultVisitor)
 }

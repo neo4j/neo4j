@@ -17,19 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.executionplan
+package org.neo4j.cypher.internal.compiler.v2_3.birk.il
 
-import org.neo4j.cypher.internal.ExecutionMode
-import org.neo4j.cypher.internal.compiler.v2_3.PlannerName
-import org.neo4j.cypher.internal.compiler.v2_3.spi.{GraphStatistics, QueryContext}
-import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.kernel.api.Statement
-import org.neo4j.kernel.impl.api.KernelStatement
+case class GetMatchesFromProbeTable(key: String, code: CodeThunk, action: Instruction) extends Instruction {
+  def generateCode() = code(key, action)
+  def generateInit() = action.generateInit()
 
-abstract class ExecutionPlan {
-  //TODO run should not have direct access to statement?
-  def run(queryContext: QueryContext, statement: Statement, planType: ExecutionMode, params: Map[String, Any]): InternalExecutionResult
-  def isPeriodicCommit: Boolean
-  def plannerUsed: PlannerName
-  def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean
+  def fields() = action.fields()
+
+  override def children = Seq(action)
 }

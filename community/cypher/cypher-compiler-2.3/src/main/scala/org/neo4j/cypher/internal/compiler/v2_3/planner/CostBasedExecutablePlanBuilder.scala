@@ -24,17 +24,18 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.conditions.containsNamedPathOnlyForShortestPath
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.plannerQuery.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters._
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{PipeBuilder, PipeInfo}
+import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.ExecutablePlanBuilder
 import org.neo4j.cypher.internal.compiler.v2_3.planner.execution.{PipeExecutionBuilderContext, PipeExecutionPlanBuilder}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{LogicalPlan, ProduceResult}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.{ApplyRewriter, RewriterCondition, RewriterStepSequencer}
 import org.neo4j.helpers.Clock
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
-case class CostBasedPipeBuilder(monitors: Monitors,
+case class CostBasedExecutablePlanBuilder(monitors: Monitors,
                                 metricsFactory: MetricsFactory,
                                 monitor: PlanningMonitor,
                                 clock: Clock,
@@ -43,10 +44,13 @@ case class CostBasedPipeBuilder(monitors: Monitors,
                                 queryPlanner: QueryPlanner,
                                 queryGraphSolver: QueryGraphSolver,
                                 plannerName: CostBasedPlannerName)
-  extends PipeBuilder {
+  extends ExecutablePlanBuilder {
 
-  def producePlan(inputQuery: PreparedQuery, planContext: PlanContext): PipeInfo = {
-    val statement = CostBasedPipeBuilder.rewriteStatement(inputQuery.statement, inputQuery.scopeTree,
+  //todo make configurable
+  private val useCompiledPlans = false
+
+  def producePlan(inputQuery: PreparedQuery, planContext: PlanContext) = {
+    val statement = CostBasedExecutablePlanBuilder.rewriteStatement(inputQuery.statement, inputQuery.scopeTree,
                                                           inputQuery.semanticTable, inputQuery.conditions,
                                                           monitors.newMonitor[AstRewritingMonitor]())
     statement match {
@@ -54,12 +58,39 @@ case class CostBasedPipeBuilder(monitors: Monitors,
         monitor.startedPlanning(inputQuery.queryText)
         val (logicalPlan, pipeBuildContext) = produceLogicalPlan(ast, rewrittenSemanticTable)(planContext)
         monitor.foundPlan(inputQuery.queryText, logicalPlan)
-        val result = executionPlanBuilder.build(logicalPlan)(pipeBuildContext, planContext)
-        monitor.successfulPlanning(inputQuery.queryText, result)
-        result
-
+        try {
+          val res = produceCompiledPlan(logicalPlan, inputQuery, rewrittenSemanticTable,  planContext, pipeBuildContext)
+          monitor.successfulPlanning(inputQuery.queryText)
+          res
+        } catch {//fallback on interpreted plans
+          case e: CantCompileQueryException =>
+            val res = Right(executionPlanBuilder.build(logicalPlan)(pipeBuildContext, planContext))
+            monitor.successfulPlanning(inputQuery.queryText)
+            res
+        }
       case _ =>
         throw new CantHandleQueryException
+    }
+  }
+
+  private def produceCompiledPlan(logicalPlan: LogicalPlan, inputQuery: PreparedQuery,
+                                  semanticTable: SemanticTable, planContext: PlanContext,
+                                  pipeBuildContext: PipeExecutionBuilderContext) = {
+
+    if (!useCompiledPlans) Right(executionPlanBuilder.build(logicalPlan)(pipeBuildContext, planContext))
+    else {
+      val returnIdentifiers = inputQuery.statement.treeFold(Seq.empty[Identifier]) {
+        case Return(_, returnItems, _, _, _) =>
+          val identifiers = returnItems.items.collect {
+            case AliasedReturnItem(_, identifier) => identifier
+          }
+          (acc, children) => children(acc ++ identifiers)
+      }
+      val nodes = returnIdentifiers.filter(semanticTable.isNode).map(_.name)
+      val relationships = returnIdentifiers.filter(semanticTable.isRelationship).map(_.name)
+      val finalPlan = ProduceResult(nodes, relationships, logicalPlan)
+      val codeGen = new CodeGenerator
+      Left(codeGen.generate(finalPlan, planContext, clock))
     }
   }
 
@@ -83,7 +114,7 @@ case class CostBasedPipeBuilder(monitors: Monitors,
   }
 }
 
-object CostBasedPipeBuilder {
+object CostBasedExecutablePlanBuilder {
   import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStep._
 
   def rewriteStatement(statement: Statement, scopeTree: Scope, semanticTable: SemanticTable, preConditions: Set[RewriterCondition], monitor: AstRewritingMonitor): (Statement, SemanticTable) = {
@@ -115,5 +146,6 @@ object CostBasedPipeBuilder {
 trait PlanningMonitor {
   def startedPlanning(q: String)
   def foundPlan(q: String, p: LogicalPlan)
-  def successfulPlanning(q: String, p: PipeInfo)
+
+  def successfulPlanning(q: String)
 }

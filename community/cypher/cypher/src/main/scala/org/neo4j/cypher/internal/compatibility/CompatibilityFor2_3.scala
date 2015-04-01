@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.{CypherCompilerFactory, CypherExc
 import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
 import org.neo4j.cypher.{ArithmeticException, CypherTypeException, EntityNotFoundException, FailedIndexException, IncomparableValuesException, IndexHintException, InternalException, InvalidArgumentException, InvalidSemanticsException, LabelScanHintException, LoadCsvStatusWrapCypherException, LoadExternalResourceException, MergeConstraintConflictException, NodeStillHasRelationshipsException, ParameterNotFoundException, ParameterWrongTypeException, PatternException, PeriodicCommitInOpenTransactionException, ProfilerStatisticsNotReadyException, SyntaxException, UniquePathNotUniqueException, UnknownLabelException, _}
+import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.impl.notification.NotificationCode
 import org.neo4j.graphdb.{GraphDatabaseService, InputPosition, QueryExecutionType, ResourceIterator}
 import org.neo4j.helpers.Clock
@@ -164,7 +165,7 @@ trait CompatibilityFor2_3 {
     def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, executionMode: ExecutionMode, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
       implicit val s = session
       exceptionHandlerFor2_3.runSafely {
-        ExecutionResultWrapperFor2_3(inner.run(queryContext(graph, txInfo), executionMode, params), inner.plannerUsed)
+        ExecutionResultWrapperFor2_3(inner.run(queryContext(graph, txInfo), txInfo.statement, executionMode, params), inner.plannerUsed)
       }
     }
 
@@ -262,6 +263,8 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
     case CartesianProductNotification(pos) =>
        NotificationCode.CARTESIAN_PRODUCT.notification(new InputPosition(pos.offset, pos.line, pos.column))
   }
+
+  override def accept(visitor: ResultVisitor) = exceptionHandlerFor2_3.runSafely {inner.accept(visitor)}
 }
 
 case class CompatibilityPlanDescriptionFor2_3(inner: InternalPlanDescription, version: CypherVersion, planner: PlannerName)

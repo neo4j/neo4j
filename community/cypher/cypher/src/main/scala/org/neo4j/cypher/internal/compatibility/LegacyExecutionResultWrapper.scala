@@ -24,12 +24,16 @@ import java.io.PrintWriter
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.AmendedRootPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.RulePlannerName
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.iteratorToVisitable
 import org.neo4j.graphdb.QueryExecutionType.{QueryType, profiled, query}
 import org.neo4j.graphdb.ResourceIterator
+import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
 
 case class LegacyExecutionResultWrapper(inner: ExecutionResult, planDescriptionRequested: Boolean, version: CypherVersion)
                                        (implicit monitor: QueryExecutionMonitor, session: QuerySession) extends ExtendedExecutionResult {
+  self =>
+
   def columns = inner.columns
 
   protected val jIterator = inner.javaIterator
@@ -103,6 +107,8 @@ case class LegacyExecutionResultWrapper(inner: ExecutionResult, planDescriptionR
     case extended: ExtendedExecutionResult => extended.notifications
     case _ => Iterable.empty
   }
+
+  def accept(visitor: ResultVisitor) = iteratorToVisitable.accept(self, visitor)
 
   // since we can't introspect the query result returned by the legacy planners, this is the best we can do
   private def queryType = if (schemaQuery(queryStatistics()))

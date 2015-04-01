@@ -29,21 +29,22 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v2_3.{SyntaxException, RulePlannerName, Monitors, PreparedQuery}
+import org.neo4j.helpers.ThisShouldNotHappenError
 
 trait ExecutionPlanInProgressRewriter {
   def rewrite(in: ExecutionPlanInProgress)(implicit context: PipeMonitor): ExecutionPlanInProgress
 }
 
-class LegacyPipeBuilder(monitors: Monitors, eagernessRewriter: Pipe => Pipe = addEagernessIfNecessary)
-  extends PatternGraphBuilder with PipeBuilder with GraphQueryBuilder {
+class LegacyExecutablePlanBuilder(monitors: Monitors, eagernessRewriter: Pipe => Pipe = addEagernessIfNecessary)
+  extends PatternGraphBuilder with ExecutablePlanBuilder with GraphQueryBuilder {
 
   private implicit val pipeMonitor: PipeMonitor = monitors.newMonitor[PipeMonitor]()
 
-  def producePlan(in: PreparedQuery, planContext: PlanContext): PipeInfo = {
+  override def producePlan(in: PreparedQuery, planContext: PlanContext) = {
     val rewriter = RewriterStepSequencer.newDefault("LegacyPipeBuilder")(reattachAliasedExpressions).rewriter
     val rewrite = in.rewrite(rewriter)
 
-    rewrite.abstractQuery match {
+    val res = rewrite.abstractQuery match {
       case PeriodicCommitQuery(q: Query, batchSize) =>
         buildQuery(q, planContext).
           copy(periodicCommit = Some(PeriodicCommitInfo(batchSize)))
@@ -60,6 +61,7 @@ class LegacyPipeBuilder(monitors: Monitors, eagernessRewriter: Pipe => Pipe = ad
       case q: Union =>
         buildUnionQuery(q, planContext)
     }
+    Right(res)
   }
 
   private val unionBuilder = new UnionBuilder(this)

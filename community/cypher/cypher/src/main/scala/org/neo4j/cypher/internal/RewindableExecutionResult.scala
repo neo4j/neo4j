@@ -19,11 +19,14 @@
  */
 package org.neo4j.cypher.internal
 
+import java.util
+
 import org.neo4j.cypher.internal.compatibility.{ExecutionResultWrapperFor2_3, exceptionHandlerFor2_3}
 import org.neo4j.cypher.internal.compiler.v2_3.PipeExecutionResult
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledExecutionResult, InternalExecutionResult}
 import org.neo4j.cypher.{ExecutionResult, InternalException}
 import org.neo4j.graphdb.QueryExecutionType.QueryType
+import org.neo4j.graphdb.Result.ResultVisitor
 
 object RewindableExecutionResult {
   self =>
@@ -31,6 +34,14 @@ object RewindableExecutionResult {
     case other: PipeExecutionResult  =>
       exceptionHandlerFor2_3.runSafely {
         new PipeExecutionResult(other.result.toEager, other.columns, other.state, other.executionPlanBuilder, other.executionMode, QueryType.READ_WRITE)
+      }
+    case other: CompiledExecutionResult  =>
+      exceptionHandlerFor2_3.runSafely {
+        new CompiledExecutionResult {
+          override def javaColumns: util.List[String] = other.javaColumns
+          override val toList = other.toList
+          override def accept(visitor: ResultVisitor): Unit = other.accept(visitor)
+        }
       }
     case _ =>
       inner

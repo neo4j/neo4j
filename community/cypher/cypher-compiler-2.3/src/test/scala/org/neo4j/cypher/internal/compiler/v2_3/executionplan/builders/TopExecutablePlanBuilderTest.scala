@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.CountStar
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{Query, SortItem}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{PartiallySolvedQuery, PlanBuilder}
 
-class TopPipeBuilderTest extends BuilderTest {
+class TopExecutablePlanBuilderTest extends BuilderTest {
   def builder: PlanBuilder = new TopPipeBuilder
 
   test("should_not_accept_aggregations_not_in_return") {

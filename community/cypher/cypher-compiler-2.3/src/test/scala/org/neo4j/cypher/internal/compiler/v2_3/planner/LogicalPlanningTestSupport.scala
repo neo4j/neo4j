@@ -151,14 +151,14 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     FakePlan(ids)(CardinalityEstimation.lift(PlannerQuery(qg), Cardinality(0)))
   }
 
-  def newPlanner(metricsFactory: MetricsFactory): CostBasedPipeBuilder =
+  def newPlanner(metricsFactory: MetricsFactory): CostBasedExecutablePlanBuilder =
     CostBasedPipeBuilderFactory(monitors, metricsFactory, mock[PlanningMonitor], Clock.SYSTEM_CLOCK)
 
-  def produceLogicalPlan(queryText: String)(implicit planner: CostBasedPipeBuilder, planContext: PlanContext): LogicalPlan = {
+  def produceLogicalPlan(queryText: String)(implicit planner: CostBasedExecutablePlanBuilder, planContext: PlanContext): LogicalPlan = {
     val parsedStatement = parser.parse(queryText)
     val semanticState = semanticChecker.check(queryText, parsedStatement, devNullLogger, None)
     val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryText, parsedStatement, semanticState)
-    CostBasedPipeBuilder.rewriteStatement(rewrittenStatement, semanticState.scopeTree, SemanticTable(types = semanticState.typeTable), postConditions, monitors.newMonitor[AstRewritingMonitor]()) match {
+    CostBasedExecutablePlanBuilder.rewriteStatement(rewrittenStatement, semanticState.scopeTree, SemanticTable(types = semanticState.typeTable), postConditions, monitors.newMonitor[AstRewritingMonitor]()) match {
       case (ast: Query, newTable)=>
         val semanticState = semanticChecker.check(queryText, ast, devNullLogger, None)
         tokenResolver.resolve(ast)(newTable, planContext)

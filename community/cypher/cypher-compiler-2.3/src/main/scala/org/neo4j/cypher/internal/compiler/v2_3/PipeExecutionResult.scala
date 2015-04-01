@@ -24,14 +24,15 @@ import java.util
 import java.util.Collections
 
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.{Eagerly, CollectionSupport}
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.{iteratorToVisitable, Eagerly, CollectionSupport}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
 import org.neo4j.cypher.internal.{ExplainMode, ExecutionMode, ProfileMode}
 import org.neo4j.cypher.internal.compiler.v2_3.notification.InternalNotification
 import org.neo4j.graphdb.QueryExecutionType.{QueryType, profiled, query}
-import org.neo4j.graphdb.ResourceIterator
+import org.neo4j.graphdb.{Path, Relationship, Node, ResourceIterator}
+import org.neo4j.graphdb.Result.{ResultVisitor, ResultRow}
 
 import scala.collection.JavaConverters._
 import scala.collection.Map
@@ -105,5 +106,6 @@ class PipeExecutionResult(val result: ResultIterator,
 
   //notifications only present for EXPLAIN
   override val notifications = Iterable.empty[InternalNotification]
-}
 
+  def accept(visitor: ResultVisitor) = iteratorToVisitable.accept(self, visitor)
+}

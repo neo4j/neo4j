@@ -19,18 +19,26 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan
 
-import org.neo4j.cypher.internal.{ProfileMode, ExecutionMode}
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.CantHandleQueryException
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantCompileQueryException, CantHandleQueryException}
 import org.neo4j.cypher.internal.compiler.v2_3.profiler.Profiler
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.{ExecutionMode, ProfileMode}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
+import org.neo4j.kernel.api.{Statement => KernelStatement}
+
+
+case class CompiledPlan(updating: Boolean,
+                        periodicCommit: Option[PeriodicCommitInfo] = None,
+                        fingerprint: Option[PlanFingerprint] = None,
+                        plannerUsed: PlannerName,
+                        executionResultBuilder: (KernelStatement, GraphDatabaseService) => InternalExecutionResult)
 
 case class PipeInfo(pipe: Pipe,
                     updating: Boolean,
@@ -47,16 +55,37 @@ trait NewLogicalPlanSuccessRateMonitor {
   def unableToHandleQuery(queryText: String, ast:Statement, origin: CantHandleQueryException)
 }
 
-trait PipeBuilder {
-  def producePlan(inputQuery: PreparedQuery, planContext: PlanContext): PipeInfo
+trait ExecutablePlanBuilder {
+  def producePlan(inputQuery: PreparedQuery, planContext: PlanContext): Either[CompiledPlan, PipeInfo]
 }
 
 class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold: Double, queryPlanTTL: Long,
-                           clock: Clock, pipeBuilder: PipeBuilder) extends PatternGraphBuilder {
+                           clock: Clock, pipeBuilder: ExecutablePlanBuilder) extends PatternGraphBuilder {
   def build(planContext: PlanContext, inputQuery: PreparedQuery): ExecutionPlan = {
-    val abstractQuery = inputQuery.abstractQuery
+    val executablePlan = pipeBuilder.producePlan(inputQuery, planContext)
+    executablePlan match {
+      case Left(compiledPlan) => buildCompiled(compiledPlan, planContext, inputQuery)
+      case Right(pipeInfo) => buildInterpreted(pipeInfo, planContext, inputQuery)
+    }
+  }
 
-    val pipeInfo = pipeBuilder.producePlan(inputQuery, planContext)
+  private def buildCompiled(compiledPlan: CompiledPlan, planContext: PlanContext, inputQuery: PreparedQuery) = {
+    new ExecutionPlan {
+      val fingerprint = PlanFingerprintReference(clock, queryPlanTTL, statsDivergenceThreshold, compiledPlan.fingerprint)
+
+      override def isStale(lastTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastTxId, statistics)
+
+      override def run(queryContext: QueryContext, kernelStatement: KernelStatement,
+                       planType: ExecutionMode, params: Map[String, Any]): InternalExecutionResult = compiledPlan.executionResultBuilder(kernelStatement, graph)
+
+      override val plannerUsed: PlannerName = CostPlannerName
+
+      override val isPeriodicCommit: Boolean = compiledPlan.periodicCommit.isDefined
+    }
+  }
+
+  private def buildInterpreted(pipeInfo: PipeInfo, planContext: PlanContext, inputQuery: PreparedQuery) = {
+    val abstractQuery = inputQuery.abstractQuery
     val PipeInfo(pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
 
     val columns = getQueryResultColumns(abstractQuery, pipe.symbols)
@@ -66,13 +95,14 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
     new ExecutionPlan {
       private val fingerprint = PlanFingerprintReference(clock, queryPlanTTL, statsDivergenceThreshold, fp)
 
-      def run(queryContext: QueryContext, planType: ExecutionMode, params: Map[String, Any]) =
+      def run(queryContext: QueryContext, ignored: KernelStatement, planType: ExecutionMode, params: Map[String, Any]) =
         func(queryContext, planType, params)
 
       def isPeriodicCommit = periodicCommitInfo.isDefined
       def plannerUsed = planner
       def isStale(lastTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastTxId, statistics)
     }
+
   }
 
   private def getQueryResultColumns(q: AbstractQuery, currentSymbols: SymbolTable): List[String] = q match {

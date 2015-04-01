@@ -75,7 +75,7 @@ object CypherCompilerFactory {
     val planningMonitor = monitors.newMonitor[PlanningMonitor](monitorTag)
     val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
     val planner = CostBasedPipeBuilderFactory(monitors, metricsFactory, planningMonitor, clock, plannerName = plannerName)
-    val pipeBuilder = new LegacyVsNewPipeBuilder(new LegacyPipeBuilder(monitors), planner, planBuilderMonitor)
+    val pipeBuilder = new LegacyVsNewExecutablePlanBuilder(new LegacyExecutablePlanBuilder(monitors), planner, planBuilderMonitor)
     val execPlanBuilder = new ExecutionPlanBuilder(graph, statsDivergenceThreshold, queryPlanTTL, clock, pipeBuilder)
     val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](queryCacheSize)
     monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), monitorTag)
@@ -90,7 +90,7 @@ object CypherCompilerFactory {
     val parser = new CypherParser(monitors.newMonitor[ParserMonitor[ast.Statement]](monitorTag))
     val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
     val rewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag))
-    val pipeBuilder = new LegacyPipeBuilder(monitors)
+    val pipeBuilder = new LegacyExecutablePlanBuilder(monitors)
 
     val execPlanBuilder = new ExecutionPlanBuilder(graph, statsDivergenceThreshold, queryPlanTTL, clock, pipeBuilder)
     val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](queryCacheSize)

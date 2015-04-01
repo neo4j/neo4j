@@ -25,18 +25,15 @@ import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_3.PlannerName
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_2.PlannerName
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.{Node, Relationship, ResourceIterator}
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
 
 import scala.collection.mutable.ListBuffer
 
-/**
- * Created by mats on 27/03/15.
- */
-class ExecutionResultWrapperFor2_3Test extends CypherFunSuite {
+class ExecutionResultWrapperFor2_2Test extends CypherFunSuite {
 
   test("visitor get works") {
     val n = mock[Node]
@@ -196,7 +193,7 @@ class ExecutionResultWrapperFor2_3Test extends CypherFunSuite {
       }
     })
     when(mockObj.javaIterator).thenReturn(mock[ResourceIterator[java.util.Map[String, Any]]])
-    new ExecutionResultWrapperFor2_3(mockObj, mock[PlannerName])(mock[QueryExecutionMonitor], mock[QuerySession])
+    new ExecutionResultWrapperFor2_2(mockObj, mock[PlannerName])(mock[QueryExecutionMonitor], mock[QuerySession])
   }
 
   private class CapturingResultVisitor(f: ResultRow => Any) extends ResultVisitor {

@@ -29,9 +29,11 @@ import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.compiler.v2_2.{CypherCompilerFactory, CypherException => CypherException_v2_2, _}
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.iteratorToVisitable
 import org.neo4j.cypher.internal.spi.v2_2.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
 import org.neo4j.cypher.{ArithmeticException, CypherTypeException, EntityNotFoundException, FailedIndexException, IncomparableValuesException, IndexHintException, InternalException, InvalidArgumentException, InvalidSemanticsException, LabelScanHintException, LoadCsvStatusWrapCypherException, LoadExternalResourceException, MergeConstraintConflictException, NodeStillHasRelationshipsException, ParameterNotFoundException, ParameterWrongTypeException, PatternException, PeriodicCommitInOpenTransactionException, ProfilerStatisticsNotReadyException, SyntaxException, UniquePathNotUniqueException, UnknownLabelException, _}
+import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{GraphDatabaseService, QueryExecutionType, ResourceIterator}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseAPI
@@ -174,6 +176,8 @@ trait CompatibilityFor2_2 {
 
 case class ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, planner: PlannerName)(implicit monitor: QueryExecutionMonitor, session: QuerySession) extends ExtendedExecutionResult {
 
+  self =>
+
   import org.neo4j.cypher.internal.compatibility.helpers._
   def planDescriptionRequested = exceptionHandlerFor2_2.runSafely {inner.planDescriptionRequested}
 
@@ -257,6 +261,8 @@ case class ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, planner:
   def executionType: QueryExecutionType = exceptionHandlerFor2_2.runSafely {inner.executionType}
 
   def notifications = Seq.empty
+
+  def accept(visitor: ResultVisitor) = exceptionHandlerFor2_2.runSafely {iteratorToVisitable.accept(self, visitor)}
 }
 
 case class CompatibilityPlanDescription(inner: InternalPlanDescription, version: CypherVersion, planner: PlannerName)

@@ -56,6 +56,6 @@ object CostBasedPipeBuilderFactory {
         )
     }
 
-    CostBasedPipeBuilder(monitors, metricsFactory, monitor, clock, tokenResolver, executionPlanBuilder, queryPlanner, queryGraphSolver, plannerName)
+    CostBasedExecutablePlanBuilder(monitors, metricsFactory, monitor, clock, tokenResolver, executionPlanBuilder, queryPlanner, queryGraphSolver, plannerName)
   }
 }

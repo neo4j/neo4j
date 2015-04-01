@@ -1031,7 +1031,7 @@ order by a.COL1""")
 
     def foundPlan(q: String, p: LogicalPlan): Unit = {}
 
-    def successfulPlanning(q: String, p: PipeInfo): Unit = {}
+    def successfulPlanning(q: String): Unit = {}
   }
 
   test("should discard plans that are considerably unsuitable") {

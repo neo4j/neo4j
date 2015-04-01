@@ -17,19 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.executionplan
+package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
-import org.neo4j.cypher.internal.ExecutionMode
-import org.neo4j.cypher.internal.compiler.v2_3.PlannerName
-import org.neo4j.cypher.internal.compiler.v2_3.spi.{GraphStatistics, QueryContext}
-import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.kernel.api.Statement
-import org.neo4j.kernel.impl.api.KernelStatement
+import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression
 
-abstract class ExecutionPlan {
-  //TODO run should not have direct access to statement?
-  def run(queryContext: QueryContext, statement: Statement, planType: ExecutionMode, params: Map[String, Any]): InternalExecutionResult
-  def isPeriodicCommit: Boolean
-  def plannerUsed: PlannerName
-  def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean
+case class ProduceResult(nodes: Seq[String], relationships: Seq[String], inner: LogicalPlan) extends LogicalPlan {
+  val lhs = Some(inner)
+
+  def solved = inner.solved
+
+  def availableSymbols = inner.availableSymbols
+
+  def rhs = None
+
+  def mapExpressions(f: (Set[IdName], Expression) => Expression) =
+    copy(inner = inner.mapExpressions(f))
+
+  def strictness = inner.strictness
 }
