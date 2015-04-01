@@ -1,6 +1,6 @@
 2.1.8
 -----
-o Track and prevent overflowing the per-index 2 billion document limit of Lucene.
+o Track and prevent overflowing the per-index document limit of Lucene.
 
 2.1.6
 -----

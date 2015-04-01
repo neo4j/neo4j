@@ -14,7 +14,7 @@ o Fixes an issue where recovery of transactions that creates, drops and recreate
   an index, could leave it in a state where it wouldn't accept new writes.
 
 Lucene index:
-o Track and prevent overflowing the per-index 2 billion document limit of Lucene.
+o Track and prevent overflowing the per-index document limit of Lucene.
 
 Consistency checker:
 o Fixes an issue where the consistency checker would report very large indexed
