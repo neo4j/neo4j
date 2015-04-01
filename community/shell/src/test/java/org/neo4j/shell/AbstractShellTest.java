@@ -76,13 +76,13 @@ public abstract class AbstractShellTest
     {
         return newShellClient( server, Collections.<String, Serializable>singletonMap( "quiet", true ) );
     }
-    
+
     protected SameJvmClient newShellClient( ShellServer server, Map<String, Serializable> session )
             throws ShellException, RemoteException
     {
         return new SameJvmClient( session, server, new CollectingOutput(), InterruptSignalHandler.getHandler() );
     }
-    
+
     protected GraphDatabaseAPI newDb()
     {
         return (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase();
@@ -110,17 +110,17 @@ public abstract class AbstractShellTest
         assert tx == null;
         tx = db.beginTx();
     }
-    
+
     protected void finishTx()
     {
         finishTx( true );
     }
-    
+
     protected ShellClient newRemoteClient() throws Exception
     {
         return newRemoteClient( NO_INITIAL_SESSION );
     }
-    
+
     protected ShellClient newRemoteClient( Map<String, Serializable> initialSession ) throws Exception
     {
         return new RemoteClient( initialSession, remoteLocation( remotelyAvailableOnPort ),
@@ -135,7 +135,7 @@ public abstract class AbstractShellTest
             shellServer.makeRemotelyAvailable( remotelyAvailableOnPort, SimpleAppServer.DEFAULT_NAME );
         }
     }
-    
+
     private int findFreePort()
     {
         // TODO
@@ -330,7 +330,7 @@ public abstract class AbstractShellTest
             tx.success();
         }
     }
-    
+
     protected Node getCurrentNode() throws RemoteException, ShellException
     {
         Serializable current = shellServer.interpretVariable( shellClient.getId(), Variables.CURRENT_KEY );
