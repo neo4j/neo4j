@@ -1,3 +1,7 @@
+2.1.8
+-----
+o Track and prevent overflowing the per-index document limit of Lucene.
+
 2.1.6
 -----
 o Tweaks of segment merge options which allow for reduced file handle

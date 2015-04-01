@@ -219,6 +219,60 @@ o Sometimes when the editor is blurred, you could not execute it or save the con
 o Escape contents displayed to prevent javascript from executing.
 o Prepend js and css file names with part of md5 hex of it's contents to prevent false caching.
 
+2.1.8
+-----
+Kernel:
+o Fixes an issue in the batch inserter, where writing multiple labels would not
+  sort them correctly, and writing the same label twice could introduce
+  duplicate label records.
+o Fixes an issue where we would fail to delete the index files of a uniqueness
+  constraint, if the database crashed during the commit of the transaction that
+  created said constraint _and_ the constraint cannot be brought online because
+  duplicates have since been committed.
+o Fixes an issue where recovery of transactions that creates, drops and recreates
+  an index, could leave it in a state where it wouldn't accept new writes.
+
+Lucene index:
+o Track and prevent overflowing the per-index document limit of Lucene.
+
+Consistency checker:
+o Fixes an issue where the consistency checker would report very large indexed
+  long valued properties as duplicates, even though they were distinct.
+o Add a "consistency_check_graph" setting (for the "-config" properties file)
+  that allows you to turn off consistency checking of the store files, and only
+  check the indexes and the schema.
+
+Cypher:
+o Throw an exception when toInt() is used to parse a number too big to fit in 64 bits
+
+2.1.7
+-----
+Kernel:
+o It is now possible to define the amount of memory to dedicate to
+  mapping portions of the relationship type storage
+o Recovery of the relationship type store no longer leads to
+  excessive size use because of improper id use
+o Batch importer will now throw ConstraintViolationException
+  when a schema constraint is not respected
+o Deleting a Node already deleted in the running transaction
+  will now result in an EntityNotFoundException
+o Constraint enforcement is now more strict courtesy of using
+  an up to date Lucene index reader
+o messages.log file is now properly created under Windows
+
+Cypher:
+o Fixes problem when using undirected variable length paths
+o Fix type error that made numbers coercible to boolean
+o Fail with a helpful error message when predicates in shortest path can't
+  be used as expected
+o Fixes problem when using shortest paths with minimal length of 0
+o Fixes bug when using index hints with OPTIONAL MATCH
+o Fixes behaviour of REMOVE on NULL entities
+
+Server:
+o Improves performance of JSON serialization by flushing
+  buffers only on HTTP stream flushing
+
 2.1.6
 -----
 Kernel:

@@ -69,6 +69,32 @@ o Extends the Transaction interface with a new method `terminate()` that makes i
 o Adds an import script (neo4j-import on Unix, Neo4jImport on Windows) for bulk import
   of data from CSV files
 
+2.1.8
+-----
+o Fixes an issue in the batch inserter, where writing multiple labels would not
+  sort them correctly, and writing the same label twice could introduce
+  duplicate label records.
+o Fixes an issue where we would fail to delete the index files of a uniqueness
+  constraint, if the database crashed during the commit of the transaction that
+  created said constraint _and_ the constraint cannot be brought online because
+  duplicates have since been committed.
+o Fixes an issue where recovery of transactions that creates, drops and recreates
+  an index, could leave it in a state where it wouldn't accept new writes.
+
+2.1.7
+-----
+o It is now possible to define the amount of memory to dedicate to
+  mapping portions of the relationship type storage
+o Recovery of the relationship type store no longer leads to
+  excessive size use because of improper id use
+o Batch importer will now throw ConstraintViolationException
+  when a schema constraint is not respected
+o Deleting a Node already deleted in the running transaction
+  will now result in an EntityNotFoundException
+o Constraint enforcement is now more strict courtesy of using
+  an up to date Lucene index reader
+o messages.log file is now properly created under Windows
+
 2.1.6
 -----
 o Fixes issue with shutdown order for the store and the transaction log,
