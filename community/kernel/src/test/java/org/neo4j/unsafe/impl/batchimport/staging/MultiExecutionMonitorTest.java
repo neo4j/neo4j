@@ -74,7 +74,7 @@ public class MultiExecutionMonitorTest
 
     private static class TestableMonitor extends ExecutionMonitor.Adpter
     {
-        private volatile int timesPolled;
+        private int timesPolled;
         private final String name;
 
         public TestableMonitor( Clock clock, long interval, TimeUnit unit, String name )
@@ -86,7 +86,6 @@ public class MultiExecutionMonitorTest
         @Override
         public void check( StageExecution[] executions )
         {
-            System.out.println( "checked " + name );
             timesPolled++;
         }
 
