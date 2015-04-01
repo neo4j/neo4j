@@ -80,7 +80,7 @@ object InternalPlanDescription {
     case class LegacyExpression(value: commands.expressions.Expression) extends Argument
     case class UpdateActionName(value: String) extends Argument
     case class LegacyIndex(value: String) extends Argument
-    case class Index(label: String, property: String) extends Argument
+    case class Index(label: String, propertyKey: String) extends Argument
     case class LabelName(label: String) extends Argument
     case class KeyNames(keys: Seq[String]) extends Argument
     case class KeyExpressions(expressions: Seq[commands.expressions.Expression]) extends Argument
