@@ -25,15 +25,32 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
+import org.neo4j.kernel.api.index.DuplicateIndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
+import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
 import org.neo4j.kernel.impl.util.DiffSets;
+
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 public abstract class UniquePropertyIndexUpdater implements IndexUpdater
 {
+    public interface Lookup
+    {
+        Long currentlyIndexedNode( Object value ) throws IOException;
+    }
+
     private final Map<Object, DiffSets<Long>> referenceCount = new HashMap<>();
     private final ArrayList<NodePropertyUpdate> updates = new ArrayList<>();
+
+    private final Lookup lookup;
+
+    public UniquePropertyIndexUpdater( Lookup lookup )
+    {
+        this.lookup = lookup;
+    }
 
     @Override
     public void process( NodePropertyUpdate update )
@@ -59,9 +76,30 @@ public abstract class UniquePropertyIndexUpdater implements IndexUpdater
         updates.add( update );
     }
 
+
     @Override
     public void close() throws IOException, IndexEntryConflictException, IndexCapacityExceededException
     {
+        // verify uniqueness
+        for ( Map.Entry<Object, DiffSets<Long>> entry : referenceCount.entrySet() )
+        {
+            Object value = entry.getKey();
+            int delta = entry.getValue().delta();
+            if ( delta > 1 )
+            {
+                throw new DuplicateIndexEntryConflictException( value, asSet( entry.getValue().getAdded() ) );
+            }
+            if ( delta == 1 )
+            {
+                Long addedNode = single( entry.getValue().getAdded() );
+                Long existingNode = lookup.currentlyIndexedNode( value );
+
+                if ( existingNode != null && !addedNode.equals( existingNode ) )
+                {
+                    throw new PreexistingIndexEntryConflictException( value, existingNode, addedNode );
+                }
+            }
+        }
         // flush updates
         flushUpdates( updates );
     }
