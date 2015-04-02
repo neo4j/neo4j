@@ -196,8 +196,11 @@ public interface Result extends ResourceIterator<Map<String, Object>>
      * creation perspective.
      *
      * @param visitor the ResultVisitor instance that will see the results of the visit.
+     * @throws VisitationException if the {@linkplain ResultVisitor#visit(ResultRow) visit-method} throws such an
+     * exception.
      */
-    void accept( ResultVisitor visitor );
+    <VisitationException extends Exception> void accept( ResultVisitor<VisitationException> visitor )
+            throws VisitationException;
 
     /**
      * Describes a row of a result. The contents of this object is only stable during the
@@ -207,7 +210,6 @@ public interface Result extends ResourceIterator<Map<String, Object>>
      */
     interface ResultRow
     {
-        // TODO: Figure out type coercion around primitives
         // TODO: Type safe getters for collections and maps?
         Node getNode( String key );
 
@@ -227,15 +229,19 @@ public interface Result extends ResourceIterator<Map<String, Object>>
     /**
      * This is the visitor interface you need to implement to use the {@link Result#accept(ResultVisitor)} method.
      */
-    interface ResultVisitor
+    interface ResultVisitor<VisitationException extends Exception>
     {
         /**
          * Visits the specified row.
+         *
          * @param row the row to visit. The row object is only guaranteed to be stable until flow of control has
          *            returned from this method.
          * @return true if the next row should also be visited. Returning false will terminate the iteration of
          * result rows.
+         * @throws VisitationException if there is a problem in the execution of this method. This exception will close
+         * the result being visited, and the exception will propagate out through the
+         * {@linkplain #accept(ResultVisitor) accept method}.
          */
-        boolean visit( ResultRow row );
+        boolean visit( ResultRow row ) throws VisitationException;
     }
 }

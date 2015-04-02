@@ -262,7 +262,7 @@ case class ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, planner:
 
   def notifications = Seq.empty
 
-  def accept(visitor: ResultVisitor) = exceptionHandlerFor2_2.runSafely {iteratorToVisitable.accept(self, visitor)}
+  def accept[EX <: Exception](visitor: ResultVisitor[EX]) = exceptionHandlerFor2_2.runSafely {iteratorToVisitable.accept(self, visitor)}
 }
 
 case class CompatibilityPlanDescription(inner: InternalPlanDescription, version: CypherVersion, planner: PlannerName)

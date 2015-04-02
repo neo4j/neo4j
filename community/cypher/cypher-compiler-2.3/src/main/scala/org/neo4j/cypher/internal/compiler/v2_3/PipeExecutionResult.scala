@@ -107,5 +107,5 @@ class PipeExecutionResult(val result: ResultIterator,
   //notifications only present for EXPLAIN
   override val notifications = Iterable.empty[InternalNotification]
 
-  def accept(visitor: ResultVisitor) = iteratorToVisitable.accept(self, visitor)
+  def accept[EX <: Exception](visitor: ResultVisitor[EX]) = iteratorToVisitable.accept(self, visitor)
 }

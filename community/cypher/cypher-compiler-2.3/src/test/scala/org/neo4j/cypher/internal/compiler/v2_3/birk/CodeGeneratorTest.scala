@@ -30,12 +30,10 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionRe
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_3.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
-import org.neo4j.graphdb.Result.{ResultVisitor, ResultRow}
+import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.{Direction, GraphDatabaseService, Node}
 import org.neo4j.helpers.Clock
-import org.neo4j.helpers.collection.Visitor
 import org.neo4j.kernel.api.ReadOperations
-import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 
@@ -410,7 +408,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   private def getNodesFromResult(plan: InternalExecutionResult, columns: String*) = {
     val res= Seq.newBuilder[Map[String, Node]]
 
-    plan.accept(new ResultVisitor() {
+    plan.accept(new ResultVisitor[RuntimeException]() {
       override def visit(element: ResultRow): Boolean = {
         res += columns.map(col =>  col -> element.getNode(col)).toMap
         true

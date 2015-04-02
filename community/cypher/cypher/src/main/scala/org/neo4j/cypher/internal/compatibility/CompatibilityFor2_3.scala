@@ -264,7 +264,7 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
        NotificationCode.CARTESIAN_PRODUCT.notification(new InputPosition(pos.offset, pos.line, pos.column))
   }
 
-  override def accept(visitor: ResultVisitor) = exceptionHandlerFor2_3.runSafely {inner.accept(visitor)}
+  override def accept[EX <: Exception](visitor: ResultVisitor[EX]) = exceptionHandlerFor2_3.runSafely {inner.accept(visitor)}
 }
 
 case class CompatibilityPlanDescriptionFor2_3(inner: InternalPlanDescription, version: CypherVersion, planner: PlannerName)

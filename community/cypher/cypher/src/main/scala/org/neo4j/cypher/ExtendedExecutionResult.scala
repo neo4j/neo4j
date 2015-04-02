@@ -26,5 +26,5 @@ trait ExtendedExecutionResult extends ExecutionResult {
   def planDescriptionRequested: Boolean
   def executionType: QueryExecutionType
   def notifications: Iterable[Notification]
-  def accept(visitor: ResultVisitor)
+  def accept[EX <: Exception](visitor: ResultVisitor[EX])
 }

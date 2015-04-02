@@ -193,7 +193,7 @@ public class GraphExtractionWriterTest
         json.writeStartObject();
         try
         {
-            new GraphExtractionWriter().write( json, null, row );
+            new GraphExtractionWriter().write( json, row.keySet(), new MapRow( row ) );
         }
         finally
         {

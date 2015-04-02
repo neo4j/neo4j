@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.javacompat;
 
-import scala.collection.JavaConversions;
-
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
+
+import scala.collection.JavaConversions;
 
 import org.neo4j.cypher.CypherException;
 import org.neo4j.graphdb.ExecutionPlanDescription;
@@ -281,7 +281,8 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     }
 
     @Override
-    public void accept( ResultVisitor visitor )
+    public <VisitationException extends Exception> void accept( ResultVisitor<VisitationException> visitor )
+            throws VisitationException
     {
         inner.accept( visitor );
     }
