@@ -1550,8 +1550,7 @@ return b
     actual shouldNot be(empty)
   }
 
-  //TODO this doesn't work in rule planner
-  ignore("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second") {
+  test("MATCH (a)-[r1]->()-[r2]->(b) WITH [r1, r2] AS rs LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second") {
     val node1 = createNode()
     val node2 = createNode()
     val node3 = createNode()
@@ -1559,7 +1558,7 @@ return b
     relate(node2, node3, "Y")
 
     // when
-    val result = execute("MATCH ()-[r1]->()-[r2]->() WITH [r1, r2] AS rs LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second")
+    val result = executeWithNewPlanner("MATCH ()-[r1]->()-[r2]->() WITH [r1, r2] AS rs LIMIT 1 MATCH (first)-[rs*]->(second) RETURN first, second")
 
     val actual = result.toSet
 
