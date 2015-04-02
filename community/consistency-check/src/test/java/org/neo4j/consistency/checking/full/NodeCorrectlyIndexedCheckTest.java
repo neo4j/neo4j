@@ -23,8 +23,12 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -33,7 +37,9 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -216,6 +222,20 @@ public class NodeCorrectlyIndexedCheckTest
                         return PrimitiveLongCollections.iterator( entries.get( value ) );
                     }
                     return emptyIterator();
+                }
+
+                @Override
+                public PrimitiveLongIterator scan()
+                {
+                    List<Long> ids = new ArrayList<>();
+                    for ( long[] longs : entries.values() )
+                    {
+                        for ( long id : longs )
+                        {
+                            ids.add( id );
+                        }
+                    }
+                    return PrimitiveLongCollections.toPrimitiveIterator( ids.iterator() );
                 }
 
                 @Override
