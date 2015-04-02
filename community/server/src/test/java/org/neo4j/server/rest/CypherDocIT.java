@@ -144,7 +144,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
         Map<String, Object> output = jsonToMap( response );
         assertTrue( output.toString(), output.containsKey( "message" ) );
         assertTrue( output.containsKey( "exception" ) );
-        assertTrue( output.containsKey( "stacktrace" ) );
+        assertTrue( output.containsKey( "stackTrace" ) );
     }
 
     /**
@@ -294,7 +294,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
 
         Map<String, Object> output = jsonToMap( response );
         assertTrue( output.containsKey( "message" ) );
-        assertTrue( output.containsKey( "stacktrace" ) );
+        assertTrue( output.containsKey( "stackTrace" ) );
     }
 
     /**

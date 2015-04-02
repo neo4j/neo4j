@@ -90,7 +90,7 @@ public class ExceptionRepresentation extends MappingRepresentation
                 if (element.toString().matches( ".*(jetty|jersey|sun\\.reflect|mortbay|javax\\.servlet).*" )) continue;
                 lines.add( element.toString() );
             }
-            serializer.putList( "stacktrace", ListRepresentation.string( lines ) );
+            serializer.putList( "stackTrace", ListRepresentation.string( lines ) );
         }
 
         Throwable cause = exception.getCause();
@@ -117,7 +117,7 @@ public class ExceptionRepresentation extends MappingRepresentation
             serializer.putString( "message", error.getMessage() );
             if(error.shouldSerializeStackTrace())
             {
-                serializer.putString( "stacktrace", error.getStackTraceAsString() );
+                serializer.putString( "stackTrace", error.getStackTraceAsString() );
             }
         }
 
