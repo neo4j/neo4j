@@ -52,7 +52,7 @@ public class CsvInput implements Input
     private final IdType idType;
     private final Configuration config;
     private final Groups groups = new Groups();
-    private final Function<OutputStream,Collector<InputRelationship>> collectorFactory;
+    private final Function<OutputStream,Collector> collectorFactory;
 
     /**
      * @param nodeDataFactory multiple {@link DataFactory} instances providing data, each {@link DataFactory}
@@ -69,7 +69,7 @@ public class CsvInput implements Input
     public CsvInput(
             Iterable<DataFactory<InputNode>> nodeDataFactory, Header.Factory nodeHeaderFactory,
             Iterable<DataFactory<InputRelationship>> relationshipDataFactory, Header.Factory relationshipHeaderFactory,
-            IdType idType, Configuration config, Function<OutputStream,Collector<InputRelationship>> collectorFactory )
+            IdType idType, Configuration config, Function<OutputStream,Collector> collectorFactory )
     {
         assertSaneConfiguration( config );
 
@@ -189,7 +189,7 @@ public class CsvInput implements Input
     }
 
     @Override
-    public Collector<InputRelationship> badRelationshipsCollector( OutputStream out )
+    public Collector badCollector( OutputStream out )
     {
         return collectorFactory.apply( out );
     }
