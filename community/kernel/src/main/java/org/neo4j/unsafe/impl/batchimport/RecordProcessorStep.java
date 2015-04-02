@@ -37,7 +37,7 @@ public class RecordProcessorStep<T extends AbstractBaseRecord> extends Processor
     public RecordProcessorStep( StageControl control, String name, Configuration config,
             RecordProcessor<T> processor, boolean endOfLine, StatsProvider... additionalStatsProviders )
     {
-        super( control, name, config, false, additionalStatsProviders );
+        super( control, name, config, 1, additionalStatsProviders );
         this.processor = processor;
         this.endOfLine = endOfLine;
     }

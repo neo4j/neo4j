@@ -53,7 +53,7 @@ public final class NodeEncoderStep extends ProcessorStep<Batch<InputNode,NodeRec
             NodeStore nodeStore,
             StatsProvider memoryUsageStats )
     {
-        super( control, "NODE", config, false, memoryUsageStats );
+        super( control, "NODE", config, 1, memoryUsageStats );
         this.idMapper = idMapper;
         this.idGenerator = idGenerator;
         this.nodeStore = nodeStore;

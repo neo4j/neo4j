@@ -101,10 +101,11 @@ public class StageTest
         ReceiveOrderAssertingStep( StageControl control, String name, Configuration config,
                 long processingTime, boolean endOfLine )
         {
-            super( control, name, config, false );
-            incrementNumberOfProcessors(); // we start off with two
+            super( control, name, config, 1 );
             this.processingTime = processingTime;
             this.endOfLine = endOfLine;
+            start( true );
+            incrementNumberOfProcessors(); // we start off with two
         }
 
         @Override

@@ -114,8 +114,8 @@ public class IoQueueTest
     @Before
     public void before()
     {
-        executor = spy( new DynamicTaskExecutor<Void>( 3, 20, DEFAULT_PARK_STRATEGY, getClass().getSimpleName() ) );
-        queue = new IoQueue( executor, 3, SYNCHRONOUS );
+        executor = spy( new DynamicTaskExecutor<Void>( 3, 3, 20, DEFAULT_PARK_STRATEGY, getClass().getSimpleName() ) );
+        queue = new IoQueue( executor, SYNCHRONOUS );
     }
 
     @After

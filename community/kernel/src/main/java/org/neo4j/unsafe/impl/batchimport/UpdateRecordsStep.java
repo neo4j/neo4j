@@ -44,7 +44,7 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord>
 
     public UpdateRecordsStep( StageControl control, Configuration config, RecordStore<RECORD> store )
     {
-        super( control, "v", config, false );
+        super( control, "v", config, 1 );
         this.store = store;
         this.recordSize = store.getRecordSize();
     }

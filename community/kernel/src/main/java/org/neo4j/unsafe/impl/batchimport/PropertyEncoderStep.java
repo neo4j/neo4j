@@ -50,7 +50,7 @@ public class PropertyEncoderStep<RECORD extends PrimitiveRecord,INPUT extends In
     protected PropertyEncoderStep( StageControl control, Configuration config,
             BatchingPropertyKeyTokenRepository propertyKeyHolder, PropertyStore propertyStore )
     {
-        super( control, "PROPERTIES", config, true );
+        super( control, "PROPERTIES", config, 0 );
         this.propertyKeyHolder = propertyKeyHolder;
         this.arrayDataSize = propertyStore.getArrayStore().dataSize();
         this.stringDataSize = propertyStore.getStringStore().dataSize();

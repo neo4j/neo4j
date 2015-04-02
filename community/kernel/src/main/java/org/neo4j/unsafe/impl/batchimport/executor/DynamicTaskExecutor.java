@@ -29,6 +29,8 @@ import org.neo4j.function.Factory;
 import org.neo4j.function.Functions;
 import org.neo4j.kernel.impl.transaction.log.ParkStrategy;
 
+import static java.lang.Math.min;
+
 import static org.neo4j.helpers.Exceptions.launderedException;
 
 /**
@@ -47,17 +49,23 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
     private volatile boolean shutDown;
     private volatile Throwable panic;
     private final Factory<LOCAL> initialLocalState;
+    private final int maxProcessorCount;
 
-    public DynamicTaskExecutor( int initialProcessorCount, int maxQueueSize, ParkStrategy parkStrategy,
-            String processorThreadNamePrefix )
+    public DynamicTaskExecutor( int initialProcessorCount, int maxProcessorCount, int maxQueueSize,
+            ParkStrategy parkStrategy, String processorThreadNamePrefix )
     {
-        this( initialProcessorCount, maxQueueSize, parkStrategy, processorThreadNamePrefix,
+        this( initialProcessorCount, maxProcessorCount, maxQueueSize, parkStrategy, processorThreadNamePrefix,
                 Functions.<LOCAL>constantly( null ) );
     }
 
-    public DynamicTaskExecutor( int initialProcessorCount, int maxQueueSize, ParkStrategy parkStrategy,
-            String processorThreadNamePrefix, Factory<LOCAL> initialLocalState )
+    public DynamicTaskExecutor( int initialProcessorCount, int maxProcessorCount, int maxQueueSize,
+            ParkStrategy parkStrategy, String processorThreadNamePrefix, Factory<LOCAL> initialLocalState )
     {
+        this.maxProcessorCount = maxProcessorCount == 0 ? Integer.MAX_VALUE : maxProcessorCount;
+
+        assert this.maxProcessorCount >= initialProcessorCount :
+                "Unexpected initial processor count " + initialProcessorCount + " for max " + maxProcessorCount;
+
         this.parkStrategy = parkStrategy;
         this.processorThreadNamePrefix = processorThreadNamePrefix;
         this.initialLocalState = initialLocalState;
@@ -75,6 +83,7 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
             return;
         }
 
+        count = min( count, maxProcessorCount );
         Processor[] newProcessors;
         if ( count > processors.length )
         {   // Add one or more
@@ -104,6 +113,10 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
     @Override
     public synchronized boolean incrementNumberOfProcessors()
     {
+        if ( numberOfProcessors() >= maxProcessorCount )
+        {
+            return false;
+        }
         setNumberOfProcessors( numberOfProcessors() + 1 );
         return true;
     }
