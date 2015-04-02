@@ -108,6 +108,18 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
     )
   }
 
+  test("should not allow introducing aggregation in ORDER BY - must be listed as a return item in associated RETURN") {
+    expectError(
+      "match n return n.prop1 order by max(n.prop2)",
+      "Cannot use aggregation in ORDER BY if there are no aggregate expressions in the preceding RETURN (line 1, column 9 (offset: 8))")
+  }
+
+  test("should not allow introducing aggregation in ORDER BY - must be listed as a return item in associated WITH") {
+    expectError(
+      "match n with n.prop1 as foo order by max(n.prop2) return foo as foo",
+      "Cannot use aggregation in ORDER BY if there are no aggregate expressions in the preceding WITH (line 1, column 9 (offset: 8))")
+  }
+
   test("twoIndexQueriesInSameStart") {
     expectSyntaxError(
       "start a = node:node_auto_index(name=\"sebastian\",name=\"magnus\") return a",

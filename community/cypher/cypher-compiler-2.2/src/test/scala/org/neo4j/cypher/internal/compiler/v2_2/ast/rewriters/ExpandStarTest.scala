@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.AstConstructionTestSupport
 
-class ExpandStarTest extends CypherFunSuite {
+class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
   import parser.ParserFixture.parser
 
   test("rewrites * in return") {
@@ -105,8 +106,9 @@ class ExpandStarTest extends CypherFunSuite {
   }
 
   private def assertRewrite(originalQuery: String, expectedQuery: String) {
-    val original = parser.parse(originalQuery).endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
-    val expected = parser.parse(expectedQuery).endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
+    val mkException = new SyntaxExceptionCreator(originalQuery, Some(pos))
+    val original = parser.parse(originalQuery).endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
+    val expected = parser.parse(expectedQuery).endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
 
     val checkResult = original.semanticCheck(SemanticState.clean)
     val rewriter = expandStar(checkResult.state)

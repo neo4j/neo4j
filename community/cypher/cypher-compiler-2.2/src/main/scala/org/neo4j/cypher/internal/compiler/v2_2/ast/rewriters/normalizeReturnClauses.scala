@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.FreshIdNameGenerator
-import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.compiler.v2_2.{InputPosition, CypherException, Rewriter, bottomUp}
 
 /**
  * This rewriter makes sure that all return items in a RETURN clauses are aliased, and moves
@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, bottomUp}
  * WITH n.foo AS `  FRESHIDxx`, n.bar AS `  FRESHIDnn` ORDER BY `  FRESHIDxx`
  * RETURN `  FRESHIDxx` AS foo, `  FRESHIDnn` AS `n.bar`
  */
-case object normalizeReturnClauses extends Rewriter {
+case class normalizeReturnClauses(mkException: (String, InputPosition) => CypherException) extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = bottomUp(instance).apply(that)
 
@@ -56,6 +56,7 @@ case object normalizeReturnClauses extends Rewriter {
       )
 
     case clause @ Return(distinct, ri, orderBy, skip, limit) =>
+      clause.verifyOrderByAggregationUse(mkException)
       var rewrites = Map[Expression, Identifier]()
 
       val (aliasProjection, finalProjection) = ri.items.map {

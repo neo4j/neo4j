@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.FreshIdNameGenerator
-import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, bottomUp, topDown}
+import org.neo4j.cypher.internal.compiler.v2_2._
 
 /**
  * This rewriter normalizes the scoping structure of a query, ensuring it is able to
@@ -49,7 +49,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, bottomUp, topDown}
  * It uses multiple WITH clauses to ensure that cardinality and grouping are not altered, even in the presence
  * of aggregation.
  */
-case object normalizeWithClauses extends Rewriter {
+case class normalizeWithClauses(mkException: (String, InputPosition) => CypherException) extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = bottomUp(instance).apply(that)
 
@@ -60,6 +60,7 @@ case object normalizeWithClauses extends Rewriter {
       Seq(clause.copy(returnItems = ri.copy(items = initialReturnItems)(ri.position))(clause.position))
 
     case clause @ With(distinct, ri, orderBy, skip, limit, where) =>
+      clause.verifyOrderByAggregationUse(mkException)
       val (unaliasedReturnItems, aliasedReturnItems) = partitionReturnItems(ri.items)
       val initialReturnItems = unaliasedReturnItems ++ aliasedReturnItems
       val (introducedReturnItems, updatedOrderBy, updatedWhere) = aliasOrderByAndWhere(aliasedReturnItems.map(i => i.expression -> i.alias.get.copyId).toMap, orderBy, where)

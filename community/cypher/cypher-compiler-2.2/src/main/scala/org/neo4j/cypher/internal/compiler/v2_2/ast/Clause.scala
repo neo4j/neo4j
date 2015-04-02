@@ -259,6 +259,13 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
     s => skip.semanticCheck(SemanticState.clean).errors
   protected def checkLimit: SemanticState => Seq[SemanticError] =
     s => limit.semanticCheck(SemanticState.clean).errors
+
+  def verifyOrderByAggregationUse(mkException: (String, InputPosition) => CypherException): Unit = {
+    val aggregationInProjection = returnItems.items.map(_.expression).exists(containsAggregate)
+    val aggregationInOrderBy = orderBy.exists(_.sortItems.map(_.expression).exists(containsAggregate))
+    if (!aggregationInProjection && aggregationInOrderBy)
+      throw mkException(s"Cannot use aggregation in ORDER BY if there are no aggregate expressions in the preceding $name", position)
+  }
 }
 
 case class With(
@@ -268,6 +275,7 @@ case class With(
     skip: Option[Skip],
     limit: Option[Limit],
     where: Option[Where])(val position: InputPosition) extends ProjectionClause {
+  
   def name = "WITH"
 
   override def semanticCheck =
