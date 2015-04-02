@@ -6,7 +6,7 @@ For how to provide custom configuration to Neo4j, see <<configuration-introducti
 Neo4j utilizes two different types of caches:
 A file buffer cache and an object cache.
 The file buffer cache caches the storage file data in the same format as it is stored on the durable storage media.
-The object cache caches the nodes, relationships and properties in a format that is optimized for high traversal speeds and transactional writes.
+The object cache caches the nodes, relationships and properties in a format that is optimized for fast graph traversal.
 
 
 == File buffer cache ==
@@ -15,34 +15,19 @@ The object cache caches the nodes, relationships and properties in a format that
 ***********
 * The file buffer cache is sometimes called _low level cache_, _file system cache_ or _the page cache_.
 * It caches the Neo4j data as stored on the durable media.
-* It uses the operating system memory mapping features when possible.
-* Neo4j will configure the cache automatically, but you might want to tune it yourself to get the most out of the available memory.
+* The default configuration of the cache relies on heuristics and assumes that the machine is dedicated to running Neo4j, so you might want to tune it yourself to get the most out of the available memory.
+* There is just one setting for the file buffer cache: `dbms.pagecache.memory` - it specifies how much memory Neo4j is allowed to use for this cache.
 ***********
 
 The file buffer cache caches the Neo4j data in the same format as it is represented on the durable storage media.
 The purpose of this cache layer is to improve both read and write performance.
-The file buffer cache improves write performance by writing to the cache and deferring durable write until the logical log is rotated.
-This behavior is safe since all transactions are always durably written to the logical log, which can be used to recover the store files in the event of a crash.
+The file buffer cache improves write performance by writing to the cache and deferring durable writes.
+This behavior is safe since all transactions are always durably written to the transaction log, which can be used to recover the store files in the event of a crash.
 It also improves write performance by batching up many small writes into fewer page-sized writes.
 
-Since the operation of the cache is tightly related to the data it stores, a short description of the Neo4j durable representation format is necessary background.
-Neo4j stores data in multiple files and relies on the underlying file system to handle this efficiently.
-Each Neo4j storage file contains uniform fixed size records of a particular type:
-
-include::includes/record_sizes_table.asciidoc[]
-
-For strings and arrays, where data can be of variable length, data is stored in one or more 120B chunks, with 8B record overhead.
-The sizes of these blocks can actually be configured when the store is created using the `string_block_size` and `array_block_size` parameters.
-The size of each record type can also be used to calculate the storage requirements of a Neo4j graph or the appropriate cache size for each file buffer cache.
-Note that some strings and arrays can be stored without using the string store or the array store respectively, see <<short-strings>> and <<short-arrays>>.
-
-Neo4j uses multiple file buffer caches, one for each different storage file.
-Each file buffer cache divides its storage file into a number of equally sized windows.
-Each cache window contains an even number of storage records.
-The cache holds the most active cache windows in memory and tracks hit vs. miss ratio for the windows.
-When the hit ratio of an uncached window gets higher than the miss ratio of a cached window, the cached window gets evicted and the previously uncached window is cached instead.
-
-IMPORTANT: Note that the block sizes can only be configured at store creation time.
+Since the file buffer cache is caching the contents of the store files, you can calculate the appropriate size for it by summing up the space usage of all the store files.
+For instance, on a posix system you can look at the total of running `$ du -hc *store.db*` in your `data/graph.db` directory.
+If you configure the file buffer cache to have less memory than the size of the store, then the cache will automatically swap pages in and out on demand, such that the most popular data stays in memory.
 
 === Configuration ===
 
@@ -53,16 +38,8 @@ IMPORTANT: Note that the block sizes can only be configured at store creation ti
   The maximum amount of memory to use for the file buffer cache, either in bytes, or greater byte-like units, such as `100m` for 100 mega-bytes, or `4g` for 4 giga-bytes. |
   The amount of memory to use for mapping the store files, in a unit of bytes.
   This will automatically be rounded down to the nearest whole page.
-| string_block_size .2+^.^| The number of bytes per block. |
-  Specifies the block size for storing strings.
-  This parameter is only honored when the store is created, otherwise it is ignored.
-  Note that each character in a string occupies two bytes, meaning that a block size of 120 (the default size) will hold a 60 character long string before overflowing into a second block.
-  Also note that each block carries an overhead of 8 bytes.
-  This means that if the block size is 120, the size of the stored records will be 128 bytes.
-| array_block_size        |
-  Specifies the block size for storing arrays.
-  This parameter is only honored when the store is created, otherwise it is ignored.
-  The default block size is 120 bytes, and the overhead of each block is the same as for string blocks, i.e., 8 bytes.
+  This value cannot be zero.
+  For extremely small and memory constrained deployments, it is recommended to still reserve at least a couple of megabytes for file buffering.
 | dump_configuration | `true` or `false` | If set to `true` the current configuration settings will be written to the default system output, mostly the console or the logfiles.
 |========================================================
 
@@ -70,7 +47,9 @@ When configuring the amount of memory allowed for the file buffers and the JVM h
 It is important to configure the memory usage, such that the Neo4j JVM process won't need to use any swap memory, as this will cause a significant drag on the performance of the system.
 
 When reading the configuration parameters on startup Neo4j will automatically configure the parameters that are not specified.
-The cache sizes will be configured based on the available memory on the computer.
+The cache size will be configured based on the available memory on the computer, with the assumption that the machine is dedicated to running Neo4j.
+Specifically, Neo4j will look at how much memory the machine has, subtract the JVM heap allocation from that, and then use 75% of what is left for the file buffer cache.
+This is the default configuration when nothing else is specified.
 
 == Object cache ==
 
@@ -97,12 +76,12 @@ The overhead of the High-Performance Cache is also much smaller as well as inser
 
 [TIP]
 The use of heap memory is subject to the Java Garbage Collector -- depending on the cache type some tuning might be needed to play well with the GC at large heap sizes.
-Therefore, assigning a large heap for Neo4j's sake isn't always the best strategy as it may lead to long GC-pauses.
-Instead leave some space for Neo4j's filesystem caches.
-These are outside of the heap and under under the kernel's direct control, thus more efficiently managed.
+Therefore, assigning a large heap for Neo4j's sake isn't always the best strategy as it may lead to long GC pauses.
+Instead leave some space for Neo4j's file buffer cache.
+The file buffer cache is allocated outside of the Java heap, and thus does not impact the performance of the garbage collector.
 
 The content of this cache are objects with a representation geared towards supporting the Neo4j object API and graph traversals.
-Reading from this cache may be 5 to 10 times faster than reading from the file buffer cache.
+Reading from this cache may be faster than reading from the file buffer cache, depending on the workload.
 This cache is contained in the heap of the JVM and the size is adapted to the current amount of available heap memory.
 
 Nodes and relationships are added to the object cache as soon as they are accessed.
@@ -110,7 +89,6 @@ The cached objects are however populated lazily.
 The properties for a node or relationship are not loaded until properties are accessed for that node or relationship.
 String (and array) properties are not loaded until that particular property is accessed.
 The relationships for a particular node is also not loaded until the relationships are accessed for that node.
-
 
 === Configuration ===
 
@@ -122,7 +100,9 @@ The available cache types are:
 [options="header",cols="<15m,<85"]
 |==========================================
 | `cache_type` | Description
-| none         | Do not use a high level cache. No objects will be cached.
+| none         | Do not use a high level cache.
+                 No objects will be cached.
+                 This cache is useful for applications that otherwise suffer from high GC pause times.
 | soft         | Provides optimal utilization of the available memory.
                  Suitable for high performance traversal.
                  May run into GC issues under high load if the frequently accessed parts of the graph does not fit in the cache.
@@ -149,9 +129,8 @@ For most use cases, simply specifying a percentage of the memory available for c
 Allocating more memory to the cache gives faster querying speed, but takes memory away from other components and may put strain on the JVM garbage collector.
 
 The max amount of memory available for caching depends on which garbage collector you are using.
-For CMS and G1 collectors (CMS is the Neo4j default), it will be equal to the max size of the old generation. How big
-the old generation is is platform-dependent, but can for CMS and G1 be configured using the "NewRatio" JVM configuration
-option.
+For CMS and G1 collectors (CMS is the Neo4j default), it will be equal to the max size of the old generation.
+How big the old generation is is platform-dependent, but can for CMS and G1 be configured using the "NewRatio" JVM configuration option.
 For other collectors, it will be half of the total heap size.
 
 [options="header",cols="<25m,<65,<10m"]
@@ -179,4 +158,3 @@ You can read about references and relevant JVM settings for Sun HotSpot here:
 * http://jeremymanson.blogspot.com/2009/07/how-hotspot-decides-to-clear_07.html[How Hotspot Decides to Clear SoftReferences]
 
 * http://www.oracle.com/technetwork/java/hotspotfaq-138619.html#gc_softrefs[HotSpot FAQ]
-
