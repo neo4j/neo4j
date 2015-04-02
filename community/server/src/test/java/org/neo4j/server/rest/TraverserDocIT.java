@@ -33,8 +33,7 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.web.PropertyValueException;
+import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphDescription.NODE;
 
@@ -108,7 +107,7 @@ public class TraverserDocIT extends AbstractRestFunctionalTestBase
     @Test
     @Graph( "I know you" )
     public void shouldGetSomeHitsWhenTraversingWithDefaultDescription()
-            throws PropertyValueException
+            throws JsonParseException
     {
         String entity = gen().expectedStatus( Status.OK.getStatusCode() ).payload( "{}" ).post(
                 getTraverseUriNodes( getNode( "I" ) ) ).entity();
@@ -117,14 +116,14 @@ public class TraverserDocIT extends AbstractRestFunctionalTestBase
     }
 
     private void expectNodes( String entity, Node... nodes )
-            throws PropertyValueException
+            throws JsonParseException
     {
         Set<String> expected = new HashSet<>();
         for ( Node node : nodes )
         {
             expected.add( getNodeUri( node ) );
         }
-        Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
+        Collection<?> items = (Collection<?>) readJson( entity );
         for ( Object item : items )
         {
             Map<?, ?> map = (Map<?, ?>) item;
@@ -146,7 +145,7 @@ public class TraverserDocIT extends AbstractRestFunctionalTestBase
     @Graph( {"Root knows Mattias", "Root knows Johan", "Johan knows Emil", "Emil knows Peter", "Emil knows Tobias", "Tobias loves Sara"} )
     @Test
     public void shouldGetExpectedHitsWhenTraversingWithDescription()
-            throws PropertyValueException
+            throws JsonParseException
     {
         Node start = getNode( "Root" );
         List<Map<String, Object>> rels = new ArrayList<>();
@@ -177,7 +176,7 @@ public class TraverserDocIT extends AbstractRestFunctionalTestBase
     @Graph( {"Root knows Mattias", "Root knows Johan", "Johan knows Emil", "Emil knows Peter", "Emil knows Tobias", "Tobias loves Sara"} )
     @Test
     public void shouldGetExpectedHitsWhenTraversingAtDepth()
-            throws PropertyValueException
+            throws JsonParseException
     {
         Node start = getNode( "Root" );
         String description = createJsonFrom( map(
@@ -206,7 +205,7 @@ public class TraverserDocIT extends AbstractRestFunctionalTestBase
              "Root eats Cork",    "Cork hates Root",
              "Root likes Banana", "Banana is_a Fruit"} )
     public void shouldAllowTypeOrderedTraversals()
-            throws PropertyValueException
+            throws JsonParseException
     {
         Node start = getNode( "Root" );
         String description = createJsonFrom( map(

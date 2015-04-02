@@ -33,7 +33,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphDescription.NODE;
@@ -53,7 +52,7 @@ public class PathsDocIT extends AbstractRestFunctionalTestBase
     "c to g" } )
     @Documented
     @Title( "Find all shortest paths" )
-    public void shouldBeAbleToFindAllShortestPaths() throws PropertyValueException
+    public void shouldBeAbleToFindAllShortestPaths() throws JsonParseException
     {
 
         // Get all shortest paths
@@ -64,7 +63,7 @@ public class PathsDocIT extends AbstractRestFunctionalTestBase
         .payload( getAllShortestPathPayLoad( g ) )
         .post( "http://localhost:7474/db/data/node/" + a + "/paths" )
         .entity();
-        Collection<?> result = (Collection<?>) JsonHelper.jsonToSingleValue( response );
+        Collection<?> result = (Collection<?>) JsonHelper.readJson( response );
         assertEquals( 2, result.size() );
         for ( Object representation : result )
         {

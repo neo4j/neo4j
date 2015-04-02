@@ -22,6 +22,7 @@ package org.neo4j.server.rest.web;
 import java.util.Collection;
 import java.util.Map;
 
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -90,7 +91,7 @@ public class TransactionWrappedDatabaseActions extends DatabaseActions
     }
 
     @Override
-    public void deleteNode( long nodeId ) throws NodeNotFoundException, OperationFailureException
+    public void deleteNode( long nodeId ) throws NodeNotFoundException, ConstraintViolationException
     {
         Transaction transaction = graph.beginTx();
 

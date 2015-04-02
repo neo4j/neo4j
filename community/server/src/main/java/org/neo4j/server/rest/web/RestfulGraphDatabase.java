@@ -55,6 +55,7 @@ import org.neo4j.server.rest.domain.TraverserReturnType;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.IndexedEntityRepresentation;
 import org.neo4j.server.rest.repr.InputFormat;
+import org.neo4j.server.rest.repr.InvalidArgumentsException;
 import org.neo4j.server.rest.repr.ListEntityRepresentation;
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.OutputFormat;
@@ -283,7 +284,7 @@ public class RestfulGraphDatabase
         {
             return output.notFound( e );
         }
-        catch ( OperationFailureException e )
+        catch ( ConstraintViolationException e )
         {
             return output.conflict( e );
         }
@@ -311,7 +312,7 @@ public class RestfulGraphDatabase
         {
             return output.notFound( e );
         }
-        catch ( ConstraintViolationException e )
+        catch ( org.neo4j.graphdb.ConstraintViolationException e )
         {
             return output.conflict( e );
         }
@@ -353,7 +354,7 @@ public class RestfulGraphDatabase
         {
             return output.notFound( e );
         }
-        catch ( ConstraintViolationException e)
+        catch ( org.neo4j.graphdb.ConstraintViolationException e)
         {
             return output.conflict( e );
         }
@@ -437,7 +438,7 @@ public class RestfulGraphDatabase
             }
             else
             {
-                throw new BadInputException( format( "Label name must be a string. Got: '%s'", rawInput ) );
+                throw new InvalidArgumentsException( format( "Label name must be a string. Got: '%s'", rawInput ) );
             }
         }
         catch ( BadInputException e )
@@ -464,7 +465,7 @@ public class RestfulGraphDatabase
             Object rawInput = input.readValue( body );
             if ( !(rawInput instanceof Collection) )
             {
-                throw new BadInputException( format( "Input must be an array of Strings. Got: '%s'", rawInput ) );
+                throw new InvalidArgumentsException( format( "Input must be an array of Strings. Got: '%s'", rawInput ) );
             }
             else
             {
@@ -523,7 +524,7 @@ public class RestfulGraphDatabase
         {
             if ( labelName.isEmpty() )
             {
-                throw new BadInputException( "Empty label name" );
+                throw new InvalidArgumentsException( "Empty label name" );
             }
 
             Map<String, Object> properties = toMap( map( queryParamsToProperties, uriInfo.getQueryParameters().entrySet()));
@@ -1166,7 +1167,7 @@ public class RestfulGraphDatabase
         {
             return null;
         }
-        throw new BadInputException( "\"" + key + "\" should be a string" );
+        throw new InvalidArgumentsException( "\"" + key + "\" should be a string" );
     }
 
     @SuppressWarnings("unchecked")
@@ -1181,7 +1182,7 @@ public class RestfulGraphDatabase
         {
             return null;
         }
-        throw new BadInputException( "\"" + key + "\" should be a map" );
+        throw new InvalidArgumentsException( "\"" + key + "\" should be a map" );
     }
 
     @GET
@@ -1635,7 +1636,7 @@ public class RestfulGraphDatabase
     {
         if ( leaseTimeInSeconds < 1 )
         {
-            throw new BadInputException( "Lease time less than 1 second is not supported" );
+            throw new InvalidArgumentsException( "Lease time less than 1 second is not supported" );
         }
     }
 
@@ -1643,7 +1644,7 @@ public class RestfulGraphDatabase
     {
         if ( pageSize < 1 )
         {
-            throw new BadInputException( "Page size less than 1 is not permitted" );
+            throw new InvalidArgumentsException( "Page size less than 1 is not permitted" );
         }
     }
 
@@ -1719,7 +1720,7 @@ public class RestfulGraphDatabase
         {
             return output.badRequest( e );
         }
-        catch ( ConstraintViolationException e )
+        catch ( org.neo4j.graphdb.ConstraintViolationException e )
         {
             return output.conflict( e );
         }
@@ -1763,7 +1764,7 @@ public class RestfulGraphDatabase
                 return output.notFound();
             }
         }
-        catch ( ConstraintViolationException e )
+        catch ( org.neo4j.graphdb.ConstraintViolationException e )
         {
             return output.conflict( e );
         }
@@ -1806,7 +1807,7 @@ public class RestfulGraphDatabase
         {
             return output.badRequest( e );
         }
-        catch ( ConstraintViolationException e )
+        catch ( org.neo4j.graphdb.ConstraintViolationException e )
         {
             return output.conflict( e );
         }
@@ -1828,7 +1829,7 @@ public class RestfulGraphDatabase
                 return output.notFound();
             }
         }
-        catch ( ConstraintViolationException e )
+        catch ( org.neo4j.graphdb.ConstraintViolationException e )
         {
             return output.conflict( e );
         }
