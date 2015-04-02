@@ -149,6 +149,11 @@ final class MuninnPagedFile implements PagedFile
         return pageSize;
     }
 
+    File file()
+    {
+        return swapper.file();
+    }
+
     public void close() throws IOException
     {
         pageCache.unmap( this );

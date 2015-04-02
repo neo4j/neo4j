@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache;
 
+import java.io.File;
 import java.io.IOException;
 
 /**
@@ -66,6 +67,7 @@ import java.io.IOException;
 public interface PageCursor extends AutoCloseable
 {
     long UNBOUND_PAGE_ID = -1;
+    int UNBOUND_PAGE_SIZE = -1;
 
     /**
      * Get the signed byte at the current page offset, and then increment the offset by one.
@@ -252,11 +254,25 @@ public interface PageCursor extends AutoCloseable
 
     /**
      * Get the file page id that the cursor is currently positioned at, or
-     * UNBOUND_PAGE_ID if next() has not yet been called on this cursor.
+     * UNBOUND_PAGE_ID if next() has not yet been called on this cursor, or returned false.
      * A call to rewind() will make the current page id unbound as well, until
      * next() is called.
      */
     long getCurrentPageId();
+
+    /**
+     * Get the file page size of the page that the cursor is currently positioned at,
+     * or UNBOUND_PAGE_SIZE if next() has not yet been called on this cursor, or returned false.
+     * A call to rewind() will make the current page unbound as well, until next() is called.
+     */
+    int getCurrentPageSize();
+
+    /**
+     * Get the file the cursor is currently bound to, or {@code null} if next() has not yet been called on this
+     * cursor, or returned false.
+     * A call to rewind() will make the cursor unbound as well, until next() is called.
+     */
+    File getCurrentFile();
 
     /**
      * Rewinds the cursor to its initial condition, as if freshly returned from

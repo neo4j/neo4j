@@ -40,6 +40,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
@@ -63,6 +64,12 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
+import org.neo4j.io.pagecache.randomharness.Command;
+import org.neo4j.io.pagecache.randomharness.PageCountRecordFormat;
+import org.neo4j.io.pagecache.randomharness.Phase;
+import org.neo4j.io.pagecache.randomharness.RandomPageCacheTestHarness;
+import org.neo4j.io.pagecache.randomharness.RecordFormat;
+import org.neo4j.io.pagecache.randomharness.StandardRecordFormat;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
@@ -71,11 +78,11 @@ import org.neo4j.test.RepeatRule;
 
 import static java.lang.Long.toHexString;
 import static org.hamcrest.Matchers.both;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -986,6 +993,38 @@ public abstract class PageCacheTest<T extends PageCache>
             assertThat( cursor.getCurrentPageId(), is( 0L ) );
             cursor.rewind();
             assertThat( cursor.getCurrentPageId(), is( PageCursor.UNBOUND_PAGE_ID ) );
+        }
+    }
+
+    @Test( timeout = 1000 )
+    public void pageCursorMustKnowCurrentFilePageSize() throws IOException
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+
+        try ( PagedFile pagedFile = pageCache.map( file, filePageSize );
+              PageCursor cursor = pagedFile.io( 0L, PF_EXCLUSIVE_LOCK ) )
+        {
+            assertThat( cursor.getCurrentPageSize(), is( PageCursor.UNBOUND_PAGE_SIZE ) );
+            assertTrue( cursor.next() );
+            assertThat( cursor.getCurrentPageSize(), is( filePageSize ) );
+            cursor.rewind();
+            assertThat( cursor.getCurrentPageSize(), is( PageCursor.UNBOUND_PAGE_SIZE ) );
+        }
+    }
+
+    @Test( timeout = 1000 )
+    public void pageCursorMustKnowCurrentFile() throws Exception
+    {
+        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL );
+
+        try ( PagedFile pagedFile = pageCache.map( file, filePageSize );
+              PageCursor cursor = pagedFile.io( 0L, PF_EXCLUSIVE_LOCK ) )
+        {
+            assertThat( cursor.getCurrentFile(), nullValue() );
+            assertTrue( cursor.next() );
+            assertThat( cursor.getCurrentFile(), is( file ) );
+            cursor.rewind();
+            assertThat( cursor.getCurrentFile(), nullValue() );
         }
     }
 
@@ -2396,7 +2435,7 @@ public abstract class PageCacheTest<T extends PageCache>
         assertThat( cursor.getOffset(), is( 14 ) );
         cursor.putByte( (byte) 1 );
         assertThat( cursor.getOffset(), is( 15 ) );
-        cursor.putBytes( new byte[]{ 1, 2, 3 } );
+        cursor.putBytes( new byte[]{1, 2, 3} );
         assertThat( cursor.getOffset(), is( 18 ) );
     }
 
@@ -3353,125 +3392,82 @@ public abstract class PageCacheTest<T extends PageCache>
         pagedFileB.close();
     }
 
-    @Test( timeout = 10000 )
+    @Test
     public void concurrentPageFaultingMustNotPutInterleavedDataIntoPages() throws Exception
     {
-        getPageCache( fs, 3, pageCachePageSize, PageCacheTracer.NULL );
-
-        final File fileA = new File( "a" );
-
-        int pageCount = 11;
-
-        try (StoreChannel storeChannel = fs.create( fileA ))
+        final int filePageCount = 11;
+        final RecordFormat recordFormat = new PageCountRecordFormat();
+        RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness();
+        harness.setConcurrencyLevel( 11 );
+        harness.setUseAdversarialIO( false );
+        harness.setCachePageCount( 3 );
+        harness.setCachePageSize( pageCachePageSize );
+        harness.setFilePageCount( filePageCount );
+        harness.setFilePageSize( pageCachePageSize );
+        harness.setInitialMappedFiles( 1 );
+        harness.setCommandCount( 10000 );
+        harness.setRecordFormat( recordFormat );
+        harness.disableCommands(
+                Command.FlushCache, Command.FlushFile, Command.MapFile, Command.UnmapFile, Command.WriteRecord );
+        harness.setPreparation( new Phase()
         {
-            for ( byte i = 0; i < pageCount; i++ )
+            @Override
+            public void run(
+                    PageCache pageCache, EphemeralFileSystemAbstraction fs, Set<File> filesTouched ) throws Exception
             {
-                byte[] data = new byte[pageCachePageSize];
-                Arrays.fill(data, (byte) (i+1) );
-                storeChannel.write( ByteBuffer.wrap( data ) );
-            }
-        }
-
-        final int COUNT = 100000;
-        final CountDownLatch readyLatch = new CountDownLatch( 11 );
-        final PagedFile pagedFile = pageCache.map( fileA, pageCachePageSize );
-
-        List<Future<?>> futures = new ArrayList<>(  );
-        for ( int pageId = 0; pageId < pageCount; pageId++ )
-        {
-            final int finalPageId = pageId;
-            futures.add( executor.submit( new Callable<Void>()
-            {
-                @Override
-                public Void call() throws Exception
+                File file = filesTouched.iterator().next();
+                try ( PagedFile pf = pageCache.map( file, pageCachePageSize );
+                      PageCursor cursor = pf.io( 0, PF_EXCLUSIVE_LOCK ) )
                 {
-                    readyLatch.countDown();
-                    readyLatch.await();
-                    byte[] byteCheck = new byte[pageCachePageSize];
-                    for ( int c = 0; c < COUNT; c++ )
+                    for ( int pageId = 0; pageId < filePageCount; pageId++ )
                     {
-                        try ( PageCursor cursor = pagedFile.io( finalPageId, PagedFile.PF_SHARED_LOCK ) )
-                        {
-                            if ( cursor.next() )
-                            {
-                                do
-                                {
-                                    cursor.getBytes( byteCheck );
-                                } while ( cursor.shouldRetry() );
-                            }
-                        }
-
-                        for ( int i = 0; i < pageCachePageSize; i++ )
-                        {
-                            assertThat( byteCheck[i], equalTo( (byte) (1 + finalPageId) ) );
-                        }
+                        cursor.next();
+                        recordFormat.fillWithRecords( cursor );
                     }
-                    return null;
                 }
-            } ) );
-        }
-
-        try
-        {
-            for ( Future<?> future : futures )
-            {
-                future.get(); // This must not throw an ExecutionException
             }
-        }
-        finally
-        {
-            pagedFile.close();
-        }
+        } );
+
+        harness.run( 10, TimeUnit.SECONDS );
     }
 
     @Test( timeout = 10000 )
     public void concurrentFlushingMustNotPutInterleavedDataIntoFile() throws Exception
     {
-        generateFileWithRecords( file, recordCount, recordSize );
-
-        getPageCache( fs, 500, pageCachePageSize, PageCacheTracer.NULL );
-
-        final PagedFile pagedFile = pageCache.map( file, filePageSize );
-
-        for ( int i = 0; i < 100; i++ )
+        final RecordFormat recordFormat = new StandardRecordFormat();
+        final int filePageCount = 100;
+        RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness();
+        harness.setConcurrencyLevel( 6 );
+        harness.setUseAdversarialIO( false );
+        harness.setCachePageCount( 100 );
+        harness.setFilePageCount( filePageCount );
+        harness.setCachePageSize( pageCachePageSize );
+        harness.setFilePageSize( pageCachePageSize );
+        harness.setInitialMappedFiles( 3 );
+        harness.setCommandCount( 10000 );
+        harness.disableCommands( Command.MapFile, Command.UnmapFile, Command.ReadRecord );
+        harness.setVerification( new Phase()
         {
-            try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+            @Override
+            public void run(
+                    PageCache pageCache, EphemeralFileSystemAbstraction fs, Set<File> filesTouched ) throws Exception
             {
-                while ( cursor.next() )
+                for ( File file : filesTouched )
                 {
-                    // Advance the cursor through all the pages in the file,
-                    // faulting them into memory and marking them as dirty
-                    verifyRecordsMatchExpected( cursor );
+                    try ( PagedFile pf = pageCache.map( file, pageCachePageSize );
+                          PageCursor cursor = pf.io( 0, PF_SHARED_LOCK ) )
+                    {
+                        for ( int pageId = 0; pageId < filePageCount; pageId++ )
+                        {
+                            cursor.next();
+                            recordFormat.assertRecordsWrittenCorrectly( cursor );
+                        }
+                    }
                 }
             }
+        } );
 
-            int threads = 2;
-            final CountDownLatch readyLatch = new CountDownLatch( threads );
-            List<Future<?>> futures = new ArrayList<>();
-            for ( int j = 0; j < threads; j++ )
-            {
-                futures.add( executor.submit( new Callable<Object>()
-                {
-                    @Override
-                    public Object call() throws Exception
-                    {
-                        readyLatch.countDown();
-                        readyLatch.await();
-
-                        pagedFile.flushAndForce();
-
-                        return null;
-                    }
-                } ) );
-            }
-
-            for ( Future<?> future : futures )
-            {
-                future.get(); // Must not throw an ExecutionException
-            }
-        }
-
-        pagedFile.close();
+        harness.run( 10, TimeUnit.SECONDS );
     }
 
     @Test( timeout = 20000 )
