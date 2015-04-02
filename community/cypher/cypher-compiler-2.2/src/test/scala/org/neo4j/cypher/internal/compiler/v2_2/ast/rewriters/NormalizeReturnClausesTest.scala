@@ -72,9 +72,31 @@ class NormalizeReturnClausesTest extends CypherFunSuite with RewriteTest with As
         |with n as `  FRESHID15`, count(*) as `  FRESHID18` order by `  FRESHID18`
         |return `  FRESHID15` as n, `  FRESHID18` as c""".stripMargin)
   }
-  
-  test("match n return n as n order by max(n)") {
-    evaluating { rewriting("match n return n as n order by max(n)") } should produce[SyntaxException]
+
+  test("rejects use of aggregation in ORDER BY if aggregation is not used in associated RETURN") {
+    // Note: aggregations in ORDER BY that don't also appear in WITH are invalid
+    try {
+      rewrite(parseForRewriting(
+        """MATCH n
+          |RETURN n.prop AS prop ORDER BY max(n.foo)
+        """.stripMargin))
+      fail("We shouldn't get here")
+    } catch {
+      case (e: SyntaxException) =>
+        e.getMessage should equal("Cannot use aggregation in ORDER BY if there are no aggregate expressions in the preceding RETURN (line 2, column 1 (offset: 8))")
+    }
+  }
+
+  test("accepts use of aggregation in ORDER BY if aggregation is used in associated RETURN") {
+    assertRewrite(
+      """MATCH n
+        |RETURN n.prop AS prop, max(n.foo) AS m ORDER BY max(n.foo)
+      """.stripMargin,
+      """MATCH n
+        |WITH n.prop AS `  FRESHID17`, max(n.foo) AS `  FRESHID31` ORDER BY `  FRESHID31`
+        |RETURN  `  FRESHID17` AS prop,  `  FRESHID31` AS m
+      """.stripMargin
+    )
   }
 
   protected override def assertRewrite(originalQuery: String, expectedQuery: String) {

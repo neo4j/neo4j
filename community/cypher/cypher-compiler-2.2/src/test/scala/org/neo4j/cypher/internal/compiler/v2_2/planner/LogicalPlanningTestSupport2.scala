@@ -149,9 +149,9 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       val parsedStatement = parser.parse(queryString)
       val mkException = new SyntaxExceptionCreator(queryString, Some(pos))
       val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
-      val semanticState = semanticChecker.check(queryString, cleanedStatement, None)
+      val semanticState = semanticChecker.check(queryString, cleanedStatement, mkException)
       val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryString, cleanedStatement, semanticState)
-      val postRewriteSemanticState = semanticChecker.check(queryString, rewrittenStatement, None)
+      val postRewriteSemanticState = semanticChecker.check(queryString, rewrittenStatement, mkException)
       val semanticTable = SemanticTable(types = postRewriteSemanticState.typeTable)
       CostBasedPipeBuilder.rewriteStatement(rewrittenStatement, postRewriteSemanticState.scopeTree, semanticTable, rewriterSequencer, postConditions, mock[AstRewritingMonitor]) match {
         case (ast: Query, newTable) =>
@@ -168,7 +168,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     def getLogicalPlanFor(queryString: String): (LogicalPlan, SemanticTable) = {
       val parsedStatement = parser.parse(queryString)
-      val semanticState = semanticChecker.check(queryString, parsedStatement, None)
+      val mkException = new SyntaxExceptionCreator(queryString, Some(pos))
+      val semanticState = semanticChecker.check(queryString, parsedStatement, mkException)
       val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryString, parsedStatement, semanticState)
 
       CostBasedPipeBuilder.rewriteStatement(rewrittenStatement, semanticState.scopeTree, semanticTable, rewriterSequencer, postConditions, mock[AstRewritingMonitor]) match {

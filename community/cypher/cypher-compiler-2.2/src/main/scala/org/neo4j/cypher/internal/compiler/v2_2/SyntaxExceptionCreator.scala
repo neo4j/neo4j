@@ -25,5 +25,3 @@ class SyntaxExceptionCreator(queryText: String, preParserOffset: Option[InputPos
     new SyntaxException(s"$message ($adjustedPosition)", queryText, adjustedPosition.offset)
   }
 }
-  
-  

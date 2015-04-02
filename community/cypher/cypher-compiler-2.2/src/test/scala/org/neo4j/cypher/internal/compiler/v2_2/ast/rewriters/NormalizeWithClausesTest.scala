@@ -225,19 +225,31 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest with AstC
     )
   }
 
-  // TODO: Fix
-  ignore("does not introduce alias for ORDER BY containing unique aggregate") {
+  test("rejects use of aggregation in ORDER BY if aggregation is not used in associated WITH") {
     // Note: aggregations in ORDER BY that don't also appear in WITH are invalid
-    assertRewriteAndSemanticErrors(
+    try {
+      rewrite(parseForRewriting(
+        """MATCH n
+          |WITH n.prop AS prop ORDER BY max(n.foo)
+          |RETURN prop
+        """.stripMargin))
+      fail("We shouldn't get here")
+    } catch {
+      case (e: SyntaxException) =>
+        e.getMessage should equal("Cannot use aggregation in ORDER BY if there are no aggregate expressions in the preceding WITH (line 2, column 1 (offset: 8))")
+    }
+  }
+
+  test("accepts use of aggregation in ORDER BY if aggregation is used in associated WITH") {
+    assertRewrite(
       """MATCH n
-        |WITH n.prop AS prop ORDER BY max(n.foo)
-        |RETURN prop
+          |WITH n.prop AS prop, max(n.foo) AS m ORDER BY max(n.foo)
+        |RETURN prop AS prop, m AS m
       """.stripMargin,
       """MATCH n
-        |WITH n.prop AS prop ORDER BY max(n.foo)
-        |RETURN prop
-      """.stripMargin,
-      "n not defined (line 2, column 34 (offset: 41))"
+        |WITH n.prop AS prop, max(n.foo) AS m ORDER BY m
+        |RETURN  prop AS prop, m AS m
+      """.stripMargin
     )
   }
 
