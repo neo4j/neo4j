@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.ast
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.SemanticState
+import org.neo4j.cypher.internal.compiler.v2_2.{SemanticError, SemanticState}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
 class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSupport {

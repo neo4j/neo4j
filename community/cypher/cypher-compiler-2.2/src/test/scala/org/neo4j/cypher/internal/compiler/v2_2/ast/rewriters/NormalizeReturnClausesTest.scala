@@ -21,9 +21,12 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2.ast._
+import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 
-class NormalizeReturnClausesTest extends CypherFunSuite with RewriteTest {
-  val rewriterUnderTest: Rewriter = normalizeReturnClauses
+class NormalizeReturnClausesTest extends CypherFunSuite with RewriteTest with AstConstructionTestSupport {
+  val mkException = new SyntaxExceptionCreator("<Query>", Some(pos))
+  val rewriterUnderTest: Rewriter = normalizeReturnClauses(mkException)
 
   test("alias RETURN clause items") {
     assertRewrite(
@@ -69,6 +72,10 @@ class NormalizeReturnClausesTest extends CypherFunSuite with RewriteTest {
         |with n as `  FRESHID15`, count(*) as `  FRESHID18` order by `  FRESHID18`
         |return `  FRESHID15` as n, `  FRESHID18` as c""".stripMargin)
   }
+  
+  test("match n return n as n order by max(n)") {
+    evaluating { rewriting("match n return n as n order by max(n)") } should produce[SyntaxException]
+  }
 
   protected override def assertRewrite(originalQuery: String, expectedQuery: String) {
     val original = parseForRewriting(originalQuery)
@@ -77,4 +84,7 @@ class NormalizeReturnClausesTest extends CypherFunSuite with RewriteTest {
     assert(result === expected, "\n" + originalQuery)
   }
 
+  protected def rewriting(queryText: String): Unit = {
+    endoRewrite(parseForRewriting(queryText))
+  }
 }

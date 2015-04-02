@@ -147,7 +147,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     def planFor(queryString: String): SemanticPlan = {
       val parsedStatement = parser.parse(queryString)
-      val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
+      val mkException = new SyntaxExceptionCreator(queryString, Some(pos))
+      val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
       val semanticState = semanticChecker.check(queryString, cleanedStatement, None)
       val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryString, cleanedStatement, semanticState)
       val postRewriteSemanticState = semanticChecker.check(queryString, rewrittenStatement, None)
