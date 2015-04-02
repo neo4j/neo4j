@@ -48,10 +48,21 @@ object Namespacer {
 
   private def returnAliases(statement: Statement): Set[Ref[Identifier]] =
     statement.treeFold(Set.empty[Ref[Identifier]]) {
+
+      // ignore identifier in StartItem that represents index names and key names
+      case NodeByIdentifiedIndex(_, index, key, _) =>
+        (acc, children) => children(acc ++ Seq(Ref(index), Ref(key)))
+      case RelationshipByIdentifiedIndex(_, index, key, _) =>
+        (acc, children) => children(acc ++ Seq(Ref(index), Ref(key)))
+      case NodeByIndexQuery(_, index, _) =>
+        (acc, children) => children(acc ++ Seq(Ref(index)))
+      case RelationshipByIndexQuery(_, index, _) =>
+        (acc, children) => children(acc ++ Seq(Ref(index)))
+
       case Return(_, ReturnItems(_, items), _, _, _) =>
         val identifiers = items.map(_.alias.map(Ref[Identifier]).get)
         (acc, children) => children(acc ++ identifiers)
-    }.toSet
+    }
 
   private def identifierRenamings(statement: Statement, identifierDefinitions: Map[SymbolUse, SymbolUse],
                           ambiguousNames: Set[String], protectedIdentifiers: Set[Ref[Identifier]]): IdentifierRenamings =
