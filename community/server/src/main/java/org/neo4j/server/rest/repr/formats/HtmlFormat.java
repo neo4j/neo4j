@@ -138,7 +138,7 @@ public class HtmlFormat extends RepresentationFormat
                 }
                 entity.append( "<p><pre>" )
                         .append( serialized.get( "exception" ) );
-                List<Object> tb = (List<Object>) serialized.get( "stacktrace" );
+                List<Object> tb = (List<Object>) serialized.get( "stackTrace" );
                 if ( tb != null )
                 {
                     for ( Object el : tb )
