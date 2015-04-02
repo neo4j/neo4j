@@ -17,31 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.ndp.transport.http.msgprocess;
+package org.neo4j.ndp.transport.socket;
 
-import java.io.IOException;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
 
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.stream.Record;
-import org.neo4j.stream.RecordStream;
-
-public class ResultStreamCallback extends MessageProcessingCallback<RecordStream>
+/**
+ * Implements version one of the Neo4j protocol when transported over a socket. This means this class will handle a
+ * simple message framing protocol and forward messages to the messaging protocol implementation, version 1.
+ *
+ * Versions of the framing protocol are lock-step with the messaging protocol versioning.
+ */
+public class SocketProtocolV1 implements SocketProtocol
 {
-    public ResultStreamCallback( StringLogger log )
+    public static final int VERSION = 1;
+
+    @Override
+    public void handle( ChannelHandlerContext ctx, ByteBuf data )
     {
-        super( log );
+
     }
 
     @Override
-    public void result( RecordStream stream, Void ignore ) throws Exception
+    public int version()
     {
-        stream.visitAll( new RecordStream.Visitor()
-        {
-            @Override
-            public void visit( Record record ) throws IOException
-            {
-                out.handleRecordMessage( record );
-            }
-        });
+        return VERSION;
     }
 }

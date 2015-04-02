@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.ndp.transport.http.util;
+package org.neo4j.ndp.messaging.v1.util;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -26,19 +26,15 @@ import org.hamcrest.TypeSafeMatcher;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import javax.ws.rs.core.MediaType;
 
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1;
 import org.neo4j.ndp.messaging.v1.RecordingByteChannel;
 import org.neo4j.ndp.messaging.v1.RecordingMessageHandler;
 import org.neo4j.ndp.messaging.v1.message.FailureMessage;
 import org.neo4j.ndp.messaging.v1.message.IgnoredMessage;
-import org.neo4j.ndp.messaging.v1.message.RecordMessage;
 import org.neo4j.ndp.messaging.v1.message.Message;
+import org.neo4j.ndp.messaging.v1.message.RecordMessage;
 import org.neo4j.ndp.messaging.v1.message.SuccessMessage;
-import org.neo4j.ndp.messaging.v1.util.BytePrinter;
 import org.neo4j.ndp.runtime.internal.Neo4jError;
 import org.neo4j.stream.Record;
 
@@ -158,50 +154,6 @@ public class MessageMatchers
         };
     }
 
-    public static Matcher<Object> mapMatcher( final Object... alternatingKeyValue )
-    {
-        final Map<String, Object> expected = MapUtil.map( alternatingKeyValue );
-        return new TypeSafeMatcher<Object>()
-        {
-            @Override
-            protected boolean matchesSafely( Object t )
-            {
-                assertThat( t, instanceOf( Map.class ) );
-                assertThat(((Map<String, Object>)t).entrySet(), equalTo( expected.entrySet() ));
-                return true;
-            }
-
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendText( expected.toString() );
-            }
-        };
-    }
-
-    public static HTTP.Payload messages( Message... messages ) throws IOException
-    {
-        return createHttpPayload( serialize( messages ) );
-    }
-
-    public static HTTP.Payload createHttpPayload( final byte[] payload )
-    {
-        return new HTTP.Payload()
-        {
-            @Override
-            public Object content()
-            {
-                return payload;
-            }
-
-            @Override
-            public MediaType contentType()
-            {
-                return MediaType.valueOf( PackStreamMessageFormatV1.CONTENT_TYPE );
-            }
-        };
-    }
-
     public static byte[] serialize( Message ... messages ) throws IOException
     {
         final RecordingByteChannel rawData = new RecordingByteChannel();
@@ -217,10 +169,9 @@ public class MessageMatchers
         return rawData.getBytes();
     }
 
-    public static List<Message> messages( HTTP.Response rs ) throws IOException
+    public static List<Message> messages( byte[] bytes ) throws IOException
     {
         PackStreamMessageFormatV1.Reader unpacker = new PackStreamMessageFormatV1.Reader();
-        byte[] bytes = rs.rawContent();
         RecordingMessageHandler consumer = new RecordingMessageHandler();
 
         try

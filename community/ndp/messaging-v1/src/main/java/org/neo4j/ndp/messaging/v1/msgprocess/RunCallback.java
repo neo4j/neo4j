@@ -17,33 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.ndp.messaging.v1;
+package org.neo4j.ndp.messaging.v1.msgprocess;
 
-import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
+import java.util.HashMap;
+import java.util.Map;
 
-import org.neo4j.ndp.messaging.v1.message.Message;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.ndp.runtime.StatementMetadata;
 
-public interface MessageFormat
+public class RunCallback extends MessageProcessingCallback<StatementMetadata>
 {
-    interface Writer extends MessageHandler<IOException>
+    private final Map<String, Object> successMetadata = new HashMap<>();
+
+    public RunCallback( StringLogger log )
     {
-        Writer write( Message msg ) throws IOException;
-        Writer reset( WritableByteChannel channel );
-        void flush() throws IOException;
+        super(log);
     }
 
-    interface Reader
+    @Override
+    public void result( StatementMetadata result, Void none ) throws Exception
     {
-        /** Return true if there is another message in the underlying buffer */
-        boolean hasNext() throws IOException;
-        <E extends Exception> void read( MessageHandler<E> consumer ) throws IOException, E;
-        Reader reset( ReadableByteChannel channel );
+        successMetadata.put( "fields", result.fieldNames() );
     }
 
-    Writer newWriter();
-    Reader newReader();
-
-    int version();
+    @Override
+    protected Map successMetadata()
+    {
+        return successMetadata;
+    }
 }

@@ -17,32 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.ndp.transport.http.msgprocess;
+package org.neo4j.ndp.transport.socket;
 
-import java.util.HashMap;
-import java.util.Map;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
 
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.ndp.runtime.StatementMetadata;
-
-public class RunCallback extends MessageProcessingCallback<StatementMetadata>
+/**
+ * Implementations define a versioned implementation of the Neo4j Data Protocol. Incoming messages from clients are
+ * forwarded to the {@link #handle(io.netty.channel.ChannelHandlerContext, io.netty.buffer.ByteBuf)} method defined
+ * here.
+ */
+public interface SocketProtocol
 {
-    private final Map<String, Object> successMetadata = new HashMap<>();
+    void handle( ChannelHandlerContext ctx, ByteBuf data );
 
-    public RunCallback( StringLogger log )
-    {
-        super(log);
-    }
-
-    @Override
-    public void result( StatementMetadata result, Void none ) throws Exception
-    {
-        successMetadata.put( "fields", result.fieldNames() );
-    }
-
-    @Override
-    protected Map successMetadata()
-    {
-        return successMetadata;
-    }
+    int version();
 }

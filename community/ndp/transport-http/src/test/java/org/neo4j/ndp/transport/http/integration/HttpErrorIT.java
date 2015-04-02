@@ -33,16 +33,16 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.api.exceptions.Status.Statement.InvalidSyntax;
-import static org.neo4j.ndp.transport.http.util.MessageMatchers.createHttpPayload;
-import static org.neo4j.ndp.transport.http.util.MessageMatchers.equalsMessages;
-import static org.neo4j.ndp.transport.http.util.MessageMatchers.messages;
-import static org.neo4j.ndp.transport.http.util.MessageMatchers.msgFailure;
-import static org.neo4j.ndp.transport.http.util.MessageMatchers.msgIgnored;
-import static org.neo4j.ndp.transport.http.util.MessageMatchers.msgSuccess;
-import static org.neo4j.ndp.transport.http.util.MessageMatchers.serialize;
+import static org.neo4j.ndp.messaging.v1.util.MessageMatchers.equalsMessages;
+import static org.neo4j.ndp.messaging.v1.util.MessageMatchers.messages;
+import static org.neo4j.ndp.messaging.v1.util.MessageMatchers.msgFailure;
+import static org.neo4j.ndp.messaging.v1.util.MessageMatchers.msgIgnored;
+import static org.neo4j.ndp.messaging.v1.util.MessageMatchers.msgSuccess;
+import static org.neo4j.ndp.messaging.v1.util.MessageMatchers.serialize;
 import static org.neo4j.ndp.messaging.v1.message.Messages.ackF;
 import static org.neo4j.ndp.messaging.v1.message.Messages.run;
 import static org.neo4j.ndp.messaging.v1.message.Messages.discardAll;
+import static org.neo4j.ndp.transport.http.util.HTTP.createHttpPayload;
 
 public class HttpErrorIT
 {
@@ -58,12 +58,12 @@ public class HttpErrorIT
         String sessionLocation = rs.location();
 
         // When
-        rs = http.POST( sessionLocation, messages(
+        rs = http.POST( sessionLocation, createHttpPayload( serialize(
                 run( "syntax error" ),
-                discardAll() ) );
+                discardAll() )));
 
         // Then
-        assertThat( messages( rs ),  equalsMessages(
+        assertThat( messages( rs.rawContent() ),  equalsMessages(
                 msgFailure( new Neo4jError(InvalidSyntax,
                         "Invalid input 'y': expected 't/T' or 'e/E' (line 1, column 2 (offset: 1))\n" +
                          "\"syntax error\"\n" +
@@ -80,16 +80,16 @@ public class HttpErrorIT
         String sessionLocation = rs.location();
 
         // When
-        rs = http.POST( sessionLocation, messages(
+        rs = http.POST( sessionLocation, createHttpPayload( serialize(
                 run("syntax error" ),
                 discardAll(),
                 ackF(),
                 run( "CREATE (n)" ),
                 discardAll()
-        ));
+        )));
 
         // Then
-        assertThat( messages( rs ),  equalsMessages(
+        assertThat( messages( rs.rawContent() ),  equalsMessages(
                 msgFailure( new Neo4jError(InvalidSyntax,
                         "Invalid input 'y': expected 't/T' or 'e/E' (line 1, column 2 (offset: 1))\n" +
                         "\"syntax error\"\n" +
@@ -119,7 +119,7 @@ public class HttpErrorIT
 
         // Then
         assertThat( rs.status(), equalTo(200) );
-        assertThat( messages( rs ),  equalsMessages(
+        assertThat( messages( rs.rawContent() ),  equalsMessages(
                 msgFailure( new Neo4jError( Status.Request.Invalid,
                         "One or more malformed messages were received, please verify that your driver is of " +
                         "the latest applicable version and if not, please file a bug report. The session will be " +

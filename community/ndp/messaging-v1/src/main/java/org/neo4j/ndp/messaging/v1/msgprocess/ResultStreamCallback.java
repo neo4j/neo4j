@@ -17,33 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.ndp.messaging.v1;
+package org.neo4j.ndp.messaging.v1.msgprocess;
 
 import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
 
-import org.neo4j.ndp.messaging.v1.message.Message;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.stream.Record;
+import org.neo4j.stream.RecordStream;
 
-public interface MessageFormat
+public class ResultStreamCallback extends MessageProcessingCallback<RecordStream>
 {
-    interface Writer extends MessageHandler<IOException>
+    public ResultStreamCallback( StringLogger log )
     {
-        Writer write( Message msg ) throws IOException;
-        Writer reset( WritableByteChannel channel );
-        void flush() throws IOException;
+        super( log );
     }
 
-    interface Reader
+    @Override
+    public void result( RecordStream stream, Void ignore ) throws Exception
     {
-        /** Return true if there is another message in the underlying buffer */
-        boolean hasNext() throws IOException;
-        <E extends Exception> void read( MessageHandler<E> consumer ) throws IOException, E;
-        Reader reset( ReadableByteChannel channel );
+        stream.visitAll( new RecordStream.Visitor()
+        {
+            @Override
+            public void visit( Record record ) throws IOException
+            {
+                out.handleRecordMessage( record );
+            }
+        });
     }
-
-    Writer newWriter();
-    Reader newReader();
-
-    int version();
 }

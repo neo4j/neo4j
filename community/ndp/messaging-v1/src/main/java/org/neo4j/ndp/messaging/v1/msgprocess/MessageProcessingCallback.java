@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.ndp.transport.http.msgprocess;
+package org.neo4j.ndp.messaging.v1.msgprocess;
 
 import java.io.IOException;
 import java.util.Collections;

@@ -17,28 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.ndp.transport.http.msgprocess;
+package org.neo4j.ndp.messaging.v1.msgprocess;
 
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.function.Consumer;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.ndp.transport.http.SessionRegistry;
 import org.neo4j.ndp.messaging.v1.MessageFormat;
 import org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1;
-import org.neo4j.packstream.PackStream;
 import org.neo4j.ndp.runtime.Session;
 import org.neo4j.ndp.runtime.internal.Neo4jError;
+import org.neo4j.packstream.PackStream;
 
 /**
  * This processes incoming messages from a pair of raw I/O {@link java.nio.channels.Channel channels},
  * forwarding requests into a provided {@link org.neo4j.ndp.runtime.Session} and back.
  *
  * This class creates, implicitly, large input and output buffers (in {@link #reader} and {@link #writer}), meaning
- * you will ideally want to use one of these per session, rather than create new instances when new messages arrive
+ * you will ideally want to use one of these per session or so, rather than create new instances when new messages
+ * arrive
  * from whatever source you are using.
  */
 public class ChannelMessageProcessor
@@ -47,10 +48,10 @@ public class ChannelMessageProcessor
     private final MessageFormat.Writer writer = new PackStreamMessageFormatV1.Writer();
 
     private final AtomicInteger inFlight = new AtomicInteger();
-    private final TransportBridge userEnvironmentBridge;
+    private final TransportBridge transportBridge;
 
     private final StringLogger log;
-    private final SessionRegistry sessionRegistry;
+    private final Consumer<Session> onFatalSessionError;
 
     /**
      * Notify that one (out of potentially many) request has been completed. If this is the last request,
@@ -74,10 +75,6 @@ public class ChannelMessageProcessor
                 {
                     log.error( "Network failure while writing to client", e );
                 }
-                finally
-                {
-                    sessionRegistry.release( session.key() );
-                }
             }
         }
     };
@@ -85,11 +82,11 @@ public class ChannelMessageProcessor
     private Session session;
     private Runnable onAllMessagesCompleted;
 
-    public ChannelMessageProcessor( StringLogger log, SessionRegistry sessionRegistry )
+    public ChannelMessageProcessor( StringLogger log, Consumer<Session> onFatalSessionError )
     {
         this.log = log;
-        this.sessionRegistry = sessionRegistry;
-        this.userEnvironmentBridge = new TransportBridge( log );
+        this.onFatalSessionError = onFatalSessionError;
+        this.transportBridge = new TransportBridge( log );
     }
 
     public ChannelMessageProcessor reset( ReadableByteChannel in, WritableByteChannel out, Session session )
@@ -97,7 +94,7 @@ public class ChannelMessageProcessor
         this.session = session;
         this.writer.reset( out );
         this.reader.reset( in );
-        this.userEnvironmentBridge.reset( session, writer, onEachCompletedRequest );
+        this.transportBridge.reset( session, writer, onEachCompletedRequest );
         return this;
     }
 
@@ -114,7 +111,7 @@ public class ChannelMessageProcessor
                 while ( reader.hasNext() )
                 {
                     inFlight.incrementAndGet();
-                    reader.read( userEnvironmentBridge );
+                    reader.read( transportBridge );
                 }
             }
             catch ( PackStream.PackstreamException e )
@@ -137,7 +134,7 @@ public class ChannelMessageProcessor
         {
             if(sessionsMustDie)
             {
-                sessionRegistry.destroy( session.key() );
+                onFatalSessionError.accept( session );
             }
             else
             {

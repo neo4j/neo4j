@@ -50,7 +50,8 @@ import static org.neo4j.stream.Records.record;
 
 public class PackStreamMessageFormatV1 implements MessageFormat
 {
-    public static final String CONTENT_TYPE = "application/vnd.neo4j.v1+packstream";
+    public static final int VERSION = 1;
+    public static final String CONTENT_TYPE = "application/vnd.neo4j.v"+VERSION+"+packstream";
 
     public static interface MessageTypes
     {
@@ -79,6 +80,12 @@ public class PackStreamMessageFormatV1 implements MessageFormat
     public MessageFormat.Reader newReader()
     {
         return new Reader();
+    }
+
+    @Override
+    public int version()
+    {
+        return VERSION;
     }
 
     public static class Writer implements MessageFormat.Writer

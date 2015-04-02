@@ -31,13 +31,15 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.ndp.transport.http.util.MessageMatchers.equalsMessages;
-import static org.neo4j.ndp.transport.http.util.MessageMatchers.messages;
-import static org.neo4j.ndp.transport.http.util.MessageMatchers.msgItem;
-import static org.neo4j.ndp.transport.http.util.MessageMatchers.msgSuccess;
+import static org.neo4j.ndp.messaging.v1.util.MessageMatchers.equalsMessages;
+import static org.neo4j.ndp.messaging.v1.util.MessageMatchers.messages;
+import static org.neo4j.ndp.messaging.v1.util.MessageMatchers.msgItem;
+import static org.neo4j.ndp.messaging.v1.util.MessageMatchers.msgSuccess;
 import static org.neo4j.ndp.messaging.v1.message.Messages.pullAll;
 import static org.neo4j.ndp.messaging.v1.message.Messages.run;
 import static org.neo4j.ndp.messaging.v1.message.Messages.success;
+import static org.neo4j.ndp.messaging.v1.util.MessageMatchers.serialize;
+import static org.neo4j.ndp.transport.http.util.HTTP.createHttpPayload;
 import static org.neo4j.stream.Records.record;
 
 public class HttpTransportIT
@@ -54,12 +56,12 @@ public class HttpTransportIT
         String sessionLocation = rs.location();
 
         // When
-        rs = http.POST( sessionLocation, messages(
+        rs = http.POST( sessionLocation, createHttpPayload( serialize(
                 run( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ),
-                pullAll() ) );
+                pullAll() )));
 
         // Then
-        assertThat( messages( rs ), equalTo( asList(
+        assertThat( messages( rs.rawContent() ), equalTo( asList(
                 success( map( "fields", asList("a", "a_squared") ) ),
                 Messages.record( record( 1l, 1l ) ),
                 Messages.record( record( 2l, 4l ) ),
@@ -76,17 +78,17 @@ public class HttpTransportIT
         String sessionLocation = rs.location();
 
         // Given I've sent one slew of messages
-        http.POST( sessionLocation, messages(
+        http.POST( sessionLocation,  createHttpPayload( serialize(
                 run( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ),
-                pullAll() ) );
+                pullAll() )));
 
         // When I send a second slew of messages
-        rs = http.POST( sessionLocation, messages(
+        rs = http.POST( sessionLocation, createHttpPayload( serialize(
                 run( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ),
-                pullAll() ) );
+                pullAll() )));
 
         // Then
-        assertThat( messages( rs ), equalTo( asList(
+        assertThat( messages( rs.rawContent() ), equalTo( asList(
                 success( map( "fields", asList("a", "a_squared") ) ),
 
                 Messages.record( record( 1l, 1l ) ),
@@ -105,12 +107,12 @@ public class HttpTransportIT
 
         // Given I've sent one slew of messages
         String[] arrayValue = new String[]{"Mjölnir", "Mjölnir", "Mjölnir"};
-        rs = http.POST( sessionLocation, messages(
+        rs = http.POST( sessionLocation,  createHttpPayload( serialize(
                 run("CREATE (a {value:{value}}) RETURN a.value", map( "value", arrayValue ) ),
-                pullAll() ) );
+                pullAll() )));
 
         // Then
-        assertThat( messages( rs ), equalsMessages(
+        assertThat( messages( rs.rawContent() ), equalsMessages(
                 msgSuccess(),
 
                 msgItem( StreamMatchers.record( equalTo(asList( arrayValue )) )),

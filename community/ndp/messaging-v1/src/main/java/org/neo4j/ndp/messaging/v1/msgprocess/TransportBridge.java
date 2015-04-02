@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.ndp.transport.http.msgprocess;
+package org.neo4j.ndp.messaging.v1.msgprocess;
 
 import java.io.IOException;
 import java.util.Map;
@@ -33,17 +33,17 @@ class TransportBridge extends MessageHandler.Adapter<RuntimeException>
 {
     // Note that these callbacks can be used for multiple in-flight requests simultaneously, you cannot reset them
     // while there are in-flight requests.
-    private final org.neo4j.ndp.transport.http.msgprocess.MessageProcessingCallback<StatementMetadata> runCallback;
-    private final org.neo4j.ndp.transport.http.msgprocess.MessageProcessingCallback<RecordStream> resultStreamCallback;
-    private final org.neo4j.ndp.transport.http.msgprocess.MessageProcessingCallback<Void> simpleCallback;
+    private final MessageProcessingCallback<StatementMetadata> runCallback;
+    private final MessageProcessingCallback<RecordStream> resultStreamCallback;
+    private final MessageProcessingCallback<Void> simpleCallback;
 
     private Session session;
 
     public TransportBridge( StringLogger log )
     {
         this.resultStreamCallback = new ResultStreamCallback( log );
-        this.simpleCallback = new org.neo4j.ndp.transport.http.msgprocess.MessageProcessingCallback<>(log);
-        this.runCallback = new org.neo4j.ndp.transport.http.msgprocess.RunCallback( log );
+        this.simpleCallback = new MessageProcessingCallback<>(log);
+        this.runCallback = new RunCallback( log );
     }
 
     /**

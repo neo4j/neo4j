@@ -26,8 +26,9 @@ import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
 import io.undertow.util.StatusCodes;
 
+import org.neo4j.function.Consumer;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.ndp.transport.http.msgprocess.ChannelMessageProcessor;
+import org.neo4j.ndp.messaging.v1.msgprocess.ChannelMessageProcessor;
 import org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1;
 import org.neo4j.ndp.runtime.Session;
 
@@ -74,7 +75,7 @@ public class SessionInstanceHandler implements HttpHandler
             exchange.getResponseHeaders().add( Headers.CONTENT_TYPE, PackStreamMessageFormatV1.CONTENT_TYPE );
 
             processorForSession( exchange, acquisition.session() )
-                    .process( endExchangeCallback( exchange ) );
+                    .process( onAllMessagesProcessed( exchange, acquisition.session() ) );
         }
         else if ( acquisition.sessionExists() )
         {
@@ -119,18 +120,24 @@ public class SessionInstanceHandler implements HttpHandler
 
     private ChannelMessageProcessor processorForSession( HttpServerExchange exchange, Session session )
     {
-        // TODO: move sessionRegistry to store processors instead
-        return new ChannelMessageProcessor(log, sessionRegistry)
-                .reset( exchange.getRequestChannel(), exchange.getResponseChannel(), session );
+        return new ChannelMessageProcessor(log, new Consumer<Session>()
+        {
+            @Override
+            public void accept( Session session )
+            {
+                sessionRegistry.destroy( session.key() );
+            }
+        }).reset( exchange.getRequestChannel(), exchange.getResponseChannel(), session );
     }
 
-    private Runnable endExchangeCallback( final HttpServerExchange exchange )
+    private Runnable onAllMessagesProcessed( final HttpServerExchange exchange, final Session session )
     {
         return new Runnable()
         {
             @Override
             public void run()
             {
+                sessionRegistry.release( session.key() );
                 exchange.endExchange();
             }
         };

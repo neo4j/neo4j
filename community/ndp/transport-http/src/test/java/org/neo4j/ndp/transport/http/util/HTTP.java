@@ -25,6 +25,7 @@ import com.sun.jersey.api.client.ClientResponse;
 import org.apache.commons.io.Charsets;
 import org.codehaus.jackson.JsonNode;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,9 +33,11 @@ import java.util.List;
 import java.util.Map;
 import javax.ws.rs.core.MediaType;
 
+import org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1;
+import org.neo4j.ndp.messaging.v1.message.Message;
+import org.neo4j.ndp.messaging.v1.util.BytePrinter;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.ndp.messaging.v1.util.BytePrinter;
 
 import static java.util.Collections.unmodifiableMap;
 import static org.hamcrest.Matchers.allOf;
@@ -44,6 +47,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.ndp.messaging.v1.util.MessageMatchers.serialize;
 
 /**
  * A tool for performing REST HTTP requests
@@ -306,6 +310,31 @@ public class HTTP
 
             return sb.toString();
         }
+    }
+
+
+
+    public static HTTP.Payload messages( Message... messages ) throws IOException
+    {
+        return createHttpPayload( serialize( messages ) );
+    }
+
+    public static HTTP.Payload createHttpPayload( final byte[] payload )
+    {
+        return new HTTP.Payload()
+        {
+            @Override
+            public Object content()
+            {
+                return payload;
+            }
+
+            @Override
+            public MediaType contentType()
+            {
+                return MediaType.valueOf( PackStreamMessageFormatV1.CONTENT_TYPE );
+            }
+        };
     }
 
     public interface Payload
