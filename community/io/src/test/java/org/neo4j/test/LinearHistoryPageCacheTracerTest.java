@@ -23,19 +23,14 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
-import org.neo4j.adversaries.RandomAdversary;
-import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
+import org.neo4j.function.Functions;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PageSwapperFactory;
-import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
-import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
-
-import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.randomharness.Phase;
+import org.neo4j.io.pagecache.randomharness.RandomPageCacheTestHarness;
 
 public class LinearHistoryPageCacheTracerTest
 {
@@ -45,67 +40,22 @@ public class LinearHistoryPageCacheTracerTest
     @Test
     public void makeSomeTestOutput() throws Exception
     {
-        RandomAdversary adversary = new RandomAdversary( 0.1, 0.1, 0.0 );
-        adversary.setProbabilityFactor( 0.0 );
-        EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        AdversarialFileSystemAbstraction afs = new AdversarialFileSystemAbstraction( adversary, fs );
-        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( afs );
-        int maxPages = 10;
-        int cachePageSize = 8192;
-        LinearHistoryPageCacheTracer tracer = new LinearHistoryPageCacheTracer();
-
-        File fileA = new File( "a" );
-        File fileB = new File( "b" );
-        fs.open( fileA, "rw" ).close();
-        fs.open( fileB, "rw" ).close();
-
-        try ( MuninnPageCache cache = new MuninnPageCache( swapperFactory, maxPages, cachePageSize, tracer );
-              PagedFile pfA = cache.map( fileA, 8192 );
-              PagedFile pfB = cache.map( fileB, 8192 ) )
+        final LinearHistoryPageCacheTracer tracer = new LinearHistoryPageCacheTracer();
+        RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness();
+        harness.setUseAdversarialIO( true );
+        harness.setTracer( tracer );
+        harness.setCommandCount( 100 );
+        harness.setConcurrencyLevel( 2 );
+        harness.setPreparation( new Phase()
         {
-            adversary.setProbabilityFactor( 1.0 );
-            ThreadLocalRandom rng = ThreadLocalRandom.current();
-            for ( int i = 0; i < 200; i++ )
+            @Override
+            public void run( PageCache pageCache, EphemeralFileSystemAbstraction fs, Set<File> files )
             {
-                try
-                {
-                    boolean readOnly = rng.nextBoolean();
-                    int flags = readOnly ? PF_SHARED_LOCK : PF_EXCLUSIVE_LOCK;
-                    int startPage = rng.nextInt( 0, 10 );
-                    int iterations = rng.nextInt( 1, 10 );
-                    PagedFile file = rng.nextBoolean()? pfA : pfB;
-                    try ( PageCursor cursor = file.io( startPage, flags ) )
-                    {
-                        for ( int j = 0; j < iterations; j++ )
-                        {
-                            cursor.next();
-                            Thread.sleep( 1 );
-                            if ( !readOnly )
-                            {
-                                for ( int k = 0; k < 8192 / 4; k++ )
-                                {
-                                    cursor.putInt( rng.nextInt() );
-                                }
-                            }
-                        }
-                    }
-                    if ( rng.nextDouble() < 0.1 )
-                    {
-                        file.flushAndForce();
-                    }
-                    else if ( rng.nextBoolean() )
-                    {
-                        cache.flushAndForce();
-                    }
-                }
-                catch ( Throwable ignore )
-                {
-                }
+                tracer.processHistory( Functions.swallow( LinearHistoryPageCacheTracer.HEvent.class ) );
             }
+        } );
 
-            // Don't fail when we close or unmap.
-            adversary.setProbabilityFactor( 0.0 );
-        }
+        harness.run( 1, TimeUnit.MINUTES );
 
         tracer.printHistory( System.out );
     }

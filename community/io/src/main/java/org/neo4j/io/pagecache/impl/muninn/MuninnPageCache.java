@@ -206,6 +206,9 @@ public class MuninnPageCache implements PageCache
     // The accumulator for the flush task sleep debt. This is only accessed from the flush task.
     private long sleepDebtNanos;
 
+    // 'true' (the default) if we should print any exceptions we get when unmapping a file.
+    private boolean printExceptionsOnClose;
+
     public MuninnPageCache(
             PageSwapperFactory swapperFactory,
             int maxPages,
@@ -222,6 +225,7 @@ public class MuninnPageCache implements PageCache
         this.cursorPool = new CursorPool();
         this.tracer = tracer;
         this.pages = new MuninnPage[maxPages];
+        this.printExceptionsOnClose = true;
 
         MemoryReleaser memoryReleaser = new MemoryReleaser( maxPages );
         Object pageList = null;
@@ -396,7 +400,7 @@ public class MuninnPageCache implements PageCache
             }
             catch ( IOException e )
             {
-                if ( !printedFirstException )
+                if ( printExceptionsOnClose && !printedFirstException )
                 {
                     printedFirstException = true;
                     try
@@ -410,6 +414,11 @@ public class MuninnPageCache implements PageCache
             }
         }
         while ( !flushedAndClosed );
+    }
+
+    public void setPrintExceptionsOnClose( boolean enabled )
+    {
+        this.printExceptionsOnClose = enabled;
     }
 
     @Override

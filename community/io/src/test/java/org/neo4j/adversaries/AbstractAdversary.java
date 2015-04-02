@@ -31,6 +31,11 @@ public abstract class AbstractAdversary implements Adversary
         rng = new Random();
     }
 
+    public void setSeed( long seed )
+    {
+        rng.setSeed( seed );
+    }
+
     protected void throwOneOf( Class<? extends Throwable>... types )
     {
         int choice = rng.nextInt( types.length );
