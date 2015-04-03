@@ -21,6 +21,11 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
+/**
+ * Generic processor of {@link AbstractBaseRecord} from a store.
+ *
+ * @param <T>
+ */
 public interface RecordProcessor<T extends AbstractBaseRecord>
 {
     /**

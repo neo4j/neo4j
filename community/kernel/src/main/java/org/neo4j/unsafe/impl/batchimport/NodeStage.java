@@ -1,0 +1,66 @@
+/**
+ * Copyright (c) 2002-2015 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.unsafe.impl.batchimport;
+
+import java.io.IOException;
+
+import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.unsafe.impl.batchimport.input.InputCache;
+import org.neo4j.unsafe.impl.batchimport.input.InputNode;
+import org.neo4j.unsafe.impl.batchimport.staging.InputIteratorBatcherStep;
+import org.neo4j.unsafe.impl.batchimport.staging.Stage;
+import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStore;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
+import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
+
+/**
+ * Imports nodes and their properties, everything except
+ * {@link NodeRecord#setNextRel(long) first relationship id pointer} is set for every node in this stage.
+ */
+public class NodeStage extends Stage
+{
+    public NodeStage( Configuration config, IoMonitor writeMonitor, WriterFactory writerFactory,
+            InputIterable<InputNode> nodes, IdMapper idMapper, IdGenerator idGenerator,
+            BatchingNeoStore neoStore, InputCache inputCache, StatsProvider memoryUsage ) throws IOException
+    {
+        super( "Nodes", config, true );
+        add( new InputIteratorBatcherStep<>( control(), config.batchSize(), config.movingAverageSize(),
+                nodes.iterator(), InputNode.class ) );
+        if ( !nodes.supportsMultiplePasses() )
+        {
+            add( new InputEntityCacherStep<>( control(), config.workAheadSize(), config.movingAverageSize(),
+                    inputCache.cacheNodes() ) );
+        }
+
+        NodeStore nodeStore = neoStore.getNodeStore();
+        PropertyStore propertyStore = neoStore.getPropertyStore();
+        add( new PropertyEncoderStep<>( control(), config, 1, neoStore.getPropertyKeyRepository(),
+                propertyStore ) );
+        add( new NodeEncoderStep( control(), config, idMapper, idGenerator,
+                neoStore.getLabelRepository(), nodeStore, memoryUsage ) );
+        add( new EntityStoreUpdaterStep<>( control(), config, nodeStore, propertyStore,
+                writeMonitor, writerFactory ) );
+    }
+}
