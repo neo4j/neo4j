@@ -43,7 +43,8 @@ public class Inputs
 {
     public static Input input(
             final InputIterable<InputNode> nodes, final InputIterable<InputRelationship> relationships,
-            final IdMapper idMapper, final IdGenerator idGenerator, final boolean specificRelationshipIds )
+            final IdMapper idMapper, final IdGenerator idGenerator, final boolean specificRelationshipIds,
+            final int badTolerance )
     {
         return new Input()
         {
@@ -80,7 +81,7 @@ public class Inputs
             @Override
             public Collector<InputRelationship> badRelationshipsCollector( OutputStream out )
             {
-                return Collectors.badRelationshipsCollector( out, 0 );
+                return Collectors.badRelationshipsCollector( out, badTolerance );
             }
         };
     }

@@ -176,7 +176,8 @@ public class ParallelBatchImporterTest
             inserter.doImport( Inputs.input(
                     nodes( nodeRandomSeed, NODE_COUNT, inputIdGenerator, groups ),
                     relationships( relationshipRandomSeed, RELATIONSHIP_COUNT, inputIdGenerator, groups ),
-                    idMapper, idGenerator, false ) );
+                    idMapper, idGenerator, false,
+                    RELATIONSHIP_COUNT/*insanely high bad tolerance, but it will actually never be that many*/ ) );
 
             // THEN
             GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.absolutePath() );
@@ -203,11 +204,14 @@ public class ParallelBatchImporterTest
                     out.println( "Seed used in this failing run: " + random.seed() );
                     out.println( inputIdGenerator );
                     inputIdGenerator.reset();
+                    for ( InputNode node : nodes( nodeRandomSeed, NODE_COUNT, inputIdGenerator, groups ) )
+                    {
+                        out.println( node );
+                    }
                     for ( InputRelationship relationship : relationships( relationshipRandomSeed,
                             RELATIONSHIP_COUNT, inputIdGenerator, groups ) )
                     {
-                        out.println( (relationship.hasSpecificId() ? relationship.specificId() + " " : "") +
-                                relationship.startNode() + "-[:" + relationship.type() + "]->" + relationship.endNode() );
+                        out.println( relationship );
                     }
 
                     out.println();
@@ -237,6 +241,10 @@ public class ParallelBatchImporterTest
         abstract Object nextNodeId( Random random );
 
         abstract Object randomExisting( Random random, Register.Long.Out nodeIndex );
+
+        abstract Object miss( Random random, Object id, float chance );
+
+        abstract boolean isMiss( Object id );
 
         String randomType( Random random )
         {
@@ -273,6 +281,18 @@ public class ParallelBatchImporterTest
             nodeIndex.write( index );
             return index;
         }
+
+        @Override
+        Object miss( Random random, Object id, float chance )
+        {
+            return random.nextFloat() < chance ? ((Long)id).longValue() + 100_000_000 : id;
+        }
+
+        @Override
+        boolean isMiss( Object id )
+        {
+            return ((Long)id).longValue() >= 100_000_000;
+        }
     }
 
     private static class StringInputIdGenerator extends InputIdGenerator
@@ -301,6 +321,18 @@ public class ParallelBatchImporterTest
             int index = random.nextInt( strings.size() );
             nodeIndex.write( index );
             return strings.get( index );
+        }
+
+        @Override
+        Object miss( Random random, Object id, float chance )
+        {
+            return random.nextFloat() < chance ? "_" + id : id;
+        }
+
+        @Override
+        boolean isMiss( Object id )
+        {
+            return ((String)id).startsWith( "_" );
         }
     }
 
@@ -339,13 +371,19 @@ public class ParallelBatchImporterTest
             while ( relationships.hasNext() )
             {
                 InputRelationship input = relationships.next();
-                String name = (String) propertyOf( input, "id" );
-                Relationship relationship = relationshipByName.get( name );
-                assertEquals( nodeByInputId.get( uniqueId( input.startNodeGroup(), input.startNode() ) ),
-                        relationship.getStartNode() );
-                assertEquals( nodeByInputId.get( uniqueId( input.endNodeGroup(), input.endNode() ) ),
-                        relationship.getEndNode() );
-                assertRelationshipEquals( input, relationship );
+                if ( !inputIdGenerator.isMiss( input.startNode() ) &&
+                     !inputIdGenerator.isMiss( input.endNode() ) )
+                {
+                    // A relationship refering to missing nodes. The InputIdGenerator is expected to generate
+                    // some (very few) of those. Skip it.
+                    String name = (String) propertyOf( input, "id" );
+                    Relationship relationship = relationshipByName.get( name );
+                    assertEquals( nodeByInputId.get( uniqueId( input.startNodeGroup(), input.startNode() ) ),
+                            relationship.getStartNode() );
+                    assertEquals( nodeByInputId.get( uniqueId( input.endNodeGroup(), input.endNode() ) ),
+                            relationship.getEndNode() );
+                    assertRelationshipEquals( input, relationship );
+                }
                 verifiedRelationships++;
             }
             assertEquals( relationshipCount, verifiedRelationships );
@@ -502,6 +540,11 @@ public class ParallelBatchImporterTest
                                 Group startNodeGroup = groups.groupOf( nodeIndex.read() );
                                 Object endNode = idGenerator.randomExisting( random, nodeIndex );
                                 Group endNodeGroup = groups.groupOf( nodeIndex.read() );
+
+                                // miss some
+                                startNode = idGenerator.miss( random, startNode, 0.001f );
+                                endNode = idGenerator.miss( random, endNode, 0.001f );
+
                                 return new InputRelationship(
                                         sourceDescription, itemNumber, itemNumber,
                                         properties, null,
