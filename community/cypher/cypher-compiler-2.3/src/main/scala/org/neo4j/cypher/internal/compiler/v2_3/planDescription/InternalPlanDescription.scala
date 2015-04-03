@@ -92,6 +92,9 @@ object InternalPlanDescription {
     case class Planner(value: String) extends Argument{
       override def name = "planner"
     }
+    case class Runtime(value: String) extends Argument{
+      override def name = "runtime"
+    }
     case class ExpandExpression(from: String, relName: String, relTypes:Seq[String], to: String, direction: Direction, varLength: Boolean = false) extends Argument
   }
 }

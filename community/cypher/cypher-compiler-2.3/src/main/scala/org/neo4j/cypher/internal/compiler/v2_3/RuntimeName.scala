@@ -17,18 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.executionplan
+package org.neo4j.cypher.internal.compiler.v2_3
 
-import org.neo4j.cypher.internal.ExecutionMode
-import org.neo4j.cypher.internal.compiler.v2_3.{RuntimeName, PlannerName}
-import org.neo4j.cypher.internal.compiler.v2_3.spi.{GraphStatistics, QueryContext}
-import org.neo4j.kernel.api.Statement
+sealed abstract class RuntimeName {
+  def name: String
+}
 
-abstract class ExecutionPlan {
-  //TODO run should not have direct access to statement?
-  def run(queryContext: QueryContext, statement: Statement, planType: ExecutionMode, params: Map[String, Any]): InternalExecutionResult
-  def isPeriodicCommit: Boolean
-  def plannerUsed: PlannerName
-  def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean
-  def runtimeUsed: RuntimeName
+case object InterpretedRuntimeName extends RuntimeName {
+  override val name = "INTERPRETED"
+}
+
+case object CompiledRuntimeName extends RuntimeName {
+  override val name = "COMPILED"
+}
+
+object RuntimeName {
+
+  val default = InterpretedRuntimeName
+
+  def apply(name: String): RuntimeName = name.toUpperCase match {
+    case InterpretedRuntimeName.name => InterpretedRuntimeName
+    case CompiledRuntimeName.name => CompiledRuntimeName
+
+    case n => throw new IllegalArgumentException(
+      s"$n is not a a valid runtime, valid options are ${InterpretedRuntimeName.name} and ${CompiledRuntimeName.name}")
+  }
 }

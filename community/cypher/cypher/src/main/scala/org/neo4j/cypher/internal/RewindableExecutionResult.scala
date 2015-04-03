@@ -48,7 +48,7 @@ object RewindableExecutionResult {
   }
 
   def apply(in: ExecutionResult): InternalExecutionResult = in match {
-    case ExecutionResultWrapperFor2_3(inner, _) => exceptionHandlerFor2_3.runSafely(apply(inner))
+    case ExecutionResultWrapperFor2_3(inner, _, _) => exceptionHandlerFor2_3.runSafely(apply(inner))
 
     case _                                      => throw new InternalException("Can't get the internal execution result of an older compiler")
   }

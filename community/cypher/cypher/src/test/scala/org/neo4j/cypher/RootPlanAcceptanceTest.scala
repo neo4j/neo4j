@@ -84,7 +84,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 
   }
 
-  test("should use cost if we really ask for it in 2.2") {
+  test("should use cost if we really ask for it in 2.3") {
     given("match n return n")
       .withCypherVersion(CypherVersion.v2_3)
       .withPlannerName(CostPlannerName)

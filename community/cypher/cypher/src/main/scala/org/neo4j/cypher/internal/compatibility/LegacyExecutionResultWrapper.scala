@@ -23,7 +23,7 @@ import java.io.PrintWriter
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.AmendedRootPlanDescription
-import org.neo4j.cypher.internal.compiler.v2_3.RulePlannerName
+import org.neo4j.cypher.internal.compiler.v2_3.{InterpretedRuntimeName, RulePlannerName}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.iteratorToVisitable
 import org.neo4j.graphdb.QueryExecutionType.{QueryType, profiled, query}
 import org.neo4j.graphdb.ResourceIterator
@@ -92,7 +92,7 @@ case class LegacyExecutionResultWrapper(inner: ExecutionResult, planDescriptionR
       case other => ExtendedPlanDescriptionWrapper(other)
     }
 
-    new AmendedRootPlanDescription(description, version, RulePlannerName)
+    new AmendedRootPlanDescription(description, version, RulePlannerName, InterpretedRuntimeName)
   }
 
   def close() = inner.close()

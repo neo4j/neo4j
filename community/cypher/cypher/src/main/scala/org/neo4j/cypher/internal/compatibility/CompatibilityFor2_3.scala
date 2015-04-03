@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_3
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutionPlan => ExecutionPlan_v2_3, InternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v2_3.notification.{CartesianProductNotification, InternalNotification}
 import org.neo4j.cypher.internal.compiler.v2_3.{InputPosition => CompilerInputPosition}
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{DbHits, Planner, Rows, Version}
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.compiler.v2_3.{CypherCompilerFactory, CypherException => CypherException_v2_3, InfoLogger, Monitors, PlannerName, _}
@@ -165,7 +165,7 @@ trait CompatibilityFor2_3 {
     def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, executionMode: ExecutionMode, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
       implicit val s = session
       exceptionHandlerFor2_3.runSafely {
-        ExecutionResultWrapperFor2_3(inner.run(queryContext(graph, txInfo), txInfo.statement, executionMode, params), inner.plannerUsed)
+        ExecutionResultWrapperFor2_3(inner.run(queryContext(graph, txInfo), txInfo.statement, executionMode, params), inner.plannerUsed, inner.runtimeUsed)
       }
     }
 
@@ -176,7 +176,7 @@ trait CompatibilityFor2_3 {
   }
 }
 
-case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner: PlannerName)(implicit monitor: QueryExecutionMonitor, session: QuerySession) extends ExtendedExecutionResult {
+case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner: PlannerName, runtime: RuntimeName)(implicit monitor: QueryExecutionMonitor, session: QuerySession) extends ExtendedExecutionResult {
 
   import org.neo4j.cypher.internal.compatibility.helpers._
   def planDescriptionRequested = exceptionHandlerFor2_3.runSafely {inner.planDescriptionRequested}
@@ -195,17 +195,17 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
     new ResourceIterator[util.Map[String, Any]] {
       def close() = exceptionHandlerFor2_3.runSafely {
         endQueryExecution()
-        innerJavaIterator.close
+        innerJavaIterator.close()
       }
       def next() = exceptionHandlerFor2_3.runSafely {innerJavaIterator.next}
-      def hasNext() = exceptionHandlerFor2_3.runSafely{
+      def hasNext = exceptionHandlerFor2_3.runSafely{
         val next = innerJavaIterator.hasNext
         if (!next) {
           endQueryExecution()
         }
         next
       }
-      def remove() =  exceptionHandlerFor2_3.runSafely{innerJavaIterator.remove}
+      def remove() =  exceptionHandlerFor2_3.runSafely{innerJavaIterator.remove()}
     }
   }
 
@@ -241,7 +241,8 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
       convert(
         inner.executionPlanDescription().
           addArgument(Version("CYPHER 2.3")).
-          addArgument(Planner(planner.name))
+          addArgument(Planner(planner.name)).
+          addArgument(Runtime(runtime.name))
     )
   }
 
@@ -252,7 +253,7 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
   def hasNext = exceptionHandlerFor2_3.runSafely{ inner.hasNext }
 
   def convert(i: InternalPlanDescription): ExtendedPlanDescription = exceptionHandlerFor2_3.runSafely {
-    CompatibilityPlanDescriptionFor2_3(i, CypherVersion.v2_3, planner)
+    CompatibilityPlanDescriptionFor2_3(i, CypherVersion.v2_3, planner, runtime)
   }
 
   def executionType: QueryExecutionType = exceptionHandlerFor2_3.runSafely {inner.executionType}
@@ -267,14 +268,14 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
   override def accept[EX <: Exception](visitor: ResultVisitor[EX]) = exceptionHandlerFor2_3.runSafely {inner.accept(visitor)}
 }
 
-case class CompatibilityPlanDescriptionFor2_3(inner: InternalPlanDescription, version: CypherVersion, planner: PlannerName)
+case class CompatibilityPlanDescriptionFor2_3(inner: InternalPlanDescription, version: CypherVersion, planner: PlannerName, runtime: RuntimeName)
   extends ExtendedPlanDescription {
 
   self =>
   def children = extendedChildren
 
   def extendedChildren = exceptionHandlerFor2_3.runSafely {
-    inner.children.toSeq.map(CompatibilityPlanDescriptionFor2_3.apply(_, version, planner))
+    inner.children.toSeq.map(CompatibilityPlanDescriptionFor2_3.apply(_, version, planner, runtime))
   }
 
   def arguments: Map[String, AnyRef] = exceptionHandlerFor2_3.runSafely {
@@ -291,7 +292,7 @@ case class CompatibilityPlanDescriptionFor2_3(inner: InternalPlanDescription, ve
 
   override def toString: String = {
     val NL = System.lineSeparator()
-    exceptionHandlerFor2_3.runSafely { s"Compiler CYPHER ${version.name}$NL${NL}Planner ${planner.name.toUpperCase}$NL$NL$inner" }
+    exceptionHandlerFor2_3.runSafely { s"Compiler CYPHER ${version.name}$NL${NL}Planner ${planner.name.toUpperCase}$NL${NL}Runtime ${runtime.name.toUpperCase}$NL$NL$inner" }
   }
 
   def asJava(in: ExtendedPlanDescription): javacompat.PlanDescription = new javacompat.PlanDescription {
@@ -332,10 +333,11 @@ case class CompatibilityFor2_3Cost(graph: GraphDatabaseService,
                                            kernelAPI: KernelAPI,
                                            logger: StringLogger,
                                            notificationLoggerBuilder: (ExecutionMode => InternalNotificationLogger),
-                                           plannerName: CostBasedPlannerName) extends CompatibilityFor2_3 {
+                                           plannerName: CostBasedPlannerName,
+                                           runtimeName: RuntimeName) extends CompatibilityFor2_3 {
   protected val compiler = CypherCompilerFactory.costBasedCompiler(
     graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, new WrappedMonitors2_3( kernelMonitors ),
-    new StringInfoLogger2_3( logger ), notificationLoggerBuilder, plannerName
+    new StringInfoLogger2_3( logger ), notificationLoggerBuilder, plannerName, runtimeName
   )
 }
 

@@ -28,5 +28,5 @@ case object CostPlannerOption extends CypherOption
 case object RulePlannerOption extends CypherOption
 case object IDPPlannerOption extends CypherOption
 case object DPPlannerOption extends CypherOption
-
-
+case object InterpretedRuntimeOption extends CypherOption
+case object CompiledRuntimeOption extends CypherOption

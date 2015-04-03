@@ -1153,26 +1153,33 @@ public class TestApps extends AbstractShellTest
     @Test
     public void shouldAllowPlannerAsStartForACypherQuery() throws Exception
     {
-        executeCommand( "PLANNER COST MATCH (n) RETURN n;");
+        executeCommand( "PLANNER COST MATCH (n) RETURN n;" );
     }
 
     @Test
     public void shouldBeAbleToSwitchBetweenPlanners() throws Exception
     {
-        executeCommand( "PROFILE PLANNER RULE MATCH (n)-[:T]-(n) RETURN n;", "Planner RULE");
-        executeCommand( "PROFILE PLANNER COST MATCH (n)-[:T]-(n) RETURN n;", "Planner COST");
+        executeCommand( "PROFILE PLANNER RULE MATCH (n)-[:T]-(n) RETURN n;", "Planner RULE" );
+        executeCommand( "PROFILE PLANNER COST MATCH (n)-[:T]-(n) RETURN n;", "Planner COST" );
     }
 
     @Test
     public void shouldAllowCombiningPlannerAndProfile() throws Exception
     {
-        executeCommand( "PLANNER RULE PROFILE MATCH (n) RETURN n;", "Planner RULE");
+        executeCommand( "PLANNER RULE PROFILE MATCH (n) RETURN n;", "Planner RULE" );
     }
 
     @Test
     public void shouldAllowCombiningProfileAndPlanner() throws Exception
     {
-        executeCommand( "PROFILE PLANNER RULE MATCH (n) RETURN n;", "Planner RULE");
+        executeCommand( "PROFILE PLANNER RULE MATCH (n) RETURN n;", "Planner RULE" );
+    }
+
+    @Test
+    public void shouldBeAbleToSwitchBetweenRuntimes() throws Exception
+    {
+        executeCommand( "RUNTIME COMPILED MATCH (n)-[:T]-(n) RETURN n;" );
+        executeCommand( "RUNTIME INTERPRETED MATCH (n)-[:T]-(n) RETURN n;" );
     }
 
     @Test
