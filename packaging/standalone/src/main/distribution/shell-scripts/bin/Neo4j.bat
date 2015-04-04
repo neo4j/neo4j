@@ -24,12 +24,4 @@ set classpath="-DserverClasspath=lib/*.jar;system/lib/*.jar;plugins/**/*.jar;./c
 set mainclass="-DserverMainClass=org.neo4j.server.Bootstrapper"
 set configFile="conf\neo4j-wrapper.conf"
 
-rem Go to the folder that contains this batch file, a.k.a. NEO4J_HOME\bin
-cd /d "%~dp0"
-rem Go to NEO4J_HOME
-cd ..
-rem It makes locating our files given by relative paths (e.g. "conf\neo4j.properties")
-rem easier after we've set the NEO4J_HOME as the working directory.
-
-rem %~dps0 still points to the folder path of this batch file
 call "%~dps0base.bat" %1 %2 %3 %4 %5
