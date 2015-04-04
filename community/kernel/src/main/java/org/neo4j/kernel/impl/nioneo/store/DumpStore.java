@@ -34,7 +34,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
     {
         if ( args == null || args.length == 0 )
         {
-            System.err.println( "WARNING: no files specified..." );
+            System.err.println( "SYNTAX: [file[:id[,id]*]]+" );
             return;
         }
         StoreFactory storeFactory = new StoreFactory(
@@ -43,35 +43,58 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         for ( String arg : args )
         {
             File file = new File( arg );
-            if ( !file.isFile() )
+            long[] ids = null; // null means all possible ids
+
+            if( file.isFile() )
             {
-                throw new IllegalArgumentException( "No such file: " + arg );
+                /* If file exists, even with : in its path, then accept it straight off. */
+            }
+            else if ( !file.isDirectory() && file.getName().indexOf( ':' ) != -1 )
+            {
+                /* Now we know that it is not a directory either, and that the last component
+                   of the path contains a colon, thus it is very likely an attempt to use the
+                   id-specifying syntax. */
+
+                int idStart = arg.lastIndexOf( ':' );
+
+                String[] idStrings = arg.substring( idStart + 1 ).split( "," );
+                ids = new long[idStrings.length];
+                for ( int i = 0; i < ids.length; i++ )
+                {
+                    ids[i] = Long.parseLong( idStrings[i] );
+                }
+                file = new File( arg.substring( 0, idStart ) );
+
+                if ( !file.isFile() )
+                {
+                    throw new IllegalArgumentException( "No such file: " + arg );
+                }
             }
             switch ( file.getName() )
             {
             case "neostore.nodestore.db":
-                dumpNodeStore( file, storeFactory );
+                dumpNodeStore( file, storeFactory, ids );
                 break;
             case "neostore.relationshipstore.db":
-                dumpRelationshipStore( file, storeFactory );
+                dumpRelationshipStore( file, storeFactory, ids );
                 break;
             case "neostore.propertystore.db":
-                dumpPropertyStore( file, storeFactory );
+                dumpPropertyStore( file, storeFactory, ids );
                 break;
             case "neostore.schemastore.db":
-                dumpSchemaStore( file, storeFactory );
+                dumpSchemaStore( file, storeFactory, ids );
                 break;
             case "neostore.propertystore.db.index":
-                dumpPropertyKeys( file, storeFactory );
+                dumpPropertyKeys( file, storeFactory, ids );
                 break;
             case "neostore.labeltokenstore.db":
-                dumpLabels( file, storeFactory );
+                dumpLabels( file, storeFactory, ids );
                 break;
             case "neostore.relationshiptypestore.db":
-                dumpRelationshipTypes( file, storeFactory );
+                dumpRelationshipTypes( file, storeFactory, ids );
                 break;
             case "neostore.relationshipgroupstore.db":
-                dumpRelationshipGroups( file, storeFactory );
+                dumpRelationshipGroups( file, storeFactory, ids );
                 break;
             default:
                 throw new IllegalArgumentException( "Unknown store file: " + arg );
@@ -84,22 +107,22 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         return Boolean.getBoolean( "logger" ) ? StringLogger.SYSTEM : StringLogger.DEV_NULL;
     }
 
-    private static void dumpPropertyKeys( File file, StoreFactory storeFactory ) throws Exception
+    private static void dumpPropertyKeys( File file, StoreFactory storeFactory, long[] ids ) throws Exception
     {
-        dumpTokens( storeFactory.newPropertyKeyTokenStore( file ) );
+        dumpTokens( storeFactory.newPropertyKeyTokenStore( file ), ids );
     }
 
-    private static void dumpLabels( File file, StoreFactory storeFactory ) throws Exception
+    private static void dumpLabels( File file, StoreFactory storeFactory, long[] ids ) throws Exception
     {
-        dumpTokens( storeFactory.newLabelTokenStore( file ) );
+        dumpTokens( storeFactory.newLabelTokenStore( file ), ids );
     }
 
-    private static void dumpRelationshipTypes( File file, StoreFactory storeFactory ) throws Exception
+    private static void dumpRelationshipTypes( File file, StoreFactory storeFactory, long[] ids ) throws Exception
     {
-        dumpTokens( storeFactory.newRelationshipTypeTokenStore( file ) );
+        dumpTokens( storeFactory.newRelationshipTypeTokenStore( file ), ids );
     }
 
-    private static <T extends TokenRecord> void dumpTokens( final TokenStore<T> store ) throws Exception
+    private static <T extends TokenRecord> void dumpTokens( final TokenStore<T> store, long[] ids ) throws Exception
     {
         try
         {
@@ -115,7 +138,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
                     }
                     return null;
                 }
-            }.dump( store );
+            }.dump( store, ids );
         }
         finally
         {
@@ -123,12 +146,12 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         }
     }
 
-    private static void dumpRelationshipGroups( File file, StoreFactory storeFactory ) throws Exception
+    private static void dumpRelationshipGroups( File file, StoreFactory storeFactory, long[] ids ) throws Exception
     {
         RelationshipGroupStore store = storeFactory.newRelationshipGroupStore( file );
         try
         {
-            new DumpStore<RelationshipGroupRecord, RelationshipGroupStore>( System.out ).dump( store );
+            new DumpStore<RelationshipGroupRecord, RelationshipGroupStore>( System.out ).dump( store, ids );
         }
         finally
         {
@@ -136,12 +159,12 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         }
     }
 
-    private static void dumpRelationshipStore( File file, StoreFactory storeFactory ) throws Exception
+    private static void dumpRelationshipStore( File file, StoreFactory storeFactory, long[] ids ) throws Exception
     {
         RelationshipStore store = storeFactory.newRelationshipStore( file );
         try
         {
-            new DumpStore<RelationshipRecord, RelationshipStore>( System.out ).dump( store );
+            new DumpStore<RelationshipRecord, RelationshipStore>( System.out ).dump( store, ids );
         }
         finally
         {
@@ -149,12 +172,12 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         }
     }
 
-    private static void dumpPropertyStore( File file, StoreFactory storeFactory ) throws Exception
+    private static void dumpPropertyStore( File file, StoreFactory storeFactory, long[] ids ) throws Exception
     {
         PropertyStore store = storeFactory.newPropertyStore( file );
         try
         {
-            new DumpStore<PropertyRecord, PropertyStore>( System.out ).dump( store );
+            new DumpStore<PropertyRecord, PropertyStore>( System.out ).dump( store, ids );
         }
         finally
         {
@@ -162,7 +185,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         }
     }
 
-    private static void dumpSchemaStore( File file, StoreFactory storeFactory ) throws Exception
+    private static void dumpSchemaStore( File file, StoreFactory storeFactory, long ids[] ) throws Exception
     {
         SchemaStore store = storeFactory.newSchemaStore( file );
         try
@@ -177,7 +200,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
                            ? storage.loadSingleSchemaRule( record.getId() )
                            : null;
                 }
-            }.dump( store );
+            }.dump( store, ids );
         }
         finally
         {
@@ -185,7 +208,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         }
     }
 
-    private static void dumpNodeStore( File file, StoreFactory storeFactory ) throws Exception
+    private static void dumpNodeStore( File file, StoreFactory storeFactory, long[] ids ) throws Exception
     {
         NodeStore store = storeFactory.newNodeStore( file );
         try
@@ -197,7 +220,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
                 {
                     return record.inUse() ? record : "";
                 }
-            }.dump( store );
+            }.dump( store, ids );
         }
         finally
         {
@@ -212,7 +235,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         this.out = out;
     }
 
-    public final void dump( STORE store ) throws Exception
+    public final void dump( STORE store, long[] ids ) throws Exception
     {
         store.makeStoreOk();
         int size = store.getRecordSize();
@@ -221,43 +244,72 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         out.println( "store.getRecordSize() = " + size );
         out.println( "<dump>" );
         long used = 0;
-        for ( long i = 1, high = store.getHighestPossibleIdInUse(); i <= high; i++ )
+
+        if ( ids == null )
         {
-            RECORD record = store.forceGetRecord( i );
-            if ( record.inUse() )
+            long high = store.getHighestPossibleIdInUse();
+
+            for ( long id = 1; id <= high; id++ )
             {
-                used++;
-            }
-            Object transform = transform( record );
-            if ( transform != null )
-            {
-                if ( !"".equals( transform ) )
+                boolean inUse = dumpRecord( store, size, fileChannel, buffer, id );
+
+                if ( inUse )
                 {
-                    out.println( transform );
-                }
-            }
-            else
-            {
-                out.print( record );
-                buffer.clear();
-                fileChannel.read( buffer, i * size );
-                buffer.flip();
-                if ( record.inUse() )
-                {
-                    dumpHex( buffer, i * size );
-                }
-                else if ( allZero( buffer ) )
-                {
-                    out.printf( ": all zeros @ 0x%x - 0x%x%n", i * size, (i + 1) * size );
-                }
-                else
-                {
-                    dumpHex( buffer, i * size );
+                    used++;
                 }
             }
         }
+        else
+        {
+            for( long id : ids )
+            {
+                dumpRecord( store, size, fileChannel, buffer, id );
+            }
+        }
         out.println( "</dump>" );
-        out.printf( "used = %s / highId = %s (%.2f%%)%n", used, store.getHighId(), used * 100.0 / store.getHighId() );
+
+        if ( ids == null )
+        {
+            out.printf( "used = %s / highId = %s (%.2f%%)%n", used, store.getHighId(), used * 100.0 / store.getHighId
+                    () );
+
+        }
+    }
+
+    private boolean dumpRecord( STORE store, int size, StoreChannel fileChannel, ByteBuffer buffer, long id ) throws
+            Exception
+    {
+        RECORD record = store.forceGetRecord( id );
+
+        Object transform = transform( record );
+        if ( transform != null )
+        {
+            if ( !"".equals( transform ) )
+            {
+                out.println( transform );
+            }
+        }
+        else
+        {
+            out.print( record );
+            buffer.clear();
+            fileChannel.read( buffer, id * size );
+            buffer.flip();
+            if ( record.inUse() )
+            {
+                dumpHex( buffer, id * size );
+            }
+            else if ( allZero( buffer ) )
+            {
+                out.printf( ": all zeros @ 0x%x - 0x%x%n", id * size, (id + 1) * size );
+            }
+            else
+            {
+                dumpHex( buffer, id * size );
+            }
+        }
+
+        return record.inUse();
     }
 
     private boolean allZero( ByteBuffer buffer )
