@@ -30,9 +30,6 @@ import org.neo4j.helpers.Format;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.api.CountsAccessor;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -56,7 +53,6 @@ import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 import static java.lang.System.currentTimeMillis;
 
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
-import static org.neo4j.unsafe.impl.batchimport.Utils.idsOf;
 import static org.neo4j.unsafe.impl.batchimport.WriterFactories.parallel;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseExecution;
@@ -130,11 +126,11 @@ public class ParallelBatchImporter implements BatchImporter
         boolean hasBadEntries = false;
         File badFile = config.badFile( storeDir );
         try ( BatchingNeoStore neoStore = new BatchingNeoStore( fileSystem, storeDir, config,
-                writeMonitor, logging, monitors, writerFactory, additionalInitialIds );
+                    writeMonitor, logging, monitors, writerFactory, additionalInitialIds );
               OutputStream badOutput = new BufferedOutputStream( fileSystem.openAsOutputStream( badFile, false ) );
               Collector badCollector = input.badCollector( badOutput );
-                CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset(
-                      neoStore.getLastCommittedTransactionId() );
+              CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset(
+                    neoStore.getLastCommittedTransactionId() );
               InputCache inputCache = new InputCache( fileSystem, storeDir ) )
         {
             // Some temporary caches and indexes in the import
@@ -146,10 +142,11 @@ public class ParallelBatchImporter implements BatchImporter
             InputIterable<InputRelationship> relationships = input.relationships();
 
             // Stage 1 -- nodes, properties, labels
-            NodeStage nodeStage = new NodeStage( nodes, idMapper, idGenerator, neoStore, inputCache, memoryUsageStats );
+            NodeStage nodeStage = new NodeStage( config, writeMonitor, writerFactory,
+                    nodes, idMapper, idGenerator, neoStore, inputCache, memoryUsageStats );
 
             // Stage 2 -- calculate dense node threshold
-            CalculateDenseNodesStage calculateDenseNodesStage = new CalculateDenseNodesStage( relationships,
+            CalculateDenseNodesStage calculateDenseNodesStage = new CalculateDenseNodesStage( config, relationships,
                     nodeRelationshipCache, idMapper, badCollector, inputCache );
 
             // Execute stages 1 and 2 in parallel or sequentially?
@@ -159,7 +156,7 @@ public class ParallelBatchImporter implements BatchImporter
                 // before executing any stage that needs ids from the id mapper, for example calc dense node stage.
                 executeStages( nodeStage );
                 executeStages( new IdMapperPreparationStage( config, idMapper, nodes, inputCache,
-                        memoryUsageStats, badCollector ) );
+                        badCollector, memoryUsageStats ) );
                 executeStages( calculateDenseNodesStage );
             }
             else
@@ -169,7 +166,7 @@ public class ParallelBatchImporter implements BatchImporter
             }
 
             // Stage 3 -- relationships, properties
-            final RelationshipStage relationshipStage = new RelationshipStage(
+            final RelationshipStage relationshipStage = new RelationshipStage( config, writeMonitor, writerFactory,
                     relationships.supportsMultiplePasses() ? relationships : inputCache.relationships(),
                     idMapper, neoStore, nodeRelationshipCache, input.specificRelationshipIds() );
             executeStages( relationshipStage );
@@ -238,78 +235,5 @@ public class ParallelBatchImporter implements BatchImporter
     private void executeStages( Stage... stages )
     {
         superviseExecution( executionMonitor, config, stages );
-    }
-
-    public class NodeStage extends Stage
-    {
-        public NodeStage( InputIterable<InputNode> nodes, IdMapper idMapper, IdGenerator idGenerator,
-                BatchingNeoStore neoStore, InputCache inputCache, StatsProvider memoryUsage ) throws IOException
-        {
-            super( "Nodes", config, true );
-            add( new InputIteratorBatcherStep<>( control(), config, nodes.iterator(), InputNode.class ) );
-            if ( !nodes.supportsMultiplePasses() )
-            {
-                add( new InputEntityCacherStep<>( control(), config, inputCache.cacheNodes() ) );
-            }
-
-            NodeStore nodeStore = neoStore.getNodeStore();
-            PropertyStore propertyStore = neoStore.getPropertyStore();
-            add( new PropertyEncoderStep<>( control(), config, neoStore.getPropertyKeyRepository(), propertyStore ) );
-            add( new NodeEncoderStep( control(), config, idMapper, idGenerator,
-                    neoStore.getLabelRepository(), nodeStore, memoryUsage ) );
-            add( new EntityStoreUpdaterStep<>( control(), config, nodeStore, propertyStore,
-                    writeMonitor, writerFactory ) );
-        }
-    }
-
-    public class IdMapperPreparationStage extends Stage
-    {
-        public IdMapperPreparationStage( Configuration config, IdMapper idMapper, InputIterable<InputNode> nodes,
-                InputCache inputCache, StatsProvider memoryUsageStats, Collector collector )
-        {
-            super( "Prepare node index", config, false );
-            add( new IdMapperPreparationStep( control(), config,
-                    idMapper, idsOf( nodes.supportsMultiplePasses() ? nodes : inputCache.nodes() ),
-                    collector, memoryUsageStats ) );
-        }
-    }
-
-    public class CalculateDenseNodesStage extends Stage
-    {
-        public CalculateDenseNodesStage( InputIterable<InputRelationship> relationships,
-                NodeRelationshipCache cache, IdMapper idMapper,
-                Collector badCollector, InputCache inputCache ) throws IOException
-        {
-            super( "Calculate dense nodes", config, false );
-            add( new InputIteratorBatcherStep<>( control(), config,
-                    relationships.iterator(), InputRelationship.class ) );
-            if ( !relationships.supportsMultiplePasses() )
-            {
-                add( new InputEntityCacherStep<>( control(), config, inputCache.cacheRelationships() ) );
-            }
-            add( new RelationshipPreparationStep( control(), config, idMapper ) );
-            add( new CalculateDenseNodePrepareStep( control(), config, badCollector ) );
-            add( new CalculateDenseNodesStep( control(), config, cache ) );
-        }
-    }
-
-    public class RelationshipStage extends Stage
-    {
-        public RelationshipStage( InputIterable<InputRelationship> relationships, IdMapper idMapper,
-                BatchingNeoStore neoStore, NodeRelationshipCache cache, boolean specificIds )
-        {
-            super( "Relationships", config, specificIds );
-            add( new InputIteratorBatcherStep<>( control(), config,
-                    relationships.iterator(), InputRelationship.class ) );
-
-            RelationshipStore relationshipStore = neoStore.getRelationshipStore();
-            PropertyStore propertyStore = neoStore.getPropertyStore();
-            add( new RelationshipPreparationStep( control(), config, idMapper ) );
-            add( new PropertyEncoderStep<>( control(), config, neoStore.getPropertyKeyRepository(), propertyStore ) );
-            add( new RelationshipEncoderStep( control(), config,
-                    neoStore.getRelationshipTypeRepository(), cache, specificIds ) );
-            add( new EntityStoreUpdaterStep<>( control(), config,
-                    relationshipStore, propertyStore, writeMonitor, writerFactory ) );
-        }
     }
 }

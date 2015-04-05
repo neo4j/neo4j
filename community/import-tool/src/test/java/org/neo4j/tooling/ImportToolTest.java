@@ -41,9 +41,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.FilteringIterator;
-
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.util.Validator;
