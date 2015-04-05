@@ -205,11 +205,20 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
     private void stateChanged( HighAvailabilityMemberChangeEvent event )
     {
-        availableMasterId = event.getServerHaUri();
         if ( event.getNewState() == event.getOldState() )
         {
+            /*
+             * We get here if for example a new master becomes available while we are already switching. In that case
+             * we don't change state but we must update with the new availableMasterId, but only if it is not null.
+             */
+            if ( event.getServerHaUri() != null )
+            {
+                availableMasterId = event.getServerHaUri();
+            }
             return;
         }
+
+        availableMasterId = event.getServerHaUri();
 
         currentTargetState = event.getNewState();
         switch ( event.getNewState() )
