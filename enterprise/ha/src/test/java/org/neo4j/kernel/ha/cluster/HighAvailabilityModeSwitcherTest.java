@@ -23,6 +23,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.isNull;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -48,6 +49,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -58,6 +60,7 @@ import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.com.ComException;
 import org.neo4j.helpers.CancellationRequest;
+import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.ConsoleLogger;
@@ -133,7 +136,7 @@ public class HighAvailabilityModeSwitcherTest
            * The second argument to memberIsAvailable below is null because it has not been set yet. This would require
            * a switch to master which we don't do here.
            */
-        verifyZeroInteractions(  availability );
+        verifyZeroInteractions( availability );
     }
 
     @Test
@@ -317,6 +320,75 @@ public class HighAvailabilityModeSwitcherTest
         // switchToSlave should be retried with new master id
         verify( switchToSlave ).switchToSlave( any( LifeSupport.class ), any( URI.class ), eq( uri2 ),
                 any( CancellationRequest.class ) );
+    }
+
+    @Test
+    public void shouldNotResetAvailableMasterURIIfElectionResultReceived() throws Throwable
+    {
+        /*
+         * It is possible that a masterIsElected nulls out the current available master URI in the HAMS. That can
+         * be a problem if handing the mIE event is concurrent with an ongoing switch which re-runs because
+         * the store was incompatible or a log was missing. In such a case it will find a null master URI on
+         * rerun and it will fail.
+         */
+
+        // Given
+        SwitchToSlave switchToSlave = mock( SwitchToSlave.class );
+        // The fist run through switchToSlave
+        final CountDownLatch firstCallMade = new CountDownLatch( 1 );
+        // The second run through switchToSlave
+        final CountDownLatch secondCallMade = new CountDownLatch( 1 );
+        // The latch for waiting for the masterIsElected to come through
+        final CountDownLatch waitForSecondMessage = new CountDownLatch( 1 );
+
+        HighAvailabilityModeSwitcher toTest = new HighAvailabilityModeSwitcher( switchToSlave,
+                mock( SwitchToMaster.class ), mock( Election.class ), mock( ClusterMemberAvailability.class ),
+                StringLogger.DEV_NULL );
+        URI uri1 = URI.create( "ha://server1" );
+        toTest.init();
+        toTest.start();
+        toTest.listeningAt( URI.create( "ha://server3?serverId=3" ) );
+
+        when( switchToSlave.switchToSlave( any( LifeSupport.class ), any( URI.class ), any( URI.class ), any( CancellationRequest.class ) ) ).thenAnswer( new Answer<URI>()
+
+        {
+            // The first time around it must "fail" so as to cause a rerun, then wait for the mIE to come through
+            @Override
+            public URI answer( InvocationOnMock invocation ) throws Throwable
+            {
+                firstCallMade.countDown();
+                waitForSecondMessage.await();
+                throw new NoSuchLogVersionException( 1 );
+            }
+        } ).thenAnswer( new Answer<URI>()
+        {
+            // The second time around it can finish normally, it doesn't really matter. Just let the test continue.
+            @Override
+            public URI answer( InvocationOnMock invocation ) throws Throwable
+            {
+                secondCallMade.countDown();
+                return URI.create( "ha://server3" );
+            }
+        } );
+
+        // When
+
+        // The first message goes through, start the first run
+        toTest.masterIsAvailable(
+                new HighAvailabilityMemberChangeEvent( PENDING, TO_SLAVE, new InstanceId( 1 ), uri1 ) );
+        // Wait for it to be processed but get just before the exception
+        firstCallMade.await();
+        // It is just about to throw the exception, i.e. rerun. Send in the event
+        toTest.masterIsElected(
+                new HighAvailabilityMemberChangeEvent( TO_SLAVE, TO_SLAVE, new InstanceId( 1 ), null ) );
+        // Allow to continue and do the second run
+        waitForSecondMessage.countDown();
+        // Wait for the call to finish
+        secondCallMade.await();
+
+        // Then
+        verify( switchToSlave, times( 2 ) ).switchToSlave( any( LifeSupport.class ), any( URI.class ), eq( uri1 ), any(
+                CancellationRequest.class ) );
     }
 
     @Test
