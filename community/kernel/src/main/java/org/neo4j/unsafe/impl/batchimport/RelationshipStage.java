@@ -1,0 +1,57 @@
+/**
+ * Copyright (c) 2002-2015 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.unsafe.impl.batchimport;
+
+import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+import org.neo4j.unsafe.impl.batchimport.staging.InputIteratorBatcherStep;
+import org.neo4j.unsafe.impl.batchimport.staging.Stage;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStore;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
+import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
+
+/**
+ * Imports the first part of relationships, namely the relationship record itself and its properties.
+ * Only the "next" pointers are set at this stage. The "prev" pointers are set in a later stage.
+ */
+public class RelationshipStage extends Stage
+{
+    public RelationshipStage( Configuration config, IoMonitor writeMonitor, WriterFactory writerFactory,
+            InputIterable<InputRelationship> relationships, IdMapper idMapper,
+            BatchingNeoStore neoStore, NodeRelationshipLink nodeRelationshipLink, boolean specificIds )
+    {
+        super( "Relationships", config, false );
+        add( new InputIteratorBatcherStep<>( control(), config.batchSize(), config.movingAverageSize(),
+                relationships.iterator(), InputRelationship.class ) );
+
+        RelationshipStore relationshipStore = neoStore.getRelationshipStore();
+        PropertyStore propertyStore = neoStore.getPropertyStore();
+        add( new RelationshipPreparationStep( control(), config, idMapper ) );
+        add( new PropertyEncoderStep<>( control(), config, 1, neoStore.getPropertyKeyRepository(),
+                propertyStore ) );
+        add( new RelationshipEncoderStep( control(), config,
+                neoStore.getRelationshipTypeRepository(), relationshipStore, nodeRelationshipLink, specificIds ) );
+        add( new EntityStoreUpdaterStep<>( control(), config,
+                relationshipStore, propertyStore, writeMonitor, writerFactory ) );
+    }
+}

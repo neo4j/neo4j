@@ -344,7 +344,7 @@ public class StoreMigrator implements StoreMigrationParticipant
                 parallel(), readAdditionalIds( storeDir, lastTxId, lastTxChecksum ) );
         InputIterable<InputNode> nodes = legacyNodesAsInput( legacyStore );
         InputIterable<InputRelationship> relationships = legacyRelationshipsAsInput( legacyStore );
-        importer.doImport( Inputs.input( nodes, relationships, IdMappers.actual(), IdGenerators.fromInput(), true ) );
+        importer.doImport( Inputs.input( nodes, relationships, IdMappers.actual(), IdGenerators.fromInput(), true, 0 ) );
 
         // During migration the batch importer only writes node, relationship, relationship group and counts stores.
         // Delete the property store files from the batch import migration so that even if we won't
