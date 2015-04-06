@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planDescription
 
 import org.neo4j.cypher.internal.compiler.v2_3.commands
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.{EntityByIdRhs => PipeEntityByIdRhs, Pipe}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{EntityByIdRhs => PipeEntityByIdRhs}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.graphdb.Direction
 
@@ -31,11 +31,12 @@ sealed trait InternalPlanDescription {
   self =>
 
   def arguments: Seq[Argument]
-  def cd(name: String): InternalPlanDescription = children.find(name).head
-
   def id: Id
   def name: String
   def children: Children
+  def identifiers: Set[String]
+
+  def cd(name: String): InternalPlanDescription = children.find(name).head
   def map(f: InternalPlanDescription => InternalPlanDescription): InternalPlanDescription
   def find(name: String): Seq[InternalPlanDescription]
   def addArgument(arg: Argument): InternalPlanDescription
@@ -52,7 +53,6 @@ sealed trait InternalPlanDescription {
   def andThen(id: Id, name: String, identifiers: Set[String], arguments: Argument*) =
     PlanDescriptionImpl(id, name, SingleChild(this), arguments, identifiers)
 
-  def identifiers: Set[String]
   def orderedIdentifiers: Seq[String] = identifiers.toSeq.sorted
 
   def totalDbHits: Option[Long] = {
@@ -131,9 +131,6 @@ final case class PlanDescriptionImpl(id: Id,
                                      children: Children,
                                      arguments: Seq[Argument],
                                      identifiers: Set[String]) extends InternalPlanDescription {
-
-  self =>
-
   def find(name: String): Seq[InternalPlanDescription] =
     children.find(name) ++ (if (this.name == name)
       Some(this)
