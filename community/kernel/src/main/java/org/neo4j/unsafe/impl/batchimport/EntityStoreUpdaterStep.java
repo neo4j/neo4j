@@ -66,7 +66,7 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
             AbstractRecordStore<RECORD> entityStore,
             PropertyStore propertyStore, IoMonitor monitor, WriterFactory writerFactory )
     {
-        super( control, "v", config, 1 );
+        super( control, "v", config, 1, monitor );
         this.entityStore = entityStore;
         this.propertyStore = propertyStore;
         this.writerFactory = writerFactory;
