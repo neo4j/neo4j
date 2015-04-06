@@ -46,6 +46,12 @@ public class ProcessorAssignmentStrategies
             @Override
             public void start( StageExecution[] executions )
             {
+                saturate( availableProcessor, executions );
+                registerProcessorCount( executions );
+            }
+
+            private void saturate( final int availableProcessor, StageExecution[] executions )
+            {
                 Random random = ThreadLocalRandom.current();
                 int processors = availableProcessor;
                 for ( int rounds = 0; rounds < availableProcessor && processors > 0; rounds++ )
@@ -61,7 +67,6 @@ public class ProcessorAssignmentStrategies
                         }
                     }
                 }
-                registerProcessorCount( executions );
             }
 
             @Override
@@ -82,6 +87,12 @@ public class ProcessorAssignmentStrategies
 
             @Override
             public void check( StageExecution[] executions )
+            {
+                saturate( executions );
+                registerProcessorCount( executions );
+            }
+
+            private void saturate( StageExecution[] executions )
             {
                 if ( processors == 0 )
                 {
@@ -104,7 +115,6 @@ public class ProcessorAssignmentStrategies
                         }
                     }
                 }
-                registerProcessorCount( executions );
             }
         };
     }
