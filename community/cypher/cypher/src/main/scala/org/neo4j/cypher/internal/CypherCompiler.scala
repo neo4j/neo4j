@@ -91,20 +91,14 @@ class CypherCompiler(graph: GraphDatabaseService,
   }
 
   private def preParse(queryWithOption: CypherQueryWithOptions): PreParsedQuery = {
-
-    import org.neo4j.cypher.internal.CollectionFrosting._
-
-    val versionOptions = queryWithOption.options.collectSingle {
-      case VersionOption(v) => CypherVersion(v)
+    val cypherOptions = queryWithOption.options.collectFirst {
+      case opt: ConfigurationOptions => opt
     }
-
-    val cypherVersion = versionOptions match {
-      case Right(version) => version.getOrElse(defaultVersion)
-      case Left(versions) => throw new SyntaxException(s"You must specify only one version for a query (found: $versions)")
-    }
-
+    val cypherVersion = cypherOptions.flatMap(_.version)
+      .map(v => CypherVersion(v.version))
+      .getOrElse(defaultVersion)
+    val planner = calculatePlanner(cypherOptions, queryWithOption.options, cypherVersion)
     val executionMode: ExecutionMode = calculateExecutionMode(queryWithOption.options)
-    val planner = calculatePlanner(queryWithOption.options, cypherVersion)
     if (executionMode == ExplainMode && cypherVersion != CypherVersion.v2_2) {
       throw new InvalidArgumentException("EXPLAIN not supported in versions older than Neo4j v2.2")
     }
@@ -121,7 +115,28 @@ class CypherCompiler(graph: GraphDatabaseService,
     executionModes.reduceOption(_ combineWith _).getOrElse(NormalMode)
   }
 
-  private def calculatePlanner(options: Seq[CypherOption], version: CypherVersion) = {
+  private def calculatePlanner(options: Option[ConfigurationOptions], other: Seq[CypherOption], version: CypherVersion) = {
+    val planner = options.map(_.options.collect {
+          case CostPlannerOption => CostPlannerName
+          case RulePlannerOption => RulePlannerName
+          case IDPPlannerOption => IDPPlannerName
+          case DPPlannerOption => DPPlannerName
+        }.distinct).getOrElse(Seq.empty)
+
+    if (version != CypherVersion.v2_2 && planner.nonEmpty) {
+      throw new InvalidArgumentException("PLANNER not supported in versions older than Neo4j v2.2")
+    }
+
+    if (planner.size > 1) {
+      throw new InvalidSemanticsException("Can't use multiple planners")
+    }
+
+    //TODO once the we have removed PLANNER=X syntax, change to defaultPlanner here
+    if (planner.isEmpty) calculatePlannerDeprecated(other, version) else planner.head
+  }
+
+  @deprecated
+  private def calculatePlannerDeprecated( options: Seq[CypherOption], version: CypherVersion) = {
     val planner = options.collect {
       case CostPlannerOption => CostPlannerName
       case RulePlannerOption => RulePlannerName

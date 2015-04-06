@@ -1153,26 +1153,26 @@ public class TestApps extends AbstractShellTest
     @Test
     public void shouldAllowPlannerAsStartForACypherQuery() throws Exception
     {
-        executeCommand( "PLANNER COST MATCH (n) RETURN n;");
+        executeCommand( "CYPHER planner=cost MATCH (n) RETURN n;");
     }
 
     @Test
     public void shouldBeAbleToSwitchBetweenPlanners() throws Exception
     {
-        executeCommand( "PROFILE PLANNER RULE MATCH (n)-[:T]-(n) RETURN n;", "Planner RULE");
-        executeCommand( "PROFILE PLANNER COST MATCH (n)-[:T]-(n) RETURN n;", "Planner COST");
+        executeCommand( "PROFILE CYPHER planner=rule MATCH (n)-[:T]-(n) RETURN n;", "Planner RULE");
+        executeCommand( "PROFILE CYPHER planner=cost MATCH (n)-[:T]-(n) RETURN n;", "Planner COST");
     }
 
     @Test
     public void shouldAllowCombiningPlannerAndProfile() throws Exception
     {
-        executeCommand( "PLANNER RULE PROFILE MATCH (n) RETURN n;", "Planner RULE");
+        executeCommand( "CYPHER planner=rule PROFILE MATCH (n) RETURN n;", "Planner RULE");
     }
 
     @Test
     public void shouldAllowCombiningProfileAndPlanner() throws Exception
     {
-        executeCommand( "PROFILE PLANNER RULE MATCH (n) RETURN n;", "Planner RULE");
+        executeCommand( "PROFILE CYPHER planner=rule MATCH (n) RETURN n;", "Planner RULE");
     }
 
     @Test

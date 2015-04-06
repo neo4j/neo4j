@@ -28,5 +28,7 @@ case object CostPlannerOption extends CypherOption
 case object RulePlannerOption extends CypherOption
 case object IDPPlannerOption extends CypherOption
 case object DPPlannerOption extends CypherOption
+case class ConfigurationOptions(version: Option[VersionOption],
+                            options: Seq[CypherOption]) extends CypherOption
 
 
