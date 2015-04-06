@@ -25,7 +25,10 @@ import org.neo4j.cypher.internal.compiler.v2_3.CostPlannerName
 import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaTypes.{INT, LONG}
 import org.neo4j.cypher.internal.compiler.v2_3.birk.il._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{PlanFingerprint, CompiledPlan}
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LogicalPlanIdentificationBuilder,
+LogicalPlan2PlanDescription}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{PlanContext, InstrumentedGraphStatistics}
 import org.neo4j.graphdb.GraphDatabaseService
@@ -105,7 +108,11 @@ class CodeGenerator {
           case _ =>
             None
         }
-        val builder = (st: Statement, db: GraphDatabaseService) => Javac.newInstance(clazz, st, db)
+
+        val idMap = LogicalPlanIdentificationBuilder(plan)
+        val description: InternalPlanDescription = LogicalPlan2PlanDescription(plan, idMap)
+
+        val builder = (st: Statement, db: GraphDatabaseService) => Javac.newInstance(clazz, st, db, description)
 
         CompiledPlan(updating = false, None, fp, CostPlannerName, builder)
 
@@ -143,17 +150,25 @@ class CodeGenerator {
        |import org.neo4j.graphdb.Result.ResultRow;
        |import org.neo4j.graphdb.Result.ResultVisitor;
        |import org.neo4j.graphdb.Result;
+       |import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription;
        |$imports
        |
        |public class $className extends CompiledExecutionResult
        |{
        |private final ReadOperations ro;
        |private final GraphDatabaseService db;
+       |private final InternalPlanDescription description;
        |
-       |public $className( Statement statement, GraphDatabaseService db)
+       |public $className( Statement statement, GraphDatabaseService db, InternalPlanDescription description )
        |{
        |  this.ro = statement.readOperations( );
        |  this.db = db;
+       |  this.description = description;
+       |}
+       |
+       |public InternalPlanDescription executionPlanDescription()
+       |{
+       |  return this.description;
        |}
        |
        |$fields
