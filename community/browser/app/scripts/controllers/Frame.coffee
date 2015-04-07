@@ -20,24 +20,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 'use strict'
 
-###
-# DEPRECATED
-###
-
 angular.module('neo4jApp.controllers')
-.controller 'StreamCtrl', [
+.controller 'FrameCtrl', [
   '$scope'
-  '$timeout'
-  'Document'
-  'Frame'
-  'Editor'
-  'motdService'
-  ($scope, $timeout, Document, Frame, Editor, motdService) ->
-    ###*
-     * Initialization
-    ###
-    $scope.frames = Frame
-    $scope.motd = motdService
-    
-  ]
+  ($scope) ->
+    $scope.pinned = no
+    $scope.pin = (frame) ->
+      $scope.pinned = !$scope.pinned
+      if $scope.pinned
+        frame.pinTime = (new Date).getTime()
+      else
+        frame.pinTime = 0
+        frame.startTime = (new Date).getTime()
+]
 

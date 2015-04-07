@@ -65,6 +65,7 @@ angular.module('neo4jApp.services')
             @response  = null
             @templateUrl = intr.templateUrl
             @startTime = (new Date).getTime()
+            @pinTime = 0
             intrPromise = intrFn(query, $q.defer())
             @terminate = =>
               @resetError()
