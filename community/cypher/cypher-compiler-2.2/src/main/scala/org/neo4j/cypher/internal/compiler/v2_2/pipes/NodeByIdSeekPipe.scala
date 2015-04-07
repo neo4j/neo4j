@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.ParameterExpression
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ReadsNodes, Effects}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.{CTNode, SymbolTable}
 import org.neo4j.cypher.internal.helpers.{IsCollection, CollectionSupport}
@@ -71,7 +71,7 @@ case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: EntityByIdRhs)
 
   def sources: Seq[Pipe] = Seq.empty
 
-  override def localEffects = Effects.READS_NODES
+  override def localEffects = Effects(ReadsNodes)
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

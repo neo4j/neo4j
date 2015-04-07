@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.commands._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Expression, Identifier, Literal}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.{IsMap, MapSupport, UnNamedNameGenerator}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
@@ -212,10 +212,12 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
     }
   }
 
-  def effects(symbols: SymbolTable): Effects =
-    if (symbols.hasIdentifierNamed(start.name) &&
-        symbols.hasIdentifierNamed(end.name))
-      Effects.READS_RELATIONSHIPS | Effects.WRITES_RELATIONSHIPS
+  def effects(symbols: SymbolTable): Effects = {
+    val hasBothEndNodesInScope = symbols.hasIdentifierNamed(start.name) && symbols.hasIdentifierNamed(end.name)
+
+    if (hasBothEndNodesInScope)
+      Effects(ReadsRelationships, ReadsAnyRelationshipProperty, WritesAnyRelationshipProperty, WritesRelationships)
     else
-      Effects.ALL
+      AllEffects
+  }
 }

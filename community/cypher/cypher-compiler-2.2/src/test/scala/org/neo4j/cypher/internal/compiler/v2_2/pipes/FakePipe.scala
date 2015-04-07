@@ -45,5 +45,5 @@ class FakePipe(val data: Iterator[Map[String, Any]], newIdentifiers: (String, Cy
 
   def sources: Seq[Pipe] = ???
 
-  override def localEffects = Effects.NONE
+  override def localEffects = Effects()
 }

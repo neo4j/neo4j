@@ -49,7 +49,7 @@ case class CartesianProductPipe(lhs: Pipe, rhs: Pipe)(val estimatedCardinality: 
 
   def sources: Seq[Pipe] = Seq(lhs, rhs)
 
-  override def localEffects = Effects.NONE
+  override def localEffects = Effects()
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

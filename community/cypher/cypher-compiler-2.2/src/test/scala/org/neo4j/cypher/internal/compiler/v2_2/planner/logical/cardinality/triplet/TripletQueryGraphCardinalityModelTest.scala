@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.triplet
 
-import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality.{RandomizedCardinalityModelTestSuite, ForumPostsCardinalityData}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics

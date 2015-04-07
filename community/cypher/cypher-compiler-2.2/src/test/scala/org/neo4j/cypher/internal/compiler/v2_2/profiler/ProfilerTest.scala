@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.profiler
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{NestedPipeExpression, ProjectedPath}
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{WritesNodes, ReadsNodes, Effects}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{Argument, InternalPlanDescription}
@@ -169,7 +169,7 @@ case class ProfilerTestPipe(source: Pipe, name: String, rows: Int, dbAccess: Int
     (0 until rows).map(x => ExecutionContext.empty).toIterator
   }
 
-  def localEffects: Effects = Effects.WRITES_NODES
+  def localEffects: Effects = Effects(WritesNodes)
 
   def symbols: SymbolTable = SymbolTable()
 

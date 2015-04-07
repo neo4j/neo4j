@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Expression, NumericHelper}
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.LegacyExpression
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.SymbolTable
 
@@ -54,7 +55,7 @@ case class SkipPipe(source: Pipe, exp: Expression)
     copy(source = head)(estimatedCardinality)
   }
 
-  override def localEffects = exp.effects
+  override def localEffects = Effects()
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

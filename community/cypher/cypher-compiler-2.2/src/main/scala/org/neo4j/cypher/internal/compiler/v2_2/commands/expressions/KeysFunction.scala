@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_2._
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan._
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.IsMap
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
@@ -48,13 +48,12 @@ case class KeysFunction(expr: Expression) extends NullInNullOutExpression(expr) 
     case _ => CTCollection(CTString)
   }
 
-  def localEffects(symbols: SymbolTable) = expr match {
+  override def localEffects(symbols: SymbolTable) = expr match {
     case i: Identifier => symbols.identifiers(i.entityName) match {
-      case _: NodeType => Effects.READS_NODES
-      case _: RelationshipType => Effects.READS_RELATIONSHIPS
-      case _ => Effects.NONE
+      case _: NodeType => Effects(ReadsAnyNodeProperty)
+      case _: RelationshipType => Effects(ReadsAnyRelationshipProperty)
+      case _ => Effects()
     }
-    case _ => Effects.NONE
+    case _ => Effects()
   }
-
 }

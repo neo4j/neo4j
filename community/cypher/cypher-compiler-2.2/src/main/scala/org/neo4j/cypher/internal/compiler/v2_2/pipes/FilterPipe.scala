@@ -41,7 +41,7 @@ case class FilterPipe(source: Pipe, predicate: Predicate)(val estimatedCardinali
     copy(source = source)(estimatedCardinality)
   }
 
-  override def localEffects = predicate.effects
+  override def localEffects = predicate.effects(symbols)
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }
