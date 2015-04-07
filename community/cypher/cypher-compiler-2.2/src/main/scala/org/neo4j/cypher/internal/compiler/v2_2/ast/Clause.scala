@@ -248,17 +248,34 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
     super.semanticCheck chain
     returnItems.semanticCheck
 
-  def semanticCheckContinuation(previousScope: Scope): SemanticCheck =
-    returnItems.declareIdentifiers(previousScope) chain
-      orderBy.semanticCheck chain
-      checkSkip chain
-      checkLimit
+  def semanticCheckContinuation(previousScope: Scope): SemanticCheck =  (s: SemanticState) => {
+    val specialStateForShuffle = {
+      // ORDER BY lives in this special scope that has access to things in scope before the RETURN/WITH clause,
+      // but also to the identifiers introduced by RETURN/WITH. This is most easily done by turning
+      // RETURN a, b, c => RETURN *, a, b, c
+
+      // Except when we are doing DISTINCT or aggregation, in which case we only see the scope introduced by the
+      // projecting clause
+      val includePreviousScope = !(returnItems.containsAggregate || distinct)
+      val specialReturnItems = returnItems.copy(includeExisting = includePreviousScope)(returnItems.position)
+      specialReturnItems.declareIdentifiers(previousScope)(s).state
+    }
+    val shuffleErrors = (orderBy.semanticCheck chain checkSkip chain checkLimit)(specialStateForShuffle).errors
+
+    // We still need to declare the return items, and register the use of identifiers in the ORDER BY clause. But we
+    // don't want to see errors from ORDER BY - we'll get them through shuffleErrors instead
+    val orderByResult = (returnItems.declareIdentifiers(previousScope) chain ignoreErrors(orderBy.semanticCheck))(s)
+
+    SemanticCheckResult(orderByResult.state, orderByResult.errors ++ shuffleErrors)
+  }
 
   // use an empty state when checking skip & limit, as these have entirely isolated context
   protected def checkSkip: SemanticState => Seq[SemanticError] =
     s => skip.semanticCheck(SemanticState.clean).errors
   protected def checkLimit: SemanticState => Seq[SemanticError] =
     s => limit.semanticCheck(SemanticState.clean).errors
+  protected def ignoreErrors(inner: SemanticCheck): SemanticCheck =
+    s => SemanticCheckResult.success(inner.apply(s).state)
 }
 
 case class With(
