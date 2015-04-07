@@ -23,62 +23,41 @@ import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.InputPosition
 import org.neo4j.cypher.internal.compiler.v2_2.parser.ParserMonitor
+import org.scalatest.prop.TableDrivenPropertyChecks
 
-class CypherOptionParserTest extends CypherFunSuite {
+class CypherOptionParserTest extends CypherFunSuite with TableDrivenPropertyChecks {
 
-  private val pos = InputPosition(42, 3, 5)
+  val queries = Table(
+    ("query", "expected"),
+    ("CYPHER 1.9 MATCH", CypherQueryWithOptions("MATCH", Seq(ConfigurationOptions(Some(VersionOption("1.9")), Seq.empty)), (1, 12, 11))),
+    ("CYPHER 2.0 THAT", CypherQueryWithOptions("THAT", Seq(ConfigurationOptions(Some(VersionOption("2.0")), Seq.empty)), (1, 12, 11))),
+    ("CYPHER 2.1 YO", CypherQueryWithOptions("YO", Seq(ConfigurationOptions(Some(VersionOption("2.1")), Seq.empty)), (1, 12, 11))),
+    ("CYPHER 2.2 HO", CypherQueryWithOptions("HO", Seq(ConfigurationOptions(Some(VersionOption("2.2")), Seq.empty)), (1, 12, 11))),
+    ("PROFILE THINGS", CypherQueryWithOptions("THINGS", Seq(ProfileOption), (1, 9, 8))),
+    ("EXPLAIN THIS", CypherQueryWithOptions("THIS", Seq(ExplainOption), (1, 9, 8))),
+    ("CYPHER 2.2 PLANNER COST PROFILE PATTERN", CypherQueryWithOptions("PATTERN", Seq(ConfigurationOptions(Some(VersionOption("2.2")), Seq.empty), CostPlannerOption, ProfileOption), (1, 33, 32))),
+    ("EXPLAIN CYPHER 2.1 YALL", CypherQueryWithOptions("YALL", Seq(ExplainOption, ConfigurationOptions(Some(VersionOption("2.1")), Seq.empty)), (1, 20, 19))),
+    ("CYPHER 2.2 PLANNER COST RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(Some(VersionOption("2.2")), Seq.empty), CostPlannerOption), (1, 25, 24))),
+    ("PLANNER COST RETURN", CypherQueryWithOptions("RETURN",Seq(CostPlannerOption), (1, 14, 13))),
+    ("CYPHER 2.2 PLANNER RULE RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(Some(VersionOption("2.2")), Seq.empty), RulePlannerOption), (1, 25, 24))),
+    ("PLANNER RULE RETURN", CypherQueryWithOptions("RETURN", Seq(RulePlannerOption), (1, 14, 13))),
+    ("CYPHER 2.2 PLANNER IDP RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(Some(VersionOption("2.2")), Seq.empty), IDPPlannerOption), (1, 24, 23))),
+    ("CYPHER 2.2 PLANNER DP RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(Some(VersionOption("2.2")), Seq.empty), DPPlannerOption), (1, 23, 22))),
+    ("PLANNER IDP RETURN", CypherQueryWithOptions("RETURN",Seq(IDPPlannerOption), (1, 13, 12))),
+    ("PLANNER DP RETURN", CypherQueryWithOptions("RETURN", Seq(DPPlannerOption), (1, 12, 11))),
+    ("CYPHER planner=cost RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(None, Seq(CostPlannerOption))), (1, 21, 20))),
+    ("CYPHER 2.2 planner=cost RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(Some(VersionOption("2.2")), Seq(CostPlannerOption))), (1, 25, 24))),
+    ("CYPHER 2.2 planner = idp RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(Some(VersionOption("2.2")), Seq(IDPPlannerOption))), (1, 26, 25))),
+    ("CYPHER planner =dp RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(None, Seq(DPPlannerOption))), (1, 20, 19))),
+    ("explainmatch", CypherQueryWithOptions("explainmatch", Seq.empty, (1, 1, 0)))
+    )
 
-  def parse(arg:String): CypherQueryWithOptions = {
+  forAll(queries) {
+    case (query, expected) => parse(query) should equal(expected)
+  }
+
+  private def parse(arg:String): CypherQueryWithOptions = {
     CypherOptionParser(mock[ParserMonitor[CypherQueryWithOptions]]).apply(arg)
-  }
-
-  test("should parse version") {
-    parse("CYPHER 1.9 MATCH") should equal(CypherQueryWithOptions("MATCH", Seq(VersionOption("1.9")), (1, 12, 11)))
-    parse("CYPHER 2.0 THAT") should equal(CypherQueryWithOptions("THAT", Seq(VersionOption("2.0")), (1, 12, 11)))
-    parse("CYPHER 2.1 YO") should equal(CypherQueryWithOptions("YO", Seq(VersionOption("2.1")), (1, 12, 11)))
-    parse("CYPHER 2.2 HO") should equal(CypherQueryWithOptions("HO", Seq(VersionOption("2.2")), (1, 12, 11)))
-  }
-
-  test("should parse profile") {
-    parse("PROFILE THINGS") should equal(CypherQueryWithOptions("THINGS", Seq(ProfileOption), (1, 9, 8)))
-  }
-
-  test("should parse explain") {
-    parse("EXPLAIN THIS") should equal(CypherQueryWithOptions("THIS", Seq(ExplainOption), (1, 9, 8)))
-  }
-
-  test("should parse multiple options") {
-    parse("CYPHER 2.2 PLANNER COST PROFILE PATTERN") should equal(
-      CypherQueryWithOptions("PATTERN", Seq(VersionOption("2.2"), CostPlannerOption, ProfileOption), (1, 33, 32))
-    )
-    parse("EXPLAIN CYPHER 2.1 YALL") should equal(
-      CypherQueryWithOptions("YALL", Seq(ExplainOption, VersionOption("2.1")), (1, 20, 19))
-    )
-  }
-
-  test("should parse version and planner/compiler") {
-    parse("CYPHER 2.2 PLANNER COST RETURN") should equal(
-      CypherQueryWithOptions("RETURN", Seq(VersionOption("2.2"), CostPlannerOption), (1, 25, 24))
-    )
-    parse("PLANNER COST RETURN") should equal(
-      CypherQueryWithOptions("RETURN",Seq(CostPlannerOption), (1, 14, 13))
-    )
-    parse("CYPHER 2.2 PLANNER RULE RETURN") should equal(
-      CypherQueryWithOptions("RETURN", Seq(VersionOption("2.2"), RulePlannerOption), (1, 25, 24))
-    )
-    parse("PLANNER RULE RETURN") should equal(CypherQueryWithOptions("RETURN", Seq(RulePlannerOption), (1, 14, 13)))
-    parse("CYPHER 2.2 PLANNER IDP RETURN") should equal(
-      CypherQueryWithOptions("RETURN", Seq(VersionOption("2.2"), IDPPlannerOption), (1, 24, 23))
-    )
-    parse("CYPHER 2.2 PLANNER DP RETURN") should equal(
-      CypherQueryWithOptions("RETURN", Seq(VersionOption("2.2"), DPPlannerOption), (1, 23, 22))
-    )
-    parse("PLANNER IDP RETURN") should equal(CypherQueryWithOptions("RETURN",Seq(IDPPlannerOption), (1, 13, 12)))
-    parse("PLANNER DP RETURN") should equal(CypherQueryWithOptions("RETURN",Seq(DPPlannerOption), (1, 12, 11)))
-  }
-
-  test("should require whitespace between option and query") {
-    parse("explainmatch") should equal(CypherQueryWithOptions("explainmatch", Seq.empty, (1, 1, 0)))
   }
 
   private implicit def lift(pos: (Int, Int, Int)): InputPosition = InputPosition(pos._3, pos._1, pos._2)

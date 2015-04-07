@@ -83,7 +83,7 @@ class UniquenessAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
 
-  val planners = Table(("Prefix"), ("PLANNER COST"), ("PLANNER RULE"), (""))
+  val planners = Table(("Prefix"), ("CYPHER planner=cost"), ("CYPHER planner=rule"), (""))
 
   test("should consider uniqueness when combining simple and variable length pattern in a match") {
     forAll(planners) { planner =>
