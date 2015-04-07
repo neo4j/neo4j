@@ -23,18 +23,11 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{AstNode, EffectfulAstNode}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{Effectful, QueryState}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
-trait WritesNodes
-trait WritesRelationships
-
-trait Effectful {
-  def effects: Effects
-  def localEffects: Effects
-}
 
 trait UpdateAction extends TypeSafe with AstNode[UpdateAction] {
   self =>
@@ -52,14 +45,14 @@ trait UpdateAction extends TypeSafe with AstNode[UpdateAction] {
   def effects(symbols: SymbolTable): Effects = {
     val collector = new EffectsCollector(localEffects(symbols), self, symbols)
     visitFirst {
-      case (expr: Effectful) => collector.register(expr).withEffects(expr.localEffects)
-      case (expr: EffectfulAstNode[_]) => collector.register(expr).withEffects(expr.localEffects)
-      case (expr: UpdateAction) =>
-        val oldSymbols = collector.symbols(expr)
+      case (effectful: Effectful) => collector.register(effectful).withEffects(effectful.localEffects.toWriteEffects())
+      case (effectfulAst: EffectfulAstNode[_]) => collector.register(effectfulAst).withEffects(effectfulAst.localEffects(symbols).toWriteEffects())
+      case (update: UpdateAction) =>
+        val oldSymbols = collector.symbols(update)
         collector
-          .registerWithSymbolTable(expr, expr.updateSymbols(oldSymbols))
-          .withEffects(expr.localEffects(oldSymbols))
-      case expr => collector.register(expr)
+          .registerWithSymbolTable(update, update.updateSymbols(oldSymbols))
+          .withEffects(update.localEffects(oldSymbols))
+      case other => collector.register(other)
     }
 
     collector.effects

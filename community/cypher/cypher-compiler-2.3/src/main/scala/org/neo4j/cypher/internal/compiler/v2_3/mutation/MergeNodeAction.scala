@@ -20,16 +20,16 @@
 package org.neo4j.cypher.internal.compiler.v2_3.mutation
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import commands.expressions.Expression
-import commands.Predicate
-import commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Argument
-import pipes.{QueryState, EntityProducer}
-import symbols._
-import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
-import org.neo4j.graphdb.Node
+import org.neo4j.cypher.internal.compiler.v2_3.commands.Predicate
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsNodes, WritesNodes}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.PropertySupport
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{EntityProducer, QueryState}
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Argument
+import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
+import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.graphdb.Node
 
 final case class IndexNodeProducer(label: KeyToken, propertyKey: KeyToken, producer: EntityProducer[Node]) extends EntityProducer[Node] {
   def producerType: String = s"IndexNodProducer(${producer.producerType})"
@@ -168,7 +168,7 @@ case class MergeNodeAction(identifier: String,
       ++ onCreate.flatMap(_.symbolTableDependencies)
       ++ onMatch.flatMap(_.symbolTableDependencies)).toSet - identifier
 
-  def localEffects(symbols: SymbolTable) = Effects.READS_NODES | Effects.WRITES_NODES
+  def localEffects(symbols: SymbolTable) = Effects(WritesNodes, ReadsNodes)
 
   override def updateSymbols(symbol: SymbolTable): SymbolTable = symbol.add(identifiers.toMap)
 }

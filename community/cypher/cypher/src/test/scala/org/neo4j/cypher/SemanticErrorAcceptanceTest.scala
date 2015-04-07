@@ -325,8 +325,9 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   test("should fail if using an hint with property equality comparison") {
     executeAndEnsureError(
       "match (n:Person)-->(m:Person) using index n:Person(name) where n.name = m.name return n",
-      "Cannot use index hint in this context. Index hints require using a simple equality comparison " +
-        "or IN condition in WHERE (either directly or as part of a top-level AND). Note that the label " +
+      "Cannot use index hint in this context. Index hints require using a simple equality comparison or IN condition " +
+        "or checking property existance on a node in WHERE (either directly or as part of a top-level AND). " +
+        "Note that the label " +
         "and property comparison must be specified on a non-optional node (line 1, column 31 (offset: 30))"
     )
   }

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsNodes}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.CollectionSupport
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
@@ -38,7 +38,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
   val symbols: SymbolTable =
     source.symbols.add(start, CTNode).add(end, CTNode)
 
-  override val localEffects = if (!startInScope || !endInScope) Effects.READS_NODES else Effects.NONE
+  override val localEffects = if (!startInScope || !endInScope) Effects(ReadsNodes) else Effects()
 
   type Projector = (ExecutionContext) => Iterator[ExecutionContext]
 

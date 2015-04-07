@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{ManyQueryExpression, QueryExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LeafPlanner, LogicalPlanningContext}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 
-abstract class IndexLeafPlanner extends LeafPlanner {
+abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
   def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext) = {
     implicit val semanticTable = context.semanticTable
     val predicates: Seq[Expression] = qg.selections.flatPredicates
@@ -75,7 +75,7 @@ abstract class IndexLeafPlanner extends LeafPlanner {
   protected def findIndexesFor(label: String, property: String)(implicit context: LogicalPlanningContext): Option[IndexDescriptor]
 }
 
-object uniqueIndexSeekLeafPlanner extends IndexLeafPlanner {
+object uniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
   protected def constructPlan(idName: IdName,
                               label: LabelToken,
                               propertyKey: PropertyKeyToken,
@@ -91,7 +91,7 @@ object uniqueIndexSeekLeafPlanner extends IndexLeafPlanner {
     context.planContext.getUniqueIndexRule(label, property)
 }
 
-object indexSeekLeafPlanner extends IndexLeafPlanner {
+object indexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
   protected def constructPlan(idName: IdName,
                               label: LabelToken,
                               propertyKey: PropertyKeyToken,

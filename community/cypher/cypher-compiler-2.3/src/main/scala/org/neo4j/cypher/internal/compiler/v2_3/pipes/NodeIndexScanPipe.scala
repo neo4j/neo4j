@@ -19,45 +19,35 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, ParameterExpression}
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsNodes}
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.{CollectionSupport, IsCollection}
+import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.cypher.internal.compiler.v2_3.ast.{LabelToken, PropertyKeyToken}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsLabel, ReadsNodeProperty, ReadsNodes}
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.Index
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.{CTNode, SymbolTable}
+import org.neo4j.kernel.api.index.IndexDescriptor
 
-sealed trait EntityByIdRhs {
-  def expressions(ctx: ExecutionContext, state: QueryState): Iterable[Any]
-}
-case class EntityByIdParameter(parameter: ParameterExpression) extends EntityByIdRhs {
-  def expressions(ctx: ExecutionContext, state: QueryState) =
-    parameter(ctx)(state) match {
-      case IsCollection(values) => values
-    }
-}
-case class EntityByIdExprs(exprs: Seq[Expression]) extends EntityByIdRhs {
-  def expressions(ctx: ExecutionContext, state: QueryState) =
-    exprs.map(_.apply(ctx)(state))
-}
+case class NodeIndexScanPipe(ident: String,
+                             label: LabelToken,
+                             propertyKey: PropertyKeyToken)
+                            (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
+  extends Pipe with RonjaPipe {
 
-case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: EntityByIdRhs)
-                           (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
-  extends Pipe
-  with CollectionSupport
-  with RonjaPipe {
+  private val descriptor = new IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)
 
-    val ctx = state.initialContext.getOrElse(ExecutionContext.empty)
-    val nodeIds = nodeIdsExpr.expressions(ctx, state)
-    new NodeIdSeekIterator(ident, ctx, state.query.nodeOps, nodeIds.iterator)
+    val baseContext = state.initialContext.getOrElse(ExecutionContext.empty)
+    val resultNodes = state.query.indexScan(descriptor)
+    resultNodes.map(node => baseContext.newWith1(ident, node))
   }
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  def planDescriptionWithoutCardinality = new PlanDescriptionImpl(this.id, "NodeByIdSeek", NoChildren, Seq(), identifiers)
+  def planDescriptionWithoutCardinality =
+    new PlanDescriptionImpl(this.id, "NodeIndexScan", NoChildren, Seq(Index(label.name, propertyKey.name)), identifiers)
 
   def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
 
@@ -70,7 +60,7 @@ case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: EntityByIdRhs)
 
   def sources: Seq[Pipe] = Seq.empty
 
-  override def localEffects = Effects(ReadsNodes)
+  override def localEffects = Effects(ReadsNodes, ReadsLabel(label.name), ReadsNodeProperty(propertyKey.name))
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

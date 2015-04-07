@@ -23,7 +23,8 @@ import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.UnresolvedLabel
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.AllReadEffects
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.graphdb.{Direction, Path}
 
 class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSupport {
@@ -108,6 +109,6 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
     val expression = PathExpression(Seq(pattern))
 
     // THEN
-    expression.effects should equal(Effects.READS_ENTITIES)
+    expression.effects(SymbolTable()) should equal(AllReadEffects)
   }
 }

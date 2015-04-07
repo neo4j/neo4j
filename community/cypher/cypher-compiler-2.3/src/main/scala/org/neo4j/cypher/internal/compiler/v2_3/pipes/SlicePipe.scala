@@ -76,7 +76,7 @@ case class SlicePipe(source: Pipe, skip: Option[Expression], limit: Option[Expre
     copy(source = head)
   }
 
-  override def localEffects = (skip ++ limit).foldLeft(Effects.NONE)(_ | _.effects)
+  override def localEffects = Effects()
 }
 
 class HeadAndTail[T](head:T, tail:Iterator[T]) extends Iterator[T] {

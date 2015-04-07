@@ -20,15 +20,16 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import commands.{SingleNode, Pattern, PathExtractor, ShortestPath}
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
-import pipes.QueryState
-import symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.{PathExtractor, Pattern, ShortestPath, SingleNode}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsNodes, ReadsRelationships}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 import org.neo4j.graphalgo.GraphAlgoFactory
-import org.neo4j.graphdb.{Path, DynamicRelationshipType, Node, Expander}
+import org.neo4j.graphdb.{DynamicRelationshipType, Expander, Node, Path}
 import org.neo4j.kernel.Traversal
-import collection.Map
+
 import scala.collection.JavaConverters._
+import scala.collection.Map
 
 case class ShortestPathExpression(ast: ShortestPath) extends Expression with PathExtractor {
   val pathPattern:Seq[Pattern] = Seq(ast)
@@ -76,7 +77,7 @@ case class ShortestPathExpression(ast: ShortestPath) extends Expression with Pat
 
   def symbolTableDependencies = ast.symbolTableDependencies + ast.left.name + ast.right.name
 
-  override def localEffects = Effects.READS_ENTITIES
+  override def localEffects(symbols: SymbolTable) = Effects(ReadsNodes, ReadsRelationships)
 }
 
 trait ShortestPathStrategy {

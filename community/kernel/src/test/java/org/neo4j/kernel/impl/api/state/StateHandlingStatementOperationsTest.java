@@ -27,6 +27,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -223,6 +225,36 @@ public class StateHandlingStatementOperationsTest
         verify( txState, atLeastOnce() ).relationshipIsAddedInThisTx( relationshipId );
         verify( txState ).relationshipIsDeletedInThisTx( relationshipId );
         verify( storeReadLayer ).relationshipExists( relationshipId );
+    }
+
+    @Test
+    public void shouldConsiderTransactionStateWhenScanningAnIndex() throws Exception
+    {
+        // Given
+        TransactionState txState = mock( TransactionState.class );
+        KernelStatement statement = mock( KernelStatement.class );
+        when( statement.hasTxStateWithChanges() ).thenReturn( true );
+        when( statement.txState() ).thenReturn( txState );
+        IndexDescriptor index = new IndexDescriptor( 1, 2 );
+        when( txState.indexUpdates( index, null ) ).thenReturn(
+                new DiffSets<>( Collections.singleton( 42L ), Collections.singleton( 44L ) )
+        );
+        when( txState.addedAndRemovedNodes() ).thenReturn(
+                new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
+        );
+
+        StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
+        when( storeReadLayer.nodesGetFromIndexScan( statement, index ) ).thenReturn(
+                IteratorUtil.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
+        );
+
+        StateHandlingStatementOperations context = newTxStateOps( storeReadLayer );
+
+        // When
+        PrimitiveLongIterator results = context.nodesGetFromIndexScan( statement, index );
+
+        // Then
+        assertEquals( asSet( 42L, 43L ), asSet( results ) );
     }
 
     @Test( expected = EntityNotFoundException.class )

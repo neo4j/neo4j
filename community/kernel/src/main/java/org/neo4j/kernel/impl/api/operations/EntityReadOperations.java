@@ -59,6 +59,14 @@ public interface EntityReadOperations
             throws IndexNotFoundKernelException;
 
     /**
+     * Returns an iterable with the matched nodes.
+     *
+     * @throws IndexNotFoundKernelException if no such index found.
+     */
+    PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement state, IndexDescriptor index )
+            throws IndexNotFoundKernelException;
+
+    /**
      * Returns an iterable with the matched node.
      *
      * @throws IndexNotFoundKernelException if no such index found.
@@ -151,4 +159,5 @@ public interface EntityReadOperations
     Cursor nodeGetRelationships( KernelStatement statement, long nodeId, Direction direction, int[] types,
                                  RelationshipVisitor<? extends RuntimeException> visitor )
             throws EntityNotFoundException;
+
 }

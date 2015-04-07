@@ -77,5 +77,5 @@ case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])(val 
     copy(source = source)(estimatedCardinality)
   }
 
-  override def localEffects = expressions.effects
+  override def localEffects = expressions.effects(symbols)
 }

@@ -116,8 +116,8 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
           || !containsPropertyPredicate(identifier, property) =>
         SemanticError(
           """|Cannot use index hint in this context.
-             | Index hints require using a simple equality comparison or IN condition in WHERE (either directly or as part of a
-             | top-level AND).
+             | Index hints require using a simple equality comparison or IN condition or checking property
+             | existance on a node in WHERE (either directly or as part of a top-level AND).
              | Note that the label and property comparison must be specified on a
              | non-optional node""".stripLinesAndMargins, hint.position)
       case hint@UsingScanHint(Identifier(identifier), LabelName(labelName))
@@ -138,6 +138,9 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
         case Equals(other, Property(Identifier(id), PropertyKeyName(name))) if id == identifier && applicable(other) =>
           (acc, _) => acc :+ name
         case In(Property(Identifier(id), PropertyKeyName(name)),_) if id == identifier =>
+          (acc, _) => acc :+ name
+        case predicate@FunctionInvocation(_, _, IndexedSeq(Property(Identifier(id), PropertyKeyName(name))))
+          if id == identifier && predicate.function == Some(functions.Has) =>
           (acc, _) => acc :+ name
         case _: Where | _: And | _: Ands | _: Set[_] =>
           (acc, children) => children(acc)
@@ -276,17 +279,34 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
     super.semanticCheck chain
     returnItems.semanticCheck
 
-  def semanticCheckContinuation(previousScope: Scope): SemanticCheck =
-    returnItems.declareIdentifiers(previousScope) chain
-      orderBy.semanticCheck chain
-      checkSkip chain
-      checkLimit
+  def semanticCheckContinuation(previousScope: Scope): SemanticCheck =  (s: SemanticState) => {
+    val specialStateForShuffle = {
+      // ORDER BY lives in this special scope that has access to things in scope before the RETURN/WITH clause,
+      // but also to the identifiers introduced by RETURN/WITH. This is most easily done by turning
+      // RETURN a, b, c => RETURN *, a, b, c
+
+      // Except when we are doing DISTINCT or aggregation, in which case we only see the scope introduced by the
+      // projecting clause
+      val includePreviousScope = !(returnItems.containsAggregate || distinct)
+      val specialReturnItems = returnItems.copy(includeExisting = includePreviousScope)(returnItems.position)
+      specialReturnItems.declareIdentifiers(previousScope)(s).state
+    }
+    val shuffleErrors = (orderBy.semanticCheck chain checkSkip chain checkLimit)(specialStateForShuffle).errors
+
+    // We still need to declare the return items, and register the use of identifiers in the ORDER BY clause. But we
+    // don't want to see errors from ORDER BY - we'll get them through shuffleErrors instead
+    val orderByResult = (returnItems.declareIdentifiers(previousScope) chain ignoreErrors(orderBy.semanticCheck))(s)
+
+    SemanticCheckResult(orderByResult.state, orderByResult.errors ++ shuffleErrors)
+  }
 
   // use an empty state when checking skip & limit, as these have entirely isolated context
   protected def checkSkip: SemanticState => Seq[SemanticError] =
     s => skip.semanticCheck(SemanticState.clean).errors
   protected def checkLimit: SemanticState => Seq[SemanticError] =
     s => limit.semanticCheck(SemanticState.clean).errors
+  protected def ignoreErrors(inner: SemanticCheck): SemanticCheck =
+    s => SemanticCheckResult.success(inner.apply(s).state)
 }
 
 case class With(

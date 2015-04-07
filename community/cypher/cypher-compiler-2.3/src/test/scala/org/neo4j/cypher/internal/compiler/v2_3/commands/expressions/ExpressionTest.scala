@@ -104,8 +104,8 @@ class ExpressionTest extends CypherFunSuite {
     val expression = Not(True())
 
     // then
-    expression.localEffects should equal(Effects.NONE)
-    expression.effects should equal(Effects.NONE)
+    expression.localEffects(SymbolTable()) should equal(Effects())
+    expression.effects(SymbolTable()) should equal(Effects())
   }
 
   private def testMerge(a: Map[String, CypherType], b: Map[String, CypherType], expected: Map[String, CypherType]) {

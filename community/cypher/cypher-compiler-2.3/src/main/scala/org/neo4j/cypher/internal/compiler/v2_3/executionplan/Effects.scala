@@ -19,64 +19,183 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan
 
-import org.neo4j.cypher.internal.compiler.v2_3.commands.{SortItem, ReturnItem}
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v2_3.mutation.{UpdateAction, Effectful}
-import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, Identifier}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.{ReturnItem, SortItem}
+import org.neo4j.cypher.internal.compiler.v2_3.mutation.UpdateAction
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.Effectful
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.{SymbolTable, _}
 
-case class Effects(value: Int)  {
-  def &(other: Effects): Effects = Effects(other.value & value)
-  def |(other: Effects): Effects = Effects(other.value | value)
+case class Effects(effectsSet: Set[Effect] = Set.empty) {
 
-  def contains(other: Effects): Boolean = (value & other.value) == other.value
-  def intersects(other: Effects): Boolean = (value & other.value) != 0
-  def reads(): Boolean = intersects(Effects.READS_ENTITIES)
-  def writes(): Boolean = intersects(Effects.WRITES_ENTITIES)
+  def &(other: Effects): Effects = Effects(other.effectsSet.intersect(effectsSet))
 
-  override def toString =
-    if (value == 0) "NONE"
-    else {
-      Seq("WRITES_NODES", "WRITES_RELATIONSHIPS", "READS_NODES", "READS_RELATIONSHIPS").zipWithIndex
-        .filter { case (_: String, index: Int) => (value & (2 << index)) != 0}.map(_._1).mkString(" | ")
-    }
+  def |(other: Effects): Effects = Effects(effectsSet ++ other.effectsSet)
+
+  def contains(effect: Effect): Boolean = effectsSet(effect)
+
+  def reads() = effectsSet.exists(_.reads)
+
+  def writes() = effectsSet.exists(_.writes)
+
+  def toWriteEffects() = Effects(effectsSet.map {
+    case e: ReadEffect => e.toWriteEffect
+    case e: WriteEffect => e
+  }.toSet[Effect])
+}
+
+object AllWriteEffects extends Effects(Set(WritesNodes, WritesRelationships, WritesAnyLabel, WritesAnyNodeProperty, WritesAnyRelationshipProperty)) {
+  override def toString = "AllWriteEffects"
+}
+
+object AllReadEffects extends Effects(Set(ReadsNodes, ReadsRelationships, ReadsAnyLabel, ReadsAnyNodeProperty, ReadsAnyRelationshipProperty)) {
+  override def toString = "AllReadEffects"
+}
+
+object AllEffects extends Effects((AllWriteEffects | AllReadEffects).effectsSet) {
+  override def toString = "AllEffects"
 }
 
 object Effects {
-  val WRITES_NODES = Effects(2 << 0)
-  val WRITES_RELATIONSHIPS = Effects(2 << 1)
-  val READS_NODES = Effects(2 << 2)
-  val READS_RELATIONSHIPS = Effects(2 << 3)
 
-  val NONE = Effects(0)
-  val READS_ENTITIES = READS_NODES | READS_RELATIONSHIPS
-  val WRITES_ENTITIES = WRITES_NODES | WRITES_RELATIONSHIPS
-  val ALL = READS_ENTITIES | WRITES_ENTITIES
+  def apply(effectsSeq: Effect*): Effects = Effects(effectsSeq.toSet)
+
+  def propertyRead(expression: Expression, symbols: SymbolTable)(propertyKey: String) = {
+    (expression match {
+      case i: Identifier => symbols.identifiers.get(i.entityName).map {
+        case _: NodeType => Effects(ReadsNodeProperty(propertyKey))
+        case _: RelationshipType => Effects(ReadsRelationshipProperty(propertyKey))
+        case _ => Effects()
+      }
+      case _ => None
+    }).getOrElse(AllReadEffects)
+  }
+
+  def propertyWrite(expression: Expression, symbols: SymbolTable)(propertyKey: String) =
+    (expression match {
+      case i: Identifier => symbols.identifiers.get(i.entityName).map {
+        case _: NodeType => Effects(WritesNodeProperty(propertyKey))
+        case _: RelationshipType => Effects(WritesRelationshipProperty(propertyKey))
+        case _ => Effects()
+      }
+      case _ => None
+    }).getOrElse(AllWriteEffects)
 
   implicit class TraversableEffects(iter: Traversable[Effectful]) {
-    def effects: Effects = iter.map(_.effects).reduced
+    def effects: Effects = Effects(iter.flatMap(_.effects.effectsSet).toSet)
   }
 
   implicit class TraversableExpressions(iter: Traversable[Expression]) {
-    def effects: Effects = iter.map(_.effects).reduced
+    def effects(symbols: SymbolTable): Effects = Effects(iter.flatMap(_.effects(symbols).effectsSet).toSet)
   }
 
   implicit class EffectfulReturnItems(iter: Traversable[ReturnItem]) {
-    def effects: Effects = iter.map(_.expression.effects).reduced
+    def effects(symbols: SymbolTable): Effects = Effects(iter.flatMap(_.expression.effects(symbols).effectsSet).toSet)
   }
 
   implicit class EffectfulUpdateAction(commands: Traversable[UpdateAction]) {
-    def effects(symbols: SymbolTable): Effects = commands.map(_.effects(symbols)).reduced
+    def effects(symbols: SymbolTable): Effects = Effects(commands.flatMap(_.effects(symbols).effectsSet).toSet)
   }
 
   implicit class MapEffects(m: Map[_, Expression]) {
-    def effects: Effects = m.values.map(_.effects).reduced
+    def effects(symbols: SymbolTable): Effects = Effects(m.values.flatMap(_.effects(symbols).effectsSet).toSet)
   }
 
   implicit class SortItemEffects(m: Traversable[SortItem]) {
-    def effects: Effects = m.map(_.expression.effects).reduced
+    def effects(symbols: SymbolTable): Effects = Effects(m.flatMap(_.expression.effects(symbols).effectsSet).toSet)
   }
 
-  implicit class ReducedEffects(effects: Traversable[Effects]) {
-    def reduced = effects.reduceOption(_ | _).getOrElse(Effects.NONE)
-  }
+}
+
+trait Effect {
+  def reads: Boolean
+
+  def writes: Boolean
+
+  override def toString = this.getClass.getSimpleName
+}
+
+protected trait ReadEffect extends Effect {
+  override def reads = true
+
+  override def writes = false
+
+  def toWriteEffect: WriteEffect
+}
+
+protected trait WriteEffect extends Effect {
+  override def reads = false
+
+  override def writes = true
+}
+
+case object ReadsNodes extends ReadEffect {
+  override def toWriteEffect = WritesNodes
+}
+
+case object WritesNodes extends WriteEffect
+
+case class ReadsNodeProperty(propertyName: String) extends ReadEffect {
+  override def toString = s"${super.toString} '$propertyName'"
+
+  override def toWriteEffect = WritesNodeProperty(propertyName)
+}
+
+object ReadsAnyNodeProperty extends ReadsNodeProperty("") {
+  override def toWriteEffect: WritesNodeProperty = WritesAnyNodeProperty
+
+  override def toString = this.getClass.getSimpleName
+}
+
+case class WritesNodeProperty(propertyName: String) extends WriteEffect {
+  override def toString = s"${super.toString} '$propertyName'"
+}
+
+object WritesAnyNodeProperty extends WritesNodeProperty("") {
+  override def toString = this.getClass.getSimpleName
+}
+
+case class ReadsLabel(labelName: String) extends ReadEffect {
+  override def toString = s"${super.toString} '$labelName'"
+
+  override def toWriteEffect = WritesLabel(labelName)
+}
+
+object ReadsAnyLabel extends ReadsLabel("") {
+  override def toWriteEffect: WritesLabel = WritesAnyLabel
+
+  override def toString = this.getClass.getSimpleName
+}
+
+case class WritesLabel(labelName: String) extends WriteEffect {
+  override def toString = s"${super.toString} '$labelName'"
+}
+
+object WritesAnyLabel extends WritesLabel("") {
+  override def toString = this.getClass.getSimpleName
+}
+
+case object ReadsRelationships extends ReadEffect {
+  override def toWriteEffect = WritesRelationships
+}
+
+case object WritesRelationships extends WriteEffect
+
+case class ReadsRelationshipProperty(propertyName: String) extends ReadEffect {
+  override def toString = s"${super.toString} '$propertyName'"
+
+  override def toWriteEffect = WritesRelationshipProperty(propertyName)
+}
+
+case class WritesRelationshipProperty(propertyName: String) extends WriteEffect {
+  override def toString = s"${super.toString} '$propertyName'"
+}
+
+object ReadsAnyRelationshipProperty extends ReadsRelationshipProperty("") {
+  override def toWriteEffect: WritesRelationshipProperty = WritesAnyRelationshipProperty
+
+  override def toString = this.getClass.getSimpleName
+}
+
+object WritesAnyRelationshipProperty extends WritesRelationshipProperty("") {
+  override def toString = this.getClass.getSimpleName
 }

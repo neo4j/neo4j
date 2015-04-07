@@ -59,17 +59,10 @@ class NamespacerTest extends CypherFunSuite {
     "match n return n, count(*) as c order by c" ->
     """match `  n@6`
       |with `  n@6` as `  FRESHID15`, count(*) as `  FRESHID18` ORDER BY `  FRESHID18`
-      |return `  FRESHID15` as n, `  FRESHID18` as c""".stripMargin,
-    """START root=node:Person(id='deevian') RETURN id(root) as id
-      |
-      |UNION
-      |
-      |START root=node:Person(id='retophy') RETURN id(root) as id""".stripMargin ->
-    """START `  root@6`=node:Person(id='deevian') RETURN id(`  root@6`) as id
-      |
-      |UNION
-      |
-      |START `  root@73`=node:Person(id='retophy') RETURN id(`  root@73`) as id""".stripMargin
+      |return `  FRESHID15` as n, `  FRESHID18` as c""".stripMargin
+    ,
+    "START root=node:Person(id='deevian') RETURN id(root) as id UNION START root=node:Person(id='retophy') RETURN id(root) as id" ->
+    "START `  root@6`=node:Person(id='deevian') RETURN id(`  root@6`) as id UNION START `  root@71`=node:Person(id='retophy') RETURN id(`  root@71`) as id"
   )
 
   tests.foreach {

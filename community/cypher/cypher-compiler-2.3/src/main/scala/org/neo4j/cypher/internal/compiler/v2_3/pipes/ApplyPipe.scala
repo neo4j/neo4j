@@ -48,7 +48,7 @@ case class ApplyPipe(source: Pipe, inner: Pipe)(val estimatedCardinality: Option
 
   override val sources: Seq[Pipe] = Seq(source, inner)
 
-  override def localEffects = Effects.NONE
+  override def localEffects = Effects()
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

@@ -114,6 +114,6 @@ case class ExtractPipe(source: Pipe, expressions: Map[String, Expression], hack_
     copy(source = source)
   }
 
-  override def localEffects = expressions.effects
+  override def localEffects = expressions.effects(symbols)
 }
 

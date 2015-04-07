@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutionPlanInProgress, PlanBuilder}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
-import org.neo4j.graphdb.{Relationship, Node}
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{PlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
+import org.neo4j.graphdb.{Node, Relationship}
 
 /*
 This class is responsible for taking unsolved StartItems and transforming them into StartPipes
@@ -72,7 +72,7 @@ class StartPointBuilder extends PlanBuilder {
     val result: PartialFunction[(PlanContext, QueryToken[StartItem]), (Pipe => Pipe)] = {
       case (planContext, Unsolved(item)) if nodeStart.isDefinedAt((planContext, item)) =>
         (p: Pipe) =>
-          new NodeStartPipe(p, item.identifierName, nodeStart.apply((planContext, item)))()
+          new NodeStartPipe(p, item.identifierName, nodeStart.apply((planContext, item)), item.effects)()
 
       case (planContext, Unsolved(item)) if relationshipStart.isDefinedAt((planContext, item)) =>
         (p: Pipe) =>

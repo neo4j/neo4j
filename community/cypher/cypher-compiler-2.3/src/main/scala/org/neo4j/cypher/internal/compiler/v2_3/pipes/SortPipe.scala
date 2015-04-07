@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.KeyNames
 import org.neo4j.cypher.internal.compiler.v2_3.{Comparer, ExecutionContext}
 
@@ -32,16 +31,12 @@ case class Descending(id:String) extends SortDescription
 
 case class SortPipe(source: Pipe, orderBy: Seq[SortDescription])
                    (val estimatedCardinality: Option[Double] = None)(implicit monitor: PipeMonitor)
-  extends PipeWithSource(source, monitor) with Comparer with RonjaPipe {
+  extends PipeWithSource(source, monitor) with Comparer with RonjaPipe with NoEffectsPipe {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.toList.
       sortWith((a, b) => compareBy(a, b, orderBy)(state)).iterator
 
   def planDescriptionWithoutCardinality = source.planDescription.andThen(this.id, "Sort", identifiers, KeyNames(orderBy.map(_.id)))
-
-  // since we load the whole input in memory this Pipe has no effects
-  override val localEffects = Effects.NONE
-  override val effects = Effects.NONE
 
   def symbols = source.symbols
 

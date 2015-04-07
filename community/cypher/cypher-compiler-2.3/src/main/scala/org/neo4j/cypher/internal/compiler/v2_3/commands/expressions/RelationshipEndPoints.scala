@@ -20,12 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import commands.AstNode
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsRelationships}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.CastSupport
-import pipes.QueryState
-import symbols._
-import CastSupport.castOrFail
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.CastSupport.castOrFail
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 import org.neo4j.graphdb.Relationship
 
 case class RelationshipEndPoints(relExpression: Expression, start: Boolean) extends Expression {
@@ -48,5 +47,5 @@ case class RelationshipEndPoints(relExpression: Expression, start: Boolean) exte
 
   def symbolTableDependencies: Set[String] = relExpression.symbolTableDependencies
 
-  override def localEffects = Effects.READS_RELATIONSHIPS
+  override def localEffects(symbols: SymbolTable) = Effects(ReadsRelationships)
 }

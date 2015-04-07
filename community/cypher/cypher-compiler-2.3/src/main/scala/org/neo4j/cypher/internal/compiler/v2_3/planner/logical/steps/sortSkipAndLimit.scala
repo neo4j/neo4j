@@ -56,7 +56,6 @@ object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
   private def sortDescription(in: ast.SortItem): SortDescription = in match {
     case ast.AscSortItem(ast.Identifier(key)) => Ascending(key)
     case ast.DescSortItem(ast.Identifier(key)) => Descending(key)
-    case _ => ???
   }
 
   private def addSkip(s: Option[ast.Expression], plan: LogicalPlan)(implicit context: LogicalPlanningContext) =

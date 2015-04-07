@@ -40,7 +40,7 @@ case class UnionPipe(sources: List[Pipe], columns:List[String])(implicit val mon
     copy(sources = sources)
   }
 
-  override def localEffects = Effects.NONE
+  override def localEffects = Effects()
 }
 
 case class NewUnionPipe(l: Pipe, r: Pipe)
@@ -63,7 +63,7 @@ case class NewUnionPipe(l: Pipe, r: Pipe)
 
   def sources: Seq[Pipe] = Seq(l, r)
 
-  override def localEffects = Effects.NONE
+  override def localEffects = Effects()
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

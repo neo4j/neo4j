@@ -21,14 +21,12 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.SortItem
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.LegacyExpression
 
 import scala.math.signum
 
 case class LegacySortPipe(source: Pipe, sortDescription: List[SortItem])
-              (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with ExecutionContextComparer {
+              (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with ExecutionContextComparer with NoEffectsPipe {
   def symbols = source.symbols
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
@@ -46,11 +44,6 @@ case class LegacySortPipe(source: Pipe, sortDescription: List[SortItem])
     val (source :: Nil) = sources
     copy(source = source)
   }
-
-  // no local effects
-  override val localEffects = Effects.NONE
-  // the global effects are the one produced by the expression of the SortItems
-  override def effects = sortDescription.effects
 }
 
 trait ExecutionContextComparer extends Comparer {

@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.AggregationExpression
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
@@ -34,7 +32,7 @@ import scala.collection.mutable.{Map => MutableMap}
 // Cypher is lazy until it can't - this pipe will eagerly load the full match
 case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggregations: Map[String, AggregationExpression])
                                (val estimatedCardinality: Option[Double] = None)
-                               (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
+                               (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe with NoEffectsPipe {
 
   val symbols: SymbolTable = createSymbols()
 
@@ -97,14 +95,10 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
   def planDescriptionWithoutCardinality = source.planDescription.
                         andThen(this.id, "EagerAggregation", identifiers, Arguments.KeyNames(keyExpressions.toSeq))
 
-  override def effects = Effects.NONE
-
   def dup(sources: List[Pipe]): Pipe = {
     val (source :: Nil) = sources
     copy(source = source)(estimatedCardinality)
   }
-
-  override def localEffects = aggregations.effects
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

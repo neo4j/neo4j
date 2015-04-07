@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3.mutation
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Identifier, Expression}
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, Identifier}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, _}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
@@ -66,10 +66,10 @@ case class DeleteEntityAction(elementToDelete: Expression)
 
   def localEffects(symbols: SymbolTable) = elementToDelete match {
     case i: Identifier => symbols.identifiers(i.entityName) match {
-      case _: NodeType         => Effects.WRITES_NODES
-      case _: RelationshipType => Effects.WRITES_RELATIONSHIPS
-      case _                   => Effects.NONE
+      case _: NodeType         => Effects(WritesNodes, WritesAnyLabel, WritesAnyNodeProperty)
+      case _: RelationshipType => Effects(WritesRelationships, WritesAnyRelationshipProperty)
+      case _                   => Effects()
     }
-    case _ => Effects.WRITES_ENTITIES
+    case _ => AllWriteEffects
   }
 }

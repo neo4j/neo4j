@@ -223,21 +223,6 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
     )
   }
 
-  test("does not introduce alias for ORDER BY containing unique aggregate") {
-    // Note: aggregations in ORDER BY that don't also appear in WITH are invalid
-    assertRewriteAndSemanticErrors(
-      """MATCH n
-        |WITH n.prop AS prop ORDER BY max(n.foo)
-        |RETURN prop
-      """.stripMargin,
-      """MATCH n
-        |WITH n.prop AS prop ORDER BY max(n.foo)
-        |RETURN prop
-      """.stripMargin,
-      "n not defined (line 2, column 34 (offset: 41))"
-    )
-  }
-
   test("does not introduce alias for WHERE containing aggregate") {
     // Note: aggregations in WHERE are invalid, and will be caught during semantic check
     assertRewriteAndSemanticErrors(
@@ -572,7 +557,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
 
     val checkResult = result.semanticCheck(SemanticState.clean)
     val errors = checkResult.errors.map(error => s"${error.msg} (${error.position})").toSet
-    semanticErrors.map(msg =>
+    semanticErrors.foreach(msg =>
       assert(errors contains msg, s"Error '$msg' not produced (errors: $errors)}")
     )
   }

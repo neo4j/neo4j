@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.IsMap
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
@@ -58,4 +59,6 @@ case class Property(mapExpr: Expression, propertyKey: KeyToken)
   def symbolTableDependencies = mapExpr.symbolTableDependencies
 
   override def toString = s"$mapExpr.${propertyKey.name}"
+
+  override def localEffects(symbols: SymbolTable): Effects = Effects.propertyRead(mapExpr, symbols)(propertyKey.name)
 }

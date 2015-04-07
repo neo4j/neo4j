@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.spi.v2_3
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.compiler.v2_3.{EntityNotFoundException, FailedIndexException}
 import org.neo4j.graphdb.DynamicRelationshipType._
@@ -129,6 +130,9 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
   def exactIndexSearch(index: IndexDescriptor, value: Any) =
     JavaConversionSupport.mapToScala(statement.readOperations().nodesGetFromIndexLookup(index, value))(nodeOps.getById)
+
+  def indexScan(index: IndexDescriptor) =
+    mapToScala(statement.readOperations().nodesGetFromIndexScan(index))(nodeOps.getById)
 
   def exactUniqueIndexSearch(index: IndexDescriptor, value: Any): Option[Node] = {
     val nodeId: Long = statement.readOperations().nodeGetUniqueFromIndexLookup(index, value)

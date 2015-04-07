@@ -62,5 +62,5 @@ case class ColumnFilterPipe(source: Pipe, returnItems: Seq[ReturnItem])
     copy(source = head)
   }
 
-  override def localEffects = returnItems.effects
+  override def localEffects = returnItems.effects(symbols)
 }

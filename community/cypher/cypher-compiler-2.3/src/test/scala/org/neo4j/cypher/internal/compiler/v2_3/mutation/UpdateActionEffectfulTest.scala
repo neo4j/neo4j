@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.StatementCon
 import org.neo4j.cypher.internal.compiler.v2_3.commands.Query
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Identifier, Literal, Property}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType.PropertyKey
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, _}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 
@@ -32,27 +32,34 @@ class UpdateActionEffectfulTest extends CypherFunSuite {
 
   import org.neo4j.cypher.internal.compiler.v2_3.parser.ParserFixture.parser
 
-  test("Updates symbol table correctly when computing effects of MergeNodeAction") {
+  test("correctly computes MergeNodeAction's effects for node property write") {
     val inner = PropertySetAction(Property(Identifier("a"), PropertyKey("x")), Literal(1))
     val given = MergeNodeAction("a", Map.empty, Seq.empty, Seq.empty, Seq(inner), Seq.empty, None)
 
-    given.effects(SymbolTable()) should equal(Effects.READS_NODES | Effects.WRITES_NODES)
+    given.effects(SymbolTable(Map("a" -> symbols.CTNode))) should equal(Effects(ReadsNodes, WritesNodes, WritesNodeProperty("x")))
   }
 
-  test("Updates symbol table correctly when computing effects of MergeNodeAction inside Foreach") {
+  test("correctly computes MergeNodeAction's effects for relationship property write") {
+    val inner = PropertySetAction(Property(Identifier("a"), PropertyKey("x")), Literal(1))
+    val given = MergeNodeAction("b", Map.empty, Seq.empty, Seq.empty, Seq(inner), Seq.empty, None)
+
+    given.effects(SymbolTable(Map("a" -> symbols.CTRelationship))) should equal(Effects(ReadsNodes, WritesNodes, WritesRelationshipProperty("x")))
+  }
+
+  test("correctly computes MergeNodeAction's effects when inside Foreach") {
     val inner = PropertySetAction(Property(Identifier("a"), PropertyKey("x")), Literal(1))
     val merge = MergeNodeAction("a", Map.empty, Seq.empty, Seq.empty, Seq(inner), Seq.empty, None)
     val given = ForeachAction(Literal(Seq.empty), "k", Seq(merge))
 
-    given.effects(SymbolTable()) should equal(Effects.READS_NODES | Effects.WRITES_NODES)
+    given.effects(SymbolTable(Map("a" -> symbols.CTNode))) should equal(Effects(ReadsNodes, WritesNodes, WritesNodeProperty("x")))
   }
 
-  test("Updates symbol table correctly when computing effects of CreateNode and PropertySetAction inside Foreach") {
+  test("correctly computes CreateNode's effects when inside Foreach") {
     val propertySet = PropertySetAction(Property(Identifier("a"), PropertyKey("x")), Literal(1))
     val create = CreateNode("a", Map.empty, Seq.empty)
     val given = ForeachAction(Literal(Seq.empty), "k", Seq(create, propertySet))
 
-    given.effects(SymbolTable()) should equal(Effects.WRITES_NODES)
+    given.effects(SymbolTable(Map("a" -> symbols.CTNode))) should equal(Effects(WritesNodes, WritesNodeProperty("x")))
   }
 
   test("MATCH (a) SET a:Foo RETURN a") {
@@ -62,7 +69,7 @@ class UpdateActionEffectfulTest extends CypherFunSuite {
       case query: Query =>
         query.tail.get.updatedCommands match {
           case Seq(setAction) =>
-            setAction.effects(SymbolTable(Map("a" -> symbols.CTNode))) should equal(Effects.WRITES_NODES)
+            setAction.effects(SymbolTable(Map("a" -> symbols.CTNode))) should equal(Effects(WritesLabel("Foo")))
         }
     }
   }

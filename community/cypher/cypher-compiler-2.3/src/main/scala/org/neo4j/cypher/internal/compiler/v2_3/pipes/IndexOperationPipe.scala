@@ -66,5 +66,5 @@ case class IndexOperationPipe(indexOp: IndexOperation)(implicit val monitor: Pip
 
   def sources: Seq[Pipe] = Seq.empty
 
-  override def localEffects = Effects.NONE
+  override def localEffects = Effects()
 }

@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.TypeSpec
 
 package object v2_3 {
-
   type SemanticCheck = SemanticState => SemanticCheckResult
   type TypeGenerator = SemanticState => TypeSpec
 

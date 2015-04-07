@@ -53,7 +53,7 @@ class OptionSemanticChecking[A](val option: Option[A]) extends AnyVal {
 
 class TraversableOnceSemanticChecking[A](val traversable: TraversableOnce[A]) extends AnyVal {
   def foldSemanticCheck(check: A => SemanticCheck): SemanticCheck = state => traversable.foldLeft(SemanticCheckResult.success(state)) {
-    (r1, o) =>
+    case (r1: SemanticCheckResult, o: A) =>
       val r2 = check(o)(r1.state)
       SemanticCheckResult(r2.state, r1.errors ++ r2.errors)
   }

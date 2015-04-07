@@ -19,7 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 import org.neo4j.collection.primitive.Primitive;
@@ -37,6 +40,8 @@ import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Function;
+import org.neo4j.helpers.Provider;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -68,6 +73,7 @@ import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
@@ -75,6 +81,9 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
+import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -125,6 +134,22 @@ public class DiskLayer implements StoreReadLayer
     private final CountsAccessor counts;
     private final PropertyLoader propertyLoader;
 
+    private static class PropertyStoreProvider implements Provider<PropertyStore>
+    {
+        private final Supplier<NeoStore> neoStoreProvider;
+
+        public PropertyStoreProvider( Supplier<NeoStore> neoStoreProvider )
+        {
+            this.neoStoreProvider = neoStoreProvider;
+        }
+
+        @Override
+        public PropertyStore instance()
+        {
+            return neoStoreProvider.get().getPropertyStore();
+        }
+    }
+
     /**
      * A note on this taking Supplier<NeoStore> rather than just neo store: This is a workaround until the cache is
      * removed. Because the neostore may be restarted while the database is running, and because lazy properties keep
@@ -147,6 +172,7 @@ public class DiskLayer implements StoreReadLayer
         this.relationshipGroupStore = this.neoStore.getRelationshipGroupStore();
         this.counts = neoStore.getCounts();
         this.propertyLoader = new PropertyLoader( neoStore );
+
     }
 
     @Override
@@ -482,6 +508,13 @@ public class DiskLayer implements StoreReadLayer
     }
 
     @Override
+    public PrimitiveLongResourceIterator nodesGetFromIndexScan( KernelStatement state, IndexDescriptor index ) throws
+            IndexNotFoundKernelException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public IndexDescriptor indexesGetForLabelAndPropertyKey( int labelId, int propertyKey )
     {
         return descriptor( schemaStorage.indexRule( labelId, propertyKey ) );
@@ -789,6 +822,13 @@ public class DiskLayer implements StoreReadLayer
     {
         IndexReader reader = state.getIndexReader( index );
         return resourceIterator( reader.lookup( value ), reader );
+    }
+
+    public PrimitiveLongResourceIterator nodesGetFromIndexScan( KernelStatement state, long index )
+            throws IndexNotFoundKernelException
+    {
+        IndexReader reader = state.getIndexReader( index );
+        return resourceIterator( reader.scan(), reader );
     }
 
     @Override

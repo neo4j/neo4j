@@ -46,6 +46,9 @@ case class LeafPlannerList(leafPlanners: LeafPlanner*) {
           case NodeIndexUniqueSeek(IdName(n), LabelToken(l, _), PropertyKeyToken(p, _), _, _) =>
             n == name && l == label && p == property
 
+          case NodeIndexScan(IdName(n), LabelToken(l, _), PropertyKeyToken(p, _), _) =>
+            n == name && l == label && p == property
+
           case _ => false
         }
         if (!satisfied) throw new IndexHintException(name, label, property, "No such index found.")

@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.triplet
 
-import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.{RandomizedCardinalityModelTestSuite, ForumPostsCardinalityData}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality.{ForumPostsCardinalityData, RandomizedCardinalityModelTestSuite}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
 
 class TripletQueryGraphCardinalityModelTest extends RandomizedCardinalityModelTestSuite with ForumPostsCardinalityData {

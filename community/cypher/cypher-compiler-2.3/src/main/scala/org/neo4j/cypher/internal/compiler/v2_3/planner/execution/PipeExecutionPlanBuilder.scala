@@ -92,6 +92,9 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
         case NodeIndexUniqueSeek(IdName(id), label, propertyKey, valueExpr, _) =>
           NodeIndexSeekPipe(id, label, propertyKey, valueExpr.map(buildExpression), unique = true)()
 
+        case NodeIndexScan(IdName(id), label, propertyKey, _) =>
+          NodeIndexScanPipe(id, label, propertyKey)()
+
         case Selection(predicates, left) =>
           FilterPipe(buildPipe(left, input), predicates.map(buildPredicate).reduce(_ ++ _))()
 

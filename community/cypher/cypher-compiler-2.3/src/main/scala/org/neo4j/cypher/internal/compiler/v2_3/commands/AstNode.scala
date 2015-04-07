@@ -22,15 +22,17 @@ package org.neo4j.cypher.internal.compiler.v2_3.commands
 import org.neo4j.cypher.internal.compiler.v2_3.CypherTypeException
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 
 
 trait EffectfulAstNode[T] extends AstNode[T] {
-  def localEffects: Effects
-  final def effects: Effects = {
-    var completeEffects = localEffects
+  def localEffects(symbols: SymbolTable): Effects
+
+  final def effects(symbols: SymbolTable): Effects = {
+    var completeEffects = localEffects(symbols)
     visitChildren {
       case (expr: EffectfulAstNode[_]) =>
-        completeEffects = completeEffects | expr.localEffects
+        completeEffects = completeEffects | expr.localEffects(symbols)
     }
     completeEffects
   }

@@ -84,5 +84,5 @@ case class NamedPathPipe(source: Pipe, pathName: String, entities: Seq[AbstractP
     copy(source = head)
   }
 
-  override def localEffects = Effects.NONE
+  override def localEffects = Effects()
 }

@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.mutation
 
-import org.neo4j.cypher.internal.compiler.v2_3.{InvalidSemanticsException, InternalException, ExecutionContext}
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, _}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.PropertySupport
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionContext, InternalException, InvalidSemanticsException}
 import org.neo4j.graphdb.Node
 import org.neo4j.helpers.ThisShouldNotHappenError
 
@@ -111,11 +111,15 @@ case class MergePatternAction(patterns: Seq[Pattern],
     dependencies -- introducedIdentifiers
   }
 
-  private def readEffects(symbols: SymbolTable): Effects =
-    identifiers.collect {
-      case (k, CTNode) if !symbols.hasIdentifierNamed(k) => Effects.READS_NODES
-      case (k, CTRelationship) if !symbols.hasIdentifierNamed(k) => Effects.READS_RELATIONSHIPS
-    }.reduced
+  private def readEffects(symbols: SymbolTable): Effects = {
+    val collect: Seq[Effect] = identifiers.collect {
+      case (k, CTNode) if !symbols.hasIdentifierNamed(k) => ReadsNodes
+      case (k, CTRelationship) if !symbols.hasIdentifierNamed(k) => ReadsRelationships
+    }
+
+    Effects(collect.toSet)
+  }
+
 
   def localEffects(externalSymbols: SymbolTable) = {
     import Effects._

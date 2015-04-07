@@ -87,13 +87,26 @@ class LuceneIndexAccessorReader implements IndexReader
         return sampler.result( result );
     }
 
-
     @Override
     public PrimitiveLongIterator lookup( Object value )
     {
         try
         {
             Hits hits = new Hits( searcher, documentLogic.newQuery( value ), null );
+            return new HitsPrimitiveLongIterator( hits, documentLogic );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    @Override
+    public PrimitiveLongIterator scan()
+    {
+        try
+        {
+            Hits hits = new Hits( searcher, documentLogic.newMatchAllQuery(), null );
             return new HitsPrimitiveLongIterator( hits, documentLogic );
         }
         catch ( IOException e )

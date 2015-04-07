@@ -21,6 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.PathImpl
 import org.neo4j.graphdb._
+
 import scala.collection.JavaConverters._
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
@@ -1276,6 +1277,22 @@ return b
     ))
   }
 
+  test("should use the index for property existance queries") {
+    // given
+    val n = createLabeledNode(Map("email" -> "me@mine"), "User")
+    val m = createLabeledNode(Map("email" -> "you@yours"), "User")
+    val p = createLabeledNode(Map("emailx" -> "youtoo@yours"), "User")
+//    (1 to 100).foreach(e => createLabeledNode("User"))
+    graph.createIndex("User", "email")
+
+    // when
+    val result = executeWithNewPlanner("MATCH (n:User) USING INDEX n:User(email) WHERE has(n.email) RETURN n")
+
+    // then
+    result.toList should equal(List(Map("n" -> n), Map("n" -> m)))
+    result.executionPlanDescription().toString should include("NodeIndexScan")
+  }
+
   test("should handle cyclic patterns") {
     // given
     val a = createNode("a")
@@ -1772,6 +1789,37 @@ return b
                   |OPTIONAL MATCH (project)-[hasFolder:HAS_FOLDER]->(:Folder)
                   |OPTIONAL MATCH (project)-[:HAS_FOLDER]->(folder:Folder)
                   |DELETE folder, hasFolder
+                  |WITH project
+                  |   // add the new relations and objects
+                  |FOREACH (el in[{name:"Dir1"}, {name:"Dir2"}] |
+                  |  MERGE (folder:Folder{ name: el.name })
+                  |  MERGE (project)–[:HAS_FOLDER]->(folder))
+                  |RETURN DISTINCT project""".stripMargin
+
+    //WHEN
+    val first = eengine.execute(query).toList
+    val second = eengine.execute(query).toList
+    val check = executeWithNewPlanner("MATCH (f:Folder) RETURN f.name").toSet
+
+    //THEN
+    first should equal(second)
+    check should equal(Set(Map("f.name" -> "Dir1"), Map("f.name" -> "Dir2")))
+  }
+
+  test("Should be able to run delete/merge query multiple times, match on property") {
+    //GIVEN
+    createLabeledNode("User")
+
+
+    val query = """MATCH (:User)
+                  |MERGE (project:Project)
+                  |MERGE (user)-[:HAS_PROJECT]->(project)
+                  |WITH project
+                  |    // delete the current relations to be able to replace them with new ones
+                  |OPTIONAL MATCH (project)-[hasFolder:HAS_FOLDER]->({name: "Dir2"})
+                  |OPTIONAL MATCH (project)-[hasFolder2:HAS_FOLDER]->({name: "Dir1"})
+                  |OPTIONAL MATCH (project)-[:HAS_FOLDER]->(folder {name: "Dir1"})
+                  |DELETE folder, hasFolder, hasFolder2
                   |WITH project
                   |   // add the new relations and objects
                   |FOREACH (el in[{name:"Dir1"}, {name:"Dir2"}] |

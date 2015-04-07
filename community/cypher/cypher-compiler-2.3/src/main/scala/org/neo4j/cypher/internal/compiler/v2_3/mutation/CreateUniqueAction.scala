@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_3.mutation
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import commands.expressions.Expression
-import pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v2_3.symbols.{SymbolTable, CypherType}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.{CypherType, SymbolTable}
 import org.neo4j.graphdb.PropertyContainer
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects._
 
 case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
 
@@ -176,7 +176,7 @@ case class CreateUniqueAction(incomingLinks: UniqueLink*) extends UpdateAction {
 
   override def toString: String = links.mkString(",")
 
-  def localEffects(symbols: SymbolTable) = links.map(_.effects(symbols)).reduced
+  def localEffects(symbols: SymbolTable) = Effects(links.flatMap(_.effects(symbols).effectsSet).toSet)
 }
 
 sealed abstract class CreateUniqueResult
