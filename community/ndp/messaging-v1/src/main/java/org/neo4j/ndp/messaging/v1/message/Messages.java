@@ -30,7 +30,7 @@ public class Messages
         return new RunMessage( statement );
     }
 
-    public static Message run( String statement, Map<String, Object> parameters )
+    public static Message run( String statement, Map<String,Object> parameters )
     {
         return new RunMessage( statement, parameters );
     }
@@ -55,7 +55,7 @@ public class Messages
         return new RecordMessage( value );
     }
 
-    public static Message success( Map<String, Object> metadata )
+    public static Message success( Map<String,Object> metadata )
     {
         return new SuccessMessage( metadata );
     }

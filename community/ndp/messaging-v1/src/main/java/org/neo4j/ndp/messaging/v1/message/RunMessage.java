@@ -40,7 +40,7 @@ public class RunMessage implements Message
         this.params = params;
     }
 
-    public Map<String, Object> params()
+    public Map<String,Object> params()
     {
         return params;
     }

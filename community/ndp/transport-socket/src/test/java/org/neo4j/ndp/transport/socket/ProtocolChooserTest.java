@@ -48,7 +48,7 @@ public class ProtocolChooserTest
         Factory factory = mock( Factory.class );
         SocketProtocol protocol = mock( SocketProtocol.class );
 
-        when(factory.newInstance()).thenReturn( protocol );
+        when( factory.newInstance() ).thenReturn( protocol );
         available.put( 1, factory );
 
         ProtocolChooser chooser = new ProtocolChooser( available );
@@ -62,8 +62,8 @@ public class ProtocolChooserTest
                         0, 0, 0, 0} ) );
 
         // Then
-        assertThat( outcome, equalTo( PROTOCOL_CHOSEN  ));
-        assertThat( chooser.chosenProtocol(), equalTo( protocol ));
+        assertThat( outcome, equalTo( PROTOCOL_CHOSEN ) );
+        assertThat( chooser.chosenProtocol(), equalTo( protocol ) );
     }
 
     @Test
@@ -74,7 +74,7 @@ public class ProtocolChooserTest
         Factory factory = mock( Factory.class );
         SocketProtocol protocol = mock( SocketProtocol.class );
 
-        when(factory.newInstance()).thenReturn( protocol );
+        when( factory.newInstance() ).thenReturn( protocol );
         available.put( 1, factory );
 
         ProtocolChooser chooser = new ProtocolChooser( available );
@@ -82,16 +82,16 @@ public class ProtocolChooserTest
         // When
         HandshakeOutcome firstOutcome = chooser.handleVersionHandshakeChunk( wrappedBuffer( new byte[]{
                 0, 0, 0, 0,
-                0, 0, 0 } ) );
+                0, 0, 0} ) );
         HandshakeOutcome secondOutcome = chooser.handleVersionHandshakeChunk( wrappedBuffer( new byte[]{
-                         1,
+                1,
                 0, 0, 0, 0,
-                0, 0, 0, 0 } ) );
+                0, 0, 0, 0} ) );
 
         // Then
         assertThat( firstOutcome, equalTo( PARTIAL_HANDSHAKE ) );
         assertThat( secondOutcome, equalTo( PROTOCOL_CHOSEN ) );
-        assertThat( chooser.chosenProtocol(), equalTo( protocol ));
+        assertThat( chooser.chosenProtocol(), equalTo( protocol ) );
     }
 
     @Test
@@ -102,7 +102,7 @@ public class ProtocolChooserTest
         Factory factory = mock( Factory.class );
         SocketProtocol protocol = mock( SocketProtocol.class );
 
-        when(factory.newInstance()).thenReturn( protocol );
+        when( factory.newInstance() ).thenReturn( protocol );
         available.put( 1, factory );
 
         ProtocolChooser chooser = new ProtocolChooser( available );
@@ -113,14 +113,14 @@ public class ProtocolChooserTest
                 0, 0, 0, 1,
                 0, 0, 0, 0,
                 0, 0, 0, 0,
-                1, 2, 3, 4 } ); // These last four bytes are not part of the handshake
+                1, 2, 3, 4} ); // These last four bytes are not part of the handshake
 
-        HandshakeOutcome outcome = chooser.handleVersionHandshakeChunk(buffer );
+        HandshakeOutcome outcome = chooser.handleVersionHandshakeChunk( buffer );
 
         // Then
-        assertThat( outcome, equalTo( PROTOCOL_CHOSEN ));
-        assertThat( chooser.chosenProtocol(), equalTo( protocol ));
-        assertThat(buffer.readableBytes(), equalTo(4));
+        assertThat( outcome, equalTo( PROTOCOL_CHOSEN ) );
+        assertThat( chooser.chosenProtocol(), equalTo( protocol ) );
+        assertThat( buffer.readableBytes(), equalTo( 4 ) );
     }
 
     @Test
@@ -133,7 +133,7 @@ public class ProtocolChooserTest
         Factory factory = mock( Factory.class );
         SocketProtocol protocol = mock( SocketProtocol.class );
 
-        when(factory.newInstance()).thenReturn( protocol );
+        when( factory.newInstance() ).thenReturn( protocol );
         available.put( maxUnsignedInt32, factory );
 
         ProtocolChooser chooser = new ProtocolChooser( available );
@@ -147,7 +147,7 @@ public class ProtocolChooserTest
 
         // Then
         assertThat( outcome, equalTo( PROTOCOL_CHOSEN ) );
-        assertThat( chooser.chosenProtocol(), equalTo(protocol));
+        assertThat( chooser.chosenProtocol(), equalTo( protocol ) );
     }
 
     @Test
@@ -157,9 +157,9 @@ public class ProtocolChooserTest
         PrimitiveLongObjectMap<Factory<SocketProtocol>> available = Primitive.longObjectMap();
         Factory fallbackFactory = mock( Factory.class );
         SocketProtocol fallbackProtocol = mock( SocketProtocol.class );
-        when(fallbackFactory.newInstance()).thenReturn( fallbackProtocol );
+        when( fallbackFactory.newInstance() ).thenReturn( fallbackProtocol );
 
-        available.put( 1, mock(Factory.class) );
+        available.put( 1, mock( Factory.class ) );
 
         ProtocolChooser chooser = new ProtocolChooser( available );
 
@@ -171,7 +171,7 @@ public class ProtocolChooserTest
                 0, 0, 0, 4} ) );
 
         // Then
-        assertThat( outcome, equalTo( NO_APPLICABLE_PROTOCOL ));
-        assertThat( chooser.chosenProtocol(), nullValue());
+        assertThat( outcome, equalTo( NO_APPLICABLE_PROTOCOL ) );
+        assertThat( chooser.chosenProtocol(), nullValue() );
     }
 }

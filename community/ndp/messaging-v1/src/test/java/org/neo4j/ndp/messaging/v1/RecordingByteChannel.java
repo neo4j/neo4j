@@ -26,9 +26,9 @@ import java.nio.channels.WritableByteChannel;
 
 public class RecordingByteChannel implements WritableByteChannel, ReadableByteChannel
 {
+    private final ByteBuffer buffer = ByteBuffer.allocate( 16 * 1024 );
     private int writePosition = 0;
     private int readPosition = 0;
-    private final ByteBuffer buffer = ByteBuffer.allocate( 16 * 1024 );
     private boolean eof;
 
     @Override
@@ -46,7 +46,7 @@ public class RecordingByteChannel implements WritableByteChannel, ReadableByteCh
     @Override
     public int write( ByteBuffer src ) throws IOException
     {
-        buffer.position(writePosition);
+        buffer.position( writePosition );
         int originalPosition = writePosition;
 
         buffer.put( src );
@@ -58,27 +58,27 @@ public class RecordingByteChannel implements WritableByteChannel, ReadableByteCh
     @Override
     public int read( ByteBuffer dst ) throws IOException
     {
-        if(readPosition == writePosition)
+        if ( readPosition == writePosition )
         {
             return eof ? -1 : 0;
         }
-        buffer.position(readPosition);
+        buffer.position( readPosition );
         int originalPosition = readPosition;
         int originalLimit = buffer.limit();
 
-        buffer.limit( Math.min(buffer.position() + (dst.limit() - dst.position()), writePosition ) );
-        dst.put(buffer);
+        buffer.limit( Math.min( buffer.position() + (dst.limit() - dst.position()), writePosition ) );
+        dst.put( buffer );
 
         readPosition = buffer.position();
-        buffer.limit(originalLimit);
+        buffer.limit( originalLimit );
         return readPosition - originalPosition;
     }
 
     public byte[] getBytes()
     {
         byte[] bytes = new byte[buffer.position()];
-        buffer.position(0);
-        buffer.get(bytes);
+        buffer.position( 0 );
+        buffer.get( bytes );
         return bytes;
     }
 

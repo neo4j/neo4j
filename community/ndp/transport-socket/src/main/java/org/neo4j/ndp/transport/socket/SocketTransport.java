@@ -32,7 +32,9 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.ndp.runtime.Sessions;
 
 /**
  * Implements a transport for the Neo4j Messaging Protocol that uses good old regular sockets.
@@ -44,7 +46,7 @@ public class SocketTransport extends LifecycleAdapter
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
 
-    public SocketTransport( HostnamePort address )
+    public SocketTransport( HostnamePort address, final StringLogger log, final Sessions sessions )
     {
         this.address = address;
 
@@ -54,15 +56,15 @@ public class SocketTransport extends LifecycleAdapter
             @Override
             public SocketProtocol newInstance()
             {
-                return new SocketProtocolV1();
+                return new SocketProtocolV1( log, sessions.newSession() );
             }
-        });
+        } );
     }
 
     @Override
     public void init() throws Throwable
     {
-        bossGroup = new NioEventLoopGroup(1);
+        bossGroup = new NioEventLoopGroup( 1 );
         workerGroup = new NioEventLoopGroup();
     }
 
@@ -71,20 +73,20 @@ public class SocketTransport extends LifecycleAdapter
     {
         ServerBootstrap b = new ServerBootstrap();
         b.group( bossGroup, workerGroup )
-                .channel(NioServerSocketChannel.class)
-                .handler(new LoggingHandler( LogLevel.INFO))
-                .childHandler(new ChannelInitializer<SocketChannel>()
+                .channel( NioServerSocketChannel.class )
+                .handler( new LoggingHandler( LogLevel.INFO ) )
+                .childHandler( new ChannelInitializer<SocketChannel>()
                 {
                     @Override
-                    public void initChannel(SocketChannel ch) throws Exception
+                    public void initChannel( SocketChannel ch ) throws Exception
                     {
-                        ch.pipeline().addLast(new SocketTransportHandler( new SocketTransportHandler.ProtocolChooser(
-                                availableProtocols ) ));
+                        ch.pipeline().addLast( new SocketTransportHandler( new SocketTransportHandler.ProtocolChooser(
+                                availableProtocols ) ) );
                     }
-                });
+                } );
 
         // Bind and start to accept incoming connections.
-        b.bind(address.getHost(), address.getPort()).sync();
+        b.bind( address.getHost(), address.getPort() ).sync();
     }
 
     @Override

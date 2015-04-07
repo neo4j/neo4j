@@ -30,13 +30,14 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.ndp.runtime.Session;
+import org.neo4j.ndp.runtime.internal.StandardSessions;
 import org.neo4j.ndp.transport.socket.SocketTransport;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class Neo4jWithSocket implements TestRule
 {
-    private SocketTransport transport;
     private final LifeSupport life = new LifeSupport();
+    private SocketTransport transport;
 
     public HostnamePort address()
     {
@@ -57,7 +58,7 @@ public class Neo4jWithSocket implements TestRule
                         .getMessagesLog( Session.class );
 
                 transport = life.add( new SocketTransport(
-                        new HostnamePort( "localhost:7687" )
+                        new HostnamePort( "localhost:7687" ), log, life.add( new StandardSessions( api, log ) )
                 ) );
                 life.start();
                 try

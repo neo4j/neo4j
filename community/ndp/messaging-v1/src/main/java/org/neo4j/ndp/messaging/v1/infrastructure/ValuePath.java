@@ -31,7 +31,7 @@ public class ValuePath implements Path
 {
     private final PropertyContainer[] entities;
 
-    public ValuePath( PropertyContainer ... entities )
+    public ValuePath( PropertyContainer... entities )
     {
         this.entities = entities;
     }

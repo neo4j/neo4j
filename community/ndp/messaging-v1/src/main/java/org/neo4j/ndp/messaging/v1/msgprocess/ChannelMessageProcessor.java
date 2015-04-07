@@ -36,7 +36,7 @@ import org.neo4j.packstream.PackStream;
 /**
  * This processes incoming messages from a pair of raw I/O {@link java.nio.channels.Channel channels},
  * forwarding requests into a provided {@link org.neo4j.ndp.runtime.Session} and back.
- *
+ * <p/>
  * This class creates, implicitly, large input and output buffers (in {@link #reader} and {@link #writer}), meaning
  * you will ideally want to use one of these per session or so, rather than create new instances when new messages
  * arrive
@@ -44,8 +44,8 @@ import org.neo4j.packstream.PackStream;
  */
 public class ChannelMessageProcessor
 {
-    private final MessageFormat.Reader reader = new PackStreamMessageFormatV1.Reader();
-    private final MessageFormat.Writer writer = new PackStreamMessageFormatV1.Writer();
+    private final MessageFormat.Reader reader;
+    private final MessageFormat.Writer writer;
 
     private final AtomicInteger inFlight = new AtomicInteger();
     private final TransportBridge transportBridge;
@@ -62,7 +62,7 @@ public class ChannelMessageProcessor
         @Override
         public void run()
         {
-            if(inFlight.decrementAndGet() == 0)
+            if ( inFlight.decrementAndGet() == 0 )
             {
                 try
                 {
@@ -87,6 +87,8 @@ public class ChannelMessageProcessor
         this.log = log;
         this.onFatalSessionError = onFatalSessionError;
         this.transportBridge = new TransportBridge( log );
+        reader = new PackStreamMessageFormatV1.Reader();
+        writer = new PackStreamMessageFormatV1.Writer();
     }
 
     public ChannelMessageProcessor reset( ReadableByteChannel in, WritableByteChannel out, Session session )
@@ -132,7 +134,7 @@ public class ChannelMessageProcessor
         }
         finally
         {
-            if(sessionsMustDie)
+            if ( sessionsMustDie )
             {
                 onFatalSessionError.accept( session );
             }

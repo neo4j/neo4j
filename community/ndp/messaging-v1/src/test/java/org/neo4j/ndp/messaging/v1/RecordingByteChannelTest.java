@@ -19,9 +19,9 @@
  */
 package org.neo4j.ndp.messaging.v1;
 
-import java.nio.ByteBuffer;
-
 import org.junit.Test;
+
+import java.nio.ByteBuffer;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;

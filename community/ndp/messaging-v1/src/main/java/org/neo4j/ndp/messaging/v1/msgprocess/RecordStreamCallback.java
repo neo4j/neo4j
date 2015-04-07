@@ -25,9 +25,9 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.stream.Record;
 import org.neo4j.stream.RecordStream;
 
-public class ResultStreamCallback extends MessageProcessingCallback<RecordStream>
+public class RecordStreamCallback extends MessageProcessingCallback<RecordStream>
 {
-    public ResultStreamCallback( StringLogger log )
+    public RecordStreamCallback( StringLogger log )
     {
         super( log );
     }
@@ -42,6 +42,6 @@ public class ResultStreamCallback extends MessageProcessingCallback<RecordStream
             {
                 out.handleRecordMessage( record );
             }
-        });
+        } );
     }
 }

@@ -27,13 +27,19 @@ import org.neo4j.stream.Record;
 public interface MessageHandler<E extends Exception>
 {
     void handleRunMessage( String statement, Map<String,Object> params ) throws E;
+
     void handlePullAllMessage() throws E;
+
     void handleDiscardAllMessage() throws E;
+
     void handleAckFailureMessage() throws E;
 
     void handleRecordMessage( Record item ) throws E;
+
     void handleSuccessMessage( Map<String,Object> metadata ) throws E;
+
     void handleFailureMessage( Neo4jError cause ) throws E;
+
     void handleIgnoredMessage() throws E;
 
     class Adapter<E extends Exception> implements MessageHandler<E>

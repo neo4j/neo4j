@@ -28,6 +28,7 @@ public class AcknowledgeFailureMessage implements Message
     {
         consumer.handleAckFailureMessage();
     }
+
     @Override
     public boolean equals( Object o )
     {

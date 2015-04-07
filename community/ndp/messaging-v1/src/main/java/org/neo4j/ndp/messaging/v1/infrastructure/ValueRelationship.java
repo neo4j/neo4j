@@ -46,13 +46,13 @@ public class ValueRelationship implements Relationship
 
     public ValueRelationship( String id, String from, String to, String type, Map<String,Object> map )
     {
-        this(toLong( id ), toLong( from ), toLong( to ), DynamicRelationshipType.withName( type ), map);
+        this( toLong( id ), toLong( from ), toLong( to ), DynamicRelationshipType.withName( type ), map );
     }
 
-    private static long toLong(String urn)
+    private static long toLong( String urn )
     {
         String[] split = urn.split( "/" );
-        return Long.parseLong(split[split.length-1]);
+        return Long.parseLong( split[split.length - 1] );
     }
 
     @Override

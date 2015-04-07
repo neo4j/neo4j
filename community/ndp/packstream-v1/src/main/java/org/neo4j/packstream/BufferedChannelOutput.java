@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2014 "Neo Technology,"
+ * Copyright (c) 2002-2015 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -36,7 +36,7 @@ public class BufferedChannelOutput implements PackOutput
 
     public BufferedChannelOutput( WritableByteChannel channel )
     {
-        this(channel, 1024);
+        this( channel, 1024 );
     }
 
     public BufferedChannelOutput( WritableByteChannel channel, int bufferSize )
@@ -77,15 +77,21 @@ public class BufferedChannelOutput implements PackOutput
     }
 
     @Override
-    public int remaining()
+    public PackOutput put( byte[] data, int offset, int length ) throws IOException
     {
-        return buffer.remaining();
-    }
+        int index = 0;
+        while(index < length)
+        {
+            int amountToWrite = Math.min( buffer.remaining(), length - index );
 
-    @Override
-    public PackOutput put( byte[] data, int offset, int amountToWrite )
-    {
-        buffer.put( data, offset, amountToWrite );
+            buffer.put( data, offset, amountToWrite );
+            index += amountToWrite;
+
+            if( buffer.remaining() == 0)
+            {
+                flush();
+            }
+        }
         return this;
     }
 

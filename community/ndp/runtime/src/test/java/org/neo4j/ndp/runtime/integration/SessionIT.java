@@ -37,7 +37,7 @@ import static org.neo4j.ndp.runtime.Session.Callback.NO_OP;
 import static org.neo4j.ndp.runtime.integration.SessionMatchers.streamContaining;
 import static org.neo4j.ndp.runtime.integration.SessionMatchers.failedWith;
 import static org.neo4j.ndp.runtime.integration.SessionMatchers.success;
-import static org.neo4j.runtime.internal.runner.StreamMatchers.record;
+import static org.neo4j.runtime.internal.runner.StreamMatchers.eqRecord;
 
 @SuppressWarnings( "unchecked" )
 public class SessionIT
@@ -63,7 +63,7 @@ public class SessionIT
 
         // Then
         assertThat(responses.next(), streamContaining(
-                record( equalTo( "k" ) ) ) );
+                eqRecord( equalTo( "k" ) ) ) );
     }
 
     @Test

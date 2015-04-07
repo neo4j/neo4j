@@ -29,7 +29,7 @@ import org.neo4j.ndp.runtime.StatementMetadata;
 import org.neo4j.stream.RecordStream;
 
 /** Bridges the gap between incoming deserialized messages, the user environment and back. */
-class TransportBridge extends MessageHandler.Adapter<RuntimeException>
+public class TransportBridge extends MessageHandler.Adapter<RuntimeException>
 {
     // Note that these callbacks can be used for multiple in-flight requests simultaneously, you cannot reset them
     // while there are in-flight requests.
@@ -41,8 +41,8 @@ class TransportBridge extends MessageHandler.Adapter<RuntimeException>
 
     public TransportBridge( StringLogger log )
     {
-        this.resultStreamCallback = new ResultStreamCallback( log );
-        this.simpleCallback = new MessageProcessingCallback<>(log);
+        this.resultStreamCallback = new RecordStreamCallback( log );
+        this.simpleCallback = new MessageProcessingCallback<>( log );
         this.runCallback = new RunCallback( log );
     }
 
@@ -51,7 +51,7 @@ class TransportBridge extends MessageHandler.Adapter<RuntimeException>
      * requests for this bridge running, doing so will cause protocol errors.
      */
     public TransportBridge reset( Session session, MessageHandler<IOException> output,
-                                  Runnable onEachCompletedRequest )
+            Runnable onEachCompletedRequest )
     {
         this.session = session;
         this.simpleCallback.reset( output, onEachCompletedRequest );

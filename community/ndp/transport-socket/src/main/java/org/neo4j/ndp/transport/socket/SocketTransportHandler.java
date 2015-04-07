@@ -34,7 +34,7 @@ import static io.netty.buffer.Unpooled.wrappedBuffer;
 /**
  * Handles incoming chunks of data for a given client channel. This initially will negotiate a protocol version to use,
  * and then delegate future messages to the chosen protocol.
- *
+ * <p/>
  * This class is stateful, one instance is expected per channel.
  */
 public class SocketTransportHandler extends ChannelInboundHandlerAdapter
@@ -50,10 +50,10 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
     @Override
     public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception
     {
-        if(msg instanceof ByteBuf )
+        if ( msg instanceof ByteBuf )
         {
             ByteBuf buffer = (ByteBuf) msg;
-            if(protocol == null)
+            if ( protocol == null )
             {
                 chooseProtocolVersion( ctx, buffer );
             }
@@ -70,7 +70,7 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
 
     private void chooseProtocolVersion( ChannelHandlerContext ctx, ByteBuf buffer ) throws Exception
     {
-        switch(protocolChooser.handleVersionHandshakeChunk( buffer ))
+        switch ( protocolChooser.handleVersionHandshakeChunk( buffer ) )
         {
         case PROTOCOL_CHOSEN:
             protocol = protocolChooser.chosenProtocol();
@@ -80,16 +80,16 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
             // shouldn't be doing that since it can't know which versions we support, but here we are anyway.
             // Emulate a second call to channelRead, the remaining data in the buffer will be forwarded to the newly
             // selected protocol.
-            if( buffer.readableBytes() > 0)
+            if ( buffer.readableBytes() > 0 )
             {
                 channelRead( ctx, buffer );
             }
             return;
         case NO_APPLICABLE_PROTOCOL:
             ctx.writeAndFlush( wrappedBuffer( new byte[]{0, 0, 0, 0} ) )
-               .sync()
-               .channel()
-               .close();
+                    .sync()
+                    .channel()
+                    .close();
             return;
         case PARTIAL_HANDSHAKE:
             return;
@@ -129,24 +129,24 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
 
         public HandshakeOutcome handleVersionHandshakeChunk( ByteBuf buffer )
         {
-            if(suggestedVersions.remaining() > buffer.readableBytes())
+            if ( suggestedVersions.remaining() > buffer.readableBytes() )
             {
                 suggestedVersions.limit( suggestedVersions.position() + buffer.readableBytes() );
                 buffer.readBytes( suggestedVersions );
-                suggestedVersions.limit(suggestedVersions.capacity());
+                suggestedVersions.limit( suggestedVersions.capacity() );
             }
             else
             {
                 buffer.readBytes( suggestedVersions );
             }
 
-            if( suggestedVersions.remaining() == 0)
+            if ( suggestedVersions.remaining() == 0 )
             {
                 suggestedVersions.flip();
                 for ( int i = 0; i < 4; i++ )
                 {
                     long suggestion = suggestedVersions.getInt() & 0xFFFFFFFFL;
-                    if( availableVersions.containsKey( suggestion ) )
+                    if ( availableVersions.containsKey( suggestion ) )
                     {
                         protocol = availableVersions.get( suggestion ).newInstance();
                         return HandshakeOutcome.PROTOCOL_CHOSEN;

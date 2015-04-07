@@ -26,21 +26,14 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.ndp.messaging.v1.MessageFormat;
 
 public class NDPConn
 {
-    private final MessageFormat protocolFormat;
     private Socket socket;
     private InputStream in;
     private OutputStream out;
 
-    public NDPConn( MessageFormat protocolFormat )
-    {
-        this.protocolFormat = protocolFormat;
-    }
-
-    public NDPConn connect(HostnamePort address) throws IOException
+    public NDPConn connect( HostnamePort address ) throws IOException
     {
         socket = new Socket();
         socket.connect( new InetSocketAddress( address.getHost(), address.getPort() ) );
@@ -49,16 +42,29 @@ public class NDPConn
         return this;
     }
 
-    public void send( byte[] rawBytes ) throws IOException
+    public NDPConn send( byte[] rawBytes ) throws IOException
     {
         out.write( rawBytes );
+        return this;
     }
 
-    public byte[] recv( int length ) throws IOException
+    public byte[] recv( int length ) throws IOException, InterruptedException
     {
+        long timeout = System.currentTimeMillis() + 1000 * 30;
         byte[] bytes = new byte[length];
         int left = length, read;
-        while( (read = in.read( bytes, length - left, left )) != -1 && left > 0 ) { left -= read; }
+        while ( (read = in.read( bytes, length - left, left )) != -1 && left > 0 )
+        {
+            if ( System.currentTimeMillis() > timeout )
+            {
+                throw new IOException( "Waited 30 seconds for " + left + " bytes, recieved " + (length - left) );
+            }
+            left -= read;
+            if ( left > 0 )
+            {
+                Thread.sleep( 10 );
+            }
+        }
         return bytes;
     }
 }

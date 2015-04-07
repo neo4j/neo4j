@@ -34,7 +34,7 @@ import static java.util.Arrays.asList;
 
 public class StreamMatchers
 {
-    public static Matcher<Record> record( final Matcher<?> ... expectedFieldValues )
+    public static Matcher<Record> eqRecord( final Matcher<?>... expectedFieldValues )
     {
         return new TypeSafeMatcher<Record>()
         {

@@ -35,7 +35,7 @@ public class ArrayByteChannel implements ReadableByteChannel
     @Override
     public int read( ByteBuffer dst ) throws IOException
     {
-        if(data.position() == data.limit())
+        if ( data.position() == data.limit() )
         {
             return -1;
         }

@@ -26,6 +26,7 @@ import org.hamcrest.TypeSafeMatcher;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1;
 import org.neo4j.ndp.messaging.v1.RecordingByteChannel;
@@ -68,6 +69,26 @@ public class MessageMatchers
             {
                 description.appendList( "MessageList[", ", ", "]", Arrays.asList( messageMatchers
                 ) );
+            }
+        };
+    }
+
+    public static Matcher<Message> msgSuccess( final Map<String,Object> metadata )
+    {
+        return new TypeSafeMatcher<Message>()
+        {
+            @Override
+            protected boolean matchesSafely( Message t )
+            {
+                assertThat( t, instanceOf( SuccessMessage.class ) );
+                assertThat( ((SuccessMessage) t).meta(), equalTo( metadata ) );
+                return true;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "SUCCESS" );
             }
         };
     }
@@ -118,8 +139,8 @@ public class MessageMatchers
             protected boolean matchesSafely( Message t )
             {
                 assertThat( t, instanceOf( FailureMessage.class ) );
-                FailureMessage msg = (FailureMessage)t;
-                assertThat( msg.cause(), equalTo( error ));
+                FailureMessage msg = (FailureMessage) t;
+                assertThat( msg.cause(), equalTo( error ) );
                 return true;
             }
 
@@ -131,7 +152,7 @@ public class MessageMatchers
         };
     }
 
-    public static Matcher<Message> msgItem( final Matcher<Record> matcher )
+    public static Matcher<Message> msgRecord( final Matcher<Record> matcher )
     {
         return new TypeSafeMatcher<Message>()
         {
@@ -148,13 +169,13 @@ public class MessageMatchers
             @Override
             public void describeTo( Description description )
             {
-                description.appendText( "ITEM " );
+                description.appendText( "RECORD " );
                 description.appendDescriptionOf( matcher );
             }
         };
     }
 
-    public static byte[] serialize( Message ... messages ) throws IOException
+    public static byte[] serialize( Message... messages ) throws IOException
     {
         final RecordingByteChannel rawData = new RecordingByteChannel();
         final PackStreamMessageFormatV1.Writer packer = new PackStreamMessageFormatV1.Writer().reset(
@@ -184,12 +205,39 @@ public class MessageMatchers
             }
 
             return consumer.asList();
-        } catch(Throwable e)
+        }
+        catch ( Throwable e )
         {
             throw new IOException( "Failed to deserialize response, '" + e.getMessage() + "'. Messages read so " +
                                    "far: \n" + consumer.asList() + "\n" +
                                    "Raw data: \n" +
-                                   BytePrinter.hex(bytes) );
+                                   BytePrinter.hex( bytes ) );
+        }
+    }
+
+    public static Message message( byte[] bytes ) throws IOException
+    {
+        PackStreamMessageFormatV1.Reader unpacker = new PackStreamMessageFormatV1.Reader();
+        RecordingMessageHandler consumer = new RecordingMessageHandler();
+
+        try
+        {
+            unpacker.reset( new ArrayByteChannel( bytes ) );
+
+            if ( unpacker.hasNext() )
+            {
+                unpacker.read( consumer );
+                return consumer.asList().get( 0 );
+            }
+
+            throw new IllegalArgumentException( "Expected a message in " + BytePrinter.hex( bytes ) );
+        }
+        catch ( Throwable e )
+        {
+            throw new IOException( "Failed to deserialize response, '" + e.getMessage() + "'. Messages read so " +
+                                   "far: \n" + consumer.asList() + "\n" +
+                                   "Raw data: \n" +
+                                   BytePrinter.hex( bytes ), e );
         }
     }
 

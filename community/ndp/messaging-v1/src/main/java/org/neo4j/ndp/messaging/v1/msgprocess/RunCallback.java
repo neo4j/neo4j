@@ -27,11 +27,11 @@ import org.neo4j.ndp.runtime.StatementMetadata;
 
 public class RunCallback extends MessageProcessingCallback<StatementMetadata>
 {
-    private final Map<String, Object> successMetadata = new HashMap<>();
+    private final Map<String,Object> successMetadata = new HashMap<>();
 
     public RunCallback( StringLogger log )
     {
-        super(log);
+        super( log );
     }
 
     @Override

@@ -33,7 +33,7 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.ndp.messaging.v1.util.MessageMatchers.equalsMessages;
 import static org.neo4j.ndp.messaging.v1.util.MessageMatchers.messages;
-import static org.neo4j.ndp.messaging.v1.util.MessageMatchers.msgItem;
+import static org.neo4j.ndp.messaging.v1.util.MessageMatchers.msgRecord;
 import static org.neo4j.ndp.messaging.v1.util.MessageMatchers.msgSuccess;
 import static org.neo4j.ndp.messaging.v1.message.Messages.pullAll;
 import static org.neo4j.ndp.messaging.v1.message.Messages.run;
@@ -115,7 +115,7 @@ public class HttpTransportIT
         assertThat( messages( rs.rawContent() ), equalsMessages(
                 msgSuccess(),
 
-                msgItem( StreamMatchers.record( equalTo(asList( arrayValue )) )),
+                msgRecord( StreamMatchers.eqRecord( equalTo( asList( arrayValue ) ) ) ),
                 msgSuccess()
         ) );
     }

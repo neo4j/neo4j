@@ -27,10 +27,18 @@ import org.neo4j.ndp.messaging.v1.message.Message;
 
 public interface MessageFormat
 {
+    Writer newWriter();
+
+    Reader newReader();
+
+    int version();
+
     interface Writer extends MessageHandler<IOException>
     {
         Writer write( Message msg ) throws IOException;
+
         Writer reset( WritableByteChannel channel );
+
         void flush() throws IOException;
     }
 
@@ -38,12 +46,9 @@ public interface MessageFormat
     {
         /** Return true if there is another message in the underlying buffer */
         boolean hasNext() throws IOException;
+
         <E extends Exception> void read( MessageHandler<E> consumer ) throws IOException, E;
+
         Reader reset( ReadableByteChannel channel );
     }
-
-    Writer newWriter();
-    Reader newReader();
-
-    int version();
 }

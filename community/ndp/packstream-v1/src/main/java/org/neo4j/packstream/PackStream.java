@@ -31,7 +31,6 @@ import java.util.Map;
 import static java.lang.Integer.toHexString;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-
 import static org.neo4j.packstream.PackValue.EMPTY_BYTE_ARRAY;
 import static org.neo4j.packstream.PackValue.EMPTY_LIST_OF_VALUES;
 import static org.neo4j.packstream.PackValue.EMPTY_MAP_OF_VALUES;
@@ -184,19 +183,7 @@ public class PackStream
 
         public void packRaw( byte[] data ) throws IOException
         {
-            int index = 0;
-            while(index < data.length)
-            {
-                int amountToWrite = Math.min( out.remaining(), data.length - index );
-
-                out.put( data, index, amountToWrite );
-                index += amountToWrite;
-
-                if( out.remaining() == 0)
-                {
-                    flush();
-                }
-            }
+            out.put( data, 0, data.length );
         }
 
         public void packNull() throws IOException
@@ -605,7 +592,7 @@ public class PackStream
                     throw new Overflow( "TEXT_32 too long for Java" );
                 }
             }
-            default: throw new Unexpected( "Expected a string, but got: " + toHexString( markerByte ));
+            default: throw new Unexpected( "Expected a string, but got: " + toHexString( markerByte & 0xFF ));
             }
         }
 
@@ -616,7 +603,7 @@ public class PackStream
             {
             case TRUE: return true;
             case FALSE: return false;
-            default: throw new Unexpected( "Expected a boolean, but got: " + toHexString( markerByte ));
+            default: throw new Unexpected( "Expected a boolean, but got: " + toHexString( markerByte & 0xFF ));
             }
         }
 
@@ -799,6 +786,11 @@ public class PackStream
                 if(in.remaining() == 0 && index < size)
                 {
                     in.attemptUpTo( size - index );
+                    if(in.remaining() == 0)
+                    {
+                        throw new EndOfStream( "Expected " + (size - index) + " bytes available, " +
+                                                "but no more bytes accessible from underlying stream." );
+                    }
                 }
             }
             return heapBuffer;
