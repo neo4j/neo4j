@@ -29,7 +29,7 @@ case class CypherOptionParser(monitor: ParserMonitor[CypherQueryWithOptions]) ex
   def apply(input: String): CypherQueryWithOptions = parseOrThrow(input, None, QueryWithOptions, Some(monitor))
 
   def QueryWithOptions: Rule1[Seq[CypherQueryWithOptions]] =
-    AllOptions ~ optional(WS) ~ AnySomething ~~>>
+    WS ~ AllOptions ~ WS ~ AnySomething ~~>>
       ( (options: Seq[CypherOption], text: String) => pos => Seq(CypherQueryWithOptions(text, options, pos)))
 
   def AllOptions: Rule1[Seq[CypherOption]] = zeroOrMore(AnyCypherOption, WS)
