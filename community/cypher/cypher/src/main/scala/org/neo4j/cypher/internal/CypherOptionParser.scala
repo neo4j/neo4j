@@ -34,14 +34,14 @@ case class CypherOptionParser(monitor: ParserMonitor[CypherQueryWithOptions]) ex
 
   def AllOptions: Rule1[Seq[CypherOption]] = zeroOrMore(AnyCypherOption, WS)
 
-  def AnyCypherOption: Rule1[CypherOption] = Cypher | Explain | Profile | PlannerDeprecated | Runtime
+  def AnyCypherOption: Rule1[CypherOption] = Cypher | Explain | Profile | PlannerDeprecated
 
   def AnySomething: Rule1[String] = rule("Query") { oneOrMore(org.parboiled.scala.ANY) ~> identity }
 
   def Cypher = rule("CYPHER options") {
     keyword("CYPHER") ~~
       optional(VersionNumber) ~~
-      zeroOrMore(PlannerOption) ~~> ConfigurationOptions
+      zeroOrMore(PlannerOption | RuntimeOption, WS) ~~> ConfigurationOptions
   }
 
   def PlannerOption: Rule1[CypherOption] = rule("planner option") (
@@ -49,6 +49,11 @@ case class CypherOptionParser(monitor: ParserMonitor[CypherQueryWithOptions]) ex
   | option("planner", "rule") ~ push(RulePlannerOption)
   | option("planner", "idp") ~ push(IDPPlannerOption)
   | option("planner", "dp") ~ push(DPPlannerOption)
+  )
+
+  def RuntimeOption = rule("runtime option")(
+    option("runtime", "interpreted") ~ push(InterpretedRuntimeOption)
+      | option("runtime", "compiled") ~ push(CompiledRuntimeOption)
   )
 
   @deprecated
@@ -62,11 +67,6 @@ case class CypherOptionParser(monitor: ParserMonitor[CypherQueryWithOptions]) ex
   def VersionNumber = rule("Version") {
     group(Digits ~ "." ~ Digits) ~> VersionOption
   }
-
-  def Runtime = rule("RUNTIME")(
-    keyword("RUNTIME INTERPRETED") ~ push(InterpretedRuntimeOption)
-      | keyword("RUNTIME COMPILED") ~ push(CompiledRuntimeOption)
-  )
 
   def Digits = oneOrMore("0" - "9")
 

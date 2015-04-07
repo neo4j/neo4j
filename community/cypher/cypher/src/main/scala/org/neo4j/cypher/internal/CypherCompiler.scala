@@ -49,7 +49,7 @@ object CypherCompiler {
 
 case class PreParsedQuery(statement: String, version: CypherVersion, executionMode: ExecutionMode, planner: PlannerName, runtime: RuntimeName)
                          (val offset: InputPosition) {
-  val statementWithVersionAndPlanner = s"CYPHER ${version.name} PLANNER ${planner.name} RUNTIME ${runtime.name} $statement"
+  val statementWithVersionAndPlanner = s"CYPHER ${version.name} planner=${planner.name} runtime=${runtime.name} $statement"
 }
 
 
@@ -144,7 +144,7 @@ class CypherCompiler(graph: GraphDatabaseService,
     if (executionMode == ExplainMode && VERSIONS_WITH_FIXED_PLANNER(cypherVersion)) {
       throw new InvalidArgumentException("EXPLAIN not supported in versions older than Neo4j v2.2")
     }
-    val runtime = calculateRuntime(queryWithOption.options, planner, cypherVersion)
+    val runtime = calculateRuntime(cypherOptions, planner, cypherVersion)
 
     PreParsedQuery(queryWithOption.statement, cypherVersion, executionMode, planner, runtime)(queryWithOption.offset)
   }
@@ -174,7 +174,7 @@ class CypherCompiler(graph: GraphDatabaseService,
       throw new InvalidSemanticsException("Can't use multiple planners")
     }
 
-    //TODO once the we have removed PLANNER=X syntax, change to defaultPlanner here
+    //TODO once the we have removed PLANNER X syntax, change to defaultPlanner here
     if (planner.isEmpty) calculatePlannerDeprecated(other, version) else planner.head
   }
 
@@ -199,11 +199,11 @@ class CypherCompiler(graph: GraphDatabaseService,
     if (planner.isEmpty) defaultPlanner else planner.head
   }
 
-  private def calculateRuntime(options: Seq[CypherOption], planner: PlannerName, version: CypherVersion) = {
-    val runtimes = options.collect {
+  private def calculateRuntime(options: Option[ConfigurationOptions], planner: PlannerName, version: CypherVersion) = {
+    val runtimes = options.map(_.options.collect {
       case InterpretedRuntimeOption => InterpretedRuntimeName
       case CompiledRuntimeOption => CompiledRuntimeName
-    }.distinct
+    }.distinct).getOrElse(Seq.empty)
 
     if (VERSIONS_WITH_FIXED_RUNTIME(version) && runtimes.nonEmpty) {
       throw new InvalidArgumentException("RUNTIME not supported in versions older than Neo4j v2.3")
