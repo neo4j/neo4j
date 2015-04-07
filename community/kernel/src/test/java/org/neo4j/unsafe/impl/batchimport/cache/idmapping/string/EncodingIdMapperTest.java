@@ -42,6 +42,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper.Monitor;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.SimpleInputIterator;
@@ -62,6 +63,7 @@ import static org.mockito.Mockito.when;
 import static java.lang.System.currentTimeMillis;
 
 import static org.neo4j.helpers.progress.ProgressListener.NONE;
+import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper.NO_MONITOR;
 import static org.neo4j.unsafe.impl.batchimport.input.Group.GLOBAL;
 import static org.neo4j.unsafe.impl.batchimport.input.SimpleInputIteratorWrapper.wrap;
 
@@ -179,7 +181,7 @@ public class EncodingIdMapperTest
         int size = random.nextInt( 10_000 ) + 2;
         ValueType type = ValueType.values()[random.nextInt( ValueType.values().length )];
         IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, type.encoder(), type.radix(),
-                size*2, processorsForSorting /*1-7*/ );
+                NO_MONITOR, size*2, processorsForSorting /*1-7*/ );
 
         // WHEN
         InputIterable<Object> values = new ValueGenerator( size, type.data( random ) );
@@ -213,7 +215,8 @@ public class EncodingIdMapperTest
     public void shouldRefuseCollisionsBasedOnSameInputId() throws Exception
     {
         // GIVEN
-        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), new Radix.String() );
+        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), new Radix.String(),
+                NO_MONITOR );
         InputIterable<Object> ids = wrap( "source", Arrays.<Object>asList( "10", "9", "10" ) );
         Group group = new Group.Adapter( GLOBAL.id(), "global" );
         try ( ResourceIterator<Object> iterator = ids.iterator() )
@@ -241,7 +244,8 @@ public class EncodingIdMapperTest
     public void shouldIncludeSourceLocationsOfCollisions() throws Exception
     {
         // GIVEN
-        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), new Radix.String() );
+        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), new Radix.String(),
+                NO_MONITOR );
         final List<Object> idList = Arrays.<Object>asList( "10", "9", "10" );
         InputIterable<Object> ids = wrap( "source", idList );
         try ( ResourceIterator<Object> iterator = ids.iterator() )
@@ -271,9 +275,10 @@ public class EncodingIdMapperTest
     public void shouldCopeWithCollisionsBasedOnDifferentInputIds() throws Exception
     {
         // GIVEN
+        Monitor monitor = mock( Monitor.class );
         Encoder encoder = mock( Encoder.class );
         when( encoder.encode( any() ) ).thenReturn( 12345L );
-        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, encoder, new Radix.String() );
+        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, encoder, new Radix.String(), monitor );
         InputIterable<Object> ids = wrap( "source", Arrays.<Object>asList( "10", "9" ) );
         try ( ResourceIterator<Object> iterator = ids.iterator() )
         {
@@ -288,6 +293,7 @@ public class EncodingIdMapperTest
         mapper.prepare( ids, progress );
 
         // THEN
+        verify( monitor ).numberOfCollisions( 1 );
         assertEquals( 0L, mapper.get( "10", GLOBAL ) );
         assertEquals( 1L, mapper.get( "9", GLOBAL ) );
         // 3 times since SORT+DETECT+RESOLVE
@@ -296,10 +302,64 @@ public class EncodingIdMapperTest
     }
 
     @Test
+    public void shouldCopeWithMixedActualAndAccidentalCollisions() throws Exception
+    {
+        // GIVEN
+        Monitor monitor = mock( Monitor.class );
+        Encoder encoder = mock( Encoder.class );
+        // Create these explicit instances so that we can use them in mock, even for same values
+        String a = new String( "a" );
+        String b = new String( "b" );
+        String c = new String( "c" );
+        String a2 = new String( "a" );
+        String e = new String( "e" );
+        String f = new String( "f" );
+        when( encoder.encode( a ) ).thenReturn( 1L );
+        when( encoder.encode( b ) ).thenReturn( 1L );
+        when( encoder.encode( c ) ).thenReturn( 3L );
+        when( encoder.encode( a2 ) ).thenReturn( 1L );
+        when( encoder.encode( e ) ).thenReturn( 2L );
+        when( encoder.encode( f ) ).thenReturn( 1L );
+        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, encoder, new Radix.String(), monitor );
+        InputIterable<Object> ids = wrap( "source", Arrays.<Object>asList( "a", "b", "c", "a", "e", "f" ) );
+        Group.Adapter groupA = new Group.Adapter( 1, "A" );
+        Group.Adapter groupB = new Group.Adapter( 2, "B" );
+        Group[] groups = new Group[] {groupA, groupA, groupA, groupB, groupB, groupB};
+
+        // a/A --> 1
+        // b/A --> 1 accidental collision with a/A
+        // c/A --> 3
+        // a/B --> 1 actual collision with a/A
+        // e/B --> 2
+        // f/B --> 1 accidental collision with a/A
+
+        // WHEN
+        try ( ResourceIterator<Object> iterator = ids.iterator() )
+        {
+            for ( int i = 0; iterator.hasNext(); i++ )
+            {
+                mapper.put( iterator.next(), i, groups[i] );
+            }
+        }
+        mapper.prepare( ids, mock( ProgressListener.class ) );
+
+        // THEN
+        verify( monitor ).numberOfCollisions( 2 );
+        assertEquals( 0L, mapper.get( a, groupA ) );
+        assertEquals( 1L, mapper.get( b, groupA ) );
+        assertEquals( 2L, mapper.get( c, groupA ) );
+        assertEquals( 3L, mapper.get( a2, groupB ) );
+        assertEquals( 4L, mapper.get( e, groupB ) );
+        assertEquals( 5L, mapper.get( f, groupB ) );
+    }
+
+    @Test
     public void shouldBeAbleToHaveDuplicateInputIdButInDifferentGroups() throws Exception
     {
         // GIVEN
-        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), new Radix.String() );
+        Monitor monitor = mock( Monitor.class );
+        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), new Radix.String(),
+                monitor );
         InputIterable<Object> ids = wrap( "source", Arrays.<Object>asList( "10", "9", "10" ) );
         Groups groups = new Groups();
         Group firstGroup = groups.getOrCreate( "first" ), secondGroup = groups.getOrCreate( "second" );
@@ -315,6 +375,7 @@ public class EncodingIdMapperTest
         mapper.prepare( ids, NONE );
 
         // WHEN/THEN
+        verify( monitor ).numberOfCollisions( 0 );
         assertEquals( 0L, mapper.get( "10", firstGroup ) );
         assertEquals( 1L, mapper.get( "9", firstGroup ) );
         assertEquals( 2L, mapper.get( "10", secondGroup ) );
@@ -324,7 +385,8 @@ public class EncodingIdMapperTest
     public void shouldOnlyFindInputIdsInSpecificGroup() throws Exception
     {
         // GIVEN
-        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), new Radix.String() );
+        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), new Radix.String(),
+                NO_MONITOR );
         InputIterable<Object> ids = wrap( "source", Arrays.<Object>asList( "8", "9", "10" ) );
         Groups groups = new Groups();
         Group firstGroup, secondGroup, thirdGroup;
@@ -355,7 +417,8 @@ public class EncodingIdMapperTest
     public void shouldHandleManyGroups() throws Exception
     {
         // GIVEN
-        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new LongEncoder(), new Radix.String() );
+        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new LongEncoder(), new Radix.String(),
+                NO_MONITOR );
         int size = 100;
 
         // WHEN
