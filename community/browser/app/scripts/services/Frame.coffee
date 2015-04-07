@@ -59,12 +59,12 @@ angular.module('neo4jApp.services')
             @errorText = no
             @detailedErrorText = no
             @hasErrors = no
-            @isLoading = yes
+            @isLoading = yes unless @startTime
             @isTerminating = no
             @closeAttempts = 0
             @response  = null
             @templateUrl = intr.templateUrl
-            @startTime = (new Date).getTime()
+            @startTime = (new Date).getTime() unless @startTime
             @pinTime = 0
             intrPromise = intrFn(query, $q.defer())
             @terminate = =>
