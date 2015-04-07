@@ -508,12 +508,10 @@ class EagerizationAcceptanceTest extends ExecutionEngineFunSuite with TableDrive
   forAll(ConversionFunctions) {
     (function, initialValue, newValue) =>
       test(s"matching property using $function and writing should be eager") {
-        println("a")
         assertNumberOfEagerness(s"MATCH n WHERE $function(n.prop) = $initialValue SET n.prop = $newValue", 1)
       }
 
       test(s"matching property using $function and not writing should not be eager") {
-        println("b")
         assertNumberOfEagerness(s"MATCH n WHERE $function(n.prop) = $initialValue RETURN n", 0)
       }
   }

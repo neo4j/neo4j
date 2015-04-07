@@ -1944,7 +1944,7 @@ return b
     val node2 = createNode()
     val r = relate(node1, node2)
 
-    val query = """PLANNER COST WITH [{0}, {1}] AS x, count(*) as y
+    val query = """CYPHER planner=cost WITH [{0}, {1}] AS x, count(*) as y
                   |MATCH (n) WHERE ID(n) IN x
                   |MATCH (m) WHERE ID(m) IN x
                   |MATCH paths = allShortestPaths((n)-[*..1]-(m))

@@ -34,7 +34,7 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
       ldbcQuery.constraintQueries.foreach(execute(_))
 
       //when
-      val result = executeWithNewPlanner(s"PLANNER COST ${ldbcQuery.query}", ldbcQuery.params.toSeq: _*).result
+      val result = executeWithNewPlanner(s"CYPHER planner=cost ${ldbcQuery.query}", ldbcQuery.params.toSeq: _*).result
 
       //then
       result should equal(ldbcQuery.expectedResult)

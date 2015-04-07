@@ -34,7 +34,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     relate( createNode(), createNode(), "FOO")
 
     //WHEN
-    val result = profile("cypher 2.3 planner cost match n where n-[:FOO]->() return *")
+    val result = profile("CYPHER 2.3 planner=cost match n where n-[:FOO]->() return *")
 
     //THEN
     assertRows(1)(result)("SemiApply")
@@ -67,7 +67,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     relate( createNode(), createNode(), "FOO")
 
     //WHEN
-    val result = profile("cypher 2.3 planner cost match n where not n-[:FOO]->() return *")
+    val result = profile("CYPHER 2.3 planner=cost match n where not n-[:FOO]->() return *")
 
     //THEN
     assertRows(1)(result)("AntiSemiApply")
@@ -150,7 +150,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("allows optional match to start a query") {
     //GIVEN
-    val result = profile("cypher 2.3 planner cost optional match (n) return n")
+    val result = profile("CYPHER 2.3 planner=cost optional match (n) return n")
 
     //WHEN THEN
     assertRows(1)(result)("Optional")
@@ -219,19 +219,19 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   }
 
   test("should not have a problem profiling empty results") {
-    val result = super.profile("CYPHER 2.3 PLANNER COST MATCH n WHERE (n)-->() RETURN n")
+    val result = super.profile("CYPHER 2.3 planner=cost MATCH n WHERE (n)-->() RETURN n")
 
     result shouldBe empty
     result.executionPlanDescription().toString should include("AllNodes")
   }
 
   test("reports COST planner when showing plan description") {
-    val executionPlanDescription = eengine.execute("cypher 2.2 planner cost match n return n").executionPlanDescription()
+    val executionPlanDescription = eengine.execute("CYPHER 2.2 planner=cost match n return n").executionPlanDescription()
     executionPlanDescription.toString should include("Planner COST" + System.lineSeparator())
   }
 
   test("reports RULE planner when showing plan description") {
-    val executionPlanDescription = eengine.execute("cypher 2.2 planner cost create ()").executionPlanDescription()
+    val executionPlanDescription = eengine.execute("CYPHER 2.2 planner=cost create ()").executionPlanDescription()
 
     executionPlanDescription.toString should not include "Planner COST"
     executionPlanDescription.toString should include("Planner RULE" + System.lineSeparator())
@@ -253,7 +253,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     result.executionPlanDescription().toString should not include("EstimatedRows")
   }
 
-  test("planner cost match (p:Person {name:'Seymour'}) return (p)-[:RELATED_TO]->()") {
+  test("CYPHER planner=cost match (p:Person {name:'Seymour'}) return (p)-[:RELATED_TO]->()") {
     //GIVEN
     val seymour = createLabeledNode(Map("name" -> "Seymour"), "Person")
     relate(seymour, createLabeledNode(Map("name" -> "Buddy"), "Person"), "RELATED_TO")
@@ -266,7 +266,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     graph.createConstraint("Person", "name")
 
     //WHEN
-    val result = profile("planner cost match (p:Person {name:'Seymour'}) return (p)-[:RELATED_TO]->()")
+    val result = profile("CYPHER planner=cost match (p:Person {name:'Seymour'}) return (p)-[:RELATED_TO]->()")
 
     //THEN
     assertDbHits(7)(result)("Projection")
@@ -280,7 +280,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   }
 
   test("should show expand with types in a simple form") {
-    val a = profile("planner cost match n-[r:T]->() return *")
+    val a = profile("CYPHER planner=cost match n-[r:T]->() return *")
 
     a.executionPlanDescription().toString should include("()<-[r:T]-(n)")
   }

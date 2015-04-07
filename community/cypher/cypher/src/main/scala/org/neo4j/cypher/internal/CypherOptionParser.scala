@@ -34,15 +34,25 @@ case class CypherOptionParser(monitor: ParserMonitor[CypherQueryWithOptions]) ex
 
   def AllOptions: Rule1[Seq[CypherOption]] = zeroOrMore(AnyCypherOption, WS)
 
-  def AnyCypherOption: Rule1[CypherOption] = Version | Explain | Profile | Planner | Runtime
+  def AnyCypherOption: Rule1[CypherOption] = Cypher | Explain | Profile | PlannerDeprecated | Runtime
 
   def AnySomething: Rule1[String] = rule("Query") { oneOrMore(org.parboiled.scala.ANY) ~> identity }
 
-  def Version: Rule1[VersionOption] = rule("CYPHER") {
-      keyword("CYPHER") ~ WS ~ VersionNumber
-    }
+  def Cypher = rule("CYPHER options") {
+    keyword("CYPHER") ~~
+      optional(VersionNumber) ~~
+      zeroOrMore(PlannerOption) ~~> ConfigurationOptions
+  }
 
-  def Planner = rule("PLANNER") (
+  def PlannerOption: Rule1[CypherOption] = rule("planner option") (
+    option("planner", "cost") ~ push(CostPlannerOption)
+  | option("planner", "rule") ~ push(RulePlannerOption)
+  | option("planner", "idp") ~ push(IDPPlannerOption)
+  | option("planner", "dp") ~ push(DPPlannerOption)
+  )
+
+  @deprecated
+  def PlannerDeprecated = rule("PLANNER") (
     keyword("PLANNER COST") ~ push(CostPlannerOption)
       | keyword("PLANNER IDP") ~ push(IDPPlannerOption)
       | keyword("PLANNER DP") ~ push(DPPlannerOption)
@@ -63,4 +73,8 @@ case class CypherOptionParser(monitor: ParserMonitor[CypherQueryWithOptions]) ex
   def Profile = keyword("PROFILE") ~ push(ProfileOption)
 
   def Explain = keyword("EXPLAIN") ~ push(ExplainOption)
+
+  def option(key: String, value: String): Rule0 = {
+    keyword(key) ~ WS ~ "=" ~ WS ~keyword(value)
+  }
 }
