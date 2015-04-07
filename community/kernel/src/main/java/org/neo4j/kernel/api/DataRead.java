@@ -53,6 +53,15 @@ interface DataRead
             throws IndexNotFoundKernelException;
 
     /**
+     * Returns an iterator with the matched nodes.
+     *
+     * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException
+     *          if no such index found.
+     */
+    PrimitiveLongIterator nodesGetFromIndexScan( IndexDescriptor index )
+            throws IndexNotFoundKernelException;
+
+    /**
      * @return an iterator over all nodes in the database.
      */
     PrimitiveLongIterator nodesGetAll();

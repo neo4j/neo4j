@@ -1082,7 +1082,10 @@ public abstract class IteratorUtil
             @Override
             public void close()
             {
-                resource.close();
+                if ( resource != null )
+                {
+                    resource.close();
+                }
             }
 
             @Override

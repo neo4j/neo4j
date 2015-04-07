@@ -23,45 +23,34 @@ import org.neo4j.cypher.internal.compiler.v2_2._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.{LabelToken, PropertyKeyToken}
 import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_2.commands.{QueryExpression, indexQuery}
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{Effects, ReadsLabel, ReadsNodeProperty, ReadsNodes}
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.Effects
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.Index
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.{CTNode, SymbolTable}
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.index.IndexDescriptor
 
-case class NodeIndexSeekPipe(ident: String,
+case class NodeIndexScanPipe(ident: String,
                              label: LabelToken,
-                             propertyKey: PropertyKeyToken,
-                             valueExpr: QueryExpression[Expression],
-                             unique: Boolean = false)
+                             propertyKey: PropertyKeyToken)
                             (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends Pipe with RonjaPipe {
 
   private val descriptor = new IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
 
-  private val indexFactory: (QueryState) => (Any) => Iterator[Node] =
-    if (unique)
-      (state: QueryState) => (x: Any) => state.query.exactUniqueIndexSearch(descriptor, x).toIterator
-    else
-      (state: QueryState) => (x: Any) => state.query.exactIndexSearch(descriptor, x)
-
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)
 
-    val index = indexFactory(state)
     val baseContext = state.initialContext.getOrElse(ExecutionContext.empty)
-    val resultNodes = indexQuery(valueExpr, baseContext, state, index, label.name, propertyKey.name)
+    val resultNodes = state.query.indexScan(descriptor)
     resultNodes.map(node => baseContext.newWith1(ident, node))
   }
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  def planDescription = {
-    val name = if (unique) "NodeUniqueIndexSeek" else "NodeIndexSeek"
-    new PlanDescriptionImpl(this, name, NoChildren, Seq(Index(label.name, propertyKey.name)), identifiers)
-  }
+  def planDescription =
+    new PlanDescriptionImpl(this, "NodeIndexScan", NoChildren, Seq(Index(label.name, propertyKey.name)), identifiers)
 
   def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
 
@@ -74,7 +63,7 @@ case class NodeIndexSeekPipe(ident: String,
 
   def sources: Seq[Pipe] = Seq.empty
 
-  override def localEffects = Effects(ReadsNodes, ReadsLabel(label.name), ReadsNodeProperty(propertyKey.name))
+  override def localEffects = Effects.READS_NODES
 
   def withEstimatedCardinality(estimated: Double) = copy()(Some(estimated))
 }

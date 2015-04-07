@@ -33,6 +33,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Future;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.IOFunction;
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
@@ -60,6 +61,22 @@ import static org.neo4j.test.ThreadingRule.stackTracePredicate;
 @RunWith( Parameterized.class )
 public class LuceneIndexAccessorTest
 {
+    @Test
+    public void indexReaderShouldSupportScan() throws Exception
+    {
+        // GIVEN
+        updateAndCommit( asList( add( nodeId, value ), add( nodeId2, value2 ) ) );
+        IndexReader reader = accessor.newReader();
+
+        // WHEN
+        PrimitiveLongIterator results = reader.scan();
+
+        // THEN
+        assertEquals( asSet( nodeId, nodeId2 ), asSet( results ) );
+        assertEquals( asSet( nodeId ), asUniqueSet( reader.lookup( value ) ) );
+        reader.close();
+    }
+
     @Test
     public void indexReaderShouldHonorRepeatableReads() throws Exception
     {

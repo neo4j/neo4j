@@ -24,10 +24,9 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.ManyQueryExpression
 import org.neo4j.cypher.internal.compiler.v2_2.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.{indexSeekLeafPlanner, uniqueIndexSeekLeafPlanner}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.{uniqueIndexSeekLeafPlanner, indexSeekLeafPlanner}
 
-class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   val idName = IdName("n")
   val hasLabels: Expression = HasLabels(ident("n"), Seq(LabelName("Awesome") _)) _

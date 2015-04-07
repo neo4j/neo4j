@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.commands.ManyQueryExpression
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_2.{LabelId, PropertyKeyId}
 
@@ -66,6 +67,78 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     )
   }
 
+  private val nodeIndexScanCost: PartialFunction[(LogicalPlan, QueryGraphSolverInput), Cost] = {
+    case (_: AllNodesScan, _) => 1000.0
+    case (_: NodeByLabelScan, _) => 50.0
+    case (_: NodeIndexScan, _) => 10.0
+    case (_: NodeIndexSeek, _) => 1.0
+    case (Selection(_, plan), input) => nodeIndexScanCost((plan, input))
+    case _ => Double.MaxValue
+  }
+
+  test("should build plans for index scan when there is an index on the property") {
+    implicit val plan = new given {
+      indexOn("Awesome", "prop")
+      cost = nodeIndexScanCost
+    } planFor "MATCH (n:Awesome) WHERE has(n.prop) RETURN n"
+
+    plan.plan should equal(
+      NodeIndexScan(
+        "n",
+        LabelToken("Awesome", LabelId(0)),
+        PropertyKeyToken(PropertyKeyName("prop")_, PropertyKeyId(0)),
+        Set.empty)(solved)
+    )
+  }
+
+  test("should build plans for index scan when there is an unique index on the property") {
+    implicit val plan = new given {
+      uniqueIndexOn("Awesome", "prop")
+      cost = nodeIndexScanCost
+    } planFor "MATCH (n:Awesome) WHERE has(n.prop) RETURN n"
+
+    plan.plan should equal(
+      NodeIndexScan(
+        "n",
+        LabelToken("Awesome", LabelId(0)),
+        PropertyKeyToken(PropertyKeyName("prop")_, PropertyKeyId(0)),
+        Set.empty)(solved)
+    )
+  }
+
+  test("should build plans for index scan when there is both an unique index and index on the property") {
+    implicit val plan = new given {
+      indexOn("Awesome", "prop")
+      uniqueIndexOn("Awesome", "prop")
+      cost = nodeIndexScanCost
+    } planFor "MATCH (n:Awesome) WHERE has(n.prop) RETURN n"
+
+    plan.plan should equal(
+      NodeIndexScan(
+        "n",
+        LabelToken("Awesome", LabelId(0)),
+        PropertyKeyToken(PropertyKeyName("prop")_, PropertyKeyId(0)),
+        Set.empty)(solved)
+    )
+  }
+
+  test("should build plans for index seek rather than index scan where there are predicates for both") {
+    implicit val plan = new given {
+      indexOn("Awesome", "prop")
+      cost = nodeIndexScanCost
+    } planFor "MATCH (n:Awesome) WHERE has(n.prop) AND n.prop = 42 RETURN n"
+
+    plan.plan should equal(
+      Selection(Seq(FunctionInvocation(FunctionName("has") _, Property(ident("n"), PropertyKeyName("prop") _) _) _),
+        NodeIndexSeek(
+          "n",
+          LabelToken("Awesome", LabelId(0)),
+          PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)),
+          ManyQueryExpression(Collection(Seq(SignedDecimalIntegerLiteral("42") _)) _),
+          Set.empty)(solved)
+      )(solved))
+  }
+
   test("should build plans for index seek when there is an index on the property") {
     implicit val plan = new given {
       indexOn("Awesome", "prop")
@@ -98,7 +171,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } planFor "MATCH (n:Awesome) WHERE n.prop = 42 RETURN n"
 
     plan.plan should equal(
-      NodeIndexUniqueSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(1)), ManyQueryExpression(Collection(Seq(SignedDecimalIntegerLiteral("42")_))_), Set.empty)(solved)
+      NodeIndexUniqueSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(0)),
+        ManyQueryExpression(Collection(Seq(SignedDecimalIntegerLiteral("42")_))_), Set.empty)(solved)
     )
   }
 

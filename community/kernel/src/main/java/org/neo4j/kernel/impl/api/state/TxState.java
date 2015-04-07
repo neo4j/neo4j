@@ -999,7 +999,8 @@ public final class TxState implements TransactionState
     @Override
     public ReadableDiffSets<Long> indexUpdates( IndexDescriptor descriptor, Object value )
     {
-        return ReadableDiffSets.Empty.ifNull(
+        return ReadableDiffSets.Empty.ifNull( (value == null) ?
+                getIndexUpdates( descriptor.getLabelId(), descriptor.getPropertyKeyId() ) :
                 getIndexUpdates( descriptor.getLabelId(), /*create=*/false,
                                  property( descriptor.getPropertyKeyId(), value ) ) );
     }
@@ -1064,6 +1065,29 @@ public final class TxState implements TransactionState
         if ( diffs == null && create )
         {
             updates.put( property, diffs = new DiffSets<>() );
+        }
+        return diffs;
+    }
+
+    private DiffSets<Long> getIndexUpdates( int label, int propertyKeyId )
+    {
+        if ( indexUpdates == null )
+        {
+            return null;
+        }
+        Map<DefinedProperty,DiffSets<Long>> updates = indexUpdates.get( label );
+        if ( updates == null )
+        {
+            return null;
+        }
+        DiffSets<Long> diffs = new DiffSets<>();
+        for ( Map.Entry<DefinedProperty,DiffSets<Long>> entry : updates.entrySet() )
+        {
+            if ( entry.getKey().propertyKeyId() == propertyKeyId )
+            {
+                diffs.addAll( entry.getValue().getAdded().iterator() );
+                diffs.removeAll( entry.getValue().getRemoved().iterator() );
+            }
         }
         return diffs;
     }
