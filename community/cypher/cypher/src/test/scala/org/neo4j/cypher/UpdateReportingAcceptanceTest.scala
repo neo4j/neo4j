@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 class UpdateReportingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
   test("creating a node gets reported as such") {
-    val output = execute("create (:A)").dumpToString()
+    val output = executeWithRulePlanner("create (:A)").dumpToString()
 
     output should include ("Nodes created: 1")
     output should include ("Labels added: 1")

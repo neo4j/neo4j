@@ -43,55 +43,55 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
   // *** TESTS OF %
 
   test("finds exact matches") {
-    val result = executeWithNewPlanner("MATCH (a) WHERE a.name LIKE 'ABCDEF' RETURN a")
+    val result = executeWithAllPlanners("MATCH (a) WHERE a.name LIKE 'ABCDEF' RETURN a")
 
     result.toList should equal(Seq(Map("a" -> aNode)))
   }
 
   test("finds case insensitive matches") {
-    val result = executeWithNewPlanner("MATCH (a) WHERE a.name ILIKE 'ABCDEF' RETURN a")
+    val result = executeWithAllPlanners("MATCH (a) WHERE a.name ILIKE 'ABCDEF' RETURN a")
 
     result.toList should equal(Seq(Map("a" -> aNode), Map("a" -> cNode)))
   }
 
   test("start of string") {
-    val result = executeWithNewPlanner("MATCH (a) WHERE a.name LIKE 'ABC%' RETURN a")
+    val result = executeWithAllPlanners("MATCH (a) WHERE a.name LIKE 'ABC%' RETURN a")
 
     result.toList should equal(Seq(Map("a" -> aNode)))
   }
 
   test("end of string1") {
-    val result = executeWithNewPlanner("MATCH (a) WHERE a.name LIKE '%DEF' RETURN a")
+    val result = executeWithAllPlanners("MATCH (a) WHERE a.name LIKE '%DEF' RETURN a")
 
     result.toList should equal(Seq(Map("a" -> aNode)))
   }
 
   test("case insensitive start of string") {
-    val result = executeWithNewPlanner("MATCH (a) WHERE a.name ILIKE 'ABC%' RETURN a")
+    val result = executeWithAllPlanners("MATCH (a) WHERE a.name ILIKE 'ABC%' RETURN a")
 
     result.toList should equal(Seq(Map("a" -> aNode), Map("a" -> cNode)))
   }
 
   test("case insensitive end of string1") {
-    val result = executeWithNewPlanner("MATCH (a) WHERE a.name ILIKE '%DEF' RETURN a")
+    val result = executeWithAllPlanners("MATCH (a) WHERE a.name ILIKE '%DEF' RETURN a")
 
     result.toList should equal(Seq(Map("a" -> aNode), Map("a" -> cNode)))
   }
 
   test("end of string2") {
-    val result = executeWithNewPlanner("MATCH (a) WHERE a.name LIKE '%AB' RETURN a")
+    val result = executeWithAllPlanners("MATCH (a) WHERE a.name LIKE '%AB' RETURN a")
 
     result.toList should equal(Seq(Map("a" -> bNode)))
   }
 
   test("middle of string") {
-    val result = executeWithNewPlanner("MATCH (a) WHERE a.name LIKE 'a%f' RETURN a")
+    val result = executeWithAllPlanners("MATCH (a) WHERE a.name LIKE 'a%f' RETURN a")
 
     result.toList should equal(Seq(Map("a" -> cNode)))
   }
 
   test("all the things") {
-    val result = executeWithNewPlanner("MATCH (a) WHERE a.name LIKE '%' RETURN a")
+    val result = executeWithAllPlanners("MATCH (a) WHERE a.name LIKE '%' RETURN a")
 
     result.toList should equal(List(
       Map("a" -> aNode),
@@ -102,7 +102,7 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
   }
 
   test("middle of string is known") {
-    val result = executeWithNewPlanner("MATCH (a) WHERE a.name LIKE '%CD%' RETURN a")
+    val result = executeWithAllPlanners("MATCH (a) WHERE a.name LIKE '%CD%' RETURN a")
 
     result.toList should equal(Seq(
       Map("a" -> aNode))
@@ -110,26 +110,26 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
   }
 
   test("LIKE against a null value returns no matches") {
-    val result = executeWithNewPlanner("MATCH (a) WHERE a.name LIKE NULL RETURN a")
+    val result = executeWithAllPlanners("MATCH (a) WHERE a.name LIKE NULL RETURN a")
 
     result.toList shouldBe empty
   }
 
 
   test("NOT LIKE against a null value returns no matches") {
-    val result = executeWithNewPlanner("MATCH (a) WHERE a.name NOT LIKE NULL RETURN a")
+    val result = executeWithAllPlanners("MATCH (a) WHERE a.name NOT LIKE NULL RETURN a")
 
     result.toList shouldBe empty
   }
 
   test("ILIKE against a null value returns no matches") {
-    val result = executeWithNewPlanner("MATCH (a) WHERE a.name ILIKE NULL RETURN a")
+    val result = executeWithAllPlanners("MATCH (a) WHERE a.name ILIKE NULL RETURN a")
 
     result.toList shouldBe empty
   }
 
   test("NOT ILIKE against a null value returns no matches") {
-    val result = executeWithNewPlanner("MATCH (a) WHERE a.name NOT ILIKE NULL RETURN a")
+    val result = executeWithAllPlanners("MATCH (a) WHERE a.name NOT ILIKE NULL RETURN a")
 
     result.toList shouldBe empty
   }
@@ -137,37 +137,37 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
   // *** TESTS OF _
 
   test("one letter at the start of a string") {
-    val result = executeWithNewPlanner("MATCH (a) WHERE a.name LIKE '_BCDEF' RETURN a")
+    val result = executeWithAllPlanners("MATCH (a) WHERE a.name LIKE '_BCDEF' RETURN a")
 
     result.toList should equal(Seq(Map("a" -> aNode)))
   }
 
   test("one letter at the end of a string") {
-    val result = executeWithNewPlanner("MATCH (a) WHERE a.name LIKE 'ABCDE_' RETURN a")
+    val result = executeWithAllPlanners("MATCH (a) WHERE a.name LIKE 'ABCDE_' RETURN a")
 
     result.toList should equal(Seq(Map("a" -> aNode)))
   }
 
   test("first and last letter are not known") {
-    val result = executeWithNewPlanner("MATCH (a) WHERE a.name LIKE '_bcde_' RETURN a")
+    val result = executeWithAllPlanners("MATCH (a) WHERE a.name LIKE '_bcde_' RETURN a")
 
     result.toList should equal(Seq(Map("a" -> cNode)))
   }
 
   test("single letter in the middle of a string") {
-    val result = executeWithNewPlanner("MATCH (a) WHERE a.name LIKE 'AB_DEF' RETURN a")
+    val result = executeWithAllPlanners("MATCH (a) WHERE a.name LIKE 'AB_DEF' RETURN a")
 
     result.toList should equal(Seq(Map("a" -> aNode)))
   }
 
   test("underscore must match at least one letter") {
-    val result = executeWithNewPlanner("MATCH (a) WHERE a.name LIKE 'ABC_DEF' RETURN a")
+    val result = executeWithAllPlanners("MATCH (a) WHERE a.name LIKE 'ABC_DEF' RETURN a")
 
     result.toList shouldBe empty
   }
 
   test("none of the things") {
-    val result = executeWithNewPlanner("MATCH (a) WHERE a.name LIKE '_' RETURN a")
+    val result = executeWithAllPlanners("MATCH (a) WHERE a.name LIKE '_' RETURN a")
 
     result.toList shouldBe empty
   }
@@ -175,7 +175,7 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
   // *** TESTS OF FEATURE INTERACTION
 
   test("combining underscore and percent") {
-    val result = executeWithNewPlanner("MATCH (a) WHERE a.name LIKE 'A%C_EF' RETURN a")
+    val result = executeWithAllPlanners("MATCH (a) WHERE a.name LIKE 'A%C_EF' RETURN a")
 
     result.toList should equal(Seq(Map("a" -> aNode)))
   }
@@ -183,13 +183,13 @@ class LikeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
   // *** TESTS OF NOT
 
   test("NOT can be used infix for LIKE") {
-    val result = executeWithNewPlanner("MATCH (a) WHERE a.name NOT LIKE '%b%' RETURN a")
+    val result = executeWithAllPlanners("MATCH (a) WHERE a.name NOT LIKE '%b%' RETURN a")
 
     result.toList should equal(Seq(Map("a" -> aNode), Map("a" -> bNode), Map("a" -> eNode)))
   }
 
   test("NOT can be used infix for ILIKE") {
-    val result = executeWithNewPlanner("MATCH (a) WHERE a.name NOT ILIKE '%b%' RETURN a")
+    val result = executeWithAllPlanners("MATCH (a) WHERE a.name NOT ILIKE '%b%' RETURN a")
 
     result.toList should equal(Seq(Map("a" -> eNode)))
   }

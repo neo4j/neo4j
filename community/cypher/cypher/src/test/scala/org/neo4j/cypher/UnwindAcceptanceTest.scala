@@ -26,7 +26,7 @@ class UnwindAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSu
 
   test("unwind collection returns individual values") {
 
-    val result = executeWithNewPlanner(
+    val result = executeWithAllPlanners(
       "UNWIND [1,2,3] as x return x"
     )
     result.columnAs[Int]("x").toList should equal(List(1, 2, 3))
@@ -34,14 +34,14 @@ class UnwindAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSu
 
   test("unwind a range") {
 
-    val result = executeWithNewPlanner(
+    val result = executeWithAllPlanners(
       "UNWIND RANGE(1,3) as x return x"
     )
     result.columnAs[Int]("x").toList should equal(List(1, 2, 3))
   }
   test("unwind a concatenation of collections") {
 
-    val result = executeWithNewPlanner(
+    val result = executeWithAllPlanners(
       "WITH [1,2,3] AS first, [4,5,6] AS second UNWIND (first + second) as x return x"
     )
     result.columnAs[Int]("x").toList should equal(List(1, 2, 3, 4, 5, 6))
@@ -49,7 +49,7 @@ class UnwindAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSu
 
   test("unwind a collected unwound expression") {
 
-    val result = executeWithNewPlanner(
+    val result = executeWithAllPlanners(
       "UNWIND RANGE(1,2) AS row WITH collect(row) as rows UNWIND rows as x return x"
     )
     result.columnAs[Int]("x").toList should equal(List(1, 2))
@@ -59,7 +59,7 @@ class UnwindAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSu
     val a = createLabeledNode(Map("id" -> 1))
     val b = createLabeledNode(Map("id" -> 2))
 
-    val result = executeWithNewPlanner(
+    val result = executeWithAllPlanners(
       "MATCH (row) WITH collect(row) AS rows UNWIND rows AS node RETURN node"
     )
     result.columnAs[Node]("node").toList should equal(List(a, b))
@@ -68,7 +68,7 @@ class UnwindAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSu
   test("create nodes from a collection parameter") {
     createLabeledNode(Map("year" -> 2014), "Year")
 
-    val result = execute(
+    val result = executeWithRulePlanner(
       "UNWIND {events} as event MATCH (y:Year {year:event.year}) MERGE (y)<-[:IN]-(e:Event {id:event.id}) RETURN e.id as x order by x",
       "events" -> List(Map("year" -> 2014, "id" -> 1), Map("year" -> 2014, "id" -> 2))
     )
@@ -76,35 +76,35 @@ class UnwindAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSu
   }
 
   test("double unwinding a collection of collections returns one row per item") {
-    val result = executeWithNewPlanner(
+    val result = executeWithAllPlanners(
       "WITH [[1,2,3], [4,5,6]] AS coc UNWIND coc AS x UNWIND x AS y RETURN y"
     )
     result.columnAs[Int]("y").toList should equal(List(1, 2, 3, 4, 5, 6))
   }
 
   test("no rows for unwinding an empty collection") {
-    val result = executeWithNewPlanner(
+    val result = executeWithAllPlanners(
       "UNWIND [] AS empty RETURN empty"
     )
     result.columnAs[Int]("empty").toList should equal(List())
   }
 
   test("no rows for unwinding null") {
-    val result = executeWithNewPlanner(
+    val result = executeWithAllPlanners(
       "UNWIND null AS empty RETURN empty"
     )
     result.columnAs[Int]("empty").toList should equal(List())
   }
 
   test("one row per item of a collection even with duplicates") {
-    val result = executeWithNewPlanner(
+    val result = executeWithAllPlanners(
       "UNWIND [1,1,2,2,3,3,4,4,5,5] AS duplicate RETURN duplicate"
     )
     result.columnAs[Int]("duplicate").toList should equal(List(1, 1, 2, 2, 3, 3, 4, 4, 5, 5))
   }
 
   test("unwind does not remove anything from the context") {
-    val result = executeWithNewPlanner(
+    val result = executeWithAllPlanners(
       "WITH [1,2,3] as collection UNWIND collection AS x RETURN *"
     )
     result.toList should equal(List(
@@ -121,7 +121,7 @@ class UnwindAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSu
     relate(s1, n2, "Y")
     relate(createNode(), n2, "Y")
 
-    val result = executeWithNewPlanner("""MATCH (a:Start)-[:X]->(b1)
+    val result = executeWithAllPlanners("""MATCH (a:Start)-[:X]->(b1)
                                          |WITH a, COLLECT(b1) AS bees
                                          |UNWIND bees as b2
                                          |MATCH (a)-[:Y]->(b2)
@@ -131,7 +131,7 @@ class UnwindAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSu
 
   test("multiple unwinds after each other work like expected") {
     val result =
-      executeWithNewPlanner( """WITH [1,2] as XS, [3,4] as YS, [5,6] as ZS
+      executeWithAllPlanners( """WITH [1,2] as XS, [3,4] as YS, [5,6] as ZS
                              |UNWIND XS as X
                              |UNWIND YS as Y
                              |UNWIND ZS as Z
