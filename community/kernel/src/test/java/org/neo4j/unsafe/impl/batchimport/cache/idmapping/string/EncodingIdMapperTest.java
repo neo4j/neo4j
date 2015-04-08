@@ -321,37 +321,6 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldPreventCollisionGetFromManyGroups() throws Exception
-    {
-        // GIVEN
-        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), new Radix.String() );
-        InputIterable<Object> ids = wrap( "source", Arrays.<Object>asList( "9", "10", "10" ) );
-        Groups groups = new Groups();
-        Group firstGroup = groups.getOrCreate( "first" ), secondGroup = groups.getOrCreate( "second" );
-        try ( ResourceIterator<Object> iterator = ids.iterator() )
-        {
-            int id = 0;
-            // group 0
-            mapper.put( iterator.next(), id++, firstGroup );
-            mapper.put( iterator.next(), id++, firstGroup );
-            // group 1
-            mapper.put( iterator.next(), id++, secondGroup );
-        }
-        mapper.prepare( ids, NONE );
-
-        // WHEN/THEN
-        try
-        {
-            mapper.get( "10", GLOBAL );
-            fail( "Should fail" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // Good
-        }
-    }
-
-    @Test
     public void shouldOnlyFindInputIdsInSpecificGroup() throws Exception
     {
         // GIVEN
