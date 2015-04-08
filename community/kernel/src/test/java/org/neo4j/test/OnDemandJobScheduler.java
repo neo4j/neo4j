@@ -19,6 +19,7 @@
  */
 package org.neo4j.test;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -27,6 +28,19 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 public class OnDemandJobScheduler extends LifecycleAdapter implements JobScheduler
 {
     private Runnable job;
+
+    @Override
+    public Executor executor( Group group )
+    {
+        return new Executor()
+        {
+            @Override
+            public void execute( Runnable command )
+            {
+                job = command;
+            }
+        };
+    }
 
     @Override
     public JobHandle schedule( Group group, Runnable job )
