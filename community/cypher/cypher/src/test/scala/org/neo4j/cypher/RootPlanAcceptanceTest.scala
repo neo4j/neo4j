@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v2_3.{CostPlannerName, PlannerName, RulePlannerName}
+import org.neo4j.cypher.internal.compiler.v2_3._
 
 class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -37,67 +37,67 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
   test("should use Cost if it can by default in 2.3") {
     given("match n return n")
       .shouldHaveCypherVersion(CypherVersion.v2_3)
-      .shouldHavePlannerName(CostPlannerName)
+      .shouldHavePlanner(CostPlannerName)
   }
   test("should use Rule for varlength in 2.3") {
     given("match (a)-[r:T1*]->(b) return a,r,b")
       .withCypherVersion(CypherVersion.v2_3)
       .shouldHaveCypherVersion(CypherVersion.v2_3)
-      .shouldHavePlannerName(CostPlannerName)
+      .shouldHavePlanner(CostPlannerName)
   }
 
   test("should use Cost for cycles in 2.3") {
     given("match (a)-[r]->(a) return a")
       .withCypherVersion(CypherVersion.v2_3)
       .shouldHaveCypherVersion(CypherVersion.v2_3)
-      .shouldHavePlannerName(CostPlannerName)
+      .shouldHavePlanner(CostPlannerName)
   }
 
   test("should fallback to Rule for updates in 2.3") {
     given("create() return 1")
       .withCypherVersion(CypherVersion.v2_3)
-      .withPlannerName(CostPlannerName)
+      .withPlanner(CostPlannerName)
       .shouldHaveCypherVersion(CypherVersion.v2_3)
-      .shouldHavePlannerName(RulePlannerName)
+      .shouldHavePlanner(RulePlannerName)
   }
 
   test("should use rule if we really ask for it in 2.3") {
     given("match n return n")
       .withCypherVersion(CypherVersion.v2_3)
-      .withPlannerName(RulePlannerName)
+      .withPlanner(RulePlannerName)
       .shouldHaveCypherVersion(CypherVersion.v2_3)
-      .shouldHavePlannerName(RulePlannerName)
+      .shouldHavePlanner(RulePlannerName)
   }
 
   test("should be able to switch between RULE and COST") {
     given("match n return n")
       .withCypherVersion(CypherVersion.v2_3)
-      .withPlannerName(RulePlannerName)
+      .withPlanner(RulePlannerName)
       .shouldHaveCypherVersion(CypherVersion.v2_3)
-      .shouldHavePlannerName(RulePlannerName)
+      .shouldHavePlanner(RulePlannerName)
 
     given("match n return n")
       .withCypherVersion(CypherVersion.v2_3)
-      .withPlannerName(CostPlannerName)
+      .withPlanner(CostPlannerName)
       .shouldHaveCypherVersion(CypherVersion.v2_3)
-      .shouldHavePlannerName(CostPlannerName)
+      .shouldHavePlanner(CostPlannerName)
 
   }
 
   test("should use cost if we really ask for it in 2.3") {
     given("match n return n")
       .withCypherVersion(CypherVersion.v2_3)
-      .withPlannerName(CostPlannerName)
+      .withPlanner(CostPlannerName)
       .shouldHaveCypherVersion(CypherVersion.v2_3)
-      .shouldHavePlannerName(CostPlannerName)
+      .shouldHavePlanner(CostPlannerName)
   }
 
   test("should fail when using planner together with older versions") {
     intercept[InvalidArgumentException] {
       given("match n return n")
         .withCypherVersion(CypherVersion.v2_1)
-        .withPlannerName(CostPlannerName)
-        .planDescripton
+        .withPlanner(CostPlannerName)
+        .planDescription
     }
   }
 
@@ -106,9 +106,9 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       """MATCH p=(n:Person {first_name: 'Shawna'})-[:FRIEND_OF]-(m:Person)
         |RETURN p UNION MATCH p=(n:Person {first_name: 'Shawna'})-[:FRIEND_OF]-()-[:FRIEND_OF]-(m:Person) RETURN p""".stripMargin)
       .withCypherVersion(CypherVersion.v2_3)
-      .withPlannerName(RulePlannerName)
+      .withPlanner(RulePlannerName)
       .shouldHaveCypherVersion(CypherVersion.v2_3)
-      .shouldHavePlannerName(RulePlannerName)
+      .shouldHavePlanner(RulePlannerName)
   }
 
   test("troublesome query that should be run in cost") {
@@ -120,7 +120,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
         |LIMIT 10""".stripMargin)
       .withCypherVersion(CypherVersion.v2_3)
       .shouldHaveCypherVersion(CypherVersion.v2_3)
-      .shouldHavePlannerName(CostPlannerName)
+      .shouldHavePlanner(CostPlannerName)
   }
 
   test("another troublesome query that should be run in cost") {
@@ -130,60 +130,107 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
         |MATCH (db1)<-[:CONNECTED_TO]-()-[:CONNECTED_TO]-(db2) RETURN s""".stripMargin)
       .withCypherVersion(CypherVersion.v2_3)
       .shouldHaveCypherVersion(CypherVersion.v2_3)
-      .shouldHavePlannerName(CostPlannerName)
+      .shouldHavePlanner(CostPlannerName)
+  }
+
+  test("simple query that should go through Birk") {
+    given(
+      "MATCH n RETURN n")
+      .withCypherVersion(CypherVersion.v2_3)
+      .withRuntime(CompiledRuntimeName)
+      .shouldHaveCypherVersion(CypherVersion.v2_3)
+      .shouldHaveRuntime(CompiledRuntimeName)
+  }
+
+  test("simple query that should not go through Birk") {
+    given(
+      "MATCH n RETURN n")
+      .withCypherVersion(CypherVersion.v2_3)
+      .withRuntime(InterpretedRuntimeName)
+      .shouldHaveCypherVersion(CypherVersion.v2_3)
+      .shouldHaveRuntime(InterpretedRuntimeName)
+  }
+
+  test("query that does not go through Birk") {
+    given(
+      "MATCH n RETURN n, count(*)")
+      .withCypherVersion(CypherVersion.v2_3)
+      .shouldHaveCypherVersion(CypherVersion.v2_3)
+      .shouldHaveRuntime(InterpretedRuntimeName)
+  }
+
+  test("query that does not go through Birk nor Cost") {
+    given(
+      "CREATE ()")
+      .withCypherVersion(CypherVersion.v2_3)
+      .shouldHaveCypherVersion(CypherVersion.v2_3)
+      .shouldHaveRuntime(InterpretedRuntimeName)
+      .shouldHavePlanner(RulePlannerName)
+  }
+
+  test("query that lacks support from Birk") {
+    given(
+      "CREATE ()")
+      .withCypherVersion(CypherVersion.v2_3)
+      .withRuntime(CompiledRuntimeName)
+      .shouldHaveCypherVersion(CypherVersion.v2_3)
+      .shouldHaveRuntime(InterpretedRuntimeName)
+      .shouldHavePlanner(RulePlannerName)
   }
 
   test("children should be empty") {
-    given("match n return n").planDescripton.getChildren.size() should equal(0)
+    given("match n return n").planDescription.getChildren.size() should equal(0)
   }
 
   test("DbHits should be properly formatted") {
-    given("match n return n").planDescripton.getArguments.get("DbHits") should equal(1)
+    given("match n return n").planDescription.getArguments.get("DbHits") should equal(1)
   }
 
   test("Rows should be properly formatted") {
-    given("match n return n").planDescripton.getArguments.get("Rows") should equal(0)
+    given("match n return n").planDescription.getArguments.get("Rows") should equal(0)
   }
 
   test("EstimatedRows should be properly formatted") {
-    given("match n return n").planDescripton.getArguments.get("EstimatedRows") should equal(0)
+    given("match n return n").planDescription.getArguments.get("EstimatedRows") should equal(0)
   }
 
   def given(query: String) = TestQuery(query)
 
   case class TestQuery(query: String,
                        cypherVersion: Option[CypherVersion] = None,
-                        planner: Option[PlannerName] = None) {
+                       planner: Option[PlannerName] = None,
+                       runtime: Option[RuntimeName] = None) {
 
+    lazy val planDescription = execute()
     def withCypherVersion(version: CypherVersion) = copy(cypherVersion = Some(version))
-    def withPlannerName(planner: PlannerName) = copy(planner = Some(planner))
+    def withPlanner(planner: PlannerName) = copy(planner = Some(planner))
+    def withRuntime(runtime: RuntimeName) = copy(runtime = Some(runtime))
 
     def shouldHaveCypherVersion(version: CypherVersion) = {
-      val planDescription = execute()
       planDescription.getArguments.get("version") should equal(s"CYPHER ${version.name}")
-
       this
     }
 
-    def shouldHavePlannerName(planner: PlannerName) = {
-      val planDescription = execute()
+    def shouldHavePlanner(planner: PlannerName) = {
       planDescription.getArguments.get("planner") should equal(s"${planner.name}")
-
       this
     }
 
-    def planDescripton = execute()
+    def shouldHaveRuntime(runtime: RuntimeName) = {
+      planDescription.getArguments.get("runtime") should equal(s"${runtime.name}")
+      this
+    }
 
     private def execute() = {
-      val versionString = cypherVersion match {
-        case Some(v) => s"cypher ${v.name}"
-        case None => ""
+      val prepend = (cypherVersion, planner, runtime) match {
+        case (None,None,None) => ""
+        case _ =>
+          val version = cypherVersion.map(_.name).getOrElse("")
+          val plannerString = planner.map("planner=" + _.name).getOrElse("")
+          val runtimeString = runtime.map("runtime=" + _.name).getOrElse("")
+          s"CYPHER $version $plannerString $runtimeString"
       }
-      val plannerString = planner match {
-              case Some(p) => s"planner ${p.name}"
-              case None => ""
-            }
-      val executionResult = eengine.profile(s"$versionString  $plannerString $query").executionPlanDescription()
+      val executionResult = eengine.profile(s"$prepend $query").executionPlanDescription()
       executionResult.asJava
     }
   }
