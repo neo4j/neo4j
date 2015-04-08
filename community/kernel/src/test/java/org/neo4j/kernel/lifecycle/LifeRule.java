@@ -23,8 +23,14 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-public class LifeRule extends LifeSupport implements TestRule
+/**
+ *  JUnit rule that allows you to manage lifecycle of a set of instances. Register instances
+ *  and then use the init/start/stop/shutdown methods.
+ */
+public class LifeRule implements TestRule
 {
+    private LifeSupport life = new LifeSupport(  );
+
     @Override
     public Statement apply( final Statement base, Description description )
     {
@@ -36,21 +42,50 @@ public class LifeRule extends LifeSupport implements TestRule
                 try
                 {
                     base.evaluate();
+                    life.shutdown();
                 }
                 catch ( Throwable failure )
                 {
                     try
                     {
-                        shutdown();
+                        life.shutdown();
                     }
                     catch ( Throwable suppressed )
                     {
                         failure.addSuppressed( suppressed );
                     }
                     throw failure;
+                } finally
+                {
+                    life = new LifeSupport(  );
                 }
-                shutdown();
             }
         };
+    }
+
+    public <T> T add( T instance )
+    {
+        return life.add(instance);
+    }
+
+
+    public void init()
+    {
+        life.init();
+    }
+
+    public void start()
+    {
+        life.start();
+    }
+
+    public void stop()
+    {
+        life.stop();
+    }
+
+    public void shutdown()
+    {
+        life.shutdown();
     }
 }

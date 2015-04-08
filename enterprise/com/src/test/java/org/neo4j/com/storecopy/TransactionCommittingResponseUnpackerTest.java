@@ -19,11 +19,11 @@
  */
 package org.neo4j.com.storecopy;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
@@ -82,6 +82,9 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_I
 
 public class TransactionCommittingResponseUnpackerTest
 {
+    public final @Rule CleanupRule cleanup = new CleanupRule();
+    public final @Rule LifeRule life = new LifeRule();
+
     private final LogAppendEvent logAppendEvent = LogAppendEvent.NULL;
 
     /*
@@ -484,7 +487,4 @@ public class TransactionCommittingResponseUnpackerTest
             }
         }
     }
-
-    public final @Rule CleanupRule cleanup = new CleanupRule();
-    public final @Rule LifeRule life = new LifeRule();
 }
