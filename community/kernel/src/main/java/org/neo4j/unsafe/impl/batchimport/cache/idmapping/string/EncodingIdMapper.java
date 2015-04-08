@@ -67,16 +67,17 @@ public class EncodingIdMapper implements IdMapper
     private static LongBitsManipulator COLLISION_BIT = new LongBitsManipulator( 56, 1 );
     public static int CACHE_CHUNK_SIZE = 1_000_000; // 8MB a piece
 
+    private final NumberArrayFactory cacheFactory;
     // Encoded values added in #put, in the order in which they are put. Indexes in the array are the actual node ids,
     // values are the encoded versions of the input ids.
-    private final LongArray dataCache;
+    private LongArray dataCache;
 
     // Ordering information about values in dataCache; the ordering of values in dataCache remains unchanged.
     // in prepare() this array is populated and changed along with how dataCache items "move around" so that
     // they end up sorted. Again, dataCache remains unchanged, only the ordering information is kept here.
     // Each index in trackerCache points to a dataCache index, where the value in dataCache contains the
     // encoded input id, used to match against the input id that is looked up during binary search.
-    private final IntArray trackerCache;
+    private IntArray trackerCache;
     private final Encoder encoder;
     private final Radix radix;
     private final int processorsForSorting;
@@ -98,17 +99,12 @@ public class EncodingIdMapper implements IdMapper
     public EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Radix radix,
             int chunkSize, int processorsForSorting )
     {
+        this.cacheFactory = cacheFactory;
         this.processorsForSorting = max( processorsForSorting, 1 );
         this.dataCache = newLongArray( cacheFactory, chunkSize );
-        this.trackerCache = newIntArray( cacheFactory, chunkSize );
         this.encoder = encoder;
         this.radix = radix;
         this.collisionCache = newLongArray( cacheFactory, chunkSize );
-    }
-
-    private static IntArray newIntArray( NumberArrayFactory cacheFactory, int chunkSize )
-    {
-        return cacheFactory.newDynamicIntArray( chunkSize, -1 );
     }
 
     private static LongArray newLongArray( NumberArrayFactory cacheFactory, int chunkSize )
@@ -194,6 +190,9 @@ public class EncodingIdMapper implements IdMapper
         endPreviousGroup();
         synchronized ( this )
         {
+            dataCache = dataCache.fixate();
+            trackerCache = cacheFactory.newIntArray( dataCache.length(), -1 );
+
             // Synchronized since there's this concern that a couple of other threads are changing trackerCache
             // and it's nice to go through a memory barrier afterwards to ensure this CPU see correct data.
             sortBuckets = new ParallelSort( radix, dataCache, trackerCache, processorsForSorting, progress ).run();
@@ -482,7 +481,10 @@ public class EncodingIdMapper implements IdMapper
     public void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor )
     {
         dataCache.acceptMemoryStatsVisitor( visitor );
-        trackerCache.acceptMemoryStatsVisitor( visitor );
+        if ( trackerCache != null )
+        {
+            trackerCache.acceptMemoryStatsVisitor( visitor );
+        }
         collisionCache.acceptMemoryStatsVisitor( visitor );
     }
 
