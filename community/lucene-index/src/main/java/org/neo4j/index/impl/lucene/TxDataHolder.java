@@ -19,11 +19,11 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import java.io.Closeable;
-import java.util.Collection;
-
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+
+import java.io.Closeable;
+import java.util.Collection;
 
 import org.neo4j.index.lucene.QueryContext;
 

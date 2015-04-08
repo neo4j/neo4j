@@ -32,17 +32,6 @@ public class Cache
             Collections.synchronizedMap( 
                     new HashMap<IndexIdentifier, Map<String,LruCache<String,Collection<Long>>>>() );
     
-    public void setCapacity( IndexIdentifier identifier, String key, int size )
-    {
-        Map<String, LruCache<String, Collection<Long>>> map = caching.get( identifier );
-        if ( map == null )
-        {
-            map = new HashMap<String, LruCache<String,Collection<Long>>>();
-            caching.put( identifier, map );
-        }
-        map.put( key, new LruCache<String, Collection<Long>>( key, size ) );
-    }
-    
     public LruCache<String, Collection<Long>> get( IndexIdentifier identifier, String key )
     {
         Map<String, LruCache<String, Collection<Long>>> map = caching.get( identifier );

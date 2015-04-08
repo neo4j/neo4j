@@ -50,6 +50,6 @@ class ConstantScoreIterator extends AbstractLegacyIndexHits
     @Override
     protected boolean fetchNext()
     {
-        return items.hasNext() ? next( items.next() ) : false;
+        return items.hasNext() && next( items.next() );
     }
 }

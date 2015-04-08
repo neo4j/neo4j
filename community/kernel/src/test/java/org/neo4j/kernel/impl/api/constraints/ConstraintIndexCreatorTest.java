@@ -19,22 +19,22 @@
  */
 package org.neo4j.kernel.impl.api.constraints;
 
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import org.junit.Test;
 
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TransactionHook;
-import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.heuristics.StatisticsData;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.PreexistingIndexEntryConflictException;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -50,7 +50,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedParts;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
 import static org.neo4j.kernel.impl.store.SchemaStorage.IndexRuleKind.CONSTRAINT;
@@ -229,24 +228,4 @@ public class ConstraintIndexCreatorTest
             throw new UnsupportedOperationException( "Please implement" );
         }
     }
-
-//
-//    private static class StubTransactor extends Transactor
-//    {
-//        final List<KernelStatement> transactions = new ArrayList<>();
-//
-//        StubTransactor()
-//        {
-//            super( null, null );
-//        }
-//
-//        @Override
-//        public <RESULT, FAILURE extends KernelException> RESULT execute(
-//                Work<RESULT, FAILURE> work ) throws FAILURE
-//        {
-//            KernelStatement state = mockedState();
-//            transactions.add( state );
-//            return work.perform( state );
-//        }
-//    }
 }

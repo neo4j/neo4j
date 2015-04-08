@@ -161,20 +161,6 @@ import static org.neo4j.kernel.impl.transaction.state.CacheLoaders.relationshipL
 
 public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexProviders
 {
-    public interface Monitor
-    {
-        void rotatedLog();
-
-        public class Adapter implements Monitor
-        {
-            @Override
-            public void rotatedLog()
-            {
-
-            }
-        }
-    }
-
     private interface NeoStoreModule
     {
         NeoStore neoStore();
@@ -294,7 +280,6 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
 
     public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
     private final Monitors monitors;
-    private final Monitor monitor;
     private final Tracers tracers;
 
     private final StringLogger msgLog;
@@ -402,7 +387,6 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
         this.guard = guard;
         this.indexConfigStore = indexConfigStore;
         this.monitors = monitors;
-        this.monitor = monitors.newMonitor( Monitor.class );
         this.tracers = tracers;
 
         readOnly = config.get( Configuration.read_only );
@@ -479,9 +463,8 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
         {
             final NeoStoreModule neoStoreModule =
                     buildNeoStore( storeFactory, labelTokens, relationshipTypeTokens, propertyKeyTokenHolder );
-            this.neoStoreModule =
-                    neoStoreModule; // TODO The only reason this is here is because of the provider-stuff for
-                    // DiskLayer. Remove when possible
+            // TODO The only reason this is here is because of the provider-stuff for DiskLayer. Remove when possible:
+            this.neoStoreModule = neoStoreModule;
 
             CacheModule cacheModule = buildCaches( neoStoreModule.neoStore(), cacheProvider, nodeManager,
                     labelTokens, relationshipTypeTokens, propertyKeyTokenHolder );
@@ -628,7 +611,7 @@ public class NeoStoreDataSource implements NeoStoreProvider, Lifecycle, IndexPro
                 new AutoLoadingCache<>( cacheProvider.relationship(),
                         relationshipLoader( neoStore.getRelationshipStore() ) );
         RelationshipLoader relationshipLoader = new RelationshipLoader(
-                lockService, relationshipCache, new RelationshipChainLoader( neoStore ) );
+                relationshipCache, new RelationshipChainLoader( neoStore ) );
         final PersistenceCache persistenceCache = new PersistenceCache( nodeCache, relationshipCache, nodeManager,
                 relationshipLoader, propertyKeyTokenHolder, relationshipTypeTokens, labelTokens );
         final CacheAccessBackDoor cacheAccess = new BridgingCacheAccess( schemaCache, updateableSchemaState,

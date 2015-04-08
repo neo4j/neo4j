@@ -41,14 +41,23 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.Reader;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.helpers.UTF8;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
@@ -59,20 +68,7 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.Reader;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import static org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy.SNAPSHOT_ID;
-import static org.neo4j.kernel.impl.store.NeoStore.versionStringToLong;
 
 /**
  * An DataSource optimized for the {@link LuceneIndexImplementation}.
@@ -85,18 +81,13 @@ public class LuceneDataSource implements Lifecycle
     public static abstract class Configuration
     {
         public static final Setting<Integer> lucene_searcher_cache_size = GraphDatabaseSettings.lucene_searcher_cache_size;
-        public static final Setting<Boolean> allow_store_upgrade = GraphDatabaseSettings.allow_store_upgrade;
         public static final Setting<Boolean> ephemeral = InternalAbstractGraphDatabase.Configuration.ephemeral;
         public static final Setting<File> store_dir = NeoStoreDataSource.Configuration.store_dir;
     }
 
     public static final Version LUCENE_VERSION = Version.LUCENE_36;
     public static final String DEFAULT_NAME = "lucene-index";
-    public static final byte[] DEFAULT_BRANCH_ID = UTF8.encode( "162374" );
-    // The reason this is still 3.5 even though the lucene version is 3.6 the format is compatible
-    // (both forwards and backwards) with lucene 3.5 and changing this would require an explicit
-    // store upgrade which feels unnecessary.
-    public static final long INDEX_VERSION = versionStringToLong( "3.5" );
+
     /**
      * Default {@link Analyzer} for fulltext parsing.
      */
@@ -137,13 +128,9 @@ public class LuceneDataSource implements Lifecycle
     private boolean closed;
     private Cache caching;
     private LuceneFilesystemFacade filesystemFacade;
-    // Used for assertion after recovery has been completed.
-    private final Set<IndexIdentifier> expectedFutureRecoveryDeletions = new HashSet<>();
 
     /**
      * Constructs this data source.
-     * @throws InstantiationException if the data source couldn't be
-     *                                instantiated
      */
     public LuceneDataSource( Config config, IndexConfigStore indexStore, FileSystemAbstraction fileSystemAbstraction )
     {
@@ -169,7 +156,6 @@ public class LuceneDataSource implements Lifecycle
         this.baseStorePath = this.filesystemFacade.ensureDirectoryExists( fileSystemAbstraction,
                 baseDirectory( storeDir ) );
         this.filesystemFacade.cleanWriteLocks( baseStorePath );
-        boolean allowUpgrade = config.get( Configuration.allow_store_upgrade );
         this.typeCache = new IndexTypeCache( indexStore );
         closed = false;
     }
@@ -258,7 +244,7 @@ public class LuceneDataSource implements Lifecycle
      * @param searcher the {@link IndexSearcher} to refresh.
      * @return a refreshed version of the searcher or, if nothing has changed,
      *         {@code null}.
-     * @throws IOException if there's a problem with the index.
+     * @throws RuntimeException if there's a problem with the index.
      */
     private IndexReference refreshSearcher( IndexReference searcher )
     {
@@ -404,8 +390,8 @@ public class LuceneDataSource implements Lifecycle
         closeIndex( identifier );
         deleteFileOrDirectory( getFileDirectory( baseStorePath, identifier ) );
         invalidateCache( identifier );
-        boolean removeFromIndexStore = !recovery
-                || (recovery && indexStore.has( identifier.entityType.entityClass(), identifier.indexName ));
+        boolean removeFromIndexStore =
+                !recovery || (indexStore.has( identifier.entityType.entityClass(), identifier.indexName ));
         if ( removeFromIndexStore )
         {
             indexStore.remove( identifier.entityType.entityClass(), identifier.indexName );
@@ -505,7 +491,6 @@ public class LuceneDataSource implements Lifecycle
     {
         try
         {
-            // TODO
             writer.deleteDocuments( query );
         }
         catch ( IOException e )
@@ -533,17 +518,6 @@ public class LuceneDataSource implements Lifecycle
     LruCache<String, Collection<Long>> getFromCache( IndexIdentifier identifier, String key )
     {
         return caching.get( identifier, key );
-    }
-
-    void setCacheCapacity( IndexIdentifier identifier, String key, int maxNumberOfCachedEntries )
-    {
-        this.caching.setCapacity( identifier, key, maxNumberOfCachedEntries );
-    }
-
-    Integer getCacheCapacity( IndexIdentifier identifier, String key )
-    {
-        LruCache<String, Collection<Long>> cache = this.caching.get( identifier, key );
-        return cache != null ? cache.maxSize() : null;
     }
 
     void invalidateCache( IndexIdentifier identifier, String key, Object value )
@@ -622,11 +596,6 @@ public class LuceneDataSource implements Lifecycle
     public ResourceIterator<File> listStoreFiles() throws IOException
     {
         return listStoreFiles( false );
-    }
-
-    public ResourceIterator<File> listLogicalLogs() throws IOException
-    {
-        return IteratorUtil.emptyIterator();
     }
 
     private void makeSureAllIndexesAreInstantiated()
@@ -726,15 +695,5 @@ public class LuceneDataSource implements Lifecycle
         abstract File ensureDirectoryExists( FileSystemAbstraction fileSystem, File path );
 
         abstract void cleanWriteLocks( File path );
-    }
-
-    void addExpectedFutureDeletion( IndexIdentifier identifier )
-    {
-        expectedFutureRecoveryDeletions.add( identifier );
-    }
-
-    void removeExpectedFutureDeletion( IndexIdentifier identifier )
-    {
-        expectedFutureRecoveryDeletions.remove( identifier );
     }
 }

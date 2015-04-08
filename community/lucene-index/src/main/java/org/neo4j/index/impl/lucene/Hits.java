@@ -19,10 +19,6 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import java.io.IOException;
-import java.util.ConcurrentModificationException;
-import java.util.Vector;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.search.Filter;
@@ -33,6 +29,10 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.Weight;
+
+import java.io.IOException;
+import java.util.ConcurrentModificationException;
+import java.util.Vector;
 
 /** A ranked list of documents, used to hold search results.
  * <p>
@@ -110,8 +110,8 @@ public final class Hits {
   // count # deletions, return -1 if unknown.
   private int countDeletions(IndexSearcher s) throws IOException {
     int cnt = -1;
-    if (s instanceof IndexSearcher) {
-      cnt = s.maxDoc() - ((IndexSearcher) s).getIndexReader().numDocs();
+    if ( s != null ) {
+      cnt = s.maxDoc() - s.getIndexReader().numDocs();
     }
     return cnt;
   }
@@ -167,7 +167,7 @@ public final class Hits {
       debugCheckedForDeletions = true;
       int i2 = 0;
       for (int i1=0; i1<hitDocs.size() && i2<scoreDocs.length; i1++) {
-        int id1 = ((HitDoc)hitDocs.get(i1)).id;
+        int id1 = hitDocs.get(i1).id;
         int id2 = scoreDocs[i2].doc;
         if (id1 == id2) {
           i2++;

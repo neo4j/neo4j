@@ -86,17 +86,6 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         this.searcherManager = instantiateSearcherManager( writer );
     }
 
-    /**
-     * Sets the number of modifications that will be the threshold for a commit
-     * to happen. This will free up memory.
-     *
-     * @param size the threshold for triggering a commit.
-     */
-    public void setCommitBatchSize( int size )
-    {
-        this.commitBatchSize = size;
-    }
-
     @Override
     public void add( long id, Map<String, Object> properties )
     {
@@ -500,7 +489,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
     {
         if ( this.cache == null )
         {
-            this.cache = new HashMap<String, LruCache<String,Collection<Long>>>();
+            this.cache = new HashMap<>();
         }
         LruCache<String, Collection<Long>> cache = this.cache.get( key );
         if ( cache != null )
@@ -509,7 +498,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         }
         else
         {
-            cache = new LruCache<String, Collection<Long>>( "Batch inserter cache for " + key, size );
+            cache = new LruCache<>( "Batch inserter cache for " + key, size );
             this.cache.put( key, cache );
         }
     }

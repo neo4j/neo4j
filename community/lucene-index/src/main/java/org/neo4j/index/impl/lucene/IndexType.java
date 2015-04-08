@@ -19,11 +19,6 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -34,34 +29,27 @@ import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.Version;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
-
 import static org.neo4j.index.impl.lucene.LuceneIndexImplementation.KEY_TO_LOWER_CASE;
 
 public abstract class IndexType
 {
     public static final IndexType EXACT = new IndexType( LuceneDataSource.KEYWORD_ANALYZER, false )
     {
-        @Override
-        public Query deletionQuery( long entityId, String key, Object value )
-        {
-            BooleanQuery q = new BooleanQuery();
-            q.add( idTermQuery( entityId ), Occur.MUST );
-            q.add( new TermQuery( new Term( key, value.toString() ) ), Occur.MUST );
-            return q;
-        }
-
         @Override
         public Query get( String key, Object value )
         {
@@ -119,15 +107,6 @@ public abstract class IndexType
         Similarity getSimilarity()
         {
             return this.similarity;
-        }
-
-        @Override
-        public Query deletionQuery( long entityId, String key, Object value )
-        {
-            BooleanQuery q = new BooleanQuery();
-            q.add( idTermQuery( entityId ), Occur.MUST );
-            q.add( new TermQuery( new Term( exactKey( key ), value.toString() ) ), Occur.MUST );
-            return q;
         }
 
         @Override
@@ -207,14 +186,14 @@ public abstract class IndexType
             if ( type.equals( "exact" ) )
             {
                 // In the exact case we default to false
-                boolean toLowerCase = TRUE.equals( toLowerCaseUnbiased ) ? true : false;
+                boolean toLowerCase = TRUE.equals( toLowerCaseUnbiased );
 
-                result = toLowerCase ? new CustomType( new LowerCaseKeywordAnalyzer(), toLowerCase, similarity ) : EXACT;
+                result = toLowerCase ? new CustomType( new LowerCaseKeywordAnalyzer(), true, similarity ) : EXACT;
             }
             else if ( type.equals( "fulltext" ) )
             {
                 // In the fulltext case we default to true
-                boolean toLowerCase = FALSE.equals( toLowerCaseUnbiased ) ? false : true;
+                boolean toLowerCase = !FALSE.equals( toLowerCaseUnbiased );
 
                 Analyzer analyzer = customAnalyzer;
                 if ( analyzer == null )
@@ -228,7 +207,7 @@ public abstract class IndexType
         else
         {
             // In the custom case we default to true
-            boolean toLowerCase = FALSE.equals( toLowerCaseUnbiased ) ? false : true;
+            boolean toLowerCase = !FALSE.equals( toLowerCaseUnbiased );
 
             // Use custom analyzer
             if ( customAnalyzer == null )
@@ -274,8 +253,6 @@ public abstract class IndexType
         }
         return null;
     }
-
-    abstract Query deletionQuery( long entityId, String key, Object value );
 
     abstract Query get( String key, Object value );
 

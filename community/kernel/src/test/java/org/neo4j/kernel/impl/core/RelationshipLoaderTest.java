@@ -19,17 +19,16 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.junit.Test;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Test;
-
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.cache.Cache;
-import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.state.RelationshipChainLoader;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -37,7 +36,6 @@ import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
@@ -68,7 +66,7 @@ public class RelationshipLoaderTest
         RelationshipChainLoader chainLoader = mock( RelationshipChainLoader.class );
         when( chainLoader.getMoreRelationships( eq( 1337l ), any( RelationshipLoadingPosition.class ),
                 any( DirectionWrapper.class ),any( int[].class ) ) ).thenReturn( moreRelationships );
-        RelationshipLoader loader = new RelationshipLoader( LockService.NO_LOCK_SERVICE, relCache, chainLoader );
+        RelationshipLoader loader = new RelationshipLoader( relCache, chainLoader );
 
         // When
         Triplet<ArrayMap<Integer,RelIdArray>,List<RelationshipImpl>,RelationshipLoadingPosition> result =

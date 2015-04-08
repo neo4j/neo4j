@@ -36,12 +36,6 @@ import org.neo4j.kernel.monitoring.Monitors;
  */
 public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord>
 {
-    public static abstract class Configuration
-        extends TokenStore.Configuration
-    {
-
-    }
-
     // Historical type descriptor, should be called PropertyKeyTokenStore
     public static final String TYPE_DESCRIPTOR = "PropertyIndexStore";
 
