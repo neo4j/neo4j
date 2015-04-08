@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{Index, LabelName, EstimatedRows}
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Id, InternalPlanDescription, NoChildren, PlanDescriptionImpl}
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription._
+import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 
 object LogicalPlan2PlanDescription extends ((LogicalPlan, Map[LogicalPlan, Id]) => InternalPlanDescription) {
@@ -43,7 +44,22 @@ object LogicalPlan2PlanDescription extends ((LogicalPlan, Map[LogicalPlan, Id]) 
       case NodeIndexUniqueSeek(IdName(id), label, propKey, value, arguments) =>
         PlanDescriptionImpl(id = idMap(plan), "NodeIndexUniqueSeek", NoChildren, Seq(Index(label.name, propKey.name)), symbols)
 
-      case _ => ???
+      case ProduceResult(nodes, rels, inner) =>
+        PlanDescriptionImpl(id = idMap(plan), "Results", SingleChild(apply(inner, idMap)), Seq(), symbols)
+
+      case Expand(inner, IdName(fromName), dir, typeNames, IdName(toName), IdName(relName), mode) =>
+        val expression = ExpandExpression( fromName, relName, typeNames.map( _.name ), toName, dir )
+        val modeText = mode match {
+          case ExpandAll => "Expand(All)"
+          case ExpandInto => "Expand(Into)"
+        }
+        PlanDescriptionImpl(id = idMap(plan), modeText, SingleChild(apply(inner, idMap)), Seq(expression), symbols)
+
+      case NodeHashJoin(nodes, lhs, rhs) =>
+        val children = TwoChildren(apply(lhs, idMap), apply(rhs, idMap))
+        PlanDescriptionImpl(id = idMap(plan), "NodeHashJoin", children, Seq(KeyNames(nodes.toSeq.map(_.name))), symbols)
+
+      case x => throw new CantCompileQueryException(x.getClass.getSimpleName)
     }
     planDescription.addArgument(EstimatedRows(plan.solved.estimatedCardinality.amount))
   }

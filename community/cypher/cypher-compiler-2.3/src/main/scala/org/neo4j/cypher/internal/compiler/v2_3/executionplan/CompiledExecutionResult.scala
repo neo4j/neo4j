@@ -73,8 +73,6 @@ abstract class CompiledExecutionResult extends InternalExecutionResult {
 
   override def queryStatistics(): InternalQueryStatistics = InternalQueryStatistics()
 
-  override def executionPlanDescription(): InternalPlanDescription = ???
-
   override def close(): Unit = {
     ensureIterator()
     innerIterator.close()

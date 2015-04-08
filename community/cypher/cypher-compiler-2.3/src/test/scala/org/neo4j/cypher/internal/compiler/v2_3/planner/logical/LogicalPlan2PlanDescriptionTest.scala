@@ -23,17 +23,27 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.ManyQueryExpression
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{Index, EstimatedRows, LabelName}
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Id, NoChildren, PlanDescriptionImpl}
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.LabelName
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.compiler.v2_3.{InputPosition, LabelId, PropertyKeyId}
+import org.neo4j.graphdb.Direction
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPropertyChecks {
   test("tests") {
+
     implicit def emptySolvedWithCardinality(i: Int): PlannerQuery with CardinalityEstimation =
       CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(i))
+
+    val lhsLP = AllNodesScan(IdName("a"), Set.empty)(2)
+    val lhsPD = PlanDescriptionImpl(new Id, "AllNodesScan", NoChildren, Seq(EstimatedRows(2)), Set("a"))
+
+    val rhsPD = PlanDescriptionImpl(new Id, "AllNodesScan", NoChildren, Seq(EstimatedRows(2)), Set("b"))
+    val rhsLP = AllNodesScan(IdName("b"), Set.empty)(2)
+
     val pos = InputPosition(0, 0, 0)
     val id = new Id
     val modeCombinations = Table(
@@ -56,13 +66,42 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
       , NodeIndexUniqueSeek(IdName("x"), LabelToken("Lebal", LabelId(0)), PropertyKeyToken("Porp", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(StringLiteral("Andres")(pos)))(pos)), Set.empty)(95) ->
         PlanDescriptionImpl(id, "NodeIndexUniqueSeek", NoChildren, Seq(Index("Lebal", "Porp"), EstimatedRows(95)), Set("x"))
+
+      , Expand(lhsLP, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), ExpandAll)(95) ->
+        PlanDescriptionImpl(id, "Expand(All)", SingleChild(lhsPD), Seq(ExpandExpression("a", "r1", Seq.empty, "b", Direction.OUTGOING), EstimatedRows(95)), Set("a", "r1", "b"))
+
+      , Expand(lhsLP, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("a"), IdName("r1"), ExpandInto)(113) ->
+        PlanDescriptionImpl(id, "Expand(Into)", SingleChild(lhsPD), Seq(ExpandExpression("a", "r1", Seq.empty, "a", Direction.OUTGOING), EstimatedRows(113)), Set("a", "r1"))
+
+      , NodeHashJoin(Set(IdName("a")), lhsLP, rhsLP)(2345) ->
+        PlanDescriptionImpl(id, "NodeHashJoin", TwoChildren(lhsPD, rhsPD), Seq(KeyNames(Seq("a")), EstimatedRows(2345)), Set("a", "b"))
     )
 
     forAll(modeCombinations) {
       case (logicalPlan: LogicalPlan, expectedPlanDescription: PlanDescriptionImpl) =>
         val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
-        LogicalPlan2PlanDescription(logicalPlan, idMap) should equal(expectedPlanDescription.copy(id = idMap(logicalPlan)))
-    }
+        val producedPlanDescription = LogicalPlan2PlanDescription(logicalPlan, idMap)
 
+        def shouldBeEqual(a: InternalPlanDescription, b: InternalPlanDescription) = {
+          withClue("name")(producedPlanDescription.name should equal(expectedPlanDescription.name))
+          withClue("arguments")(producedPlanDescription.arguments should equal(expectedPlanDescription.arguments))
+          withClue("identifiers")(producedPlanDescription.identifiers should equal(expectedPlanDescription.identifiers))
+        }
+        withClue("id")(producedPlanDescription.id should equal(idMap(logicalPlan)))
+
+        shouldBeEqual(producedPlanDescription, expectedPlanDescription)
+
+        withClue("children") {
+          producedPlanDescription.children match {
+            case NoChildren =>
+              expectedPlanDescription.children should equal(NoChildren)
+            case SingleChild(child) =>
+              shouldBeEqual(child, lhsPD)
+            case TwoChildren(l,r) =>
+              shouldBeEqual(l, lhsPD)
+              shouldBeEqual(r, rhsPD)
+          }
+        }
+    }
   }
 }

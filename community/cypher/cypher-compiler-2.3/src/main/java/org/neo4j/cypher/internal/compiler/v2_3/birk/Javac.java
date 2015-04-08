@@ -19,11 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.birk;
 
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.api.Statement;
-import sun.tools.java.CompilerError;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -35,21 +30,31 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import javax.tools.*;
+import javax.tools.Diagnostic;
+import javax.tools.DiagnosticCollector;
+import javax.tools.FileObject;
+import javax.tools.ForwardingJavaFileManager;
+import javax.tools.JavaCompiler;
+import javax.tools.JavaFileManager;
+import javax.tools.JavaFileObject;
+import javax.tools.SimpleJavaFileObject;
+import javax.tools.StandardLocation;
+import javax.tools.ToolProvider;
 
+import sun.tools.java.CompilerError;
+
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult;
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.api.Statement;
+
+import static java.lang.String.format;
 import static javax.tools.JavaCompiler.CompilationTask;
 
 //TODO this should be replaced, here for testing stuff out
 public class Javac
 {
-    //TODO this is not the way it should work…
-    @SuppressWarnings( "unchecked" )
-    public static InternalExecutionResult newInstance( String className, String classBody, Statement statement, GraphDatabaseService db ) throws Exception
-    {
-       return newInstance( compile(className, classBody), statement, db );
-    }
-
-    public static Class<InternalExecutionResult> compile(String className, String classBody) throws
+    public static Class<InternalExecutionResult> compile( String className, String classBody ) throws
             ClassNotFoundException
     {
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
@@ -64,9 +69,10 @@ public class Javac
             int number = 1;
             for ( Diagnostic<?> diagnostic : diagnosticsCollector.getDiagnostics() )
             {
-                sb.append(  diagnostic.getKind() + "  : " + number + " Type : " + diagnostic.getMessage(Locale.getDefault()));
-                sb.append(" at column : " + diagnostic.getColumnNumber() );
-                sb.append(" Line number : " + diagnostic.getLineNumber() + System.lineSeparator() );
+                String diagnosticMessage = diagnostic.getMessage( Locale.getDefault() );
+                sb.append( format( "%s  : %d Type : %s", diagnostic.getKind(), number, diagnosticMessage ) );
+                sb.append( format( " at column : %d", diagnostic.getColumnNumber() ) );
+                sb.append( format( " Line number : %d%s", diagnostic.getLineNumber(), System.lineSeparator() ) );
                 number++;
             }
             throw new CompilerError( sb.toString() );
@@ -76,10 +82,13 @@ public class Javac
         return clazz;
     }
 
-    public static InternalExecutionResult newInstance(Class<InternalExecutionResult> clazz, Statement statement, GraphDatabaseService db) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException
+    public static InternalExecutionResult newInstance( Class<InternalExecutionResult> clazz, Statement statement,
+                                                       GraphDatabaseService db, InternalPlanDescription description)
+            throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException
     {
-        Constructor<InternalExecutionResult> constructor = clazz.getDeclaredConstructor( Statement.class, GraphDatabaseService.class );
-        return  constructor.newInstance( statement, db );
+        Constructor<InternalExecutionResult> constructor =
+                clazz.getDeclaredConstructor( Statement.class, GraphDatabaseService.class, InternalPlanDescription.class );
+        return constructor.newInstance( statement, db, description );
     }
 
     private static class InMemSource extends SimpleJavaFileObject
@@ -122,7 +131,7 @@ public class Javac
 
     private static class InMemFileManager extends ForwardingJavaFileManager
     {
-        private final Map<String,InMemSink> classNameToByteCode = new HashMap<>();
+        private final Map<String, InMemSink> classNameToByteCode = new HashMap<>();
 
         InMemFileManager()
         {

@@ -41,6 +41,7 @@ object RewindableExecutionResult {
           override def javaColumns: util.List[String] = other.javaColumns
           override val toList = other.toList
           override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = other.accept(visitor)
+          override def executionPlanDescription() = other.executionPlanDescription()
         }
       }
     case _ =>
