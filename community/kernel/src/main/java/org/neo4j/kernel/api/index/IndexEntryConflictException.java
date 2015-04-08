@@ -82,11 +82,6 @@ public abstract class IndexEntryConflictException extends Exception
                 labelId, propertyKeyId ), this );
     }
 
-    public RuntimeException notAllowed( IndexDescriptor descriptor )
-    {
-        return notAllowed( descriptor.getLabelId(), descriptor.getPropertyKeyId() );
-    }
-
     public abstract Object getPropertyValue();
 
     public abstract String evidenceMessage( String labelName, String propertyKey );

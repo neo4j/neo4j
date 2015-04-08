@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.FileFilter;
 
 import static java.lang.Integer.parseInt;
-import static java.lang.Long.parseLong;
 
 public class FolderLayout implements FileFilter
 {
@@ -55,14 +54,5 @@ public class FolderLayout implements FileFilter
         {
             return false;
         }
-    }
-
-    public long getIndexId( File indexDirectory )
-    {
-        if ( !indexDirectory.getParentFile().equals( rootDirectory ) )
-        {
-            throw new IllegalArgumentException( indexDirectory + " not child of " + rootDirectory );
-        }
-        return parseLong( indexDirectory.getName() );
     }
 }

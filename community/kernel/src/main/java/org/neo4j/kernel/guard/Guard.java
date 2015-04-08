@@ -25,7 +25,7 @@ import static java.lang.System.currentTimeMillis;
 
 public class Guard
 {
-    private final ThreadLocal<GuardInternal> threadLocal = new ThreadLocal<GuardInternal>();
+    private final ThreadLocal<GuardInternal> threadLocal = new ThreadLocal<>();
 
     private final StringLogger logger;
 

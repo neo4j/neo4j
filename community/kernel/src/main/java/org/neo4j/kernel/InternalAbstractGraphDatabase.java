@@ -388,7 +388,6 @@ public abstract class InternalAbstractGraphDatabase
     {
         this.kernelExtensions = new KernelExtensions(
                 dependencies.kernelExtensions(),
-                config,
                 getDependencyResolver(),
                 fail() );
 

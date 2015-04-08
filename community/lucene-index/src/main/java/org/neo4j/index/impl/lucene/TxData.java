@@ -19,10 +19,11 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import java.util.Collection;
-
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+
+import java.util.Collection;
+
 import org.neo4j.index.lucene.QueryContext;
 
 abstract class TxData
@@ -43,7 +44,7 @@ abstract class TxData
     abstract Collection<Long> get( TxDataHolder holder, String key, Object value );
     
     abstract Collection<Long> getOrphans( String key );
-    
+
     abstract void close();
 
     abstract IndexSearcher asSearcher( TxDataHolder holder, QueryContext context );

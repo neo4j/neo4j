@@ -64,7 +64,7 @@ public class StoreMigrationTool
 
         // Add participants from kernel extensions...
         KernelExtensions kernelExtensions = life.add( new KernelExtensions(
-                GraphDatabaseDependencies.newDependencies().kernelExtensions(), config,
+                GraphDatabaseDependencies.newDependencies().kernelExtensions(),
                 kernelExtensionDependencyResolver( fs, config ), ignore() ) );
 
         // Add the kernel store migrator

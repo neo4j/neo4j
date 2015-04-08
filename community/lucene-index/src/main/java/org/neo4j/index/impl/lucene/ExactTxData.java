@@ -19,6 +19,9 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,8 +30,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
 
@@ -75,7 +76,7 @@ public class ExactTxData extends TxData
         {
             if ( create )
             {
-                data = new HashMap<String, Map<Object,Set<Object>>>();
+                data = new HashMap<>();
             }
             else
             {
@@ -86,7 +87,7 @@ public class ExactTxData extends TxData
         Map<Object, Set<Object>> inner = data.get( key );
         if ( inner == null && create )
         {
-            inner = new HashMap<Object, Set<Object>>();
+            inner = new HashMap<>();
             data.put( key, inner );
             if ( key == null )
             {
@@ -127,7 +128,7 @@ public class ExactTxData extends TxData
     {
         if ( contextOrNull != null && contextOrNull.getTradeCorrectnessForSpeed() )
         {
-            return Collections.<Long>emptyList();
+            return Collections.emptyList();
         }
 
         TxData fullTxData = toFullTxData();
@@ -166,7 +167,7 @@ public class ExactTxData extends TxData
         Set<Object> ids = idCollection( key, value, false );
         if ( ids == null || ids.isEmpty() )
         {
-            return Collections.<Long>emptySet();
+            return Collections.emptySet();
         }
         return toLongs( ids );
     }
@@ -178,7 +179,7 @@ public class ExactTxData extends TxData
         {
             return null;
         }
-        
+
         Set<Object> orphans = idCollection( null, null, false );
         Set<Object> keyOrphans = idCollection( key, null, false );
         Collection<Long> orphanLongs = orphans != null ? toLongs( orphans ) : null;
@@ -197,7 +198,7 @@ public class ExactTxData extends TxData
         }
         else
         {
-            Collection<Long> longs = new ArrayList<Long>(ids.size());
+            Collection<Long> longs = new ArrayList<>(ids.size());
             for ( Object id : ids )
             {
                 longs.add( ((RelationshipId) id).id );

@@ -29,14 +29,10 @@ import java.util.List;
 import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.lifecycle.LifecycleListener;
-import org.neo4j.kernel.lifecycle.LifecycleStatus;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -46,46 +42,15 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
     private final List<KernelExtensionFactory<?>> kernelExtensionFactories;
     private final DependencyResolver dependencyResolver;
     private final LifeSupport life = new LifeSupport();
-    private Iterable<KernelExtensionListener> listeners = Listeners.newListeners();
     private final UnsatisfiedDependencyStrategy unsatisfiedDepencyStrategy;
 
-    public KernelExtensions( Iterable<KernelExtensionFactory<?>> kernelExtensionFactories, Config config,
+    public KernelExtensions( Iterable<KernelExtensionFactory<?>> kernelExtensionFactories,
             DependencyResolver dependencyResolver, UnsatisfiedDependencyStrategy unsatisfiedDepencyStrategy )
     {
         this.unsatisfiedDepencyStrategy = unsatisfiedDepencyStrategy;
         this.kernelExtensionFactories = Iterables.addAll( new ArrayList<KernelExtensionFactory<?>>(),
                 kernelExtensionFactories );
         this.dependencyResolver = dependencyResolver;
-
-        life.addLifecycleListener( new LifecycleListener()
-        {
-            @Override
-            public void notifyStatusChanged( final Object instance, LifecycleStatus from, LifecycleStatus to )
-            {
-                if ( to.equals( LifecycleStatus.STARTED ) )
-                {
-                    Listeners.notifyListeners( listeners, new Listeners.Notification<KernelExtensionListener>()
-                    {
-                        @Override
-                        public void notify( KernelExtensionListener listener )
-                        {
-                            listener.startedKernelExtension( instance );
-                        }
-                    } );
-                }
-                else if ( to.equals( LifecycleStatus.STOPPING ) )
-                {
-                    Listeners.notifyListeners( listeners, new Listeners.Notification<KernelExtensionListener>()
-                    {
-                        @Override
-                        public void notify( KernelExtensionListener listener )
-                        {
-                            listener.stoppingKernelExtension( instance );
-                        }
-                    } );
-                }
-            }
-        } );
     }
 
     @Override
@@ -137,25 +102,6 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
             }
         }
         return false;
-    }
-
-    public void addKernelExtensionListener( KernelExtensionListener listener )
-    {
-        listeners = Listeners.addListener( listener, listeners );
-
-        // Notify listener about already started instances
-        if ( life.getStatus().equals( LifecycleStatus.STARTED ) )
-        {
-            for ( Lifecycle extension : life.getLifecycleInstances() )
-            {
-                listener.startedKernelExtension( extension );
-            }
-        }
-    }
-
-    public void removeKernelExtensionListener( KernelExtensionListener listener )
-    {
-        listeners = Listeners.removeListener( listener, listeners );
     }
 
     @Override

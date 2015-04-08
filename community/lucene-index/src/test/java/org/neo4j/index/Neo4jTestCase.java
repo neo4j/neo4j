@@ -19,16 +19,16 @@
  */
 package org.neo4j.index;
 
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -120,12 +120,6 @@ public abstract class Neo4jTestCase
     {
         return graphDb;
     }
-    
-//    public static <T> void assertContains( IndexHits<T> hits, T... expectedItems )
-//    {
-//        assertEquals( expectedItems.length, hits.size() );
-//        assertContains( (Iterable<T>) hits, expectedItems );
-//    }
     
     public static <T> void assertContains( Collection<T> collection,
         T... expectedItems )
