@@ -40,7 +40,6 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock,
       new WrappedMonitors2_3(kernelMonitors),
       new StringInfoLogger2_3(logger),
-      _ => devNullLogger,
       plannerName = CostPlannerName,
       runtimeName = InterpretedRuntimeName)
 
@@ -73,7 +72,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     val compiler = createCompiler()
     compiler.monitors.addMonitorListener(counter)
 
-    graph.inTx { compiler.planQuery("return 42", planContext, NormalMode) }
+    graph.inTx { compiler.planQuery("return 42", planContext, devNullLogger) }
 
     counter.counts should equal(CacheCounts(hits = 0, misses = 1, flushes = 1))
   }
@@ -83,8 +82,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     val counter = new CacheCounter()
     compiler.monitors.addMonitorListener(counter)
 
-    graph.inTx { compiler.planQuery("return 42", planContext, NormalMode) }
-    graph.inTx { compiler.planQuery("return 42", planContext, NormalMode) }
+    graph.inTx { compiler.planQuery("return 42", planContext, devNullLogger) }
+    graph.inTx { compiler.planQuery("return 42", planContext, devNullLogger) }
 
     counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1))
   }
@@ -94,8 +93,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     val counter = new CacheCounter()
     compiler.monitors.addMonitorListener(counter)
 
-    graph.inTx { compiler.planQuery("return 42", planContext, NormalMode) }
-    graph.inTx { compiler.planQuery("\treturn          42", planContext, NormalMode) }
+    graph.inTx { compiler.planQuery("return 42", planContext, devNullLogger) }
+    graph.inTx { compiler.planQuery("\treturn          42", planContext, devNullLogger) }
 
     counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1))
   }
@@ -105,8 +104,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     val counter = new CacheCounter()
     compiler.monitors.addMonitorListener(counter)
 
-    graph.inTx { compiler.planQuery("return 42 as result", planContext, NormalMode) }
-    graph.inTx { compiler.planQuery("return 43 as result", planContext, NormalMode) }
+    graph.inTx { compiler.planQuery("return 42 as result", planContext, devNullLogger) }
+    graph.inTx { compiler.planQuery("return 43 as result", planContext, devNullLogger) }
 
     counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1))
   }
@@ -116,9 +115,9 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     val counter = new CacheCounter()
     compiler.monitors.addMonitorListener(counter)
 
-    graph.inTx { compiler.planQuery("return 42", planContext, NormalMode) }
+    graph.inTx { compiler.planQuery("return 42", planContext, devNullLogger) }
     graph.createConstraint("Person", "id")
-    graph.inTx { compiler.planQuery("return 42", planContext, NormalMode) }
+    graph.inTx { compiler.planQuery("return 42", planContext, devNullLogger) }
 
     counter.counts should equal(CacheCounts(hits = 0, misses = 2, flushes = 2))
   }
@@ -133,11 +132,11 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
     createLabeledNode("Dog")
     (0 until 50).foreach { _ => createLabeledNode("Person") }
-    graph.inTx { compiler.planQuery(query, planContext, NormalMode) }
+    graph.inTx { compiler.planQuery(query, planContext, devNullLogger) }
 
     // when
     (0 until 1000).foreach { _ => createLabeledNode("Dog") }
-    graph.inTx { compiler.planQuery(query, planContext, NormalMode) }
+    graph.inTx { compiler.planQuery(query, planContext, devNullLogger) }
 
     // then
     counter.counts should equal(CacheCounts(hits = 1, misses = 2, flushes = 1, evicted = 1))
@@ -151,15 +150,15 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     val compiler = createCompiler(queryPlanTTL = 0, clock = clock, logger = logger)
     compiler.monitors.addMonitorListener(counter)
     val query: String = "match (n:Person:Dog) return n"
-    val statement = compiler.prepareQuery(query, NormalMode).statement
+    val statement = compiler.prepareQuery(query, devNullLogger).statement
 
     createLabeledNode("Dog")
     (0 until 50).foreach { _ => createLabeledNode("Person") }
-    graph.inTx { compiler.planQuery(query, planContext, NormalMode) }
+    graph.inTx { compiler.planQuery(query, planContext, devNullLogger) }
 
     // when
     (0 until 1000).foreach { _ => createLabeledNode("Dog") }
-    graph.inTx { compiler.planQuery(query, planContext, NormalMode) }
+    graph.inTx { compiler.planQuery(query, planContext, devNullLogger) }
 
     // then
     logger.assertExactly(LogCall.info(s"Discarded stale query from the query cache: $statement"))

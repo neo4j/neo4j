@@ -147,15 +147,15 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     monitoringNewPlanner(innerExecute(queryText, params: _*))(failedToUseNewPlanner(queryText))(unexpectedlyUsedNewRuntime(queryText))
 
   def executeWithNewRuntime(queryText: String, params: (String, Any)*): InternalExecutionResult = {
-    val interpretedResult = innerExecute(s"RUNTIME INTERPRETED $queryText", params: _*)
-    val compiledResult = monitoringNewPlanner(innerExecute(s"RUNTIME COMPILED $queryText", params: _* ))(failedToUseNewPlanner(queryText))(failedToUseNewRuntime(queryText))
+    val interpretedResult = innerExecute(s"CYPHER runtime=interpreted $queryText", params: _*)
+    val compiledResult = monitoringNewPlanner(innerExecute(s"CYPHER runtime=compiled $queryText", params: _* ))(failedToUseNewPlanner(queryText))(failedToUseNewRuntime(queryText))
     assert(interpretedResult.toList === compiledResult.toList, "diverging results between compiled and interpreted runtime")
     compiledResult
   }
 
   def executeScalarWithNewRuntime[T](queryText: String, params: (String, Any)*) = {
-    val interpretedResult = self.executeScalar[T](s"RUNTIME INTERPRETED $queryText", params: _*)
-    val compiledResult = monitoringNewPlanner(self.executeScalar[T](s"RUNTIME COMPILED $queryText", params: _* ))(failedToUseNewPlanner(queryText))(failedToUseNewRuntime(queryText))
+    val interpretedResult = self.executeScalar[T](s"CYPHER runtime=interpreted $queryText", params: _*)
+    val compiledResult = monitoringNewPlanner(self.executeScalar[T](s"CYPHER runtime=compiled $queryText", params: _* ))(failedToUseNewPlanner(queryText))(failedToUseNewRuntime(queryText))
     assert(interpretedResult === compiledResult, "diverging results between compiled and interpreted runtime")
     compiledResult
   }

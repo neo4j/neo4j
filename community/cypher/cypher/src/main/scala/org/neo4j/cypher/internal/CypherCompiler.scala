@@ -23,6 +23,7 @@ import org.neo4j.cypher.CypherVersion._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compiler.v2_3.InputPosition
 import org.neo4j.cypher.internal.compiler.v2_2.{ConservativePlannerName => ConservativePlanner2_2, IDPPlannerName => IDPPlanner2_2, DPPlannerName => DPPlanner2_2,  CostPlannerName => CostPlanner2_2}
+import org.neo4j.cypher.internal.compiler.v2_3.notification.LegacyPlannerNotification
 import org.neo4j.cypher.internal.compiler.v2_3.{DPPlannerName, RulePlannerName, CostPlannerName, IDPPlannerName, ConservativePlannerName, PlannerName, InternalNotificationLogger, RecordingNotificationLogger, devNullLogger}
 import org.neo4j.cypher.internal.compiler.v2_2.{ConservativePlannerName => ConservativePlanner2_2, CostPlannerName => CostPlanner2_2, IDPPlannerName => IDPPlanner2_2}
 import org.neo4j.cypher.internal.compiler.v2_3.{ConservativePlannerName, CostPlannerName, DPPlannerName, IDPPlannerName, InputPosition, InternalNotificationLogger, PlannerName, RecordingNotificationLogger, RulePlannerName, devNullLogger, _}
@@ -47,9 +48,10 @@ object CypherCompiler {
     }
 }
 
-case class PreParsedQuery(statement: String, version: CypherVersion, executionMode: ExecutionMode, planner: PlannerName, runtime: RuntimeName)
+case class PreParsedQuery(statement: String, version: CypherVersion, executionMode: ExecutionMode, planner: PlannerName,
+                          runtime: RuntimeName, notificationLogger: InternalNotificationLogger)
                          (val offset: InputPosition) {
-  val statementWithVersionAndPlanner = s"CYPHER ${version.name} PLANNER ${planner.name} RUNTIME ${runtime.name} $statement"
+  val statementWithVersionAndPlanner = s"CYPHER ${version.name} planner=${planner.name} runtime=${runtime.name} $statement"
 }
 
 
@@ -78,16 +80,16 @@ class CypherCompiler(graph: GraphDatabaseService,
   private val compatibilityFor2_2DP = CompatibilityFor2_2Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, DPPlanner2_2)
   private val compatibilityFor2_2 = CompatibilityFor2_2Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, ConservativePlanner2_2)
 
-  private val compatibilityFor2_3Rule = CompatibilityFor2_3Rule(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, notificationLoggerBuilder)
-  private val compatibilityFor2_3CostInterpreted = CompatibilityFor2_3Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, notificationLoggerBuilder, CostPlannerName, InterpretedRuntimeName)
-  private val compatibilityFor2_3IDPInterpreted = CompatibilityFor2_3Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, notificationLoggerBuilder, IDPPlannerName, InterpretedRuntimeName)
-  private val compatibilityFor2_3DPInterpreted = CompatibilityFor2_3Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, notificationLoggerBuilder, DPPlannerName, InterpretedRuntimeName)
-  private val compatibilityFor2_3CostCompiled = CompatibilityFor2_3Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, notificationLoggerBuilder, CostPlannerName, CompiledRuntimeName)
-  private val compatibilityFor2_3IDPCompiled = CompatibilityFor2_3Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, notificationLoggerBuilder, IDPPlannerName, CompiledRuntimeName)
-  private val compatibilityFor2_3DPCompiled = CompatibilityFor2_3Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, notificationLoggerBuilder, DPPlannerName, CompiledRuntimeName)
-  private val compatibilityFor2_3ConservativeCompiled = CompatibilityFor2_3Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, notificationLoggerBuilder, ConservativePlannerName, CompiledRuntimeName)
+  private val compatibilityFor2_3Rule = CompatibilityFor2_3Rule(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI)
+  private val compatibilityFor2_3CostInterpreted = CompatibilityFor2_3Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, CostPlannerName, InterpretedRuntimeName)
+  private val compatibilityFor2_3IDPInterpreted = CompatibilityFor2_3Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, IDPPlannerName, InterpretedRuntimeName)
+  private val compatibilityFor2_3DPInterpreted = CompatibilityFor2_3Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, DPPlannerName, InterpretedRuntimeName)
+  private val compatibilityFor2_3CostCompiled = CompatibilityFor2_3Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, CostPlannerName, CompiledRuntimeName)
+  private val compatibilityFor2_3IDPCompiled = CompatibilityFor2_3Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, IDPPlannerName, CompiledRuntimeName)
+  private val compatibilityFor2_3DPCompiled = CompatibilityFor2_3Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, DPPlannerName, CompiledRuntimeName)
+  private val compatibilityFor2_3ConservativeCompiled = CompatibilityFor2_3Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, ConservativePlannerName, CompiledRuntimeName)
 
-  private val compatibilityFor2_3 = CompatibilityFor2_3Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, notificationLoggerBuilder, ConservativePlannerName, InterpretedRuntimeName)
+  private val compatibilityFor2_3 = CompatibilityFor2_3Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, logger, ConservativePlannerName, InterpretedRuntimeName)
 
   private final val VERSIONS_WITH_FIXED_PLANNER: Set[CypherVersion] = Set(v1_9, v2_0, v2_1)
   private final val VERSIONS_WITH_FIXED_RUNTIME: Set[CypherVersion] = Set(v1_9, v2_0, v2_1, v2_2)
@@ -139,14 +141,14 @@ class CypherCompiler(graph: GraphDatabaseService,
     val cypherVersion = cypherOptions.flatMap(_.version)
       .map(v => CypherVersion(v.version))
       .getOrElse(defaultVersion)
-    val planner = calculatePlanner(cypherOptions, queryWithOption.options, cypherVersion)
     val executionMode: ExecutionMode = calculateExecutionMode(queryWithOption.options)
+    val logger = notificationLoggerBuilder(executionMode)
     if (executionMode == ExplainMode && VERSIONS_WITH_FIXED_PLANNER(cypherVersion)) {
       throw new InvalidArgumentException("EXPLAIN not supported in versions older than Neo4j v2.2")
     }
-    val runtime = calculateRuntime(queryWithOption.options, planner, cypherVersion)
-
-    PreParsedQuery(queryWithOption.statement, cypherVersion, executionMode, planner, runtime)(queryWithOption.offset)
+    val planner = calculatePlanner(cypherOptions, queryWithOption.options, cypherVersion, logger)
+    val runtime = calculateRuntime(cypherOptions, planner, cypherVersion)
+    PreParsedQuery(queryWithOption.statement, cypherVersion, executionMode, planner, runtime, logger)(queryWithOption.offset)
   }
 
   private def calculateExecutionMode(options: Seq[CypherOption]) = {
@@ -158,7 +160,8 @@ class CypherCompiler(graph: GraphDatabaseService,
     executionModes.reduceOption(_ combineWith _).getOrElse(NormalMode)
   }
 
-  private def calculatePlanner(options: Option[ConfigurationOptions], other: Seq[CypherOption], version: CypherVersion) = {
+  private def calculatePlanner(options: Option[ConfigurationOptions], other: Seq[CypherOption],
+                               version: CypherVersion, logger: InternalNotificationLogger) = {
     val planner = options.map(_.options.collect {
           case CostPlannerOption => CostPlannerName
           case RulePlannerOption => RulePlannerName
@@ -174,12 +177,12 @@ class CypherCompiler(graph: GraphDatabaseService,
       throw new InvalidSemanticsException("Can't use multiple planners")
     }
 
-    //TODO once the we have removed PLANNER=X syntax, change to defaultPlanner here
-    if (planner.isEmpty) calculatePlannerDeprecated(other, version) else planner.head
+    //TODO once the we have removed PLANNER X syntax, change to defaultPlanner here
+    if (planner.isEmpty) calculatePlannerDeprecated(other, version, logger) else planner.head
   }
 
   @deprecated
-  private def calculatePlannerDeprecated( options: Seq[CypherOption], version: CypherVersion) = {
+  private def calculatePlannerDeprecated( options: Seq[CypherOption], version: CypherVersion, logger: InternalNotificationLogger) = {
     val planner = options.collect {
       case CostPlannerOption => CostPlannerName
       case RulePlannerOption => RulePlannerName
@@ -196,14 +199,19 @@ class CypherCompiler(graph: GraphDatabaseService,
       throw new InvalidSemanticsException("Can't use multiple planners")
     }
 
-    if (planner.isEmpty) defaultPlanner else planner.head
+    if (planner.isEmpty)
+      defaultPlanner
+    else {
+      logger += LegacyPlannerNotification
+      planner.head
+    }
   }
 
-  private def calculateRuntime(options: Seq[CypherOption], planner: PlannerName, version: CypherVersion) = {
-    val runtimes = options.collect {
+  private def calculateRuntime(options: Option[ConfigurationOptions], planner: PlannerName, version: CypherVersion) = {
+    val runtimes = options.map(_.options.collect {
       case InterpretedRuntimeOption => InterpretedRuntimeName
       case CompiledRuntimeOption => CompiledRuntimeName
-    }.distinct
+    }.distinct).getOrElse(Seq.empty)
 
     if (VERSIONS_WITH_FIXED_RUNTIME(version) && runtimes.nonEmpty) {
       throw new InvalidArgumentException("RUNTIME not supported in versions older than Neo4j v2.3")

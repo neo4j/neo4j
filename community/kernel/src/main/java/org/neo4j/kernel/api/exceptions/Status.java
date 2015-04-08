@@ -159,6 +159,7 @@ public interface Status
         ExecutionFailure( DatabaseError, "The database was unable to execute the statement." ),
         ExternalResourceFailure( TransientError, "The external resource is not available"),
         CartesianProduct( ClientNotification, "This query builds a cartesian product between disconnected patterns." ),
+        DeprecationWarning( ClientNotification, "This feature is deprecated and will be removed in future versions." ),
         ;
 
         private final Code code;

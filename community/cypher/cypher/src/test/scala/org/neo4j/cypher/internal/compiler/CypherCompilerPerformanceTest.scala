@@ -153,7 +153,7 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
 
   def plan(query: String): (Double, Double) = {
     val compiler = createCurrentCompiler
-    val (prepareTime, preparedQuery) = measure(compiler.prepareQuery(query, NormalMode))
+    val (prepareTime, preparedQuery) = measure(compiler.prepareQuery(query, devNullLogger))
     val (planTime, _) = graph.inTx {
       measure(compiler.executionPlanBuilder.build(planContext, preparedQuery))
     }
@@ -176,7 +176,6 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
       clock = CLOCK,
       monitors = new WrappedMonitors2_3(kernelMonitors),
       logger = DEV_NULL,
-      notificationLoggerBuilder = _ => devNullLogger,
       plannerName = CostPlannerName,
       runtimeName = InterpretedRuntimeName
     )

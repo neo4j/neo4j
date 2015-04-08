@@ -51,23 +51,24 @@ class CypherOptionParserTest extends CypherFunSuite with TableDrivenPropertyChec
     ("CYPHER planner =dp RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(None, Seq(
       DPPlannerOption))), (1, 20, 19))),
 
-    ("RUNTIME INTERPRETED RETURN", CypherQueryWithOptions("RETURN", Seq(InterpretedRuntimeOption), (1, 21, 20))),
-    ("RUNTIME COMPILED RETURN", CypherQueryWithOptions("RETURN", Seq(CompiledRuntimeOption), (1, 18, 17))),
-    ("CYPHER 2.3 planner=cost RUNTIME INTERPRETED RETURN", CypherQueryWithOptions("RETURN", Seq(
-      ConfigurationOptions(Some(VersionOption("2.3")), Seq(CostPlannerOption)), InterpretedRuntimeOption), (1, 45, 44))),
-    ("CYPHER 2.3 planner=cost RUNTIME COMPILED RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(
-      Some(VersionOption("2.3")), Seq(CostPlannerOption)), CompiledRuntimeOption), (1, 42, 41))),
-    ("CYPHER 2.3 planner=dp RUNTIME INTERPRETED RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(
-      Some(VersionOption("2.3")), Seq(DPPlannerOption)), InterpretedRuntimeOption), (1, 43, 42))),
-    ("CYPHER 2.3 planner=dp RUNTIME COMPILED RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(
-      Some(VersionOption("2.3")), Seq(DPPlannerOption)), CompiledRuntimeOption), (1, 40, 39))),
-    ("CYPHER 2.3 planner=idp RUNTIME INTERPRETED RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions
-      (Some(VersionOption("2.3")), Seq(IDPPlannerOption)), InterpretedRuntimeOption), (1, 44, 43))),
-    ("CYPHER 2.3 planner=idp RUNTIME COMPILED RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(
-      Some(VersionOption("2.3")), Seq(IDPPlannerOption)), CompiledRuntimeOption), (1, 41, 40))),
-    ("CYPHER planner =dp RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(None, Seq(DPPlannerOption))), (1, 20, 19))),
-    ("explainmatch", CypherQueryWithOptions("explainmatch", Seq.empty, (1, 1, 0))),
-    ("""    CYPHER 2.2 PLANNER COST PROFILE PATTERN""", CypherQueryWithOptions("PATTERN", Seq(ConfigurationOptions(Some(VersionOption("2.2")), Seq.empty), CostPlannerOption, ProfileOption), (1, 37, 36)))
+    ("CYPHER runtime=interpreted RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(None, Seq(InterpretedRuntimeOption))), (1, 28, 27))),
+    ("CYPHER runtime=compiled RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(None, Seq(CompiledRuntimeOption))), (1, 25, 24))),
+
+    ("CYPHER 2.3 planner=cost runtime=interpreted RETURN", CypherQueryWithOptions("RETURN", Seq(
+      ConfigurationOptions(Some(VersionOption("2.3")), Seq(CostPlannerOption, InterpretedRuntimeOption))), (1, 45, 44))),
+    ("CYPHER 2.3 planner=cost runtime=compiled RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(
+      Some(VersionOption("2.3")), Seq(CostPlannerOption, CompiledRuntimeOption))), (1, 42, 41))),
+    ("CYPHER 2.3 planner=dp runtime=interpreted RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(
+      Some(VersionOption("2.3")), Seq(DPPlannerOption, InterpretedRuntimeOption))), (1, 43, 42))),
+    ("CYPHER 2.3 planner=dp runtime=compiled RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(
+      Some(VersionOption("2.3")), Seq(DPPlannerOption, CompiledRuntimeOption))), (1, 40, 39))),
+    ("CYPHER 2.3 planner=idp runtime=interpreted RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions
+      (Some(VersionOption("2.3")), Seq(IDPPlannerOption, InterpretedRuntimeOption))), (1, 44, 43))),
+    ("CYPHER 2.3 planner=idp runtime=compiled RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(
+      Some(VersionOption("2.3")), Seq(IDPPlannerOption, CompiledRuntimeOption))), (1, 41, 40))),
+    ("CYPHER 2.3  runtime=compiled  planner=idp   RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(
+      Some(VersionOption("2.3")), Seq(CompiledRuntimeOption,IDPPlannerOption))), (1, 45, 44))),
+    ("explainmatch", CypherQueryWithOptions("explainmatch", Seq.empty, (1, 1, 0)))
     )
 
   test("run the tests") {

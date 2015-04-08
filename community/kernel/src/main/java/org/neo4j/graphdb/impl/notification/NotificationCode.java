@@ -36,12 +36,14 @@ public enum NotificationCode
                     " query processing. " +
                     "While occasionally intended, it may often be possible to reformulate the query that avoids the " +
                     "use of this cross " +
-                    "product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH" );
-
+                    "product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH" ),
+    LEGACY_PLANNER( SeverityLevel.WARNING,
+                    Status.Statement.DeprecationWarning,
+                    "Using PLANNER for switching between planners has been deprecated, please use CYPHER planner=[rule,cost] instead");
     private final Status status;
     private final String description;
     private final SeverityLevel severity;
-    private NotificationCode( SeverityLevel severity, Status status, String description )
+    NotificationCode(SeverityLevel severity, Status status, String description)
     {
         this.severity = severity;
         this.status = status;
