@@ -53,10 +53,8 @@ class CypherOptionParserTest extends CypherFunSuite with TableDrivenPropertyChec
 
     ("RUNTIME INTERPRETED RETURN", CypherQueryWithOptions("RETURN", Seq(InterpretedRuntimeOption), (1, 21, 20))),
     ("RUNTIME COMPILED RETURN", CypherQueryWithOptions("RETURN", Seq(CompiledRuntimeOption), (1, 18, 17))),
-
     ("CYPHER 2.3 planner=cost RUNTIME INTERPRETED RETURN", CypherQueryWithOptions("RETURN", Seq(
-      ConfigurationOptions(Some(VersionOption("2.3")), Seq(CostPlannerOption)), InterpretedRuntimeOption),
-      (1, 45, 44))),
+      ConfigurationOptions(Some(VersionOption("2.3")), Seq(CostPlannerOption)), InterpretedRuntimeOption), (1, 45, 44))),
     ("CYPHER 2.3 planner=cost RUNTIME COMPILED RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(
       Some(VersionOption("2.3")), Seq(CostPlannerOption)), CompiledRuntimeOption), (1, 42, 41))),
     ("CYPHER 2.3 planner=dp RUNTIME INTERPRETED RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(
@@ -67,13 +65,15 @@ class CypherOptionParserTest extends CypherFunSuite with TableDrivenPropertyChec
       (Some(VersionOption("2.3")), Seq(IDPPlannerOption)), InterpretedRuntimeOption), (1, 44, 43))),
     ("CYPHER 2.3 planner=idp RUNTIME COMPILED RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(
       Some(VersionOption("2.3")), Seq(IDPPlannerOption)), CompiledRuntimeOption), (1, 41, 40))),
-
-    ("explainmatch", CypherQueryWithOptions("explainmatch", Seq.empty, (1, 1, 0)))
+    ("CYPHER planner =dp RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(None, Seq(DPPlannerOption))), (1, 20, 19))),
+    ("explainmatch", CypherQueryWithOptions("explainmatch", Seq.empty, (1, 1, 0))),
+    ("""    CYPHER 2.2 PLANNER COST PROFILE PATTERN""", CypherQueryWithOptions("PATTERN", Seq(ConfigurationOptions(Some(VersionOption("2.2")), Seq.empty), CostPlannerOption, ProfileOption), (1, 37, 36)))
     )
 
-
-  forAll(queries) {
-    case (query, expected) => parse(query) should equal(expected)
+  test("run the tests") {
+    forAll(queries) {
+      case (query, expected) => parse(query) should equal(expected)
+    }
   }
 
   private def parse(arg:String): CypherQueryWithOptions = {
