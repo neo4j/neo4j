@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.InputPosition
 /**
  * Describes a notification
  */
-sealed trait InternalNotification {
-  def position: InputPosition
-}
+sealed trait InternalNotification
 
 case class CartesianProductNotification(position: InputPosition) extends InternalNotification
+
+case object LegacyPlannerNotification extends InternalNotification

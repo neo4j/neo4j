@@ -25,7 +25,7 @@ import java.util
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v2_3
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutionPlan => ExecutionPlan_v2_3, InternalExecutionResult}
-import org.neo4j.cypher.internal.compiler.v2_3.notification.{CartesianProductNotification, InternalNotification}
+import org.neo4j.cypher.internal.compiler.v2_3.notification.{LegacyPlannerNotification, CartesianProductNotification, InternalNotification}
 import org.neo4j.cypher.internal.compiler.v2_3.{InputPosition => CompilerInputPosition}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
@@ -144,7 +144,7 @@ trait CompatibilityFor2_3 {
   implicit val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
   def produceParsedQuery(preParsedQuery: PreParsedQuery, offset: CompilerInputPosition) = new ParsedQuery {
-    val preparedQueryForV_2_3 = Try(compiler.prepareQuery(preParsedQuery.statement, preParsedQuery.executionMode, Some(offset)))
+    val preparedQueryForV_2_3 = Try(compiler.prepareQuery(preParsedQuery.statement, preParsedQuery.notificationLogger, Some(offset)))
 
     def isPeriodicCommit = preparedQueryForV_2_3.map(_.isPeriodicCommit).getOrElse(false)
 
@@ -263,6 +263,8 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
   private def asKernelNotification(notification: InternalNotification) = notification match {
     case CartesianProductNotification(pos) =>
        NotificationCode.CARTESIAN_PRODUCT.notification(new InputPosition(pos.offset, pos.line, pos.column))
+    case LegacyPlannerNotification =>
+      NotificationCode.LEGACY_PLANNER.notification(InputPosition.empty)
   }
 
   override def accept[EX <: Exception](visitor: ResultVisitor[EX]) = exceptionHandlerFor2_3.runSafely {inner.accept(visitor)}
@@ -332,12 +334,11 @@ case class CompatibilityFor2_3Cost(graph: GraphDatabaseService,
                                            kernelMonitors: KernelMonitors,
                                            kernelAPI: KernelAPI,
                                            logger: StringLogger,
-                                           notificationLoggerBuilder: (ExecutionMode => InternalNotificationLogger),
                                            plannerName: CostBasedPlannerName,
                                            runtimeName: RuntimeName) extends CompatibilityFor2_3 {
   protected val compiler = CypherCompilerFactory.costBasedCompiler(
     graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, new WrappedMonitors2_3( kernelMonitors ),
-    new StringInfoLogger2_3( logger ), notificationLoggerBuilder, plannerName, runtimeName
+    new StringInfoLogger2_3( logger ), plannerName, runtimeName
   )
 }
 
@@ -347,9 +348,7 @@ case class CompatibilityFor2_3Rule(graph: GraphDatabaseService,
                                    queryPlanTTL: Long,
                                    clock: Clock,
                                    kernelMonitors: KernelMonitors,
-                                   kernelAPI: KernelAPI,
-                                   notificationLoggerBuilder: (ExecutionMode => InternalNotificationLogger)) extends CompatibilityFor2_3 {
+                                   kernelAPI: KernelAPI) extends CompatibilityFor2_3 {
   protected val compiler = CypherCompilerFactory.ruleBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, new WrappedMonitors2_3( kernelMonitors ), notificationLoggerBuilder
-  )
+    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, new WrappedMonitors2_3( kernelMonitors ))
 }

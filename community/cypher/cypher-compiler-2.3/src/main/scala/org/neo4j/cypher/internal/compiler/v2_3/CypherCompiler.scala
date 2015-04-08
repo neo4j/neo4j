@@ -66,7 +66,6 @@ object CypherCompilerFactory {
   def costBasedCompiler(graph: GraphDatabaseService, queryCacheSize: Int, statsDivergenceThreshold: Double,
                         queryPlanTTL: Long, clock: Clock, monitors: Monitors,
                         logger: InfoLogger,
-                        notificationLoggerBuilder: (ExecutionMode => InternalNotificationLogger),
                         plannerName: CostBasedPlannerName,
                         runtimeName: RuntimeName): CypherCompiler = {
     val parser = new CypherParser(monitors.newMonitor[ParserMonitor[Statement]](monitorTag))
@@ -83,11 +82,11 @@ object CypherCompilerFactory {
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
     val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheMonitor)
 
-    new CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheMonitor, monitors, notificationLoggerBuilder)
+    new CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheMonitor, monitors)
   }
 
   def ruleBasedCompiler(graph: GraphDatabaseService, queryCacheSize: Int, statsDivergenceThreshold: Double,
-                        queryPlanTTL: Long, clock: Clock, monitors: Monitors, notificationLoggerBuilder: (ExecutionMode => InternalNotificationLogger)): CypherCompiler = {
+                        queryPlanTTL: Long, clock: Clock, monitors: Monitors): CypherCompiler = {
     val parser = new CypherParser(monitors.newMonitor[ParserMonitor[ast.Statement]](monitorTag))
     val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
     val rewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag))
@@ -98,7 +97,7 @@ object CypherCompilerFactory {
     val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
     val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheMonitor)
 
-    new CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheMonitor, monitors, notificationLoggerBuilder)
+    new CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheMonitor, monitors)
   }
 
   private def logStalePlanRemovalMonitor(log: InfoLogger) = new AstCacheMonitor {
@@ -115,20 +114,16 @@ case class CypherCompiler(parser: CypherParser,
                           cacheAccessor: CacheAccessor[Statement, ExecutionPlan],
                           planCacheFactory: () => LRUCache[Statement, ExecutionPlan],
                           cacheMonitor: CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan]],
-                          monitors: Monitors,
-                          notificationLoggerBuilder: (ExecutionMode => InternalNotificationLogger)) {
+                          monitors: Monitors) {
 
-  def planQuery(queryText: String, context: PlanContext, executionMode: ExecutionMode, offset: Option[InputPosition] = None): (ExecutionPlan, Map[String, Any]) =
-    planPreparedQuery(prepareQuery(queryText, executionMode), context)
+  def planQuery(queryText: String, context: PlanContext, notificationLogger: InternalNotificationLogger,
+                offset: Option[InputPosition] = None): (ExecutionPlan, Map[String, Any]) =
+    planPreparedQuery(prepareQuery(queryText, notificationLogger), context)
 
-  def prepareQuery(queryText: String, executionMode: ExecutionMode, offset: Option[InputPosition] = None): PreparedQuery = {
-
-    val notificationLogger = notificationLoggerBuilder(executionMode)
+  def prepareQuery(queryText: String, notificationLogger: InternalNotificationLogger, offset: Option[InputPosition] = None): PreparedQuery = {
     val parsedStatement = parser.parse(queryText, offset)
-
     val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
     val originalSemanticState = semanticChecker.check(queryText, cleanedStatement, notificationLogger, offset)
-
     val (rewrittenStatement, extractedParams, postConditions) = astRewriter.rewrite(queryText, cleanedStatement, originalSemanticState)
     val postRewriteSemanticState = semanticChecker.check(queryText, rewrittenStatement, devNullLogger, offset)
 

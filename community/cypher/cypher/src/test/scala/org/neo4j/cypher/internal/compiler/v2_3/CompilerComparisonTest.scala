@@ -297,7 +297,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     val cacheFlushMonitor = monitors.newMonitor[CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan]]](monitorTag)
     val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheHitMonitor)
 
-    new CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheFlushMonitor, monitors, _ => devNullLogger)
+    new CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheFlushMonitor, monitors)
   }
 
   private def legacyCompiler(graph: GraphDatabaseService): CypherCompiler = {
@@ -313,7 +313,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     val cacheFlushMonitor = monitors.newMonitor[CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan]]](monitorTag)
     val cache = new MonitoringCacheAccessor[Statement, ExecutionPlan](cacheHitMonitor)
 
-    new CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheFlushMonitor, monitors, _ => devNullLogger)
+    new CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheFlushMonitor, monitors)
   }
 
   case class QueryExecutionResult(compiler: String, dbHits: Option[Long], plan: InternalPlanDescription) {
@@ -529,7 +529,7 @@ class CompilerComparisonTest extends ExecutionEngineFunSuite with QueryStatistic
     val (plan: ExecutionPlan, parameters) = db.withTx {
       tx =>
         val planContext = new TransactionBoundPlanContext(db.statement, db)
-        compiler.planQuery(query, planContext, NormalMode)
+        compiler.planQuery(query, planContext, devNullLogger)
     }
 
     db.withTx {
