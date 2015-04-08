@@ -226,6 +226,8 @@ For more HA related configuration options take a look at <<ha-configuration, HA 
 
 If you want to start a cluster similar to the one described above, but for development and testing purposes, it is convenient to run all Neo4j instances on the same machine.
 This is easy to achieve, although it requires some additional configuration as the defaults will conflict with each other.
+Furthermore, the default `dbms.pagecache.memory` assumes that Neo4j has the machine to itself.
+If we in this example assume that the machine has 4 gigabytes of memory, and that each JVM consumes 500 megabytes of memory, then we can allocate 500 megabytes of memory to the page cache of each server.
 
 === Download and unpack Neo4j Enterprise ===
 
@@ -255,6 +257,9 @@ ha.cluster_server = 127.0.0.1:5001
 
 # List of other known instances in this cluster
 ha.initial_hosts = 127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003
+
+# Reduce the default page cache memory allocation
+dbms.pagecache.memory=500m
 ----
 
 _conf/neo4j-server.properties_
@@ -294,6 +299,9 @@ ha.cluster_server = 127.0.0.1:5002
 
 # List of other known instances in this cluster
 ha.initial_hosts = 127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003
+
+# Reduce the default page cache memory allocation
+dbms.pagecache.memory=500m
 ----
 
 _conf/neo4j-server.properties_
@@ -333,6 +341,9 @@ ha.cluster_server = 127.0.0.1:5003
 
 # List of other known instances in this cluster
 ha.initial_hosts = 127.0.0.1:5001,127.0.0.1:5002,127.0.0.1:5003
+
+# Reduce the default page cache memory allocation
+dbms.pagecache.memory=500m
 ----
 
 _conf/neo4j-server.properties_
@@ -377,4 +388,3 @@ http://127.0.0.1:7474/webadmin/#/info/org.neo4j/High%20Availability/
 http://127.0.0.1:7475/webadmin/#/info/org.neo4j/High%20Availability/
 
 http://127.0.0.1:7476/webadmin/#/info/org.neo4j/High%20Availability/
-
