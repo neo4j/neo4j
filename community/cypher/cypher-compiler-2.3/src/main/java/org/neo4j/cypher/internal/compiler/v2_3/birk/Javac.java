@@ -26,7 +26,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.security.SecureClassLoader;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -45,6 +45,7 @@ import sun.tools.java.CompilerError;
 
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult;
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription;
+import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.api.Statement;
 
@@ -54,13 +55,19 @@ import static javax.tools.JavaCompiler.CompilationTask;
 //TODO this should be replaced, here for testing stuff out
 public class Javac
 {
+
     public static Class<InternalExecutionResult> compile( String className, String classBody ) throws
             ClassNotFoundException
     {
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        if ( compiler == null )
+        {
+            throw new CantCompileQueryException( "No compiler provided by the platform" );
+        }
+
         JavaFileManager manager = new InMemFileManager();
         DiagnosticCollector<JavaFileObject> diagnosticsCollector = new DiagnosticCollector<>();
-        Iterable<? extends JavaFileObject> sources = Arrays.asList( new InMemSource( className, classBody ) );
+        Iterable<? extends JavaFileObject> sources = Collections.singletonList( new InMemSource( className, classBody ) );
         CompilationTask task = compiler.getTask( null, manager, diagnosticsCollector, null, null, sources );
 
         if ( !task.call() )
@@ -78,7 +85,7 @@ public class Javac
             throw new CompilerError( sb.toString() );
         }
 
-        Class<InternalExecutionResult> clazz = (Class<InternalExecutionResult>) manager.getClassLoader( null ).loadClass(className );
+        Class<InternalExecutionResult> clazz = (Class<InternalExecutionResult>) manager.getClassLoader( null ).loadClass( className );
         return clazz;
     }
 
