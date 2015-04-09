@@ -43,13 +43,13 @@ import static org.neo4j.packstream.PackValue.NullValue.NULL_VALUE;
  * PackStream is a messaging serialisation format heavily inspired by MessagePack.
  * The key differences are in the type system itself which (among other things) replaces extensions with structures.
  * The Packer and Unpacker implementations are also faster than their MessagePack counterparts.
- * 
+ *
  * Note that several marker byte values are RESERVED for future use.
  * Extra markers should <em>not</em> be added casually and such additions must be follow a strict process involving both client and server software.
- * 
+ *
  * The table below shows all allocated marker byte values.
  *
- * <table> 
+ * <table>
  * <tr><th>Marker</th><th>Binary</th><th>Type</th><th>Description</th></tr>
  * <tr><td><code>00..7F</code></td><td><code>0xxxxxxx</code></td><td>+TINY_INT</td><td>Integer 0 to 127</td></tr>
  * <tr><td><code>80..8F</code></td><td><code>1000xxxx</code></td><td>TINY_TEXT</td><td></td></tr>
@@ -92,7 +92,7 @@ import static org.neo4j.packstream.PackValue.NullValue.NULL_VALUE;
  */
 public class PackStream
 {
-    
+
     public static final byte TINY_TEXT = (byte) 0x80;
     public static final byte TINY_LIST = (byte) 0x90;
     public static final byte TINY_MAP = (byte) 0xA0;
@@ -127,7 +127,7 @@ public class PackStream
     public static final byte RESERVED_DB = (byte) 0xDB;
     public static final byte STRUCT_8 = (byte) 0xDC;
     public static final byte STRUCT_16 = (byte) 0xDD;
-    public static final byte RESERVED_DE = (byte) 0xDE; // TODO STRUCT_32? or the class javadoc is wrong?
+    public static final byte RESERVED_DE = (byte) 0xDE;
     public static final byte RESERVED_DF = (byte) 0xDF;
     public static final byte RESERVED_E0 = (byte) 0xE0;
     public static final byte RESERVED_E1 = (byte) 0xE1;

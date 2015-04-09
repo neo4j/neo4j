@@ -1,0 +1,62 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+    <TITLE>API Overview</TITLE>
+</HEAD>
+<BODY>
+
+This is the reference driver implementation for <a href="http://neo4j.com">Neo4j</a>, it allows you to connect to a
+Neo4j server and interact with it.
+If you are using Java, this is generally the interface you'd use to integrate Neo4j in your application.
+
+
+<h3>Installation</h3>
+
+<p>To include this driver in your application project, you need to include it on your classpath.
+    The driver is available in Maven Central, and can be included in regular Maven projects as follows:</p>
+
+<pre><code>&lt;dependency&gt;
+    &lt;groupId&gt;org.neo4j.driver&lt;/groupId&gt;
+    &lt;artifactId&gt;neo4j-java-driver&lt;/artifactId&gt;
+    &lt;version&gt;2.2-SNAPSHOT&lt;/version&gt;
+    &lt;/dependency&gt;
+</code></pre>
+
+
+<h3>Getting Connected</h3>
+
+<p>Once you have the driver and a connector on your classpath, you can establish a session with Neo4j.
+    Below is a minimum viable snippet that establishes a session, creates a node, and queries for that node back.</p>
+
+<pre><code>Session session = Neo4j.session( "neo4j+http://localhost:7687" );
+
+    String statement = "CREATE (a {name:{n}}) RETURN a.name";
+    Map&lt;String, Object&gt; parameters = Neo4j.parameters( "n", "Bob" );
+
+    Result result = session.run( statement, parameters );
+    while ( result.hasNext() )
+    {
+    Value row = result.next();
+    System.out.println( row.get( "a.name" ) );
+    }
+
+    session.close();
+</code></pre>
+
+
+<h3>Dive into the Docs</h3>
+
+Have a look at the <a href="org/neo4j/Neo4j.html" title="interface in org.neo4j"><code>Neo4j</code></a> class to get
+started.
+
+
+<h3>Design philosophy</h3>
+
+<p>The main philosophy on which this driver is build is that <strong>the driver shouldn't get in the way</strong>.
+    Generally this means designing for <a href="http://en.wikipedia.org/wiki/Principle_of_least_astonishment">least
+        amount of surprise</a>
+    - but in some cases it means choosing a strong stance against routes that lead to surprising behavior later on.</p>
+
+
+</BODY>
+</HTML>
