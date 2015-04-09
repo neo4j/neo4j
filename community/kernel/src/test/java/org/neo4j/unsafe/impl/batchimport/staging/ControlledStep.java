@@ -38,16 +38,15 @@ import static org.junit.Assert.assertTrue;
  */
 public class ControlledStep<T> implements Step<T>, StatsProvider
 {
-    public static ControlledStep<?> stepWithAverageOf( long avg )
+    public static ControlledStep<?> stepWithAverageOf( String name, int maxProcessors, long avg )
     {
-        ControlledStep<?> step = new ControlledStep<>( "test", true );
-        step.setStat( Keys.avg_processing_time, avg );
-        return step;
+        return stepWithStats( name, maxProcessors, Keys.avg_processing_time, avg );
     }
 
-    public static ControlledStep<?> stepWithStats( Map<Key,Long> statistics )
+    public static ControlledStep<?> stepWithStats( String name, int maxProcessors,
+            Map<Key,Long> statistics )
     {
-        ControlledStep<?> step = new ControlledStep<>( "test", true );
+        ControlledStep<?> step = new ControlledStep<>( name, maxProcessors );
         for ( Map.Entry<Key,Long> statistic : statistics.entrySet() )
         {
             step.setStat( statistic.getKey(), statistic.getValue().longValue() );
@@ -55,26 +54,26 @@ public class ControlledStep<T> implements Step<T>, StatsProvider
         return step;
     }
 
-    public static ControlledStep<?> stepWithStats( Object... statisticsAltKeyAndValue )
+    public static ControlledStep<?> stepWithStats( String name, int maxProcessors, Object... statisticsAltKeyAndValue )
     {
-        return stepWithStats( MapUtil.<Key,Long>genericMap( statisticsAltKeyAndValue ) );
+        return stepWithStats( name, maxProcessors, MapUtil.<Key,Long>genericMap( statisticsAltKeyAndValue ) );
     }
 
     private final String name;
     private final Map<Key,ControlledStat> stats = new HashMap<>();
-    private final boolean allowMultipleProcessors;
+    private final int maxProcessors;
     private volatile int numberOfProcessors = 1;
 
-    public ControlledStep( String name, boolean allowMultipleProcessors )
+    public ControlledStep( String name, int maxProcessors )
     {
-        this( name, allowMultipleProcessors, 1 );
+        this( name, maxProcessors, 1 );
     }
 
-    public ControlledStep( String name, boolean allowMultipleProcessors, int initialProcessorCount )
+    public ControlledStep( String name, int maxProcessors, int initialProcessorCount )
     {
+        this.maxProcessors = maxProcessors == 0 ? Integer.MAX_VALUE : maxProcessors;
         this.name = name;
-        this.allowMultipleProcessors = allowMultipleProcessors;
-        this.numberOfProcessors = initialProcessorCount;
+        setNumberOfProcessors( initialProcessorCount );
     }
 
     @Override
@@ -85,7 +84,7 @@ public class ControlledStep<T> implements Step<T>, StatsProvider
 
     public ControlledStep<T> setNumberOfProcessors( int numberOfProcessors )
     {
-        assertTrue( allowMultipleProcessors );
+        assertTrue( numberOfProcessors <= maxProcessors );
         this.numberOfProcessors = numberOfProcessors;
         return this;
     }
@@ -93,7 +92,7 @@ public class ControlledStep<T> implements Step<T>, StatsProvider
     @Override
     public synchronized boolean incrementNumberOfProcessors()
     {
-        if ( !allowMultipleProcessors )
+        if ( numberOfProcessors >= maxProcessors )
         {
             return false;
         }
@@ -198,5 +197,17 @@ public class ControlledStep<T> implements Step<T>, StatsProvider
         {
             return value;
         }
+
+        @Override
+        public String toString()
+        {
+            return "" + value;
+        }
+    }
+
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName() + "[" + name() + ", " + stats + "]";
     }
 }
