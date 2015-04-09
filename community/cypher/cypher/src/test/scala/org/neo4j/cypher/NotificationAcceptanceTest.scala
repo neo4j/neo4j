@@ -26,13 +26,13 @@ import org.neo4j.cypher.internal.compiler.v2_3.notification.CartesianProductNoti
 class NotificationAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
   test("Warn for cartesian product") {
-    val result = executeWithNewPlanner("explain match (a)-->(b), (c)-->(d) return *")
+    val result = executeWithAllPlanners("explain match (a)-->(b), (c)-->(d) return *")
 
     result.notifications.toList should equal(List(CartesianProductNotification(InputPosition(7, 1, 8))))
   }
 
   test("Don't warn for cartesian product when not using explain") {
-    val result = executeWithNewPlanner("match (a)-->(b), (c)-->(d) return *")
+    val result = executeWithAllPlanners("match (a)-->(b), (c)-->(d) return *")
 
     result.notifications shouldBe empty
   }

@@ -26,7 +26,7 @@ class OrderByAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers 
     createNode("prop" -> 1)
     createNode("prop" -> 3)
     createNode("prop" -> -5)
-    val result = executeWithNewPlanner("match (n) return n.prop AS prop ORDER BY n.prop")
+    val result = executeWithAllPlanners("match (n) return n.prop AS prop ORDER BY n.prop")
     result.toList should equal(List(
       Map("prop" -> -5),
       Map("prop" -> 1),
@@ -38,7 +38,7 @@ class OrderByAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers 
     createNode("prop" -> 1)
     createNode("prop" -> 3)
     createNode("prop" -> -5)
-    val result = executeWithNewPlanner("match (n) return n.prop AS prop ORDER BY n.prop DESC")
+    val result = executeWithAllPlanners("match (n) return n.prop AS prop ORDER BY n.prop DESC")
     result.toList should equal(List(
       Map("prop" -> 3),
       Map("prop" -> 1),
@@ -47,7 +47,7 @@ class OrderByAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers 
   }
 
   test("ORDER BY of an column introduced in RETURN should work well") {
-    executeWithNewPlanner("WITH 1 AS p, rand() AS rng RETURN p ORDER BY rng").toList should
+    executeWithAllPlanners("WITH 1 AS p, count(*) AS rng RETURN p ORDER BY rng").toList should
       equal(List(Map("p" -> 1)))
  }
 
@@ -56,7 +56,7 @@ class OrderByAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers 
     createNode("prop" -> 3)
     createNode("prop" -> -5)
 
-    executeWithNewPlanner("MATCH n RETURN n.prop AS n ORDER BY n + 2").toList should
+    executeWithAllPlanners("MATCH n RETURN n.prop AS n ORDER BY n + 2").toList should
       equal(List(
         Map("n" -> -5),
         Map("n" -> 1),

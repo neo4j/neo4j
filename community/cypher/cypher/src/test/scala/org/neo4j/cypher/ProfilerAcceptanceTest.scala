@@ -202,7 +202,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     val query = s"USING PERIODIC COMMIT 10 LOAD CSV FROM '$url' AS line CREATE()"
 
     // given
-    execute(query).toList
+    executeWithRulePlanner(query).toList
     deleteAllEntities()
     val initialTxCounts = graph.txCounts
 
@@ -313,7 +313,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     result
   }
 
-  override def profile(q: String, params: (String, Any)*): InternalExecutionResult = profileWithPlanner(executeWithNewPlanner(_,_:_*), q, params:_*)
+  override def profile(q: String, params: (String, Any)*): InternalExecutionResult = profileWithPlanner(executeWithAllPlanners(_,_:_*), q, params:_*)
 
   def legacyProfile(q: String, params: (String, Any)*): InternalExecutionResult = profileWithPlanner(innerExecute(_,_:_*), q, params:_*)
 
