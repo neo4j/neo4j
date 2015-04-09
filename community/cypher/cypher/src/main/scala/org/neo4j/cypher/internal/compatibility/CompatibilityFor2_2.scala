@@ -28,12 +28,13 @@ import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ExecutionPlan => E
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.{DbHits, Planner, Rows, Version}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.MapToPublicExceptions
+import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v2_2.{CypherException => CypherException_v2_2, _}
 import org.neo4j.cypher.internal.spi.v2_2.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
 import org.neo4j.cypher.{ArithmeticException, CypherTypeException, EntityNotFoundException, FailedIndexException, IncomparableValuesException, IndexHintException, InternalException, InvalidArgumentException, InvalidSemanticsException, LabelScanHintException, LoadCsvStatusWrapCypherException, LoadExternalResourceException, MergeConstraintConflictException, NodeStillHasRelationshipsException, ParameterNotFoundException, ParameterWrongTypeException, PatternException, PeriodicCommitInOpenTransactionException, ProfilerStatisticsNotReadyException, SyntaxException, UniquePathNotUniqueException, UnknownLabelException, _}
 import org.neo4j.graphdb.{GraphDatabaseService, QueryExecutionType, ResourceIterator}
-import org.neo4j.helpers.Clock
+import org.neo4j.helpers.{Assertion, Clock}
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{KernelAPI, Statement}
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
@@ -138,7 +139,15 @@ trait CompatibilityFor2_2 {
   val kernelMonitors: KernelMonitors
   val kernelAPI: KernelAPI
 
+  protected val createRewriterSequence: (String) => RewriterStepSequencer = {
+    import Assertion._
+    import RewriterStepSequencer._
+
+    if (assertionsEnabled()) newValidating _ else newPlain _
+  }
+
   protected val compiler: v2_2.CypherCompiler
+
   implicit val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
   def produceParsedQuery(statementAsText: String, offset: InputPosition) = new ParsedQuery {
@@ -325,7 +334,7 @@ case class CompatibilityFor2_2Cost(graph: GraphDatabaseService,
                                    plannerName: CostBasedPlannerName) extends CompatibilityFor2_2 {
   protected val compiler = CypherCompilerFactory.costBasedCompiler(
     graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, new WrappedMonitors(kernelMonitors),
-    new StringInfoLogger(logger), plannerName
+    new StringInfoLogger(logger), plannerName, createRewriterSequence
   )
 }
 
@@ -337,6 +346,6 @@ case class CompatibilityFor2_2Rule(graph: GraphDatabaseService,
                                    kernelMonitors: KernelMonitors,
                                    kernelAPI: KernelAPI) extends CompatibilityFor2_2 {
   protected val compiler = CypherCompilerFactory.ruleBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, new WrappedMonitors(kernelMonitors)
+    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, new WrappedMonitors(kernelMonitors), createRewriterSequence
   )
 }

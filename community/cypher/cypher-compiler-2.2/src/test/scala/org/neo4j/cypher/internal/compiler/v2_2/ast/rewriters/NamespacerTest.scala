@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.{ASTAnnotationMap, Identifier
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.StatementHelper._
 import org.neo4j.cypher.internal.compiler.v2_2.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
+import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
 
 class NamespacerTest extends CypherFunSuite {
 
@@ -109,7 +110,7 @@ class NamespacerTest extends CypherFunSuite {
     ))
   }
 
-  val astRewriter = new ASTRewriter(mock[AstRewritingMonitor], false)
+  val astRewriter = new ASTRewriter(RewriterStepSequencer.newValidating _, mock[AstRewritingMonitor], false)
 
   private def assertRewritten(from: String, to: String) = {
     val fromAst = parseAndRewrite(from)

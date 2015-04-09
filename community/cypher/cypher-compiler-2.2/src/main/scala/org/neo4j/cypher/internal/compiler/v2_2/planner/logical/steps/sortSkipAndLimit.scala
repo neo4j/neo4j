@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_2.ast
+import org.neo4j.cypher.internal.compiler.v2_2.{InternalException, ast}
 import org.neo4j.cypher.internal.compiler.v2_2.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.{Ascending, Descending, SortDescription}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
@@ -56,6 +56,7 @@ object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
   private def sortDescription(in: ast.SortItem): SortDescription = in match {
     case ast.AscSortItem(ast.Identifier(key)) => Ascending(key)
     case ast.DescSortItem(ast.Identifier(key)) => Descending(key)
+    case _ => throw new InternalException("Sort items expected to only use single identifier expression")
   }
 
   private def addSkip(s: Option[ast.Expression], plan: LogicalPlan)(implicit context: LogicalPlanningContext) =

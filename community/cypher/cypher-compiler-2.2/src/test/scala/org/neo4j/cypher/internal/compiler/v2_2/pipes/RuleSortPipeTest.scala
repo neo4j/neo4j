@@ -34,7 +34,7 @@ class RuleSortPipeTest extends CypherFunSuite {
 
   test("emptyInIsEmptyOut") {
     val source = new FakePipe(List(), "x" -> CTAny)
-    val sortPipe = new LegacySortPipe(source, List(SortItem(Identifier("x"), true)))
+    val sortPipe = new LegacySortPipe(source, List(SortItem(Identifier("x"), ascending = true)))
 
     sortPipe.createResults(QueryStateHelper.empty).toList shouldBe empty
   }
@@ -42,7 +42,7 @@ class RuleSortPipeTest extends CypherFunSuite {
   test("simpleSortingIsSupported") {
     val list:Seq[MutableMap[String, Any]] = List(MutableMap("x" -> "B"), MutableMap("x" -> "A"))
     val source = new FakePipe(list, "x" -> CTString)
-    val sortPipe = new LegacySortPipe(source, List(SortItem(Identifier("x"), true)))
+    val sortPipe = new LegacySortPipe(source, List(SortItem(Identifier("x"), ascending = true)))
 
     sortPipe.createResults(QueryStateHelper.empty).toList should equal(List(
       MutableMap("x" -> "A"), MutableMap("x" -> "B")
@@ -51,13 +51,13 @@ class RuleSortPipeTest extends CypherFunSuite {
 
   test("sortByTwoColumns") {
     val source = new FakePipe(List(
-      MutableMap("x" -> "B", "y" -> 20),
-      MutableMap("x" -> "A", "y" -> 100),
-      MutableMap("x" -> "B", "y" -> 10)), "x" -> CTString, "y"->CTNumber)
+      MutableMap[String, Any]("x" -> "B", "y" -> 20),
+      MutableMap[String, Any]("x" -> "A", "y" -> 100),
+      MutableMap[String, Any]("x" -> "B", "y" -> 10)), "x" -> CTString, "y" -> CTNumber)
 
     val sortPipe = new LegacySortPipe(source, List(
-      SortItem(Identifier("x"), true),
-      SortItem(Identifier("y"), true)))
+      SortItem(Identifier("x"), ascending = true),
+      SortItem(Identifier("y"), ascending = true)))
 
     sortPipe.createResults(QueryStateHelper.empty).toList should equal(List(
       MutableMap("x" -> "A", "y" -> 100),
@@ -68,13 +68,13 @@ class RuleSortPipeTest extends CypherFunSuite {
 
   test("sortByTwoColumnsWithOneDescending") {
     val source = new FakePipe(List(
-      MutableMap("x" -> "B", "y" -> 20),
-      MutableMap("x" -> "A", "y" -> 100),
-      MutableMap("x" -> "B", "y" -> 10)), "x" -> CTString, "y"->CTNumber)
+      MutableMap[String, Any]("x" -> "B", "y" -> 20),
+      MutableMap[String, Any]("x" -> "A", "y" -> 100),
+      MutableMap[String, Any]("x" -> "B", "y" -> 10)), "x" -> CTString, "y" -> CTNumber)
 
     val sortPipe = new LegacySortPipe(source, List(
-      SortItem(Identifier("x"), true),
-      SortItem(Identifier("y"), false)))
+      SortItem(Identifier("x"), ascending = true),
+      SortItem(Identifier("y"), ascending = false)))
 
     sortPipe.createResults(QueryStateHelper.empty).toList should equal(List(
       MutableMap("x" -> "A", "y" -> 100),
@@ -90,7 +90,7 @@ class RuleSortPipeTest extends CypherFunSuite {
       MutableMap("y" -> 2))
     val source = new FakePipe(list, "y"->CTNumber)
 
-    val sortPipe = new LegacySortPipe(source, List(SortItem(Identifier("y"), true)))
+    val sortPipe = new LegacySortPipe(source, List(SortItem(Identifier("y"), ascending = true)))
 
     sortPipe.createResults(QueryStateHelper.empty).toList should equal(List(
       MutableMap("y" -> 1),

@@ -51,20 +51,20 @@ class EagerAggregationPipeTest extends CypherFunSuite {
 
   test("shouldAggregateCountStar") {
     val source = new FakePipe(List(
-      Map("name" -> "Andres", "age" -> 36),
-      Map("name" -> "Peter", "age" -> 38),
-      Map("name" -> "Michael", "age" -> 36),
-      Map("name" -> "Michael", "age" -> 31)), createSymbolTableFor("name"))
+      Map[String, Any]("name" -> "Andres", "age" -> 36),
+      Map[String, Any]("name" -> "Peter", "age" -> 38),
+      Map[String, Any]("name" -> "Michael", "age" -> 36),
+      Map[String, Any]("name" -> "Michael", "age" -> 31)), createSymbolTableFor("name"))
 
     val returnItems = createReturnItemsFor("name")
     val grouping = Map("count(*)" -> CountStar())
     val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)()
 
     getResults(aggregationPipe) should contain allOf(
-      Map("name" -> "Andres", "count(*)" -> 1),
-      Map("name" -> "Peter", "count(*)" -> 1),
-      Map("name" -> "Michael", "count(*)" -> 2)
-      )
+      Map[String, Any]("name" -> "Andres", "count(*)" -> 1),
+      Map[String, Any]("name" -> "Peter", "count(*)" -> 1),
+      Map[String, Any]("name" -> "Michael", "count(*)" -> 2)
+    )
   }
 
   test("shouldReturnZeroForEmptyInput") {
@@ -90,10 +90,10 @@ class EagerAggregationPipeTest extends CypherFunSuite {
 
   test("shouldCountNonNullValues") {
     val source = new FakePipe(List(
-      Map("name" -> "Andres", "age" -> 36),
-      Map("name" -> null, "age" -> 38),
-      Map("name" -> "Michael", "age" -> 36),
-      Map("name" -> "Michael", "age" -> 31)), createSymbolTableFor("name"))
+      Map[String, Any]("name" -> "Andres", "age" -> 36),
+      Map[String, Any]("name" -> null, "age" -> 38),
+      Map[String, Any]("name" -> "Michael", "age" -> 36),
+      Map[String, Any]("name" -> "Michael", "age" -> 31)), createSymbolTableFor("name"))
 
     val returnItems = createReturnItemsFor()
     val grouping = Map("count(name)" -> Count(Identifier("name")))
@@ -102,7 +102,7 @@ class EagerAggregationPipeTest extends CypherFunSuite {
     getResults(aggregationPipe) should equal(List(Map("count(name)" -> 3)))
   }
 
-  private def createSymbolTableFor(name: String) = name -> CTNode
+  private def createSymbolTableFor(name: String): (String, CypherType) = name -> CTNode
 
   private def getResults(p: Pipe) = p.createResults(QueryStateHelper.empty).map(_.m.toMap).toList
 }

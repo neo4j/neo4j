@@ -29,13 +29,14 @@ import org.neo4j.cypher.internal.compiler.v2_2.parser.{CypherParser, ParserMonit
 import org.neo4j.cypher.internal.compiler.v2_2.pipes._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_2.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v2_2.{Scope, Monitors, PreparedQuery}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 class RulePipeBuilderTest extends CypherFunSuite {
   val planContext: PlanContext = mock[PlanContext]
   val parser = new CypherParser(mock[ParserMonitor[Statement]])
-  val planBuilder = new LegacyPipeBuilder(mock[Monitors])
+  val planBuilder = new LegacyPipeBuilder(mock[Monitors], RewriterStepSequencer.newValidating _)
 
   test("should_use_distinct_pipe_for_distinct") {
     val pipe = buildExecutionPipe("MATCH n RETURN DISTINCT n")

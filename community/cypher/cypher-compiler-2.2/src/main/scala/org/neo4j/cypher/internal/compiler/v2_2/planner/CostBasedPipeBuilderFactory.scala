@@ -24,6 +24,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.execution.PipeExecutionPl
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.greedy.{expandsOrJoins, expandsOnly, GreedyQueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.idp.{IDPQueryGraphSolverMonitor, IDPQueryGraphSolver}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter.LogicalPlanRewriter
+import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.helpers.Clock
 
 object CostBasedPipeBuilderFactory {
@@ -32,9 +34,10 @@ object CostBasedPipeBuilderFactory {
             metricsFactory: MetricsFactory,
             monitor: PlanningMonitor,
             clock: Clock,
+            queryPlanner: QueryPlanner,
+            rewriterSequencer: (String) => RewriterStepSequencer,
             tokenResolver: SimpleTokenResolver = new SimpleTokenResolver(),
             maybeExecutionPlanBuilder: Option[PipeExecutionPlanBuilder] = None,
-            queryPlanner: QueryPlanner = new DefaultQueryPlanner(),
             plannerName: CostBasedPlannerName = PlannerName.default
            ) = {
 
@@ -56,6 +59,6 @@ object CostBasedPipeBuilderFactory {
         )
     }
 
-    CostBasedPipeBuilder(monitors, metricsFactory, monitor, clock, tokenResolver, executionPlanBuilder, queryPlanner, queryGraphSolver, plannerName)
+    CostBasedPipeBuilder(monitors, metricsFactory, monitor, clock, tokenResolver, executionPlanBuilder, queryPlanner, queryGraphSolver, plannerName, rewriterSequencer)
   }
 }
