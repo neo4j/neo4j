@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders
 import org.neo4j.cypher.internal.compiler.v2_2._
 import executionplan.{PlanBuilder, ExecutionPlanInProgress}
 import commands._
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Identifier, IdFunction}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.{PipeMonitor, EntityProducer, SingleRowPipe, TraversalMatchPipe}
 import pipes.matching.{Trail, TraversalMatcher, MonoDirectionalTraversalMatcher, BidirectionalTraversalMatcher}
 import spi.PlanContext
@@ -32,8 +33,8 @@ import org.neo4j.graphdb.Node
 class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor): ExecutionPlanInProgress =
     extractExpanderStepsFromQuery(plan) match {
-      case None              => throw new ThisShouldNotHappenError("Andres", "This plan should not have been accepted")
-      case Some(longestPath) =>
+      case (None,_) => throw new ThisShouldNotHappenError("Andres", "This plan should not have been accepted")
+      case (Some(longestPath), solvedStartItems) =>
         val LongestTrail(start, end, longestTrail) = longestPath
 
         val unsolvedItems = plan.query.start.filter(_.unsolved)
@@ -49,7 +50,7 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
 
         val newQ = plan.query.copy(
           patterns = plan.query.patterns.filterNot(p => solvedPatterns.contains(p.token)) ++ solvedPatterns.map(Solved(_)),
-          start = markStartItemsSolved(plan.query.start, tokens, longestTrail),
+          start = markStartItemsSolved(plan.query.start, tokens ++ solvedStartItems, longestTrail),
           where = newWhereClause
         )
 
@@ -124,7 +125,7 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
     entityFactory.nodeStartItems
 
   def canWorkWith(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor): Boolean = {
-    val longest = extractExpanderStepsFromQuery(plan)
+    val (longest,_) = extractExpanderStepsFromQuery(plan)
       plan.pipe.isInstanceOf[SingleRowPipe] &&
       !plan.query.optional &&
       longest.exists(doesNotOverlapExistingSymbols(plan.pipe.symbols))
@@ -133,7 +134,7 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
   private def doesNotOverlapExistingSymbols(symbols: SymbolTable)(trail: LongestTrail) =
     (trail.longestTrail.symbols(new SymbolTable()).keys intersect symbols.keys).isEmpty
 
-  private def extractExpanderStepsFromQuery(plan: ExecutionPlanInProgress): Option[LongestTrail] = {
+  private def extractExpanderStepsFromQuery(plan: ExecutionPlanInProgress): (Option[LongestTrail], Seq[QueryToken[StartItem]]) = {
     val startPoints = plan.query.start.flatMap {
       case Unsolved(x: NodeStartItemIdentifiers) => Some(x.identifierName)
       case _            => None
@@ -145,13 +146,26 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
       case _                                                    => None
     }
 
+    val unsolvedRelNames: Seq[String] = plan.query.patterns.collect {
+      case Unsolved(r: RelatedTo) if r.left != r.right => r.relName
+    }
+
+    val relIdPreds = plan.query.start.collect[(QueryToken[StartItem], AnyInCollection), Seq[(QueryToken[StartItem], AnyInCollection)]] {
+      case qt@Unsolved(x: RelationshipById) if unsolvedRelNames.contains(x.identifierName) =>
+        val compKey: String = s"--relId-${x.identifierName}--"
+        (qt, AnyInCollection(
+          x.expression, compKey,
+          Equals(IdFunction(Identifier(x.identifierName)),
+          Identifier(compKey))))
+    }
+
     val preds = plan.query.where.filter(_.unsolved).map(_.token).
     // TODO We should not filter these out. This should be removed once we only use TraversalMatcher
     filterNot {
       case pred => pred.exists( exp => exp.isInstanceOf[PathExpression]  )
     }
 
-    TrailBuilder.findLongestTrail(pattern, startPoints, preds)
+    (TrailBuilder.findLongestTrail(pattern, startPoints, preds ++ relIdPreds.map(_._2)), relIdPreds.map(_._1))
   }
 }
 

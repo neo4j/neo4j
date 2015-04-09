@@ -117,6 +117,22 @@ class TraversalMatcherBuilderTest extends GraphDatabaseFunSuite with BuilderTest
     builder.canWorkWith(plan(sourcePipe, q), ctx) should be(false)
   }
 
+  test("should handle starting from node and relationship") {
+    val q = query("start a=node(0), ab=relationship(0) match (a)-[ab]->(b) return b")
+    builder.canWorkWith(plan(SingleRowPipe(), q), ctx) should be(true)
+
+    val newPlan = builder.apply(plan(SingleRowPipe(), q), ctx)
+    newPlan.query.start.exists(_.unsolved) should be(false)
+  }
+
+  test("should handle starting from two nodes") {
+    val q = query("start a=node(0), b=node(1) match (a)-[ab]->(b) return b")
+    builder.canWorkWith(plan(SingleRowPipe(), q), ctx) should be(true)
+
+    val newPlan = builder.apply(plan(SingleRowPipe(), q), ctx)
+    newPlan.query.start.exists(_.unsolved) should be(false)
+  }
+
   def assertQueryHasNotSolvedPathExpressions(newPlan: ExecutionPlanInProgress) {
     newPlan.query.where.foreach {
       case Solved(pred) if pred.exists(_.isInstanceOf[PathExpression]) => fail("Didn't expect the predicate to be solved")
