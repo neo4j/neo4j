@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.junit.Test;
+
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
-
-import org.junit.Test;
 
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
@@ -44,6 +44,8 @@ public class DumpStoreTest
         {
             buffer.put( i );
         }
+        buffer.flip();
+
         AbstractBaseRecord record = mock( AbstractBaseRecord.class );
 
         // When

@@ -54,6 +54,12 @@ public class SocketProtocolV1 implements SocketProtocol
     private final Log log;
     private final AtomicInteger inFlight = new AtomicInteger( 0 );
 
+    private final byte[] currentHeader = new byte[2];
+
+    private boolean isReadingSplitHeader = false;
+    private boolean isReadingSplitChunk = false;
+    private int splitChunkRemaining = 0;
+
     public SocketProtocolV1( final Log log, Session session )
     {
         this.log = log;
@@ -84,25 +90,77 @@ public class SocketProtocolV1 implements SocketProtocol
         onBatchOfMessagesStarted();
         while ( data.readableBytes() > 0 )
         {
-            int chunkSize = data.readUnsignedShort();
-            if ( chunkSize > 0 )
+            // Chunks may split across network packages, so we get partial chunks. If that's currently the case,
+            // we gather those parts up as if they were individual chunks
+            if ( isReadingSplitChunk )
             {
-                if ( chunkSize <= data.readableBytes() )
-                {
-                    // Incoming buffer contains the whole chunk, forward it to our chunked input handling
-                    input.addChunk( data.readSlice( chunkSize ) );
-                }
-                else
-                {
-                    throw new UnsupportedOperationException( "Chunks split across packets not yet supported" ); // TODO
-                }
+                collectChunk( data, splitChunkRemaining );
+            }
+            else if ( data.readableBytes() == 1 )
+            {
+                // Chunk header is split across network packets..
+                currentHeader[0] = data.readByte();
             }
             else
             {
-                processChunkedMessage( channelContext );
+                // Read next chunk header
+                int chunkSize;
+                if ( isReadingSplitHeader )
+                {
+                    currentHeader[1] = data.readByte();
+                    chunkSize = (currentHeader[0] << 8 | currentHeader[1]) & 0xffff;
+                }
+                else
+                {
+                    chunkSize = data.readUnsignedShort();
+                }
+
+                // Is there data in the chunk, or are we at a message boundary?
+                if ( chunkSize > 0 )
+                {
+                    // Save this chunk
+                    collectChunk( data, chunkSize );
+                }
+                else
+                {
+                    // A full message collected, forward it for processing
+                    processCollectedMessage( channelContext );
+                }
             }
         }
         onBatchOfMessagesDone();
+    }
+
+    private void collectChunk( ByteBuf data, int chunkSize )
+    {
+        if ( chunkSize <= data.readableBytes() )
+        {
+            // Incoming buffer contains the whole chunk, forward it to our chunked input handling
+            input.addChunk( data.readSlice( chunkSize ) );
+            isReadingSplitChunk = false;
+        }
+        else
+        {
+            // Incoming buffer does not contain all the data we expect in the current chunk, gather up whats
+            // available, treat that as a chunk and remember how much we've got left to read from the next network
+            // packet.
+            if ( data.readableBytes() > 0 )
+            {
+                input.addChunk( data );
+            }
+
+            if ( isReadingSplitChunk )
+            {
+                // In the middle of reading split chunks, count down how much remains.
+                splitChunkRemaining -= chunkSize;
+            }
+            else
+            {
+                // First of a series of split chunk pieces, note the total length we need to read
+                isReadingSplitChunk = true;
+                splitChunkRemaining = chunkSize;
+            }
+        }
     }
 
     @Override
@@ -111,7 +169,7 @@ public class SocketProtocolV1 implements SocketProtocol
         return VERSION;
     }
 
-    public void processChunkedMessage( final ChannelHandlerContext channelContext )
+    public void processCollectedMessage( final ChannelHandlerContext channelContext )
     {
         output.setTargetChannel( channelContext );
         try

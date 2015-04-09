@@ -33,24 +33,24 @@ public class ErrorTranslator
 
     private final Log log;
 
-    public ErrorTranslator(Log log)
+    public ErrorTranslator( Log log )
     {
         this.log = log;
     }
 
     public Neo4jError translate( Throwable any )
     {
-        if(any instanceof KernelException)
+        if ( any instanceof KernelException )
         {
-            return new Neo4jError( ((KernelException)any).status(), any.getMessage() );
+            return new Neo4jError( ((KernelException) any).status(), any.getMessage() );
         }
-        else if( any instanceof CypherException )
+        else if ( any instanceof CypherException )
         {
-            return new Neo4jError(((CypherException) any).status(), any.getMessage());
+            return new Neo4jError( ((CypherException) any).status(), any.getMessage() );
         }
         else
         {
-            if( any.getCause() != null )
+            if ( any.getCause() != null )
             {
                 return translate( any.getCause() );
             }
@@ -58,8 +58,8 @@ public class ErrorTranslator
             // Log unknown errors.
             log.warn( "Client triggered unknown error: " + any.getMessage(), any );
 
-            return new Neo4jError(  Status.General.UnknownFailure, "An unexpected failure occurred: '"
-                                                                   + any.getMessage() + "'." );
+            return new Neo4jError( Status.General.UnknownFailure, "An unexpected failure occurred: '"
+                                                                  + any.getMessage() + "'." );
         }
     }
 

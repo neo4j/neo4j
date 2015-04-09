@@ -62,15 +62,15 @@ public class SessionMatchers
             @Override
             protected boolean matchesSafely( RecordingCallback.Call item )
             {
-                if(!(item instanceof RecordingCallback.StatementSuccess))
+                if ( !(item instanceof RecordingCallback.StatementSuccess) )
                 {
                     return false;
                 }
 
                 StatementMetadata meta = ((RecordingCallback.StatementSuccess) item).meta();
 
-                assertTrue( Arrays.toString(fieldNames) + " == " + Arrays.toString( meta.fieldNames() ),
-                        Arrays.equals( fieldNames, meta.fieldNames() ));
+                assertTrue( Arrays.toString( fieldNames ) + " == " + Arrays.toString( meta.fieldNames() ),
+                        Arrays.equals( fieldNames, meta.fieldNames() ) );
 
                 return true;
             }
@@ -83,7 +83,7 @@ public class SessionMatchers
         };
     }
 
-    public static Matcher<RecordingCallback> callsWere( final Matcher<RecordingCallback.Call> ... calls )
+    public static Matcher<RecordingCallback> callsWere( final Matcher<RecordingCallback.Call>... calls )
     {
         return new TypeSafeMatcher<RecordingCallback>()
         {
@@ -97,7 +97,7 @@ public class SessionMatchers
                         assertThat( item.next(), calls[i] );
                     }
                 }
-                catch(InterruptedException e)
+                catch ( InterruptedException e )
                 {
                     throw new RuntimeException( e );
                 }
@@ -107,7 +107,7 @@ public class SessionMatchers
             @Override
             public void describeTo( Description description )
             {
-                description.appendList( "Calls[",",","]", asList(calls) );
+                description.appendList( "Calls[", ",", "]", asList( calls ) );
             }
         };
     }
@@ -119,7 +119,7 @@ public class SessionMatchers
             @Override
             protected boolean matchesSafely( RecordingCallback.Call item )
             {
-                if(!(item instanceof RecordingCallback.Result) )
+                if ( !(item instanceof RecordingCallback.Result) )
                 {
                     return false;
                 }
@@ -127,7 +127,7 @@ public class SessionMatchers
                 Object[] actual = ((RecordingCallback.Result) item).records();
                 for ( int i = 0; i < values.length; i++ )
                 {
-                    if(!values[i].matches( actual[i] ))
+                    if ( !values[i].matches( actual[i] ) )
                     {
                         return false;
                     }
@@ -140,7 +140,7 @@ public class SessionMatchers
             public void describeTo( Description description )
             {
                 description.appendText( "Stream{" );
-                description.appendList( "values=[", "\n", "]" , asList(values));
+                description.appendList( "values=[", "\n", "]", asList( values ) );
                 description.appendText( "}" );
             }
         };
@@ -184,15 +184,15 @@ public class SessionMatchers
         };
     }
 
-    public static Matcher<Map<String, Object>> mapMatcher( final Object... alternatingKeyValue )
+    public static Matcher<Map<String,Object>> mapMatcher( final Object... alternatingKeyValue )
     {
-        final Map<String, Object> expected = MapUtil.map( alternatingKeyValue );
-        return new TypeSafeMatcher<Map<String, Object>>()
+        final Map<String,Object> expected = MapUtil.map( alternatingKeyValue );
+        return new TypeSafeMatcher<Map<String,Object>>()
         {
             @Override
-            protected boolean matchesSafely( Map<String, Object> item )
+            protected boolean matchesSafely( Map<String,Object> item )
             {
-                assertThat( item.entrySet(), equalTo(expected.entrySet()) );
+                assertThat( item.entrySet(), equalTo( expected.entrySet() ) );
                 return true;
             }
 

@@ -22,13 +22,12 @@ package org.neo4j.ndp.transport.socket;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
-
-import java.nio.ByteBuffer;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
+import java.nio.ByteBuffer;
 
 import org.neo4j.kernel.impl.util.HexPrinter;
 

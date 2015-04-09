@@ -30,25 +30,52 @@ public abstract class PackValue implements Iterable<PackValue>
 {
     public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
     public static final List<PackValue> EMPTY_LIST_OF_VALUES = Collections.EMPTY_LIST;
-    public static final Map<String, PackValue> EMPTY_MAP_OF_VALUES = Collections.EMPTY_MAP;
-    
-    public boolean isNull() { return false; }
+    public static final Map<String,PackValue> EMPTY_MAP_OF_VALUES = Collections.EMPTY_MAP;
 
-    public boolean isBoolean() { return false; }
+    public boolean isNull()
+    {
+        return false;
+    }
 
-    public boolean isInteger() { return false; }
+    public boolean isBoolean()
+    {
+        return false;
+    }
 
-    public boolean isFloat() { return false; }
+    public boolean isInteger()
+    {
+        return false;
+    }
 
-    public boolean isBytes() { return false; }
+    public boolean isFloat()
+    {
+        return false;
+    }
 
-    public boolean isText() { return false; }
+    public boolean isBytes()
+    {
+        return false;
+    }
 
-    public boolean isList() { return false; }
+    public boolean isText()
+    {
+        return false;
+    }
 
-    public boolean isMap() { return false; }
+    public boolean isList()
+    {
+        return false;
+    }
 
-    public boolean isStruct() { return false; }
+    public boolean isMap()
+    {
+        return false;
+    }
+
+    public boolean isStruct()
+    {
+        return false;
+    }
 
     public abstract boolean booleanValue();
 
@@ -64,11 +91,13 @@ public abstract class PackValue implements Iterable<PackValue>
 
     public abstract String stringValue();
 
-    public int size() {
+    public int size()
+    {
         return 1;
     }
 
-    public char signature() {
+    public char signature()
+    {
         return '\0';
     }
 
@@ -109,28 +138,52 @@ public abstract class PackValue implements Iterable<PackValue>
         public static final NullValue NULL_VALUE = new NullValue();
 
         @Override
-        public boolean isNull() { return true; }
+        public boolean isNull()
+        {
+            return true;
+        }
 
         @Override
-        public boolean booleanValue() { return false; }
+        public boolean booleanValue()
+        {
+            return false;
+        }
 
         @Override
-        public int intValue() { return 0; }
+        public int intValue()
+        {
+            return 0;
+        }
 
         @Override
-        public long longValue() { return 0; }
+        public long longValue()
+        {
+            return 0;
+        }
 
         @Override
-        public float floatValue() { return 0; }
+        public float floatValue()
+        {
+            return 0;
+        }
 
         @Override
-        public double doubleValue() { return 0; }
+        public double doubleValue()
+        {
+            return 0;
+        }
 
         @Override
-        public byte[] byteArrayValue() { return new byte[0]; }
+        public byte[] byteArrayValue()
+        {
+            return new byte[0];
+        }
 
         @Override
-        public String stringValue() { return null; }
+        public String stringValue()
+        {
+            return null;
+        }
 
         @Override
         public int size()
@@ -148,31 +201,58 @@ public abstract class PackValue implements Iterable<PackValue>
 
         private final boolean value;
 
-        private BooleanValue( boolean value ) { this.value = value; }
+        private BooleanValue( boolean value )
+        {
+            this.value = value;
+        }
 
         @Override
-        public boolean isBoolean() { return true; }
+        public boolean isBoolean()
+        {
+            return true;
+        }
 
         @Override
-        public boolean booleanValue() { return value; }
+        public boolean booleanValue()
+        {
+            return value;
+        }
 
         @Override
-        public int intValue() { return value ? 1 : 0; }
+        public int intValue()
+        {
+            return value ? 1 : 0;
+        }
 
         @Override
-        public long longValue() { return value ? 1 : 0; }
+        public long longValue()
+        {
+            return value ? 1 : 0;
+        }
 
         @Override
-        public float floatValue() { return value ? 1 : 0; }
+        public float floatValue()
+        {
+            return value ? 1 : 0;
+        }
 
         @Override
-        public double doubleValue() { return value ? 1 : 0; }
+        public double doubleValue()
+        {
+            return value ? 1 : 0;
+        }
 
         @Override
-        public byte[] byteArrayValue() { return null; }
+        public byte[] byteArrayValue()
+        {
+            return null;
+        }
 
         @Override
-        public String stringValue() { return value ? "true" : "false"; }
+        public String stringValue()
+        {
+            return value ? "true" : "false";
+        }
 
     }
 
@@ -181,6 +261,7 @@ public abstract class PackValue implements Iterable<PackValue>
         // Integer cache
         private static final IntegerValue[] positiveValues = new IntegerValue[256];
         private static final IntegerValue[] negativeValues = new IntegerValue[256];
+
         static
         {
             // Keep hold of small values so instances can be reused
@@ -217,34 +298,61 @@ public abstract class PackValue implements Iterable<PackValue>
                 }
             }
         }
-        
+
         private final long value;
 
-        private IntegerValue( long value ) { this.value = value; }
+        private IntegerValue( long value )
+        {
+            this.value = value;
+        }
 
         @Override
-        public boolean isInteger() { return true; }
+        public boolean isInteger()
+        {
+            return true;
+        }
 
         @Override
-        public boolean booleanValue() { return value != 0; }
+        public boolean booleanValue()
+        {
+            return value != 0;
+        }
 
         @Override
-        public int intValue() { return (int) value; }
+        public int intValue()
+        {
+            return (int) value;
+        }
 
         @Override
-        public long longValue() { return value; }
+        public long longValue()
+        {
+            return value;
+        }
 
         @Override
-        public float floatValue() { return (float) value; }
+        public float floatValue()
+        {
+            return (float) value;
+        }
 
         @Override
-        public double doubleValue() { return (double) value; }
+        public double doubleValue()
+        {
+            return (double) value;
+        }
 
         @Override
-        public byte[] byteArrayValue() { return new byte[0]; }
+        public byte[] byteArrayValue()
+        {
+            return new byte[0];
+        }
 
         @Override
-        public String stringValue() { return Long.toString( value ); }
+        public String stringValue()
+        {
+            return Long.toString( value );
+        }
 
     }
 
@@ -253,38 +361,65 @@ public abstract class PackValue implements Iterable<PackValue>
 
         private final double value;
 
-        public FloatValue( double value ) { this.value = value; }
+        public FloatValue( double value )
+        {
+            this.value = value;
+        }
 
         @Override
-        public boolean isFloat() { return true; }
+        public boolean isFloat()
+        {
+            return true;
+        }
 
         @Override
-        public boolean booleanValue() { return value != 0; }
+        public boolean booleanValue()
+        {
+            return value != 0;
+        }
 
         @Override
-        public int intValue() { return (int) value; }
+        public int intValue()
+        {
+            return (int) value;
+        }
 
         @Override
-        public long longValue() { return (long) value; }
+        public long longValue()
+        {
+            return (long) value;
+        }
 
         @Override
-        public float floatValue() { return (float) value; }
+        public float floatValue()
+        {
+            return (float) value;
+        }
 
         @Override
-        public double doubleValue() { return value; }
+        public double doubleValue()
+        {
+            return value;
+        }
 
         @Override
-        public byte[] byteArrayValue() { return new byte[0]; }
+        public byte[] byteArrayValue()
+        {
+            return new byte[0];
+        }
 
         @Override
-        public String stringValue() { return Double.toString( value ); }
+        public String stringValue()
+        {
+            return Double.toString( value );
+        }
 
     }
 
     public static class BytesValue extends PackValue
     {
         private static final BytesValue EMPTY_BYTES = new BytesValue( EMPTY_BYTE_ARRAY );
-        
+
         public static BytesValue getInstance( byte[] value )
         {
             if ( value.length == 0 )
@@ -296,34 +431,61 @@ public abstract class PackValue implements Iterable<PackValue>
                 return new BytesValue( value );
             }
         }
-        
+
         private final byte[] value;
 
-        private BytesValue( byte[] value ) { this.value = value; }
+        private BytesValue( byte[] value )
+        {
+            this.value = value;
+        }
 
         @Override
-        public boolean isBytes() { return true; }
+        public boolean isBytes()
+        {
+            return true;
+        }
 
         @Override
-        public boolean booleanValue() { return value.length > 0; }
+        public boolean booleanValue()
+        {
+            return value.length > 0;
+        }
 
         @Override
-        public int intValue() { throw cantConvertTo( "int" ); }
+        public int intValue()
+        {
+            throw cantConvertTo( "int" );
+        }
 
         @Override
-        public long longValue() { throw cantConvertTo( "long" ); }
+        public long longValue()
+        {
+            throw cantConvertTo( "long" );
+        }
 
         @Override
-        public float floatValue() { throw cantConvertTo( "float" ); }
+        public float floatValue()
+        {
+            throw cantConvertTo( "float" );
+        }
 
         @Override
-        public double doubleValue() { throw cantConvertTo( "double" ); }
+        public double doubleValue()
+        {
+            throw cantConvertTo( "double" );
+        }
 
         @Override
-        public byte[] byteArrayValue() { return value; }
+        public byte[] byteArrayValue()
+        {
+            return value;
+        }
 
         @Override
-        public String stringValue() { return new String( value ); }
+        public String stringValue()
+        {
+            return new String( value );
+        }
 
         @Override
         public PackValue get( int index )
@@ -347,7 +509,7 @@ public abstract class PackValue implements Iterable<PackValue>
 
         private UnsupportedOperationException cantConvertTo( String toTarget )
         {
-            return new UnsupportedOperationException( "Bytes value cannot be converted to "+toTarget+"." );
+            return new UnsupportedOperationException( "Bytes value cannot be converted to " + toTarget + "." );
         }
 
     }
@@ -370,35 +532,62 @@ public abstract class PackValue implements Iterable<PackValue>
         private final byte[] utf8;
         private String decoded;
 
-        private TextValue( char value ) { this( Character.toString( value ).getBytes( UTF_8 ) ); }
+        private TextValue( char value )
+        {
+            this( Character.toString( value ).getBytes( UTF_8 ) );
+        }
 
-        private TextValue( byte[] utf8 ) { this.utf8 = utf8; }
-
-        @Override
-        public boolean isText() { return true; }
-
-        @Override
-        public boolean booleanValue() { return stringValue().length() > 0; }
-
-        @Override
-        public int intValue() { return Integer.parseInt( stringValue() ); }
+        private TextValue( byte[] utf8 )
+        {
+            this.utf8 = utf8;
+        }
 
         @Override
-        public long longValue() { return Long.parseLong( stringValue() ); }
+        public boolean isText()
+        {
+            return true;
+        }
 
         @Override
-        public float floatValue() { return Float.parseFloat( stringValue() ); }
+        public boolean booleanValue()
+        {
+            return stringValue().length() > 0;
+        }
 
         @Override
-        public double doubleValue() { return Double.parseDouble( stringValue() ); }
+        public int intValue()
+        {
+            return Integer.parseInt( stringValue() );
+        }
 
         @Override
-        public byte[] byteArrayValue() { return utf8; }
+        public long longValue()
+        {
+            return Long.parseLong( stringValue() );
+        }
+
+        @Override
+        public float floatValue()
+        {
+            return Float.parseFloat( stringValue() );
+        }
+
+        @Override
+        public double doubleValue()
+        {
+            return Double.parseDouble( stringValue() );
+        }
+
+        @Override
+        public byte[] byteArrayValue()
+        {
+            return utf8;
+        }
 
         @Override
         public String stringValue()
         {
-            if(decoded == null)
+            if ( decoded == null )
             {
                 decoded = new String( utf8, UTF_8 );
             }
@@ -447,37 +636,70 @@ public abstract class PackValue implements Iterable<PackValue>
 
         private final List<PackValue> values;
 
-        private ListValue( List<PackValue> values ) { this.values = values; }
+        private ListValue( List<PackValue> values )
+        {
+            this.values = values;
+        }
 
         @Override
-        public boolean isList() { return true; }
+        public boolean isList()
+        {
+            return true;
+        }
 
         @Override
-        public boolean booleanValue() { return !values.isEmpty(); }
+        public boolean booleanValue()
+        {
+            return !values.isEmpty();
+        }
 
         @Override
-        public int intValue() { return 0; }
+        public int intValue()
+        {
+            return 0;
+        }
 
         @Override
-        public long longValue() { return 0; }
+        public long longValue()
+        {
+            return 0;
+        }
 
         @Override
-        public float floatValue() { return 0; }
+        public float floatValue()
+        {
+            return 0;
+        }
 
         @Override
-        public double doubleValue() { return 0; }
+        public double doubleValue()
+        {
+            return 0;
+        }
 
         @Override
-        public byte[] byteArrayValue() { return null; }
+        public byte[] byteArrayValue()
+        {
+            return null;
+        }
 
         @Override
-        public String stringValue() { return null; }
+        public String stringValue()
+        {
+            return null;
+        }
 
         @Override
-        public List<PackValue> listValue() { return values; }
+        public List<PackValue> listValue()
+        {
+            return values;
+        }
 
         @Override
-        public Iterator<PackValue> iterator() { return values.iterator(); }
+        public Iterator<PackValue> iterator()
+        {
+            return values.iterator();
+        }
 
         @Override
         public PackValue get( int index )
@@ -506,7 +728,7 @@ public abstract class PackValue implements Iterable<PackValue>
 
         private static final MapValue EMPTY_MAP = new MapValue( EMPTY_MAP_OF_VALUES );
 
-        public static MapValue getInstance( Map<String, PackValue> values )
+        public static MapValue getInstance( Map<String,PackValue> values )
         {
             if ( values.isEmpty() )
             {
@@ -520,34 +742,64 @@ public abstract class PackValue implements Iterable<PackValue>
 
         private final Map<String,PackValue> values;
 
-        private MapValue( Map<String,PackValue> values ) { this.values = values; }
+        private MapValue( Map<String,PackValue> values )
+        {
+            this.values = values;
+        }
 
         @Override
-        public boolean isMap() { return true; }
+        public boolean isMap()
+        {
+            return true;
+        }
 
         @Override
-        public boolean booleanValue() { return !values.isEmpty(); }
+        public boolean booleanValue()
+        {
+            return !values.isEmpty();
+        }
 
         @Override
-        public int intValue() { return 0; }
+        public int intValue()
+        {
+            return 0;
+        }
 
         @Override
-        public long longValue() { return 0; }
+        public long longValue()
+        {
+            return 0;
+        }
 
         @Override
-        public float floatValue() { return 0; }
+        public float floatValue()
+        {
+            return 0;
+        }
 
         @Override
-        public double doubleValue() { return 0; }
+        public double doubleValue()
+        {
+            return 0;
+        }
 
         @Override
-        public byte[] byteArrayValue() { return null; }
+        public byte[] byteArrayValue()
+        {
+            return null;
+        }
 
         @Override
-        public String stringValue() { return null; }
+        public String stringValue()
+        {
+            return null;
+        }
 
         @Override
-        public Map<String,PackValue> mapValue() { return values; }
+        public Map<String,PackValue> mapValue()
+        {
+            return values;
+        }
 
         @Override
         public PackValue get( String key )
@@ -588,34 +840,64 @@ public abstract class PackValue implements Iterable<PackValue>
         }
 
         @Override
-        public boolean isStruct() { return true; }
+        public boolean isStruct()
+        {
+            return true;
+        }
 
         @Override
-        public boolean booleanValue() { return !values.isEmpty(); }
+        public boolean booleanValue()
+        {
+            return !values.isEmpty();
+        }
 
         @Override
-        public int intValue() { return 0; }
+        public int intValue()
+        {
+            return 0;
+        }
 
         @Override
-        public long longValue() { return 0; }
+        public long longValue()
+        {
+            return 0;
+        }
 
         @Override
-        public float floatValue() { return 0; }
+        public float floatValue()
+        {
+            return 0;
+        }
 
         @Override
-        public double doubleValue() { return 0; }
+        public double doubleValue()
+        {
+            return 0;
+        }
 
         @Override
-        public byte[] byteArrayValue() { return null; }
+        public byte[] byteArrayValue()
+        {
+            return null;
+        }
 
         @Override
-        public String stringValue() { return null; }
+        public String stringValue()
+        {
+            return null;
+        }
 
         @Override
-        public List<PackValue> listValue() { return values; }
+        public List<PackValue> listValue()
+        {
+            return values;
+        }
 
         @Override
-        public Iterator<PackValue> iterator() { return values.iterator(); }
+        public Iterator<PackValue> iterator()
+        {
+            return values.iterator();
+        }
 
         @Override
         public PackValue get( int index )

@@ -294,6 +294,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
             out.print( record );
             buffer.clear();
             fileChannel.read( buffer, id * size );
+            buffer.flip();
             dumpHex( record, buffer, id, size );
         }
 
@@ -320,7 +321,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
 
     private boolean allZero( ByteBuffer buffer )
     {
-        for ( int i = 0; i < buffer.position(); i++ )
+        for ( int i = 0; i < buffer.limit(); i++ )
         {
             if ( buffer.get( i ) != 0 )
             {

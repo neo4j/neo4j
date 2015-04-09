@@ -28,11 +28,12 @@ import org.neo4j.stream.RecordStream;
  * A user session associated with a given {@link Sessions}. The majority of methods on this
  * interface are asynchronous, requesting that you provide a {@link Session.Callback} to be used to
  * publish the result.
- *
- * This arrangement reflects the asynchronous nature of sessions and enables several features. This includes out-of-band
+ * <p/>
+ * This arrangement reflects the asynchronous nature of sessions and enables several features. This includes
+ * out-of-band
  * messages such as warnings, forwarding statements over the network, and ignoring messages until errors have been
  * acknowledged by the client.
- *
+ * <p/>
  * While the operations are asynchronous, they are guaranteed to be executed in calling order. This allows you to call
  * several operations in sequence without waiting for the previous operation to complete.
  */
@@ -42,12 +43,15 @@ public interface Session extends AutoCloseable
      * Callback for handling the result of requests. For a given session, callbacks will be invoked serially,
      * in the order they were given. This means you may pass the same callback multiple times without waiting for a
      * reply, and are guaranteed that your callbacks will be called in order.
+     *
      * @param <V>
      * @param <A>
      */
-    interface Callback<V,A>
+    interface Callback<V, A>
     {
-        public static final Callback NO_OP = new Adapter(){ };
+        public static final Callback NO_OP = new Adapter()
+        {
+        };
 
         /** Called zero or more times with results, if the operation invoked yields results. */
         void result( V result, A attachment ) throws Exception;
@@ -61,7 +65,7 @@ public interface Session extends AutoCloseable
         /** Called when the state machine ignores an operation, because it is waiting for an error to be acknowledged */
         void ignored( A attachment );
 
-        public static abstract class Adapter<V,A> implements Callback<V,A>
+        public static abstract class Adapter<V, A> implements Callback<V,A>
         {
             @Override
             public void result( V result, A attachment ) throws Exception
@@ -94,12 +98,12 @@ public interface Session extends AutoCloseable
 
     /**
      * Run a statement, yielding a result stream which can be retrieved through pulling it in a subsequent call.
-     *
+     * <p/>
      * If there is a statement running already, all remaining items in its stream must be {@link #pullAll(Object,
      * Session.Callback) pulled} or {@link #discardAll(Object, Session.Callback)
      * discarded}.
      */
-    <A> void run( String statement, Map<String, Object> params, A attachment, Callback<StatementMetadata, A> callback );
+    <A> void run( String statement, Map<String,Object> params, A attachment, Callback<StatementMetadata,A> callback );
 
     /**
      * Retrieve all remaining entries in the current result. This is a distinct operation from 'run' in order to
@@ -119,8 +123,9 @@ public interface Session extends AutoCloseable
      * this method. The point of this is that we can do pipelining, sending multiple requests in one go and
      * optimistically assuming they will succeed. If any of them fail all subsequent requests are declined until the
      * client has acknowledged it has seen the error and has taken it into account for upcoming requests.
-     *
-     * Whenever an error has been acknowledged, the session will revert back to its intial state. Any ongoing statements
+     * <p/>
+     * Whenever an error has been acknowledged, the session will revert back to its intial state. Any ongoing
+     * statements
      * or transactions will have been rolled back and/or disposed of.
      */
     <A> void acknowledgeFailure( A attachment, Callback<Void,A> callback );

@@ -214,14 +214,14 @@ public class HexPrinter
     }
 
     /**
-     * Append the bytes in the byte buffer, starting from position 0, ending at the buffer's current position,
-     * into print stream
+     * Append the bytes in the byte buffer, from its current position to its limit into print stream. This operation
+     * will not move the buffers current position.
      * @param bytes
      * @return
      */
     public HexPrinter append( ByteBuffer bytes )
     {
-        return append( bytes, 0, bytes.position() );
+        return append( bytes, bytes.position(), bytes.remaining() );
     }
 
     /**
@@ -307,7 +307,7 @@ public class HexPrinter
      */
     public static String hex( ByteBuffer bytes )
     {
-        return hex( bytes, 0, bytes.position() );
+        return hex( bytes, bytes.position(), bytes.limit() );
     }
 
     /**

@@ -37,15 +37,15 @@ public class BufferedChannelInput implements PackInput
     public BufferedChannelInput reset( ReadableByteChannel ch )
     {
         this.channel = ch;
-        this.buffer.position(0);
-        this.buffer.limit(0);
+        this.buffer.position( 0 );
+        this.buffer.limit( 0 );
         return this;
     }
 
     @Override
     public PackInput ensure( int numBytes ) throws IOException
     {
-        if(!attempt( numBytes ))
+        if ( !attempt( numBytes ) )
         {
             throw new PackStream.EndOfStream( "Unexpected end of stream while trying to read " + numBytes + " bytes." );
         }
@@ -55,19 +55,19 @@ public class BufferedChannelInput implements PackInput
     @Override
     public PackInput attemptUpTo( int numBytes ) throws IOException
     {
-        attempt( Math.min(numBytes, buffer.capacity()) );
+        attempt( Math.min( numBytes, buffer.capacity() ) );
         return this;
     }
 
     @Override
     public boolean attempt( int numBytes ) throws IOException
     {
-        if(remaining() >= numBytes)
+        if ( remaining() >= numBytes )
         {
             return true;
         }
 
-        if(buffer.remaining() > 0)
+        if ( buffer.remaining() > 0 )
         {
             // If there is data remaining in the buffer, shift that remaining data to the beginning of the buffer.
             buffer.compact();
@@ -81,7 +81,8 @@ public class BufferedChannelInput implements PackInput
         do
         {
             count = channel.read( buffer );
-        } while( count >= 0 && (buffer.position() < numBytes && buffer.remaining() != 0));
+        }
+        while ( count >= 0 && (buffer.position() < numBytes && buffer.remaining() != 0) );
 
         buffer.flip();
         return buffer.remaining() >= numBytes;
@@ -126,13 +127,13 @@ public class BufferedChannelInput implements PackInput
     @Override
     public PackInput get( byte[] into, int offset, int toRead )
     {
-        buffer.get(into, offset, toRead);
+        buffer.get( into, offset, toRead );
         return this;
     }
 
     @Override
     public byte peek()
     {
-        return buffer.get(buffer.position());
+        return buffer.get( buffer.position() );
     }
 }

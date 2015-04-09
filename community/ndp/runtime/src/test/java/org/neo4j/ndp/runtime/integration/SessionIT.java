@@ -34,15 +34,16 @@ import static java.util.Collections.EMPTY_MAP;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.ndp.runtime.Session.Callback.NO_OP;
-import static org.neo4j.ndp.runtime.integration.SessionMatchers.streamContaining;
 import static org.neo4j.ndp.runtime.integration.SessionMatchers.failedWith;
+import static org.neo4j.ndp.runtime.integration.SessionMatchers.streamContaining;
 import static org.neo4j.ndp.runtime.integration.SessionMatchers.success;
 import static org.neo4j.runtime.internal.runner.StreamMatchers.eqRecord;
 
-@SuppressWarnings( "unchecked" )
+@SuppressWarnings("unchecked")
 public class SessionIT
 {
-    @Rule public TestSessions env = new TestSessions();
+    @Rule
+    public TestSessions env = new TestSessions();
     private final RecordingCallback responses = new RecordingCallback();
 
     @Test
@@ -62,7 +63,7 @@ public class SessionIT
         session.pullAll( null, responses );
 
         // Then
-        assertThat(responses.next(), streamContaining(
+        assertThat( responses.next(), streamContaining(
                 eqRecord( equalTo( "k" ) ) ) );
     }
 
@@ -73,14 +74,14 @@ public class SessionIT
         Session session = env.newSession();
 
         // And Given that I've ran and pulled one stream
-        session.run( "RETURN 1", EMPTY_MAP, null, Session.Callback.NO_OP  );
-        session.pullAll( null, Session.Callback.NO_OP  );
+        session.run( "RETURN 1", EMPTY_MAP, null, Session.Callback.NO_OP );
+        session.pullAll( null, Session.Callback.NO_OP );
 
         // When I run a new statement
         session.run( "RETURN 1", EMPTY_MAP, null, responses );
 
         // Then
-        assertThat( responses.next(), success());
+        assertThat( responses.next(), success() );
     }
 
     @Test
@@ -90,14 +91,14 @@ public class SessionIT
         Session session = env.newSession();
 
         // And Given that I've ran and pulled one stream
-        session.run( "RETURN 1", EMPTY_MAP, null, Session.Callback.NO_OP  );
+        session.run( "RETURN 1", EMPTY_MAP, null, Session.Callback.NO_OP );
         session.discardAll( null, Session.Callback.NO_OP );
 
         // When I run a new statement
         session.run( "RETURN 1", EMPTY_MAP, null, responses );
 
         // Then
-        assertThat( responses.next(), success());
+        assertThat( responses.next(), success() );
     }
 
     @Test
@@ -107,7 +108,7 @@ public class SessionIT
         Session session = env.newSession();
 
         // And Given that I've ran and pulled one stream
-        session.run( "BEGIN", EMPTY_MAP, null, Session.Callback.NO_OP  );
+        session.run( "BEGIN", EMPTY_MAP, null, Session.Callback.NO_OP );
         session.pullAll( null, Session.Callback.NO_OP );
         session.run( "COMMIT", EMPTY_MAP, null, NO_OP );
         session.pullAll( null, Session.Callback.NO_OP );
@@ -116,7 +117,7 @@ public class SessionIT
         session.run( "BEGIN", EMPTY_MAP, null, responses );
 
         // Then
-        assertThat( responses.next(), success());
+        assertThat( responses.next(), success() );
     }
 
     @Test
@@ -126,13 +127,13 @@ public class SessionIT
         Session session = env.newSession();
 
         // And Given that I've ran one statement
-        session.run( "RETURN 1", EMPTY_MAP, null, Session.Callback.NO_OP  );
+        session.run( "RETURN 1", EMPTY_MAP, null, Session.Callback.NO_OP );
 
         // When I run a new statement, before consuming the stream
         session.run( "RETURN 1", EMPTY_MAP, null, responses );
 
         // Then
-        assertThat( responses.next(), failedWith( Status.Request.Invalid ));
+        assertThat( responses.next(), failedWith( Status.Request.Invalid ) );
     }
 
     @Test
@@ -142,14 +143,14 @@ public class SessionIT
         Session session = env.newSession();
 
         // And Given that I've ran and pulled one stream
-        session.run( "RETURN 1", EMPTY_MAP, null, Session.Callback.NO_OP  );
+        session.run( "RETURN 1", EMPTY_MAP, null, Session.Callback.NO_OP );
         session.pullAll( null, Session.Callback.NO_OP );
 
         // When I attempt to pull more items from the stream
         session.pullAll( null, responses );
 
         // Then
-        assertThat( responses.next(), failedWith( Status.Request.Invalid ));
+        assertThat( responses.next(), failedWith( Status.Request.Invalid ) );
     }
 
     @Test
@@ -159,14 +160,14 @@ public class SessionIT
         Session session = env.newSession();
 
         // And Given that I've ran and pulled one stream
-        session.run( "RETURN 1", EMPTY_MAP, null, Session.Callback.NO_OP  );
+        session.run( "RETURN 1", EMPTY_MAP, null, Session.Callback.NO_OP );
         session.pullAll( null, Session.Callback.NO_OP );
 
         // When I attempt to pull more items from the stream
         session.discardAll( null, responses );
 
         // Then
-        assertThat( responses.next(), failedWith( Status.Request.Invalid ));
+        assertThat( responses.next(), failedWith( Status.Request.Invalid ) );
     }
 
     @Test
@@ -176,14 +177,14 @@ public class SessionIT
         Session session = env.newSession();
 
         // And Given that I've ran and pulled one stream
-        session.run( "RETURN 1", EMPTY_MAP, null, Session.Callback.NO_OP  );
+        session.run( "RETURN 1", EMPTY_MAP, null, Session.Callback.NO_OP );
         session.discardAll( null, Session.Callback.NO_OP );
 
         // When I attempt to pull more items from the stream
         session.discardAll( null, responses );
 
         // Then
-        assertThat( responses.next(), failedWith( Status.Request.Invalid ));
+        assertThat( responses.next(), failedWith( Status.Request.Invalid ) );
     }
 
     @Test
@@ -193,14 +194,14 @@ public class SessionIT
         Session session = env.newSession();
 
         // And Given that I've ran and pulled one stream
-        session.run( "RETURN 1", EMPTY_MAP, null, Session.Callback.NO_OP  );
+        session.run( "RETURN 1", EMPTY_MAP, null, Session.Callback.NO_OP );
         session.discardAll( null, Session.Callback.NO_OP );
 
         // When I attempt to pull more items from the stream
         session.pullAll( null, responses );
 
         // Then
-        assertThat( responses.next(), failedWith( Status.Request.Invalid ));
+        assertThat( responses.next(), failedWith( Status.Request.Invalid ) );
     }
 
     @Test
@@ -219,7 +220,7 @@ public class SessionIT
         assertThat( responses.next(), success() );
 
         // But the stop should have failed, since it implicitly triggers commit and thus triggers a failure
-        assertThat(responses.next(), failedWith( Status.Transaction.ValidationFailed ) );
+        assertThat( responses.next(), failedWith( Status.Transaction.ValidationFailed ) );
     }
 
     @Test
@@ -247,8 +248,8 @@ public class SessionIT
         } );
 
         // Then
-        assertThat( error.get(), equalTo(new Neo4jError( Status.General.UnknownFailure,
-                "An unexpected failure occurred: 'Ooopsies!'." )) );
+        assertThat( error.get(), equalTo( new Neo4jError( Status.General.UnknownFailure,
+                "An unexpected failure occurred: 'Ooopsies!'." ) ) );
     }
 
     @Test
@@ -263,15 +264,15 @@ public class SessionIT
 
         // When I issue a statement in a separate session
         Object[] stream = runAndPull( secondSession, "CREATE (a:Person) RETURN id(a)" );
-        long id = (long) ((Record)stream[0]).fields()[0];
+        long id = (long) ((Record) stream[0]).fields()[0];
 
         // And when I roll back that first session transaction
         runAndPull( firstSession, "ROLLBACK" );
 
         // Then the two should not have interfered with each other
         stream = runAndPull( secondSession, "MATCH (a:Person) WHERE id(a) = " + id + " RETURN COUNT(*)" );
-        assertThat( ((Record)stream[0]).fields()[0], equalTo( (Object) 1L ) );
-        
+        assertThat( ((Record) stream[0]).fields()[0], equalTo( (Object) 1L ) );
+
     }
 
     @Test
@@ -290,7 +291,7 @@ public class SessionIT
         Object[] stream = runAndPull( session, "RETURN 1" );
 
         // Then
-        assertThat( ((Record)stream[0]).fields()[0], equalTo((Object) 1L ) );
+        assertThat( ((Record) stream[0]).fields()[0], equalTo( (Object) 1L ) );
 
     }
 

@@ -37,20 +37,20 @@ public class CypherStatementRunner implements StatementRunner
 
     @Override
     public RecordStream run( final SessionState ctx, final String statement,
-                             final Map<String, Object> params ) throws KernelException
+            final Map<String,Object> params ) throws KernelException
     {
         // Temporary until we move parsing to cypher, or run a parser up here
-        if(statement.equalsIgnoreCase( "begin" ))
+        if ( statement.equalsIgnoreCase( "begin" ) )
         {
             ctx.beginTransaction();
             return RecordStream.EMPTY;
         }
-        else if(statement.equalsIgnoreCase( "commit" ))
+        else if ( statement.equalsIgnoreCase( "commit" ) )
         {
             ctx.commitTransaction();
             return RecordStream.EMPTY;
         }
-        else if(statement.equalsIgnoreCase( "rollback" ))
+        else if ( statement.equalsIgnoreCase( "rollback" ) )
         {
             ctx.rollbackTransaction();
             return RecordStream.EMPTY;

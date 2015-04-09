@@ -47,19 +47,21 @@ public class NDPKernelExtension extends KernelExtensionFactory<NDPKernelExtensio
 {
     public static class Settings
     {
-        @Description( "Max time that sessions can be idle, after this interval a session will get closed." )
-        public static final Setting<Boolean> ndp_enabled = setting("experimental.ndp.enabled", BOOLEAN,
+        @Description("Max time that sessions can be idle, after this interval a session will get closed.")
+        public static final Setting<Boolean> ndp_enabled = setting( "experimental.ndp.enabled", BOOLEAN,
                 "false" );
 
-        @Description( "Host and port for the Neo4j Data Protocol http transport" )
+        @Description("Host and port for the Neo4j Data Protocol http transport")
         public static final Setting<HostnamePort> ndp_address =
-                setting("dbms.ndp.address", HOSTNAME_PORT, "localhost:7687" );
+                setting( "dbms.ndp.address", HOSTNAME_PORT, "localhost:7687" );
     }
 
     public interface Dependencies
     {
         LogService logService();
+
         Config config();
+
         GraphDatabaseService db();
     }
 
@@ -78,7 +80,7 @@ public class NDPKernelExtension extends KernelExtensionFactory<NDPKernelExtensio
         final HostnamePort address = config.get( Settings.ndp_address );
         final LifeSupport life = new LifeSupport();
 
-        if(config.get( Settings.ndp_enabled ))
+        if ( config.get( Settings.ndp_enabled ) )
         {
             final Sessions env = life.add( new StandardSessions( api, log ) );
 
