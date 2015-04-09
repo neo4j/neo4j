@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
+import org.neo4j.cypher.internal.compiler.v2_3.symbols.TypeSpec
+
 import scala.collection.mutable
 
 object SemanticTable {
@@ -36,6 +38,20 @@ class SemanticTable(
     val resolvedPropertyKeyNames: mutable.Map[String, PropertyKeyId] = new mutable.HashMap[String, PropertyKeyId],
     val resolvedRelTypeNames: mutable.Map[String, RelTypeId] = new mutable.HashMap[String, RelTypeId]
   ) extends Cloneable {
+
+  def getTypeFor(s: String): TypeSpec = try {
+    val reducedType = types.collect {
+      case (Identifier(name), typ) if name == s => typ.specified
+    }.reduce(_ & _)
+
+    if (reducedType.isEmpty)
+      throw new InternalException(s"This semantic table contains conflicting type information for identifier $s")
+
+    reducedType
+  } catch {
+    case e: UnsupportedOperationException =>
+      throw new InternalException(s"Did not find any type information for identifier $s", e)
+  }
 
   def isNode(expr: Identifier) = types(expr).specified == symbols.CTNode.invariant
 
