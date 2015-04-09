@@ -28,9 +28,9 @@ trait QueryPlanner {
   def plan(plannerQuery: UnionQuery)(implicit context: LogicalPlanningContext): LogicalPlan
 }
 
-class DefaultQueryPlanner(planRewriter: Rewriter,
-                          config: QueryPlannerConfiguration = QueryPlannerConfiguration.default,
-                          expressionRewriterFactory: (LogicalPlanningContext => Rewriter) = ExpressionRewriterFactory)
+case class DefaultQueryPlanner(planRewriter: Rewriter,
+                               config: QueryPlannerConfiguration = QueryPlannerConfiguration.default,
+                               planSingleQuery: LogicalPlanningFunction1[PlannerQuery, LogicalPlan] = planSingleQueryX())
   extends QueryPlanner {
 
   def plan(unionQuery: UnionQuery)(implicit context: LogicalPlanningContext): LogicalPlan = unionQuery match {
@@ -53,50 +53,12 @@ class DefaultQueryPlanner(planRewriter: Rewriter,
     else
       unionPlan
   }
+}
 
-  protected def planSingleQuery(query: PlannerQuery)(implicit context: LogicalPlanningContext): LogicalPlan = {
-    val partPlan = planPart(query, context, None)
+case class planEventHorizonX(config: QueryPlannerConfiguration = QueryPlannerConfiguration.default)
+  extends LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] {
 
-    val projectedPlan = planEventHorizon(query, partPlan)
-    val projectedContext = context.recurse(projectedPlan)
-    val expressionRewriter = expressionRewriterFactory(projectedContext)
-    val completePlan = projectedPlan.endoRewrite(expressionRewriter)
-
-    val finalPlan = planWithTail(completePlan, query.tail)(projectedContext)
-    verifyBestPlan(finalPlan, query)
-  }
-
-  private def planWithTail(pred: LogicalPlan, remaining: Option[PlannerQuery])(implicit context: LogicalPlanningContext): LogicalPlan =
-    remaining match {
-      case Some(query) =>
-        val lhs = pred
-        val lhsContext = context.recurse(lhs)
-        val rhs = planPart(query, lhsContext, Some(context.logicalPlanProducer.planQueryArgumentRow(query.graph)))
-        val applyPlan = context.logicalPlanProducer.planTailApply(lhs, rhs)
-
-        val applyContext = lhsContext.recurse(applyPlan)
-        val projectedPlan = planEventHorizon(query, applyPlan)(applyContext)
-
-        val projectedContext = applyContext.recurse(projectedPlan)
-        val expressionRewriter = expressionRewriterFactory(projectedContext)
-        val completePlan = projectedPlan.endoRewrite(expressionRewriter)
-
-        // planning nested expressions doesn't change outer cardinality
-        planWithTail(completePlan, query.tail)(projectedContext)
-
-      case None =>
-        pred
-    }
-
-  private def planPart(query: PlannerQuery, context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = {
-    val ctx = query.preferredStrictness match {
-      case Some(mode) if context.input.strictness.exists(mode == _) => context.withStrictness(mode)
-      case _ => context
-    }
-    ctx.strategy.plan(query.graph)(ctx, leafPlan)
-  }
-
-  private def planEventHorizon(query: PlannerQuery, plan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan = {
+  override def apply(query: PlannerQuery, plan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan = {
     val selectedPlan = config.applySelections(plan, query.graph)
     val projectedPlan = query.horizon match {
       case aggregatingProjection: AggregatingQueryProjection =>
@@ -118,3 +80,59 @@ class DefaultQueryPlanner(planRewriter: Rewriter,
   }
 }
 
+case class planWithTailX(expressionRewriterFactory: (LogicalPlanningContext => Rewriter) = ExpressionRewriterFactory,
+                        planEventHorizon: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = planEventHorizonX())
+  extends LogicalPlanningFunction2[LogicalPlan, Option[PlannerQuery], LogicalPlan] {
+
+  override def apply(pred: LogicalPlan, remaining: Option[PlannerQuery])(implicit context: LogicalPlanningContext): LogicalPlan = {
+    remaining match {
+      case Some(query) =>
+        val lhs = pred
+        val lhsContext = context.recurse(lhs)
+        val rhs = planPart(query, lhsContext, Some(context.logicalPlanProducer.planQueryArgumentRow(query.graph)))
+        val applyPlan = context.logicalPlanProducer.planTailApply(lhs, rhs)
+
+        val applyContext = lhsContext.recurse(applyPlan)
+        val projectedPlan = planEventHorizon(query, applyPlan)(applyContext)
+
+        val projectedContext = applyContext.recurse(projectedPlan)
+        val expressionRewriter = expressionRewriterFactory(projectedContext)
+        val completePlan = projectedPlan.endoRewrite(expressionRewriter)
+
+        // planning nested expressions doesn't change outer cardinality
+        apply(completePlan, query.tail)(projectedContext)
+
+      case None =>
+        pred
+    }
+  }
+}
+
+case object planPart extends ((PlannerQuery, LogicalPlanningContext, Option[LogicalPlan]) => LogicalPlan) {
+
+  def apply(query: PlannerQuery, context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = {
+    val ctx = query.preferredStrictness match {
+      case Some(mode) if context.input.strictness.exists(mode == _) => context.withStrictness(mode)
+      case _ => context
+    }
+    ctx.strategy.plan(query.graph)(ctx, leafPlan)
+  }
+}
+
+case class planSingleQueryX(planPart: (PlannerQuery, LogicalPlanningContext, Option[LogicalPlan]) => LogicalPlan = planPart,
+                           planEventHorizon: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = planEventHorizonX(),
+                           expressionRewriterFactory: (LogicalPlanningContext => Rewriter) = ExpressionRewriterFactory,
+                           planWithTail: LogicalPlanningFunction2[LogicalPlan, Option[PlannerQuery], LogicalPlan] = planWithTailX()) extends LogicalPlanningFunction1[PlannerQuery, LogicalPlan] {
+
+  override def apply(in: PlannerQuery)(implicit context: LogicalPlanningContext): LogicalPlan = {
+    val partPlan = planPart(in, context, None)
+
+    val projectedPlan = planEventHorizon(in, partPlan)
+    val projectedContext = context.recurse(projectedPlan)
+    val expressionRewriter = expressionRewriterFactory(projectedContext)
+    val completePlan = projectedPlan.endoRewrite(expressionRewriter)
+
+    val finalPlan = planWithTail(completePlan, in.tail)(projectedContext)
+    verifyBestPlan(finalPlan, in)
+  }
+}
