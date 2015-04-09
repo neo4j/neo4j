@@ -191,6 +191,7 @@ public final class Strings
         }
     }
 
+
     /**
      * Use this to standardize the width of some text output to all be left-justified and space-padded
      * on the right side to fill up the given column width.
@@ -215,5 +216,21 @@ public final class Strings
     public static String rjust( String str, int columnWidth )
     {
         return String.format( "%" + columnWidth + "s", str );
+    }
+
+    /**
+     * Return a long string constructed from input strings, where the input strings are separated with
+     * system dependent line ending.
+     * @param content
+     * @return
+     */
+    public static String lines( String... content )
+    {
+        StringBuilder result = new StringBuilder();
+        for ( String line : content )
+        {
+            result.append( line ).append( System.getProperty( "line.separator" ) );
+        }
+        return result.toString();
     }
 }

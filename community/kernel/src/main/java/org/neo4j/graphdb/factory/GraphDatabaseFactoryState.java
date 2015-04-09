@@ -25,8 +25,8 @@ import java.util.List;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
 
@@ -51,7 +51,6 @@ public class GraphDatabaseFactoryState
     {
         settingsClasses = new ArrayList<>( previous.settingsClasses );
         kernelExtensions = new ArrayList<>( previous.kernelExtensions );
-        monitors = previous.monitors;
         monitors = previous.monitors;
         userLogProvider = previous.userLogProvider;
     }

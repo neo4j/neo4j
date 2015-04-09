@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <parent>
+        <groupId>org.neo4j</groupId>
+        <artifactId>parent</artifactId>
+        <version>2.3-SNAPSHOT</version>
+        <relativePath>..</relativePath>
+    </parent>
+
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.neo4j.build</groupId>
+    <artifactId>neo4j-driver-tools</artifactId>
+
+    <packaging>pom</packaging>
+    <name>Neo4j - Driver Tools</name>
+    <description>Neo4j - Driver Tools</description>
+    <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+
+    <modules>
+        <module>driver-test-server</module>
+    </modules>
+
+    <properties>
+        <short-name>driver-tools-build</short-name>
+    </properties>
+
+    <scm>
+        <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
+        <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
+        <url>https://github.com/neo4j/neo4j/tree/master/driver</url>
+    </scm>
+
+    <licenses>
+        <license>
+            <name>GNU Affero General Public License, Version 3</name>
+            <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
+            <comments>The software ("Software") developed and owned by Network Engine for
+                Objects in Lund AB (referred to in this notice as "Neo Technology") is
+                licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3 to all
+                third parties and that license is included below.
+
+                However, if you have executed an End User Software License and Services
+                Agreement or an OEM Software License and Support Services Agreement, or
+                another commercial license agreement with Neo Technology or one of its
+                affiliates (each, a "Commercial Agreement"), the terms of the license in
+                such Commercial Agreement will supersede the GNU AFFERO GENERAL PUBLIC
+                LICENSE Version 3 and you may use the Software solely pursuant to the
+                terms of the relevant Commercial Agreement.
+            </comments>
+        </license>
+    </licenses>
+
+    <dependencies>
+        <!-- Test dependencies -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-kernel</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <charset>UTF-8</charset>
+                    <docencoding>UTF-8</docencoding>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>aggregate</id>
+                        <goals>
+                            <goal>aggregate</goal>
+                        </goals>
+                        <phase>site</phase>
+                        <configuration>
+                            <charset>UTF-8</charset>
+                            <docencoding>UTF-8</docencoding>
+                            <encoding>UTF-8</encoding>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
+

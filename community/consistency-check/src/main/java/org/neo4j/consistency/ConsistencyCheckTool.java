@@ -36,6 +36,7 @@ import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.kernel.impl.recovery.StoreRecoverer;
 import org.neo4j.logging.LogProvider;
 
+import static org.neo4j.helpers.Strings.lines;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ConsistencyCheckTool
@@ -187,16 +188,6 @@ public class ConsistencyCheckTool
                 "         <neo4j.properties> is the location of an optional properties file",
                 "                            containing tuning parameters for the consistency check"
         );
-    }
-
-    private static String lines( String... content )
-    {
-        StringBuilder result = new StringBuilder();
-        for ( String line : content )
-        {
-            result.append( line ).append( System.getProperty( "line.separator" ) );
-        }
-        return result.toString();
     }
 
     class ToolFailureException extends Exception
