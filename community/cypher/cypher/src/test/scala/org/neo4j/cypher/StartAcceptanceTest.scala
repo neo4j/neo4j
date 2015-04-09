@@ -94,4 +94,85 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     result.toList should equal(List(Map("n"-> node)))
   }
+
+  test("Should return unique relationship on rel-id") {
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+    val ab = relate(a, b)
+    val ac = relate(a, c)
+    val result = executeWithRulePlanner(
+      """start a=node(0), ab=relationship(0)
+        |match (a)-[ab]->(b)
+        |return b
+      """.stripMargin)
+
+    result.toList should equal(List(Map("b" -> b)))
+  }
+
+  test("Should return unique node on node-id") {
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+    val ab = relate(a, b)
+    val ac = relate(a, c)
+    val result = executeWithRulePlanner(
+      """start a=node(0), b=node(1)
+        |match (a)-[ab]->(b)
+        |return b
+      """.stripMargin)
+
+    result.toList should equal(List(Map("b" -> b)))
+  }
+
+  test("Should return unique relationship on multiple rel-id") {
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+    val d = createNode()
+    val e = createNode()
+    val ab = relate(a, b)
+    val ac = relate(a, c)
+    val bd = relate(b, d)
+    val ce = relate(c, e)
+    val result = executeWithRulePlanner(
+      """start a=node(0), ab=relationship(0), bd=relationship(2)
+        |match (a)-[ab]->(b)-[bd]->(d)
+        |return b, d
+      """.stripMargin)
+
+    result.toList should equal(List(Map("b" -> b, "d" -> d)))
+  }
+
+  test("Should return unique relationship on rel-ids") {
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+    val d = createNode()
+    val ab = relate(a, b)
+    val ac = relate(a, c)
+    val ad = relate(a, d)
+    val result = executeWithRulePlanner(
+      """start a=node(0), ab=relationship(0, 1)
+        |match (a)-[ab]->(b)
+        |return b
+      """.stripMargin)
+
+    result.toList should equal(List(Map("b" -> c), Map("b" -> b)))
+  }
+
+  test("should return correct results on combined node and relationship index starts") {
+    val node = createNode()
+    val resultNode = createNode()
+    val rel = relate(node, resultNode)
+    relate(node, createNode())
+
+    graph.inTx {
+      graph.index.forNodes("nodes").add(node, "key", "A")
+      graph.index.forRelationships("rels").add(rel, "key", "B")
+    }
+
+    val result = executeWithRulePlanner("START n=node:nodes(key = 'A'), r=rel:rels(key = 'B') MATCH (n)-[r]->(b) RETURN b")
+    result.toList should equal(List(Map("b" -> resultNode)))
+  }
 }
