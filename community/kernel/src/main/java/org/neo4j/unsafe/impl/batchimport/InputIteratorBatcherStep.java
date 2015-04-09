@@ -19,24 +19,26 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
-import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.unsafe.impl.batchimport.staging.IteratorBatcherStep;
+import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
-public class Batch<INPUT,RECORD extends PrimitiveRecord>
+/**
+ * {@link IteratorBatcherStep} that is tailored to the {@link BatchImporter} as it produces {@link Batch}
+ * objects.
+ */
+public class InputIteratorBatcherStep<T> extends IteratorBatcherStep<T>
 {
-    public final INPUT[] input;
-    public RECORD[] records;
-    public int[] propertyBlocksLengths;
-    // This is a special succer. All property blocks for ALL records in this batch sits in this
-    // single array. The number of property blocks for a given record sits in propertyBlocksLengths
-    // using the same index as the record. So it's a collective size suitable for complete looping
-    // over the batch.
-    public PropertyBlock[] propertyBlocks;
-    // Used by relationship staged to query idMapper and store ids here
-    public long[] ids;
-
-    public Batch( INPUT[] input )
+    public InputIteratorBatcherStep( StageControl control, Configuration config,
+            InputIterator<T> data, Class<T> itemClass )
     {
-        this.input = input;
+        super( control, config, data, itemClass );
+    }
+
+    @SuppressWarnings( { "unchecked", "rawtypes" } )
+    @Override
+    protected Object nextBatchOrNull( long ticket, int batchSize )
+    {
+        Object batch = super.nextBatchOrNull( ticket, batchSize );
+        return batch != null ? new Batch( (Object[]) batch ) : null;
     }
 }

@@ -25,7 +25,8 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
 import org.neo4j.kernel.impl.util.MovingAverage;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
-import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
+import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
+import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
@@ -39,18 +40,17 @@ import static java.util.Arrays.copyOf;
  * since property encoding is potentially the most costly step in this {@link Stage}.
  */
 public class PropertyEncoderStep<RECORD extends PrimitiveRecord,INPUT extends InputEntity>
-        extends ExecutorServiceStep<Batch<INPUT,RECORD>>
+        extends ProcessorStep<Batch<INPUT,RECORD>>
 {
     private final BatchingPropertyKeyTokenRepository propertyKeyHolder;
     private final int arrayDataSize;
     private final int stringDataSize;
     private final MovingAverage averageBlocksPerBatch;
 
-    protected PropertyEncoderStep( StageControl control, Configuration config, int numberOfExecutors,
-            BatchingPropertyKeyTokenRepository propertyKeyHolder,
-            PropertyStore propertyStore )
+    protected PropertyEncoderStep( StageControl control, Configuration config,
+            BatchingPropertyKeyTokenRepository propertyKeyHolder, PropertyStore propertyStore )
     {
-        super( control, "PROPERTIES", config.workAheadSize(), config.movingAverageSize(), numberOfExecutors, true );
+        super( control, "PROPERTIES", config, 0 );
         this.propertyKeyHolder = propertyKeyHolder;
         this.arrayDataSize = propertyStore.getArrayStore().dataSize();
         this.stringDataSize = propertyStore.getStringStore().dataSize();
@@ -58,7 +58,7 @@ public class PropertyEncoderStep<RECORD extends PrimitiveRecord,INPUT extends In
     }
 
     @Override
-    protected Object process( long ticket, Batch<INPUT,RECORD> batch )
+    protected void process( Batch<INPUT,RECORD> batch, BatchSender sender )
     {
         RelativeIdRecordAllocator stringAllocator = new RelativeIdRecordAllocator( stringDataSize );
         RelativeIdRecordAllocator arrayAllocator = new RelativeIdRecordAllocator( arrayDataSize );
@@ -69,6 +69,7 @@ public class PropertyEncoderStep<RECORD extends PrimitiveRecord,INPUT extends In
                 ? batch.input.length
                 : blockCountGuess + batch.input.length / 20 /*some upper margin*/];
         int blockCursor = 0;
+        int[] lengths = new int[batch.input.length];
 
         for ( int i = 0; i < batch.input.length; i++ )
         {
@@ -86,12 +87,13 @@ public class PropertyEncoderStep<RECORD extends PrimitiveRecord,INPUT extends In
                 }
                 propertyKeyHolder.propertyKeysAndValues( propertyBlocks, blockCursor,
                         input.properties(), propertyCreator );
-                batch.propertyBlocksLengths[i] = count;
+                lengths[i] = count;
                 blockCursor += count;
             }
         }
         batch.propertyBlocks = propertyBlocks;
+        batch.propertyBlocksLengths = lengths;
         averageBlocksPerBatch.add( blockCursor );
-        return batch;
+        sender.send( batch );
     }
 }

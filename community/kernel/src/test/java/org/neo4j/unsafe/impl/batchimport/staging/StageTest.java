@@ -24,10 +24,11 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 
 import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.unsafe.impl.batchimport.staging.Configuration.DEFAULT;
 
 public class StageTest
 {
@@ -35,18 +36,30 @@ public class StageTest
     public void shouldReceiveBatchesInOrder() throws Exception
     {
         // GIVEN
-        Configuration config = new Configuration.Default();
+        Configuration config = new Configuration.Overridden( DEFAULT )
+        {
+            @Override
+            public int batchSize()
+            {
+                return 10;
+            }
+
+            @Override
+            public int workAheadSize()
+            {
+                return 20;
+            }
+        };
         Stage stage = new Stage( "Test stage", config, true );
-        int batchSize = 10;
         long batches = 1000;
-        final long items = batches*batchSize;
-        stage.add( new ProducerStep<Object>( stage.control(), "Producer", batchSize, 100 )
+        final long items = batches*config.batchSize();
+        stage.add( new ProducerStep( stage.control(), "Producer", config )
         {
             private final Object theObject = new Object();
             private long i;
 
             @Override
-            protected Object nextBatchOrNull( int batchSize )
+            protected Object nextBatchOrNull( long ticket, int batchSize )
             {
                 if ( i >= items )
                 {
@@ -62,10 +75,10 @@ public class StageTest
 
         for ( int i = 0; i < 3; i++ )
         {
-            stage.add( new ReceiveOrderAssertingStep( stage.control(), "Step" + i, 20, 2, i ) );
+            stage.add( new ReceiveOrderAssertingStep( stage.control(), "Step" + i, config, i, false ) );
         }
 
-        stage.add( new LastReceiveOrderAssertingStep( stage.control(), "Final step", 20, 2, 0 ) );
+        stage.add( new ReceiveOrderAssertingStep( stage.control(), "Final step", config, 0, true ) );
 
         // WHEN
         StageExecution execution = stage.execute();
@@ -74,32 +87,36 @@ public class StageTest
         // THEN
         for ( Step<?> step : execution.steps() )
         {
-            assertEquals( batches, step.stats().stat( Keys.done_batches ).asLong() );
+            assertEquals( "For " + step, batches, step.stats().stat( Keys.done_batches ).asLong() );
         }
         stage.close();
     }
 
-    private static class ReceiveOrderAssertingStep extends ExecutorServiceStep<Object>
+    private static class ReceiveOrderAssertingStep extends ProcessorStep<Object>
     {
         private final AtomicLong lastTicket = new AtomicLong();
         private final long processingTime;
+        private final boolean endOfLine;
 
-        ReceiveOrderAssertingStep( StageControl control, String name, int workAheadSize, int numberOfExecutors,
-                long processingTime )
+        ReceiveOrderAssertingStep( StageControl control, String name, Configuration config,
+                long processingTime, boolean endOfLine )
         {
-            super( control, name, workAheadSize, 100, numberOfExecutors );
+            super( control, name, config, 1 );
             this.processingTime = processingTime;
+            this.endOfLine = endOfLine;
+            start( true );
+            incrementNumberOfProcessors(); // we start off with two
         }
 
         @Override
         public long receive( long ticket, Object batch )
         {
-            assertEquals( lastTicket.incrementAndGet(), ticket );
+            assertEquals( "For " + batch + " in " + name(), lastTicket.getAndIncrement(), ticket );
             return super.receive( ticket, batch );
         }
 
         @Override
-        protected Object process( long ticket, Object batch )
+        protected void process( Object batch, BatchSender sender )
         {
             try
             {
@@ -109,23 +126,11 @@ public class StageTest
             {
                 throw new RuntimeException( e );
             }
-            return batch;
-        }
-    }
 
-    private static class LastReceiveOrderAssertingStep extends ReceiveOrderAssertingStep
-    {
-        LastReceiveOrderAssertingStep( StageControl control, String name, int workAheadSize,
-                int numberOfExecutors, long processingTime )
-        {
-            super( control, name, workAheadSize, numberOfExecutors, processingTime );
-        }
-
-        @Override
-        protected Object process( long ticket, Object batch )
-        {
-            super.process( ticket, batch );
-            return null;
+            if ( !endOfLine )
+            {
+                sender.send( batch );
+            }
         }
     }
 }

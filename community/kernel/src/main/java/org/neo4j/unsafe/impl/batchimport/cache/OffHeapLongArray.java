@@ -102,4 +102,10 @@ public class OffHeapLongArray extends OffHeapNumberArray implements LongArray
             UnsafeUtil.putLong( toAddress, fromValue );
         }
     }
+
+    @Override
+    public LongArray fixate()
+    {
+        return this;
+    }
 }

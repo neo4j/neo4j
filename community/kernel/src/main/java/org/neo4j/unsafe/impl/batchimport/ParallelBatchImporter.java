@@ -34,8 +34,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
-import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
-import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLinkImpl;
+import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
@@ -56,7 +55,7 @@ import static java.lang.System.currentTimeMillis;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.WriterFactories.parallel;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
-import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseExecution;
+import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 
 /**
@@ -121,7 +120,7 @@ public class ParallelBatchImporter implements BatchImporter
 
         // Things that we need to close later. The reason they're not in the try-with-resource statement
         // is that we need to close, and set to null, at specific points preferably. So use good ol' finally block.
-        NodeRelationshipLink nodeRelationshipLink = null;
+        NodeRelationshipCache nodeRelationshipCache = null;
         NodeLabelsCache nodeLabelsCache = null;
         long startTime = currentTimeMillis();
         boolean hasBadRelationships = false;
@@ -139,8 +138,8 @@ public class ParallelBatchImporter implements BatchImporter
             // Some temporary caches and indexes in the import
             IdMapper idMapper = input.idMapper();
             IdGenerator idGenerator = input.idGenerator();
-            nodeRelationshipLink = new NodeRelationshipLinkImpl( AUTO, config.denseNodeThreshold() );
-            StatsProvider memoryUsageStats = new MemoryUsageStatsProvider( nodeRelationshipLink, idMapper );
+            nodeRelationshipCache = new NodeRelationshipCache( AUTO, config.denseNodeThreshold() );
+            StatsProvider memoryUsageStats = new MemoryUsageStatsProvider( nodeRelationshipCache, idMapper );
             InputIterable<InputNode> nodes = input.nodes();
             InputIterable<InputRelationship> relationships = input.relationships();
 
@@ -150,7 +149,7 @@ public class ParallelBatchImporter implements BatchImporter
 
             // Stage 2 -- calculate dense node threshold
             CalculateDenseNodesStage calculateDenseNodesStage = new CalculateDenseNodesStage( config, relationships,
-                    nodeRelationshipLink, idMapper, badRelationships, inputCache );
+                    nodeRelationshipCache, idMapper, badRelationships, inputCache );
 
             // Execute stages 1 and 2 in parallel or sequentially?
             if ( idMapper.needsPreparation() )
@@ -170,8 +169,9 @@ public class ParallelBatchImporter implements BatchImporter
             // Stage 3 -- relationships, properties
             final RelationshipStage relationshipStage = new RelationshipStage( config, writeMonitor, writerFactory,
                     relationships.supportsMultiplePasses() ? relationships : inputCache.relationships(),
-                    idMapper, neoStore, nodeRelationshipLink, input.specificRelationshipIds() );
+                    idMapper, neoStore, nodeRelationshipCache, input.specificRelationshipIds() );
             executeStages( relationshipStage );
+            nodeRelationshipCache.fixate();
 
             // Prepare for updating
             neoStore.flush();
@@ -179,15 +179,15 @@ public class ParallelBatchImporter implements BatchImporter
 
             // Stage 4 -- set node nextRel fields
             executeStages( new NodeFirstRelationshipStage( config, neoStore.getNodeStore(),
-                    neoStore.getRelationshipGroupStore(), nodeRelationshipLink ) );
+                    neoStore.getRelationshipGroupStore(), nodeRelationshipCache ) );
             // Stage 5 -- link relationship chains together
-            nodeRelationshipLink.clearRelationships();
+            nodeRelationshipCache.clearRelationships();
             executeStages( new RelationshipLinkbackStage( config, neoStore.getRelationshipStore(),
-                    nodeRelationshipLink ) );
+                    nodeRelationshipCache ) );
 
             // Release this potentially really big piece of cached data
-            nodeRelationshipLink.close();
-            nodeRelationshipLink = null;
+            nodeRelationshipCache.close();
+            nodeRelationshipCache = null;
 
             // Stage 6 -- count nodes per label and labels per node
             nodeLabelsCache = new NodeLabelsCache( AUTO, neoStore.getLabelRepository().getHighId() );
@@ -218,9 +218,9 @@ public class ParallelBatchImporter implements BatchImporter
         finally
         {
             writerFactory.shutdown();
-            if ( nodeRelationshipLink != null )
+            if ( nodeRelationshipCache != null )
             {
-                nodeRelationshipLink.close();
+                nodeRelationshipCache.close();
             }
             if ( nodeLabelsCache != null )
             {
@@ -235,6 +235,6 @@ public class ParallelBatchImporter implements BatchImporter
 
     private void executeStages( Stage... stages )
     {
-        superviseExecution( executionMonitor, config, stages );
+        superviseDynamicExecution( executionMonitor, config, stages );
     }
 }

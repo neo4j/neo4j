@@ -36,9 +36,8 @@ public class RelationshipCountsStage extends Stage
             NumberArrayFactory cacheFactory )
     {
         super( "Relationship counts", config, false );
-        add( new ReadRelationshipCountsDataStep( control(), config.batchSize(), config.movingAverageSize(),
-                relationshipStore ) );
-        add( new ProcessRelationshipCountsDataStep( control(), cache, config.workAheadSize(),
-                config.movingAverageSize(), highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory ) );
+        add( new ReadRelationshipCountsDataStep( control(), config, relationshipStore ) );
+        add( new ProcessRelationshipCountsDataStep( control(), cache, config,
+                highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory ) );
     }
 }

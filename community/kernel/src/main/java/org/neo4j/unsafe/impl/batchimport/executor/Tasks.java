@@ -17,20 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.cache;
+package org.neo4j.unsafe.impl.batchimport.executor;
 
-/**
- * Abstraction of a {@code int[]} so that different implementations can be plugged in, for example
- * off-heap, dynamically growing, or other implementations.
- *
- * @see NumberArrayFactory
- */
-public interface IntArray extends NumberArray
+import java.util.concurrent.Callable;
+
+public class Tasks
 {
-    int get( long index );
-
-    void set( long index, int value );
-
-    @Override
-    IntArray fixate();
+    public static <LOCAL> Task<LOCAL> wrap( final Callable<?> callable )
+    {
+        return new Task<LOCAL>()
+        {
+            @Override
+            public void run( LOCAL threadLocalState ) throws Exception
+            {
+                callable.call();
+            }
+        };
+    }
 }

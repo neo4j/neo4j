@@ -21,10 +21,9 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
+import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
-import org.neo4j.unsafe.impl.batchimport.staging.InputIteratorBatcherStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStore;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
@@ -38,19 +37,17 @@ public class RelationshipStage extends Stage
 {
     public RelationshipStage( Configuration config, IoMonitor writeMonitor, WriterFactory writerFactory,
             InputIterable<InputRelationship> relationships, IdMapper idMapper,
-            BatchingNeoStore neoStore, NodeRelationshipLink nodeRelationshipLink, boolean specificIds )
+            BatchingNeoStore neoStore, NodeRelationshipCache cache, boolean specificIds )
     {
         super( "Relationships", config, false );
-        add( new InputIteratorBatcherStep<>( control(), config.batchSize(), config.movingAverageSize(),
-                relationships.iterator(), InputRelationship.class ) );
+        add( new InputIteratorBatcherStep<>( control(), config, relationships.iterator(), InputRelationship.class ) );
 
         RelationshipStore relationshipStore = neoStore.getRelationshipStore();
         PropertyStore propertyStore = neoStore.getPropertyStore();
         add( new RelationshipPreparationStep( control(), config, idMapper ) );
-        add( new PropertyEncoderStep<>( control(), config, 1, neoStore.getPropertyKeyRepository(),
-                propertyStore ) );
+        add( new PropertyEncoderStep<>( control(), config, neoStore.getPropertyKeyRepository(), propertyStore ) );
         add( new RelationshipEncoderStep( control(), config,
-                neoStore.getRelationshipTypeRepository(), relationshipStore, nodeRelationshipLink, specificIds ) );
+                neoStore.getRelationshipTypeRepository(), relationshipStore, cache, specificIds ) );
         add( new EntityStoreUpdaterStep<>( control(), config,
                 relationshipStore, propertyStore, writeMonitor, writerFactory ) );
     }

@@ -21,7 +21,7 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
+import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 
 /**
  * Links the {@code previous} fields in {@link RelationshipRecord relationship records}. This is done after
@@ -29,11 +29,11 @@ import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
  */
 public class RelationshipLinkbackProcessor implements RecordProcessor<RelationshipRecord>
 {
-    private final NodeRelationshipLink nodeRelationshipLink;
+    private final NodeRelationshipCache cache;
 
-    public RelationshipLinkbackProcessor( NodeRelationshipLink nodeRelationshipLink )
+    public RelationshipLinkbackProcessor( NodeRelationshipCache cache )
     {
-        this.nodeRelationshipLink = nodeRelationshipLink;
+        this.cache = cache;
     }
 
     @Override
@@ -42,13 +42,13 @@ public class RelationshipLinkbackProcessor implements RecordProcessor<Relationsh
         boolean isLoop = record.getFirstNode() == record.getSecondNode();
         if ( isLoop )
         {
-            long prevRel = nodeRelationshipLink.getAndPutRelationship( record.getFirstNode(),
+            long prevRel = cache.getAndPutRelationship( record.getFirstNode(),
                     record.getType(), Direction.BOTH, record.getId(), false );
             if ( prevRel == -1 )
             {   // First one
                 record.setFirstInFirstChain( true );
                 record.setFirstInSecondChain( true );
-                prevRel = nodeRelationshipLink.getCount( record.getFirstNode(),
+                prevRel = cache.getCount( record.getFirstNode(),
                         record.getType(), Direction.BOTH );
             }
             record.setFirstPrevRel( prevRel );
@@ -57,23 +57,23 @@ public class RelationshipLinkbackProcessor implements RecordProcessor<Relationsh
         else
         {
             // Start node
-            long firstPrevRel = nodeRelationshipLink.getAndPutRelationship( record.getFirstNode(),
+            long firstPrevRel = cache.getAndPutRelationship( record.getFirstNode(),
                     record.getType(), Direction.OUTGOING, record.getId(), false );
             if ( firstPrevRel == -1 )
             {   // First one
                 record.setFirstInFirstChain( true );
-                firstPrevRel = nodeRelationshipLink.getCount( record.getFirstNode(),
+                firstPrevRel = cache.getCount( record.getFirstNode(),
                         record.getType(), Direction.OUTGOING );
             }
             record.setFirstPrevRel( firstPrevRel );
 
             // End node
-            long secondPrevRel = nodeRelationshipLink.getAndPutRelationship( record.getSecondNode(),
+            long secondPrevRel = cache.getAndPutRelationship( record.getSecondNode(),
                     record.getType(), Direction.INCOMING, record.getId(), false );
             if ( secondPrevRel == -1 )
             {   // First one
                 record.setFirstInSecondChain( true );
-                secondPrevRel = nodeRelationshipLink.getCount( record.getSecondNode(),
+                secondPrevRel = cache.getCount( record.getSecondNode(),
                         record.getType(), Direction.INCOMING );
             }
             record.setSecondPrevRel( secondPrevRel );

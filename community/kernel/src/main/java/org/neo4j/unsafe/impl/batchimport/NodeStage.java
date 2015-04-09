@@ -28,7 +28,6 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.InputCache;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-import org.neo4j.unsafe.impl.batchimport.staging.InputIteratorBatcherStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStore;
@@ -46,17 +45,15 @@ public class NodeStage extends Stage
             BatchingNeoStore neoStore, InputCache inputCache, StatsProvider memoryUsage ) throws IOException
     {
         super( "Nodes", config, true );
-        add( new InputIteratorBatcherStep<>( control(), config.batchSize(), config.movingAverageSize(),
-                nodes.iterator(), InputNode.class ) );
+        add( new InputIteratorBatcherStep<>( control(), config, nodes.iterator(), InputNode.class ) );
         if ( !nodes.supportsMultiplePasses() )
         {
-            add( new InputEntityCacherStep<>( control(), config.workAheadSize(), config.movingAverageSize(),
-                    inputCache.cacheNodes() ) );
+            add( new InputEntityCacherStep<>( control(), config, inputCache.cacheNodes() ) );
         }
 
         NodeStore nodeStore = neoStore.getNodeStore();
         PropertyStore propertyStore = neoStore.getPropertyStore();
-        add( new PropertyEncoderStep<>( control(), config, 1, neoStore.getPropertyKeyRepository(),
+        add( new PropertyEncoderStep<>( control(), config, neoStore.getPropertyKeyRepository(),
                 propertyStore ) );
         add( new NodeEncoderStep( control(), config, idMapper, idGenerator,
                 neoStore.getLabelRepository(), nodeStore, memoryUsage ) );

@@ -19,63 +19,43 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
-import org.neo4j.unsafe.impl.batchimport.input.Collector;
-import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
-import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
+import org.neo4j.graphdb.Resource;
+import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
+import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
+import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
+
+import static org.neo4j.unsafe.impl.batchimport.CalculateDenseNodePrepareStep.RADIXES;
+import static org.neo4j.unsafe.impl.batchimport.CalculateDenseNodePrepareStep.radixOf;
 
 /**
  * Runs through relationship input and counts relationships per node so that dense nodes can be designated.
  */
-public class CalculateDenseNodesStep extends ExecutorServiceStep<Batch<InputRelationship,RelationshipRecord>>
+public class CalculateDenseNodesStep extends ProcessorStep<long[]>
 {
-    private final NodeRelationshipLink nodeRelationshipLink;
-    private final Collector<InputRelationship> badRelationshipsCollector;
+    private final NodeRelationshipCache cache;
+    private final StripedLock lock = new StripedLock( RADIXES );
 
-    public CalculateDenseNodesStep( StageControl control, Configuration config,
-            NodeRelationshipLink nodeRelationshipLink, Collector<InputRelationship> badRelationshipsCollector )
+    public CalculateDenseNodesStep( StageControl control, Configuration config, NodeRelationshipCache cache )
     {
-        super( control, "CALCULATOR", config.workAheadSize(), config.movingAverageSize(), 1 );
-        this.nodeRelationshipLink = nodeRelationshipLink;
-        this.badRelationshipsCollector = badRelationshipsCollector;
+        // Max 10 processors since we receive batches split by radix %10 so it doesn't make sense to have more
+        super( control, "CALCULATOR", config, RADIXES );
+        this.cache = cache;
     }
 
     @Override
-    protected Object process( long ticket, Batch<InputRelationship,RelationshipRecord> batch )
+    protected void process( long[] ids, BatchSender sender )
     {
-        InputRelationship[] input = batch.input;
-        long[] ids = batch.ids;
-        for ( int i = 0; i < input.length; i++ )
+        // We lock because we only want at most one processor processing ids of a certain radix.
+        try ( Resource automaticallyUnlocked = lock.lock( radixOf( ids[0] ) ) )
         {
-            InputRelationship rel = input[i];
-            long startNode = ids[i*2];
-            long endNode = ids[i*2+1];
-
-            incrementCount( rel, startNode, rel.startNode() );
-            if ( startNode != endNode )
+            for ( long id : ids )
             {
-                incrementCount( rel, endNode, rel.endNode() );
+                if ( id != -1 )
+                {
+                    cache.incrementCount( id );
+                }
             }
         }
-        return null; // end of the line
-    }
-
-    private void incrementCount( InputRelationship relationship, long nodeId, Object inputNodeId )
-    {
-        if ( nodeId != -1 )
-        {
-            try
-            {
-                nodeRelationshipLink.incrementCount( nodeId );
-                return;
-            }
-            catch ( ArrayIndexOutOfBoundsException e )
-            {   // This is odd, but may happen. We'll tell the bad relationship collector below
-            }
-        }
-
-        badRelationshipsCollector.collect( relationship, inputNodeId );
     }
 }

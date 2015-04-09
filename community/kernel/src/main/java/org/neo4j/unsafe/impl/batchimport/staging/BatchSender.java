@@ -19,27 +19,11 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import org.neo4j.unsafe.impl.batchimport.Batch;
-import org.neo4j.unsafe.impl.batchimport.BatchImporter;
-import org.neo4j.unsafe.impl.batchimport.InputIterator;
-
 /**
- * {@link IteratorBatcherStep} that is tailored to the {@link BatchImporter} as it produces {@link Batch}
- * objects.
+ * Sends a batch downstream, typically when a batch is processed by {@link ProcessorStep} it can get
+ * sent downstream, if there is a downstream {@link Step}, for further processing.
  */
-public class InputIteratorBatcherStep<T> extends IteratorBatcherStep<T>
+public interface BatchSender
 {
-    public InputIteratorBatcherStep( StageControl control, int batchSize, int movingAverageSize,
-            InputIterator<T> data, Class<T> itemClass )
-    {
-        super( control, batchSize, movingAverageSize, data, itemClass );
-    }
-
-    @SuppressWarnings( { "unchecked", "rawtypes" } )
-    @Override
-    protected Object nextBatchOrNull( int batchSize )
-    {
-        Object batch = super.nextBatchOrNull( batchSize );
-        return batch != null ? new Batch( (Object[]) batch ) : null;
-    }
+    void send( Object batch );
 }

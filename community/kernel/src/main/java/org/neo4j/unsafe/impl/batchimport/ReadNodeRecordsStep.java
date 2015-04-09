@@ -32,21 +32,21 @@ import static java.lang.Math.min;
  * Future: Would be quite efficient just get a page cursor and read inUse+labelField and store
  * all labelField values of a batch in one long[] or similar, instead of passing on a NodeRecord[].
  */
-public class ReadNodeRecordsStep extends IoProducerStep<NodeRecord[]>
+public class ReadNodeRecordsStep extends IoProducerStep
 {
     private final NodeStore nodeStore;
     private final long highId;
     private long id;
 
-    public ReadNodeRecordsStep( StageControl control, int batchSize, int movingAverageSize, NodeStore nodeStore )
+    public ReadNodeRecordsStep( StageControl control, Configuration config, NodeStore nodeStore )
     {
-        super( control, batchSize, movingAverageSize );
+        super( control, config );
         this.nodeStore = nodeStore;
         this.highId = nodeStore.getHighId();
     }
 
     @Override
-    protected Object nextBatchOrNull( int batchSize )
+    protected Object nextBatchOrNull( long ticket, int batchSize )
     {
         int size = (int) min( batchSize, highId-id );
         NodeRecord[] batch = new NodeRecord[size];

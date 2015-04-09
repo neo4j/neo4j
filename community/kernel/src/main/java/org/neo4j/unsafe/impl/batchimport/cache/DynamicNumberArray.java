@@ -28,105 +28,33 @@ import java.util.Arrays;
  * @see NumberArrayFactory#newDynamicLongArray(long, long)
  * @see NumberArrayFactory#newDynamicIntArray(long, int)
  */
-abstract class DynamicNumberArray<N extends NumberArray> implements NumberArray
+abstract class DynamicNumberArray<N extends NumberArray> extends ChunkedNumberArray<N>
 {
     protected final NumberArrayFactory factory;
-    private final long chunkSize;
-    private NumberArray[] chunks = new NumberArray[0];
 
     DynamicNumberArray( NumberArrayFactory factory, long chunkSize )
     {
+        super( chunkSize );
         this.factory = factory;
-        this.chunkSize = chunkSize;
+        this.chunks = new NumberArray[0];
     }
 
-    @Override
-    public long length()
-    {
-        return chunks.length * chunkSize;
-    }
-
-    @Override
-    public long size()
-    {
-        long size = 0;
-        for ( int i = 0; i < chunks.length; i++ )
-        {
-            size += chunks[i].size();
-        }
-        return size;
-    }
-
-    @Override
-    public void clear()
-    {
-        for ( NumberArray chunk : chunks )
-        {
-            chunk.clear();
-        }
-    }
-
-    @Override
-    public long highestSetIndex()
-    {
-        for ( int i = chunks.length-1; i >= 0; i-- )
-        {
-            NumberArray chunk = chunks[i];
-            long highestSetInChunk = chunk.highestSetIndex();
-            if ( highestSetInChunk > -1 )
-            {
-                return i*chunkSize + highestSetInChunk;
-            }
-        }
-        return -1;
-    }
-
-    @Override
-    public void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor )
-    {
-        for ( NumberArray chunk : chunks )
-        {
-            chunk.acceptMemoryStatsVisitor( visitor );
-        }
-    }
-
-    @SuppressWarnings( "unchecked" )
     protected N ensureChunkAt( long index )
     {
         while ( index >= length() )
         {
-            NumberArray[] newChunks = Arrays.copyOf( chunks, chunks.length+1 );
-            newChunks[chunks.length] = addChunk( chunkSize );
-            chunks = newChunks;
+            synchronized ( this )
+            {
+                if ( index >= length() )
+                {
+                    NumberArray[] newChunks = Arrays.copyOf( chunks, chunks.length+1 );
+                    newChunks[chunks.length] = addChunk( chunkSize );
+                    chunks = newChunks;
+                }
+            }
         }
-        return (N) chunks[chunkIndex( index )];
+        return chunkAt( index );
     }
 
     protected abstract N addChunk( long chunkSize );
-
-    @SuppressWarnings( "unchecked" )
-    protected N chunkAt( long index )
-    {
-        int chunkIndex = chunkIndex( index );
-        return chunkIndex < chunks.length ? (N) chunks[chunkIndex] : null;
-    }
-
-    private int chunkIndex( long index )
-    {
-        return (int) (index/chunkSize);
-    }
-
-    protected long index( long index )
-    {
-        return index % chunkSize;
-    }
-
-    @Override
-    public void close()
-    {
-        for ( NumberArray chunk : chunks )
-        {
-            chunk.close();
-        }
-    }
 }

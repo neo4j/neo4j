@@ -30,14 +30,8 @@ import static java.lang.Math.round;
 /**
  * User controlled configuration for a {@link BatchImporter}.
  */
-public interface Configuration
+public interface Configuration extends org.neo4j.unsafe.impl.batchimport.staging.Configuration
 {
-    /**
-     * Batch importer works with batches going through one or more stages where one or more threads
-     * process each stage. This setting dictates how big the batches that are passed around are.
-     */
-    int batchSize();
-
     /**
      * Memory dedicated to buffering data to be written to each store file.
      */
@@ -48,11 +42,6 @@ public interface Configuration
      * This is a multiplier for how many times bigger such buffers are compared to {@link #fileChannelBufferSize()}.
      */
     int bigFileChannelBufferSizeMultiplier();
-
-    /**
-     * Number of batches that a step can queue up before awaiting the downstream step to catch up.
-     */
-    int workAheadSize();
 
     /**
      * The number of relationships threshold for considering a node dense.
@@ -85,13 +74,6 @@ public interface Configuration
     int maxNumberOfProcessors();
 
     /**
-     * For statistics the average processing time is based on total processing time divided by
-     * number of batches processed. A total average is probably not that interesting so this configuration
-     * option specifies how many of the latest processed batches counts in the equation above.
-     */
-    int movingAverageSize();
-
-    /**
      * File name of log accepting bad entries encountered during import. Can be relative (to where the
      * store directory of the database that gets created) or absolute.
      *
@@ -99,7 +81,9 @@ public interface Configuration
      */
     File badFile( File storeDirectory );
 
-    public static class Default implements Configuration
+    class Default
+            extends org.neo4j.unsafe.impl.batchimport.staging.Configuration.Default
+            implements Configuration
     {
         private static final int OPTIMAL_FILE_CHANNEL_CHUNK_SIZE = 1024 * 4;
 
@@ -169,28 +153,25 @@ public interface Configuration
         }
     }
 
-    public static final Configuration DEFAULT = new Default();
+    Configuration DEFAULT = new Default();
 
-    public static class OverrideFromConfig implements Configuration
+    class Overridden
+            extends org.neo4j.unsafe.impl.batchimport.staging.Configuration.Overridden
+            implements Configuration
     {
         private final Configuration defaults;
         private final Config config;
 
-        public OverrideFromConfig( Configuration defaults, Config config )
+        public Overridden( Configuration defaults, Config config )
         {
+            super( defaults );
             this.defaults = defaults;
             this.config = config;
         }
 
-        public OverrideFromConfig( Config config )
+        public Overridden( Config config )
         {
-            this( DEFAULT, config );
-        }
-
-        @Override
-        public int batchSize()
-        {
-            return defaults.batchSize();
+            this( Configuration.DEFAULT, config );
         }
 
         @Override
@@ -203,12 +184,6 @@ public interface Configuration
         public int bigFileChannelBufferSizeMultiplier()
         {
             return defaults.bigFileChannelBufferSizeMultiplier();
-        }
-
-        @Override
-        public int workAheadSize()
-        {
-            return defaults.workAheadSize();
         }
 
         @Override
@@ -241,6 +216,4 @@ public interface Configuration
             return defaults.badFile( storeDirectory );
         }
     }
-
-    // TODO Add Configuration option "calibrate()" which probes the hardware and returns optimal values.
 }

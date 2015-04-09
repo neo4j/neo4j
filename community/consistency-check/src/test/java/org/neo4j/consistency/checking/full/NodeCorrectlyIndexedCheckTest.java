@@ -24,8 +24,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -37,9 +35,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.function.Function;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -53,12 +49,14 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.register.Register;
 
-import static java.util.Arrays.asList;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+
+import static java.util.Arrays.asList;
+
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
 import static org.neo4j.kernel.impl.store.record.IndexRule.constraintIndexRule;

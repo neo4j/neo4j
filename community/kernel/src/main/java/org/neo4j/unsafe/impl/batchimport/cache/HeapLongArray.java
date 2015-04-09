@@ -83,4 +83,10 @@ public class HeapLongArray extends HeapNumberArray implements LongArray
             set( toIndex+i, fromValue );
         }
     }
+
+    @Override
+    public LongArray fixate()
+    {
+        return this;
+    }
 }

@@ -19,8 +19,15 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
-import static java.lang.Math.max;
-import static java.lang.System.currentTimeMillis;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.InOrder;
+
+import java.util.Random;
+
+import org.neo4j.graphdb.Direction;
+import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache.GroupVisitor;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -29,21 +36,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-import java.util.Random;
+import static java.lang.Math.max;
+import static java.lang.System.currentTimeMillis;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.InOrder;
-import org.neo4j.graphdb.Direction;
-import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink.GroupVisitor;
-
-public class NodeRelationshipLinkImplTest
+public class NodeRelationshipCacheTest
 {
     @Test
     public void shouldReportCorrectNumberOfDenseNodes() throws Exception
     {
         // GIVEN
-        NodeRelationshipLink cache = new NodeRelationshipLinkImpl( NumberArrayFactory.AUTO, 5 );
+        NodeRelationshipCache cache = new NodeRelationshipCache( NumberArrayFactory.AUTO, 5 );
         increment( cache, 2, 10 );
         increment( cache, 5, 2 );
         increment( cache, 7, 12 );
@@ -66,7 +68,7 @@ public class NodeRelationshipLinkImplTest
     {
         // GIVEN
         int nodeCount = 10;
-        NodeRelationshipLink link = new NodeRelationshipLinkImpl( NumberArrayFactory.OFF_HEAP, 20 );
+        NodeRelationshipCache link = new NodeRelationshipCache( NumberArrayFactory.OFF_HEAP, 20 );
         incrementRandomCounts( link, nodeCount, nodeCount*20 );
 
         // Test sparse node semantics
@@ -89,7 +91,7 @@ public class NodeRelationshipLinkImplTest
     {
         // GIVEN a dense node
         long denseNode = 0;
-        NodeRelationshipLink link = new NodeRelationshipLinkImpl( NumberArrayFactory.AUTO, 1 );
+        NodeRelationshipCache link = new NodeRelationshipCache( NumberArrayFactory.AUTO, 1 );
         link.incrementCount( denseNode );
         link.getAndPutRelationship( denseNode, 0, Direction.OUTGOING, 0, true );
 
@@ -113,7 +115,7 @@ public class NodeRelationshipLinkImplTest
     {
         // GIVEN a dense node
         long denseNode = 0;
-        NodeRelationshipLink link = new NodeRelationshipLinkImpl( NumberArrayFactory.AUTO, 1 );
+        NodeRelationshipCache link = new NodeRelationshipCache( NumberArrayFactory.AUTO, 1 );
         link.incrementCount( denseNode );
         link.getAndPutRelationship( denseNode, 1, Direction.INCOMING, 1, true );
 
@@ -137,7 +139,7 @@ public class NodeRelationshipLinkImplTest
     {
         // GIVEN a dense node
         long denseNode = 0;
-        NodeRelationshipLink link = new NodeRelationshipLinkImpl( NumberArrayFactory.AUTO, 1 );
+        NodeRelationshipCache link = new NodeRelationshipCache( NumberArrayFactory.AUTO, 1 );
         link.incrementCount( denseNode );
         link.getAndPutRelationship( denseNode, 0, Direction.OUTGOING, 0, true );
         link.getAndPutRelationship( denseNode, 2, Direction.OUTGOING, 1, true );
@@ -159,7 +161,7 @@ public class NodeRelationshipLinkImplTest
         verifyNoMoreInteractions( visitor );
     }
 
-    private void testNode( NodeRelationshipLink link, long node, int type, Direction direction )
+    private void testNode( NodeRelationshipCache link, long node, int type, Direction direction )
     {
         int count = link.getCount( node, type, direction );
         assertEquals( -1, link.getAndPutRelationship( node, type, direction, 5, false ) );
@@ -167,7 +169,7 @@ public class NodeRelationshipLinkImplTest
         assertEquals( count, link.getCount( node, type, direction ) );
     }
 
-    private long findNode( NodeRelationshipLink link, long nodeCount, boolean isDense )
+    private long findNode( NodeRelationshipCache link, long nodeCount, boolean isDense )
     {
         for ( long i = 0; i < nodeCount; i++ )
         {
@@ -179,7 +181,7 @@ public class NodeRelationshipLinkImplTest
         throw new IllegalArgumentException( "No dense node found" );
     }
 
-    private int incrementRandomCounts( NodeRelationshipLink link, int nodeCount, int i )
+    private int incrementRandomCounts( NodeRelationshipCache link, int nodeCount, int i )
     {
         int highestSeenCount = 0;
         while ( i --> 0 )
@@ -199,7 +201,7 @@ public class NodeRelationshipLinkImplTest
         random = new Random( seed );
     }
 
-    private void increment( NodeRelationshipLink cache, long node, int count )
+    private void increment( NodeRelationshipCache cache, long node, int count )
     {
         for ( int i = 0; i < count; i++ )
         {

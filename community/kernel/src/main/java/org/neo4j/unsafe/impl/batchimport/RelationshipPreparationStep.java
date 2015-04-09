@@ -22,7 +22,8 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
-import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
+import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
+import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 /**
@@ -30,18 +31,18 @@ import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
  * This step is also parallelizable so if it becomes a bottleneck then more processors will automatically
  * be assigned to it.
  */
-public class RelationshipPreparationStep extends ExecutorServiceStep<Batch<InputRelationship,RelationshipRecord>>
+public class RelationshipPreparationStep extends ProcessorStep<Batch<InputRelationship,RelationshipRecord>>
 {
     private final IdMapper idMapper;
 
     public RelationshipPreparationStep( StageControl control, Configuration config, IdMapper idMapper )
     {
-        super( control, "PREPARE", config.workAheadSize(), config.movingAverageSize(), 1, true );
+        super( control, "PREPARE", config, 0 );
         this.idMapper = idMapper;
     }
 
     @Override
-    protected Object process( long ticket, Batch<InputRelationship,RelationshipRecord> batch )
+    protected void process( Batch<InputRelationship,RelationshipRecord> batch, BatchSender sender )
     {
         InputRelationship[] input = batch.input;
         long[] ids = batch.ids = new long[input.length*2];
@@ -51,6 +52,6 @@ public class RelationshipPreparationStep extends ExecutorServiceStep<Batch<Input
             ids[i*2] = idMapper.get( batchRelationship.startNode(), batchRelationship.startNodeGroup() );
             ids[i*2+1] = idMapper.get( batchRelationship.endNode(), batchRelationship.endNodeGroup() );
         }
-        return batch;
+        sender.send( batch );
     }
 }

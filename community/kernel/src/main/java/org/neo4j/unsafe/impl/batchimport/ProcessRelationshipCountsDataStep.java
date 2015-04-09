@@ -25,14 +25,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
-import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
+import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
+import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 /**
  * Processes relationship count data received from {@link ReadRelationshipCountsDataStep} and keeps
  * the accumulated counts per thread. Aggregated when {@link #done()}.
  */
-public class ProcessRelationshipCountsDataStep extends ExecutorServiceStep<long[]>
+public class ProcessRelationshipCountsDataStep extends ProcessorStep<long[]>
 {
     private final NodeLabelsCache cache;
     private final Map<Thread,RelationshipCountsProcessor> processors = new ConcurrentHashMap<>();
@@ -42,10 +43,10 @@ public class ProcessRelationshipCountsDataStep extends ExecutorServiceStep<long[
     private final NumberArrayFactory cacheFactory;
 
     public ProcessRelationshipCountsDataStep( StageControl control, NodeLabelsCache cache,
-            int workAheadSize, int movingAverageSize, int highLabelId, int highRelationshipTypeId,
+            Configuration config, int highLabelId, int highRelationshipTypeId,
             CountsAccessor.Updater countsUpdater, NumberArrayFactory cacheFactory )
     {
-        super( control, "COUNT", workAheadSize, movingAverageSize, 1, true );
+        super( control, "COUNT", config, 0 );
         this.cache = cache;
         this.highLabelId = highLabelId;
         this.highRelationshipTypeId = highRelationshipTypeId;
@@ -54,14 +55,13 @@ public class ProcessRelationshipCountsDataStep extends ExecutorServiceStep<long[
     }
 
     @Override
-    protected Object process( long ticket, long[] batch )
+    protected void process( long[] batch, BatchSender sender )
     {
         RelationshipCountsProcessor processor = processor();
         for ( int i = 0; i < batch.length; i++ )
         {
             processor.process( batch[i++], (int)batch[i++], batch[i] );
         }
-        return null; // end of line
     }
 
     private RelationshipCountsProcessor processor()
