@@ -239,6 +239,23 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.toList should equal(List(Map("b" -> b), Map("b" -> c)))
   }
 
+  test("should return correct results on combined node and relationship index starts") {
+    val node = createNode()
+    val resultNode = createNode()
+    val rel = relate(node, resultNode)
+    relate(node, createNode())
+
+    graph.inTx {
+      graph.index.forNodes("nodes").add(node, "key", "A")
+      graph.index.forRelationships("rels").add(rel, "key", "B")
+    }
+
+    graph.inTx {
+      val result = execute("START n=node:nodes(key = 'A'), r=rel:rels(key = 'B') MATCH (n)-[r]->(b) RETURN b")
+      result.toList should equal(List(Map("b" -> resultNode)))
+    }
+  }
+
   test("magic rel type works as expected") {
     createNodes("A", "B", "C")
     relate("A" -> "KNOWS" -> "B")
