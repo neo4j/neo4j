@@ -88,10 +88,8 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       graph.index.forNodes("index").add(otherNode, "key", "value")
     }
 
-    val result = executeWithNewPlanner("""START n=node:index("key:value") WHERE n.prop = 42 RETURN n""")
+    val result = executeWithNewPlanner("""START n=node:index("key:value") WHERE n.prop = 42 RETURN n""").toList
 
-    println(result.executionPlanDescription())
-
-    result.toList should equal(List(Map("n"-> node)))
+    result should equal(List(Map("n"-> node)))
   }
 }
