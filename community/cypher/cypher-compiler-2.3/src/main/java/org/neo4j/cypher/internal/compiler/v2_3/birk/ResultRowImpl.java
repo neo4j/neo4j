@@ -45,6 +45,11 @@ public class ResultRowImpl implements Result.ResultRow
         results.put( k, db.getRelationshipById(id) );
     }
 
+    public void set( String k, Object value)
+    {
+        results.put( k, value );
+    }
+
     @Override
     public Object get( String key )
     {

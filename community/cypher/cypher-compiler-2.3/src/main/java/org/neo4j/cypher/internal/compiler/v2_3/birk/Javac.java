@@ -43,6 +43,7 @@ import javax.tools.ToolProvider;
 
 import sun.tools.java.CompilerError;
 
+import org.neo4j.cypher.internal.ExecutionMode;
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult;
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription;
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException;
@@ -90,12 +91,12 @@ public class Javac
     }
 
     public static InternalExecutionResult newInstance( Class<InternalExecutionResult> clazz, Statement statement,
-                                                       GraphDatabaseService db, InternalPlanDescription description)
+                                                       GraphDatabaseService db, ExecutionMode executionMode, InternalPlanDescription description)
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException
     {
         Constructor<InternalExecutionResult> constructor =
-                clazz.getDeclaredConstructor( Statement.class, GraphDatabaseService.class, InternalPlanDescription.class );
-        return constructor.newInstance( statement, db, description );
+                clazz.getDeclaredConstructor( Statement.class, GraphDatabaseService.class, ExecutionMode.class, InternalPlanDescription.class );
+        return constructor.newInstance( statement, db, executionMode, description );
     }
 
     private static class InMemSource extends SimpleJavaFileObject

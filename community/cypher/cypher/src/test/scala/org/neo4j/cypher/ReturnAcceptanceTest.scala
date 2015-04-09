@@ -488,7 +488,7 @@ return coalesce(a.title, a.name)""")
 
   test("should be able to alias expressions") {
     createNode("id" -> 42)
-    val result = executeWithAllPlanners("match (a) return a.id as a, a.id")
+    val result = executeWithAllPlannersAndRuntimes("match (a) return a.id as a, a.id")
     result.toList should equal(List(Map("a" -> 42, "a.id" -> 42)))
   }
 

@@ -21,12 +21,14 @@ package org.neo4j.cypher.internal.compiler.v2_3.birk
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.neo4j.cypher.internal.compiler.v2_3.CostPlannerName
+import org.neo4j.cypher.internal.ExecutionMode
+import org.neo4j.cypher.internal.compiler.v2_3.{PropertyKeyId, CostPlannerName}
+import org.neo4j.cypher.internal.compiler.v2_3.ast.{Identifier, Property}
 import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaTypes.{INT, LONG}
 import org.neo4j.cypher.internal.compiler.v2_3.birk.il._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{PlanFingerprint, CompiledPlan}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{SemanticTable, CantCompileQueryException}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LogicalPlanIdentificationBuilder,
 LogicalPlan2PlanDescription}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
@@ -90,7 +92,7 @@ class Namer(prefix: String) {
 
 case class JavaSymbol(name: String, javaType: String)
 
-class CodeGenerator {
+class CodeGenerator(semanticTable: SemanticTable) {
 
   import CodeGenerator.{n, nextClassName, packageName}
 
@@ -112,7 +114,7 @@ class CodeGenerator {
         val idMap = LogicalPlanIdentificationBuilder(plan)
         val description: InternalPlanDescription = LogicalPlan2PlanDescription(plan, idMap)
 
-        val builder = (st: Statement, db: GraphDatabaseService) => Javac.newInstance(clazz, st, db, description)
+        val builder = (st: Statement, db: GraphDatabaseService, mode: ExecutionMode) => Javac.newInstance(clazz, st, db,  mode, description)
 
         CompiledPlan(updating = false, None, fp, CostPlannerName, builder)
 
@@ -151,6 +153,8 @@ class CodeGenerator {
        |import org.neo4j.graphdb.Result.ResultVisitor;
        |import org.neo4j.graphdb.Result;
        |import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription;
+       |import org.neo4j.cypher.internal.ExecutionMode;
+       |
        |$imports
        |
        |public class $className extends CompiledExecutionResult
@@ -158,12 +162,19 @@ class CodeGenerator {
        |private final ReadOperations ro;
        |private final GraphDatabaseService db;
        |private final InternalPlanDescription description;
+       |private final ExecutionMode executionMode;
        |
-       |public $className( Statement statement, GraphDatabaseService db, InternalPlanDescription description )
+       |public $className( Statement statement, GraphDatabaseService db, ExecutionMode executionMode, InternalPlanDescription description )
        |{
        |  this.ro = statement.readOperations( );
        |  this.db = db;
+       |  this.executionMode = executionMode;
        |  this.description = description;
+       |}
+       |
+       |public ExecutionMode executionMode()
+       |{
+       |  return this.executionMode;
        |}
        |
        |public InternalPlanDescription executionPlanDescription()
@@ -213,7 +224,7 @@ class CodeGenerator {
           val (methodHandle, actions) = consume(stack.top, plan, stack.pop)
           (methodHandle, Seq(WhileLoop(nodeVariable, ScanForLabel(label.name, labelToken), actions)))
 
-        case _: ProduceResult | _: Expand =>
+        case _: ProduceResult | _: Expand | _: Projection =>
           produce(plan.lhs.get, stack.push(plan))
 
         case NodeHashJoin(_, lhs, rhs) =>
@@ -228,9 +239,10 @@ class CodeGenerator {
 
     def consume(plan: LogicalPlan, from: LogicalPlan, stack: Stack[LogicalPlan]): (Option[JavaSymbol], Instruction) = {
       plan match {
-        case ProduceResult(nodes, rels, _) =>
+        case ProduceResult(nodes, rels, other, _) =>
           (None, ProduceResults(nodes.map(c => c -> variables(c).name).toMap,
-            rels.map(c => c -> variables(c).name).toMap))
+            rels.map(c => c -> variables(c).name).toMap,
+            other.map(c => c -> variables(c).name).toMap))
 
         case join@NodeHashJoin(nodes, lhs, rhs) if from eq lhs =>
           val nodeId = variables(nodes.head.name)
@@ -260,6 +272,34 @@ class CodeGenerator {
 
           val (x, action) = consume(stack.top, plan, stack.pop)
           (x, WhileLoop(relVar, ExpandC(variables(fromNode).name, relVar.name, dir, relTypes.map(t => variableName.next -> t.name).toMap,nodeVar.name, action), Instruction.empty))
+
+        case Projection(left, expressions)  =>
+          val projectionInstructions =
+            expressions.map {
+            case (identifier, nodeOrRel@Identifier(name)) if semanticTable.isNode(nodeOrRel) || semanticTable.isRelationship(nodeOrRel) =>
+              //just project the new names
+              variables += identifier -> variables(name)
+              None
+
+            case (identifier, Property(node@Identifier(name), propKey)) if semanticTable.isNode(node) =>
+              val propValueVar = variableName.nextWithType("Object")
+              variables += identifier -> propValueVar
+              val token = propKey.id(semanticTable).map(_.id)
+              Some(ProjectNodeProperty(propValueVar.name, token, propKey.name, variables(name).name))
+
+            case (identifier, Property(rel@Identifier(name), propKey)) if semanticTable.isRelationship(rel) =>
+              val propValueVar = variableName.nextWithType("Object")
+              variables += identifier -> propValueVar
+              val token = propKey.id(semanticTable).map(_.id)
+              Some(ProjectRelProperty(propValueVar.name,token, propKey.name, variables(name).name))
+
+            case other => throw new CantCompileQueryException(s"Projections of $other not yet supported")
+
+          }.flatten.toSeq
+
+          val (x, action) = consume(stack.top, plan, stack.pop)
+
+          (x, ProjectNodeProperties(projectionInstructions, action))
 
         case _ => throw new CantCompileQueryException(s"$plan is not yet supported")
       }
