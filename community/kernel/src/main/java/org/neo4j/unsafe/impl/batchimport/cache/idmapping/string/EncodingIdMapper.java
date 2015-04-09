@@ -45,6 +45,7 @@ import static java.lang.String.format;
 
 import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToInt;
 import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedCompare;
+import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedDifference;
 
 /**
  * Maps arbitrary values to long ids. The values can be {@link #put(Object, long) added} in any order,
@@ -321,15 +322,12 @@ public class EncodingIdMapper implements IdMapper
                 long dataA = clearCollision( dataCache.get( dataIndexA ) );
                 long dataB = clearCollision( dataCache.get( dataIndexB ) );
 
-                if ( unsignedCompare( dataA, dataB, CompareType.GE ) )
+                switch ( unsignedDifference( dataA, dataB ) )
                 {
-                    if ( !unsignedCompare( dataA, dataB, CompareType.EQ ) )
-                    {
-                        throw new IllegalStateException( "Failure:[" + i + "] " +
-                                Long.toHexString( dataA ) + ":" + Long.toHexString( dataB ) + " | " +
-                                radixOf( dataA ) + ":" + radixOf( dataB ) );
-                    }
-
+                case GT: throw new IllegalStateException( "Failure:[" + i + "] " +
+                            Long.toHexString( dataA ) + ":" + Long.toHexString( dataB ) + " | " +
+                            radixOf( dataA ) + ":" + radixOf( dataB ) );
+                case EQ:
                     // Here we have two equal encoded values. First let's check if they are in the same id space.
                     int collision = sameGroupDetector.collisionWithinSameGroup(
                             dataIndexA, groupOf( dataIndexA ).id(),
@@ -347,9 +345,8 @@ public class EncodingIdMapper implements IdMapper
                         markAsCollision( dataIndexB );
                         numCollisions++;
                     }
-                }
-                else
-                {
+                    break;
+                default:
                     sameGroupDetector.reset();
                 }
             }
@@ -443,14 +440,15 @@ public class EncodingIdMapper implements IdMapper
                 return -1;
             }
             long midValue = dataCache.get( dataIndex );
-            if ( unsignedCompare( clearCollision( midValue ), x, CompareType.EQ ) )
+            switch ( unsignedDifference( clearCollision( midValue ), x ) )
             {
+            case EQ:
                 // We found the value we were looking for. Question now is whether or not it's the only
                 // of its kind. Not all values that there are duplicates of are considered collisions,
                 // read more in detectAndMarkCollisions(). So regardless we need to check previous/next
                 // if they are the same value.
                 if ( (mid > 0 && unsignedCompare( x, dataValue( mid - 1 ), CompareType.EQ )) ||
-                        (mid < trackerStats.highestIndex() && unsignedCompare( x, dataValue( mid + 1 ), CompareType.EQ ) ) )
+                     (mid < trackerStats.highestIndex() && unsignedCompare( x, dataValue( mid + 1 ), CompareType.EQ ) ) )
                 {   // OK so there are actually multiple equal data values here, we need to go through them all
                     // to be sure we find the correct one.
                     return findFromCollisions( mid, midValue, inputId, groupId );
@@ -459,14 +457,12 @@ public class EncodingIdMapper implements IdMapper
                 {   // This is the only value here, let's do a simple comparison with correct group id and return
                     return groupOf( dataIndex ).id() == groupId ? dataIndex : -1;
                 }
-            }
-            else if ( unsignedCompare( clearCollision( midValue ), x, CompareType.LT ) )
-            {
+            case LT:
                 low = mid + 1;
-            }
-            else
-            {
+                break;
+            default:
                 high = mid - 1;
+                break;
             }
         }
         return -1;
@@ -486,17 +482,15 @@ public class EncodingIdMapper implements IdMapper
         {
             long mid = (low + high) / 2;
             long midValue = array.get( mid );
-            if ( unsignedCompare( midValue, value, CompareType.EQ ) )
+            switch ( unsignedDifference( midValue, value ) )
             {
-                return mid;
-            }
-            else if ( unsignedCompare( midValue, value, CompareType.LT ) )
-            {
+            case EQ: return mid;
+            case LT:
                 low = mid + 1;
-            }
-            else
-            {
+                break;
+            default:
                 high = mid - 1;
+                break;
             }
         }
         return -1;

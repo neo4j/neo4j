@@ -209,29 +209,30 @@ public class ParallelSort
         long pivot = clearCollision( dataCache.get( tracker.get( pi ) ) );
         //save pivot in last index
         tracker.swap( pi, rightIndex - 1, 1 );
-        long left = 0, right = 0;
+        long left = clearCollision( dataCache.get( tracker.get( li ) ) );
+        long right = clearCollision( dataCache.get( tracker.get( ri ) ) );
         while ( li < ri )
         {
-            left = clearCollision( dataCache.get( tracker.get( li ) ) );
-            right = clearCollision( dataCache.get( tracker.get( ri ) ) );
             if ( Utils.unsignedCompare( left, pivot, CompareType.LT ) )
             {
                 //increment left to find the greater element than the pivot
-                li++;
+                left = clearCollision( dataCache.get( tracker.get( ++li ) ) );
             }
             else if ( Utils.unsignedCompare( right, pivot, CompareType.GE ) )
             {
                 //decrement right to find the smaller element than the pivot
-                ri--;
+                right = clearCollision( dataCache.get( tracker.get( --ri ) ) );
             }
             else
             {
                 //if right index is greater then only swap
                 tracker.swap( li, ri, 1 );
+                long temp = left;
+                left = right;
+                right = temp;
             }
         }
         int partingIndex = ri;
-        right = clearCollision( dataCache.get( tracker.get( ri ) ) );
         if ( Utils.unsignedCompare( right, pivot, CompareType.LT ) )
         {
             partingIndex++;

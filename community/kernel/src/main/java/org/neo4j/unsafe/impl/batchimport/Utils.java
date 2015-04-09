@@ -86,6 +86,19 @@ public class Utils
         return false;
     }
 
+    /**
+     * Like {@link #unsignedCompare(long, long, CompareType)} but reversed in that you get {@link CompareType}
+     * from comparing data A and B, i.e. the difference between them.
+     */
+    public static CompareType unsignedDifference( long dataA, long dataB )
+    {
+        if ( dataA == dataB )
+        {
+            return CompareType.EQ;
+        }
+        return ((dataA < dataB) ^ ((dataA < 0) != (dataB < 0))) ? CompareType.LT : CompareType.GT;
+    }
+
     public static InputIterable<Object> idsOf( final InputIterable<InputNode> nodes )
     {
         return new InputIterable<Object>()
