@@ -32,6 +32,8 @@ import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 
+import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper.NO_MONITOR;
+
 /**
  * Place to instantiate common {@link IdMapper} implementations.
  */
@@ -90,7 +92,7 @@ public class IdMappers
      */
     public static IdMapper strings( NumberArrayFactory cacheFactory )
     {
-        return new EncodingIdMapper( cacheFactory, new StringEncoder(), new Radix.String() );
+        return new EncodingIdMapper( cacheFactory, new StringEncoder(), new Radix.String(), NO_MONITOR );
     }
 
     /**
@@ -102,6 +104,6 @@ public class IdMappers
      */
     public static IdMapper longs( NumberArrayFactory cacheFactory )
     {
-        return new EncodingIdMapper( cacheFactory, new LongEncoder(), new Radix.Long() );
+        return new EncodingIdMapper( cacheFactory, new LongEncoder(), new Radix.Long(), NO_MONITOR );
     }
 }

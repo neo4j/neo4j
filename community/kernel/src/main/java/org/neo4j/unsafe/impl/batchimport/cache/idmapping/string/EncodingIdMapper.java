@@ -59,6 +59,19 @@ import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedCompare;
  */
 public class EncodingIdMapper implements IdMapper
 {
+    public interface Monitor
+    {
+        void numberOfCollisions( int numberOfCollisions );
+    }
+
+    public static final Monitor NO_MONITOR = new Monitor()
+    {
+        @Override
+        public void numberOfCollisions( int numberOfCollisions )
+        {   // Do nothing.
+        }
+    };
+
     // Bit in encoded String --> long values that marks that the particular item has a collision,
     // i.e. that there's at least one other string that encodes into the same long value.
     // This bit is the least significant in the most significant byte of the encoded values,
@@ -89,15 +102,17 @@ public class EncodingIdMapper implements IdMapper
     private IdGroup[] idGroups = new IdGroup[10];
     private IdGroup currentIdGroup;
     private int idGroupsCursor;
+    private final Monitor monitor;
 
-    public EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Radix radix )
+    public EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Radix radix, Monitor monitor )
     {
-        this( cacheFactory, encoder, radix, CACHE_CHUNK_SIZE, Runtime.getRuntime().availableProcessors() - 1 );
+        this( cacheFactory, encoder, radix, monitor, CACHE_CHUNK_SIZE, Runtime.getRuntime().availableProcessors() - 1 );
     }
 
     public EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Radix radix,
-            int chunkSize, int processorsForSorting )
+            Monitor monitor, int chunkSize, int processorsForSorting )
     {
+        this.monitor = monitor;
         this.processorsForSorting = max( processorsForSorting, 1 );
         this.dataCache = newLongArray( cacheFactory, chunkSize );
         this.trackerCache = newIntArray( cacheFactory, chunkSize );
@@ -116,6 +131,9 @@ public class EncodingIdMapper implements IdMapper
         return cacheFactory.newDynamicLongArray( chunkSize, -1 );
     }
 
+    /**
+     * Returns the data index if found, or {@code -1} if not found.
+     */
     @Override
     public long get( Object inputId, Group group )
     {
@@ -255,47 +273,87 @@ public class EncodingIdMapper implements IdMapper
         return COLLISION_BIT.get( value, 1 ) != 0;
     }
 
+    /**
+     * There are two types of collisions:
+     * - actual: collisions coming from equal input value. These might however not impose
+     *   keeping original input value since the colliding values might be for separate id groups,
+     *   just as long as there's at most one per id space.
+     * - accidental: collisions coming from different input values that happens to coerce into
+     *   the same encoded value internally.
+     *
+     * For any encoded value there might be a mix of actual and accidental collisions. As long as there's
+     * only one such value (accidental or actual) per id space the original input id doesn't need to be kept.
+     * For scenarios where there are multiple per for any given id space:
+     * - actual: there are two equal input values in the same id space
+     *     ==> fail, not allowed
+     * - accidental: there are two different input values coerced into the same encoded value
+     *   in the same id space
+     *     ==> original input values needs to be kept
+     */
     private int detectAndMarkCollisions( ProgressListener progress )
     {
         progress.started( "DETECT" );
         int numCollisions = 0;
         long max = trackerCache.size() - 1;
+        SameGroupDetector sameGroupDetector = new SameGroupDetector();
         for ( int i = 0; i < max; )
         {
             int batch = (int) min( max-i, 10_000 );
             for ( int j = 0; j < batch; j++, i++ )
             {
-                if ( compareDataCache( dataCache, trackerCache, i, i + 1, CompareType.GE ) )
+                int dataIndexA = trackerCache.get( i );
+                int dataIndexB = trackerCache.get( i+1 );
+                if ( dataIndexA == -1 || dataIndexB == -1 )
                 {
-                    if ( !compareDataCache( dataCache, trackerCache, i, i + 1, CompareType.EQ ) )
+                    sameGroupDetector.reset();
+                    continue;
+                }
+
+                long dataA = clearCollision( dataCache.get( dataIndexA ) );
+                long dataB = clearCollision( dataCache.get( dataIndexB ) );
+
+                if ( unsignedCompare( dataA, dataB, CompareType.GE ) )
+                {
+                    if ( !unsignedCompare( dataA, dataB, CompareType.EQ ) )
                     {
                         throw new IllegalStateException( "Failure:[" + i + "] " +
-                                Long.toHexString( dataCache.get( trackerCache.get( i ) ) ) + ":" +
-                                Long.toHexString( dataCache.get( trackerCache.get( i + 1 ) ) ) + " | " +
-                                radixOf( dataCache.get( trackerCache.get( i ) ) ) + ":" +
-                                radixOf( dataCache.get( trackerCache.get( i + 1 ) ) ) );
+                                Long.toHexString( dataA ) + ":" + Long.toHexString( dataB ) + " | " +
+                                radixOf( dataA ) + ":" + radixOf( dataB ) );
                     }
 
-                    if ( trackerCache.get( i ) > trackerCache.get( i + 1 ) )
-                    {   // swap
+                    // Here we have two equal encoded values. First let's check if they are in the same id space.
+                    int collision = sameGroupDetector.collisionWithinSameGroup(
+                            dataIndexA, groupOf( dataIndexA ).id(),
+                            dataIndexB, groupOf( dataIndexB ).id() );
+
+                    if ( dataIndexA > dataIndexB )
+                    {
+                        // Swap so that lower tracker index means lower data index. TODO Why do we do this?
                         trackerCache.swap( i, i+1, 1 );
                     }
 
-                    markAsCollision( i );
-                    markAsCollision( i+1 );
-                    numCollisions++;
+                    if ( collision != -1 )
+                    {
+                        markAsCollision( collision );
+                        markAsCollision( dataIndexB );
+                        numCollisions++;
+                    }
+                }
+                else
+                {
+                    sameGroupDetector.reset();
                 }
             }
             progress.add( batch );
         }
         progress.done();
+        monitor.numberOfCollisions( numCollisions );
         return numCollisions;
     }
 
-    private void markAsCollision( int trackerIndex )
+    private void markAsCollision( int dataIndex )
     {
-        int index = trackerCache.get( trackerIndex );
-        dataCache.set( index, setCollision( dataCache.get( index ) ) );
+        dataCache.set( dataIndex, setCollision( dataCache.get( dataIndex ) ) );
     }
 
     private void buildCollisionInfo( InputIterator<Object> ids, Collector collector, ProgressListener progress )
@@ -367,19 +425,28 @@ public class EncodingIdMapper implements IdMapper
         while ( low <= high )
         {
             long mid = low + (high - low)/2;//(low + high) / 2;
-            int index = trackerCache.get( mid );
-            if ( index == -1 )
+            int dataIndex = trackerCache.get( mid );
+            if ( dataIndex == -1 )
             {
                 return -1;
             }
-            long midValue = dataCache.get( index );
+            long midValue = dataCache.get( dataIndex );
             if ( unsignedCompare( clearCollision( midValue ), x, CompareType.EQ ) )
             {
-                if ( isCollision( midValue ) )
-                {
-                    return findFromCollisions( mid, inputId, groupId );
+                // We found the value we were looking for. Question now is whether or not it's the only
+                // of its kind. Not all values that there are duplicates of are considered collisions,
+                // read more in detectAndMarkCollisions(). So regardless we need to check previous/next
+                // if they are the same value.
+                if ( (mid > 0 && unsignedCompare( x, dataValue( mid - 1 ), CompareType.EQ )) ||
+                        (mid < trackerCache.highestSetIndex() && unsignedCompare( x, dataValue( mid + 1 ), CompareType.EQ ) ) )
+                {   // OK so there are actually multiple equal data values here, we need to go through them all
+                    // to be sure we find the correct one.
+                    return findFromCollisions( mid, midValue, inputId, groupId );
                 }
-                return groupOf( index ).id() == groupId ? index : -1;
+                else
+                {   // This is the only value here, let's do a simple comparison with correct group id and return
+                    return groupOf( dataIndex ).id() == groupId ? dataIndex : -1;
+                }
             }
             else if ( unsignedCompare( clearCollision( midValue ), x, CompareType.LT ) )
             {
@@ -391,6 +458,11 @@ public class EncodingIdMapper implements IdMapper
             }
         }
         return -1;
+    }
+
+    private long dataValue( long index )
+    {
+        return clearCollision( dataCache.get( trackerCache.get( index ) ) );
     }
 
     private long findIndex( LongArray array, long value )
@@ -418,19 +490,18 @@ public class EncodingIdMapper implements IdMapper
         return -1;
     }
 
-    private long findFromCollisions( long index, Object inputId, int groupId )
+    private long findFromCollisions( long index, long val, Object inputId , int groupId )
     {
-        long val = clearCollision( dataCache.get( trackerCache.get( index ) ) );
+        val = clearCollision( val );
         assert val == encoder.encode( inputId );
 
-        while ( index > 0 &&
-                unsignedCompare( val, clearCollision( dataCache.get( trackerCache.get( index - 1 ) ) ), CompareType.EQ ) )
+        while ( index > 0 && unsignedCompare( val, dataValue( index - 1 ), CompareType.EQ ) )
         {
             index--;
         }
+        long high = trackerCache.highestSetIndex();
         long fromIndex = index;
-        while ( index < trackerCache.highestSetIndex() &&
-                unsignedCompare( val, clearCollision( dataCache.get( trackerCache.get( index + 1 ) ) ), CompareType.EQ ) )
+        while ( index < high && unsignedCompare( val, dataValue( index + 1 ), CompareType.EQ ) )
         {
             index++;
         }
@@ -445,18 +516,32 @@ public class EncodingIdMapper implements IdMapper
         for ( long index = fromIndex; index <= toIndex; index++ )
         {
             int dataIndex = trackerCache.get( index );
+            long data = dataCache.get( dataIndex );
             IdGroup group = groupOf( dataIndex );
             if ( groupId == group.id() )
             {
-                // If we have more than Integer.MAX_VALUE collisions then I'd be darned.
-                int collisionIndex = safeCastLongToInt( findIndex( collisionCache, dataIndex ) );
-                Object value = collisionValues.get( collisionIndex );
-                if ( inputId.equals( value ) )
-                {
-                    lowestFound = lowestFound == -1 ? dataIndex : min( lowestFound, dataIndex );
-                    // continue checking so that we can find the lowest one. It's not up to us here to
-                    // consider multiple equal ids in this group an error or not. That should have been
-                    // decided in #prepare.
+                if ( isCollision( data ) )
+                {   // We found a data value for our group, but there are collisions within this group.
+                    // We need to consult the collision cache and original input id
+
+                    // If we have more than Integer.MAX_VALUE collisions then I'd be darned.
+                    int collisionIndex = safeCastLongToInt( findIndex( collisionCache, dataIndex ) );
+                    Object value = collisionValues.get( collisionIndex );
+                    if ( inputId.equals( value ) )
+                    {
+                        lowestFound = lowestFound == -1 ? dataIndex : min( lowestFound, dataIndex );
+                        // continue checking so that we can find the lowest one. It's not up to us here to
+                        // consider multiple equal ids in this group an error or not. That should have been
+                        // decided in #prepare.
+                    }
+                }
+                else
+                {   // We found a data value that is alone in its group. Just return it
+                    lowestFound = dataIndex;
+
+                    // We don't need to look no further because this value wasn't a collision,
+                    // i.e. there are more like it for this group
+                    break;
                 }
             }
         }
