@@ -25,19 +25,19 @@ import java.util
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v2_3
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutionPlan => ExecutionPlan_v2_3, InternalExecutionResult}
-import org.neo4j.cypher.internal.compiler.v2_3.notification.{LegacyPlannerNotification, CartesianProductNotification, InternalNotification}
-import org.neo4j.cypher.internal.compiler.v2_3.{InputPosition => CompilerInputPosition}
+import org.neo4j.cypher.internal.compiler.v2_3.notification.{CartesianProductNotification, InternalNotification, LegacyPlannerNotification}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.MapToPublicExceptions
-import org.neo4j.cypher.internal.compiler.v2_3.{CypherCompilerFactory, CypherException => CypherException_v2_3, InfoLogger, Monitors, PlannerName, _}
+import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.compiler.v2_3.{CypherCompilerFactory, CypherException => CypherException_v2_3, InfoLogger, InputPosition => CompilerInputPosition, Monitors, PlannerName, _}
 import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
 import org.neo4j.cypher.{ArithmeticException, CypherTypeException, EntityNotFoundException, FailedIndexException, IncomparableValuesException, IndexHintException, InternalException, InvalidArgumentException, InvalidSemanticsException, LabelScanHintException, LoadCsvStatusWrapCypherException, LoadExternalResourceException, MergeConstraintConflictException, NodeStillHasRelationshipsException, ParameterNotFoundException, ParameterWrongTypeException, PatternException, PeriodicCommitInOpenTransactionException, ProfilerStatisticsNotReadyException, SyntaxException, UniquePathNotUniqueException, UnknownLabelException, _}
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.impl.notification.NotificationCode
 import org.neo4j.graphdb.{GraphDatabaseService, InputPosition, QueryExecutionType, ResourceIterator}
-import org.neo4j.helpers.Clock
+import org.neo4j.helpers.{Assertion, Clock}
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{KernelAPI, Statement}
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
@@ -140,7 +140,15 @@ trait CompatibilityFor2_3 {
   val kernelMonitors: KernelMonitors
   val kernelAPI: KernelAPI
 
+  protected val rewriterSequencer: (String) => RewriterStepSequencer = {
+    import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer._
+    import org.neo4j.helpers.Assertion._
+
+    if (assertionsEnabled()) newValidating else newPlain
+  }
+
   protected val compiler: v2_3.CypherCompiler
+
   implicit val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
   def produceParsedQuery(preParsedQuery: PreParsedQuery, offset: CompilerInputPosition) = new ParsedQuery {
@@ -338,7 +346,7 @@ case class CompatibilityFor2_3Cost(graph: GraphDatabaseService,
                                            runtimeName: RuntimeName) extends CompatibilityFor2_3 {
   protected val compiler = CypherCompilerFactory.costBasedCompiler(
     graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, new WrappedMonitors2_3( kernelMonitors ),
-    new StringInfoLogger2_3( logger ), plannerName, runtimeName
+    new StringInfoLogger2_3( logger ), rewriterSequencer, plannerName, runtimeName
   )
 }
 
@@ -350,5 +358,5 @@ case class CompatibilityFor2_3Rule(graph: GraphDatabaseService,
                                    kernelMonitors: KernelMonitors,
                                    kernelAPI: KernelAPI) extends CompatibilityFor2_3 {
   protected val compiler = CypherCompilerFactory.ruleBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, new WrappedMonitors2_3( kernelMonitors ))
+    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, new WrappedMonitors2_3( kernelMonitors ), rewriterSequencer)
 }

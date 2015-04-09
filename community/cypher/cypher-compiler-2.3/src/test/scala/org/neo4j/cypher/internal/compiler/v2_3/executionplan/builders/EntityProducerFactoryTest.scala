@@ -46,7 +46,7 @@ class EntityProducerFactoryTest extends CypherFunSuite {
     when(planContext.getIndexRule(label, prop)).thenReturn(None)
 
     //WHEN
-    intercept[IndexHintException](factory.nodeByIndexHint(planContext, SchemaIndex("id", label, prop, AnyIndex, None)))
+    intercept[IndexHintException](factory.nodeByIndexHint(planContext -> SchemaIndex("id", label, prop, AnyIndex, None)))
   }
 
   test("calls_the_right_methods") {
@@ -62,7 +62,7 @@ class EntityProducerFactoryTest extends CypherFunSuite {
     val state = QueryStateHelper.emptyWith(query = queryContext)
 
     //WHEN
-    val func = factory.nodeByIndexHint(planContext, SchemaIndex("id", label, prop, AnyIndex, Some(SingleQueryExpression(Literal(value)))))
+    val func = factory.nodeByIndexHint(planContext -> SchemaIndex("id", label, prop, AnyIndex, Some(SingleQueryExpression(Literal(value)))))
     func(context, state) should equal(indexResult)
   }
 
@@ -75,7 +75,7 @@ class EntityProducerFactoryTest extends CypherFunSuite {
     val state = QueryStateHelper.emptyWith(query = queryContext)
 
     // when
-    val func = factory.nodeByLabel(planContext, NodeByLabel("id", label))
+    val func = factory.nodeByLabel(planContext -> NodeByLabel("id", label))
     func(context, state) should equal(Iterator.empty)
 
     // then
@@ -88,7 +88,7 @@ class EntityProducerFactoryTest extends CypherFunSuite {
     val propertyKey = "prop"
     val index: IndexDescriptor = new IndexDescriptor(123, 456)
     when(planContext.getIndexRule(labelName, propertyKey)).thenReturn(Some(index))
-    val producer = factory.nodeByIndexHint(planContext, SchemaIndex("x", labelName, propertyKey, AnyIndex, Some(SingleQueryExpression(Literal(Seq(1,2,3))))))
+    val producer = factory.nodeByIndexHint(planContext -> SchemaIndex("x", labelName, propertyKey, AnyIndex, Some(SingleQueryExpression(Literal(Seq(1,2,3))))))
     val queryContext: QueryContext = mock[QueryContext]
     val state = QueryStateHelper.emptyWith(query = queryContext)
     when(queryContext.exactIndexSearch(index, Array(1,2,3))).thenReturn(Iterator.empty)

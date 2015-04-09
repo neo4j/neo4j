@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import executionplan.{PlanBuilder, ExecutionPlanInProgress}
-import commands._
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.{PipeMonitor, EntityProducer, SingleRowPipe, TraversalMatchPipe}
-import pipes.matching.{Trail, TraversalMatcher, MonoDirectionalTraversalMatcher, BidirectionalTraversalMatcher}
-import spi.PlanContext
-import symbols._
-import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.compiler.v2_3.commands._
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutionPlanInProgress, PlanBuilder}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.{BidirectionalTraversalMatcher, MonoDirectionalTraversalMatcher, Trail, TraversalMatcher}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{EntityProducer, PipeMonitor, SingleRowPipe, TraversalMatchPipe}
+import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 import org.neo4j.graphdb.Node
+import org.neo4j.helpers.ThisShouldNotHappenError
 
 class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor): ExecutionPlanInProgress =
@@ -115,7 +115,7 @@ class TraversalMatcherBuilder extends PlanBuilder with PatternGraphBuilder {
   def identifier2nodeFn(ctx:PlanContext, identifier: String, unsolvedItems: Seq[QueryToken[StartItem]]):
   (QueryToken[StartItem], EntityProducer[Node]) = {
     val startItemQueryToken = unsolvedItems.filter { (item) => identifier == item.token.identifierName }.head
-    (startItemQueryToken, mapNodeStartCreator()(ctx, startItemQueryToken.token))
+    (startItemQueryToken, mapNodeStartCreator()((ctx, startItemQueryToken.token)))
   }
 
   val entityFactory = new EntityProducerFactory

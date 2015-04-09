@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_3
 
 import org.neo4j.cypher.GraphDatabaseTestSupport
-import org.neo4j.cypher.internal.NormalMode
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compatibility.{StringInfoLogger2_3, WrappedMonitors2_3}
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.ExecutionPlan
+import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.{Clock, FrozenClock}
 import org.neo4j.kernel.impl.util.StringLogger.DEV_NULL
@@ -41,7 +41,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       new WrappedMonitors2_3(kernelMonitors),
       new StringInfoLogger2_3(logger),
       plannerName = CostPlannerName,
-      runtimeName = InterpretedRuntimeName)
+      runtimeName = InterpretedRuntimeName,
+      rewriterSequencer = RewriterStepSequencer.newValidating)
 
   case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0, evicted: Int = 0) {
     override def toString = s"hits = $hits, misses = $misses, flushes = $flushes, evicted = $evicted"

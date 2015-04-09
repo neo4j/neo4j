@@ -39,6 +39,7 @@ case class Yes[T](values: Seq[T]) extends Maybe[T] {
   def map[B](f: T => B): Maybe[B] = Yes(values.map(f))
 
   def seqMap[B](f: (Seq[T]) => Seq[B]): Maybe[B] = Yes(f(values))
+
   def getValuesOr[B >: T](f: => Seq[B]) = values
 }
 
@@ -55,5 +56,5 @@ case class No(messages: Seq[String]) extends Maybe[Nothing] {
 
   def seqMap[B](f: (Seq[Nothing]) => Seq[B]): Maybe[B] = this
 
-  def getValuesOr[Nothing](f: => Seq[Nothing]) = f
+  def getValuesOr[B >: Nothing](f: => Seq[B]) = f
 }

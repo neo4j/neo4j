@@ -43,6 +43,7 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
                                 executionPlanBuilder: PipeExecutionPlanBuilder,
                                 queryPlanner: QueryPlanner,
                                 queryGraphSolver: QueryGraphSolver,
+                                rewriterSequencer: (String) => RewriterStepSequencer,
                                 plannerName: CostBasedPlannerName,
                                 runtimeName: RuntimeName)
   extends ExecutablePlanBuilder {
@@ -50,9 +51,16 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
 
 
   def producePlan(inputQuery: PreparedQuery, planContext: PlanContext) = {
-    val statement = CostBasedExecutablePlanBuilder.rewriteStatement(inputQuery.statement, inputQuery.scopeTree,
-                                                          inputQuery.semanticTable, inputQuery.conditions,
-                                                          monitors.newMonitor[AstRewritingMonitor]())
+    val statement =
+      CostBasedExecutablePlanBuilder.rewriteStatement(
+        statement = inputQuery.statement,
+        scopeTree = inputQuery.scopeTree,
+        semanticTable = inputQuery.semanticTable,
+        rewriterSequencer = rewriterSequencer,
+        preConditions = inputQuery.conditions,
+        monitor = monitors.newMonitor[AstRewritingMonitor]()
+      )
+
     //monitor success of compilation
     val planBuilderMonitor = monitors.newMonitor[NewRuntimeSuccessRateMonitor](CypherCompilerFactory.monitorTag)
     statement match {
@@ -124,17 +132,16 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
 object CostBasedExecutablePlanBuilder {
   import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStep._
 
-  def rewriteStatement(statement: Statement, scopeTree: Scope, semanticTable: SemanticTable, preConditions: Set[RewriterCondition], monitor: AstRewritingMonitor): (Statement, SemanticTable) = {
+  def rewriteStatement(statement: Statement, scopeTree: Scope, semanticTable: SemanticTable, rewriterSequencer: (String) => RewriterStepSequencer, preConditions: Set[RewriterCondition], monitor: AstRewritingMonitor): (Statement, SemanticTable) = {
     val namespacer = Namespacer(statement, scopeTree)
-    val newStatement = rewriteStatement(namespacer, statement, preConditions, monitor)
+    val newStatement = rewriteStatement(namespacer, statement, rewriterSequencer, preConditions, monitor)
     val newSemanticTable = namespacer.tableRewriter(semanticTable)
     (newStatement, newSemanticTable)
   }
 
-  private def rewriteStatement(namespacer: Namespacer, statement: Statement, preConditions: Set[RewriterCondition], monitor: AstRewritingMonitor): Statement = {
+  private def rewriteStatement(namespacer: Namespacer, statement: Statement, rewriterSequencer: (String) => RewriterStepSequencer, preConditions: Set[RewriterCondition], monitor: AstRewritingMonitor): Statement = {
     val rewriter =
-      RewriterStepSequencer
-        .newDefault("Planner")
+      rewriterSequencer("Planner")
         .withPrecondition(preConditions)(
           ApplyRewriter("namespaceIdentifiers", namespacer.astRewriter),
           rewriteEqualityToInCollection,

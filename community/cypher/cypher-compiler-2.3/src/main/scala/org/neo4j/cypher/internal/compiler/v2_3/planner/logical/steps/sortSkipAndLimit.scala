@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{Ascending, Descending, SortDescription}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{PlannerQuery, QueryProjection}
+import org.neo4j.cypher.internal.compiler.v2_3.{InternalException, ast}
 
 object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
 
@@ -56,6 +56,7 @@ object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
   private def sortDescription(in: ast.SortItem): SortDescription = in match {
     case ast.AscSortItem(ast.Identifier(key)) => Ascending(key)
     case ast.DescSortItem(ast.Identifier(key)) => Descending(key)
+    case _ => throw new InternalException("Sort items expected to only use single identifier expression")
   }
 
   private def addSkip(s: Option[ast.Expression], plan: LogicalPlan)(implicit context: LogicalPlanningContext) =

@@ -58,7 +58,7 @@ class EagerlyTest extends CypherFunSuite {
   }
 
   test("replaces keys on empty map") {
-    val result = Eagerly.immutableReplaceKeys(Map.empty)("a" -> 1)
+    val result = Eagerly.immutableReplaceKeys[Any, Any](Map.empty)("a" -> 1)
 
     result should be(empty)
   }

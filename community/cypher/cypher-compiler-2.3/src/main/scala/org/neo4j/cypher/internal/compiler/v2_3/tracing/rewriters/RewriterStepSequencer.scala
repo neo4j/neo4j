@@ -20,22 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.helpers.Assertion
-import org.neo4j.helpers.Assertion.assertionsEnabled
 
-import collection.mutable
+import scala.collection.mutable
 
 case class RewriterContract(childRewriters: Seq[Rewriter], postConditions: Set[RewriterCondition]) {
   val rewriter = inSequence(childRewriters: _*)
 }
 
 object RewriterStepSequencer {
-  def newDefault(sequenceName: String): RewriterStepSequencer =
-    if (assertionsEnabled())
-      newValidating(sequenceName)
-    else
-      newPlain(sequenceName)
-
   def newPlain(sequenceName: String) =
     PlainRewriterStepSequencer(sequenceName, DefaultRewriterTaskProcessor(sequenceName))
 

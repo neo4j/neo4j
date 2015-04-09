@@ -20,16 +20,16 @@
 package org.neo4j.cypher.internal.spi.v2_1
 
 import org.neo4j.cypher.MissingIndexException
+import org.neo4j.cypher.internal.compiler.v2_1.spi.{GraphStatistics, PlanContext}
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.KernelException
-import org.neo4j.kernel.api.{KernelAPI, Statement}
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException
-import org.neo4j.cypher.internal.compiler.v2_1.spi.{GraphStatistics, PlanContext}
+import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
+import org.neo4j.kernel.api.{KernelAPI, Statement}
 
-final class TransactionBoundPlanContext(statement: Statement, kernelAPI: KernelAPI, gdb: GraphDatabaseService)
-  extends TransactionBoundTokenContext(statement) with PlanContext {
+final class TransactionBoundPlanContext(someStatement: Statement, kernelAPI: KernelAPI, gdb: GraphDatabaseService)
+  extends TransactionBoundTokenContext(someStatement) with PlanContext {
 
   @Deprecated
   def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = evalOrNone {

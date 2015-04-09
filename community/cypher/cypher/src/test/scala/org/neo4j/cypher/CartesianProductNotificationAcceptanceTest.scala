@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compatibility.{StringInfoLogger2_3, WrappedMonitors2_3}
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.notification.CartesianProductNotification
+import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.impl.util.StringLogger._
 
@@ -88,5 +89,7 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
       new WrappedMonitors2_3(kernelMonitors),
       new StringInfoLogger2_3(DEV_NULL),
       plannerName = CostPlannerName,
-      runtimeName = InterpretedRuntimeName)
+      runtimeName = InterpretedRuntimeName,
+      rewriterSequencer = RewriterStepSequencer.newValidating
+    )
 }

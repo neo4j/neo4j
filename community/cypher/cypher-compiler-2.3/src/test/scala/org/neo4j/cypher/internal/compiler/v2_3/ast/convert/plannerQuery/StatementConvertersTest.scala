@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.plannerQuery.Statemen
 import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters.{namePatternPredicatePatternElements, normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanningTestSupport, _}
+import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.graphdb.Direction
 
 class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -53,7 +54,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val semanticState = semanticChecker.check(query, cleanedStatement, devNullLogger, None)
     val statement = astRewriter.rewrite(query, cleanedStatement, semanticState)._1
     val semanticTable: SemanticTable = SemanticTable(types = semanticState.typeTable)
-    val (rewrittenAst: Statement, _) = CostBasedExecutablePlanBuilder.rewriteStatement(statement, semanticState.scopeTree, semanticTable, Set.empty, mock[AstRewritingMonitor])
+    val (rewrittenAst: Statement, _) = CostBasedExecutablePlanBuilder.rewriteStatement(statement, semanticState.scopeTree, semanticTable, RewriterStepSequencer.newValidating, Set.empty, mock[AstRewritingMonitor])
 
     // This fakes pattern expression naming for testing purposes
     // In the actual code path, this renaming happens as part of planning

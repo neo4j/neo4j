@@ -20,22 +20,20 @@
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.NormalMode
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
-import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.StatementConverters
-import StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.parser.{CypherParser, ParserMonitor}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_3.{devNullLogger, Scope, Monitors, PreparedQuery}
+import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.compiler.v2_3.{Monitors, PreparedQuery, Scope, devNullLogger}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 class RuleExecutablePlanBuilderTest extends CypherFunSuite {
   val planContext: PlanContext = mock[PlanContext]
   val parser = new CypherParser(mock[ParserMonitor[Statement]])
-  val planBuilder = new LegacyExecutablePlanBuilder(mock[Monitors])
+  val planBuilder = new LegacyExecutablePlanBuilder(mock[Monitors], RewriterStepSequencer.newValidating)
 
   test("should_use_distinct_pipe_for_distinct") {
     val pipe = buildExecutionPipe("MATCH n RETURN DISTINCT n")

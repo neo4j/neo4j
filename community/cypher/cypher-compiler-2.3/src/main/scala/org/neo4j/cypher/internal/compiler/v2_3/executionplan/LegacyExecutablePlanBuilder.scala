@@ -28,20 +28,19 @@ import org.neo4j.cypher.internal.compiler.v2_3.helpers.Converge.iterateUntilConv
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.compiler.v2_3.{SyntaxException, RulePlannerName, Monitors, PreparedQuery}
-import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.compiler.v2_3.{Monitors, PreparedQuery, RulePlannerName, SyntaxException}
 
 trait ExecutionPlanInProgressRewriter {
   def rewrite(in: ExecutionPlanInProgress)(implicit context: PipeMonitor): ExecutionPlanInProgress
 }
 
-class LegacyExecutablePlanBuilder(monitors: Monitors, eagernessRewriter: Pipe => Pipe = addEagernessIfNecessary)
+class LegacyExecutablePlanBuilder(monitors: Monitors, rewriterSequencer: (String) => RewriterStepSequencer, eagernessRewriter: Pipe => Pipe = addEagernessIfNecessary)
   extends PatternGraphBuilder with ExecutablePlanBuilder with GraphQueryBuilder {
 
   private implicit val pipeMonitor: PipeMonitor = monitors.newMonitor[PipeMonitor]()
 
   override def producePlan(in: PreparedQuery, planContext: PlanContext) = {
-    val rewriter = RewriterStepSequencer.newDefault("LegacyPipeBuilder")(reattachAliasedExpressions).rewriter
+    val rewriter = rewriterSequencer("LegacyPipeBuilder")(reattachAliasedExpressions).rewriter
     val rewrite = in.rewrite(rewriter)
 
     val res = rewrite.abstractQuery match {
