@@ -1,5 +1,10 @@
 For Release Notes, see http://neo4j.com/release-notes/neo4j-${project.version}/
 
+2.2.1
+-----
+Cypher:
+o NOTE: Support for Cypher version 2.0 and 2.1 will be removed in Neo4j 2.3
+
 2.2.0
 -----
 Browser:
