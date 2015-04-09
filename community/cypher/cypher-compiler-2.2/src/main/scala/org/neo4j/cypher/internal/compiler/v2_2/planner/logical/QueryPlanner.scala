@@ -26,6 +26,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.rewriter.Lo
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.{aggregation, projection, sortSkipAndLimit, verifyBestPlan}
 import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
 
+import scala.annotation.tailrec
+
 trait QueryPlanner {
   def plan(plannerQuery: UnionQuery)(implicit context: LogicalPlanningContext): LogicalPlan
 }
@@ -68,6 +70,7 @@ class DefaultQueryPlanner(planRewriter: Rewriter,
     verifyBestPlan(finalPlan, query)
   }
 
+  @tailrec
   private def planWithTail(pred: LogicalPlan, remaining: Option[PlannerQuery])(implicit context: LogicalPlanningContext): LogicalPlan =
     remaining match {
       case Some(query) =>
@@ -92,7 +95,7 @@ class DefaultQueryPlanner(planRewriter: Rewriter,
 
   private def planPart(query: PlannerQuery, context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = {
     val ctx = query.preferredStrictness match {
-      case Some(mode) if context.input.strictness.exists(mode == _) => context.withStrictness(mode)
+      case Some(mode) if !context.input.strictness.exists(mode == _) => context.withStrictness(mode)
       case _ => context
     }
     ctx.strategy.plan(query.graph)(ctx, leafPlan)

@@ -19,12 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
+import org.mockito.Answers
+import org.mockito.Matchers.any
+import org.mockito.Mockito.{times, verify, when}
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_2.InputPosition
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.v2_2.{Rewriter, InputPosition}
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{Projection, IdName, SingleRow, LazyMode, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.LogicalPlanProducer
-import org.neo4j.cypher.internal.compiler.v2_2.planner.{LogicalPlanningTestSupport2, QueryGraph, SemanticTable}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.{RegularQueryProjection, CardinalityEstimation, PlannerQuery, UnionQuery, LogicalPlanningTestSupport2, QueryGraph, SemanticTable}
 
 class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -72,6 +76,40 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
 
     // then
     expectedPlan should equal(producedPlan)
+  }
+
+  test("should set strictness when needed") {
+    // given
+    val plannerQuery = mock[PlannerQuery with CardinalityEstimation]
+    when(plannerQuery.preferredStrictness).thenReturn(Some(LazyMode))
+    when(plannerQuery.graph).thenReturn(QueryGraph.empty)
+    when(plannerQuery.horizon).thenReturn(RegularQueryProjection())
+    when(plannerQuery.tail).thenReturn(None)
+
+    val lp = {
+      val plan = mock[Projection]
+      when(plan.availableSymbols).thenReturn(Set.empty[IdName])
+      when(plan.solved).thenReturn(plannerQuery)
+      plan
+    }
+
+    val context = mock[LogicalPlanningContext]
+    when(context.input).thenReturn(QueryGraphSolverInput.empty)
+    when(context.strategy).thenReturn(new QueryGraphSolver with PatternExpressionSolving {
+      override def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = lp
+    })
+    when(context.withStrictness(any())).thenReturn(context)
+    val producer = mock[LogicalPlanProducer]
+    when(producer.planStarProjection(any(), any())(any())).thenReturn(lp)
+    when(context.logicalPlanProducer).thenReturn(producer)
+    val queryPlanner = new DefaultQueryPlanner(planRewriter = Rewriter.noop, expressionRewriterFactory = (lpc) => Rewriter.noop )
+
+    // when
+    val query = UnionQuery(Seq(plannerQuery), distinct = false)
+    queryPlanner.plan(query)(context)
+
+    // then
+    verify(context, times(1)).withStrictness(LazyMode)
   }
 
   private def parsePatternExpression(query: String): PatternExpression = {
