@@ -34,9 +34,10 @@ trait QueryGraphProducer extends MockitoSugar {
   def producePlannerQueryForPattern(query: String): (PlannerQuery, SemanticTable) = {
     val q = query + " RETURN 1 AS Result"
     val ast = parser.parse(q)
+    val mkException = new SyntaxExceptionCreator(query, Some(pos))
     val semanticChecker = new SemanticChecker(mock[SemanticCheckMonitor])
-    val cleanedStatement: Statement = ast.endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
-    val semanticState = semanticChecker.check(query, cleanedStatement, None)
+    val cleanedStatement: Statement = ast.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
+    val semanticState = semanticChecker.check(query, cleanedStatement, mkException)
 
     val (firstRewriteStep, _, postConditions) = astRewriter.rewrite(query, cleanedStatement, semanticState)
     val semanticTable = SemanticTable(types = semanticState.typeTable, recordedScopes = semanticState.recordedScopes)

@@ -21,9 +21,11 @@ package org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2._
+import org.neo4j.cypher.internal.compiler.v2_2.ast.AstConstructionTestSupport
 
-class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
-  val rewriterUnderTest: Rewriter = normalizeWithClauses
+class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest with AstConstructionTestSupport {
+  val mkException = new SyntaxExceptionCreator("<Query>", Some(pos))
+  val rewriterUnderTest: Rewriter = normalizeWithClauses(mkException)
 
   test("ensure identifiers are aliased") {
     assertRewrite(
@@ -220,6 +222,34 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
         |RETURN prop
       """.stripMargin,
       "Expression in WITH must be aliased (use AS) (line 2, column 6 (offset: 13))"
+    )
+  }
+
+  test("rejects use of aggregation in ORDER BY if aggregation is not used in associated WITH") {
+    // Note: aggregations in ORDER BY that don't also appear in WITH are invalid
+    try {
+      rewrite(parseForRewriting(
+        """MATCH n
+          |WITH n.prop AS prop ORDER BY max(n.foo)
+          |RETURN prop
+        """.stripMargin))
+      fail("We shouldn't get here")
+    } catch {
+      case (e: SyntaxException) =>
+        e.getMessage should equal("Cannot use aggregation in ORDER BY if there are no aggregate expressions in the preceding WITH (line 2, column 1 (offset: 8))")
+    }
+  }
+
+  test("accepts use of aggregation in ORDER BY if aggregation is used in associated WITH") {
+    assertRewrite(
+      """MATCH n
+          |WITH n.prop AS prop, max(n.foo) AS m ORDER BY max(n.foo)
+        |RETURN prop AS prop, m AS m
+      """.stripMargin,
+      """MATCH n
+        |WITH n.prop AS prop, max(n.foo) AS m ORDER BY m
+        |RETURN  prop AS prop, m AS m
+      """.stripMargin
     )
   }
 
@@ -539,6 +569,10 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
     )
   }
 
+  test("match n with n as n order by max(n) return n") {
+    evaluating { rewriting("match n with n as n order by max(n) return n") } should produce[SyntaxException]
+  }
+
   protected override def assertRewrite(originalQuery: String, expectedQuery: String) {
     val original = parseForRewriting(originalQuery.replace("\r\n", "\n"))
     val expected = parseForRewriting(expectedQuery.replace("\r\n", "\n"))
@@ -560,5 +594,9 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest {
     semanticErrors.foreach(msg =>
       assert(errors contains msg, s"Error '$msg' not produced (errors: $errors)}")
     )
+  }
+
+  protected def rewriting(queryText: String): Unit = {
+    endoRewrite(parseForRewriting(queryText))
   }
 }
