@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{ASTAnnotationMap, Identifier, Statement}
+import org.neo4j.cypher.internal.compiler.v2_3.ast.{AstConstructionTestSupport, ASTAnnotationMap, Identifier, Statement}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.StatementHelper._
 import org.neo4j.cypher.internal.compiler.v2_3.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 
-class NamespacerTest extends CypherFunSuite {
+class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
 
   val tests = Seq(
     "match n return n as n" ->
@@ -125,7 +125,8 @@ class NamespacerTest extends CypherFunSuite {
 
   private def parseAndRewrite(queryText: String): Statement = {
     val parsedAst = parser.parse(queryText)
-    val cleanedAst = parsedAst.endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
+    val mkException = new SyntaxExceptionCreator(queryText, Some(pos))
+    val cleanedAst = parsedAst.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
     val (rewrittenAst, _, _) = astRewriter.rewrite(queryText, cleanedAst, cleanedAst.semanticState)
     rewrittenAst
   }

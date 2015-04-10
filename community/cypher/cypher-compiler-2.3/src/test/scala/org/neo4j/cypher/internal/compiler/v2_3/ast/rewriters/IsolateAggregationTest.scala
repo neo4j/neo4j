@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_3.inSequence
+import org.neo4j.cypher.internal.compiler.v2_3.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.compiler.v2_3.{SyntaxExceptionCreator, inSequence}
 
-class IsolateAggregationTest extends CypherFunSuite with RewriteTest {
+class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstConstructionTestSupport {
   val rewriterUnderTest = isolateAggregation
 
   test("does not rewrite things that should not be rewritten") {
@@ -136,6 +137,8 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest {
       "WITH 1 AS x, 2 AS y WITH sum(x) as `  AGGREGATION27`, y as y RETURN `  AGGREGATION27`*y AS a, `  AGGREGATION27`*y AS b")
   }
 
-  override protected def parseForRewriting(queryText: String) =
-    super.parseForRewriting(queryText).endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
+  override protected def parseForRewriting(queryText: String) = {
+    val mkException = new SyntaxExceptionCreator(queryText, Some(pos))
+    super.parseForRewriting(queryText).endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
+  }
 }

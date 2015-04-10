@@ -147,10 +147,11 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     def planFor(queryString: String): SemanticPlan = {
       val parsedStatement = parser.parse(queryString)
-      val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
-      val semanticState = semanticChecker.check(queryString, cleanedStatement, devNullLogger, None)
+      val mkException = new SyntaxExceptionCreator(queryString, Some(pos))
+      val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
+      val semanticState = semanticChecker.check(queryString, cleanedStatement, devNullLogger, mkException)
       val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryString, cleanedStatement, semanticState)
-      val postRewriteSemanticState = semanticChecker.check(queryString, rewrittenStatement, devNullLogger, None)
+      val postRewriteSemanticState = semanticChecker.check(queryString, rewrittenStatement, devNullLogger, mkException)
       val semanticTable = SemanticTable(types = postRewriteSemanticState.typeTable)
       CostBasedExecutablePlanBuilder.rewriteStatement(rewrittenStatement, postRewriteSemanticState.scopeTree, semanticTable, rewriterSequencer, postConditions, mock[AstRewritingMonitor]) match {
         case (ast: Query, newTable) =>
@@ -167,7 +168,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     def getLogicalPlanFor(queryString: String): (LogicalPlan, SemanticTable) = {
       val parsedStatement = parser.parse(queryString)
-      val semanticState = semanticChecker.check(queryString, parsedStatement, devNullLogger, None)
+      val mkException = new SyntaxExceptionCreator(queryString, Some(pos))
+      val semanticState = semanticChecker.check(queryString, parsedStatement, devNullLogger, mkException)
       val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryString, parsedStatement, semanticState)
 
       CostBasedExecutablePlanBuilder.rewriteStatement(rewrittenStatement, semanticState.scopeTree, semanticTable, rewriterSequencer, postConditions, mock[AstRewritingMonitor]) match {

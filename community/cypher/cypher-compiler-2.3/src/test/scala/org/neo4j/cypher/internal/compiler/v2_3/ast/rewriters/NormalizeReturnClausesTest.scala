@@ -21,9 +21,11 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.cypher.internal.compiler.v2_3.ast.AstConstructionTestSupport
 
-class NormalizeReturnClausesTest extends CypherFunSuite with RewriteTest {
-  val rewriterUnderTest: Rewriter = normalizeReturnClauses
+class NormalizeReturnClausesTest extends CypherFunSuite with RewriteTest with AstConstructionTestSupport {
+  val mkException = new SyntaxExceptionCreator("<Query>", Some(pos))
+  val rewriterUnderTest: Rewriter = normalizeReturnClauses(mkException)
 
   test("alias RETURN clause items") {
     assertRewrite(
@@ -70,6 +72,32 @@ class NormalizeReturnClausesTest extends CypherFunSuite with RewriteTest {
         |return `  FRESHID15` as n, `  FRESHID18` as c""".stripMargin)
   }
 
+  test("rejects use of aggregation in ORDER BY if aggregation is not used in associated RETURN") {
+    // Note: aggregations in ORDER BY that don't also appear in WITH are invalid
+    try {
+      rewrite(parseForRewriting(
+        """MATCH n
+          |RETURN n.prop AS prop ORDER BY max(n.foo)
+        """.stripMargin))
+      fail("We shouldn't get here")
+    } catch {
+      case (e: SyntaxException) =>
+        e.getMessage should equal("Cannot use aggregation in ORDER BY if there are no aggregate expressions in the preceding RETURN (line 2, column 1 (offset: 8))")
+    }
+  }
+
+  test("accepts use of aggregation in ORDER BY if aggregation is used in associated RETURN") {
+    assertRewrite(
+      """MATCH n
+        |RETURN n.prop AS prop, max(n.foo) AS m ORDER BY max(n.foo)
+      """.stripMargin,
+      """MATCH n
+        |WITH n.prop AS `  FRESHID17`, max(n.foo) AS `  FRESHID31` ORDER BY `  FRESHID31`
+        |RETURN  `  FRESHID17` AS prop,  `  FRESHID31` AS m
+      """.stripMargin
+    )
+  }
+
   protected override def assertRewrite(originalQuery: String, expectedQuery: String) {
     val original = parseForRewriting(originalQuery)
     val expected = parseForRewriting(expectedQuery)
@@ -77,4 +105,7 @@ class NormalizeReturnClausesTest extends CypherFunSuite with RewriteTest {
     assert(result === expected, "\n" + originalQuery)
   }
 
+  protected def rewriting(queryText: String): Unit = {
+    endoRewrite(parseForRewriting(queryText))
+  }
 }

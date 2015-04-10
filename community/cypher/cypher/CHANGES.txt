@@ -1,5 +1,6 @@
 2.2.1
 -----
+o NOTE: Support for Cypher version 2.0 and 2.1 will be removed in Neo4j 2.3
 o Fixes #4315 - UNWIND not binding to identifier
 o Fixes #4341 - START clause ignores associated WHERE
 o Fixes #4331 - Alleged duplicate result column names

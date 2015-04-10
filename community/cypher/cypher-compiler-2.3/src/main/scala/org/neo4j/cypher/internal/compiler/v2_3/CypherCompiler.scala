@@ -127,10 +127,13 @@ case class CypherCompiler(parser: CypherParser,
 
   def prepareQuery(queryText: String, notificationLogger: InternalNotificationLogger, offset: Option[InputPosition] = None): PreparedQuery = {
     val parsedStatement = parser.parse(queryText, offset)
-    val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
-    val originalSemanticState = semanticChecker.check(queryText, cleanedStatement, notificationLogger, offset)
+
+    val mkException = new SyntaxExceptionCreator(queryText, offset)
+    val cleanedStatement: Statement = parsedStatement.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
+    val originalSemanticState = semanticChecker.check(queryText, cleanedStatement, notificationLogger, mkException)
+
     val (rewrittenStatement, extractedParams, postConditions) = astRewriter.rewrite(queryText, cleanedStatement, originalSemanticState)
-    val postRewriteSemanticState = semanticChecker.check(queryText, rewrittenStatement, devNullLogger, offset)
+    val postRewriteSemanticState = semanticChecker.check(queryText, rewrittenStatement, devNullLogger, mkException)
 
     val table = SemanticTable(types = postRewriteSemanticState.typeTable, recordedScopes = postRewriteSemanticState.recordedScopes)
     PreparedQuery(rewrittenStatement, queryText, extractedParams)(table, postConditions, postRewriteSemanticState.scopeTree, notificationLogger)

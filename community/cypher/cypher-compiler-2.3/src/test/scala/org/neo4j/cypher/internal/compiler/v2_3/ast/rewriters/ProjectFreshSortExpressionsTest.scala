@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.cypher.internal.compiler.v2_3.ast.AstConstructionTestSupport
 
-class ProjectFreshSortExpressionsTest extends CypherFunSuite with RewriteTest {
+class ProjectFreshSortExpressionsTest extends CypherFunSuite with RewriteTest with AstConstructionTestSupport {
   val rewriterUnderTest: Rewriter = projectFreshSortExpressions
 
   test("dont adjust WITH without ORDER BY or WHERE") {
@@ -169,7 +170,8 @@ class ProjectFreshSortExpressionsTest extends CypherFunSuite with RewriteTest {
 
   private def ast(queryText: String) = {
     val parsed = parseForRewriting(queryText)
-    val normalized = parsed.endoRewrite(inSequence(normalizeReturnClauses, normalizeWithClauses))
+    val mkException = new SyntaxExceptionCreator(queryText, Some(pos))
+    val normalized = parsed.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
     val checkResult = normalized.semanticCheck(SemanticState.clean)
     normalized.endoRewrite(inSequence(expandStar(checkResult.state)))
   }

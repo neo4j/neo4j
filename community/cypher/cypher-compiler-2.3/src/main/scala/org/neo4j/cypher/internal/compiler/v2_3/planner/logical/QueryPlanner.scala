@@ -24,6 +24,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.{aggregation, projection, sortSkipAndLimit, verifyBestPlan}
 
+import scala.annotation.tailrec
+
 trait QueryPlanner {
   def plan(plannerQuery: UnionQuery)(implicit context: LogicalPlanningContext): LogicalPlan
 }
@@ -84,6 +86,7 @@ case class planWithTailX(expressionRewriterFactory: (LogicalPlanningContext => R
                         planEventHorizon: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = planEventHorizonX())
   extends LogicalPlanningFunction2[LogicalPlan, Option[PlannerQuery], LogicalPlan] {
 
+//  @tailrec
   override def apply(pred: LogicalPlan, remaining: Option[PlannerQuery])(implicit context: LogicalPlanningContext): LogicalPlan = {
     remaining match {
       case Some(query) =>
@@ -112,7 +115,7 @@ case object planPart extends ((PlannerQuery, LogicalPlanningContext, Option[Logi
 
   def apply(query: PlannerQuery, context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = {
     val ctx = query.preferredStrictness match {
-      case Some(mode) if context.input.strictness.exists(mode == _) => context.withStrictness(mode)
+      case Some(mode) if !context.input.strictness.exists(mode == _) => context.withStrictness(mode)
       case _ => context
     }
     ctx.strategy.plan(query.graph)(ctx, leafPlan)
