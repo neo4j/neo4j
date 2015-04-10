@@ -65,6 +65,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
+import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_NODE_DECORATOR;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.additiveLabels;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.defaultRelationshipType;
@@ -133,11 +134,6 @@ public class ImportTool
         STACKTRACE( "stacktrace", null,
                 "",
                 "Enable printing of error stack traces." ),
-        BAD( "bad", null,
-                "<file name>",
-                "Relationships that refer to nodes that cannot be found can, instead of making the import fail,"
-                        + " be logged to a file specified by this option. Can be relative (to store directory)"
-                        + " or absolute" ),
         BAD_TOLERANCE( "bad-tolerance", 1000,
                 "<max number of bad entries>",
                 "Number of bad entries before the import is considered failed. This tolerance threshold is "
@@ -250,7 +246,6 @@ public class ImportTool
         boolean enableStacktrace;
         Number processors = null;
         Input input = null;
-        String badFileName;
         int badTolerance;
         Charset inputEncoding;
         try
@@ -266,7 +261,6 @@ public class ImportTool
                     withDefault( (IdType)Options.ID_TYPE.defaultValue() ), TO_ID_TYPE );
             badTolerance = args.getNumber( Options.BAD_TOLERANCE.key(),
                     (Number) Options.BAD_TOLERANCE.defaultValue() ).intValue();
-            badFileName = args.get( Options.BAD.key() );
             inputEncoding = Charset.forName( args.get( Options.INPUT_ENCODING.key(), defaultCharset().name() ) );
             input = new CsvInput(
                     nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
@@ -284,7 +278,7 @@ public class ImportTool
                 new Config( stringMap( store_dir.name(), storeDir.getAbsolutePath() ) ) ) );
         life.start();
         org.neo4j.unsafe.impl.batchimport.Configuration config =
-                importConfiguration( processors, badFileName, defaultSettingsSuitableForTests );
+                importConfiguration( processors, defaultSettingsSuitableForTests );
         BatchImporter importer = new ParallelBatchImporter( storeDir.getPath(),
                 config,
                 logging,
@@ -301,11 +295,11 @@ public class ImportTool
         }
         finally
         {
-            File badRelationships = config.badFile( storeDir );
+            File badRelationships = new File( storeDir, BAD_FILE_NAME );
             if ( badRelationships.exists() )
             {
-                out.println("There were bad relationships which were skipped " +
-                            "and logged into " + badRelationships.getAbsolutePath());
+                out.println( "There were bad relationships which were skipped " +
+                            "and logged into " + badRelationships.getAbsolutePath() );
             }
 
             life.shutdown();
@@ -343,7 +337,7 @@ public class ImportTool
     }
 
     private static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration( final Number processors,
-            final String badFileName, final boolean defaultSettingsSuitableForTests )
+            final boolean defaultSettingsSuitableForTests )
     {
         return new org.neo4j.unsafe.impl.batchimport.Configuration.Default()
         {
@@ -351,18 +345,6 @@ public class ImportTool
             public int maxNumberOfProcessors()
             {
                 return processors != null ? processors.intValue() : super.maxNumberOfProcessors();
-            }
-
-            @Override
-            public File badFile( File storeDirectory )
-            {
-                if ( badFileName == null )
-                {
-                    return super.badFile( storeDirectory );
-                }
-
-                File part = new File( badFileName );
-                return part.isAbsolute() ? part : new File( storeDirectory, badFileName );
             }
 
             @Override

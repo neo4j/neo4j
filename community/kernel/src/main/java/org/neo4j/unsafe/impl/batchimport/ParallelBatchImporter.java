@@ -124,7 +124,7 @@ public class ParallelBatchImporter implements BatchImporter
         NodeLabelsCache nodeLabelsCache = null;
         long startTime = currentTimeMillis();
         boolean hasBadRelationships = false;
-        File badFile = config.badFile( storeDir );
+        File badFile = new File( storeDir, Configuration.BAD_FILE_NAME );
         try ( BatchingNeoStore neoStore = new BatchingNeoStore( fileSystem, storeDir, config,
                 writeMonitor, logging, monitors, writerFactory, additionalInitialIds );
               OutputStream badRelationshipsOutput = new BufferedOutputStream(
