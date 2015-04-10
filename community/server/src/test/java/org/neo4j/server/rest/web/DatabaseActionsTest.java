@@ -33,6 +33,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Label;
@@ -271,7 +272,7 @@ public class DatabaseActionsTest
 
     @Test
     public void shouldRemoveNodeWithNoRelationsFromDBOnDelete() throws NodeNotFoundException,
-            OperationFailureException
+            ConstraintViolationException
     {
         long nodeId;
         Transaction tx = database.getGraph().beginTx();

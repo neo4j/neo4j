@@ -84,7 +84,7 @@ public class GetNodePropertiesDocIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldGetCorrectContentEncodingRetrievingProperties() throws PropertyValueException
+    public void shouldGetCorrectContentEncodingRetrievingProperties() throws JsonParseException
     {
         String asianText = "\u4f8b\u5b50";
         String germanText = "öäüÖÄÜß";
@@ -95,11 +95,12 @@ public class GetNodePropertiesDocIT extends AbstractRestFunctionalTestBase
         String entity = JsonHelper.createJsonFrom( Collections.singletonMap( "foo", complicatedString ));
         final RestRequest request = req;
         JaxRsResponse createResponse = request.post(functionalTestHelper.dataUri() + "node/", entity);
-        String response = (String) JsonHelper.jsonToSingleValue( request.get( getPropertyUri( createResponse.getLocation().toString(), "foo" ) ).getEntity() );
+        String response = (String) JsonHelper.readJson( request.get( getPropertyUri( createResponse.getLocation()
+                .toString(), "foo" ) ).getEntity() );
         assertEquals( complicatedString, response );
     }
     @Test
-    public void shouldGetCorrectContentEncodingRetrievingPropertiesWithStreaming() throws PropertyValueException
+    public void shouldGetCorrectContentEncodingRetrievingPropertiesWithStreaming() throws JsonParseException
     {
         String asianText = "\u4f8b\u5b50";
         String germanText = "öäüÖÄÜß";
@@ -109,7 +110,8 @@ public class GetNodePropertiesDocIT extends AbstractRestFunctionalTestBase
         String entity = JsonHelper.createJsonFrom( Collections.singletonMap( "foo", complicatedString ) );
         final RestRequest request = req.header( StreamingJsonFormat.STREAM_HEADER,"true");
         JaxRsResponse createResponse = request.post(functionalTestHelper.dataUri() + "node/", entity);
-        String response = (String) JsonHelper.jsonToSingleValue( request.get( getPropertyUri( createResponse.getLocation().toString(), "foo" ) , new MediaType( "application","json", stringMap( "stream", "true" ) )).getEntity() );
+        String response = (String) JsonHelper.readJson( request.get( getPropertyUri( createResponse.getLocation()
+                .toString(), "foo" ), new MediaType( "application", "json", stringMap( "stream", "true" ) ) ).getEntity() );
         assertEquals( complicatedString, response );
     }
 

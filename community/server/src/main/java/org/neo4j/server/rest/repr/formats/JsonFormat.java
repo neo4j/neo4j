@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.ws.rs.core.MediaType;
 
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -36,6 +35,9 @@ import org.neo4j.server.rest.repr.DefaultFormat;
 import org.neo4j.server.rest.repr.ListWriter;
 import org.neo4j.server.rest.repr.MappingWriter;
 import org.neo4j.server.rest.repr.RepresentationFormat;
+
+import static org.neo4j.server.rest.domain.JsonHelper.assertSupportedPropertyValue;
+import static org.neo4j.server.rest.domain.JsonHelper.readJson;
 
 public class JsonFormat extends RepresentationFormat
 {
@@ -117,7 +119,7 @@ public class JsonFormat extends RepresentationFormat
         if ( empty( input ) ) return Collections.emptyMap();
         try
         {
-            return JsonHelper.jsonToSingleValue( stripByteOrderMark( input ) );
+            return assertSupportedPropertyValue( readJson( stripByteOrderMark( input ) ) );
         }
         catch ( JsonParseException ex )
         {

@@ -19,8 +19,13 @@
  */
 package org.neo4j.server.rest.domain;
 
+import org.neo4j.server.rest.web.NodeNotFoundException;
+
 @SuppressWarnings( "serial" )
 public class EndNodeNotFoundException extends Exception
 {
-
+    public EndNodeNotFoundException( NodeNotFoundException e )
+    {
+        super( e );
+    }
 }

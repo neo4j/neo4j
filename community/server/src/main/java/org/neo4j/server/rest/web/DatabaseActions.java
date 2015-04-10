@@ -83,6 +83,7 @@ import org.neo4j.server.rest.repr.DatabaseRepresentation;
 import org.neo4j.server.rest.repr.IndexDefinitionRepresentation;
 import org.neo4j.server.rest.repr.IndexRepresentation;
 import org.neo4j.server.rest.repr.IndexedEntityRepresentation;
+import org.neo4j.server.rest.repr.InvalidArgumentsException;
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.NodeIndexRepresentation;
 import org.neo4j.server.rest.repr.NodeIndexRootRepresentation;
@@ -173,7 +174,7 @@ public class DatabaseActions
         catch ( NotFoundException e )
         {
             throw new NodeNotFoundException( String.format(
-                    "Cannot find node with id [%d] in database.", id ) );
+                    "Cannot find node with id [%d] in database.", id ), e );
         }
     }
 
@@ -186,7 +187,7 @@ public class DatabaseActions
         }
         catch ( NotFoundException e )
         {
-            throw new RelationshipNotFoundException();
+            throw new RelationshipNotFoundException( e );
         }
     }
 
@@ -220,13 +221,13 @@ public class DatabaseActions
         return new NodeRepresentation( node( nodeId ) );
     }
 
-    public void deleteNode( long nodeId ) throws NodeNotFoundException, OperationFailureException
+    public void deleteNode( long nodeId ) throws NodeNotFoundException, ConstraintViolationException
     {
         Node node = node( nodeId );
 
         if ( node.hasRelationship() )
         {
-            throw new OperationFailureException(
+            throw new ConstraintViolationException(
                     String.format(
                             "The node with id %d cannot be deleted. Check that the node is orphaned before deletion.",
                             nodeId ) );
@@ -315,7 +316,7 @@ public class DatabaseActions
                 node.addLabel( label( labelName ) );
             }
         }
-        catch ( ConstraintViolationException e )
+        catch ( org.neo4j.graphdb.ConstraintViolationException e )
         {
             throw new BadInputException( "Unable to add label, see nested exception.", e );
         }
@@ -341,7 +342,7 @@ public class DatabaseActions
                 node.addLabel( label( labelName ) );
             }
         }
-        catch ( ConstraintViolationException e )
+        catch ( org.neo4j.graphdb.ConstraintViolationException e )
         {
             throw new BadInputException( "Unable to add label, see nested exception.", e );
         }
@@ -541,7 +542,7 @@ public class DatabaseActions
         }
         catch ( NodeNotFoundException e )
         {
-            throw new StartNodeNotFoundException();
+            throw new StartNodeNotFoundException( e );
         }
         try
         {
@@ -549,7 +550,7 @@ public class DatabaseActions
         }
         catch ( NodeNotFoundException e )
         {
-            throw new EndNodeNotFoundException();
+            throw new EndNodeNotFoundException( e );
         }
 
         Relationship rel = start.createRelationshipTo( end,
@@ -878,7 +879,7 @@ public class DatabaseActions
         {
             if ( properties != null )
             {
-                throw new BadInputException( "Cannot specify properties for a new node, " +
+                throw new InvalidArgumentsException( "Cannot specify properties for a new node, " +
                         "when a node to index is specified." );
             }
             Node node = node( nodeOrNull );
@@ -924,7 +925,7 @@ public class DatabaseActions
         {
             if ( startNode != null || type != null || endNode != null || properties != null )
             {
-                throw new BadInputException( "Either specify a relationship to index uniquely, " +
+                throw new InvalidArgumentsException( "Either specify a relationship to index uniquely, " +
                         "or the means for creating it." );
             }
             Relationship relationship = relationship( relationshipOrNull );
@@ -942,7 +943,7 @@ public class DatabaseActions
         }
         else if ( startNode == null || type == null || endNode == null )
         {
-            throw new BadInputException( "Either specify a relationship to index uniquely, " +
+            throw new InvalidArgumentsException( "Either specify a relationship to index uniquely, " +
                     "or the means for creating it." );
         }
         else

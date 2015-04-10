@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
@@ -81,6 +80,11 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.kernel.api.exceptions.Status.Request;
+import static org.neo4j.kernel.api.exceptions.Status.Request.InvalidFormat;
+import static org.neo4j.kernel.api.exceptions.Status.Schema;
+import static org.neo4j.kernel.api.exceptions.Status.Statement;
 
 public class RestfulGraphDatabaseTest
 {
@@ -189,8 +193,13 @@ public class RestfulGraphDatabaseTest
         createPerson( "Fred" );
         String wilma = createPerson( "Wilma" );
 
-        assertEquals( 409, service.setAllNodeProperties( parseLong( wilma ), "{\"name\":\"Fred\"}" ).getStatus() );
-        assertEquals( 409, service.setNodeProperty( parseLong( wilma ), "name", "\"Fred\"" ).getStatus() );
+        Response setAllNodePropertiesResponse = service.setAllNodeProperties( parseLong( wilma ), "{\"name\":\"Fred\"}" );
+        assertEquals( 409, setAllNodePropertiesResponse.getStatus() );
+        assertEquals( Schema.ConstraintViolation.code().serialize(), singleErrorCode( setAllNodePropertiesResponse ) );
+
+        Response singleNodePropertyResponse = service.setNodeProperty( parseLong( wilma ), "name", "\"Fred\"" );
+        assertEquals( 409, singleNodePropertyResponse.getStatus() );
+        assertEquals( Schema.ConstraintViolation.code().serialize(), singleErrorCode( singleNodePropertyResponse ) );
     }
 
     private String createPerson( final String name ) throws JsonParseException
@@ -274,19 +283,21 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith400WhenNodeCreatedWithUnsupportedPropertyData()
+    public void shouldRespondWith400WhenNodeCreatedWithUnsupportedPropertyData() throws Exception
     {
         Response response = service.createNode( "{\"foo\" : {\"bar\" : \"baz\"}}" );
 
         assertEquals( 400, response.getStatus() );
+        assertEquals( Statement.InvalidArguments.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
-    public void shouldRespondWith400WhenNodeCreatedWithInvalidJSON()
+    public void shouldRespondWith400WhenNodeCreatedWithInvalidJSON() throws Exception
     {
         Response response = service.createNode( "this:::isNot::JSON}" );
 
         assertEquals( 400, response.getStatus() );
+        assertEquals( InvalidFormat.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
@@ -305,6 +316,7 @@ public class RestfulGraphDatabaseTest
     {
         Response response = service.getNode( 9000000000000L );
         assertEquals( 404, response.getStatus() );
+        assertEquals( Statement.EntityNotFound.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
@@ -320,6 +332,7 @@ public class RestfulGraphDatabaseTest
     {
         Response response = service.setAllNodeProperties( 9000000000000L, "{\"foo\" : \"bar\"}" );
         assertEquals( 404, response.getStatus() );
+        assertEquals( Statement.EntityNotFound.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
@@ -328,6 +341,7 @@ public class RestfulGraphDatabaseTest
         Response response = service.setAllNodeProperties( helper.createNode(),
                 "{\"foo\" : bad-json-here \"bar\"}" );
         assertEquals( 400, response.getStatus() );
+        assertEquals( Request.InvalidFormat.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
@@ -336,6 +350,7 @@ public class RestfulGraphDatabaseTest
         Response response = service.setAllNodeProperties( helper.createNode(),
                 "{\"foo\" : {\"bar\" : \"baz\"}}" );
         assertEquals( 400, response.getStatus() );
+        assertEquals( Statement.InvalidArguments.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
@@ -377,7 +392,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith409IfNodeCannotBeDeleted()
+    public void shouldRespondWith409IfNodeCannotBeDeleted() throws Exception
     {
         long id = helper.createNode();
         helper.createRelationship( "LOVES", id, helper.createNode() );
@@ -385,15 +400,17 @@ public class RestfulGraphDatabaseTest
         Response response = service.deleteNode( id );
 
         assertEquals( 409, response.getStatus() );
+        assertEquals( Schema.ConstraintViolation.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
-    public void shouldRespondWith404IfNodeToBeDeletedDoesNotExist()
+    public void shouldRespondWith404IfNodeToBeDeletedDoesNotExist() throws Exception
     {
         long nonExistentId = 999999;
         Response response = service.deleteNode( nonExistentId );
 
         assertEquals( 404, response.getStatus() );
+        assertEquals( Statement.EntityNotFound.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
@@ -419,37 +436,41 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404ForSetNodePropertyOnNonExistingNode()
+    public void shouldRespondWith404ForSetNodePropertyOnNonExistingNode() throws Exception
     {
         String key = "foo";
         String json = "\"bar\"";
         Response response = service.setNodeProperty( 999999, key, json );
         assertEquals( 404, response.getStatus() );
+        assertEquals( Statement.EntityNotFound.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
-    public void shouldRespondWith400ForSetNodePropertyWithInvalidJson()
+    public void shouldRespondWith400ForSetNodePropertyWithInvalidJson() throws Exception
     {
         String key = "foo";
         String json = "{invalid json";
         Response response = service.setNodeProperty( 999999, key, json );
         assertEquals( 400, response.getStatus() );
+        assertEquals( Request.InvalidFormat.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
-    public void shouldRespondWith404ForGetNonExistentNodeProperty()
+    public void shouldRespondWith404ForGetNonExistentNodeProperty() throws Exception
     {
         long nodeId = helper.createNode();
         Response response = service.getNodeProperty( nodeId, "foo" );
         assertEquals( 404, response.getStatus() );
+        assertEquals( Statement.NoSuchProperty.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
-    public void shouldRespondWith404ForGetNodePropertyOnNonExistentNode()
+    public void shouldRespondWith404ForGetNodePropertyOnNonExistentNode() throws Exception
     {
         long nodeId = 999999;
         Response response = service.getNodeProperty( nodeId, "foo" );
         assertEquals( 404, response.getStatus() );
+        assertEquals( Statement.EntityNotFound.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
@@ -524,21 +545,23 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404WhenTryingToCreateRelationshipFromNonExistentNode()
+    public void shouldRespondWith404WhenTryingToCreateRelationshipFromNonExistentNode() throws Exception
     {
         long nodeId = helper.createNode();
-        Response response = service.createRelationship( nodeId * 1000, "{\"to\" : \"" + BASE_URI + nodeId
+        Response response = service.createRelationship( nodeId + 1000, "{\"to\" : \"" + BASE_URI + nodeId
                 + "\", \"type\" : \"LOVES\"}" );
         assertEquals( 404, response.getStatus() );
+        assertEquals( Statement.EntityNotFound.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
-    public void shouldRespondWith400WhenTryingToCreateRelationshipToNonExistentNode()
+    public void shouldRespondWith400WhenTryingToCreateRelationshipToNonExistentNode() throws Exception
     {
         long nodeId = helper.createNode();
-        Response response = service.createRelationship( nodeId, "{\"to\" : \"" + BASE_URI + (nodeId * 1000)
+        Response response = service.createRelationship( nodeId, "{\"to\" : \"" + BASE_URI + (nodeId + 1000)
                 + "\", \"type\" : \"LOVES\"}" );
         assertEquals( 400, response.getStatus() );
+        assertEquals( Statement.EntityNotFound.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
@@ -551,17 +574,18 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith400WhenTryingToCreateRelationshipWithBadJson()
+    public void shouldRespondWith400WhenTryingToCreateRelationshipWithBadJson() throws Exception
     {
         long startNode = helper.createNode();
         long endNode = helper.createNode();
         Response response = service.createRelationship( startNode, "{\"to\" : \"" + BASE_URI + endNode
                 + "\", \"type\" ***and junk*** : \"LOVES\"}" );
         assertEquals( 400, response.getStatus() );
+        assertEquals( Request.InvalidFormat.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
-    public void shouldRespondWith400WhenTryingToCreateRelationshipWithUnsupportedProperties()
+    public void shouldRespondWith400WhenTryingToCreateRelationshipWithUnsupportedProperties() throws Exception
 
     {
         long startNode = helper.createNode();
@@ -570,6 +594,7 @@ public class RestfulGraphDatabaseTest
                 "{\"to\" : \"" + BASE_URI + endNode
                         + "\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : {\"bar\" : \"baz\"}}}" );
         assertEquals( 400, response.getStatus() );
+        assertEquals( Statement.InvalidArguments.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
@@ -598,11 +623,12 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404ForRemoveNodePropertiesForNonExistingNode()
+    public void shouldRespondWith404ForRemoveNodePropertiesForNonExistingNode() throws Exception
     {
         long nodeId = 999999;
         Response response = service.deleteAllNodeProperties( nodeId );
         assertEquals( 404, response.getStatus() );
+        assertEquals( Statement.EntityNotFound.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
@@ -619,7 +645,7 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGet404WhenRemovingNonExistingProperty()
+    public void shouldGet404WhenRemovingNonExistingProperty() throws Exception
     {
         long nodeId = helper.createNode();
         Map<String, Object> properties = new HashMap<String, Object>();
@@ -628,14 +654,16 @@ public class RestfulGraphDatabaseTest
         helper.setNodeProperties( nodeId, properties );
         Response response = service.deleteNodeProperty( nodeId, "baz" );
         assertEquals( 404, response.getStatus() );
+        assertEquals( Statement.NoSuchProperty.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
-    public void shouldGet404WhenRemovingPropertyFromNonExistingNode()
+    public void shouldGet404WhenRemovingPropertyFromNonExistingNode() throws Exception
     {
         long nodeId = 999999;
         Response response = service.deleteNodeProperty( nodeId, "foo" );
         assertEquals( 404, response.getStatus() );
+        assertEquals( Statement.EntityNotFound.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
@@ -649,10 +677,11 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGet404WhenRetrievingRelationshipThatDoesNotExist()
+    public void shouldGet404WhenRetrievingRelationshipThatDoesNotExist() throws Exception
     {
         Response response = service.getRelationship( 999999 );
         assertEquals( 404, response.getStatus() );
+        assertEquals( Statement.EntityNotFound.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
@@ -684,17 +713,18 @@ public class RestfulGraphDatabaseTest
         Response response = service.getRelationshipProperty( relationshipId, "some-key" );
 
         assertEquals( 200, response.getStatus() );
-        assertEquals( "some-value", JsonHelper.jsonToSingleValue( entityAsString( response ) ) );
+        assertEquals( "some-value", JsonHelper.readJson( entityAsString( response ) ) );
 
         checkContentTypeCharsetUtf8(response);
     }
 
     @Test
-    public void shouldGet404WhenCannotResolveAPropertyOnRelationship()
+    public void shouldGet404WhenCannotResolveAPropertyOnRelationship() throws Exception
     {
         long relationshipId = helper.createRelationship( "knows" );
         Response response = service.getRelationshipProperty( relationshipId, "some-key" );
         assertEquals( 404, response.getStatus() );
+        assertEquals( Statement.NoSuchProperty.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
@@ -707,12 +737,13 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldGet404WhenRemovingNonExistentRelationship()
+    public void shouldGet404WhenRemovingNonExistentRelationship() throws Exception
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
 
         Response response = service.deleteRelationship( relationshipId + 1000 );
         assertEquals( 404, response.getStatus() );
+        assertEquals( Statement.EntityNotFound.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
@@ -760,7 +791,7 @@ public class RestfulGraphDatabaseTest
         helper.createRelationship( "LIKES", nodeId, helper.createNode() );
         Response response = service.getNodeRelationships( nodeId, RelationshipDirection.all,
                 new AmpersandSeparatedCollection( "LIKES&LIKES" ) );
-        Collection<?> array = (Collection<?>) JsonHelper.jsonToSingleValue( entityAsString( response ) );
+        Collection<?> array = (Collection<?>) JsonHelper.readJson( entityAsString( response ) );
         assertEquals( 1, array.size() );
     }
 
@@ -790,12 +821,13 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404WhenGettingIncomingRelationshipsForNonExistingNode()
+    public void shouldRespondWith404WhenGettingIncomingRelationshipsForNonExistingNode() throws Exception
 
     {
         Response response = service.getNodeRelationships( 999999, RelationshipDirection.all,
                 new AmpersandSeparatedCollection( "" ) );
         assertEquals( 404, response.getStatus() );
+        assertEquals( Statement.EntityNotFound.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
@@ -813,22 +845,24 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith400WhenSettingRelationshipPropertiesWithBadJson()
+    public void shouldRespondWith400WhenSettingRelationshipPropertiesWithBadJson() throws Exception
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
         String json = "{\"name: \"Mattias\", \"age\": 30}";
         Response response = service.setAllRelationshipProperties( relationshipId, json );
         assertEquals( 400, response.getStatus() );
+        assertEquals( Request.InvalidFormat.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
-    public void shouldRespondWith404WhenSettingRelationshipPropertiesOnNonExistingRelationship()
+    public void shouldRespondWith404WhenSettingRelationshipPropertiesOnNonExistingRelationship() throws Exception
 
     {
         long relationshipId = 99999999;
         String json = "{\"name\": \"Mattias\", \"age\": 30}";
         Response response = service.setAllRelationshipProperties( relationshipId, json );
         assertEquals( 404, response.getStatus() );
+        assertEquals( Statement.EntityNotFound.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
@@ -845,22 +879,24 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith400WhenSettingRelationshipPropertyWithBadJson()
+    public void shouldRespondWith400WhenSettingRelationshipPropertyWithBadJson() throws Exception
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
         String json = "}Mattias";
         Response response = service.setRelationshipProperty( relationshipId, "name", json );
         assertEquals( 400, response.getStatus() );
+        assertEquals( Request.InvalidFormat.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
-    public void shouldRespondWith404WhenSettingRelationshipPropertyOnNonExistingRelationship()
+    public void shouldRespondWith404WhenSettingRelationshipPropertyOnNonExistingRelationship() throws Exception
 
     {
         long relationshipId = 99999999;
         String json = "\"Mattias\"";
         Response response = service.setRelationshipProperty( relationshipId, "name", json );
         assertEquals( 404, response.getStatus() );
+        assertEquals( Statement.EntityNotFound.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
@@ -884,12 +920,13 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404WhenNoRelationshipFromWhichToRemoveProperties()
+    public void shouldRespondWith404WhenNoRelationshipFromWhichToRemoveProperties() throws Exception
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
 
         Response response = service.deleteAllRelationshipProperties( relationshipId + 1000 );
         assertEquals( 404, response.getStatus() );
+        assertEquals( Statement.EntityNotFound.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
@@ -904,20 +941,22 @@ public class RestfulGraphDatabaseTest
     }
 
     @Test
-    public void shouldRespondWith404WhenRemovingRelationshipPropertyWhichDoesNotExist()
+    public void shouldRespondWith404WhenRemovingRelationshipPropertyWhichDoesNotExist() throws Exception
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
         Response response = service.deleteRelationshipProperty( relationshipId, "foo" );
         assertEquals( 404, response.getStatus() );
+        assertEquals( Statement.NoSuchProperty.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
-    public void shouldRespondWith404WhenNoRelationshipFromWhichToRemoveProperty()
+    public void shouldRespondWith404WhenNoRelationshipFromWhichToRemoveProperty() throws Exception
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
 
         Response response = service.deleteRelationshipProperty( relationshipId * 1000, "some-key" );
         assertEquals( 404, response.getStatus() );
+        assertEquals( Statement.EntityNotFound.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
@@ -1110,6 +1149,7 @@ public class RestfulGraphDatabaseTest
         Response response = service.addToNodeIndex( "unique-nodes", "", "",
                 JsonHelper.createJsonFrom( postBody ) );
         assertEquals( 400, response.getStatus() );
+        assertEquals( Statement.InvalidArguments.code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
@@ -1432,7 +1472,7 @@ public class RestfulGraphDatabaseTest
         Response response = service.getIndexedNodes( matrixers.nodeIndexName, indexedKeyValue.getKey(),
                 indexedKeyValue.getValue() );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
-        Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( entityAsString( response ) );
+        Collection<?> items = (Collection<?>) JsonHelper.readJson( entityAsString( response ) );
         int counter = 0;
         for ( Object item : items )
         {
@@ -1460,7 +1500,7 @@ public class RestfulGraphDatabaseTest
                 + indexedKeyValue.getValue().substring( 0, 1 ) + "*",
                 "" /*default ordering*/ );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
-        Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( entityAsString( response ) );
+        Collection<?> items = (Collection<?>) JsonHelper.readJson( entityAsString( response ) );
         int counter = 0;
         for ( Object item : items )
         {
@@ -1494,7 +1534,7 @@ public class RestfulGraphDatabaseTest
         Response response = service.getIndexedNodesByQuery( matrixers.nodeIndexName, indexedKeyValue.getKey(),
                 indexedKeyValue.getValue().substring( 0, 1 ) + "*", "" /*default ordering*/ );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
-        Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( entityAsString( response ) );
+        Collection<?> items = (Collection<?>) JsonHelper.readJson( entityAsString( response ) );
         int counter = 0;
         for ( Object item : items )
         {
@@ -1537,7 +1577,7 @@ public class RestfulGraphDatabaseTest
 
         Response response = service.getIndexedRelationships( indexName, key, value );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
-        Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( entityAsString( response ) );
+        Collection<?> items = (Collection<?>) JsonHelper.readJson( entityAsString( response ) );
         int counter = 0;
         for ( Object item : items )
         {
@@ -1575,7 +1615,7 @@ public class RestfulGraphDatabaseTest
         Response response = service.getIndexedRelationshipsByQuery( indexName,
                 key + ":" + value.substring( 0, 1 ) + "*", "" /*default ordering*/ );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
-        Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( entityAsString( response ) );
+        Collection<?> items = (Collection<?>) JsonHelper.readJson( entityAsString( response ) );
         int counter = 0;
         for ( Object item : items )
         {
@@ -1614,7 +1654,7 @@ public class RestfulGraphDatabaseTest
         Response response = service.getIndexedRelationshipsByQuery( indexName,
                 key, value.substring( 0, 1 ) + "*", "" /*default ordering*/ );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
-        Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( entityAsString( response ) );
+        Collection<?> items = (Collection<?>) JsonHelper.readJson( entityAsString( response ) );
         int counter = 0;
         for ( Object item : items )
         {
@@ -1642,7 +1682,7 @@ public class RestfulGraphDatabaseTest
         checkContentTypeCharsetUtf8(response);
 
         String entity = entityAsString( response );
-        Object parsedJson = JsonHelper.jsonToSingleValue( entity );
+        Object parsedJson = JsonHelper.readJson( entity );
         assertTrue( parsedJson instanceof Collection<?> );
         assertTrue( ((Collection<?>) parsedJson).isEmpty() );
     }
@@ -1686,6 +1726,7 @@ public class RestfulGraphDatabaseTest
     {
         Response response = service.deleteFromNodeIndex( "nodes", "bogus", "bogus", 999999 );
         assertEquals( Status.NOT_FOUND.getStatusCode(), response.getStatus() );
+//        assertEquals( Statement..code().serialize(), singleErrorCode( response ) );
     }
 
     @Test
@@ -2019,5 +2060,16 @@ public class RestfulGraphDatabaseTest
         response = service.isAutoIndexerEnabled( type );
         assertEquals( 200, response.getStatus() );
         assertFalse( Boolean.parseBoolean( entityAsString( response ) ) );
+    }
+
+    @SuppressWarnings("unchecked")
+    private String singleErrorCode( Response response ) throws JsonParseException
+    {
+        String json = entityAsString( response );
+        Map<String, Object> map = JsonHelper.jsonToMap( json );
+        List<Object> errors = (List<Object>) map.get( "errors" );
+        assertEquals( 1, errors.size() );
+        Map<String, String> error = (Map<String, String>) errors.get( 0 );
+        return error.get( "code" );
     }
 }

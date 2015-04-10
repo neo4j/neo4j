@@ -138,7 +138,7 @@ public class PropertySettingStrategy
         }
         catch ( IllegalArgumentException e )
         {
-            throw new PropertyValueException( key, value );
+            throw new PropertyValueException( "Could not set property \"" + key + "\", unsupported type: " + value );
         }
     }
 

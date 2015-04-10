@@ -176,7 +176,7 @@ public class IndexRelationshipDocIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldGet200AndArrayOfRelationshipRepsWhenGettingFromIndex() throws PropertyValueException
+    public void shouldGet200AndArrayOfRelationshipRepsWhenGettingFromIndex() throws JsonParseException
     {
         final long startNode = helper.createNode();
         final long endNode = helper.createNode();
@@ -207,7 +207,7 @@ public class IndexRelationshipDocIT extends AbstractRestFunctionalTestBase
         JaxRsResponse response = RestRequest.req().get(
                 functionalTestHelper.indexRelationshipUri( indexName, key, value ) );
         assertEquals( 200, response.getStatus() );
-        Collection<?> items = (Collection<?>) JsonHelper.jsonToSingleValue( response.getEntity() );
+        Collection<?> items = (Collection<?>) JsonHelper.readJson( response.getEntity() );
         int counter = 0;
         for ( Object item : items )
         {
@@ -322,14 +322,14 @@ public class IndexRelationshipDocIT extends AbstractRestFunctionalTestBase
         response = httpGetIndexRelationshipNameKeyValue( indexName, key, URIHelper.encode( value ) );
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
         String responseEntity = response.getEntity();
-        Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue( responseEntity );
+        Collection<?> hits = (Collection<?>) JsonHelper.readJson( responseEntity );
         assertEquals( 1, hits.size() );
         response.close();
         CLIENT.resource( location ).delete();
         response = httpGetIndexRelationshipNameKeyValue( indexName, key, URIHelper.encode( value ) );
         assertEquals( 200, response.getStatus() );
         responseEntity = response.getEntity();
-        hits = (Collection<?>) JsonHelper.jsonToSingleValue( responseEntity );
+        hits = (Collection<?>) JsonHelper.readJson( responseEntity );
         assertEquals( 0, hits.size() );
         response.close();
     }
