@@ -547,7 +547,7 @@ public class ImportTool
         {
             return args.interpretOptionsWithMetadata( key, Converters.<File[]>optional(),
                     Converters.toFiles( MULTI_FILE_DELIMITER ), FILES_EXISTS,
-                    Validators.<File>atLeast( 1 ) );
+                    Validators.<File>atLeast( "--" + key, 1 ) );
         }
     };
 

@@ -90,7 +90,7 @@ public class Validators
         }
     };
 
-    public static <T> Validator<T[]> atLeast( final int length )
+    public static <T> Validator<T[]> atLeast( final String key, final int length )
     {
         return new Validator<T[]>()
         {
@@ -99,8 +99,9 @@ public class Validators
             {
                 if ( value.length < length )
                 {
-                    throw new IllegalArgumentException( "Expected " + Arrays.toString( value ) +
-                            " to have at least " + length + " items, but had only " + value.length );
+                    throw new IllegalArgumentException( "Expected '" + key + "' to have at least " +
+                            length + " item" + (length == 1 ? "" : "s") + ", but had " + value.length +
+                            " (" + Arrays.toString( value ) + ")" );
                 }
             }
         };
