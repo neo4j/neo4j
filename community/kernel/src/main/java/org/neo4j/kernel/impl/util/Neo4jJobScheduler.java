@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -53,6 +54,19 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     {
         this.executor = newCachedThreadPool( daemon( "Neo4j " + id + trackTest() ) );
         this.scheduledExecutor = new ScheduledThreadPoolExecutor( 2, daemon( "Scheduled Neo4j " + id + trackTest() ) );
+    }
+
+    @Override
+    public Executor executor( final Group group )
+    {
+        return new Executor()
+        {
+            @Override
+            public void execute( Runnable command )
+            {
+                schedule( group, command );
+            }
+        };
     }
 
     @Override
