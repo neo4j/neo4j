@@ -283,6 +283,7 @@ public class ImportTool
                 config,
                 logging,
                 ExecutionMonitors.defaultVisible() );
+        printInputSummary( storeDir, nodesFiles, relationshipsFiles );
         boolean success = false;
         try
         {
@@ -321,6 +322,42 @@ public class ImportTool
                 }
             }
         }
+    }
+
+    private static void printInputSummary( File storeDir, Collection<Option<File[]>> nodesFiles,
+            Collection<Option<File[]>> relationshipsFiles )
+    {
+        System.out.println( "Importing the contents of these files into " + storeDir + ":" );
+        printInputFiles( "Nodes", nodesFiles );
+        printInputFiles( "Relationships", relationshipsFiles );
+    }
+
+    private static void printInputFiles( String name, Collection<Option<File[]>> files )
+    {
+        if ( files.isEmpty() )
+        {
+            return;
+        }
+
+        System.out.println( name + ":" );
+        int i = 0;
+        String indent = "  ";
+        for ( Option<File[]> group : files )
+        {
+            if ( i++ > 0 )
+            {
+                System.out.println();
+            }
+            if ( group.metadata() != null )
+            {
+                System.out.println( indent + ":" + group.metadata() );
+            }
+            for ( File file : group.value() )
+            {
+                System.out.println( indent + file );
+            }
+        }
+        System.out.println();
     }
 
     private static void validateInputFiles( Collection<Option<File[]>> nodesFiles,
