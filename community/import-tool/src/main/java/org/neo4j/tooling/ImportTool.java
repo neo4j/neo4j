@@ -259,6 +259,7 @@ public class ImportTool
                     Converters.toFile(), Validators.DIRECTORY_IS_WRITABLE, Validators.CONTAINS_NO_EXISTING_DATABASE );
             nodesFiles = INPUT_FILES_EXTRACTOR.apply( args, Options.NODE_DATA.key() );
             relationshipsFiles = INPUT_FILES_EXTRACTOR.apply( args, Options.RELATIONSHIP_DATA.key() );
+            validateInputFiles( nodesFiles, relationshipsFiles );
             enableStacktrace = args.getBoolean( Options.STACKTRACE.key(), Boolean.FALSE, Boolean.TRUE );
             processors = args.getNumber( Options.PROCESSORS.key(), null );
             IdType idType = args.interpretOption( Options.ID_TYPE.key(),
@@ -325,6 +326,19 @@ public class ImportTool
                     }
                 }
             }
+        }
+    }
+
+    private static void validateInputFiles( Collection<Option<File[]>> nodesFiles,
+            Collection<Option<File[]>> relationshipsFiles )
+    {
+        if ( nodesFiles.isEmpty() )
+        {
+            if ( relationshipsFiles.isEmpty() )
+            {
+                throw new IllegalArgumentException( "No input specified, nothing to import" );
+            }
+            throw new IllegalArgumentException( "No node input specified, cannot import relationships without nodes" );
         }
     }
 

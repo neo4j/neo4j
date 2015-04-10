@@ -52,9 +52,11 @@ import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -458,6 +460,28 @@ public class ImportToolTest
 
         // THEN
         verifyData();
+    }
+
+    @Test
+    public void shouldDisallowImportWithoutNodesInput() throws Exception
+    {
+        // GIVEN
+        List<String> nodeIds = nodeIds();
+        Configuration config = Configuration.COMMAS;
+
+        // WHEN
+        try
+        {
+            importTool(
+                    "--into", dbRule.getStoreDir().getAbsolutePath(),
+                    "--relationships", relationshipData( true, config, nodeIds, alwaysTrue(), true ).getAbsolutePath() );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // THEN
+            assertThat( e.getMessage(), containsString( "No node input" ) );
+        }
     }
 
     protected void assertNodeHasLabels( Node node, String[] names )
