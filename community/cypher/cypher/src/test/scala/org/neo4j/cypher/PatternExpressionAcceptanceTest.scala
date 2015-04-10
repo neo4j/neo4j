@@ -323,17 +323,25 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     val nodeC = createLabeledNode("Foo")
     val nodeD = createLabeledNode("Foo")
     val nodeE = createLabeledNode("Bar")
+    createLabeledNode("Bar")
+    createLabeledNode("Bar")
     relate(nodeA, nodeB, "HAS")
     relate(nodeC, nodeB, "HAS")
     relate(nodeD, nodeE, "HAS")
 
-    val query = "PROFILE MATCH (a:Foo) OPTIONAL MATCH a--(b:Bar) WHERE a--(b:Bar)--() RETURN b"
-    val results = executeWithNewPlanner(query).toList
-    results should equal(List(Map("b" -> nodeB), Map("b" -> nodeB), Map("b" -> null)))
+    val result = executeWithNewPlanner("MATCH (a:Foo) OPTIONAL MATCH a--(b:Bar) WHERE a--(b:Bar)--() RETURN a, b")
+    result.toList should equal(List(
+      Map("a" -> nodeA, "b" -> nodeB),
+      Map("a" -> nodeC, "b" -> nodeB),
+      Map("a" -> nodeD, "b" -> null)
+    ))
 
-    val queryNot = "PROFILE MATCH (a:Foo) OPTIONAL MATCH a--(b:Bar) WHERE NOT(a--(b:Bar)--()) RETURN b"
-    val resultsNot = executeWithNewPlanner(queryNot).toList
-    resultsNot should equal(List(Map("b" -> null), Map("b" -> null), Map("b" -> nodeE)))
+    val resultNot = executeWithNewPlanner("MATCH (a:Foo) OPTIONAL MATCH a--(b:Bar) WHERE NOT(a--(b:Bar)--()) RETURN a, b")
+    resultNot.toList should equal(List(
+      Map("a" -> nodeA, "b" -> null),
+      Map("a" -> nodeC, "b" -> null),
+      Map("a" -> nodeD, "b" -> nodeE)
+    ))
   }
 
   test("should consider cardinality input when planning pattern expression in where clause") {
