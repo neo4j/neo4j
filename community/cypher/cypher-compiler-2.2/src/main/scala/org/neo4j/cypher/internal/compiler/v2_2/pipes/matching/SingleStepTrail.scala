@@ -35,7 +35,7 @@ final case class SingleStepTrail(next: Trail,
                                  originalPredicates: Seq[Predicate]) extends Trail {
   val end = next.end
 
-  def pathDescription = next.pathDescription ++ Seq(relName, end)
+  def pathDescription = next.pathDescription ++ Seq(relName, start)
 
   def toSteps(id: Int) = {
     val steps = next.toSteps(id + 1)
