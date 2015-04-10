@@ -169,7 +169,15 @@ final class MuninnPagedFile implements PagedFile
     {
         try ( MajorFlushEvent flushEvent = tracer.beginFileFlush( swapper ) )
         {
-            FlushEventOpportunity flushOpportunity = flushEvent.flushEventOpportunity();
+            flushAndForceInternal( flushEvent.flushEventOpportunity() );
+        }
+    }
+
+    void flushAndForceInternal( FlushEventOpportunity flushOpportunity ) throws IOException
+    {
+        pageCache.pauseBackgroundFlushTask();
+        try
+        {
             for ( Object[] chunk : translationTable )
             {
                 for ( Object element : chunk )
@@ -190,6 +198,10 @@ final class MuninnPagedFile implements PagedFile
                 }
             }
             force();
+        }
+        finally
+        {
+            pageCache.unpauseBackgroundFlushTask();
         }
     }
 
