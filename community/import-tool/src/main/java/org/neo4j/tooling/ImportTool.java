@@ -385,7 +385,6 @@ public class ImportTool
             e.printStackTrace( System.err );
         }
         System.err.println();
-        printUsage( System.err );
 
         // Mute the stack trace that the default exception handler would have liked to print.
         // Calling System.exit( 1 ) or similar would be convenient on one hand since we can set
