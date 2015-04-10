@@ -119,7 +119,7 @@ public class CommunityNeoServer extends AbstractNeoServer
     @Override
     protected WebServer createWebServer()
     {
-		return new Jetty9WebServer( dependencies.logging());
+		return new Jetty9WebServer( dependencies.logging(), configurator.configuration());
 	}
 
     @Override

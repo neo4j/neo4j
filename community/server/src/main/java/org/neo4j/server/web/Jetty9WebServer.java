@@ -59,6 +59,8 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.WebAppContext;
 
+import org.neo4j.kernel.configuration.Config;
+
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
@@ -126,16 +128,18 @@ public class Jetty9WebServer implements WebServer
     private int jettyMaxThreads;
     private boolean httpsEnabled = false;
     private KeyStoreInformation httpsCertificateInformation = null;
-    private final SslSocketConnectorFactory sslSocketFactory = new SslSocketConnectorFactory();
-    private final HttpConnectorFactory connectorFactory = new HttpConnectorFactory();
+    private final SslSocketConnectorFactory sslSocketFactory;
+    private final HttpConnectorFactory connectorFactory;
     private File requestLoggingConfiguration;
     private final ConsoleLogger console;
     private final StringLogger log;
 
-    public Jetty9WebServer( Logging logging )
+    public Jetty9WebServer( Logging logging, Config config )
     {
         this.console = logging.getConsoleLog( getClass() );
         this.log = logging.getMessagesLog( getClass() );
+        sslSocketFactory = new SslSocketConnectorFactory(config);
+        connectorFactory = new HttpConnectorFactory(config);
     }
 
     @Override

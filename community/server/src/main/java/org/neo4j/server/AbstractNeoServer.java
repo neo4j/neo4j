@@ -440,9 +440,9 @@ public abstract class AbstractNeoServer implements NeoServer
 
     private int getMaxThreads()
     {
-        return configurator.configuration()
-                .get( ServerSettings.webserver_max_threads ) != null ? configurator.configuration()
-                .get( ServerSettings.webserver_max_threads ) : defaultMaxWebServerThreads();
+        return configurator.configuration().get( ServerSettings.webserver_max_threads ) != null ?
+               configurator.configuration().get( ServerSettings.webserver_max_threads ) :
+               defaultMaxWebServerThreads();
     }
 
     private int defaultMaxWebServerThreads()

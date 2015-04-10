@@ -22,17 +22,20 @@ package org.neo4j.server.rest.web;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import org.apache.commons.configuration.Configuration;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -40,10 +43,15 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.FakeClock;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.server.configuration.ConfigWrappingConfiguration;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.rest.domain.GraphDbHelper;
@@ -56,11 +64,13 @@ import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 import org.neo4j.server.rest.web.RestfulGraphDatabase.AmpersandSeparatedCollection;
+import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.server.EntityOutputFormat;
 
 import static java.lang.Long.parseLong;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasKey;
@@ -93,8 +103,14 @@ public class RestfulGraphDatabaseTest
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
         leaseManager = new LeaseManager( new FakeClock() );
+
+        Config config = new Config();
+        config.registerSettingsClasses( asList( ServerSettings.class, ServerInternalSettings.class,
+                GraphDatabaseSettings.class ));
+
         service = new RestfulGraphDatabase( new JsonFormat(), output,
-                new DatabaseActions( leaseManager, true, database.getGraph() ) );
+                new DatabaseActions( leaseManager, true, database.getGraph() ), new ConfigWrappingConfiguration(
+                config ) );
         service = new TransactionWrappingRestfulGraphDatabase( graph, service );
     }
 
@@ -1033,6 +1049,34 @@ public class RestfulGraphDatabaseTest
         assertNotNull( response.getMetadata()
                 .getFirst( "Location" ) );
     }
+
+    @Test
+    public void shouldNotBeAbleToIndexANodePropertyThatsTooLarge()
+    {
+        Response response = service.createNode( null );
+        URI nodeUri = (URI) response.getMetadata()
+                .getFirst( "Location" );
+
+        Map<String, String> postBody = new HashMap<>();
+        postBody.put( "key", "mykey" );
+
+        char[] alphabet = "abcdefghijklmnopqrstuvwxyz".toCharArray();
+
+        String largePropertyValue = "";
+        Random random = new Random();
+        for ( int i = 0; i < 30_000; i++ )
+        {
+            largePropertyValue += alphabet[random.nextInt( alphabet.length )];
+        }
+
+        postBody.put( "value", largePropertyValue );
+        postBody.put( "uri", nodeUri.toString() );
+
+        response = service.addToNodeIndex( "node", null, null, JsonHelper.createJsonFrom( postBody ) );
+
+        assertEquals( 413, response.getStatus() );
+    }
+
 
     @Test
     public void shouldBeAbleToIndexNodeUniquely()

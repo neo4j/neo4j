@@ -38,7 +38,7 @@ public class TransactionWrappingRestfulGraphDatabase extends RestfulGraphDatabas
     public TransactionWrappingRestfulGraphDatabase( InternalAbstractGraphDatabase graph,
                                                     RestfulGraphDatabase restfulGraphDatabase )
     {
-        super( null, null, null );
+        super( null, null, null, null );
 
         this.graph = graph;
         this.restfulGraphDatabase = restfulGraphDatabase;
