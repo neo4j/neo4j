@@ -24,20 +24,24 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.Logger;
 import org.neo4j.kernel.monitoring.Monitors;
 
 public class MonitorLoggingExtension implements Lifecycle
 {
     private final Properties props;
-    private final Logging logging;
+    private final LogService logService;
+    private final Log log;
     private final Monitors monitors;
 
-    public MonitorLoggingExtension( Properties props, Logging logging, Monitors monitors )
+    public MonitorLoggingExtension( Properties props, LogService logService, Monitors monitors )
     {
         this.props = props;
-        this.logging = logging;
+        this.logService = logService;
+        this.log = logService.getInternalLog( getClass() );
         this.monitors = monitors;
     }
 
@@ -50,23 +54,44 @@ public class MonitorLoggingExtension implements Lifecycle
             return;
         }
 
-        final Map<Class<?>, LogLevel> clazzez = new HashMap<>( classes.size() );
+        final Map<Class<?>, Logger> clazzez = new HashMap<>( classes.size() );
         for ( Map.Entry<Object, Object> entry : classes )
         {
             String className = (String) entry.getKey();
             String logLevel = (String) entry.getValue();
+
+            Class clazz;
             try
             {
-                clazzez.put( getClass().getClassLoader().loadClass( className ), LogLevel.valueOf( logLevel.toUpperCase() ));
-            }
-            catch ( ClassNotFoundException ex )
+                clazz = getClass().getClassLoader().loadClass( className );
+            } catch ( ClassNotFoundException ex )
             {
-                logging.getMessagesLog( getClass() )
-                        .warn( "When trying to add a logging monitor, not able to load class " + className, ex );
-            } catch ( IllegalArgumentException ex) {
-                logging.getMessagesLog( getClass() )
-                        .warn( "When trying to add a logging monitor for " + className + " not able to understand the log level, got " + logLevel, ex );
+                log.warn( "When trying to add a logging monitor, not able to load class " + className, ex );
+                continue;
             }
+
+            Log classLog = logService.getInternalLog( clazz );
+            Logger logger;
+            switch ( logLevel )
+            {
+                case "DEBUG":
+                    logger = classLog.debugLogger();
+                    break;
+                case "INFO":
+                    logger = classLog.infoLogger();
+                    break;
+                case "WARN":
+                    logger = classLog.warnLogger();
+                    break;
+                case "ERROR":
+                    logger = classLog.errorLogger();
+                    break;
+                default:
+                    log.warn( "When trying to add a logging monitor for %s not able to understand the log level, got %s", className, logLevel );
+                    continue;
+            }
+
+            clazzez.put( clazz, logger );
         }
 
         if ( clazzez.isEmpty() )
@@ -74,7 +99,7 @@ public class MonitorLoggingExtension implements Lifecycle
             return;
         }
 
-        LoggingListener listener = new LoggingListener( logging, clazzez );
+        LoggingListener listener = new LoggingListener( clazzez );
         monitors.addMonitorListener( listener, listener.predicate );
     }
 

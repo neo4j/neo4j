@@ -26,6 +26,7 @@ import java.util.Map;
 import org.junit.Test;
 
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.web.WebServer;
@@ -35,8 +36,6 @@ import static org.mockito.Matchers.anyCollection;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-
-import static org.neo4j.kernel.logging.DevNullLoggingService.DEV_NULL;
 
 public class RESTApiModuleTest
 {
@@ -52,7 +51,7 @@ public class RESTApiModuleTest
 
         Database db = mock(Database.class);
 
-        RESTApiModule module = new RESTApiModule(webServer, db, config, DEV_NULL);
+        RESTApiModule module = new RESTApiModule( webServer, db, config, NullLogProvider.getInstance() );
         module.start();
 
         verify( webServer ).addJAXRSClasses( any( List.class ), anyString(), anyCollection() );

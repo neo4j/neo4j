@@ -28,7 +28,7 @@ import org.neo4j.kernel.TopLevelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 import org.neo4j.ndp.runtime.Session;
 import org.neo4j.ndp.runtime.StatementMetadata;
 import org.neo4j.ndp.runtime.internal.ErrorTranslator;
@@ -315,7 +315,7 @@ public class SessionStateMachine implements Session, SessionState
     private final GraphDatabaseService db;
     private final StatementRunner statementRunner;
     private final ErrorTranslator errTrans;
-    private final StringLogger log;
+    private final Log log;
     private final String id;
 
     /** A re-usable statement metadata instance that always represents the currently running statement */
@@ -355,7 +355,7 @@ public class SessionStateMachine implements Session, SessionState
 
     // Note: We shouldn't depend on GDB like this, I think. Better to define an SPI that we can shape into a spec
     // for exactly the kind of underlying support the state machine needs.
-    public SessionStateMachine( GraphDatabaseService db, ThreadToStatementContextBridge txBridge, StatementRunner engine, StringLogger log )
+    public SessionStateMachine( GraphDatabaseService db, ThreadToStatementContextBridge txBridge, StatementRunner engine, Log log )
     {
         this.db = db;
         this.txBridge = txBridge;

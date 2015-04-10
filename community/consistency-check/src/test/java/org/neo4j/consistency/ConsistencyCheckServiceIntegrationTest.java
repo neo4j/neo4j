@@ -40,7 +40,7 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -64,12 +64,12 @@ public class ConsistencyCheckServiceIntegrationTest
 
         // when
         ConsistencyCheckService.Result result = service.runFullConsistencyCheck( fixture.directory().getPath(),
-                configuration, ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
+                configuration, ProgressMonitorFactory.NONE, NullLogProvider.getInstance() );
 
         // then
         assertEquals( ConsistencyCheckService.Result.SUCCESS, result );
         File reportFile = new File( fixture.directory(), defaultLogFileName( timestamp ) );
-        assertFalse( "Inconsistency report file " + reportFile + " not generated", reportFile.exists() );
+        assertFalse( "Unexpected generation of consistency check report file: " + reportFile, reportFile.exists() );
     }
 
     @Test
@@ -83,7 +83,7 @@ public class ConsistencyCheckServiceIntegrationTest
 
         // when
         ConsistencyCheckService.Result result = service.runFullConsistencyCheck( fixture.directory().getPath(),
-                configuration, ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
+                configuration, ProgressMonitorFactory.NONE, NullLogProvider.getInstance() );
 
         // then
         assertEquals( ConsistencyCheckService.Result.FAILURE, result );
@@ -105,7 +105,7 @@ public class ConsistencyCheckServiceIntegrationTest
 
         // when
         service.runFullConsistencyCheck( fixture.directory().getPath(), configuration,
-                ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
+                ProgressMonitorFactory.NONE, NullLogProvider.getInstance() );
 
         // then
         assertTrue( "Inconsistency report file " + specificLogFile + " not generated", specificLogFile.exists() );
@@ -136,7 +136,7 @@ public class ConsistencyCheckServiceIntegrationTest
 
         // when
         Result result = service.runFullConsistencyCheck( testDirectory.absolutePath(), configuration,
-                ProgressMonitorFactory.NONE, StringLogger.DEV_NULL );
+                ProgressMonitorFactory.NONE, NullLogProvider.getInstance() );
 
         // then
         assertEquals( ConsistencyCheckService.Result.SUCCESS, result );

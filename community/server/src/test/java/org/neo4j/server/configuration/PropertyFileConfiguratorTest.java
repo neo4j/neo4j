@@ -29,14 +29,16 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.logging.BufferingConsoleLogger;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.FormattedLog;
+import org.neo4j.logging.Log;
 import org.neo4j.test.Mute;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.test.Mute.muteAll;
 
 public class PropertyFileConfiguratorTest
@@ -46,6 +48,8 @@ public class PropertyFileConfiguratorTest
     @Rule
     public final TemporaryFolder folder = new TemporaryFolder();
 
+    private final Log log = FormattedLog.toOutputStream( System.out );
+
     @Test
     public void whenDatabaseTuningFilePresentInDefaultLocationShouldLoadItEvenIfNotSpecified() throws IOException
     {
@@ -54,7 +58,7 @@ public class PropertyFileConfiguratorTest
         DatabaseTuningPropertyFileBuilder.builder( folder.getRoot() )
                 .build();
 
-        PropertyFileConfigurator configurator = new PropertyFileConfigurator( emptyPropertyFile );
+        PropertyFileConfigurator configurator = new PropertyFileConfigurator( emptyPropertyFile, log );
 
         assertEquals( "25M", configurator.getDatabaseTuningProperties()
                 .get( GraphDatabaseSettings.nodestore_mapped_memory_size.name() ) );
@@ -75,7 +79,7 @@ public class PropertyFileConfiguratorTest
         DatabaseTuningPropertyFileBuilder.builder( folder.newFolder() )
                 .build();
 
-        PropertyFileConfigurator configurator = new PropertyFileConfigurator( emptyPropertyFile );
+        PropertyFileConfigurator configurator = new PropertyFileConfigurator( emptyPropertyFile, log );
 
         assertEquals( String.valueOf( unlikelyDefaultMemoryMappedValue ) + "M",
                 configurator.getDatabaseTuningProperties()
@@ -91,12 +95,12 @@ public class PropertyFileConfiguratorTest
         File tuningPropertiesFile = DatabaseTuningPropertyFileBuilder.builder( folder.getRoot() )
                 .build();
 
-        BufferingConsoleLogger logger = new BufferingConsoleLogger();
-        new PropertyFileConfigurator( emptyPropertyFile, logger );
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        new PropertyFileConfigurator( emptyPropertyFile, logProvider.getLog( getClass() ) );
 
-        assertThat( logger.toString(), containsString( String.format(
-                "No database tuning file explicitly set, defaulting to [%s]",
-                tuningPropertiesFile.getAbsolutePath() ) ) );
+        logProvider.assertAtLeastOnce(
+                inLog( getClass() ).warn( "No database tuning file explicitly set, defaulting to [%s]", tuningPropertiesFile.getAbsolutePath() )
+        );
     }
 
     @Test
@@ -107,7 +111,7 @@ public class PropertyFileConfiguratorTest
                         "org.neo4j.extension.extension1=/extension1,org.neo4j.extension.extension2=/extension2," +
                         "org.neo4j.extension.extension3=/extension3" )
                 .build();
-        PropertyFileConfigurator propertyFileConfigurator = new PropertyFileConfigurator( propertyFile );
+        PropertyFileConfigurator propertyFileConfigurator = new PropertyFileConfigurator( propertyFile, log );
 
         List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages =
                 propertyFileConfigurator.configuration().get( ServerSettings.third_party_packages );
@@ -126,7 +130,7 @@ public class PropertyFileConfiguratorTest
         String dbLocation = new File( "/tmp/does_not_matter" ).getAbsolutePath();
         File propertyFile = PropertyFileBuilder.builder( folder.getRoot() )
                 .withNameValue( Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbLocation ).build();
-        PropertyFileConfigurator serverConfig = new PropertyFileConfigurator( propertyFile );
+        PropertyFileConfigurator serverConfig = new PropertyFileConfigurator( propertyFile, log );
 
         // When
         Map<String,String> properties = serverConfig.getDatabaseTuningProperties();
@@ -136,26 +140,13 @@ public class PropertyFileConfiguratorTest
     }
 
     @Test
-    public void shouldWorkFineWithNoPropertiesFile()
-    {
-        // Given
-        File propertiesFile = null;
-
-        // When
-        PropertyFileConfigurator configurator = new PropertyFileConfigurator( propertiesFile );
-
-        // Then
-        assertFalse( configurator.getDatabaseTuningProperties().isEmpty() );
-    }
-
-    @Test
     public void shouldWorkFineWhenSpecifiedPropertiesFileDoesNotExist()
     {
         // Given
         File nonExistentFilePropertiesFile = new File( "/tmp/" + System.currentTimeMillis() );
 
         // When
-        PropertyFileConfigurator configurator = new PropertyFileConfigurator( nonExistentFilePropertiesFile );
+        PropertyFileConfigurator configurator = new PropertyFileConfigurator( nonExistentFilePropertiesFile, log );
 
         // Then
         assertFalse( configurator.getDatabaseTuningProperties().isEmpty() );

@@ -25,8 +25,6 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import static org.neo4j.kernel.logging.DevNullLoggingService.DEV_NULL;
-
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -42,6 +40,7 @@ import org.junit.Test;
 
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.RrdDbWrapper;
 import org.neo4j.server.database.WrappedDatabase;
@@ -95,7 +94,7 @@ public class MonitorServiceDocTest implements JobScheduler
     {
         database = new WrappedDatabase( (InternalAbstractGraphDatabase) new TestGraphDatabaseFactory().newImpermanentDatabase() );
 
-        rrdDb = new RrdFactory( new Config(), DEV_NULL ).createRrdDbAndSampler( database, this );
+        rrdDb = new RrdFactory( new Config(), NullLogProvider.getInstance() ).createRrdDbAndSampler( database, this );
 
         output = new EntityOutputFormat( new JsonFormat(), URI.create( "http://peteriscool.com:6666/" ), null );
         monitorService = new MonitorService( rrdDb.get(), output );

@@ -27,8 +27,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
 
 /**
  * Wraps a neo4j database in lifecycle management. This is intermediate, and will go away once we have an internal
@@ -65,7 +64,7 @@ public class LifecycleManagingDatabase implements Database
     private final Config dbConfig;
     private final GraphFactory dbFactory;
     private final Dependencies dependencies;
-    private final ConsoleLogger log;
+    private final Log log;
 
     private boolean isRunning = false;
     private GraphDatabaseAPI graph;
@@ -75,13 +74,7 @@ public class LifecycleManagingDatabase implements Database
         this.dbConfig = dbConfig;
         this.dbFactory = dbFactory;
         this.dependencies = dependencies;
-        this.log = dependencies.logging().getConsoleLog( getClass() );
-    }
-
-    @Override
-    public Logging getLogging()
-    {
-        return dependencies.logging();
+        this.log = dependencies.userLogProvider().getLog( getClass() );
     }
 
     @Override
@@ -109,7 +102,7 @@ public class LifecycleManagingDatabase implements Database
         {
             this.graph = dbFactory.newGraphDatabase( getLocation(), dbConfig.getParams(), dependencies );
             isRunning = true;
-            log.log( "Successfully started database" );
+            log.info( "Successfully started database" );
         }
         catch ( Exception e )
         {
@@ -128,7 +121,7 @@ public class LifecycleManagingDatabase implements Database
                 graph.shutdown();
                 isRunning = false;
                 graph = null;
-                log.log( "Successfully stopped database" );
+                log.info( "Successfully stopped database" );
             }
         }
         catch ( Exception e )

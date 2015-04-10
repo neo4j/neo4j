@@ -28,7 +28,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.function.Predicate;
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.Clock;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.transactional.error.InvalidConcurrentTransactionAccess;
 import org.neo4j.server.rest.transactional.error.InvalidTransactionId;
 import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
@@ -42,14 +43,14 @@ public class TransactionHandleRegistry implements TransactionRegistry
 
     private final Clock clock;
 
-    private final StringLogger log;
+    private final Log log;
     private final long timeoutMillis;
 
-    public TransactionHandleRegistry( Clock clock, long timeoutMillis, StringLogger log )
+    public TransactionHandleRegistry( Clock clock, long timeoutMillis, LogProvider logProvider )
     {
         this.clock = clock;
         this.timeoutMillis = timeoutMillis;
-        this.log = log;
+        this.log = logProvider.getLog( getClass() );
     }
 
     private static abstract class TransactionMarker

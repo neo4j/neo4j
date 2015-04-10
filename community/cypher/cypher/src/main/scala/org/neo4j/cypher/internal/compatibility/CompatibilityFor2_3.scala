@@ -41,8 +41,8 @@ import org.neo4j.helpers.{Assertion, Clock}
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{KernelAPI, Statement}
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
-import org.neo4j.kernel.impl.util.StringLogger
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
+import org.neo4j.logging.Log
 
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
@@ -329,9 +329,9 @@ case class CompatibilityPlanDescriptionFor2_3(inner: InternalPlanDescription, ve
   }
 }
 
-class StringInfoLogger2_3(stringLogger: StringLogger) extends InfoLogger {
+class StringInfoLogger2_3(log: Log) extends InfoLogger {
   def info(message: String) {
-    stringLogger.info(message)
+    log.info(message)
   }
 }
 case class CompatibilityFor2_3Cost(graph: GraphDatabaseService,
@@ -341,12 +341,12 @@ case class CompatibilityFor2_3Cost(graph: GraphDatabaseService,
                                            clock: Clock,
                                            kernelMonitors: KernelMonitors,
                                            kernelAPI: KernelAPI,
-                                           logger: StringLogger,
+                                           log: Log,
                                            plannerName: CostBasedPlannerName,
                                            runtimeName: RuntimeName) extends CompatibilityFor2_3 {
   protected val compiler = CypherCompilerFactory.costBasedCompiler(
     graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, new WrappedMonitors2_3( kernelMonitors ),
-    new StringInfoLogger2_3( logger ), rewriterSequencer, plannerName, runtimeName
+    new StringInfoLogger2_3( log ), rewriterSequencer, plannerName, runtimeName
   )
 }
 

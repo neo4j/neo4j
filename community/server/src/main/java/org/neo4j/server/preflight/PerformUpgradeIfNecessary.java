@@ -32,29 +32,29 @@ import org.neo4j.kernel.impl.storemigration.StoreUpgrader.Monitor;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.web.ServerInternalSettings;
 
 import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
 
 public class PerformUpgradeIfNecessary implements PreflightTask
 {
-    private final Logging logging;
+    private final LogProvider logProvider;
     private String failureMessage = "Unable to upgrade database";
     private final Config config;
     private final Map<String, String> dbConfig;
-    private final ConsoleLogger log;
+    private final Log log;
     private final Monitor monitor;
 
     public PerformUpgradeIfNecessary( Config serverConfig, Map<String, String> dbConfig,
-            Logging logging, StoreUpgrader.Monitor monitor )
+            LogProvider logProvider, StoreUpgrader.Monitor monitor )
     {
         this.config = serverConfig;
         this.dbConfig = dbConfig;
         this.monitor = monitor;
-        this.logging = logging;
-        this.log = this.logging.getConsoleLog( getClass() );
+        this.logProvider = logProvider;
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
@@ -78,12 +78,12 @@ public class PerformUpgradeIfNecessary implements PreflightTask
 
             try
             {
-                new StoreMigrationTool().run( storeDir.getAbsolutePath(),
-                        configForStoreDir( new Config( dbConfig ), storeDir ), logging, monitor );
+                new StoreMigrationTool().run( fileSystem, storeDir,
+                        configForStoreDir( new Config( dbConfig ), storeDir ), logProvider, monitor );
             }
             catch ( UpgradeNotAllowedByConfigurationException e )
             {
-                log.log( e.getMessage() );
+                log.error( e.getMessage() );
                 failureMessage = e.getMessage();
                 return false;
             }

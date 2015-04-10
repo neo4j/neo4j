@@ -20,28 +20,29 @@
 package org.neo4j.server;
 
 import java.io.File;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.GraphDatabaseDependencies;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.DuplicatingLogProvider;
+import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.BufferingConsoleLogger;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.DefaultLogging;
-import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.logging.SystemOutLogging;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.server.logging.JULBridge;
+import org.neo4j.server.logging.JettyLogBridge;
 import org.neo4j.server.web.ServerInternalSettings;
 
 import static java.lang.String.format;
+import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 
 /**
  * @deprecated This class is for internal use only and will be moved to an internal package in a future release.
@@ -60,8 +61,8 @@ public abstract class Bootstrapper
     private Thread shutdownHook;
     protected GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies();
 
-    // default logger to System.out so that we are always able to print errors even if logging has not been initialized
-    private ConsoleLogger log = new ConsoleLogger( StringLogger.SYSTEM );
+    private Log log;
+    private String serverPort;
 
     public static void main( String[] args )
     {
@@ -100,20 +101,29 @@ public abstract class Bootstrapper
 
     public Integer start()
     {
+        LogProvider userLogProvider = new ContextLessLogProviderDelegate( FormattedLogProvider.toOutputStream( System.out ) );
+
+        JULBridge.resetJUL();
+        Logger.getLogger( "" ).setLevel( Level.WARNING );
+        JULBridge.forwardTo( userLogProvider );
+        JettyLogBridge.setLogProvider( userLogProvider );
+
+        log = userLogProvider.getLog( getClass() );
+
+        serverPort = (configurator == null)
+                ? "unknown port"
+                : String.valueOf( configurator.configuration().get( ServerSettings.webserver_port ) );
+
         try
         {
-            dependencies = dependencies.monitors( new Monitors() );
-            BufferingConsoleLogger consoleBuffer = new BufferingConsoleLogger();
-            configurator = createConfigurationBuilder( consoleBuffer );
-            dependencies = dependencies.logging( createLogging( configurator, dependencies.monitors() ) );
-            log = dependencies.logging().getConsoleLog( getClass() );
-            consoleBuffer.replayInto( log );
+            configurator = createConfigurationBuilder( log );
+            dependencies = dependencies.userLogProvider( userLogProvider );
 
             life.start();
 
             checkCompatibility();
 
-            server = createNeoServer();
+            server = createNeoServer( configurator, dependencies, userLogProvider );
             server.start();
 
             addShutdownHook();
@@ -124,42 +134,27 @@ public abstract class Bootstrapper
         {
             String locationMsg = (server == null) ? "" : " Another process may be using database location " +
                                                          server.getDatabase().getLocation();
-            log.error( format( "Failed to start Neo Server on port [%s].", webServerPort() ) + locationMsg, tfe );
+            log.error( format( "Failed to start Neo Server on port [%s].", serverPort ) + locationMsg, tfe );
             return GRAPH_DATABASE_STARTUP_ERROR_CODE;
         }
         catch ( IllegalArgumentException e )
         {
-            log.error( format( "Failed to start Neo Server on port [%s]", webServerPort() ), e );
+            log.error( format( "Failed to start Neo Server on port [%s]", serverPort ), e );
             return WEB_SERVER_STARTUP_ERROR_CODE;
         }
         catch ( Exception e )
         {
-            log.error( format( "Failed to start Neo Server on port [%s]", webServerPort() ), e );
+            log.error( format( "Failed to start Neo Server on port [%s]", serverPort ), e );
             return WEB_SERVER_STARTUP_ERROR_CODE;
-        }
-    }
-
-    private Logging createLogging( ConfigurationBuilder configurator, Monitors monitors )
-    {
-        try
-        {
-            Config config = new Config( configurator.getDatabaseTuningProperties() );
-            return life.add( DefaultLogging.createDefaultLogging( config, monitors ) );
-        }
-        catch ( RuntimeException e )
-        {
-            log.error( "Unable to initialize logging. Will fallback to System.out", e );
-            return new SystemOutLogging();
         }
     }
 
     private void checkCompatibility()
     {
-        new JvmChecker( dependencies.logging().getMessagesLog( JvmChecker.class ),
-                new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
+        new JvmChecker( log, new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
     }
 
-    protected abstract NeoServer createNeoServer();
+    protected abstract NeoServer createNeoServer( ConfigurationBuilder configurator, GraphDatabaseDependencies dependencies, LogProvider userLogProvider );
 
     // TODO: stopArg is not used, check if it is safe to remove this method
     public void stop( int stopArg )
@@ -176,7 +171,7 @@ public abstract class Bootstrapper
             {
                 server.stop();
             }
-            log.log( "Successfully shutdown Neo Server on port [%s], database [%s]", webServerPort(), location );
+            log.info( "Successfully shutdown Neo Server on port [%s], database [%s]", serverPort, location );
 
             removeShutdownHook();
 
@@ -187,7 +182,7 @@ public abstract class Bootstrapper
         catch ( Exception e )
         {
             log.error( "Failed to cleanly shutdown Neo Server on port [%s], database [%s]. Reason [%s] ",
-                    webServerPort(), location, e.getMessage(), e );
+                    serverPort, location, e.getMessage(), e );
             return 1;
         }
     }
@@ -215,7 +210,7 @@ public abstract class Bootstrapper
             @Override
             public void run()
             {
-                log.log( "Neo4j Server shutdown initiated by request" );
+                log.info( "Neo4j Server shutdown initiated by request" );
                 if ( server != null )
                 {
                     server.stop();
@@ -226,12 +221,12 @@ public abstract class Bootstrapper
                 .addShutdownHook( shutdownHook );
     }
 
-    protected Configurator createConfigurator( ConsoleLogger log )
+    protected Configurator createConfigurator( Log log )
     {
         return new ConfigurationBuilder.ConfigurationBuilderWrappingConfigurator( createConfigurationBuilder( log ) );
     }
 
-    protected ConfigurationBuilder createConfigurationBuilder( ConsoleLogger log )
+    protected ConfigurationBuilder createConfigurationBuilder( Log log )
     {
         File configFile = new File( System.getProperty(
                 ServerInternalSettings.SERVER_CONFIG_FILE_KEY, Configurator.DEFAULT_CONFIG_DIR ) );
@@ -245,10 +240,25 @@ public abstract class Bootstrapper
                 .isAssignableFrom( getClass() );
     }
 
-    private String webServerPort()
+    private static class ContextLessLogProviderDelegate implements LogProvider
     {
-        return (configurator == null)
-               ? "unknown port"
-               : String.valueOf( configurator.configuration().get( ServerSettings.webserver_port ) );
+        private LogProvider delegate;
+
+        private ContextLessLogProviderDelegate( LogProvider delegate )
+        {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public Log getLog( Class loggingClass )
+        {
+            return delegate.getLog( "" );
+        }
+
+        @Override
+        public Log getLog( String context )
+        {
+            return delegate.getLog( "" );
+        }
     }
 }

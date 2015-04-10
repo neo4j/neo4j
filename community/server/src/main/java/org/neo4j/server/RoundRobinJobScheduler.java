@@ -22,7 +22,7 @@ package org.neo4j.server;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rrd.JobScheduler;
 import org.neo4j.server.rrd.ScheduledJob;
 
@@ -33,17 +33,17 @@ import org.neo4j.server.rrd.ScheduledJob;
 public class RoundRobinJobScheduler implements JobScheduler
 {
     private final List<ScheduledJob> scheduledJobs = new LinkedList<ScheduledJob>();
-    private final Logging logging;
+    private final LogProvider logProvider;
 
-    public RoundRobinJobScheduler( Logging logging )
+    public RoundRobinJobScheduler( LogProvider logProvider )
     {
-        this.logging = logging;
+        this.logProvider = logProvider;
     }
 
     @Override
     public void scheduleAtFixedRate( Runnable job, String jobName, long delay, long period )
     {
-        ScheduledJob scheduledJob = new ScheduledJob( job, jobName, delay, period, logging );
+        ScheduledJob scheduledJob = new ScheduledJob( job, jobName, delay, period, logProvider );
         scheduledJobs.add( scheduledJob );
     }
 

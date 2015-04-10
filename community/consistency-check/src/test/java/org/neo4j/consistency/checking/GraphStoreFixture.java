@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.index.IndexUpdatesValidator;
 import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -63,7 +64,6 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -93,7 +93,7 @@ public abstract class GraphStoreFixture extends PageCacheRule implements TestRul
                             directory().getAbsolutePath(),
                             nativeStores.getRawNeoStore(),
                             fileSystem,
-                            StringLogger.SYSTEM
+                            FormattedLogProvider.toOutputStream( System.out )
                     ).build(),
                     createIndexes()
             );

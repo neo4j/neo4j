@@ -21,8 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api
-import org.neo4j.kernel.impl.util.TestLogger
-import org.neo4j.kernel.impl.util.TestLogger.LogCall
+import org.neo4j.logging.AssertableLogProvider
 
 import scala.collection.Map
 
@@ -111,8 +110,8 @@ class CypherCompilerStringCacheMonitoringAcceptanceTest extends ExecutionEngineF
 
   test("should log on cache evictions") {
     // given
-    val logger: TestLogger = new TestLogger()
-    val engine = new ExecutionEngine(graph, logger)
+    val logProvider = new AssertableLogProvider( )
+    val engine = new ExecutionEngine( graph, logProvider )
     val counter = new CacheCounter()
     kernelMonitors.addMonitorListener(counter)
     val query = "match (n:Person:Dog) return n"
@@ -126,7 +125,9 @@ class CypherCompilerStringCacheMonitoringAcceptanceTest extends ExecutionEngineF
     engine.execute(query).toList
 
     // then
-    logger.assertAtLeastOnce(LogCall.info(s"Discarded stale query from the query cache: CYPHER 2.3 planner=CONSERVATIVE runtime=INTERPRETED $query"))
+    logProvider.assertAtLeastOnce(
+      AssertableLogProvider.inLog( classOf[ExecutionEngine] ).info( s"Discarded stale query from the query cache: CYPHER 2.3 planner=CONSERVATIVE runtime=INTERPRETED $query" )
+    )
   }
 }
 

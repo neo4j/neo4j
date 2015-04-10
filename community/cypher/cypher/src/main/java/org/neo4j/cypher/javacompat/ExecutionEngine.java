@@ -23,9 +23,9 @@ import java.util.Map;
 
 import org.neo4j.cypher.CypherException;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.impl.util.StringLogger;
 
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 
 /**
  * To run a Cypher query, use this class.
@@ -43,23 +43,23 @@ public class ExecutionEngine
      */
     public ExecutionEngine( GraphDatabaseService database )
     {
-        inner = createInnerEngine( database, DEV_NULL );
+        inner = createInnerEngine( database, NullLogProvider.getInstance() );
     }
 
     /**
      * Creates an execution engine around the give graph database
      * @param database The database to wrap
-     * @param logger A logger for cypher-statements
+     * @param logProvider A {@link LogProvider} for cypher-statements
      */
-    public ExecutionEngine( GraphDatabaseService database, StringLogger logger )
+    public ExecutionEngine( GraphDatabaseService database, LogProvider logProvider )
     {
-        inner = createInnerEngine( database, logger );
+        inner = createInnerEngine( database, logProvider );
     }
 
     protected
-    org.neo4j.cypher.ExecutionEngine createInnerEngine( GraphDatabaseService database, StringLogger logger )
+    org.neo4j.cypher.ExecutionEngine createInnerEngine( GraphDatabaseService database, LogProvider logProvider )
     {
-        return new org.neo4j.cypher.ExecutionEngine( database, logger );
+        return new org.neo4j.cypher.ExecutionEngine( database, logProvider );
     }
 
     /**

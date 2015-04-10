@@ -24,7 +24,6 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.logging.Logging;
 
 public class WrappedDatabase extends LifecycleAdapter implements Database
 {
@@ -72,11 +71,5 @@ public class WrappedDatabase extends LifecycleAdapter implements Database
     public boolean isRunning()
     {
         return true;
-    }
-
-    @Override
-    public Logging getLogging()
-    {
-        return graph.getDependencyResolver().resolveDependency( Logging.class );
     }
 }

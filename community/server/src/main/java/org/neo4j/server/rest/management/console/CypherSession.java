@@ -25,8 +25,8 @@ import javax.servlet.http.HttpServletRequest;
 import org.neo4j.cypher.SyntaxException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.rest.web.ServerQuerySession;
 import org.neo4j.server.webadmin.console.ScriptSession;
@@ -34,13 +34,13 @@ import org.neo4j.server.webadmin.console.ScriptSession;
 public class CypherSession implements ScriptSession
 {
     private final CypherExecutor cypherExecutor;
-    private final ConsoleLogger log;
+    private final Log log;
     private final HttpServletRequest request;
 
-    public CypherSession( CypherExecutor cypherExecutor, Logging logging, HttpServletRequest request )
+    public CypherSession( CypherExecutor cypherExecutor, LogProvider logProvider, HttpServletRequest request )
     {
         this.cypherExecutor = cypherExecutor;
-        this.log = logging.getConsoleLog( getClass() );
+        this.log = logProvider.getLog( getClass() );
         this.request = request;
     }
 

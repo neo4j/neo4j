@@ -22,7 +22,7 @@ package org.neo4j.ndp.runtime.internal;
 import org.neo4j.cypher.CypherException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 
 /**
  * Convert the mixed exceptions the underlying engine can throw to a cohesive set of known failures. This is an
@@ -31,9 +31,9 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public class ErrorTranslator
 {
 
-    private final StringLogger log;
+    private final Log log;
 
-    public ErrorTranslator(StringLogger log)
+    public ErrorTranslator(Log log)
     {
         this.log = log;
     }

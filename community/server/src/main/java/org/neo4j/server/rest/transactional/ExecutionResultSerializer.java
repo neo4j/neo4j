@@ -36,7 +36,8 @@ import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.Result;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.repr.util.RFC1123;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 
@@ -57,10 +58,10 @@ import static org.neo4j.server.rest.domain.JsonHelper.writeValue;
  */
 public class ExecutionResultSerializer
 {
-    public ExecutionResultSerializer( OutputStream output, URI baseUri, StringLogger log )
+    public ExecutionResultSerializer( OutputStream output, URI baseUri, LogProvider logProvider )
     {
         this.baseUri = baseUri;
-        this.log = log;
+        this.log = logProvider.getLog( getClass() );
         JsonGenerator generator = null;
         try
         {
@@ -394,7 +395,7 @@ public class ExecutionResultSerializer
     private static final JsonFactory JSON_FACTORY = new JsonFactory( new Neo4jJsonCodec() ).disable( JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM );
     private final JsonGenerator out;
     private final URI baseUri;
-    private final StringLogger log;
+    private final Log log;
 
     private void ensureDocumentOpen() throws IOException
     {

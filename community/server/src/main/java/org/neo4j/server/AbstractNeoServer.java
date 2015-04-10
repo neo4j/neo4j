@@ -45,14 +45,12 @@ import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ConfigWrappingConfiguration;
 import org.neo4j.server.configuration.ConfigurationBuilder;
-import org.neo4j.server.configuration.ConfigurationBuilder.ConfiguratorWrappingConfigurationBuilder;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.CypherExecutor;
@@ -117,10 +115,10 @@ public abstract class AbstractNeoServer implements NeoServer
      */
     private static final long ROUNDING_SECOND = 1000L;
 
-    protected final InternalAbstractGraphDatabase.Dependencies dependencies;
+    protected final ConfigurationBuilder configurator;
+    protected final LogProvider logProvider;
     protected Database database;
     protected CypherExecutor cypherExecutor;
-    protected ConfigurationBuilder configurator;
     protected WebServer webServer;
 
     protected AuthManager authManager;
@@ -134,7 +132,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
     private InterruptThreadTimer interruptStartupTimer;
     private DatabaseActions databaseActions;
-    protected final ConsoleLogger log;
+    protected final Log log;
 
     private RoundRobinJobScheduler rrdDbScheduler;
     private RrdDbWrapper rrdDbWrapper;
@@ -148,25 +146,16 @@ public abstract class AbstractNeoServer implements NeoServer
 
     protected abstract WebServer createWebServer();
 
-    /**
-     * Should use the new constructor with {@link ConfigurationBuilder}
-     */
-    @Deprecated
-    public AbstractNeoServer( Configurator configurator, Database.Factory dbFactory, InternalAbstractGraphDatabase.Dependencies dependencies )
-    {
-        this( new ConfiguratorWrappingConfigurationBuilder( configurator ), dbFactory, dependencies );
-    }
-
-    public AbstractNeoServer( ConfigurationBuilder configurator, Database.Factory dbFactory, InternalAbstractGraphDatabase.Dependencies dependencies )
+    public AbstractNeoServer( ConfigurationBuilder configurator, Database.Factory dbFactory, InternalAbstractGraphDatabase.Dependencies dependencies, LogProvider logProvider )
     {
         this.configurator = configurator;
-        this.dependencies = dependencies;
+        this.logProvider = logProvider;
         this.dbConfig = new Config();
-        this.log = dependencies.logging().getConsoleLog( getClass() );
+        this.log = logProvider.getLog( getClass() );
 
         this.database = life.add( dependencyResolver.satisfyDependency(dbFactory.newDatabase( dbConfig, dependencies)) );
 
-        FileUserRepository users = life.add( new FileUserRepository( configurator.configuration().get( ServerInternalSettings.auth_store ).toPath(), dependencies.logging() ) );
+        FileUserRepository users = life.add( new FileUserRepository( configurator.configuration().get( ServerInternalSettings.auth_store ).toPath(), logProvider ) );
 
         this.authManager = life.add(new AuthManager( users, Clock.SYSTEM_CLOCK, configurator.configuration().get( ServerSettings.auth_enabled ) ));
         this.preFlight = dependencyResolver.satisfyDependency(createPreflightTasks());
@@ -204,14 +193,14 @@ public abstract class AbstractNeoServer implements NeoServer
 
                 DiagnosticsManager diagnosticsManager = resolveDependency(DiagnosticsManager.class);
 
-                StringLogger diagnosticsLog = diagnosticsManager.getTargetLog();
+                Log diagnosticsLog = diagnosticsManager.getTargetLog();
                 diagnosticsLog.info( "--- SERVER STARTED START ---" );
 
                 databaseActions = createDatabaseActions();
 
                 // TODO: RrdDb is not needed once we remove the old webadmin
-                rrdDbScheduler = new RoundRobinJobScheduler( dependencies.logging() );
-                rrdDbWrapper = new RrdFactory( configurator.configuration(), dependencies.logging() )
+                rrdDbScheduler = new RoundRobinJobScheduler( logProvider );
+                rrdDbWrapper = new RrdFactory( configurator.configuration(), logProvider )
                         .createRrdDbAndSampler( database, rrdDbScheduler );
 
                 transactionFacade = createTransactionalActions();
@@ -293,7 +282,7 @@ public abstract class AbstractNeoServer implements NeoServer
         final Clock clock = SYSTEM_CLOCK;
 
         transactionRegistry =
-            new TransactionHandleRegistry( clock, timeoutMillis, dependencies.logging().getMessagesLog(TransactionRegistry.class) );
+            new TransactionHandleRegistry( clock, timeoutMillis, logProvider );
 
         // ensure that this is > 0
         long runEvery = round( timeoutMillis / 2.0 );
@@ -312,7 +301,7 @@ public abstract class AbstractNeoServer implements NeoServer
                 new TransitionalPeriodTransactionMessContainer( database.getGraph() ),
                 database.getGraph().getDependencyResolver().resolveDependency( QueryExecutionEngine.class ),
                 transactionRegistry,
-                dependencies.logging().getMessagesLog(TransactionFacade.class)
+                logProvider
         );
     }
 
@@ -333,8 +322,7 @@ public abstract class AbstractNeoServer implements NeoServer
         InterruptThreadTimer stopStartupTimer;
         if ( startupTimeout > 0 )
         {
-            log.log( "Setting startup timeout to: " + startupTimeout + "ms based on "
-                    + configurator.configuration().get( ServerInternalSettings.startup_timeout ) );
+            log.info( "Setting startup timeout to %dms", startupTimeout );
             stopStartupTimer = InterruptThreadTimer.createTimer(
                     startupTimeout,
                     Thread.currentThread() );
@@ -402,11 +390,6 @@ public abstract class AbstractNeoServer implements NeoServer
         return new ConfigWrappingConfiguration( this.configurator.configuration() );
     }
 
-    protected Logging getLogging()
-    {
-        return dependencies.logging();
-    }
-
     // TODO: Once WebServer is fully implementing LifeCycle,
     // it should manage all but static (eg. unchangeable during runtime)
     // configuration itself.
@@ -420,7 +403,7 @@ public abstract class AbstractNeoServer implements NeoServer
         int sslPort = getHttpsPort();
         boolean sslEnabled = getHttpsEnabled();
 
-        log.log( "Starting HTTP on port :%s with %d threads available", webServerPort, maxThreads );
+        log.info( "Starting HTTP on port %s (%d threads available)", webServerPort, maxThreads );
         webServer.setPort( webServerPort );
         webServer.setAddress( webServerAddr );
         webServer.setMaxThreads( maxThreads );
@@ -433,7 +416,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
         if ( sslEnabled )
         {
-            log.log( "Enabling HTTPS on port :%s", sslPort );
+            log.info( "Enabling HTTPS on port %s", sslPort );
             webServer.setHttpsCertificateInformation( initHttpsKeyStore() );
         }
     }
@@ -461,16 +444,13 @@ public abstract class AbstractNeoServer implements NeoServer
 
             webServer.start();
 
-            log.log( "Server started on: " + baseUri() );
-
-            //noinspection deprecation
-            log.log( format( "Remote interface ready and available at [%s]", baseUri() ) );
+            log.info( "Remote interface ready and available at %s", baseUri() );
         }
         catch ( RuntimeException e )
         {
             //noinspection deprecation
-            log.error( format( "Failed to start Neo Server on port [%d], reason [%s]",
-                    getWebServerPort(), e.getMessage() ) );
+            log.error( "Failed to start Neo Server on port %d: %s",
+                    getWebServerPort(), e.getMessage() );
             throw e;
         }
     }
@@ -562,7 +542,7 @@ public abstract class AbstractNeoServer implements NeoServer
         if ( !certificatePath.exists() )
         {
             //noinspection deprecation
-            log.log( "No SSL certificate found, generating a self-signed certificate.." );
+            log.info( "No SSL certificate found, generating a self-signed certificate.." );
             SslCertificateFactory certFactory = new SslCertificateFactory();
             certFactory.createSelfSignedCertificate( certificatePath, privateKeyPath, getWebServerAddress() );
         }
@@ -607,7 +587,7 @@ public abstract class AbstractNeoServer implements NeoServer
         ).run();
 
         //noinspection deprecation
-        log.log( "Successfully shutdown database." );
+        log.info( "Successfully shutdown database" );
     }
 
     private void stopRrdDb()
@@ -622,11 +602,11 @@ public abstract class AbstractNeoServer implements NeoServer
             {
                 rrdDbWrapper.close();
             }
-            log.log( "Successfully shutdown Neo4j Server." );
+            log.info( "Successfully shutdown Neo4j Server" );
         } catch(IOException e)
         {
             // If we fail on shutdown, we can't really recover from it. Log the issue and carry on.
-            log.error( "Unable to cleanly shut down statistics database.", e );
+            log.error( "Unable to cleanly shut down statistics database", e );
         }
     }
 
@@ -720,8 +700,8 @@ public abstract class AbstractNeoServer implements NeoServer
         singletons.add( providerForSingleton( transactionFacade, TransactionFacade.class ) );
         singletons.add( providerForSingleton( authManager, AuthManager.class ) );
         singletons.add( new TransactionFilter( database ) );
-        singletons.add( new LoggingProvider( dependencies.logging() ) );
-        singletons.add( providerForSingleton( dependencies.logging().getConsoleLog( NeoServer.class ), ConsoleLogger.class ) );
+        singletons.add( new LoggingProvider( logProvider ) );
+        singletons.add( providerForSingleton( logProvider.getLog( NeoServer.class ), Log.class ) );
 
         return singletons;
     }

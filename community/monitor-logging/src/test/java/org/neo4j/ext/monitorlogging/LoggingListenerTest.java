@@ -25,13 +25,11 @@ import java.util.Map;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.util.TestLogging;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.Logger;
 import org.neo4j.kernel.monitoring.Monitors;
 
-import static org.neo4j.kernel.impl.util.TestLogger.LogCall.debug;
-import static org.neo4j.kernel.impl.util.TestLogger.LogCall.error;
-import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
-import static org.neo4j.kernel.impl.util.TestLogger.LogCall.warn;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class LoggingListenerTest
 {
@@ -55,10 +53,11 @@ public class LoggingListenerTest
     {
         // Given
         Monitors monitors = new Monitors();
-        TestLogging logging = new TestLogging();
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+
         InterestingMonitor1 aMonitor = monitors.newMonitor( InterestingMonitor1.class );
-        LoggingListener listener = new LoggingListener( logging,
-                Collections.<Class<?>, LogLevel>singletonMap( InterestingMonitor1.class, LogLevel.INFO )
+        LoggingListener listener = new LoggingListener(
+                Collections.<Class<?>, Logger>singletonMap( InterestingMonitor1.class, logProvider.getLog( InterestingMonitor1.class ).infoLogger() )
         );
         monitors.addMonitorListener( listener, listener.predicate );
 
@@ -66,24 +65,29 @@ public class LoggingListenerTest
         aMonitor.touch();
 
         // Then
-        logging.getMessagesLog( InterestingMonitor1.class ).assertExactly( info( "touch()" ) );
+        logProvider.assertExactly(
+                inLog( InterestingMonitor1.class ).info( "touch()" )
+        );
     }
 
     @Test
-    public void shouldNotLogWhenThingsAreNotRegisteredInTheMonitorListener()
+    public void shouldNotLogWhenMatchingClassIsNotRegisteredInTheMonitorListener()
     {
         // Given
         Monitors monitors = new Monitors();
-        TestLogging logging = new TestLogging();
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+
         InterestingMonitor1 aMonitor = monitors.newMonitor( InterestingMonitor1.class );
-        LoggingListener listener = new LoggingListener( logging, Collections.<Class<?>, LogLevel>emptyMap() );
+        LoggingListener listener = new LoggingListener(
+                Collections.<Class<?>, Logger>singletonMap( InterestingMonitor2.class, logProvider.getLog( InterestingMonitor2.class ).infoLogger() )
+        );
         monitors.addMonitorListener( listener, listener.predicate );
 
         // When
         aMonitor.touch();
 
         // Then
-        logging.getMessagesLog( InterestingMonitor1.class ).assertNoInfos();
+        logProvider.assertNoLoggingOccurred();
     }
 
     @Test
@@ -91,13 +95,14 @@ public class LoggingListenerTest
     {
         // Given
         Monitors monitors = new Monitors();
-        TestLogging logging = new TestLogging();
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+
         InterestingMonitor1 aMonitor = monitors.newMonitor( InterestingMonitor1.class );
         InterestingMonitor2 bMonitor = monitors.newMonitor( InterestingMonitor2.class );
-        Map<Class<?>, LogLevel> classes = new HashMap<>( 2 );
-        classes.put( InterestingMonitor1.class, LogLevel.DEBUG );
-        classes.put( InterestingMonitor2.class, LogLevel.WARN );
-        LoggingListener listener = new LoggingListener( logging, classes );
+        Map<Class<?>, Logger> classes = new HashMap<>( 2 );
+        classes.put( InterestingMonitor1.class, logProvider.getLog( InterestingMonitor1.class ).debugLogger() );
+        classes.put( InterestingMonitor2.class, logProvider.getLog( InterestingMonitor2.class ).warnLogger() );
+        LoggingListener listener = new LoggingListener( classes );
         monitors.addMonitorListener( listener, listener.predicate );
 
         // When
@@ -105,8 +110,10 @@ public class LoggingListenerTest
         bMonitor.touch();
 
         // Then
-        logging.getMessagesLog( InterestingMonitor1.class ).assertExactly( debug( "touch()" ) );
-        logging.getMessagesLog( InterestingMonitor2.class ).assertExactly( warn( "touch()" ) );
+        logProvider.assertExactly(
+                inLog( InterestingMonitor1.class ).debug( "touch()" ),
+                inLog( InterestingMonitor2.class ).warn( "touch()" )
+        );
     }
 
     @Test
@@ -114,10 +121,11 @@ public class LoggingListenerTest
     {
         // Given
         Monitors monitors = new Monitors();
-        TestLogging logging = new TestLogging();
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+
         InterestingMonitor1 aMonitor = monitors.newMonitor( InterestingMonitor1.class );
-        LoggingListener listener = new LoggingListener( logging,
-                Collections.<Class<?>, LogLevel>singletonMap( InterestingMonitor1.class, LogLevel.ERROR )
+        LoggingListener listener = new LoggingListener(
+                Collections.<Class<?>, Logger>singletonMap( InterestingMonitor1.class, logProvider.getLog( InterestingMonitor1.class ).errorLogger() )
         );
         monitors.addMonitorListener( listener, listener.predicate );
 
@@ -125,7 +133,9 @@ public class LoggingListenerTest
         aMonitor.touch( "APA" );
 
         // Then
-        logging.getMessagesLog( InterestingMonitor1.class ).assertExactly( error( "touch(String:APA)" ) );
+        logProvider.assertExactly(
+                inLog( InterestingMonitor1.class ).error( "touch(String:APA)" )
+        );
     }
 
     @Test
@@ -133,10 +143,11 @@ public class LoggingListenerTest
     {
         // Given
         Monitors monitors = new Monitors();
-        TestLogging logging = new TestLogging();
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+
         InterestingMonitor2 aMonitor = monitors.newMonitor( InterestingMonitor2.class );
-        LoggingListener listener = new LoggingListener( logging,
-                Collections.<Class<?>, LogLevel>singletonMap( InterestingMonitor2.class, LogLevel.WARN )
+        LoggingListener listener = new LoggingListener(
+                Collections.<Class<?>, Logger>singletonMap( InterestingMonitor2.class, logProvider.getLog( InterestingMonitor2.class ).debugLogger() )
         );
         monitors.addMonitorListener( listener, listener.predicate );
 
@@ -144,6 +155,8 @@ public class LoggingListenerTest
         aMonitor.doubleTouch( "APA", 42 );
 
         // Then
-        logging.getMessagesLog( InterestingMonitor2.class ).assertExactly( warn( "doubleTouch(String:APA,int:42)" ) );
+        logProvider.assertExactly(
+                inLog( InterestingMonitor2.class ).debug( "doubleTouch(String:APA,int:42)" )
+        );
     }
 }

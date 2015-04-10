@@ -42,8 +42,8 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 public class LuceneLabelScanStore
@@ -77,9 +77,9 @@ public class LuceneLabelScanStore
         void rebuilt( long roughNodeCount );
     }
 
-    public static Monitor loggerMonitor( Logging logging )
+    public static Monitor loggerMonitor( LogProvider logProvider )
     {
-        final StringLogger logger = logging.getMessagesLog( LuceneLabelScanStore.class );
+        final Log log = logProvider.getLog( LuceneLabelScanStore.class );
         return new Monitor()
         {
             @Override
@@ -90,33 +90,33 @@ public class LuceneLabelScanStore
             @Override
             public void noIndex()
             {
-                logger.info( "No lucene scan store index found, this might just be first use. " +
+                log.info( "No lucene scan store index found, this might just be first use. " +
                              "Preparing to rebuild." );
             }
 
             @Override
             public void lockedIndex( LockObtainFailedException e )
             {
-                logger.warn( "Index is locked by another process or database", e );
+                log.warn( "Index is locked by another process or database", e );
             }
 
             @Override
             public void corruptIndex( IOException corruptionException )
             {
-                logger.warn( "Lucene scan store index could not be read. Preparing to rebuild.",
+                log.warn( "Lucene scan store index could not be read. Preparing to rebuild.",
                         corruptionException );
             }
 
             @Override
             public void rebuilding()
             {
-                logger.info( "Rebuilding lucene scan store, this may take a while" );
+                log.info( "Rebuilding lucene scan store, this may take a while" );
             }
 
             @Override
             public void rebuilt( long highNodeId )
             {
-                logger.info( "Lucene scan store rebuilt (roughly " + highNodeId + " nodes)" );
+                log.info( "Lucene scan store rebuilt (roughly " + highNodeId + " nodes)" );
             }
         };
     }

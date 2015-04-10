@@ -21,32 +21,28 @@ package org.neo4j.server.preflight;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.Map;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.recovery.StoreRecoverer;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.web.ServerInternalSettings;
 
 public class PerformRecoveryIfNecessary implements PreflightTask
 {
     private final String failureMessage = "Unable to recover database";
     private final Config config;
-    private final PrintStream out;
     private final Map<String, String> dbConfig;
-    private final ConsoleLogger log;
-    private final Logging logging;
+    private final LogProvider userLogProvider;
+    private final Log log;
 
-    public PerformRecoveryIfNecessary( Config serverConfig, Map<String, String> dbConfig, PrintStream out,
-            Logging logging )
+    public PerformRecoveryIfNecessary( Config serverConfig, Map<String, String> dbConfig, LogProvider userLogProvider )
     {
         this.config = serverConfig;
         this.dbConfig = dbConfig;
-        this.out = out;
-        this.log = logging.getConsoleLog( getClass() );
-        this.logging = logging;
+        this.userLogProvider = userLogProvider;
+        this.log = userLogProvider.getLog( getClass() );
     }
 
     @Override
@@ -61,8 +57,8 @@ public class PerformRecoveryIfNecessary implements PreflightTask
                 StoreRecoverer recoverer = new StoreRecoverer();
                 if ( recoverer.recoveryNeededAt( dbLocation ) )
                 {
-                    out.println( "Detected incorrectly shut down database, performing recovery.." );
-                    recoverer.recover( dbLocation, dbConfig, logging );
+                    log.warn( "Detected incorrectly shut down database, performing recovery.." );
+                    recoverer.recover( dbLocation, dbConfig, userLogProvider );
                 }
             }
             return true;

@@ -27,10 +27,10 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
 import org.neo4j.ndp.runtime.Sessions;
 import org.neo4j.ndp.runtime.internal.StandardSessions;
 import org.neo4j.ndp.transport.socket.SocketTransport;
@@ -58,7 +58,7 @@ public class NDPKernelExtension extends KernelExtensionFactory<NDPKernelExtensio
 
     public interface Dependencies
     {
-        Logging logging();
+        LogService logService();
         Config config();
         GraphDatabaseService db();
     }
@@ -74,7 +74,7 @@ public class NDPKernelExtension extends KernelExtensionFactory<NDPKernelExtensio
         final Config config = dependencies.config();
         final GraphDatabaseService gdb = dependencies.db();
         final GraphDatabaseAPI api = (GraphDatabaseAPI) gdb;
-        final StringLogger log = dependencies.logging().getMessagesLog( Sessions.class );
+        final Log log = dependencies.logService().getInternalLog( Sessions.class );
         final HostnamePort address = config.get( Settings.ndp_address );
         final LifeSupport life = new LifeSupport();
 

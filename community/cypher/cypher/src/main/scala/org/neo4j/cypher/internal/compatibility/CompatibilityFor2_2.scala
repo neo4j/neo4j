@@ -40,8 +40,8 @@ import org.neo4j.helpers.{Assertion, Clock}
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{KernelAPI, Statement}
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
-import org.neo4j.kernel.impl.util.StringLogger
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
+import org.neo4j.logging.Log
 
 import scala.collection.JavaConverters._
 import scala.util.Try
@@ -325,9 +325,9 @@ case class CompatibilityPlanDescription(inner: InternalPlanDescription, version:
   }
 }
 
-case class StringInfoLogger2_2(stringLogger: StringLogger) extends InfoLogger {
+case class StringInfoLogger2_2(log: Log) extends InfoLogger {
   def info(message: String) {
-    stringLogger.info(message)
+    log.info(message)
   }
 }
 
@@ -338,12 +338,12 @@ case class CompatibilityFor2_2Cost(graph: GraphDatabaseService,
                                    clock: Clock,
                                    kernelMonitors: KernelMonitors,
                                    kernelAPI: KernelAPI,
-                                   logger: StringLogger,
+                                   log: Log,
                                    plannerName: CostBasedPlannerName) extends CompatibilityFor2_2 {
   // TODO: just add inherited rewriterSequencer here once 2.2.1 has been released
 
   protected val compiler = CypherCompilerFactory.costBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, WrappedMonitors2_2(kernelMonitors), StringInfoLogger2_2(logger), plannerName
+    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, WrappedMonitors2_2(kernelMonitors), StringInfoLogger2_2(log), plannerName
   )
 }
 

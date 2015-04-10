@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLog;
 import org.neo4j.ndp.runtime.Session;
 import org.neo4j.ndp.runtime.integration.RecordingCallback;
 import org.neo4j.ndp.runtime.internal.StatementRunner;
@@ -71,7 +71,7 @@ public class StateMachineErrorTest
         doThrow( new SyntaxException( "src/test" ) ).when( runner ).run( any(SessionState.class),
                 any(String.class), any(Map.class) );
 
-        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, StringLogger.DEV_NULL );
+        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLog.getInstance() );
 
         // When
         machine.run( "this is nonsense", EMPTY_MAP, null, responses );
@@ -96,7 +96,7 @@ public class StateMachineErrorTest
         when(runner.run( any(SessionState.class), any(String.class), any(Map.class) ))
                 .thenReturn( mock( RecordStream.class ) );
 
-        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, StringLogger.DEV_NULL );
+        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLog.getInstance() );
 
         // and Given there is a result ready to be retrieved
         machine.run( "something", null, null, Session.Callback.NO_OP );
@@ -113,7 +113,7 @@ public class StateMachineErrorTest
     public void testRollbackError() throws Throwable
     {
         // Given
-        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, StringLogger.DEV_NULL );
+        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLog.getInstance() );
 
         // Given there is a running transaction
         machine.beginTransaction();
@@ -133,7 +133,7 @@ public class StateMachineErrorTest
     {
         // Given
         RecordingCallback messages = new RecordingCallback();
-        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, StringLogger.DEV_NULL );
+        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLog.getInstance() );
 
         // When I perform some action that causes an error state
         machine.commitTransaction(); // No tx to be committed!
@@ -172,7 +172,7 @@ public class StateMachineErrorTest
     {
         // Given
         RecordingCallback messages = new RecordingCallback();
-        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, StringLogger.DEV_NULL );
+        SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLog.getInstance() );
 
         // Given I've performed some action that causes an error state
         machine.commitTransaction(); // No tx to be committed!

@@ -23,7 +23,6 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Logging;
 
 public interface Database extends Lifecycle
 {
@@ -37,6 +36,4 @@ public interface Database extends Lifecycle
     public GraphDatabaseAPI getGraph();
 
     public abstract boolean isRunning();
-
-    public Logging getLogging();
 }

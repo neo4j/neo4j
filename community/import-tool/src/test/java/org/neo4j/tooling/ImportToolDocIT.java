@@ -315,7 +315,7 @@ public class ImportToolDocIT
     }
 
     @Test
-    public void sameNodeLabelEverywhere() throws FileNotFoundException
+    public void sameNodeLabelEverywhere() throws Exception
     {
         // GIVEN
         File movies = file( "ops", "movies5.csv" );
@@ -377,7 +377,7 @@ public class ImportToolDocIT
     }
 
     @Test
-    public void sameRelationshipTypeEverywhere() throws FileNotFoundException
+    public void sameRelationshipTypeEverywhere() throws Exception
     {
         // GIVEN
         File movies = file( "ops", "movies6.csv" );
@@ -429,7 +429,7 @@ public class ImportToolDocIT
     }
 
     @Test
-    public void idSpaces() throws FileNotFoundException
+    public void idSpaces() throws Exception
     {
         // GIVEN
         File movies = file( "ops", "movies7.csv" );
@@ -576,7 +576,7 @@ public class ImportToolDocIT
     }
 
     @Test
-    public void propertyTypes() throws FileNotFoundException
+    public void propertyTypes() throws IOException
     {
         // GIVEN
         File movies = file( "ops", "movies10.csv" );
@@ -728,7 +728,7 @@ public class ImportToolDocIT
         return arguments;
     }
 
-    private void importTool( String[] arguments )
+    private void importTool( String[] arguments ) throws IOException
     {
         ImportTool.main( arguments, true );
     }

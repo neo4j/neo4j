@@ -22,7 +22,7 @@ package org.neo4j.ndp.messaging.v1.msgprocess;
 import java.io.IOException;
 import java.util.Map;
 
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 import org.neo4j.ndp.messaging.v1.MessageHandler;
 import org.neo4j.ndp.runtime.Session;
 import org.neo4j.ndp.runtime.StatementMetadata;
@@ -39,7 +39,7 @@ public class TransportBridge extends MessageHandler.Adapter<RuntimeException>
 
     private Session session;
 
-    public TransportBridge( StringLogger log )
+    public TransportBridge( Log log )
     {
         this.resultStreamCallback = new RecordStreamCallback( log );
         this.simpleCallback = new MessageProcessingCallback<>( log );

@@ -38,7 +38,7 @@ import org.neo4j.kernel.Recovery;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.recovery.StoreRecoverer;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
@@ -79,7 +79,7 @@ public class ConsistencyCheckToolTest
 
         // then
         verify( service ).runFullConsistencyCheck( eq( storeDirectoryPath ), any( Config.class ),
-                any( ProgressMonitorFactory.class ), any( StringLogger.class ) );
+                any( ProgressMonitorFactory.class ), any( LogProvider.class ) );
     }
 
     @Test
@@ -96,7 +96,7 @@ public class ConsistencyCheckToolTest
         // then
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
         verify( service ).runFullConsistencyCheck( anyString(), config.capture(),
-                any( ProgressMonitorFactory.class ), any( StringLogger.class ) );
+                any( ProgressMonitorFactory.class ), any( LogProvider.class ) );
         assertFalse( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
         assertEquals( TaskExecutionOrder.MULTI_PASS,
                 config.getValue().get( ConsistencyCheckSettings.consistency_check_execution_order ) );
@@ -121,7 +121,7 @@ public class ConsistencyCheckToolTest
         // then
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
         verify( service ).runFullConsistencyCheck( anyString(), config.capture(),
-                any( ProgressMonitorFactory.class ), any( StringLogger.class ) );
+                any( ProgressMonitorFactory.class ), any( LogProvider.class ) );
         assertTrue( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
     }
 

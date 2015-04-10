@@ -40,8 +40,9 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
@@ -84,12 +85,18 @@ public class NonUniqueIndexTests
 
     private GraphDatabaseService newEmbeddedGraphDatabaseWithSlowJobScheduler()
     {
-        return new EmbeddedGraphDatabase( directory.absolutePath(), stringMap(), GraphDatabaseDependencies.newDependencies().logging(DevNullLoggingService.DEV_NULL))
+        return new EmbeddedGraphDatabase( directory.absolutePath(), stringMap(), GraphDatabaseDependencies.newDependencies() )
         {
             @Override
             protected Neo4jJobScheduler createJobScheduler()
             {
                 return newSlowJobScheduler();
+            }
+
+            @Override
+            protected LogService createLogService()
+            {
+                return NullLogService.getInstance();
             }
         };
     }

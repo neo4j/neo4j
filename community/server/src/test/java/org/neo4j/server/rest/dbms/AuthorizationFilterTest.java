@@ -22,8 +22,8 @@ package org.neo4j.server.rest.dbms;
 import org.apache.commons.codec.binary.Base64;
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.kernel.impl.util.Charsets;
-import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.server.security.auth.AuthManager;
 import org.neo4j.server.security.auth.AuthenticationResult;
 
@@ -46,12 +46,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class AuthorizationFilterTest
 {
     private final AuthManager authManager = mock( AuthManager.class );
-    private final ConsoleLogger logger = mock( ConsoleLogger.class );
-    private final AuthorizationFilter filter = new AuthorizationFilter( authManager, logger );
+    private final AssertableLogProvider logProvider = new AssertableLogProvider();
+    private final AuthorizationFilter filter = new AuthorizationFilter( authManager, logProvider );
     private final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     private final HttpServletRequest servletRequest = mock( HttpServletRequest.class );
     private final HttpServletResponse servletResponse = mock( HttpServletResponse.class );
@@ -191,7 +192,9 @@ public class AuthorizationFilterTest
 
         // Then
         verifyNoMoreInteractions( filterChain );
-        verify( logger ).warn( "Failed authentication attempt for '%s' from %s", "foo", "remote_ip_address" );
+        logProvider.assertExactly(
+                inLog( AuthorizationFilter.class ).warn( "Failed authentication attempt for '%s' from %s", "foo", "remote_ip_address" )
+        );
         verify( servletResponse ).setStatus( 401 );
         verify( servletResponse ).addHeader( HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8" );
         assertThat( outputStream.toString( Charsets.UTF_8.name() ), containsString( "\"code\" : \"Neo.ClientError.Security.AuthorizationFailed\"" ) );

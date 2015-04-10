@@ -19,8 +19,8 @@
  */
 package org.neo4j.server.preflight;
 
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 /**
  * These are tasks that are run on server startup that may take a long time
@@ -49,14 +49,14 @@ import org.neo4j.kernel.logging.Logging;
 public class PreFlightTasks
 {
     private final PreflightTask[] tasks;
-    private final ConsoleLogger log;
+    private final Log log;
 
     private PreflightTask failedTask = null;
 
-    public PreFlightTasks( Logging logging, PreflightTask... tasks )
+    public PreFlightTasks( LogProvider logProvider, PreflightTask... tasks )
     {
         this.tasks = tasks;
-        this.log = logging.getConsoleLog( getClass() );
+        this.log = logProvider.getLog( getClass() );
     }
 
     public boolean run()

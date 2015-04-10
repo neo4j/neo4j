@@ -27,19 +27,18 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.{Clock, FrozenClock}
-import org.neo4j.kernel.impl.util.StringLogger.DEV_NULL
-import org.neo4j.kernel.impl.util.TestLogger.LogCall
-import org.neo4j.kernel.impl.util.{StringLogger, TestLogger}
+import org.neo4j.logging.{NullLog, Log, AssertableLogProvider}
+import AssertableLogProvider.inLog
 
 import scala.collection.Map
 
 class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
   def createCompiler(queryCacheSize: Int = 128, statsDivergenceThreshold: Double = 0.5, queryPlanTTL: Long = 1000,
-                     clock: Clock = Clock.SYSTEM_CLOCK, logger: StringLogger = DEV_NULL) =
+                     clock: Clock = Clock.SYSTEM_CLOCK, log: Log = NullLog.getInstance) =
     CypherCompilerFactory.costBasedCompiler(
       graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock,
       new WrappedMonitors2_3(kernelMonitors),
-      new StringInfoLogger2_3(logger),
+      new StringInfoLogger2_3(log),
       plannerName = CostPlannerName,
       runtimeName = InterpretedRuntimeName,
       rewriterSequencer = RewriterStepSequencer.newValidating)
@@ -146,9 +145,9 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   test("should log on cache remove") {
     // given
     val counter = new CacheCounter()
-    val logger: TestLogger = new TestLogger()
+    val logProvider = new AssertableLogProvider()
     val clock: Clock = new FrozenClock(1000)
-    val compiler = createCompiler(queryPlanTTL = 0, clock = clock, logger = logger)
+    val compiler = createCompiler(queryPlanTTL = 0, clock = clock, log = logProvider.getLog(getClass))
     compiler.monitors.addMonitorListener(counter)
     val query: String = "match (n:Person:Dog) return n"
     val statement = compiler.prepareQuery(query, devNullLogger).statement
@@ -162,6 +161,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     graph.inTx { compiler.planQuery(query, planContext, devNullLogger) }
 
     // then
-    logger.assertExactly(LogCall.info(s"Discarded stale query from the query cache: $statement"))
+    logProvider.assertExactly(
+      inLog(getClass).info( s"Discarded stale query from the query cache: $statement" )
+    )
   }
 }

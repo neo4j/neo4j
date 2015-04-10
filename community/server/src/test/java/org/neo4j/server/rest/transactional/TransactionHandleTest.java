@@ -41,7 +41,9 @@ import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.web.QuerySessionProvider;
 import org.neo4j.server.rest.web.TransactionUriScheme;
@@ -83,7 +85,7 @@ public class TransactionHandleTest
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337l );
         TransactionHandle handle = new TransactionHandle( kernel, executionEngine,
-                registry, uriScheme, StringLogger.DEV_NULL, querySessionProvider);
+                registry, uriScheme, NullLogProvider.getInstance(), querySessionProvider);
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
@@ -120,7 +122,7 @@ public class TransactionHandleTest
         when( executionEngine.executeQuery( "query", map(), querySession ) ).thenReturn( executionResult );
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337l );
         TransactionHandle handle = new TransactionHandle( kernel, executionEngine,
-                registry, uriScheme, StringLogger.DEV_NULL, querySessionProvider);
+                registry, uriScheme, NullLogProvider.getInstance(), querySessionProvider);
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
@@ -156,7 +158,7 @@ public class TransactionHandleTest
         when(querySessionProvider.create( any(HttpServletRequest.class) )).thenReturn( querySession );
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337l );
         TransactionHandle handle = new TransactionHandle( kernel, executionEngine, registry, uriScheme,
-                StringLogger.DEV_NULL, querySessionProvider);
+                NullLogProvider.getInstance(), querySessionProvider);
 
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
@@ -205,8 +207,8 @@ public class TransactionHandleTest
 
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337l );
-        TransactionHandle handle = new TransactionHandle( kernel, executionEngine, registry, uriScheme, StringLogger
-                .DEV_NULL, querySessionProvider);
+        TransactionHandle handle = new TransactionHandle( kernel, executionEngine, registry, uriScheme,
+                NullLogProvider.getInstance(), querySessionProvider);
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
         Statement statement = new Statement( queryText, map(), false, (ResultDataContent[]) null );
 
@@ -243,7 +245,7 @@ public class TransactionHandleTest
         when( engine.executeQuery( "query", map(), querySession ) ).thenReturn( result );
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337l );
         TransactionHandle handle = new TransactionHandle( kernel, engine,
-                registry, uriScheme, StringLogger.DEV_NULL, querySessionProvider);
+                registry, uriScheme, NullLogProvider.getInstance(), querySessionProvider);
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
@@ -274,7 +276,7 @@ public class TransactionHandleTest
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337l );
         TransactionHandle handle = new TransactionHandle( kernel, mock( QueryExecutionEngine.class ),
-                registry, uriScheme, StringLogger.DEV_NULL, querySessionProvider);
+                registry, uriScheme, NullLogProvider.getInstance(), querySessionProvider);
 
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
@@ -309,7 +311,7 @@ public class TransactionHandleTest
         when( engine.executeQuery( "query", map(), querySession ) ).thenReturn( executionResult );
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337l );
         TransactionHandle handle = new TransactionHandle( kernel, engine,
-                registry, uriScheme, StringLogger.DEV_NULL, querySessionProvider);
+                registry, uriScheme, NullLogProvider.getInstance(), querySessionProvider);
 
         // then
         verifyZeroInteractions( kernel );
@@ -348,7 +350,7 @@ public class TransactionHandleTest
 
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337l );
         TransactionHandle handle = new TransactionHandle( kernel, executionEngine, registry, uriScheme,
-                StringLogger.DEV_NULL, querySessionProvider);
+                NullLogProvider.getInstance(), querySessionProvider);
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
@@ -374,7 +376,9 @@ public class TransactionHandleTest
         TransitionalTxManagementKernelTransaction transactionContext = kernel.newTransaction();
         doThrow( new NullPointerException() ).when( transactionContext ).commit();
 
-        StringLogger log = mock( StringLogger.class );
+        LogProvider logProvider = mock( LogProvider.class );
+        Log log = mock( Log.class );
+        when( logProvider.getLog( TransactionHandle.class ) ).thenReturn( log );
 
         TransactionRegistry registry = mock( TransactionRegistry.class );
 
@@ -385,7 +389,7 @@ public class TransactionHandleTest
         when( querySessionProvider.create( any( HttpServletRequest.class ) ) ).thenReturn( querySession );
         when( engine.executeQuery( "query", map(), querySession ) ).thenReturn( executionResult );
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337l );
-        TransactionHandle handle = new TransactionHandle( kernel, engine, registry, uriScheme, log, querySessionProvider);
+        TransactionHandle handle = new TransactionHandle( kernel, engine, registry, uriScheme, logProvider, querySessionProvider);
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
@@ -417,11 +421,9 @@ public class TransactionHandleTest
         when( executionEngine.executeQuery( "matsch (n) return n", map(), querySession ) )
                 .thenThrow( new QueryExecutionKernelException( new SyntaxException( "did you mean MATCH?" ) ) );
 
-        StringLogger log = mock( StringLogger.class );
-
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337l );
-        TransactionHandle handle = new TransactionHandle( kernel, executionEngine, registry, uriScheme, log, querySessionProvider);
+        TransactionHandle handle = new TransactionHandle( kernel, executionEngine, registry, uriScheme, NullLogProvider.getInstance(), querySessionProvider);
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
@@ -455,7 +457,7 @@ public class TransactionHandleTest
         TransactionRegistry registry = mock( TransactionRegistry.class );
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337l );
         TransactionHandle handle = new TransactionHandle( mockKernel(), executionEngine, registry, uriScheme,
-                mock( StringLogger.class ), querySessionProvider);
+                NullLogProvider.getInstance(), querySessionProvider);
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
 
         // when
@@ -482,7 +484,7 @@ public class TransactionHandleTest
         when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 1337l );
         QueryExecutionEngine executionEngine = mock( QueryExecutionEngine.class );
         QuerySessionProvider querySessionProvider = mock( QuerySessionProvider.class );
-        TransactionHandle handle = new TransactionHandle( kernel, executionEngine, registry, uriScheme, StringLogger.DEV_NULL, querySessionProvider);
+        TransactionHandle handle = new TransactionHandle( kernel, executionEngine, registry, uriScheme, NullLogProvider.getInstance(), querySessionProvider);
 
         ExecutionResultSerializer output = mock( ExecutionResultSerializer.class );
         handle.execute( statements(), output, mock( HttpServletRequest.class ) );
