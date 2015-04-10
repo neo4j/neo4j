@@ -27,7 +27,7 @@ class UsingInAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestS
 
     // WHEN & THEN
     intercept[SyntaxException](
-      executeWithNewPlanner("start n=node(*) using index n:Person(name) where n:Person and n.name IN ['kabam'] return n"))
+      executeWithAllPlanners("start n=node(*) using index n:Person(name) where n:Person and n.name IN ['kabam'] return n"))
   }
 
   test("fail if using an identifier with label not used in match") {
@@ -36,7 +36,7 @@ class UsingInAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestS
 
     // WHEN
     intercept[SyntaxException](
-      executeWithNewPlanner("match n-->() using index n:Person(name) where n.name IN ['kabam'] return n"))
+      executeWithAllPlanners("match n-->() using index n:Person(name) where n.name IN ['kabam'] return n"))
   }
 
   test("fail if using an hint for a non existing index") {
@@ -44,7 +44,7 @@ class UsingInAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestS
 
     // WHEN
     intercept[IndexHintException](
-      executeWithNewPlanner("match (n:Person)-->() using index n:Person(name) where n.name IN ['kabam'] return n"))
+      executeWithAllPlanners("match (n:Person)-->() using index n:Person(name) where n.name IN ['kabam'] return n"))
   }
 
   test("fail if using hints with unusable equality predicate") {
@@ -53,7 +53,7 @@ class UsingInAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestS
 
     // WHEN
     intercept[SyntaxException](
-      executeWithNewPlanner("match (n:Person)-->() using index n:Person(name) where NOT (n.name IN ['kabam']) return n"))
+      executeWithAllPlanners("match (n:Person)-->() using index n:Person(name) where NOT (n.name IN ['kabam']) return n"))
   }
 
   test("fail if joining index hints in equality predicates") {
@@ -63,7 +63,7 @@ class UsingInAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestS
 
     // WHEN
     intercept[SyntaxException](
-      executeWithNewPlanner("match (n:Person)-->(m:Food) using index n:Person(name) using index m:Food(name) where n.name IN [m.name] return n"))
+      executeWithAllPlanners("match (n:Person)-->(m:Food) using index n:Person(name) using index m:Food(name) where n.name IN [m.name] return n"))
   }
 
   test("fail when equality checks are done with OR") {
@@ -72,6 +72,6 @@ class UsingInAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestS
 
     // WHEN
     intercept[SyntaxException](
-      executeWithNewPlanner("match n-->() using index n:Person(name) where n.name IN ['kabam'] OR n.name = 'kaboom' return n"))
+      executeWithAllPlanners("match n-->() using index n:Person(name) where n.name IN ['kabam'] OR n.name = 'kaboom' return n"))
   }
 }

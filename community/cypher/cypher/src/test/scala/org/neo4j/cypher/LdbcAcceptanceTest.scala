@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compiler.v2_2.executionplan.InternalExecutionResult
-
 /**
  * Runs the 14 LDBC queries and checks so that the result is what is expected.
  */
@@ -30,30 +28,14 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
   LDBC_QUERIES.foreach { ldbcQuery =>
     test(ldbcQuery.name) {
       //given
-      execute(ldbcQuery.createQuery, ldbcQuery.createParams.toSeq: _*)
-      ldbcQuery.constraintQueries.foreach(execute(_))
+      executeWithRulePlannerOnly(ldbcQuery.createQuery, ldbcQuery.createParams.toSeq: _*)
+      ldbcQuery.constraintQueries.foreach(executeWithRulePlannerOnly(_))
 
       //when
-      val result = executeWithNewPlanner(s"CYPHER planner=cost ${ldbcQuery.query}", ldbcQuery.params.toSeq: _*).result
+      val result = executeWithAllPlanners(ldbcQuery.query, ldbcQuery.params.toSeq: _*).toComparableList
 
       //then
       result should equal(ldbcQuery.expectedResult)
     }
-  }
-
-  /**
-   * Get rid of Arrays to make it easier to compare results by equality.
-   */
-  implicit class RichInternalExecutionResults(res: InternalExecutionResult) {
-    def result: Seq[Map[String, Any]] = res.toList.withArraysAsLists
-  }
-
-  implicit class RichMapSeq(res: Seq[Map[String, Any]]) {
-    def withArraysAsLists: Seq[Map[String, Any]] = res.map((map: Map[String, Any]) =>
-      map.map {
-        case (k, a: Array[_]) => k -> a.toList
-        case m => m
-      }
-    )
   }
 }

@@ -74,41 +74,37 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     self.kernelMonitors.addMonitorListener(newPlannerMonitor)
   }
 
-  def executeScalarWithNewPlanner[T](queryText: String, params: (String, Any)*): T =
-    monitoringNewPlanner(self.executeScalar[T](queryText, params: _*)) { trace =>
-      trace.collect {
-        case UnableToHandleQuery(stackTrace) => fail(s"Failed to use the new planner on: $queryText\n$stackTrace")
-      }
-    }
+  def executeScalarWithAllPlanners[T](queryText: String, params: (String, Any)*): T = {
+    val ruleResult = self.executeScalar[T](queryText, params: _*)
+    val costResult = monitoringNewPlanner(self.executeScalar[T](queryText, params: _*))(failedToUseNewPlanner(queryText))
 
-  def executeWithNewPlanner(queryText: String, params: (String, Any)*): InternalExecutionResult =
-    monitoringNewPlanner(innerExecute(queryText, params: _*)) { trace =>
-      trace.collect {
-        case UnableToHandleQuery(stackTrace) => fail(s"Failed to use the new planner on: $queryText\n$stackTrace")
-      }
-    }
+    assert(ruleResult === costResult, "Diverging results between rule and cost planners")
+
+    costResult
+  }
+
+  def executeWithAllPlanners(queryText: String, params: (String, Any)*): InternalExecutionResult = {
+    val ruleResult = innerExecute(s"CYPHER planner=rule $queryText", params: _*)
+    val costResult = executeWithCostPlannerOnly(queryText, params: _*)
+
+    assertResultsAreSame(ruleResult, costResult, queryText, "Diverging results between rule and cost planners")
+
+    costResult
+  }
+
+  def executeWithCostPlannerOnly(queryText: String, params: (String, Any)*): InternalExecutionResult =
+    monitoringNewPlanner(innerExecute(queryText, params: _*))(failedToUseNewPlanner(queryText))
+
+  def executeWithRulePlannerOnly(queryText: String, params: (String, Any)*) =
+    monitoringNewPlanner(innerExecute(queryText, params: _*))(unexpectedlyUsedNewPlanner(queryText))
 
   protected def innerExecute(queryText: String, params: (String, Any)*): InternalExecutionResult =
     eengine.execute(queryText, params.toMap) match {
       case ExecutionResultWrapperFor2_2(inner: InternalExecutionResult, _) => RewindableExecutionResult(inner)
     }
 
-  def executeWithOlderPlanner(queryText: String, params: (String, Any)*): ExecutionResult =
-    eengine.execute("cypher 2.1 " + queryText, params.toMap)
-
-  def executeScalarWithOlderPlanner[T](queryText: String, params: (String, Any)*): T =
-    scalar(eengine.execute("cypher 2.1 " + queryText, params.toMap).toList)
-
   override def execute(queryText: String, params: (String, Any)*) =
-    monitoringNewPlanner(innerExecute(queryText, params: _*)) { trace =>
-      val unableToHandle = trace.collectFirst {
-        case event: UnableToHandleQuery => event
-      }
-
-      unableToHandle.orElse {
-        fail(s"Unexpectedly used the new planner on: $queryText")
-      }
-    }
+    fail("Don't use execute together with NewPlannerTestSupport")
 
   def monitoringNewPlanner[T](action: => T)(test: List[NewPlannerMonitorCall] => Unit): T = {
     newPlannerMonitor.clear()
@@ -118,5 +114,47 @@ trait NewPlannerTestSupport extends CypherTestSupport {
 
     //now it is safe to throw
     result.get
+  }
+
+  private def assertResultsAreSame(ruleResult: InternalExecutionResult, costResult: InternalExecutionResult, queryText: String, errorMsg: String) {
+    withClue(errorMsg) {
+      if (queryText.toLowerCase contains "order by") {
+        ruleResult.toComparableList should contain theSameElementsInOrderAs costResult.toComparableList
+      } else {
+        ruleResult.toComparableList should contain theSameElementsAs costResult.toComparableList
+      }
+    }
+  }
+
+  /**
+   * Get rid of Arrays to make it easier to compare results by equality.
+   */
+  implicit class RichInternalExecutionResults(res: InternalExecutionResult) {
+    def toComparableList: Seq[Map[String, Any]] = res.toList.withArraysAsLists
+  }
+
+
+  implicit class RichMapSeq(res: Seq[Map[String, Any]]) {
+    def withArraysAsLists: Seq[Map[String, Any]] = res.map((map: Map[String, Any]) =>
+      map.map {
+        case (k, a: Array[_]) => k -> a.toList
+        case m => m
+      }
+    )
+  }
+
+  private def failedToUseNewPlanner(query: String)(trace: List[NewPlannerMonitorCall]) {
+    trace.collect {
+      case UnableToHandleQuery(stackTrace) => fail(s"Failed to use the new planner on: $query\n$stackTrace")
+    }
+  }
+
+  private def unexpectedlyUsedNewPlanner(query: String)(trace: List[NewPlannerMonitorCall]) {
+    val events = trace.collectFirst {
+      case event: UnableToHandleQuery => event
+    }
+    events.orElse {
+      fail(s"Unexpectedly used the new planner on: $query")
+    }
   }
 }
