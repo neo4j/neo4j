@@ -389,10 +389,8 @@ public class EncodingIdMapper implements IdMapper
                     String existing = collisionsForGroup.get( id );
                     if ( existing != null )
                     {
-                        throw new IllegalStateException( "Id '" + id + "' is defined more than once in " +
-                                group.name() + ", at least at " +
-                                existing + " and " +
-                                sourceLocation( ids ) );
+                        throw new DuplicateInputIdException( id, group.name(),
+                                existing, sourceLocation( ids ) );
                     }
                     collisionsForGroup.put( id, sourceLocation( ids ) );
 

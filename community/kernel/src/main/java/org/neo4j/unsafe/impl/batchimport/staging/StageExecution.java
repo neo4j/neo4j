@@ -33,6 +33,8 @@ import org.neo4j.unsafe.impl.batchimport.stats.Stat;
 
 import static java.lang.System.currentTimeMillis;
 
+import static org.neo4j.helpers.Exceptions.launderedException;
+
 /**
  * Default implementation of {@link StageControl}
  */
@@ -59,7 +61,7 @@ public class StageExecution implements StageControl
         if ( panic != null )
         {
             String message = panic.getMessage();
-            throw new RuntimeException( message == null? "Panic" : message, panic );
+            throw launderedException( message == null? "Panic" : message, panic );
         }
 
         for ( Step<?> step : pipeline )

@@ -46,8 +46,10 @@ import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.ClassicLoggingService;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.tooling.import_tool.ComponentVersion;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.DuplicateInputIdException;
 import org.neo4j.unsafe.impl.batchimport.input.Collectors;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
@@ -398,6 +400,14 @@ public class ImportTool
      */
     private static RuntimeException andPrintError( String typeOfError, Exception e, boolean stackTrace )
     {
+        if ( e.getClass().equals( DuplicateInputIdException.class ) )
+        {
+            System.err.println( "Duplicate input ids that would otherwise clash can be put into separate id space,"
+                    + " read more about how to use id spaces in the manual:"
+                    + " http://neo4j.com/docs/" + ComponentVersion.getKernel().getVersion() +
+                    "/import-tool-header-format.html#_id_spaces" );
+        }
+
         System.err.println( typeOfError + ": " + e.getMessage() );
         if ( stackTrace )
         {

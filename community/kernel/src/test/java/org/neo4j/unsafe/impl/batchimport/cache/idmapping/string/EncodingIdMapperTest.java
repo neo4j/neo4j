@@ -233,7 +233,7 @@ public class EncodingIdMapperTest
             mapper.prepare( ids, NONE );
             fail( "Should have failed" );
         }
-        catch ( IllegalStateException e )
+        catch ( DuplicateInputIdException e )
         {
             // THEN
             assertTrue( e.getMessage().contains( "10" ) );
@@ -262,7 +262,7 @@ public class EncodingIdMapperTest
             mapper.prepare( ids, NONE );
             fail( "Should have failed" );
         }
-        catch ( IllegalStateException e )
+        catch ( DuplicateInputIdException e )
         {
             // THEN
             assertThat( e.getMessage(), containsString( "10" ) );

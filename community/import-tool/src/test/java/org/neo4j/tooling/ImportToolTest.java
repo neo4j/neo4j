@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.test.EmbeddedDatabaseRule;
 import org.neo4j.test.Mute;
 import org.neo4j.test.RandomRule;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.DuplicateInputIdException;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
@@ -68,7 +69,6 @@ import static org.neo4j.collection.primitive.PrimitiveIntCollections.alwaysTrue;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.ArrayUtil.join;
-import static org.neo4j.helpers.Exceptions.contains;
 import static org.neo4j.helpers.Exceptions.withMessage;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
@@ -337,8 +337,8 @@ public class ImportToolTest
         catch ( Exception e )
         {
             // THEN
-            assertExceptionContains( e, nodeData1.getPath() + ":" + 1, IllegalStateException.class );
-            assertExceptionContains( e, nodeData2.getPath() + ":" + 3, IllegalStateException.class );
+            assertExceptionContains( e, nodeData1.getPath() + ":" + 1, DuplicateInputIdException.class );
+            assertExceptionContains( e, nodeData2.getPath() + ":" + 3, DuplicateInputIdException.class );
         }
     }
 
@@ -854,7 +854,7 @@ public class ImportToolTest
     private void assertExceptionContains( Exception e, String message, Class<? extends Exception> type )
             throws Exception
     {
-        if ( !contains( e, message, type ) )
+        if ( !type.equals( e.getClass() ) && !e.getMessage().contains( message ) )
         {   // Rethrow the exception since we'd like to see what it was instead
             throw withMessage( e,
                     format( "Expected exception to contain cause '%s', %s. but was %s", message, type, e ) );
