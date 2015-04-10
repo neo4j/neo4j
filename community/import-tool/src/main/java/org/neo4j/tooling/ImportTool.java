@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.storemigration.FileOperation;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.util.Converters;
+import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.ClassicLoggingService;
@@ -531,8 +532,31 @@ public class ImportTool
         public Collection<Option<File[]>> apply( Args args, String key )
         {
             return args.interpretOptionsWithMetadata( key, Converters.<File[]>optional(),
-                    Converters.toFiles( MULTI_FILE_DELIMITER ), Validators.FILES_EXISTS,
+                    Converters.toFiles( MULTI_FILE_DELIMITER ), FILES_EXISTS,
                     Validators.<File>atLeast( 1 ) );
         }
     };
+
+    private static final Validator<File[]> FILES_EXISTS = new Validator<File[]>()
+    {
+        @Override
+        public void validate( File[] files )
+        {
+            for ( File file : files )
+            {
+                if ( file.getName().startsWith( ":" ) )
+                {
+                    warn( "It looks like you're trying to specify default label or relationship type (" +
+                            file.getName() + "). Please put such directly on the key, f.ex. " +
+                            Options.NODE_DATA.argument() + ":MyLabel" );
+                }
+                Validators.FILE_EXISTS.validate( file );
+            }
+        }
+    };
+
+    private static void warn( String warning )
+    {
+        System.err.println( warning );
+    }
 }

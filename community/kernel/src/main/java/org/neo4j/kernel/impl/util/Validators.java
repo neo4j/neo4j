@@ -47,7 +47,7 @@ public class Validators
         {
             if ( !file.exists() )
             {
-                throw new IllegalArgumentException( "'" + file + "' doesn't exist" );
+                throw new IllegalArgumentException( "File '" + file + "' doesn't exist" );
             }
         }
     };
