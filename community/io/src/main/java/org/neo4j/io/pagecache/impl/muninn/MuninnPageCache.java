@@ -32,6 +32,7 @@ import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
+import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
@@ -165,6 +166,7 @@ public class MuninnPageCache implements PageCache
     private final CursorPool cursorPool;
     private final PageCacheTracer tracer;
     private final MuninnPage[] pages;
+    private final AtomicInteger backgroundFlushPauseRequests;
 
     // The freelist takes a bit of explanation. It is a thread-safe linked-list
     // of 3 types of objects. A link can either be a MuninnPage, a FreePage or
@@ -225,6 +227,7 @@ public class MuninnPageCache implements PageCache
         this.cursorPool = new CursorPool();
         this.tracer = tracer;
         this.pages = new MuninnPage[maxPages];
+        this.backgroundFlushPauseRequests = new AtomicInteger();
         this.printExceptionsOnClose = true;
 
         MemoryReleaser memoryReleaser = new MemoryReleaser( maxPages );
@@ -433,23 +436,11 @@ public class MuninnPageCache implements PageCache
     {
         try ( MajorFlushEvent cacheFlush = tracer.beginCacheFlush() )
         {
-            for ( MuninnPage page : pages )
-            {
-                long stamp = page.readLock();
-                try
-                {
-                    page.flush( cacheFlush.flushEventOpportunity() );
-                }
-                finally
-                {
-                    page.unlockRead( stamp );
-                }
-            }
-
+            FlushEventOpportunity flushOpportunity = cacheFlush.flushEventOpportunity();
             FileMapping fileMapping = mappedFiles;
             while ( fileMapping != null )
             {
-                fileMapping.pagedFile.force();
+                fileMapping.pagedFile.flushAndForceInternal( flushOpportunity );
                 fileMapping = fileMapping.next;
             }
         }
@@ -901,6 +892,25 @@ public class MuninnPageCache implements PageCache
         evictorException = null;
     }
 
+    void pauseBackgroundFlushTask()
+    {
+        backgroundFlushPauseRequests.getAndIncrement();
+    }
+
+    void unpauseBackgroundFlushTask()
+    {
+        backgroundFlushPauseRequests.getAndDecrement();
+        LockSupport.unpark( flushThread );
+    }
+
+    private void checkBackgroundFlushPause()
+    {
+        while ( backgroundFlushPauseRequests.get() > 0 )
+        {
+            LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
+        }
+    }
+
     /**
      * Scan through all the pages, flushing the dirty ones. Aim to only spend at most 50% of its time doing IO, in an
      * effort to avoid saturating the IO subsystem or steal precious IO resources from more important work.
@@ -1001,6 +1011,9 @@ public class MuninnPageCache implements PageCache
                     LockSupport.parkNanos( sleepDebtNanos );
                     sleepDebtNanos = 0;
                 }
+
+                // Check if we've been asked to pause, because another thread wants to focus on flushing.
+                checkBackgroundFlushPause();
             }
         }
 
