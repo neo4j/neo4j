@@ -243,21 +243,6 @@
             <groupId>org.neo4j.build.plugins</groupId>
             <artifactId>neo4j-doctools</artifactId>
             <version>${doctools.version}</version>
-            <exclusions>
-              <exclusion>
-                <groupId>ch.qos.logback</groupId>
-                <artifactId>logback-classic</artifactId>
-              </exclusion>
-              <exclusion>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-jdk14</artifactId>
-              </exclusion>
-            </exclusions>
-          </dependency>
-          <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-jdk14</artifactId>
-            <version>1.7.7</version>
           </dependency>
         </dependencies>
       </plugin>

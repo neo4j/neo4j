@@ -10,8 +10,6 @@ ${product.fullname} configuration files.
 * neo4j-server.properties            -- runtime operational settings
 * neo4j.properties                   -- database tuning parameters
 * neo4j-wrapper.conf                 -- environment and launch settings for Neo4j Server
-* loggging.properties                -- java.util.logging settings for Neo4j Server
-* windows-wrapper-logging.properties -- java.util.logging settings for the windows service wrapper
 * ssl/                               -- directory holding certificate files for
                                         HTTPS operation of the REST server
 
