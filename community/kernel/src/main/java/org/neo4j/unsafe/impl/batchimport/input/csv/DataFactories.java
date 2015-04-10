@@ -36,6 +36,7 @@ import org.neo4j.function.Factory;
 import org.neo4j.function.Function;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.unsafe.impl.batchimport.input.DuplicateHeaderException;
+import org.neo4j.unsafe.impl.batchimport.input.HeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
@@ -338,6 +339,18 @@ public class DataFactories
             }
         }
 
+        protected boolean isRecognizedType( String typeSpec )
+        {
+            for ( Type type : Type.values() )
+            {
+                if ( type.name().equalsIgnoreCase( typeSpec ) )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         /**
          * @param idExtractor we supply the id extractor explicitly because it's a configuration,
          * or at least input-global concern and not a concern of this particular header.
@@ -413,6 +426,10 @@ public class DataFactories
                 type = Type.LABEL;
                 extractor = extractors.stringArray();
             }
+            else if ( isRecognizedType( typeSpec ) )
+            {
+                throw new HeaderException( "Unexpected node header type '" + typeSpec + "'" );
+            }
             else
             {
                 type = Type.PROPERTY;
@@ -457,8 +474,12 @@ public class DataFactories
                 type = Type.TYPE;
                 extractor = extractors.string();
             }
+            else if ( isRecognizedType( typeSpec ) )
+            {
+                throw new HeaderException( "Unexpected relationship header type '" + typeSpec + "'" );
+            }
             else
-            {   // Property
+            {
                 type = Type.PROPERTY;
                 extractor = extractors.valueOf( typeSpec );
             }
