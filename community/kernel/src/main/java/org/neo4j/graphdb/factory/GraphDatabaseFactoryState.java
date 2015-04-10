@@ -25,7 +25,7 @@ import java.util.List;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
@@ -34,8 +34,8 @@ public class GraphDatabaseFactoryState
 {
     private final List<Class<?>> settingsClasses;
     private final List<KernelExtensionFactory<?>> kernelExtensions;
-    private Logging logging;
     private Monitors monitors;
+    private LogProvider userLogProvider;
 
     public GraphDatabaseFactoryState() {
         settingsClasses = new ArrayList<>();
@@ -52,8 +52,8 @@ public class GraphDatabaseFactoryState
         settingsClasses = new ArrayList<>( previous.settingsClasses );
         kernelExtensions = new ArrayList<>( previous.kernelExtensions );
         monitors = previous.monitors;
-        logging = previous.logging;
         monitors = previous.monitors;
+        userLogProvider = previous.userLogProvider;
     }
 
     public Iterable<KernelExtensionFactory<?>> getKernelExtension()
@@ -75,9 +75,9 @@ public class GraphDatabaseFactoryState
         }
     }
 
-    public void setLogging( Logging logging )
+    public void setUserLogProvider( LogProvider userLogProvider )
     {
-        this.logging = logging;
+        this.userLogProvider = userLogProvider;
     }
 
     public void setMonitors(Monitors monitors)
@@ -89,7 +89,7 @@ public class GraphDatabaseFactoryState
     {
         return newDependencies().
                 monitors(monitors).
-                logging(logging).
+                userLogProvider(userLogProvider).
                 settingsClasses(settingsClasses).
                 kernelExtensions(kernelExtensions);
     }

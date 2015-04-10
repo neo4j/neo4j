@@ -19,21 +19,20 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 
 public class DumpLocksVisitor implements Locks.Visitor
 {
-    private final StringLogger logger;
+    private final Log log;
 
-    public DumpLocksVisitor( StringLogger logger )
+    public DumpLocksVisitor( Log log )
     {
-        this.logger = logger;
+        this.log = log;
     }
 
     @Override
     public void visit( Locks.ResourceType resourceType, long resourceId, String description, long estimatedWaitTime )
     {
-        logger.info( String.format( "%s{id=%d, waitTime=%d, description=%s}", resourceType, resourceId,
-                estimatedWaitTime, description ) );
+        log.info( "%s{id=%d, waitTime=%d, description=%s}", resourceType, resourceId, estimatedWaitTime, description );
     }
 }

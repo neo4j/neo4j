@@ -41,8 +41,9 @@ import org.neo4j.kernel.impl.store.kvstore.Rotation;
 import org.neo4j.kernel.impl.store.kvstore.RotationMonitor;
 import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
 import org.neo4j.kernel.impl.store.kvstore.WritableBuffer;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.function.Optional;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register;
 
 import static java.lang.String.format;
@@ -80,35 +81,37 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
     public static final String LEFT = ".a", RIGHT = ".b";
     public static final String TYPE_DESCRIPTOR = "CountsStore";
 
-    public CountsTracker( final StringLogger logger, FileSystemAbstraction fs, PageCache pages, File baseFile )
+    public CountsTracker( final LogProvider logProvider, FileSystemAbstraction fs, PageCache pages, File baseFile )
     {
         super( fs, pages, baseFile, new RotationMonitor()
         {
+            final Log log = logProvider.getLog( CountsTracker.class );
+
             @Override
             public void failedToOpenStoreFile( File path, Exception error )
             {
-                logger.logMessage( "Failed to open counts store file: " + path, error );
+                log.error( "Failed to open counts store file: " + path, error );
             }
 
             @Override
             public void beforeRotation( File source, File target, Headers headers )
             {
-                logger.logMessage( format( "About to rotate counts store at transaction %d to [%s], from [%s].",
-                                           headers.get( FileVersion.FILE_VERSION ).txId, target, source ) );
+                log.info( format( "About to rotate counts store at transaction %d to [%s], from [%s].",
+                        headers.get( FileVersion.FILE_VERSION ).txId, target, source ) );
             }
 
             @Override
             public void rotationSucceeded( File source, File target, Headers headers )
             {
-                logger.logMessage( format( "Successfully rotated counts store at transaction %d to [%s], from [%s].",
-                                           headers.get( FileVersion.FILE_VERSION ).txId, target, source ) );
+                log.info( format( "Successfully rotated counts store at transaction %d to [%s], from [%s].",
+                        headers.get( FileVersion.FILE_VERSION ).txId, target, source ) );
             }
 
             @Override
             public void rotationFailed( File source, File target, Headers headers, Exception e )
             {
-                logger.logMessage( format( "Failed to rotate counts store at transaction %d to [%s], from [%s].",
-                                           headers.get( FileVersion.FILE_VERSION ).txId, target, source ), e );
+                log.error( format( "Failed to rotate counts store at transaction %d to [%s], from [%s].",
+                        headers.get( FileVersion.FILE_VERSION ).txId, target, source ), e );
             }
         }, 16, 16, HEADER_FIELDS );
     }

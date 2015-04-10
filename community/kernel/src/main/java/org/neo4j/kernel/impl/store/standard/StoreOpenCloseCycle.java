@@ -36,7 +36,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.NotCurrentStoreVersionException;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.util.Charsets;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 
 /**
  * Manages the "opening" and "closing" of store files. In this context, a "closed" store is one that has a footer
@@ -107,14 +107,14 @@ public class StoreOpenCloseCycle
         }
     }
 
-    private final StringLogger log;
+    private final Log log;
     private final File dbFileName;
     private final StoreFormat<?, ?> format;
     private final FileSystemAbstraction fs;
 
     private FileLock fileLock;
 
-    public StoreOpenCloseCycle( StringLogger log, File dbFileName, StoreFormat<?, ?> format, FileSystemAbstraction fs )
+    public StoreOpenCloseCycle( Log log, File dbFileName, StoreFormat<?, ?> format, FileSystemAbstraction fs )
     {
         this.log = log;
         this.dbFileName = dbFileName;

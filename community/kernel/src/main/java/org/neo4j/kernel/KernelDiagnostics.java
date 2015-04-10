@@ -31,12 +31,11 @@ import java.util.TimeZone;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Format;
 import org.neo4j.helpers.Service;
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
+import org.neo4j.logging.Logger;
 
 /**
  * @deprecated This will be moved to internal packages in the next major release.
@@ -63,20 +62,19 @@ abstract class KernelDiagnostics implements DiagnosticsProvider
         }
 
         @Override
-        void dump( StringLogger logger )
+        void dump( Logger logger )
         {
-            logger.logMessage( "Graph Database: " + graphDb.getName() + " " + storeId );
-            logger.logMessage( "Kernel version: " + Version.getKernel() );
-            logger.logMessage( "Neo4j component versions:" );
+            logger.log( "Graph Database: " + graphDb.getName() + " " + storeId );
+            logger.log( "Kernel version: " + Version.getKernel() );
+            logger.log( "Neo4j component versions:" );
             for ( Version componentVersion : Service.load( Version.class ) )
             {
-                logger.logMessage( "  " + componentVersion + "; revision: " + componentVersion.getRevision() );
+                logger.log( "  " + componentVersion + "; revision: " + componentVersion.getRevision() );
             }
         }
     }
 
-    private static class StoreFiles extends KernelDiagnostics implements Visitor<StringLogger.LineLogger,
-            RuntimeException>
+    private static class StoreFiles extends KernelDiagnostics
     {
         private final File storeDir;
         private static String FORMAT_DATE_ISO = "yyyy-MM-dd'T'HH:mm:ssZ";
@@ -91,19 +89,13 @@ abstract class KernelDiagnostics implements DiagnosticsProvider
         }
 
         @Override
-        void dump( StringLogger logger )
+        void dump( Logger logger )
         {
-            logger.logLongMessage( getDiskSpace( storeDir ) + "\nStorage files: (filename : modification date - size)", this, true );
-        }
-
-        @Override
-        public boolean visit( StringLogger.LineLogger logger )
-        {
+            logger.log( getDiskSpace( storeDir ) + "\nStorage files: (filename : modification date - size)" );
             logStoreFiles( logger, "  ", storeDir );
-            return false;
         }
 
-        private long logStoreFiles( StringLogger.LineLogger logger, String prefix, File dir )
+        private long logStoreFiles( Logger logger, String prefix, File dir )
         {
             if ( !dir.isDirectory() )
             {
@@ -112,7 +104,7 @@ abstract class KernelDiagnostics implements DiagnosticsProvider
             File[] files = dir.listFiles();
             if ( files == null )
             {
-                logger.logLine( prefix + "<INACCESSIBLE>" );
+                logger.log( prefix + "<INACCESSIBLE>" );
                 return 0;
             }
             long total = 0;
@@ -134,7 +126,7 @@ abstract class KernelDiagnostics implements DiagnosticsProvider
                 String filename = file.getName();
                 if ( file.isDirectory() )
                 {
-                    logger.logLine( prefix + filename + ":" );
+                    logger.log( prefix + filename + ":" );
                     size = logStoreFiles( logger, prefix + "  ", file );
                     filename = "- Total";
                 } else
@@ -145,7 +137,7 @@ abstract class KernelDiagnostics implements DiagnosticsProvider
                 String fileModificationDate = getFileModificationDate( file );
                 String bytes = Format.bytes( size );
                 String fileInformation = String.format( "%s%s: %s - %s", prefix, filename, fileModificationDate, bytes );
-                logger.logLine( fileInformation );
+                logger.log( fileInformation );
 
                 total += size;
             }
@@ -181,7 +173,7 @@ abstract class KernelDiagnostics implements DiagnosticsProvider
     }
 
     @Override
-    public void dump( DiagnosticsPhase phase, StringLogger log )
+    public void dump( DiagnosticsPhase phase, Logger log )
     {
         if ( phase.isInitialization() || phase.isExplicitlyRequested() )
         {
@@ -189,5 +181,5 @@ abstract class KernelDiagnostics implements DiagnosticsProvider
         }
     }
 
-    abstract void dump( StringLogger logger );
+    abstract void dump( Logger logger );
 }

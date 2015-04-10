@@ -25,8 +25,8 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register.DoubleLongRegister;
 
 import static org.neo4j.register.Registers.newDoubleLongRegister;
@@ -37,27 +37,27 @@ public class IndexSamplingControllerFactory
     private final IndexStoreView storeView;
     private final JobScheduler scheduler;
     private final TokenNameLookup tokenNameLookup;
-    private final Logging logging;
+    private final LogProvider logProvider;
 
     public IndexSamplingControllerFactory( IndexSamplingConfig config, IndexStoreView storeView,
                                            JobScheduler scheduler, TokenNameLookup tokenNameLookup,
-                                           Logging logging )
+                                           LogProvider logProvider )
     {
         this.config = config;
         this.storeView = storeView;
         this.scheduler = scheduler;
         this.tokenNameLookup = tokenNameLookup;
-        this.logging = logging;
+        this.logProvider = logProvider;
     }
 
     public IndexSamplingController create( IndexMapSnapshotProvider snapshotProvider )
     {
         OnlineIndexSamplingJobFactory jobFactory =
-                new OnlineIndexSamplingJobFactory( storeView, tokenNameLookup, logging );
+                new OnlineIndexSamplingJobFactory( storeView, tokenNameLookup, logProvider );
         Predicate<IndexDescriptor> samplingUpdatePredicate = createSamplingPredicate();
         IndexSamplingJobQueue<IndexDescriptor> jobQueue = new IndexSamplingJobQueue<>( samplingUpdatePredicate );
         IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( config, scheduler );
-        Predicate<IndexDescriptor> indexRecoveryCondition = createIndexRecoveryCondition( logging, tokenNameLookup );
+        Predicate<IndexDescriptor> indexRecoveryCondition = createIndexRecoveryCondition( logProvider, tokenNameLookup );
         return new IndexSamplingController(
                 config, jobFactory, jobQueue, jobTracker, snapshotProvider, scheduler, indexRecoveryCondition
         );
@@ -81,12 +81,12 @@ public class IndexSamplingControllerFactory
         };
     }
 
-    private Predicate<IndexDescriptor> createIndexRecoveryCondition( final Logging logging,
+    private Predicate<IndexDescriptor> createIndexRecoveryCondition( final LogProvider logProvider,
                                                                      final TokenNameLookup tokenNameLookup )
     {
         return new Predicate<IndexDescriptor>()
         {
-            private final StringLogger logger = logging.getMessagesLog( IndexSamplingController.class );
+            private final Log log = logProvider.getLog( IndexSamplingController.class );
             private final DoubleLongRegister register = newDoubleLongRegister();
 
             @Override
@@ -95,8 +95,7 @@ public class IndexSamplingControllerFactory
                 boolean result = storeView.indexSample( descriptor, register ).readSecond() == 0;
                 if ( result )
                 {
-                    logger.warn( "Recovering index sampling for index " +
-                                 descriptor.userDescription( tokenNameLookup ));
+                    log.warn( "Recovering index sampling for index %s", descriptor.userDescription( tokenNameLookup ) );
                 }
                 return result;
             }

@@ -30,8 +30,8 @@ import org.neo4j.helpers.Format;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.api.CountsAccessor;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
@@ -74,8 +74,8 @@ public class ParallelBatchImporter implements BatchImporter
     private final FileSystemAbstraction fileSystem;
     private final Configuration config;
     private final IoMonitor writeMonitor;
-    private final Logging logging;
-    private final StringLogger logger;
+    private final LogProvider logProvider;
+    private final Log log;
     private final ExecutionMonitor executionMonitor;
     private final Monitors monitors;
     private final WriterFactory writerFactory;
@@ -86,16 +86,16 @@ public class ParallelBatchImporter implements BatchImporter
      * a constructor with fewer arguments instead.
      */
     public ParallelBatchImporter( String storeDir, FileSystemAbstraction fileSystem, Configuration config,
-            Logging logging, ExecutionMonitor executionMonitor, Function<Configuration,WriterFactory> writerFactory,
+            LogProvider logProvider, ExecutionMonitor executionMonitor, Function<Configuration,WriterFactory> writerFactory,
             AdditionalInitialIds additionalInitialIds )
     {
         this.storeDir = new File( storeDir );
         this.fileSystem = fileSystem;
         this.config = config;
-        this.logging = logging;
+        this.logProvider = logProvider;
+        this.log = logProvider.getLog( getClass() );
         this.executionMonitor = executionMonitor;
         this.additionalInitialIds = additionalInitialIds;
-        this.logger = logging.getMessagesLog( getClass() );
         this.monitors = new Monitors();
         this.writeMonitor = new IoMonitor();
         this.writerFactory = writerFactory.apply( config );
@@ -106,17 +106,17 @@ public class ParallelBatchImporter implements BatchImporter
      * The provided {@link ExecutionMonitor} will be decorated with {@link DynamicProcessorAssigner} for
      * optimal assignment of processors to bottleneck steps over time.
      */
-    public ParallelBatchImporter( String storeDir, Configuration config, Logging logging,
+    public ParallelBatchImporter( String storeDir, Configuration config, LogProvider logProvider,
             ExecutionMonitor executionMonitor )
     {
-        this( storeDir, new DefaultFileSystemAbstraction(), config, logging,
+        this( storeDir, new DefaultFileSystemAbstraction(), config, logProvider,
                 withDynamicProcessorAssignment( executionMonitor, config ), parallel(), EMPTY );
     }
 
     @Override
     public void doImport( Input input ) throws IOException
     {
-        logger.info( "Import starting" );
+        log.info( "Import starting" );
 
         // Things that we need to close later. The reason they're not in the try-with-resource statement
         // is that we need to close, and set to null, at specific points preferably. So use good ol' finally block.
@@ -126,7 +126,7 @@ public class ParallelBatchImporter implements BatchImporter
         boolean hasBadEntries = false;
         File badFile = config.badFile( storeDir );
         try ( BatchingNeoStore neoStore = new BatchingNeoStore( fileSystem, storeDir, config,
-                    writeMonitor, logging, monitors, writerFactory, additionalInitialIds );
+                    writeMonitor, logProvider, monitors, writerFactory, additionalInitialIds );
               OutputStream badOutput = new BufferedOutputStream( fileSystem.openAsOutputStream( badFile, false ) );
               Collector badCollector = input.badCollector( badOutput );
               CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset(
@@ -202,17 +202,17 @@ public class ParallelBatchImporter implements BatchImporter
             // We're done, do some final logging about it
             long totalTimeMillis = currentTimeMillis() - startTime;
             executionMonitor.done( totalTimeMillis );
-            logger.info( "Import completed, took " + Format.duration( totalTimeMillis ) );
+            log.info( "Import completed, took " + Format.duration( totalTimeMillis ) );
             hasBadEntries = badCollector.badEntries() > 0;
             if ( hasBadEntries )
             {
-                logger.warn( "There were " + badCollector.badEntries() + " bad entries which were skipped " +
+                log.warn( "There were " + badCollector.badEntries() + " bad entries which were skipped " +
                              "and logged into " + badFile.getAbsolutePath() );
             }
         }
         catch ( Throwable t )
         {
-            logger.error( "Error during import", t );
+            log.error( "Error during import", t );
             throw Exceptions.launderedException( IOException.class, t );
         }
         finally

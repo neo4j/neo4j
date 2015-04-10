@@ -34,7 +34,9 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 
@@ -89,9 +91,9 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
         this.first = first;
     }
 
-    private static StringLogger logger()
+    private static LogProvider logProvider()
     {
-        return Boolean.getBoolean( "logger" ) ? StringLogger.SYSTEM : StringLogger.DEV_NULL;
+        return Boolean.getBoolean( "logger" ) ? FormattedLogProvider.toOutputStream( System.out ) : NullLogProvider.getInstance();
     }
 
     void dump( File storeFile ) throws IOException
@@ -102,7 +104,7 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
         {
             DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
             Config config = new Config();
-            StoreFactory storeFactory = new StoreFactory( config, idGeneratorFactory, pageCache, fs, logger(), null );
+            StoreFactory storeFactory = new StoreFactory( config, idGeneratorFactory, pageCache, fs, logProvider(), null );
             RecordStore<RECORD> store = store( storeFactory, storeFile );
             try
             {

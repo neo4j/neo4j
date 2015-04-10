@@ -43,6 +43,7 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.NeoStore;
@@ -74,7 +75,7 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v21.propertydeduplicatio
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.Lifespan;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
@@ -101,7 +102,6 @@ import static org.neo4j.kernel.impl.store.NeoStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 import static org.neo4j.unsafe.impl.batchimport.WriterFactories.parallel;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 
@@ -125,27 +125,27 @@ public class StoreMigrator implements StoreMigrationParticipant
     private final FileSystemAbstraction fileSystem;
     private final UpgradableDatabase upgradableDatabase;
     private final Config config;
-    private final Logging logging;
+    private final LogService logService;
     private final LegacyLogs legacyLogs;
     private String versionToUpgradeFrom;
 
     // TODO progress meter should be an aspect of StoreUpgrader, not specific to this participant.
 
     public StoreMigrator( MigrationProgressMonitor progressMonitor, FileSystemAbstraction fileSystem,
-                          Logging logging )
+                          LogService logService )
     {
         this( progressMonitor, fileSystem, new UpgradableDatabase( new StoreVersionCheck( fileSystem ) ),
-                new Config(), logging );
+                new Config(), logService );
     }
 
     public StoreMigrator( MigrationProgressMonitor progressMonitor, FileSystemAbstraction fileSystem,
-                          UpgradableDatabase upgradableDatabase, Config config, Logging logging )
+                          UpgradableDatabase upgradableDatabase, Config config, LogService logService )
     {
         this.progressMonitor = progressMonitor;
         this.fileSystem = fileSystem;
         this.upgradableDatabase = upgradableDatabase;
         this.config = config;
-        this.logging = logging;
+        this.logService = logService;
         this.legacyLogs = new LegacyLogs( fileSystem );
     }
 
@@ -299,7 +299,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         final File storeFileBase = new File( migrationDir, NeoStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
 
         final StoreFactory storeFactory =
-                new StoreFactory( fileSystem, storeDir, pageCache, DEV_NULL, new Monitors(),
+                new StoreFactory( fileSystem, storeDir, pageCache, NullLogProvider.getInstance(), new Monitors(),
                         StoreVersionMismatchHandler.ALLOW_OLD_VERSION );
         try ( NodeStore nodeStore = storeFactory.newNodeStore();
               RelationshipStore relationshipStore = storeFactory.newRelationshipStore() )
@@ -313,7 +313,7 @@ public class StoreMigrator implements StoreMigrationParticipant
                 CountsComputer initializer = new CountsComputer(
                         lastTxId, nodeStore, relationshipStore, highLabelId, highRelationshipTypeId );
                 life.add( new CountsTracker(
-                        logging.getMessagesLog( CountsTracker.class ), fileSystem, pageCache, storeFileBase )
+                        logService.getInternalLogProvider(), fileSystem, pageCache, storeFileBase )
                                   .setInitializer( initializer ) );
             }
         }
@@ -339,7 +339,7 @@ public class StoreMigrator implements StoreMigrationParticipant
 
         Configuration importConfig = new Configuration.Overridden( config );
         BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsolutePath(), fileSystem,
-                importConfig, logging, withDynamicProcessorAssignment( migrationBatchImporterMonitor(
+                importConfig, logService.getInternalLogProvider(), withDynamicProcessorAssignment( migrationBatchImporterMonitor(
                         legacyStore, progressMonitor ), importConfig ),
                 parallel(), readAdditionalIds( storeDir, lastTxId, lastTxChecksum ) );
         InputIterable<InputNode> nodes = legacyNodesAsInput( legacyStore );
@@ -459,7 +459,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         return new StoreFactory(
                 StoreFactory.configForStoreDir( config, migrationDir ),
                 new DefaultIdGeneratorFactory(), pageCache,
-                fileSystem, DEV_NULL, new Monitors() );
+                fileSystem, NullLogProvider.getInstance(), new Monitors() );
     }
 
     private void migratePropertyKeys( Legacy19Store legacyStore, PageCache pageCache, File migrationDir )

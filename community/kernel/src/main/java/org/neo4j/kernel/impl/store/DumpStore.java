@@ -35,7 +35,9 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 
@@ -52,8 +54,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         try ( PageCache pageCache = createPageCache( fs ) )
         {
             DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
-            StoreFactory storeFactory = new StoreFactory(
-                    new Config(), idGeneratorFactory, pageCache, fs, logger(), null );
+            StoreFactory storeFactory = new StoreFactory( new Config(), idGeneratorFactory, pageCache, fs, logProvider(), null );
 
             for ( String arg : args )
             {
@@ -123,9 +124,9 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         }
     }
 
-    private static StringLogger logger()
+    private static LogProvider logProvider()
     {
-        return Boolean.getBoolean( "logger" ) ? StringLogger.SYSTEM : StringLogger.DEV_NULL;
+        return Boolean.getBoolean( "logger" ) ? FormattedLogProvider.toOutputStream( System.out ) : NullLogProvider.getInstance();
     }
 
     private static void dumpPropertyKeys( File file, StoreFactory storeFactory, long[] ids ) throws Exception

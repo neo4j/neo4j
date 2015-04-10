@@ -43,6 +43,7 @@ import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.Visitor;
@@ -90,6 +91,7 @@ import org.neo4j.kernel.impl.coreapi.schema.PropertyUniqueConstraintDefinition;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
+import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
@@ -127,11 +129,12 @@ import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.transaction.state.RelationshipCreator;
 import org.neo4j.kernel.impl.transaction.state.RelationshipGroupGetter;
 import org.neo4j.kernel.impl.transaction.state.RelationshipLocker;
+import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Listener;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.logging.SingleLoggingService;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.Boolean.parseBoolean;
@@ -156,9 +159,8 @@ public class BatchInserterImpl implements BatchInserter
     private final IdGeneratorFactory idGeneratorFactory;
     private final SchemaIndexProviderMap schemaIndexProviders;
     private final LabelScanStore labelScanStore;
-    // TODO use Logging instead
-    private final StringLogger msgLog;
-    private final Logging logging;
+    private final StoreLogService logService;
+    private final Log msgLog;
     private final FileSystemAbstraction fileSystem;
     private final SchemaCache schemaCache;
     private final Config config;
@@ -185,7 +187,7 @@ public class BatchInserterImpl implements BatchInserter
     private final PropertyDeleter propertyDeletor;
 
     BatchInserterImpl( String storeDir,
-                       Map<String, String> stringParams )
+                       Map<String, String> stringParams ) throws IOException
     {
         this( storeDir,
               new DefaultFileSystemAbstraction(),
@@ -195,7 +197,7 @@ public class BatchInserterImpl implements BatchInserter
     }
 
     BatchInserterImpl( String storeDir, FileSystemAbstraction fileSystem,
-                       Map<String, String> stringParams, Iterable<KernelExtensionFactory<?>> kernelExtensions )
+                       Map<String, String> stringParams, Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
     {
         rejectAutoUpgrade( stringParams );
         Map<String, String> params = getDefaultParams();
@@ -211,8 +213,9 @@ public class BatchInserterImpl implements BatchInserter
                 fileSystem, config, PageCacheTracer.NULL );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 
-        msgLog = StringLogger.loggerDirectory( fileSystem, this.storeDir );
-        logging = new SingleLoggingService( msgLog );
+        JobScheduler jobScheduler = life.add( new Neo4jJobScheduler() );
+        logService = new StoreLogService( NullLogProvider.getInstance(), fileSystem, this.storeDir, jobScheduler );
+        msgLog = logService.getInternalLog( getClass() );
         storeLocker = new StoreLocker( fileSystem );
         storeLocker.checkLock( this.storeDir );
 
@@ -224,14 +227,14 @@ public class BatchInserterImpl implements BatchInserter
                 idGeneratorFactory,
                 pageCache,
                 fileSystem,
-                msgLog,
+                logService.getInternalLogProvider(),
                 monitors );
 
         if ( dump )
         {
             dumpConfiguration( params );
         }
-        msgLog.logMessage( Thread.currentThread() + " Starting BatchInserter(" + this + ")" );
+        msgLog.info( Thread.currentThread() + " Starting BatchInserter(" + this + ")" );
         life.start();
         neoStore = sf.newNeoStore( true );
         if ( !neoStore.isStoreOk() )
@@ -885,8 +888,7 @@ public class BatchInserterImpl implements BatchInserter
             throw new UnderlyingStorageException( "Could not release store lock", e );
         }
 
-        msgLog.logMessage( Thread.currentThread() + " Clean shutdown on BatchInserter(" + this + ")", true );
-        msgLog.close();
+        msgLog.info( Thread.currentThread() + " Clean shutdown on BatchInserter(" + this + ")", true );
         life.shutdown();
     }
 
@@ -1108,9 +1110,9 @@ public class BatchInserterImpl implements BatchInserter
             {
                 return type.cast( config );
             }
-            if ( type.isInstance( logging ) )
+            if ( type.isInstance( logService ) )
             {
-                return type.cast( logging );
+                return type.cast( logService );
             }
             if ( NeoStoreSupplier.class.isAssignableFrom( type ) )
             {

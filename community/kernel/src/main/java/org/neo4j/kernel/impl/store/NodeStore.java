@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.util.Bits;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
@@ -85,13 +85,13 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             FileSystemAbstraction fileSystemAbstraction,
-            StringLogger stringLogger,
+            LogProvider logProvider,
             DynamicArrayStore dynamicLabelStore,
             StoreVersionMismatchHandler versionMismatchHandler,
             Monitors monitors )
     {
         super( fileName, config, IdType.NODE, idGeneratorFactory, pageCache, fileSystemAbstraction,
-                stringLogger, versionMismatchHandler, monitors );
+                logProvider, versionMismatchHandler, monitors );
         this.dynamicLabelStore = dynamicLabelStore;
     }
 

@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.Map;
 
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 
 
 public class AnnotationBasedConfigurationMigrator implements ConfigurationMigrator {
@@ -46,7 +46,7 @@ public class AnnotationBasedConfigurationMigrator implements ConfigurationMigrat
 
     @Override
     public Map<String, String> apply(Map<String, String> rawConfiguration,
-            StringLogger log)
+            Log log)
     {
         for(ConfigurationMigrator migrator : migrators)
         {

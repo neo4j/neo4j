@@ -25,7 +25,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.NeoStoreDataSourceRule;
 import org.neo4j.test.PageCacheRule;
@@ -52,7 +52,7 @@ public class NeoStoreDataSourceTest
         try
         {
             KernelHealth kernelHealth = new KernelHealth( mock( KernelPanicEventGenerator.class ),
-                    DevNullLoggingService.DEV_NULL );
+                    NullLogProvider.getInstance() );
 
             theDataSource = ds.getDataSource( dir, fs.get(), pageCacheRule.getPageCache( fs.get() ),
                     stringMap(), kernelHealth );

@@ -22,10 +22,10 @@ package org.neo4j.kernel.lifecycle;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.function.Consumer;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Logger;
 
 /**
  * Support class for handling collections of Lifecycle instances. Manages the transitions from one state to another.
@@ -41,16 +41,9 @@ public class LifeSupport
     private volatile List<LifecycleInstance> instances = new ArrayList<LifecycleInstance>();
     private volatile LifecycleStatus status = LifecycleStatus.NONE;
     private final List<LifecycleListener> listeners = new ArrayList<LifecycleListener>();
-    private final StringLogger log;
     
     public LifeSupport()
     {
-        this( StringLogger.SYSTEM_ERR );
-    }
-    
-    public LifeSupport( StringLogger log )
-    {
-        this.log = log;
     }
 
     /**
@@ -386,24 +379,20 @@ public class LifeSupport
         listeners.remove( listener );
     }
 
-
-    public synchronized void dump( StringLogger logger )
+    public synchronized void dump( Logger logger )
     {
-        logger.logLongMessage( "Lifecycle status:" + status.name(), new Visitor<StringLogger.LineLogger,
-                RuntimeException>()
+        logger.bulk( new Consumer<Logger>()
         {
             @Override
-            public boolean visit( StringLogger.LineLogger element )
+            public void accept( Logger bulkLogger )
             {
+                bulkLogger.log( "Lifecycle status: %s", status.name() );
                 for ( LifecycleInstance instance : instances )
                 {
-                    element.logLine( instance.toString() );
+                    bulkLogger.log( instance.toString() );
                 }
-
-                return true;
             }
-        }, true
-        );
+        } );
     }
 
     private void bringToState( LifecycleInstance instance )
@@ -428,9 +417,6 @@ public class LifeSupport
         {
             return exception;
         }
-
-        log.error( "Lifecycle exception", exception );
-        log.error( "Chained lifecycle exception", chainedLifecycleException );
         
         Throwable current = exception;
         while ( current.getCause() != null )
@@ -528,7 +514,6 @@ public class LifeSupport
                 }
                 catch ( Throwable e )
                 {
-                    log.error( "Exception when stopping " + instance, e );
                     throw new LifecycleException( instance, LifecycleStatus.STARTED, LifecycleStatus.STOPPED, e );
                 }
                 finally

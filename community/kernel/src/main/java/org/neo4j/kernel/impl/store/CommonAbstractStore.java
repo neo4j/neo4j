@@ -43,7 +43,9 @@ import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.Logger;
 
 import static java.nio.ByteBuffer.wrap;
 
@@ -68,7 +70,8 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     private final IdGeneratorFactory idGeneratorFactory;
     private final StoreVersionMismatchHandler versionMismatchHandler;
     protected FileSystemAbstraction fileSystemAbstraction;
-    protected StringLogger stringLogger;
+    protected final LogProvider logProvider;
+    protected final Log log;
     protected PagedFile storeFile;
     private IdGenerator idGenerator;
     private StoreChannel fileChannel;
@@ -100,7 +103,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             FileSystemAbstraction fileSystemAbstraction,
-            StringLogger stringLogger,
+            LogProvider logProvider,
             StoreVersionMismatchHandler versionMismatchHandler )
     {
         this.storageFileName = fileName;
@@ -109,7 +112,8 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         this.pageCache = pageCache;
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.idType = idType;
-        this.stringLogger = stringLogger;
+        this.logProvider = logProvider;
+        this.log = logProvider.getLog( getClass() );
         this.versionMismatchHandler = versionMismatchHandler;
 
         try
@@ -282,10 +286,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         {
             if ( !getStoreOk() )
             {
-                if ( stringLogger != null )
-                {
-                    stringLogger.debug( getStorageFileName() + " non clean shutdown detected" );
-                }
+                log.debug( getStorageFileName() + " non clean shutdown detected" );
             }
         }
     }
@@ -347,7 +348,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
             throw new InvalidRecordException( "Illegal blockSize: " + blockSize );
         }
 
-        stringLogger.debug( "Rebuilding id generator for[" + getStorageFileName() + "] ..." );
+        log.debug( "Rebuilding id generator for[" + getStorageFileName() + "] ..." );
         closeIdGenerator();
         File idFile = new File( getStorageFileName().getPath() + ".id" );
         if ( fileSystemAbstraction.fileExists( idFile ) )
@@ -380,9 +381,9 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
                     "Unable to rebuild id generator " + getStorageFileName(), e );
         }
 
-        stringLogger.debug( "[" + getStorageFileName() + "] high id=" + getHighId()
+        log.debug( "[" + getStorageFileName() + "] high id=" + getHighId()
                             + " (defragged=" + defraggedCount + ")" );
-        stringLogger.debug( getStorageFileName() + " rebuild id generator, highId=" + getHighId() +
+        log.debug( getStorageFileName() + " rebuild id generator, highId=" + getHighId() +
                                  " defragged count=" + defraggedCount );
 
         if ( !fastRebuild )
@@ -723,7 +724,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
                     fileChannel.position( highId * recordSize );
                     ByteBuffer buffer = wrap( encode( versionMismatchHandler.trailerToWrite( getTypeAndVersionDescriptor(), readTypeDescriptorAndVersion ) ) );
                     fileChannel.write( buffer );
-                    stringLogger.debug( "Closing " + storageFileName + ", truncating at " + fileChannel.position() +
+                    log.debug( "Closing " + storageFileName + ", truncating at " + fileChannel.position() +
                                         " vs file size " + fileChannel.size() );
                     fileChannel.truncate( fileChannel.position() );
                     fileChannel.force( false );
@@ -757,7 +758,7 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         }
         catch ( IOException e )
         {
-            stringLogger.warn( "Could not close [" + storageFileName + "]", e );
+            log.warn( "Could not close [" + storageFileName + "]", e );
         }
         fileChannel = null;
     }
@@ -833,14 +834,14 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
         return idType;
     }
 
-    public void logVersions( StringLogger.LineLogger logger )
+    public void logVersions( Logger logger )
     {
-        logger.logLine( "  " + getTypeAndVersionDescriptor() );
+        logger.log( "  " + getTypeAndVersionDescriptor() );
     }
 
-    public void logIdUsage( StringLogger.LineLogger lineLogger )
+    public void logIdUsage( Logger logger )
     {
-        lineLogger.logLine( String.format( "  %s: used=%s high=%s",
+        logger.log( String.format( "  %s: used=%s high=%s",
                 getTypeDescriptor(), getNumberOfIdsInUse(), getHighestPossibleIdInUse() ) );
     }
 
@@ -850,8 +851,8 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
      * methods like:
      * {@link #makeStoreOk()},
      * {@link #closeStorage()} (where that method could be deleted all together and do a visit in {@link #close()}),
-     * {@link #logIdUsage(org.neo4j.kernel.impl.util.StringLogger.LineLogger)},
-     * {@link #logVersions(org.neo4j.kernel.impl.util.StringLogger.LineLogger)}
+     * {@link #logIdUsage(Logger)},
+     * {@link #logVersions(Logger)}
      * For a good samaritan to pick up later.
      */
     public void visitStore( Visitor<CommonAbstractStore,RuntimeException> visitor )

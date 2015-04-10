@@ -28,7 +28,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -55,7 +55,7 @@ public class BatchingNeoStoreTest
         try
         {
             new BatchingNeoStore( fsr.get(), storeDir, DEFAULT, NO_MONITOR,
-                    new DevNullLoggingService(), new Monitors(), SYNCHRONOUS, EMPTY );
+                    NullLogProvider.getInstance(), new Monitors(), SYNCHRONOUS, EMPTY );
             fail( "Should fail on existing data" );
         }
         catch ( IllegalStateException e )

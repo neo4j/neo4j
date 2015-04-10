@@ -109,7 +109,7 @@ public class BatchInsertDocTest
     }
 
     @Test
-    public void insertWithConfig()
+    public void insertWithConfig() throws IOException
     {
         // START SNIPPET: configuredInsert
         Map<String, String> config = new HashMap<>();

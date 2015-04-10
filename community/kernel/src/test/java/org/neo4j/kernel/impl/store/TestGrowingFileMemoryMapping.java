@@ -30,7 +30,7 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.CommonAbstractStore.Configuration;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
@@ -69,7 +69,7 @@ public class TestGrowingFileMemoryMapping
                 idGeneratorFactory,
                 pageCache,
                 fileSystemAbstraction,
-                StringLogger.DEV_NULL,
+                NullLogProvider.getInstance(),
                 monitors );
 
         File fileName = new File( storeDir, NeoStore.DEFAULT_NAME + ".nodestore.db" );
@@ -82,7 +82,7 @@ public class TestGrowingFileMemoryMapping
                 idGeneratorFactory,
                 pageCache,
                 fileSystemAbstraction,
-                StringLogger.DEV_NULL,
+                NullLogProvider.getInstance(),
                 null,
                 StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
                 monitors );

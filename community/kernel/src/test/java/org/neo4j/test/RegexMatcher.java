@@ -17,21 +17,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.logging;
+package org.neo4j.test;
 
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.filter.Filter;
-import ch.qos.logback.core.spi.FilterReply;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 
-public class ConsoleLoggingFilter extends Filter<ILoggingEvent>
+import java.util.regex.Pattern;
+
+public class RegexMatcher extends TypeSafeMatcher<String>
 {
-    @Override
-    public FilterReply decide( ILoggingEvent event )
+    private final Pattern pattern;
+
+    public RegexMatcher( Pattern pattern )
     {
-        if ( event.getMarker() != null && LogMarker.CONSOLE.equals( event.getMarker().getName() ) )
-        {
-            return FilterReply.ACCEPT;
-        }
-        return FilterReply.DENY;
+        this.pattern = pattern;
+    }
+
+    public static Matcher<String> pattern( String regex )
+    {
+        return new RegexMatcher( Pattern.compile( regex ) );
+    }
+
+    @Override
+    protected boolean matchesSafely( String item )
+    {
+        return pattern.matcher( item ).matches();
+    }
+
+    @Override
+    public void describeTo( Description description )
+    {
+        description.appendText( "a string matching /" );
+        description.appendText( pattern.toString() );
+        description.appendText( "/" );
     }
 }

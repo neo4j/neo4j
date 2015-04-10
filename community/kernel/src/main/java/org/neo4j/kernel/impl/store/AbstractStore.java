@@ -30,7 +30,7 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.LogProvider;
 
 /**
  * An abstract representation of a store. A store is a file that contains
@@ -50,10 +50,10 @@ public abstract class AbstractStore extends CommonAbstractStore
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             FileSystemAbstraction fileSystemAbstraction,
-            StringLogger stringLogger,
+            LogProvider logProvider,
             StoreVersionMismatchHandler versionMismatchHandler )
     {
-        super( fileName, conf, idType, idGeneratorFactory, pageCache, fileSystemAbstraction, stringLogger,
+        super( fileName, conf, idType, idGeneratorFactory, pageCache, fileSystemAbstraction, logProvider,
                 versionMismatchHandler );
     }
 

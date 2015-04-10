@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.command.NeoStoreTransactionApplier;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -52,7 +53,6 @@ import org.neo4j.test.PageCacheRule;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class ApplyRecoveredTransactionsTest
 {
@@ -116,7 +116,7 @@ public class ApplyRecoveredTransactionsTest
         File storeDir = new File( "dir" );
         Config config = configForStoreDir( new Config(), storeDir );
         StoreFactory storeFactory = new StoreFactory( config, new DefaultIdGeneratorFactory(),
-                pageCacheRule.getPageCache( fsr.get() ), fsr.get(), DEV_NULL, new Monitors() );
+                pageCacheRule.getPageCache( fsr.get() ), fsr.get(), NullLogProvider.getInstance(), new Monitors() );
         neoStore = storeFactory.newNeoStore( true );
     }
 

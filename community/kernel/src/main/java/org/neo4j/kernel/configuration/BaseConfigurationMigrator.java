@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 
 /**
  * A basic approach to implementing configuration migrations.
@@ -142,7 +142,7 @@ public class BaseConfigurationMigrator implements ConfigurationMigrator {
     }
 
     @Override
-    public Map<String, String> apply(Map<String, String> rawConfiguration, StringLogger log)
+    public Map<String, String> apply(Map<String, String> rawConfiguration, Log log)
     {
         boolean printedDeprecationMessage = false;
         for(Migration migration : migrations) 

@@ -17,65 +17,50 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.logging;
+package org.neo4j.kernel.impl.logging;
 
-import java.util.Iterator;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLog;
+import org.neo4j.logging.NullLogProvider;
 
-import org.slf4j.Marker;
-
-public class Slf4jMarkerAdapter implements Marker
+public class NullLogService implements LogService
 {
-    private final String name;
+    private static final NullLogService INSTANCE = new NullLogService();
 
-    public Slf4jMarkerAdapter( String name )
-    {
-        this.name = name;
-    }
+    public final NullLogProvider nullLogProvider = NullLogProvider.getInstance();
+    public final NullLog nullLog = NullLog.getInstance();
 
-    @Override
-    public String getName()
-    {
-        return name;
-    }
-
-    @Override
-    public void add( Marker reference )
+    private NullLogService()
     {
     }
 
-    @Override
-    public boolean remove( Marker reference )
+    public static NullLogService getInstance()
     {
-        return false;
+        return INSTANCE;
     }
 
     @Override
-    public boolean hasChildren()
+    public LogProvider getUserLogProvider()
     {
-        return false;
+        return nullLogProvider;
     }
 
     @Override
-    public boolean hasReferences()
+    public Log getUserLog( Class loggingClass )
     {
-        return false;
+        return nullLog;
     }
 
     @Override
-    public Iterator iterator()
+    public LogProvider getInternalLogProvider()
     {
-        return null;
+        return nullLogProvider;
     }
 
     @Override
-    public boolean contains( Marker other )
+    public Log getInternalLog( Class loggingClass )
     {
-        return false;
-    }
-
-    @Override
-    public boolean contains( String name )
-    {
-        return false;
+        return nullLog;
     }
 }

@@ -29,14 +29,16 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
-import org.neo4j.kernel.logging.BufferingLogger;
+import org.neo4j.logging.BufferingLog;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.Logger;
 
 import static java.lang.Character.isDigit;
 import static java.util.Collections.emptyList;
@@ -59,7 +61,8 @@ public class Config implements DiagnosticsProvider
 
     // Messages to this log get replayed into a real logger once logging has been
     // instantiated.
-    private StringLogger log = new BufferingLogger();
+    private BufferingLog bufferedLog = new BufferingLog();
+    private Log log = bufferedLog;
 
     private Iterable<Class<?>> settingsClasses = emptyList();
     private ConfigurationMigrator migrator;
@@ -195,11 +198,11 @@ public class Config implements DiagnosticsProvider
         return settingsClasses;
     }
 
-    public void setLogger( StringLogger log )
+    public void setLogger( Log log )
     {
-        if ( this.log instanceof BufferingLogger )
+        if ( this.log == bufferedLog )
         {
-            ((BufferingLogger) this.log).replayInto( log );
+            bufferedLog.replayInto( log );
         }
         this.log = log;
     }
@@ -227,19 +230,15 @@ public class Config implements DiagnosticsProvider
     }
 
     @Override
-    public void dump( DiagnosticsPhase phase, StringLogger log )
+    public void dump( DiagnosticsPhase phase, Logger logger )
     {
         if ( phase.isInitialization() || phase.isExplicitlyRequested() )
         {
-            log.logLongMessage( "Neo4j Kernel properties:", Iterables.map( new Function<Map.Entry<String, String>,
-                    String>()
+            logger.log( "Neo4j Kernel properties:" );
+            for ( Map.Entry<String, String> param : params.entrySet() )
             {
-                @Override
-                public String apply( Map.Entry<String, String> stringStringEntry )
-                {
-                    return stringStringEntry.getKey() + "=" + stringStringEntry.getValue();
-                }
-            }, params.entrySet() ) );
+                logger.log( "%s=%s", param.getKey(), param.getValue() );
+            }
         }
     }
 

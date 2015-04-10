@@ -22,12 +22,16 @@ package org.neo4j.test;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.impl.logging.AbstractLogService;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 
 /**
@@ -37,13 +41,8 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
 {
     public TestGraphDatabaseFactory()
     {
-       super( new TestGraphDatabaseFactoryState() );
-    }
-
-    public TestGraphDatabaseFactory( Logging logging )
-    {
         super( new TestGraphDatabaseFactoryState() );
-        setLogging( logging );
+        setUserLogProvider( NullLogProvider.getInstance() );
     }
 
     public GraphDatabaseService newImpermanentDatabase()
@@ -54,6 +53,16 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
     public GraphDatabaseService newImpermanentDatabase( String storeDir )
     {
         return newImpermanentDatabaseBuilder( storeDir ).newGraphDatabase();
+    }
+
+    public GraphDatabaseService newImpermanentDatabase( Map<Setting<?>, String> config )
+    {
+        GraphDatabaseBuilder builder = newImpermanentDatabaseBuilder();
+        for ( Map.Entry<Setting<?>, String> entry : config.entrySet() )
+        {
+            builder.setConfig( entry.getKey(), entry.getValue() );
+        }
+        return builder.newGraphDatabase();
     }
 
     public GraphDatabaseBuilder newImpermanentDatabaseBuilder()
@@ -97,11 +106,16 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         getCurrentState().setMonitors( monitors );
         return this;
     }
-    
+
     @Override
-    public TestGraphDatabaseFactory setLogging( Logging logging )
+    public TestGraphDatabaseFactory setUserLogProvider( LogProvider logProvider )
     {
-        getCurrentState().setLogging( logging );
+        return (TestGraphDatabaseFactory) super.setUserLogProvider( logProvider );
+    }
+
+    public TestGraphDatabaseFactory setInternalLogProvider( LogProvider logProvider )
+    {
+        getCurrentState().setInternalLogProvider( logProvider );
         return this;
     }
 
@@ -156,6 +170,32 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
                         {
                             return super.createFileSystemAbstraction();
                         }
+                    }
+
+                    @Override
+                    protected LogService createLogService()
+                    {
+                        final LogProvider internalLogProvider = state.getInternalLogProvider();
+                        if ( internalLogProvider == null )
+                        {
+                            return super.createLogService();
+                        }
+
+                        final LogProvider userLogProvider = state.databaseDependencies().userLogProvider();
+                        return new AbstractLogService()
+                        {
+                            @Override
+                            public LogProvider getUserLogProvider()
+                            {
+                                return userLogProvider;
+                            }
+
+                            @Override
+                            public LogProvider getInternalLogProvider()
+                            {
+                                return internalLogProvider;
+                            }
+                        };
                     }
                 };
             }

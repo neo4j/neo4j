@@ -37,7 +37,7 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.PageCacheRule;
 
@@ -178,7 +178,7 @@ public class TestStore
                     ID_GENERATOR_FACTORY,
                     pageCache,
                     FILE_SYSTEM,
-                    StringLogger.DEV_NULL,
+                    NullLogProvider.getInstance(),
                     StoreVersionMismatchHandler.FORCE_CURRENT_VERSION
             );
         }
@@ -202,7 +202,7 @@ public class TestStore
                     ID_GENERATOR_FACTORY,
                     pageCache,
                     FILE_SYSTEM,
-                    StringLogger.DEV_NULL,
+                    NullLogProvider.getInstance(),
                     new Monitors() ).
                     createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ) );
             return new Store( fileName, pageCache );

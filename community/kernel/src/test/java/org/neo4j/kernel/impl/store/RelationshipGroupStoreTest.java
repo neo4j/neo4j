@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.PageCacheRule;
@@ -179,7 +179,7 @@ public class RelationshipGroupStoreTest
                 new DefaultIdGeneratorFactory(),
                 pageCache,
                 fs,
-                StringLogger.DEV_NULL,
+                NullLogProvider.getInstance(),
                 monitors );
     }
 

@@ -32,7 +32,7 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache;
@@ -77,7 +77,7 @@ public class AbstractDynamicStoreTest
     {
         return new AbstractDynamicStore( fileName, new Config(), IdType.ARRAY_BLOCK, new DefaultIdGeneratorFactory(),
                 new BatchingPageCache( fsr.get(), 1000, 1, BatchingPageCache.SYNCHRONOUS, mock( Monitor.class ) ),
-                fsr.get(), StringLogger.DEV_NULL, StoreVersionMismatchHandler.ALLOW_OLD_VERSION, new Monitors() )
+                fsr.get(), NullLogProvider.getInstance(), StoreVersionMismatchHandler.ALLOW_OLD_VERSION, new Monitors() )
         {
             @Override
             public void accept( Processor processor, DynamicRecord record )

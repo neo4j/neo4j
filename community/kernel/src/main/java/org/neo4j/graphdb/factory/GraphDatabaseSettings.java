@@ -126,15 +126,14 @@ public abstract class GraphDatabaseSettings
     @Internal
     public static final Setting<File> neo_store = setting("neo_store", PATH, "neostore", basePath(store_dir) );
 
-    // Remote logging
-    @Description("Whether to enable logging to a remote server or not.")
-    public static final Setting<Boolean> remote_logging_enabled = setting("remote_logging_enabled", BOOLEAN, FALSE );
+    @Description( "Threshold for rotation of the internal log." )
+    public static final Setting<Long> store_internal_log_rotation_threshold = setting("store.internal_log.rotation_threshold", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
 
-    @Description( "Host for remote logging using Logback SocketAppender." )
-    public static final Setting<String> remote_logging_host = setting("remote_logging_host", STRING, "127.0.0.1", illegalValueMessage( "must be a valid hostname", matches( ANY ) ) );
+    @Description( "Minimum time (in seconds) after last rotation of the internal log before it may be rotated again." )
+    public static final Setting<Integer> store_internal_log_rotation_delay = setting("store.internal_log.rotation_threshold", INTEGER, "300", min(0), max( Integer.MAX_VALUE ) );
 
-    @Description( "Port for remote logging using Logback SocketAppender." )
-    public static final Setting<Integer> remote_logging_port = setting("remote_logging_port", INTEGER, "4560", port );
+    @Description( "Maximum number of history files for the internal log." )
+    public static final Setting<Integer> store_internal_log_archive_count = setting("store.internal_log.archive_count", INTEGER, "7", min(1) );
 
     // Indexing
     @Description("Controls the auto indexing feature for nodes. Setting it to `false` shuts it down, " +

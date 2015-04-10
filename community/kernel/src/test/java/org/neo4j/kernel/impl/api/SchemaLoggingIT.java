@@ -27,18 +27,18 @@ import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.api.index.IndexPopulationJob;
-import org.neo4j.kernel.impl.util.TestLogging;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class SchemaLoggingIT
 {
+    private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
-    private final TestLogging logging = new TestLogging();
-
-    @Rule public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule(logging);
+    @Rule public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule( logProvider );
 
     @Test
     public void shouldLogUserReadableLabelAndPropertyNames() throws Exception
@@ -53,10 +53,10 @@ public class SchemaLoggingIT
         createIndex( db, labelName, property );
 
         // then
-        logging.getMessagesLog( IndexPopulationJob.class ).assertExactly(
-                info( "Index population started: [:User(name) [provider: {key=in-memory-index, version=1.0}]]" ),
-                info( "Index population completed. Index is now online: [:User(name) [provider: {key=in-memory-index," +
-                        " version=1.0}]]" )
+        LogMatcherBuilder match = inLog( IndexPopulationJob.class );
+        logProvider.assertAtLeastOnce(
+                match.info( "Index population started: [%s]", ":User(name) [provider: {key=in-memory-index, version=1.0}]" ),
+                match.info( "Index population completed. Index is now online: [%s]", ":User(name) [provider: {key=in-memory-index, version=1.0}]" )
         );
     }
 

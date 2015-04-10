@@ -34,8 +34,8 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
@@ -63,20 +63,20 @@ public class BatchingNeoStore implements AutoCloseable
     private final BatchingPropertyKeyTokenRepository propertyKeyRepository;
     private final BatchingLabelTokenRepository labelRepository;
     private final BatchingRelationshipTypeTokenRepository relationshipTypeRepository;
-    private final StringLogger logger;
+    private final LogProvider logProvider;
     private final Config neo4jConfig;
     private final BatchingPageCache pageCache;
     private final NeoStore neoStore;
     private final WriterFactory writerFactory;
 
     public BatchingNeoStore( FileSystemAbstraction fileSystem, File storeDir,
-                             Configuration config, Monitor writeMonitor, Logging logging,
+                             Configuration config, Monitor writeMonitor, LogProvider logProvider,
                              Monitors monitors, WriterFactory writerFactory, AdditionalInitialIds initialIds )
     {
         this.fileSystem = fileSystem;
         this.monitors = monitors;
         this.writerFactory = writerFactory;
-        this.logger = logging.getMessagesLog( getClass() );
+        this.logProvider = logProvider;
         this.neo4jConfig = configForStoreDir(
                 new Config( stringMap( dense_node_threshold.name(), valueOf( config.denseNodeThreshold() ) ),
                         GraphDatabaseSettings.class ),
@@ -126,7 +126,7 @@ public class BatchingNeoStore implements AutoCloseable
                 Configuration.DEFAULT.bigFileChannelBufferSizeMultiplier(),
                 BatchingPageCache.SYNCHRONOUS, Monitor.NO_MONITOR );
         StoreFactory storeFactory = new StoreFactory(
-                fileSystem, new File( storeDir ), pageCache, StringLogger.DEV_NULL, new Monitors() );
+                fileSystem, new File( storeDir ), pageCache, NullLogProvider.getInstance(), new Monitors() );
         storeFactory.createNeoStore().close();
         pageCache.close();
     }
@@ -134,7 +134,7 @@ public class BatchingNeoStore implements AutoCloseable
     private NeoStore newNeoStore( PageCache pageCache )
     {
         StoreFactory storeFactory = new StoreFactory( neo4jConfig, new BatchingIdGeneratorFactory(),
-                pageCache, fileSystem, logger, monitors );
+                pageCache, fileSystem, logProvider, monitors );
         return storeFactory.newNeoStore( true );
     }
 

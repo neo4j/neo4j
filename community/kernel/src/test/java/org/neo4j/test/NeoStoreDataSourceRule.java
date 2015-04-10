@@ -54,10 +54,10 @@ import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
+import org.neo4j.logging.NullLog;
+import org.neo4j.logging.NullLogProvider;
 
 public class NeoStoreDataSourceRule extends ExternalResource
 {
@@ -77,13 +77,13 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 GraphDatabaseSettings.class );
 
         StoreFactory sf = new StoreFactory( config, new DefaultIdGeneratorFactory(), pageCache, fs,
-                StringLogger.DEV_NULL, new Monitors() );
+                NullLogProvider.getInstance(), new Monitors() );
 
         Locks locks = mock( Locks.class );
         when( locks.newClient() ).thenReturn( mock( Locks.Client.class ) );
 
-        theDs = new NeoStoreDataSource( config, sf, StringLogger.DEV_NULL, mock( JobScheduler.class ),
-                DevNullLoggingService.DEV_NULL, mock( TokenNameLookup.class ),
+        theDs = new NeoStoreDataSource( config, sf, NullLogProvider.getInstance(), mock( JobScheduler.class ),
+                mock( TokenNameLookup.class ),
                 dependencyResolverForNoIndexProvider(), mock( PropertyKeyTokenHolder.class ),
                 mock( LabelTokenHolder.class ), mock( RelationshipTypeTokenHolder.class ), locks,
                 mock( SchemaWriteGuard.class ), mock( TransactionEventHandlers.class ), IndexingService.NO_MONITOR,
@@ -91,7 +91,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 mock( PhysicalLogFile.Monitor.class ), TransactionHeaderInformationFactory.DEFAULT,
                 new StartupStatisticsProvider(), mock( NodeManager.class ), null, null,
                 InternalAbstractGraphDatabase.defaultCommitProcessFactory, mock( PageCache.class ),
-                mock( Monitors.class ), new Tracers( "null", StringLogger.DEV_NULL ) );
+                mock( Monitors.class ), new Tracers( "null", NullLog.getInstance() ) );
 
         return theDs;
     }
@@ -100,7 +100,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                                              PageCache pageCache, Map<String, String> additionalConfig )
     {
         KernelHealth kernelHealth = new KernelHealth( mock( KernelPanicEventGenerator.class ),
-                DevNullLoggingService.DEV_NULL );
+                NullLogProvider.getInstance() );
         return getDataSource( dir, fs, pageCache, additionalConfig, kernelHealth );
     }
 

@@ -17,37 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.logging;
+package org.neo4j.kernel.impl.logging;
 
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.DuplicatingLogProvider;
+import org.neo4j.logging.LogProvider;
 
-public class SingleLoggingService extends LifecycleAdapter implements Logging
+public class SimpleLogService extends AbstractLogService
 {
-    private final StringLogger logger;
-    private final ConsoleLogger consoleLogger;
+    private final LogProvider userLogProvider;
+    private final LogProvider internalLogProvider;
 
-    public SingleLoggingService( StringLogger logger )
+    public SimpleLogService( LogProvider userLogProvider, LogProvider internalLogProvider )
     {
-        this.logger = logger;
-        this.consoleLogger = new ConsoleLogger( this.logger );
-    }
-    
-    @Override
-    public StringLogger getMessagesLog( Class loggingClass )
-    {
-        return logger;
+        this.userLogProvider = new DuplicatingLogProvider( userLogProvider, internalLogProvider );
+        this.internalLogProvider = internalLogProvider;
     }
 
     @Override
-    public ConsoleLogger getConsoleLog( Class loggingClass )
+    public LogProvider getUserLogProvider()
     {
-        return consoleLogger;
+        return this.userLogProvider;
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public LogProvider getInternalLogProvider()
     {
-        logger.close();
+        return this.internalLogProvider;
     }
 }

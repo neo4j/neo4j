@@ -45,9 +45,9 @@ import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -75,7 +75,7 @@ public class CountsComputerTest
 
         try ( Lifespan life = new Lifespan() )
         {
-            CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
+            CountsTracker store = life.add( new CountsTracker( NullLogProvider.getInstance(), fs, pageCache,
                     new File( dir, COUNTS_STORE_BASE ) ) );
             // a transaction for creating the label and a transaction for the node
             assertEquals( BASE_TX_ID, store.txId() );
@@ -103,7 +103,7 @@ public class CountsComputerTest
 
         try ( Lifespan life = new Lifespan() )
         {
-            CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
+            CountsTracker store = life.add( new CountsTracker( NullLogProvider.getInstance(), fs, pageCache,
                     new File( dir, COUNTS_STORE_BASE ) ) );
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1, store.txId() );
             assertEquals( 4, store.totalEntriesStored() );
@@ -136,7 +136,7 @@ public class CountsComputerTest
 
         try ( Lifespan life = new Lifespan() )
         {
-            CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
+            CountsTracker store = life.add( new CountsTracker( NullLogProvider.getInstance(), fs, pageCache,
                     new File( dir, COUNTS_STORE_BASE ) ) );
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1, store.txId() );
             assertEquals( 3, store.totalEntriesStored() );
@@ -169,7 +169,7 @@ public class CountsComputerTest
 
         try ( Lifespan life = new Lifespan() )
         {
-            CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
+            CountsTracker store = life.add( new CountsTracker( NullLogProvider.getInstance(), fs, pageCache,
                     new File( dir, COUNTS_STORE_BASE ) ) );
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1, store.txId() );
 //            assertEquals( 11, store.totalRecordsStored() ); // we do not support yet (label,type,label) counts
@@ -207,7 +207,7 @@ public class CountsComputerTest
 
         try ( Lifespan life = new Lifespan() )
         {
-            CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
+            CountsTracker store = life.add( new CountsTracker( NullLogProvider.getInstance(), fs, pageCache,
                     new File( dir, COUNTS_STORE_BASE ) ) );
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1 + 1, store.txId() );
 //            assertEquals( 15, store.totalRecordsStored() ); // we do not support yet (label,type,label) counts
@@ -252,7 +252,7 @@ public class CountsComputerTest
 
         try ( Lifespan life = new Lifespan() )
         {
-            CountsTracker store = life.add( new CountsTracker( StringLogger.DEV_NULL, fs, pageCache,
+            CountsTracker store = life.add( new CountsTracker( NullLogProvider.getInstance(), fs, pageCache,
                     new File( dir, COUNTS_STORE_BASE ) ) );
             assertEquals( BASE_TX_ID + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1, store.txId() );
             assertEquals( 22, store.totalEntriesStored() );
@@ -327,7 +327,7 @@ public class CountsComputerTest
     {
         cleanupCountsForRebuilding();
 
-        StoreFactory storeFactory = new StoreFactory( fs, dir, pageCache, StringLogger.DEV_NULL, new Monitors() );
+        StoreFactory storeFactory = new StoreFactory( fs, dir, pageCache, NullLogProvider.getInstance(), new Monitors() );
         try ( Lifespan life = new Lifespan();
               NodeStore nodeStore = storeFactory.newNodeStore();
               RelationshipStore relationshipStore = storeFactory.newRelationshipStore() )

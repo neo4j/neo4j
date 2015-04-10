@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.store.format.TestHeaderlessStoreFormat;
 import org.neo4j.kernel.impl.store.standard.IdGeneratorRebuilder;
 import org.neo4j.kernel.impl.store.standard.StoreFormat;
 import org.neo4j.kernel.impl.store.standard.StoreOpenCloseCycle;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLog;
 import org.neo4j.test.EphemeralFileSystemRule;
 
 public class StoreOpenCloseCycleTest
@@ -62,7 +62,7 @@ public class StoreOpenCloseCycleTest
         FileSystemAbstraction fs = mock(FileSystemAbstraction.class);
         when(fs.tryLock( dbFileName, channel )).thenReturn( lock );
 
-        StoreOpenCloseCycle logic = new StoreOpenCloseCycle( StringLogger.DEV_NULL,
+        StoreOpenCloseCycle logic = new StoreOpenCloseCycle( NullLog.getInstance(),
                 dbFileName, format, fs );
 
         // When
@@ -86,7 +86,7 @@ public class StoreOpenCloseCycleTest
         EphemeralFileSystemAbstraction fs = fsRule.get();
         TestHeaderlessStoreFormat format = new TestHeaderlessStoreFormat();
 
-        StoreOpenCloseCycle cycle = new StoreOpenCloseCycle( StringLogger.DEV_NULL,
+        StoreOpenCloseCycle cycle = new StoreOpenCloseCycle( NullLog.getInstance(),
                 storeFile, format, fs );
 
         // And given the file exists (but contains no headers, and should thus be considered unclean)
@@ -110,7 +110,7 @@ public class StoreOpenCloseCycleTest
         StoreChannel channel = newCleanStore( storeFile );
 
         IdGeneratorRebuilder idGenRebuilder = mock( IdGeneratorRebuilder.class );
-        StoreOpenCloseCycle cycle = new StoreOpenCloseCycle( StringLogger.DEV_NULL,
+        StoreOpenCloseCycle cycle = new StoreOpenCloseCycle( NullLog.getInstance(),
                 storeFile, new TestHeaderlessStoreFormat(), fs );
 
         // When
@@ -123,7 +123,7 @@ public class StoreOpenCloseCycleTest
     private StoreChannel newCleanStore( File storeFile ) throws IOException
     {
         EphemeralFileSystemAbstraction fs = fsRule.get();
-        StoreOpenCloseCycle cycle = new StoreOpenCloseCycle( StringLogger.DEV_NULL,
+        StoreOpenCloseCycle cycle = new StoreOpenCloseCycle( NullLog.getInstance(),
                 storeFile, new TestHeaderlessStoreFormat(), fs);
 
         // And given a cleanly shut down store

@@ -17,38 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.logging;
+package org.neo4j.kernel.impl.logging;
 
-import ch.qos.logback.core.rolling.RolloverFailure;
-import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 /**
- * Allows the roll-over event to be monitored. We need this to be able to output diagnostics at the beginning of every log.
+ * Logging service that is used to obtain loggers for different output purposes
  */
-public class MonitoredRollingPolicy
-    extends TimeBasedRollingPolicy
+public abstract class AbstractLogService implements LogService
 {
-    private static Monitors monitors;
+    public abstract LogProvider getUserLogProvider();
 
-    public static void setMonitorsInstance(Monitors monitorsInstance)
+    public Log getUserLog( Class loggingClass )
     {
-        monitors = monitorsInstance;
+        return getUserLogProvider().getLog( loggingClass );
     }
 
-    private RollingLogMonitor monitor;
+    public abstract LogProvider getInternalLogProvider();
 
-    public MonitoredRollingPolicy()
+    public Log getInternalLog( Class loggingClass )
     {
-        if (monitors != null)
-            monitor = monitors.newMonitor(RollingLogMonitor.class);
-    }
-
-    @Override
-    public void rollover() throws RolloverFailure
-    {
-        super.rollover();
-
-        monitor.rolledOver();
+        return getInternalLogProvider().getLog( loggingClass );
     }
 }

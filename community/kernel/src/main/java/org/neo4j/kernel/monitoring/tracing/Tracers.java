@@ -22,7 +22,7 @@ package org.neo4j.kernel.monitoring.tracing;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 
 /**
  * <h1>Tracers</h1>
@@ -102,9 +102,9 @@ public class Tracers
      * Otherwise the default implementation is used, and a warning is logged to the given StringLogger.
      * @param desiredImplementationName The name of the desired {@link org.neo4j.kernel.monitoring.tracing
      * .TracerFactory} implementation, as given by its {@link TracerFactory#getImplementationName()} method.
-     * @param msgLog A logger for logging if the desired implementation cannot be created.
+     * @param msgLog A {@link Log} for logging when the desired implementation cannot be created.
      */
-    public Tracers( String desiredImplementationName, StringLogger msgLog )
+    public Tracers( String desiredImplementationName, Log msgLog )
     {
         if ( "null".equalsIgnoreCase( desiredImplementationName ) )
         {
@@ -135,7 +135,7 @@ public class Tracers
 
             if ( !found )
             {
-                msgLog.warn( "Using default tracer implementations instead of '" + desiredImplementationName + "'" );
+                msgLog.warn( "Using default tracer implementations instead of '%s'", desiredImplementationName );
             }
 
             pageCacheTracer = foundFactory.createPageCacheTracer();

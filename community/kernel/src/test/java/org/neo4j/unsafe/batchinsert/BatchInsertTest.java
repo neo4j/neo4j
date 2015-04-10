@@ -73,6 +73,7 @@ import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
+import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -87,8 +88,8 @@ import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -192,19 +193,19 @@ public class BatchInsertTest
         return stringMap( GraphDatabaseSettings.dense_node_threshold.name(), String.valueOf( denseNodeThreshold ) );
     }
 
-    private BatchInserter newBatchInserter()
+    private BatchInserter newBatchInserter() throws Exception
     {
         return BatchInserters.inserter( new File("neo-batch-db").getAbsolutePath(), fs.get(), configuration() );
     }
 
-    private BatchInserter newBatchInserterWithSchemaIndexProvider( KernelExtensionFactory<?> provider )
+    private BatchInserter newBatchInserterWithSchemaIndexProvider( KernelExtensionFactory<?> provider ) throws Exception
     {
         List<KernelExtensionFactory<?>> extensions = Arrays.asList(
                 provider, new InMemoryLabelScanStoreExtension() );
         return BatchInserters.inserter( "neo-batch-db", fs.get(), configuration(), extensions );
     }
 
-    private BatchInserter newBatchInserterWithLabelScanStore( KernelExtensionFactory<?> provider )
+    private BatchInserter newBatchInserterWithLabelScanStore( KernelExtensionFactory<?> provider ) throws Exception
     {
         List<KernelExtensionFactory<?>> extensions = Arrays.asList(
                 new InMemoryIndexProviderFactory(), provider );
@@ -212,7 +213,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldUpdateStringArrayPropertiesOnNodesUsingBatchInserter1()
+    public void shouldUpdateStringArrayPropertiesOnNodesUsingBatchInserter1() throws Exception
     {
         // Given
         BatchInserter batchInserter = newBatchInserter();
@@ -240,7 +241,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void testSimple()
+    public void testSimple() throws Exception
     {
         BatchInserter graphDb = newBatchInserter();
         long node1 = graphDb.createNode( null );
@@ -255,7 +256,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void testSetAndAddNodeProperties()
+    public void testSetAndAddNodeProperties() throws Exception
     {
         BatchInserter inserter = newBatchInserter();
 
@@ -301,12 +302,12 @@ public class BatchInsertTest
         inserter.shutdown();
         File dir = new File( inserter.getStoreDir() );
         PageCache pageCache = pageCacheRule.getPageCache( fs.get() );
-        StoreFactory storeFactory = new StoreFactory( fs.get(), dir, pageCache, StringLogger.DEV_NULL, new Monitors() );
+        StoreFactory storeFactory = new StoreFactory( fs.get(), dir, pageCache, NullLogProvider.getInstance(), new Monitors() );
         return storeFactory.newNeoStore( false );
     }
 
     @Test
-    public void testSetAndKeepNodeProperty()
+    public void testSetAndKeepNodeProperty() throws Exception
     {
         BatchInserter inserter = newBatchInserter();
 
@@ -347,7 +348,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void testSetAndKeepRelationshipProperty()
+    public void testSetAndKeepRelationshipProperty() throws Exception
     {
         BatchInserter inserter = newBatchInserter();
 
@@ -392,7 +393,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void testNodeHasProperty()
+    public void testNodeHasProperty() throws Exception
     {
         BatchInserter inserter = newBatchInserter();
 
@@ -412,7 +413,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void testRemoveProperties()
+    public void testRemoveProperties() throws Exception
     {
         BatchInserter inserter = newBatchInserter();
 
@@ -469,7 +470,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveDynamicProperty()
+    public void shouldBeAbleToRemoveDynamicProperty() throws Exception
     {
         // Only triggered if assertions are enabled
 
@@ -487,7 +488,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void shouldBeAbleToOverwriteDynamicProperty()
+    public void shouldBeAbleToOverwriteDynamicProperty() throws Exception
     {
         // Only triggered if assertions are enabled
 
@@ -506,7 +507,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void testMore()
+    public void testMore() throws Exception
     {
         BatchInserter graphDb = newBatchInserter();
         long startNode = graphDb.createNode( properties );
@@ -528,7 +529,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void makeSureLoopsCanBeCreated()
+    public void makeSureLoopsCanBeCreated() throws Exception
     {
         BatchInserter graphDb = newBatchInserter();
         long startNode = graphDb.createNode( properties );
@@ -735,7 +736,7 @@ public class BatchInsertTest
         BatchInserter inserter = BatchInserters.inserter( storeDir, new DefaultFileSystemAbstraction(),
                 stringMap() );
         inserter.shutdown();
-        assertTrue( new File( storeDir, StringLogger.DEFAULT_NAME ).delete() );
+        assertTrue( new File( storeDir, StoreLogService.INTERNAL_LOG_NAME ).delete() );
     }
 
     @Test
@@ -1124,7 +1125,7 @@ public class BatchInsertTest
         verifyNoMoreInteractions( populator );
     }
 
-    private long dbWithIndexAndSingleIndexedNode()
+    private long dbWithIndexAndSingleIndexedNode() throws Exception
     {
         IndexPopulator populator = mock( IndexPopulator.class );
         SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
@@ -1186,7 +1187,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void propertiesCanBeReSetUsingBatchInserter()
+    public void propertiesCanBeReSetUsingBatchInserter() throws Exception
     {
         // GIVEN
         BatchInserter batchInserter = newBatchInserter();
@@ -1212,7 +1213,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void propertiesCanBeReSetUsingBatchInserter2()
+    public void propertiesCanBeReSetUsingBatchInserter2() throws Exception
     {
         // GIVEN
         BatchInserter batchInserter = newBatchInserter();
@@ -1229,7 +1230,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void replaceWithBiggerPropertySpillsOverIntoNewPropertyRecord()
+    public void replaceWithBiggerPropertySpillsOverIntoNewPropertyRecord() throws Exception
     {
         // GIVEN
         BatchInserter batchInserter = newBatchInserter();
@@ -1249,7 +1250,7 @@ public class BatchInsertTest
     }
 
     @Test
-    public void mustSplitUpRelationshipChainsWhenCreatingDenseNodes()
+    public void mustSplitUpRelationshipChainsWhenCreatingDenseNodes() throws Exception
     {
         BatchInserter inserter = newBatchInserter();
 
