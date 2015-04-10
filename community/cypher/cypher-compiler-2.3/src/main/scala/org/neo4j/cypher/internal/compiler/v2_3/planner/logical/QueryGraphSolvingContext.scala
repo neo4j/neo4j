@@ -39,11 +39,7 @@ case class LogicalPlanningContext(planContext: PlanContext,
   def forExpressionPlanning(nodes: Iterable[Identifier], rels: Iterable[Identifier]) = {
     val tableWithNodes = nodes.foldLeft(semanticTable) { case (table, node) => table.addNode(node) }
     val tableWithRels = rels.foldLeft(tableWithNodes) { case (table, rel) => table.addRelationship(rel) }
-
-    copy(
-      input = input.copy(inboundCardinality = Cardinality(1)),
-      semanticTable = tableWithRels
-    )
+    copy(semanticTable = tableWithRels)
   }
 
   def statistics = planContext.statistics

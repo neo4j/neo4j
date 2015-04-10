@@ -321,6 +321,8 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
     val nodeC = createLabeledNode("Foo")
     val nodeD = createLabeledNode("Foo")
     val nodeE = createLabeledNode("Bar")
+    createLabeledNode("Bar")
+    createLabeledNode("Bar")
     relate(nodeA, nodeB, "HAS")
     relate(nodeC, nodeB, "HAS")
     relate(nodeD, nodeE, "HAS")
