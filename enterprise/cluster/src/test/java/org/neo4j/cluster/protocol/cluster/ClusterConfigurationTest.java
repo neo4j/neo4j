@@ -32,15 +32,8 @@ import java.util.Collections;
 import org.junit.Test;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLogProvider;
 
-/**
- * Created with IntelliJ IDEA.
- * User: rickard
- * Date: 2012-05-16
- * Time: 14:52
- * To change this template use File | Settings | File Templates.
- */
 public class ClusterConfigurationTest
 {
     public static URI NEO4J_SERVER1_URI;
@@ -59,7 +52,7 @@ public class ClusterConfigurationTest
         }
     }
 
-    ClusterConfiguration configuration = new ClusterConfiguration( "default", StringLogger.SYSTEM, new ArrayList<URI>() );
+    ClusterConfiguration configuration = new ClusterConfiguration( "default", NullLogProvider.getInstance(), new ArrayList<URI>() );
 
     @Test
     public void givenEmptyClusterWhenNodeAddedThenNodeWasAdded()

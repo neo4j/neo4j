@@ -27,7 +27,7 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.InterruptThreadTimer;
 import org.neo4j.server.advanced.AdvancedNeoServer;
 import org.neo4j.server.configuration.ConfigurationBuilder;
@@ -62,14 +62,14 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
         }
     };
 
-    public EnterpriseNeoServer( ConfigurationBuilder configurator, Dependencies dependencies )
+    public EnterpriseNeoServer( ConfigurationBuilder configurator, Dependencies dependencies, LogProvider logProvider )
     {
-        super( configurator, createDbFactory( configurator.configuration() ), dependencies );
+        super( configurator, createDbFactory( configurator.configuration() ), dependencies, logProvider );
     }
 
-    public EnterpriseNeoServer( ConfigurationBuilder configurator, Database.Factory dbFactory, Dependencies dependencies )
+    public EnterpriseNeoServer( ConfigurationBuilder configurator, Database.Factory dbFactory, Dependencies dependencies, LogProvider logProvider )
     {
-        super( configurator, dbFactory, dependencies );
+        super( configurator, dbFactory, dependencies, logProvider );
     }
 
     protected static Database.Factory createDbFactory( Config config )
@@ -81,12 +81,11 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
     @Override
     protected PreFlightTasks createPreflightTasks()
     {
-        final Logging logging = dependencies.logging();
-        return new PreFlightTasks( logging,
+        return new PreFlightTasks( logProvider,
                 new EnsurePreparedForHttpLogging( configurator.configuration() ), new PerformUpgradeIfNecessary(
-                        getConfig(), configurator.getDatabaseTuningProperties(), logging,
+                        getConfig(), configurator.getDatabaseTuningProperties(), logProvider,
                         StoreUpgrader.NO_MONITOR ), new PerformRecoveryIfNecessary( getConfig(),
-                        configurator.getDatabaseTuningProperties(), System.out, logging ) );
+                        configurator.getDatabaseTuningProperties(), logProvider ) );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -95,7 +94,7 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
     {
         return mix(
                 asList( (ServerModule) new MasterInfoServerModule( webServer, getConfig(),
-                        dependencies.logging() ) ), super.createServerModules() );
+                        logProvider ) ), super.createServerModules() );
     }
 
     @Override

@@ -25,8 +25,8 @@ import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId.I
 
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatState;
 import org.neo4j.helpers.Strings;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 /**
  * Logs state transitions in {@link StateMachine}s. Use this for debugging mainly.
@@ -34,22 +34,22 @@ import org.neo4j.kernel.logging.Logging;
 public class StateTransitionLogger
         implements StateTransitionListener
 {
-    private final Logging logging;
+    private final LogProvider logProvider;
 
     /** Throttle so don't flood occurrences of the same message over and over */
     private String lastLogMessage = "";
 
-    public StateTransitionLogger( Logging logging )
+    public StateTransitionLogger( LogProvider logProvider )
     {
-        this.logging = logging;
+        this.logProvider = logProvider;
     }
 
     @Override
     public void stateTransition( StateTransition transition )
     {
-        StringLogger logger = logging.getMessagesLog( transition.getOldState().getClass() );
+        Log log = logProvider.getLog( transition.getOldState().getClass() );
 
-        if ( logger.isDebugEnabled() )
+        if ( log.isDebugEnabled() )
         {
             if ( transition.getOldState() == HeartbeatState.heartbeat )
             {
@@ -90,7 +90,7 @@ public class StateTransitionLogger
             }
 
             // Log it
-            logger.debug( line.toString() );
+            log.debug( line.toString() );
             lastLogMessage = msg;
         }
     }

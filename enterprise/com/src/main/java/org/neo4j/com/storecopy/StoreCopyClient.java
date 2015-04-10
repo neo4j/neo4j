@@ -51,8 +51,9 @@ import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterv1;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.Math.max;
@@ -157,20 +158,18 @@ public class StoreCopyClient
     };
     private final Config config;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensions;
-    private final ConsoleLogger console;
-    private final Logging logging;
+    private final Log log;
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
     private final Monitor monitor;
 
     public StoreCopyClient( Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                            ConsoleLogger console, Logging logging, FileSystemAbstraction fs,
+                            LogProvider logProvider, FileSystemAbstraction fs,
                             PageCache pageCache, Monitor monitor )
     {
         this.config = config;
         this.kernelExtensions = kernelExtensions;
-        this.console = console;
-        this.logging = logging;
+        this.log = logProvider.getLog( getClass() );
         this.fs = fs;
         this.pageCache = pageCache;
         this.monitor = monitor;
@@ -289,13 +288,12 @@ public class StoreCopyClient
     {
         GraphDatabaseFactory factory = ExternallyManagedPageCache.graphDatabaseFactoryWithPageCache( pageCache );
         return factory
-                .setLogging( logging )
+                .setUserLogProvider( NullLogProvider.getInstance() )
                 .setKernelExtensions( kernelExtensions )
                 .newEmbeddedDatabaseBuilder( tempStore.getAbsolutePath() )
                 .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.allow_store_upgrade,
                         config.get( GraphDatabaseSettings.allow_store_upgrade ).toString() )
-                .setConfig( InternalAbstractGraphDatabase.Configuration.log_configuration_file, logConfigFileName() )
                 .newGraphDatabase();
     }
 
@@ -314,9 +312,9 @@ public class StoreCopyClient
             public long write( String path, ReadableByteChannel data, ByteBuffer temporaryBuffer,
                               boolean hasData ) throws IOException
             {
-                console.log( "Copying " + path );
+                log.info( "Copying %s", path );
                 long written = actual.write( path, data, temporaryBuffer, hasData );
-                console.log( "Copied  " + path + " " + bytes( written ) );
+                log.info( "Copied %s %s", path, bytes( written ) );
                 totalFiles++;
                 return written;
             }
@@ -325,7 +323,7 @@ public class StoreCopyClient
             public void close()
             {
                 actual.close();
-                console.log( "Done, copied " + totalFiles + " files" );
+                log.info( "Done, copied %s files", totalFiles );
             }
         };
     }

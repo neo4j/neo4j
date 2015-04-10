@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
+import java.util.logging.Level;
 
 import org.junit.After;
 import org.junit.Rule;
@@ -59,6 +60,7 @@ import org.neo4j.cluster.statemachine.State;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.LoggerRule;
 
@@ -74,7 +76,7 @@ public class ClusterMockTest
 
     public static NetworkMock DEFAULT_NETWORK()
     {
-        return new NetworkMock( new Monitors(), 10,
+        return new NetworkMock( NullLogProvider.getInstance(), new Monitors(), 10,
                 new MultipleFailureLatencyStrategy( new FixedNetworkLatencyStrategy( 10 ),
                         new ScriptableNetworkFailureLatencyStrategy() ),
                 new MessageTimeoutStrategy( new FixedTimeoutStrategy( 500 ) )
@@ -88,7 +90,7 @@ public class ClusterMockTest
     Map<Integer, URI> members = new HashMap<Integer, URI>();
 
     @Rule
-    public LoggerRule logger = new LoggerRule();
+    public LoggerRule logger = new LoggerRule( Level.OFF );
 
     public NetworkMock network;
 
@@ -97,13 +99,13 @@ public class ClusterMockTest
     @After
     public void tearDown()
     {
-        logger.getLogger().info( "Current threads" );
+        logger.getLogger().fine( "Current threads" );
         for ( Map.Entry<Thread, StackTraceElement[]> threadEntry : Thread.getAllStackTraces().entrySet() )
         {
-            logger.getLogger().info( threadEntry.getKey().getName() );
+            logger.getLogger().fine( threadEntry.getKey().getName() );
             for ( StackTraceElement stackTraceElement : threadEntry.getValue() )
             {
-                logger.getLogger().info( "   " + stackTraceElement.toString() );
+                logger.getLogger().fine( "   " + stackTraceElement.toString() );
             }
         }
 
@@ -145,13 +147,13 @@ public class ClusterMockTest
                 @Override
                 public void failed( InstanceId server )
                 {
-                    logger.getLogger().warn( uri + ": Failed:" + server );
+                    logger.getLogger().warning( uri + ": Failed:" + server );
                 }
 
                 @Override
                 public void alive( InstanceId server )
                 {
-                    logger.getLogger().debug( uri + ": Alive:" + server );
+                    logger.getLogger().fine( uri + ": Alive:" + server );
                 }
             } );
             server.newClient( AtomicBroadcast.class ).addAtomicBroadcastListener( new AtomicBroadcastListener()
@@ -164,7 +166,7 @@ public class ClusterMockTest
                 {
                     try
                     {
-                        logger.getLogger().debug( uri + " received: " + serializer.receive( value ) );
+                        logger.getLogger().fine( uri + " received: " + serializer.receive( value ) );
                     }
                     catch ( IOException e )
                     {
@@ -184,7 +186,7 @@ public class ClusterMockTest
         // Run test
         for ( int i = 0; i < script.rounds(); i++ )
         {
-            logger.getLogger().debug( "Round " + i + ", time:" + network.getTime() );
+            logger.getLogger().fine( "Round " + i + ", time:" + network.getTime() );
 
             script.tick( network.getTime() );
 
@@ -202,12 +204,12 @@ public class ClusterMockTest
             verifyConfigurations( finalConfig );
         }
 
-        logger.getLogger().debug( "All nodes leave" );
+        logger.getLogger().fine( "All nodes leave" );
 
         // All leave
         for ( Cluster cluster : new ArrayList<Cluster>( in ) )
         {
-            logger.getLogger().debug( "Leaving:" + cluster );
+            logger.getLogger().fine( "Leaving:" + cluster );
             cluster.leave();
             in.remove( cluster );
             network.tick( 400 );
@@ -230,40 +232,40 @@ public class ClusterMockTest
             @Override
             public void enteredCluster( ClusterConfiguration clusterConfiguration )
             {
-                logger.getLogger().debug( uri + " entered cluster:" + clusterConfiguration.getMemberURIs() );
+                logger.getLogger().fine( uri + " entered cluster:" + clusterConfiguration.getMemberURIs() );
                 in.add( cluster );
             }
 
             @Override
             public void joinedCluster( InstanceId id, URI member )
             {
-                logger.getLogger().debug( uri + " sees a join from " + id + " at URI " + member );
+                logger.getLogger().fine( uri + " sees a join from " + id + " at URI " + member );
             }
 
             @Override
             public void leftCluster( InstanceId id, URI member )
             {
-                logger.getLogger().debug( uri + " sees a leave from " + id );
+                logger.getLogger().fine( uri + " sees a leave from " + id );
             }
 
             @Override
             public void leftCluster()
             {
-                logger.getLogger().debug( uri + " left cluster" );
+                logger.getLogger().fine( uri + " left cluster" );
                 out.add( cluster );
             }
 
             @Override
             public void elected( String role, InstanceId id, URI electedMember )
             {
-                logger.getLogger().debug(
+                logger.getLogger().fine(
                         uri + " sees an election: " + id + " elected as " + role + " at URI " + electedMember );
             }
 
             @Override
             public void unelected( String role, InstanceId instanceId, URI electedMember )
             {
-                logger.getLogger().debug(
+                logger.getLogger().fine(
                         uri + " sees an unelection: " + instanceId + " removed from " + role + " at URI " +
                                 electedMember );
             }
@@ -272,7 +274,7 @@ public class ClusterMockTest
 
     public void verifyConfigurations( VerifyInstanceConfiguration[] toCheckAgainst )
     {
-        logger.getLogger().debug( "Verify configurations against given" );
+        logger.getLogger().fine( "Verify configurations against given" );
 
         List<URI> members;
         Map<String, InstanceId> roles;
@@ -295,7 +297,7 @@ public class ClusterMockTest
             State<?, ?> clusterState = stateMachines.getStateMachine( ClusterMessage.class ).getState();
             if ( !clusterState.equals( ClusterState.entered ) )
             {
-                logger.getLogger().warn( "Instance " + (j + 1) + " is not in the cluster (" + clusterState + ")" );
+                logger.getLogger().warning( "Instance " + ( j + 1 ) + " is not in the cluster (" + clusterState + ")" );
                 continue;
             }
 
@@ -306,7 +308,7 @@ public class ClusterMockTest
             ClusterConfiguration clusterConfiguration = context.getConfiguration();
             if ( !clusterConfiguration.getMemberURIs().isEmpty() )
             {
-                logger.getLogger().debug( "   Server " + (j + 1) + ": Cluster:" + clusterConfiguration.getMemberURIs() +
+                logger.getLogger().fine( "   Server " + ( j + 1 ) + ": Cluster:" + clusterConfiguration.getMemberURIs() +
                         ", Roles:" + clusterConfiguration.getRoles() + ", Failed:" + heartbeatContext.getFailed() );
                 verifyConfigurations( stateMachines, members, roles, failed, errors );
             }
@@ -320,7 +322,7 @@ public class ClusterMockTest
         {
             for ( AssertionError error : errors )
             {
-                logger.getLogger().error( error.toString() );
+                logger.getLogger().severe( error.toString() );
             }
             throw errors.get( 0 );
         }
@@ -328,7 +330,7 @@ public class ClusterMockTest
 
     public void verifyConfigurations( String description )
     {
-        logger.getLogger().debug( "Verify configurations" );
+        logger.getLogger().fine( "Verify configurations" );
 
         List<URI> members = null;
         Map<String, InstanceId> roles = null;
@@ -345,7 +347,7 @@ public class ClusterMockTest
             State<?, ?> clusterState = stateMachines.getStateMachine( ClusterMessage.class ).getState();
             if ( !clusterState.equals( ClusterState.entered ) )
             {
-                logger.getLogger().warn( "Instance " + (j + 1) + " is not in the cluster (" + clusterState + ")" );
+                logger.getLogger().fine( "Instance " + ( j + 1 ) + " is not in the cluster (" + clusterState + ")" );
                 continue;
             }
 
@@ -356,7 +358,7 @@ public class ClusterMockTest
             ClusterConfiguration clusterConfiguration = context.getConfiguration();
             if ( !clusterConfiguration.getMemberURIs().isEmpty() )
             {
-                logger.getLogger().debug( "   Server " + (j + 1) + ": Cluster:" + clusterConfiguration.getMemberURIs() +
+                logger.getLogger().fine( "   Server " + ( j + 1 ) + ": Cluster:" + clusterConfiguration.getMemberURIs() +
                         ", Roles:" + clusterConfiguration.getRoles() + ", Failed:" + heartbeatContext.getFailed() );
                 if ( members == null )
                 {
@@ -380,7 +382,7 @@ public class ClusterMockTest
         {
             for ( AssertionError error : errors )
             {
-                logger.getLogger().error( error.toString() );
+                logger.getLogger().severe( error.toString() );
             }
             throw errors.get( 0 );
         }
@@ -397,7 +399,7 @@ public class ClusterMockTest
         State<?, ?> clusterState = stateMachines.getStateMachine( ClusterMessage.class ).getState();
         if ( !clusterState.equals( ClusterState.entered ) )
         {
-            logger.getLogger().warn( "Instance " + myId + " is not in the cluster (" + clusterState + ")" );
+            logger.getLogger().warning( "Instance " + myId + " is not in the cluster (" + clusterState + ")" );
             return;
         }
 
@@ -478,7 +480,7 @@ public class ClusterMockTest
                         if ( cluster.equals( joinCluster ) )
                         {
                             out.remove( cluster );
-                            logger.getLogger().debug( "Join:" + cluster.toString() );
+                            logger.getLogger().fine( "Join:" + cluster.toString() );
                             if ( joinServers.length == 0 )
                             {
                                 if ( in.isEmpty() )
@@ -502,12 +504,12 @@ public class ClusterMockTest
                                             try
                                             {
                                                 ClusterConfiguration clusterConfiguration = result.get();
-                                                logger.getLogger().debug( "**** Cluster configuration:" +
+                                                logger.getLogger().fine( "**** Cluster configuration:" +
                                                         clusterConfiguration );
                                             }
                                             catch ( Exception e )
                                             {
-                                                logger.getLogger().debug( "**** Node could not join cluster:" + e
+                                                logger.getLogger().warning( "**** Node could not join cluster:" + e
                                                         .getMessage() );
                                                 out.add( cluster );
                                             }
@@ -535,12 +537,12 @@ public class ClusterMockTest
                                         try
                                         {
                                             ClusterConfiguration clusterConfiguration = result.get();
-                                            logger.getLogger().debug( "**** Cluster configuration:" +
+                                            logger.getLogger().fine( "**** Cluster configuration:" +
                                                     clusterConfiguration );
                                         }
                                         catch ( Exception e )
                                         {
-                                            logger.getLogger().debug(
+                                            logger.getLogger().warning(
                                                     "**** Node " + joinServer + " could not join cluster:" + e
                                                             .getMessage()
                                             );
@@ -550,7 +552,7 @@ public class ClusterMockTest
                                             }
                                             else
                                             {
-                                                logger.getLogger().debug( "*** Incorrectly configured cluster? "
+                                                logger.getLogger().warning( "*** Incorrectly configured cluster? "
                                                         + e.getCause().getMessage() );
                                             }
                                         }
@@ -579,7 +581,7 @@ public class ClusterMockTest
                         {
                             in.remove( cluster );
                             cluster.leave();
-                            logger.getLogger().debug( "Leave:" + cluster.toString() );
+                            logger.getLogger().fine( "Leave:" + cluster.toString() );
                             break;
                         }
                     }
@@ -597,7 +599,7 @@ public class ClusterMockTest
                     Cluster server = servers.get( serverDown - 1 ).newClient( Cluster.class );
                     network.getNetworkLatencyStrategy().getStrategy( ScriptableNetworkFailureLatencyStrategy.class )
                             .nodeIsDown( "server" + server.toString() );
-                    logger.getLogger().debug( server + " is down" );
+                    logger.getLogger().fine( server + " is down" );
                 }
             }, time );
         }
@@ -613,7 +615,7 @@ public class ClusterMockTest
                     network.getNetworkLatencyStrategy()
                             .getStrategy( ScriptableNetworkFailureLatencyStrategy.class )
                             .nodeIsUp( "server" + server.toString() );
-                    logger.getLogger().debug( server + " is up" );
+                    logger.getLogger().fine( server + " is up" );
                 }
             }, time );
         }
@@ -645,7 +647,7 @@ public class ClusterMockTest
                 @Override
                 public void run()
                 {
-                    logger.getLogger().debug( "Slept for " + sleepTime );
+                    logger.getLogger().fine( "Slept for " + sleepTime );
                 }
             }, sleepTime );
         }
@@ -657,7 +659,7 @@ public class ClusterMockTest
                 @Override
                 public void run()
                 {
-                    logger.getLogger().debug( msg );
+                    logger.getLogger().fine( msg );
                 }
             }, time );
         }
@@ -760,14 +762,14 @@ public class ClusterMockTest
 
             if ( time == 0 )
             {
-                logger.getLogger().debug( "Random seed:" + seed + "L" );
+                logger.getLogger().fine( "Random seed:" + seed + "L" );
             }
 
             if ( random.nextDouble() >= 0.8 )
             {
                 double inOrOut = (in.size() - out.size()) / ((double) servers.size());
                 double whatToDo = random.nextDouble() + inOrOut;
-                logger.getLogger().debug( "What to do:" + whatToDo );
+                logger.getLogger().fine( "What to do:" + whatToDo );
 
                 if ( whatToDo < 0.5 && !out.isEmpty() )
                 {
@@ -790,12 +792,12 @@ public class ClusterMockTest
                                 try
                                 {
                                     ClusterConfiguration clusterConfiguration = result.get();
-                                    logger.getLogger().debug( "**** Cluster configuration:" +
+                                    logger.getLogger().fine( "**** Cluster configuration:" +
                                             clusterConfiguration );
                                 }
                                 catch ( Exception e )
                                 {
-                                    logger.getLogger().debug( "**** Node could not join cluster:" + e
+                                    logger.getLogger().fine( "**** Node could not join cluster:" + e
                                             .getMessage() );
                                     out.add( cluster );
                                 }
@@ -803,7 +805,7 @@ public class ClusterMockTest
                         };
                         network.addFutureWaiter( result, joiner );
                     }
-                    logger.getLogger().debug( "Enter cluster:" + cluster.toString() );
+                    logger.getLogger().fine( "Enter cluster:" + cluster.toString() );
 
                 }
                 else if ( !in.isEmpty() )
@@ -811,7 +813,7 @@ public class ClusterMockTest
                     int idx = random.nextInt( in.size() );
                     Cluster cluster = in.remove( idx );
                     cluster.leave();
-                    logger.getLogger().debug( "Leave cluster:" + cluster.toString() );
+                    logger.getLogger().fine( "Leave cluster:" + cluster.toString() );
                 }
             }
         }
@@ -829,7 +831,7 @@ public class ClusterMockTest
             State<?, ?> clusterState = stateMachines.getStateMachine( ClusterMessage.class ).getState();
             if ( !clusterState.equals( ClusterState.entered ) )
             {
-                logger.getLogger().warn( "Instance " + (j + 1) + " is not in the cluster (" + clusterState + ")" );
+                logger.getLogger().warning( "Instance " + (j + 1) + " is not in the cluster (" + clusterState + ")" );
                 continue;
             }
 

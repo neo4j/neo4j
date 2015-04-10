@@ -47,11 +47,8 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.LogbackWeakDependency;
-import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -85,8 +82,6 @@ public class StoreCopyClientTest
         final String originalDir = new File( testDir.directory(), "original" ).getAbsolutePath();
 
         Config config = new Config( MapUtil.stringMap( store_dir.name(), copyDir ) );
-        Logging logging = LogbackWeakDependency.tryLoadLogbackService( config, null, null );
-        ConsoleLogger console = new ConsoleLogger( StringLogger.SYSTEM );
 
         final AtomicBoolean cancelStoreCopy = new AtomicBoolean( false );
         CancellationRequest cancellationRequest = new CancellationRequest()
@@ -110,7 +105,7 @@ public class StoreCopyClientTest
 
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreCopyClient copier =
-                new StoreCopyClient( config, loadKernelExtensions(), console, logging, fs, pageCache, storeCopyMonitor );
+                new StoreCopyClient( config, loadKernelExtensions(), NullLogProvider.getInstance(), fs, pageCache, storeCopyMonitor );
 
         final GraphDatabaseAPI original =
                 (GraphDatabaseAPI) startDatabase( originalDir );
@@ -165,8 +160,6 @@ public class StoreCopyClientTest
         final String originalDir = new File( testDir.directory(), "original" ).getAbsolutePath();
 
         Config config = new Config( MapUtil.stringMap( store_dir.name(), copyDir ) );
-        Logging logging = LogbackWeakDependency.tryLoadLogbackService( config, null, null );
-        ConsoleLogger console = new ConsoleLogger( StringLogger.SYSTEM );
 
         final AtomicBoolean cancelStoreCopy = new AtomicBoolean( false );
         CancellationRequest cancellationRequest = new CancellationRequest()
@@ -190,7 +183,7 @@ public class StoreCopyClientTest
 
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreCopyClient copier =
-                new StoreCopyClient( config, loadKernelExtensions(), console, logging, fs, pageCache, storeCopyMonitor );
+                new StoreCopyClient( config, loadKernelExtensions(), NullLogProvider.getInstance(), fs, pageCache, storeCopyMonitor );
 
         final GraphDatabaseAPI original =
                 (GraphDatabaseAPI) startDatabase( originalDir );

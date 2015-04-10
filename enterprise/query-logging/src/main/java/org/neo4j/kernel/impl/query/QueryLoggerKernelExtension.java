@@ -20,19 +20,22 @@
 package org.neo4j.kernel.impl.query;
 
 import java.io.File;
+import java.io.OutputStream;
 
-import org.neo4j.function.Factory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.logging.FormattedLog;
 import org.neo4j.kernel.impl.query.QuerySession.MetadataKey;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 
 @Service.Implementation(KernelExtensionFactory.class)
 public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLoggerKernelExtension.Dependencies>
@@ -52,49 +55,54 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
     }
 
     @Override
-    public Lifecycle newKernelExtension( Dependencies the ) throws Throwable
+    public Lifecycle newKernelExtension( final Dependencies deps ) throws Throwable
     {
-        if ( the.config().get( GraphDatabaseSettings.log_queries ) )
+        if ( ! deps.config().get( GraphDatabaseSettings.log_queries ) )
         {
-            QueryLogger logger = new QueryLogger(
-                    Clock.SYSTEM_CLOCK,
-                    new LoggerFactory(
-                            the.filesystem(),
-                            the.config().get( GraphDatabaseSettings.log_queries_filename ) ),
-                    the.config().get( GraphDatabaseSettings.log_queries_threshold ) );
-            the.monitoring().addMonitorListener( logger );
-            return logger;
+            return null;
         }
-        return null;
+
+        return new LifecycleAdapter() {
+            OutputStream logOutputStream;
+
+            @Override
+            public void init() throws Throwable
+            {
+                final FileSystemAbstraction filesystem = deps.filesystem();
+                final File logFile = deps.config().get( GraphDatabaseSettings.log_queries_filename );
+                logOutputStream = createOrOpenAsOuputStream( filesystem, logFile, true );
+                Long thresholdMillis = deps.config().get( GraphDatabaseSettings.log_queries_threshold );
+
+                QueryLogger logger = new QueryLogger(
+                        Clock.SYSTEM_CLOCK,
+                        FormattedLog.toOutputStream( logOutputStream ),
+                        thresholdMillis
+                );
+                deps.monitoring().addMonitorListener( logger );
+            }
+
+            @Override
+            public void shutdown() throws Throwable
+            {
+                logOutputStream.close();
+            }
+        };
     }
 
-    public static class QueryLogger extends LifecycleAdapter implements QueryExecutionMonitor
+    public static class QueryLogger implements QueryExecutionMonitor
     {
         private static final MetadataKey<Long> START_TIME = new MetadataKey<>( Long.class, "start time" );
         private static final MetadataKey<String> QUERY_STRING = new MetadataKey<>( String.class, "query string" );
-        private final Clock clock;
-        private final Factory<StringLogger> loggerFactory;
-        private final long thresholdMillis;
-        private StringLogger logger;
 
-        public QueryLogger( Clock clock, Factory<StringLogger> loggerFactory, long thresholdMillis )
+        private final Clock clock;
+        private final Log log;
+        private final long thresholdMillis;
+
+        public QueryLogger( Clock clock, Log log, long thresholdMillis )
         {
             this.clock = clock;
-            this.loggerFactory = loggerFactory;
+            this.log = log;
             this.thresholdMillis = thresholdMillis;
-        }
-
-        @Override
-        public void init()
-        {
-            logger = loggerFactory.newInstance();
-        }
-
-        @Override
-        public void shutdown()
-        {
-            logger.close();
-            logger = null;
         }
 
         @Override
@@ -105,8 +113,8 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
             Object oldQuery = session.put( QUERY_STRING, query );
             if ( oldTime != null || oldQuery != null )
             {
-                logger.warn( String.format( "Concurrent queries for session %s: \"%s\" @ %s and \"%s\" @ %s",
-                        session, oldQuery, oldTime, query, startTime ) );
+                log.error( "Concurrent queries for session %s: \"%s\" @ %s and \"%s\" @ %s",
+                        session.toString(), oldQuery, oldTime, query, startTime );
             }
         }
 
@@ -118,7 +126,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
             if ( startTime != null )
             {
                 long time = clock.currentTimeMillis() - startTime;
-                logger.logMessage( String.format( "FAILURE %d ms: %s - %s", time, session,
+                log.error( String.format( "%d ms: %s - %s", time, session.toString(),
                         query == null ? "<unknown query>" : query ), failure );
             }
         }
@@ -133,28 +141,10 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
                 long time = clock.currentTimeMillis() - startTime;
                 if ( time >= thresholdMillis )
                 {
-                    logger.logMessage( String.format( "SUCCESS %d ms: %s - %s", time, session,
-                            query == null ? "<unknown query>" : query ));
+                    log.info( "%d ms: %s - %s", time, session.toString(),
+                            query == null ? "<unknown query>" : query );
                 }
             }
-        }
-    }
-
-    private static class LoggerFactory implements Factory<StringLogger>
-    {
-        private final FileSystemAbstraction filesystem;
-        private final File logfile;
-
-        public LoggerFactory( FileSystemAbstraction filesystem, File logfile )
-        {
-            this.filesystem = filesystem;
-            this.logfile = logfile;
-        }
-
-        @Override
-        public StringLogger newInstance()
-        {
-            return StringLogger.loggerDirectory( filesystem, logfile );
         }
     }
 }

@@ -43,9 +43,8 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.transaction.log.LogRotation;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 
 import static java.lang.System.currentTimeMillis;
 import static org.junit.Assert.assertTrue;
@@ -157,7 +156,7 @@ public class BackupServiceStressTestingBuilder
                         new Config(),
                         db,
                         db.getDependencyResolver().resolveDependency( KernelPanicEventGenerator.class ),
-                        new DevNullLoggingService(),
+                        NullLogProvider.getInstance(),
                         new Monitors() );
                 try
                 {
@@ -186,7 +185,7 @@ public class BackupServiceStressTestingBuilder
                 executor.execute( new Runnable()
                 {
                     private final BackupService backupService = new BackupService(
-                            fileSystem, StringLogger.DEV_NULL, new Monitors() );
+                            fileSystem, NullLogProvider.getInstance(), new Monitors() );
 
                     @Override
                     public void run()

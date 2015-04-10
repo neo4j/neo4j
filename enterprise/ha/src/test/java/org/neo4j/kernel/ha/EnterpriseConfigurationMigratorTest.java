@@ -27,7 +27,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLog;
 
 /**
  * EnterpriseConfigurationMigrator tests
@@ -41,7 +41,7 @@ public class EnterpriseConfigurationMigratorTest
         throws Exception
     {
         Map<String, String> original = MapUtil.stringMap( "enable_online_backup", "true" );
-        Map<String, String> migrated = migrator.apply( original, StringLogger.DEV_NULL );
+        Map<String, String> migrated = migrator.apply( original, NullLog.getInstance() );
         Assert.assertThat( migrated.containsKey( "enable_online_backup" ), is( false ) );
         Assert.assertThat( migrated.get( "online_backup_enabled" ), is( "true" ) );
         Assert.assertThat( migrated.get( "online_backup_server" ), is( OnlineBackupSettings.online_backup_server.getDefaultValue() ) );
@@ -52,7 +52,7 @@ public class EnterpriseConfigurationMigratorTest
         throws Exception
     {
         Map<String, String> original = MapUtil.stringMap( "enable_online_backup", "port=123" );
-        Map<String, String> migrated = migrator.apply( original, StringLogger.DEV_NULL );
+        Map<String, String> migrated = migrator.apply( original, NullLog.getInstance() );
         Assert.assertThat( migrated.containsKey( "enable_online_backup" ), is( false ) );
         Assert.assertThat( migrated.get( "online_backup_enabled" ), is( "true" ) );
         Assert.assertThat( migrated.get( "online_backup_server" ), is( "0.0.0.0:123" ) );
@@ -63,7 +63,7 @@ public class EnterpriseConfigurationMigratorTest
         throws Exception
     {
         Map<String, String> original = MapUtil.stringMap( "ha.machine_id", "123" );
-        Map<String, String> migrated = migrator.apply( original, StringLogger.DEV_NULL );
+        Map<String, String> migrated = migrator.apply( original, NullLog.getInstance() );
         Assert.assertThat( migrated.containsKey( "ha.machine_id" ), is( false ) );
         Assert.assertThat( migrated.get( "ha.server_id" ), is( "123" ) );
     }

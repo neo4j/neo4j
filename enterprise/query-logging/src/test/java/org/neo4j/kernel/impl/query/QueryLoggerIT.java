@@ -74,7 +74,7 @@ public class QueryLoggerIT
 
         db.shutdown();
 
-        File logfile = new File( "target/test-data/impermanent-db/queries.log/messages.log" );
+        File logfile = new File( "target/test-data/impermanent-db/queries.log" );
         List<String> logLines = new ArrayList<>();
         try ( BufferedReader reader = new BufferedReader( fs.get().openAsReader( logfile, "UTF-8" ) ) )
         {

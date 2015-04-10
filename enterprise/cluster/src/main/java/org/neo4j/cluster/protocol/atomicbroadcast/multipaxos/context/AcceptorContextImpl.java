@@ -24,7 +24,7 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstance;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AcceptorInstanceStore;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 
 class AcceptorContextImpl
         extends AbstractContextImpl
@@ -33,10 +33,10 @@ class AcceptorContextImpl
     private final AcceptorInstanceStore instanceStore;
 
     AcceptorContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState,
-                         Logging logging,
+                         LogProvider logProvider,
                          Timeouts timeouts, AcceptorInstanceStore instanceStore )
     {
-        super( me, commonState, logging, timeouts );
+        super( me, commonState, logProvider, timeouts );
         this.instanceStore = instanceStore;
     }
 
@@ -64,10 +64,10 @@ class AcceptorContextImpl
         instanceStore.clear();
     }
 
-    public AcceptorContextImpl snapshot( CommonContextState commonStateSnapshot, Logging logging, Timeouts timeouts,
+    public AcceptorContextImpl snapshot( CommonContextState commonStateSnapshot, LogProvider logProvider, Timeouts timeouts,
                                          AcceptorInstanceStore instanceStore )
     {
-        return new AcceptorContextImpl( me, commonStateSnapshot, logging, timeouts, instanceStore );
+        return new AcceptorContextImpl( me, commonStateSnapshot, logProvider, timeouts, instanceStore );
     }
 
     @Override

@@ -35,17 +35,16 @@ import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Functions;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.InconsistentlyUpgradedClusterException;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.UnableToCopyStoreFromOldMasterException;
 import org.neo4j.kernel.impl.store.UnavailableMembersException;
 import org.neo4j.kernel.impl.transaction.log.NoSuchLogVersionException;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
 
 import static org.neo4j.cluster.ClusterSettings.INSTANCE_ID;
 import static org.neo4j.helpers.Functions.withDefaults;
@@ -87,8 +86,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private final InstanceId instanceId;
     private final DependencyResolver dependencyResolver;
 
-    private final StringLogger msgLog;
-    private final ConsoleLogger consoleLog;
+    private final Log msgLog;
+    private final Log userLog;
 
     private LifeSupport haCommunicationLife;
 
@@ -103,15 +102,15 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                                          Election election,
                                          ClusterMemberAvailability clusterMemberAvailability,
                                          DependencyResolver dependencyResolver,
-                                         InstanceId instanceId, Logging logging )
+                                         InstanceId instanceId, LogService logService )
     {
         this.switchToSlave = switchToSlave;
         this.switchToMaster = switchToMaster;
         this.election = election;
         this.clusterMemberAvailability = clusterMemberAvailability;
         this.instanceId = instanceId;
-        this.msgLog = logging.getMessagesLog( getClass() );
-        this.consoleLog = logging.getConsoleLog( getClass() );
+        this.msgLog = logService.getInternalLog( getClass() );
+        this.userLog = logService.getUserLog( getClass() );
         this.haCommunicationLife = new LifeSupport();
         this.dependencyResolver = dependencyResolver;
     }
@@ -282,7 +281,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 }
                 catch ( Throwable e )
                 {
-                    msgLog.logMessage( "Failed to switch to master", e );
+                    msgLog.error( "Failed to switch to master", e );
                     // Since this master switch failed, elect someone else
                     election.demote( instanceId );
                 }
@@ -343,7 +342,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 catch ( UnableToCopyStoreFromOldMasterException | InconsistentlyUpgradedClusterException |
                         UnavailableMembersException e )
                 {
-                    consoleLog.error( "UNABLE TO START UP AS SLAVE: " + e.getMessage() );
+                    userLog.error( "UNABLE TO START UP AS SLAVE: %s", e.getMessage() );
                     msgLog.error( "Unable to start up as slave", e );
 
                     clusterMemberAvailability.memberIsUnavailable( SLAVE );
@@ -369,7 +368,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 }
                 catch ( Throwable t )
                 {
-                    msgLog.logMessage( "Error while trying to switch to slave", t );
+                    msgLog.error( "Error while trying to switch to slave", t );
 
                     // Try again later
                     wait.set( (1 + wait.get() * 2) ); // Exponential backoff
@@ -377,7 +376,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
                     modeSwitcherFuture = modeSwitcherExecutor.schedule( this, wait.get(), TimeUnit.SECONDS );
 
-                    msgLog.logMessage( "Attempting to switch to slave in " + wait.get() + "s" );
+                    msgLog.info( "Attempting to switch to slave in %ds", wait.get() );
                 }
             }
         }, cancellationHandle );
@@ -385,7 +384,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
     private void switchToPending()
     {
-        msgLog.logMessage( "I am " + instanceId + ", moving to pending" );
+        msgLog.info( "I am %s, moving to pending", instanceId );
 
         startModeSwitching( new Runnable()
         {

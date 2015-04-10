@@ -44,7 +44,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellLobby;
@@ -186,7 +186,7 @@ public class TestPullUpdates
                 }
             } );
 
-            ((GraphDatabaseAPI)master).getDependencyResolver().resolveDependency( StringLogger.class ).info( "SHUTTING DOWN SLAVE" );
+            ((GraphDatabaseAPI)master).getDependencyResolver().resolveDependency( LogService.class ).getInternalLog( getClass() ).info( "SHUTTING DOWN SLAVE" );
             slave.shutdown();
 
             // Make sure that the slave has left, because shutdown() may return before the master knows

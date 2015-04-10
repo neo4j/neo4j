@@ -24,9 +24,8 @@ import java.net.URISyntaxException;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
+import java.util.logging.Logger;
 
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.LoggerContext;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -53,14 +52,12 @@ import org.neo4j.cluster.protocol.heartbeat.HeartbeatMessage;
 import org.neo4j.cluster.protocol.snapshot.Snapshot;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.LogbackService;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.test.TargetDirectory;
 
 /**
  * TODO
@@ -74,14 +71,6 @@ public class MultiPaxosNetworkTest
             throws ExecutionException, InterruptedException, URISyntaxException, BrokenBarrierException
     {
         final LifeSupport life = new LifeSupport();
-        Config config = new Config( MapUtil.stringMap( GraphDatabaseSettings.store_dir.name(),
-                TargetDirectory.forTest( getClass() ).cleanDirectory( "cluster" ).getAbsolutePath() ),
-                GraphDatabaseSettings.class
-        );
-
-        final LoggerContext loggerContext = new LoggerContext();
-        loggerContext.putProperty( "host", "none" );
-        LogbackService logging = life.add( new LogbackService( config, loggerContext ) );
 
         MessageTimeoutStrategy timeoutStrategy = new MessageTimeoutStrategy( new FixedTimeoutStrategy( 10000 ) )
                 .timeout( AtomicBroadcastMessage.broadcastTimeout, 30000 )
@@ -91,14 +80,14 @@ public class MultiPaxosNetworkTest
 
         Monitors monitors = new Monitors();
         NetworkedServerFactory serverFactory = new NetworkedServerFactory( life,
-                new MultiPaxosServerFactory( new ClusterConfiguration( "default", logging.getMessagesLog( ClusterConfiguration.class ),
+                new MultiPaxosServerFactory( new ClusterConfiguration( "default", NullLogProvider.getInstance(),
                                 "cluster://localhost:5001",
                                 "cluster://localhost:5002",
                                 "cluster://localhost:5003" ),
-                        logging,
+                        NullLogProvider.getInstance(),
                         monitors.newMonitor( StateMachines.Monitor.class )
                 ),
-                timeoutStrategy, logging, new ObjectStreamFactory(), new ObjectStreamFactory(),
+                timeoutStrategy, NullLogProvider.getInstance(), new ObjectStreamFactory(), new ObjectStreamFactory(),
                 monitors.newMonitor( NetworkReceiver.Monitor.class ), monitors.newMonitor( NetworkSender.Monitor.class ),
                 monitors.newMonitor( NamedThreadFactory.Monitor.class )
         );
@@ -171,7 +160,7 @@ public class MultiPaxosNetworkTest
 
         final Semaphore semaphore = new Semaphore( -2 );
 
-        final Logger logger = loggerContext.getLogger( getClass() );
+        final Logger logger = Logger.getLogger( getClass().getName() );
         server1.newClient( Cluster.class ).addClusterListener( new ClusterListener.Adapter()
         {
             @Override
@@ -253,11 +242,11 @@ public class MultiPaxosNetworkTest
 
         map2.put( "foo2", "666" );
 
-        logger.warn( "Read value2:" + map2.get( "foo1" ) );
-        logger.warn( "Read value3:" + map2.get( "foo2" ) );
+        logger.warning( "Read value2:" + map2.get( "foo1" ) );
+        logger.warning( "Read value3:" + map2.get( "foo2" ) );
 
-        logger.warn( "Read value4:" + map3.get( "foo1" ) );
-        logger.warn( "Read value5:" + map3.get( "foo99" ) );
+        logger.warning( "Read value4:" + map3.get( "foo1" ) );
+        logger.warning( "Read value5:" + map3.get( "foo99" ) );
         Assert.assertThat( map3.get( "foo1" ), CoreMatchers.equalTo( "bar1" ) );
         Assert.assertThat( map3.get( "foo99" ), CoreMatchers.equalTo( "bar99" ) );
 

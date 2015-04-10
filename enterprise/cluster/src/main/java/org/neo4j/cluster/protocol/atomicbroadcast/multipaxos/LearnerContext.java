@@ -20,15 +20,15 @@
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
 import org.neo4j.cluster.protocol.ConfigurationContext;
-import org.neo4j.cluster.protocol.LoggingContext;
 import org.neo4j.cluster.protocol.TimeoutsContext;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
+import org.neo4j.logging.LogProvider;
 
 /**
  * Context for the Learner Paxos state machine.
  */
 public interface LearnerContext
-    extends TimeoutsContext, LoggingContext, ConfigurationContext
+    extends TimeoutsContext, LogProvider, ConfigurationContext
 {
     long getLastDeliveredInstanceId();
 

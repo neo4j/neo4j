@@ -31,7 +31,7 @@ import org.neo4j.com.MadeUpServer.MadeUpRequestType;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -46,7 +46,7 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
     public MadeUpClient( int port, StoreId storeIdToExpect, byte internalProtocolVersion,
                          byte applicationProtocolVersion, int chunkSize, ResponseUnpacker responseUnpacker )
     {
-        super( localhost(), port, new DevNullLoggingService(), storeIdToExpect, FRAME_LENGTH,
+        super( localhost(), port, NullLogProvider.getInstance(), storeIdToExpect, FRAME_LENGTH,
                 new ProtocolVersion( applicationProtocolVersion, internalProtocolVersion ),
                 Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS * 1000,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT,

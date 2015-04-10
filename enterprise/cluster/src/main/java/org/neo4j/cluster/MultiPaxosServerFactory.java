@@ -61,7 +61,7 @@ import org.neo4j.cluster.statemachine.StateMachineRules;
 import org.neo4j.cluster.timeout.TimeoutStrategy;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.cluster.com.message.Message.internal;
 
@@ -72,13 +72,13 @@ public class MultiPaxosServerFactory
         implements ProtocolServerFactory
 {
     private final ClusterConfiguration initialConfig;
-    private final Logging logging;
+    private final LogProvider logProvider;
     private StateMachines.Monitor stateMachinesMonitor;
 
-    public MultiPaxosServerFactory( ClusterConfiguration initialConfig, Logging logging, StateMachines.Monitor stateMachinesMonitor )
+    public MultiPaxosServerFactory( ClusterConfiguration initialConfig, LogProvider logProvider, StateMachines.Monitor stateMachinesMonitor )
     {
         this.initialConfig = initialConfig;
-        this.logging = logging;
+        this.logProvider = logProvider;
         this.stateMachinesMonitor = stateMachinesMonitor;
     }
 
@@ -90,16 +90,16 @@ public class MultiPaxosServerFactory
                                              ObjectInputStreamFactory objectInputStreamFactory,
                                              ObjectOutputStreamFactory objectOutputStreamFactory )
     {
-        DelayedDirectExecutor executor = new DelayedDirectExecutor( logging );
+        DelayedDirectExecutor executor = new DelayedDirectExecutor( logProvider );
 
         // Create state machines
         Timeouts timeouts = new Timeouts( timeoutStrategy );
 
         final MultiPaxosContext context = new MultiPaxosContext( me,
                 Iterables.<ElectionRole, ElectionRole>iterable( new ElectionRole( ClusterConfiguration.COORDINATOR ) ),
-                new ClusterConfiguration( initialConfig.getName(), logging.getMessagesLog( ClusterConfiguration.class ),
+                new ClusterConfiguration( initialConfig.getName(), logProvider,
                         initialConfig.getMemberURIs() ),
-                executor, logging, objectInputStreamFactory, objectOutputStreamFactory, acceptorInstanceStore, timeouts,
+                executor, logProvider, objectInputStreamFactory, objectOutputStreamFactory, acceptorInstanceStore, timeouts,
                 electionCredentialsProvider
         );
 
@@ -119,20 +119,20 @@ public class MultiPaxosServerFactory
                 context, new StateMachine[]
                 {
                         new StateMachine( context.getAtomicBroadcastContext(), AtomicBroadcastMessage.class,
-                                AtomicBroadcastState.start, logging ),
+                                AtomicBroadcastState.start, logProvider ),
                         new StateMachine( context.getAcceptorContext(), AcceptorMessage.class, AcceptorState.start,
-                                logging ),
+                                logProvider ),
                         new StateMachine( context.getProposerContext(), ProposerMessage.class, ProposerState.start,
-                                logging ),
+                                logProvider ),
                         new StateMachine( context.getLearnerContext(), LearnerMessage.class, LearnerState.start,
-                                logging ),
+                                logProvider ),
                         new StateMachine( context.getHeartbeatContext(), HeartbeatMessage.class, HeartbeatState.start,
-                                logging ),
+                                logProvider ),
                         new StateMachine( context.getElectionContext(), ElectionMessage.class, ElectionState.start,
-                                logging ),
-                        new StateMachine( snapshotContext, SnapshotMessage.class, SnapshotState.start, logging ),
+                                logProvider ),
+                        new StateMachine( snapshotContext, SnapshotMessage.class, SnapshotState.start, logProvider ),
                         new StateMachine( context.getClusterContext(), ClusterMessage.class, ClusterState.start,
-                                logging )
+                                logProvider )
                 } );
     }
 
@@ -148,7 +148,7 @@ public class MultiPaxosServerFactory
                                                                 final MultiPaxosContext context,
                                                                 StateMachine[] machines )
     {
-        StateMachines stateMachines = new StateMachines( stateMachinesMonitor, input,
+        StateMachines stateMachines = new StateMachines( logProvider, stateMachinesMonitor, input,
                 output, timeouts, executor, stateMachineExecutor, me );
 
         for ( StateMachine machine : machines )
@@ -156,7 +156,7 @@ public class MultiPaxosServerFactory
             stateMachines.addStateMachine( machine );
         }
 
-        final ProtocolServer server = new ProtocolServer( me, stateMachines, logging );
+        final ProtocolServer server = new ProtocolServer( me, stateMachines, logProvider );
 
         server.addBindingListener( new BindingListener()
         {
@@ -174,13 +174,13 @@ public class MultiPaxosServerFactory
 
         Cluster cluster = server.newClient( Cluster.class );
         cluster.addClusterListener( new HeartbeatJoinListener( stateMachines.getOutgoing() ) );
-        cluster.addClusterListener( new HeartbeatLeftListener( context.getHeartbeatContext(), logging ) );
+        cluster.addClusterListener( new HeartbeatLeftListener( context.getHeartbeatContext(), logProvider ) );
 
         context.getHeartbeatContext().addHeartbeatListener( new HeartbeatReelectionListener(
-                server.newClient( Election.class ), logging.getMessagesLog( HeartbeatReelectionListener.class ) ) );
+                server.newClient( Election.class ), logProvider ) );
         context.getClusterContext().addClusterListener( new ClusterLeaveReelectionListener( server.newClient(
                 Election.class ),
-                logging.getMessagesLog( ClusterLeaveReelectionListener.class )
+                logProvider
         ) );
 
         StateMachineRules rules = new StateMachineRules( stateMachines.getOutgoing() )

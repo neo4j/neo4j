@@ -29,7 +29,7 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageType;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLog;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -51,7 +51,7 @@ public class AtomicBroadcastStateTest
         InstanceId coordinator = id( 1 );
         when( context.getCoordinator() ).thenReturn( coordinator );
         when( context.getUriForId( coordinator ) ).thenReturn( uri( 1 ) );
-        when( context.getLogger( AtomicBroadcastState.class ) ).thenReturn( StringLogger.SYSTEM );
+        when( context.getLog( AtomicBroadcastState.class ) ).thenReturn( NullLog.getInstance() );
 
         final List<Message<?>> messages = new ArrayList<>( 1 );
         MessageHolder outgoing = new MessageHolder()
@@ -76,7 +76,7 @@ public class AtomicBroadcastStateTest
         AtomicBroadcastContext context = mock( AtomicBroadcastContext.class );
         when( context.hasQuorum() ).thenReturn( false );
         when( context.getCoordinator() ).thenReturn( null );
-        when( context.getLogger( AtomicBroadcastState.class ) ).thenReturn( StringLogger.SYSTEM );
+        when( context.getLog( AtomicBroadcastState.class ) ).thenReturn( NullLog.getInstance() );
 
         final List<Message<?>> messages = new ArrayList<>( 1 );
         MessageHolder outgoing = new MessageHolder()

@@ -36,7 +36,6 @@ import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
@@ -46,12 +45,16 @@ import org.neo4j.kernel.ha.com.master.SlavePriority;
 import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.ha.transaction.CommitPusher;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
+import org.neo4j.logging.AssertableLogProvider.LogMatcher;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.LogMarker;
+import org.neo4j.logging.NullLog;
 import org.neo4j.test.CleanupRule;
 
+import static org.hamcrest.Matchers.any;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -59,13 +62,15 @@ import static org.junit.Assert.assertTrue;
 
 import static org.neo4j.kernel.ha.com.master.SlavePriorities.givenOrder;
 import static org.neo4j.kernel.ha.com.master.SlavePriorities.roundRobin;
+import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 
 public class TestMasterCommittingAtSlave
 {
     private static final int MasterServerId = 0;
 
     private Iterable<Slave> slaves;
-    private FakeStringLogger log;
+    private AssertableLogProvider logProvider = new AssertableLogProvider();
+    LogMatcher communicationLogMessage = new LogMatcher( any( String.class ), is( ERROR ), containsString( "communication" ), any( Object[].class ), any( Throwable.class ) );
 
     @Test
     public void commitSuccessfullyToTheFirstOne() throws Exception
@@ -73,7 +78,7 @@ public class TestMasterCommittingAtSlave
         TransactionPropagator propagator = newPropagator( 3, 1, givenOrder() );
         propagator.committed( 2, MasterServerId );
         assertCalls( (FakeSlave) slaves.iterator().next(), 2l );
-        assertNoFailureLogs();
+        logProvider.assertNone( communicationLogMessage );
     }
 
     @Test
@@ -84,7 +89,7 @@ public class TestMasterCommittingAtSlave
         propagator.committed( 3, MasterServerId );
         propagator.committed( 4, MasterServerId );
         assertCalls( (FakeSlave) slaves.iterator().next(), 2, 3, 4 );
-        assertNoFailureLogs();
+        logProvider.assertNone( communicationLogMessage );
     }
 
     @Test
@@ -95,7 +100,7 @@ public class TestMasterCommittingAtSlave
         Iterator<Slave> slaveIt = slaves.iterator();
         assertCalls( (FakeSlave) slaveIt.next() );
         assertCalls( (FakeSlave) slaveIt.next(), 2 );
-        assertNoFailureLogs();
+        logProvider.assertNone( communicationLogMessage );
     }
 
     @Test
@@ -113,8 +118,7 @@ public class TestMasterCommittingAtSlave
         assertCalls( (FakeSlave) slaveIt.next(), 2, 3, 4 );
         assertCalls( (FakeSlave) slaveIt.next() );
         assertCalls( (FakeSlave) slaveIt.next() );
-
-        assertNoFailureLogs();
+        logProvider.assertNone( communicationLogMessage );
     }
 
     @Test
@@ -128,7 +132,7 @@ public class TestMasterCommittingAtSlave
         slaveIt.next();
         assertCalls( (FakeSlave) slaveIt.next(), 2 );
         assertCalls( (FakeSlave) slaveIt.next(), 2 );
-        assertNoFailureLogs();
+        logProvider.assertNone( communicationLogMessage );
     }
 
     @Test
@@ -143,7 +147,7 @@ public class TestMasterCommittingAtSlave
         assertCalls( (FakeSlave) slaveIt.next(), 2, 5 );
         assertCalls( (FakeSlave) slaveIt.next(), 3, 6 );
         assertCalls( (FakeSlave) slaveIt.next(), 4 );
-        assertNoFailureLogs();
+        logProvider.assertNone( communicationLogMessage );
     }
 
     @Test
@@ -167,7 +171,7 @@ public class TestMasterCommittingAtSlave
         slaveIt.next();
         assertCalls( (FakeSlave) slaveIt.next(), 2, 3, 4, 6 );
         assertCalls( (FakeSlave) slaveIt.next(), 3, 4, 5 );
-        assertNoFailureLogs();
+        logProvider.assertNone( communicationLogMessage );
     }
 
     @Test
@@ -179,7 +183,7 @@ public class TestMasterCommittingAtSlave
         slaveIt.next();
         slaveIt.next();
         assertCalls( (FakeSlave) slaveIt.next(), 2 );
-        assertFailureLogs();
+        logProvider.assertNone( communicationLogMessage );
     }
 
     @Test
@@ -198,16 +202,6 @@ public class TestMasterCommittingAtSlave
         assertTrue( !sortedSlaves.hasNext() );
     }
 
-    private void assertNoFailureLogs()
-    {
-        assertFalse( "Errors:" + log.errors.toString(), log.unexpectedExceptionLogged );
-    }
-
-    private void assertFailureLogs()
-    {
-        assertTrue( log.unexpectedExceptionLogged );
-    }
-
     private void assertCalls( FakeSlave slave, long... txs )
     {
         for ( long tx : txs )
@@ -224,12 +218,11 @@ public class TestMasterCommittingAtSlave
     {
         slaves = instantiateSlaves( slaveCount, failingSlaves );
 
-        log = new FakeStringLogger();
         Config config = new Config( MapUtil.stringMap(
                 HaSettings.tx_push_factor.name(), "" + replication, ClusterSettings.server_id.name(), "" + MasterServerId ) );
         Neo4jJobScheduler scheduler = cleanup.add( new Neo4jJobScheduler() );
         TransactionPropagator result = new TransactionPropagator( TransactionPropagator.from( config, slavePriority ),
-                log, new Slaves()
+                NullLog.getInstance(), new Slaves()
         {
             @Override
             public Iterable<Slave> getSlaves()
@@ -310,66 +303,6 @@ public class TestMasterCommittingAtSlave
         public String toString()
         {
             return "FakeSlave[" + serverId + "]";
-        }
-    }
-
-    private static class FakeStringLogger extends StringLogger
-    {
-        private volatile boolean unexpectedExceptionLogged;
-        private final StringBuilder errors = new StringBuilder();
-
-        @Override
-        public void logLongMessage( String msg, Visitor<LineLogger, RuntimeException> source, boolean flush )
-        {
-            addError( msg );
-        }
-
-        private void addError( String msg )
-        {
-            if ( !msg.contains( "communication" ) )
-            {
-                unexpectedExceptionLogged = true;
-            }
-            errors.append( errors.length() > 0 ? "," : "" ).append( msg );
-        }
-
-        @Override
-        public void logMessage( String msg, boolean flush )
-        {
-            addError( msg );
-        }
-
-        @Override
-        public void logMessage( String msg, LogMarker marker )
-        {
-            addError( msg );
-        }
-
-        @Override
-        public void logMessage( String msg, Throwable cause, boolean flush )
-        {
-            addError( msg );
-        }
-
-        @Override
-        public void addRotationListener( Runnable listener )
-        {
-        }
-
-        @Override
-        public void flush()
-        {
-        }
-
-        @Override
-        public void close()
-        {
-        }
-
-        @Override
-        protected void logLine( String line )
-        {
-            addError( line );
         }
     }
 }

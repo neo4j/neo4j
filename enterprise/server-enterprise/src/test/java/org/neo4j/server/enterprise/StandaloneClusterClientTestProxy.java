@@ -19,11 +19,13 @@
  */
 package org.neo4j.server.enterprise;
 
+import java.io.IOException;
+
 public class StandaloneClusterClientTestProxy
 {
     public static final String START_SIGNAL = "starting";
 
-    public static void main( String[] args )
+    public static void main( String[] args ) throws IOException
     {
         // This sysout will be intercepted by the parent process and will trigger
         // a start of a timeout. The whole reason for this class to be here is to

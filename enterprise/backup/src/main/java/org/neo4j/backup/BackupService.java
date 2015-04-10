@@ -51,20 +51,21 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigParam;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.DevNullLoggingService;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -106,18 +107,20 @@ class BackupService
     static final String DIFFERENT_STORE = "Target directory contains full backup of a logically different store.";
 
     private final FileSystemAbstraction fileSystem;
-    private final StringLogger logger;
+    private final LogProvider logProvider;
+    private final Log log;
     private final Monitors monitors;
 
     BackupService()
     {
-        this( new DefaultFileSystemAbstraction(), StringLogger.SYSTEM, new Monitors() );
+        this( new DefaultFileSystemAbstraction(), FormattedLogProvider.toOutputStream( System.out ), new Monitors() );
     }
 
-    BackupService( FileSystemAbstraction fileSystem, StringLogger logger, Monitors monitors )
+    BackupService( FileSystemAbstraction fileSystem, LogProvider logProvider, Monitors monitors )
     {
         this.fileSystem = fileSystem;
-        this.logger = logger;
+        this.logProvider = logProvider;
+        this.log = logProvider.getLog( getClass() );
         this.monitors = monitors;
     }
 
@@ -137,7 +140,7 @@ class BackupService
         try ( PageCache pageCache = createPageCache( fileSystem ) )
         {
             StoreCopyClient storeCopier = new StoreCopyClient( tuningConfiguration, loadKernelExtensions(),
-                    new ConsoleLogger( StringLogger.SYSTEM ), new DevNullLoggingService(),
+                    logProvider,
                     new DefaultFileSystemAbstraction(), pageCache,
                     monitors.newMonitor( StoreCopyClient.Monitor.class, getClass() ) );
             storeCopier.copyStore( new StoreCopyClient.StoreCopyRequester()
@@ -147,7 +150,7 @@ class BackupService
                 @Override
                 public Response<?> copyStore( StoreWriter writer )
                 {
-                    client = new BackupClient( sourceHostNameOrIp, sourcePort, new DevNullLoggingService(),
+                    client = new BackupClient( sourceHostNameOrIp, sourcePort, NullLogProvider.getInstance(),
                             StoreId.DEFAULT, timeout, ResponseUnpacker.NO_OP_RESPONSE_UNPACKER,
                             monitors.newMonitor( ByteCounterMonitor.class ),
                             monitors.newMonitor( RequestMonitor.class ) );
@@ -169,15 +172,11 @@ class BackupService
                 {
                     consistent = new ConsistencyCheckService().runFullConsistencyCheck(
                             targetDirectory, tuningConfiguration, ProgressMonitorFactory.textual( System.err ),
-                            logger, fileSystem, pageCache ).isSuccessful();
+                            logProvider, fileSystem, pageCache ).isSuccessful();
                 }
                 catch ( ConsistencyCheckIncompleteException e )
                 {
-                    logger.error( "Consistency check incomplete", e );
-                }
-                finally
-                {
-                    logger.flush();
+                    log.error( "Consistency check incomplete", e );
                 }
             }
             return new BackupOutcome( lastCommittedTx, consistent );
@@ -245,7 +244,7 @@ class BackupService
             try
             {
                 // Our existing backup is out of date.
-                logger.info( "Existing backup is too far out of date, a new full backup will be performed." );
+                log.info( "Existing backup is too far out of date, a new full backup will be performed." );
                 File targetDirFile = new File( targetDirectory );
                 FileUtils.deleteRecursively( targetDirFile );
                 return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirFile.getAbsolutePath(), verification,
@@ -288,8 +287,6 @@ class BackupService
     {
         Map<String, String> config = new HashMap<>();
         config.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
-        config.put( InternalAbstractGraphDatabase.Configuration.log_configuration_file.name(),
-                "neo4j-backup-logback.xml" );
         for ( ConfigParam param : params )
         {
             if ( param != null )
@@ -319,8 +316,9 @@ class BackupService
         TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker( resolver );
 
         Monitors monitors = resolver.resolveDependency( Monitors.class );
+        LogProvider logProvider = resolver.resolveDependency( LogService.class ).getInternalLogProvider();
         BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort,
-                resolver.resolveDependency( Logging.class ), targetDb.storeId(), timeout, unpacker,
+                logProvider, targetDb.storeId(), timeout, unpacker,
                 monitors.newMonitor( ByteCounterMonitor.class, BackupClient.class ),
                 monitors.newMonitor( RequestMonitor.class, BackupClient.class ) );
 
@@ -362,7 +360,7 @@ class BackupService
             }
             catch ( Throwable throwable )
             {
-                logger.warn( "Unable to stop backup client", throwable );
+                log.warn( "Unable to stop backup client", throwable );
             }
         }
         return new BackupOutcome( handler.getLastSeenTransactionId(), consistent );
@@ -380,7 +378,7 @@ class BackupService
                  *  Contains ensures that previously timestamped files are
                  *  picked up as well
                  */
-                return name.equals( StringLogger.DEFAULT_NAME );
+                return name.equals( StoreLogService.INTERNAL_LOG_NAME );
             }
         } );
         if ( candidates.length != 1 )
@@ -390,7 +388,7 @@ class BackupService
         // candidates has a unique member, the right one
         File previous = candidates[0];
         // Build to, from existing parent + new filename
-        File to = new File( previous.getParentFile(), StringLogger.DEFAULT_NAME + "." + toTimestamp );
+        File to = new File( previous.getParentFile(), StoreLogService.INTERNAL_LOG_NAME + "." + toTimestamp );
         return previous.renameTo( to );
     }
 

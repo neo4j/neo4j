@@ -27,22 +27,23 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 /**
- * This class logs to the console whenever important cluster or high availability events
+ * This class logs whenever important cluster or high availability events
  * are issued.
  */
-public class HighAvailabilityConsoleLogger
+public class HighAvailabilityLogger
         implements ClusterMemberListener, ClusterListener, AvailabilityGuard.AvailabilityListener
 {
-    private final ConsoleLogger console;
+    private final Log log;
     private final InstanceId myId;
     private URI myUri;
 
-    public HighAvailabilityConsoleLogger( ConsoleLogger console, InstanceId myId )
+    public HighAvailabilityLogger( LogProvider logProvider, InstanceId myId )
     {
-        this.console = console;
+        this.log = logProvider.getLog( getClass() );
         this.myId = myId;
     }
 
@@ -57,7 +58,7 @@ public class HighAvailabilityConsoleLogger
     public void enteredCluster( ClusterConfiguration clusterConfiguration )
     {
         myUri = clusterConfiguration.getUriForId( myId );
-        console.log( String.format( "Instance %s joined the cluster", printId( myId, myUri )) );
+        log.info( "Instance %s joined the cluster", printId( myId, myUri ) );
     }
 
     /**
@@ -66,7 +67,7 @@ public class HighAvailabilityConsoleLogger
     @Override
     public void leftCluster()
     {
-        console.log( String.format( "Instance %s left the cluster", printId( myId, myUri ) ) );
+        log.info( "Instance %s left the cluster", printId( myId, myUri ) );
     }
 
     /**
@@ -78,7 +79,7 @@ public class HighAvailabilityConsoleLogger
     @Override
     public void joinedCluster( InstanceId instanceId, URI member )
     {
-        console.log( "Instance " + printId(instanceId, member) + " joined the cluster" );
+        log.info( "Instance %s joined the cluster", printId( instanceId, member ) );
     }
 
     /**
@@ -89,7 +90,7 @@ public class HighAvailabilityConsoleLogger
     @Override
     public void leftCluster( InstanceId instanceId, URI member )
     {
-        console.log( "Instance " + printId( instanceId, member ) + " has left the cluster" );
+        log.info( "Instance %s has left the cluster", printId( instanceId, member ) );
     }
 
     /**
@@ -102,7 +103,7 @@ public class HighAvailabilityConsoleLogger
     @Override
     public void elected( String role, InstanceId instanceId, URI electedMember )
     {
-        console.log( "Instance " + printId( instanceId, electedMember ) + "was elected as " + role );
+        log.info( "Instance %s was elected as %s", printId( instanceId, electedMember ), role );
     }
 
     /**
@@ -115,7 +116,7 @@ public class HighAvailabilityConsoleLogger
     @Override
     public void unelected( String role, InstanceId instanceId, URI electedMember )
     {
-        console.log( "Instance " + printId( instanceId, electedMember ) + "was demoted as " + role );
+        log.info( "Instance %s was demoted as %s", printId( instanceId, electedMember ), role );
     }
 
     // HA events
@@ -134,7 +135,7 @@ public class HighAvailabilityConsoleLogger
     @Override
     public void memberIsAvailable( String role, InstanceId availableId, URI atUri, StoreId storeId )
     {
-        console.log( "Instance " + printId( availableId, atUri ) + "is available as " + role + " at " + atUri.toASCIIString() + " with " + storeId );
+        log.info( "Instance %s is available as %s at %s with %s", printId( availableId, atUri ), role, atUri.toASCIIString(), storeId );
     }
 
     /**
@@ -146,7 +147,7 @@ public class HighAvailabilityConsoleLogger
     @Override
     public void memberIsUnavailable( String role, InstanceId unavailableId )
     {
-        console.log( "Instance " + printId( unavailableId, null ) + "is unavailable as " + role );
+        log.info( "Instance %s is unavailable as %s", printId( unavailableId, null ), role );
     }
 
     /**
@@ -157,7 +158,7 @@ public class HighAvailabilityConsoleLogger
     @Override
     public void memberIsFailed( InstanceId instanceId )
     {
-        console.log( "Instance " + printId( instanceId, null ) + "has failed" );
+        log.info( "Instance %s has failed", printId( instanceId, null ) );
     }
 
     /**
@@ -168,7 +169,7 @@ public class HighAvailabilityConsoleLogger
     @Override
     public void memberIsAlive( InstanceId instanceId )
     {
-        console.log( "Instance " + printId( instanceId, null ) + "is alive" );
+        log.info( "Instance %s is alive", printId( instanceId, null ) );
     }
 
     // InstanceAccessGuard events
@@ -179,7 +180,7 @@ public class HighAvailabilityConsoleLogger
     @Override
     public void available()
     {
-        console.log( "Database available for write transactions" );
+        log.info( "Database available for write transactions" );
     }
 
     /**
@@ -188,7 +189,7 @@ public class HighAvailabilityConsoleLogger
     @Override
     public void unavailable()
     {
-        console.log( "Write transactions to database disabled" );
+        log.info( "Write transactions to database disabled" );
     }
 
     private String printId( InstanceId id, URI member )

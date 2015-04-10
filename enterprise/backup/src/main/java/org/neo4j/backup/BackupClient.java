@@ -35,7 +35,7 @@ import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.storecopy.ToNetworkStoreWriter;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -50,10 +50,10 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
 
     static final long BIG_READ_TIMEOUT = 40 * 1000;
 
-    public BackupClient( String hostNameOrIp, int port, Logging logging, StoreId storeId, long timeout,
+    public BackupClient( String hostNameOrIp, int port, LogProvider logProvider, StoreId storeId, long timeout,
                          ResponseUnpacker unpacker, ByteCounterMonitor byteCounterMonitor, RequestMonitor requestMonitor )
     {
-        super( hostNameOrIp, port, logging, storeId, FRAME_LENGTH,
+        super( hostNameOrIp, port, logProvider, storeId, FRAME_LENGTH,
                 new ProtocolVersion( PROTOCOL_VERSION, ProtocolVersion.INTERNAL_PROTOCOL_VERSION ), timeout,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT, FRAME_LENGTH, unpacker,
                 byteCounterMonitor, requestMonitor );

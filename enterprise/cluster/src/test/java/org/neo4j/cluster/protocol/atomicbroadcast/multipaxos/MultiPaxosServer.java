@@ -26,13 +26,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.LoggerContext;
-import org.slf4j.impl.StaticLoggerBinder;
+import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.LogProvider;
 
 import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.ClusterSettings;
@@ -60,14 +56,10 @@ import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatMessage;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.monitoring.Monitors;
 
 /**
@@ -97,15 +89,13 @@ public class MultiPaxosServer
             MessageTimeoutStrategy timeoutStrategy = new MessageTimeoutStrategy( new FixedTimeoutStrategy( 5000 ) )
                     .timeout( HeartbeatMessage.sendHeartbeat, 200 );
 
-            LogbackService logging = new LogbackService( new Config( Collections.<String, String>emptyMap(),
-                    InternalAbstractGraphDatabase.Configuration.class, GraphDatabaseSettings.class ),
-                    new LoggerContext() );
+            LogProvider logProvider = FormattedLogProvider.toOutputStream( System.out );
+
             Monitors monitors = new Monitors();
             NetworkedServerFactory serverFactory = new NetworkedServerFactory( life,
-                    new MultiPaxosServerFactory( new ClusterConfiguration( "default",
-                            StringLogger.SYSTEM ),
-                            logging, monitors.newMonitor( StateMachines.Monitor.class ) ),
-                    timeoutStrategy, logging, new ObjectStreamFactory(), new ObjectStreamFactory(),
+                    new MultiPaxosServerFactory( new ClusterConfiguration( "default", logProvider ),
+                            logProvider, monitors.newMonitor( StateMachines.Monitor.class ) ),
+                    timeoutStrategy, logProvider, new ObjectStreamFactory(), new ObjectStreamFactory(),
                     monitors.newMonitor( NetworkReceiver.Monitor.class ),
                     monitors.newMonitor( NetworkSender.Monitor.class ),
                     monitors.newMonitor( NamedThreadFactory.Monitor.class )
@@ -240,19 +230,6 @@ public class MultiPaxosServer
         {
             life.shutdown();
             System.out.println( "Done" );
-        }
-    }
-
-    public void logging( String name, String level )
-    {
-        LoggerContext loggerContext = (LoggerContext) StaticLoggerBinder.getSingleton().getLoggerFactory();
-        List<Logger> loggers = loggerContext.getLoggerList();
-        for ( Logger logger : loggers )
-        {
-            if ( logger.getName().startsWith( name ) )
-            {
-                logger.setLevel( Level.toLevel( level ) );
-            }
         }
     }
 

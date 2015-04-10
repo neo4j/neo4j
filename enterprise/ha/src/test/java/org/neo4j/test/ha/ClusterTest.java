@@ -25,6 +25,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.net.InetAddress;
+import java.util.logging.Level;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.Clusters;
@@ -48,7 +49,7 @@ import static org.neo4j.test.ha.ClusterManager.fromXml;
 public class ClusterTest
 {
     @Rule
-    public LoggerRule logging = new LoggerRule();
+    public LoggerRule logging = new LoggerRule( Level.OFF );
 
     @Test
     public void testCluster() throws Throwable

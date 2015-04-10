@@ -66,10 +66,10 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.DbRepresentation;
@@ -138,7 +138,7 @@ public class BackupServiceIT
 
     private BackupService backupService()
     {
-        return new BackupService( fileSystem, StringLogger.SYSTEM, new Monitors() );
+        return new BackupService( fileSystem, FormattedLogProvider.toOutputStream( System.out ), new Monitors() );
     }
 
     @Test
@@ -512,7 +512,7 @@ public class BackupServiceIT
                 defaultConfig,
                 db,
                 db.getDependencyResolver().resolveDependency( KernelPanicEventGenerator.class ),
-                new DevNullLoggingService(),
+                NullLogProvider.getInstance(),
                 // ... so that it's used by StoreCopyServer
                 monitors );
         backup.start();
