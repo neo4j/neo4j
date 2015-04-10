@@ -154,8 +154,8 @@ public class RestRequest {
     }
 
 
-    public Object toEntity( JaxRsResponse JaxRsResponse ) throws PropertyValueException {
-        return JsonHelper.jsonToSingleValue( entityString( JaxRsResponse ) );
+    public Object toEntity( JaxRsResponse JaxRsResponse ) throws JsonParseException {
+        return JsonHelper.readJson( entityString( JaxRsResponse ) );
     }
 
     public Map<?, ?> toMap( JaxRsResponse JaxRsResponse) throws JsonParseException {

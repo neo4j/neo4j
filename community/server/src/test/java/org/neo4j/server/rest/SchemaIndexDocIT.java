@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Neo4jMatchers;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.rest.web.PropertyValueException;
+import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.GraphDescription;
 
 import static java.util.Arrays.asList;
@@ -60,7 +60,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
     @Documented
     @Test
     @GraphDescription.Graph( nodes = {} )
-    public void create_index() throws PropertyValueException
+    public void create_index() throws JsonParseException
     {
         data.get();
         
@@ -85,7 +85,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
     @Documented
     @Test
     @GraphDescription.Graph( nodes = {} )
-    public void get_indexes_for_label() throws PropertyValueException
+    public void get_indexes_for_label() throws JsonParseException
     {
         data.get();
         
@@ -116,7 +116,7 @@ public class SchemaIndexDocIT extends AbstractRestFunctionalTestBase
     @Documented
     @Test
     @GraphDescription.Graph( nodes = {} )
-    public void get_indexes() throws PropertyValueException
+    public void get_indexes() throws JsonParseException
     {
         data.get();
 

@@ -150,11 +150,11 @@ public class DefaultFormat extends RepresentationFormat
         {
             if ( missing.size() == 1 )
             {
-                throw new BadInputException( "Missing required key: \"" + missing.iterator().next() + "\"" );
+                throw new InvalidArgumentsException( "Missing required key: \"" + missing.iterator().next() + "\"" );
             }
             else
             {
-                throw new BadInputException( "Missing required keys: " + missing );
+                throw new InvalidArgumentsException( "Missing required keys: " + missing );
             }
         }
         return map;

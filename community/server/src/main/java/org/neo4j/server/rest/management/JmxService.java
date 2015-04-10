@@ -44,7 +44,7 @@ import org.neo4j.jmx.Kernel;
 import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.repr.BadInputException;
+import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.OutputFormat;
@@ -153,7 +153,7 @@ public class JmxService implements AdvertisableService
             MBeanServer server = ManagementFactory.getPlatformMBeanServer();
 
             String json = dodgeStartingUnicodeMarker( query );
-            Collection<Object> queries = (Collection<Object>) JsonHelper.jsonToSingleValue( json );
+            Collection<Object> queries = (Collection<Object>) JsonHelper.readJson( json );
 
             ArrayList<JmxMBeanRepresentation> beans = new ArrayList<JmxMBeanRepresentation>();
             for ( Object queryObj : queries )
@@ -167,15 +167,14 @@ public class JmxService implements AdvertisableService
 
             return output.ok( new ListRepresentation( "jmxBean", beans ) );
         }
+        catch ( JsonParseException e )
+        {
+            return output.badRequest( e );
+        }
         catch ( MalformedObjectNameException e )
         {
             return output.badRequest( e );
         }
-        catch ( BadInputException e )
-        {
-            return output.badRequest( e );
-        }
-
     }
 
     @POST

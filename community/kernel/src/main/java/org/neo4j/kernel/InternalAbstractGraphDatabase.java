@@ -62,6 +62,7 @@ import org.neo4j.helpers.collection.ResourceClosingIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.monitoring.PageCacheMonitor;
+import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
@@ -1055,13 +1056,15 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( id < 0 || id > MAX_NODE_ID )
         {
-            throw new NotFoundException( format( "Node %d not found", id ) );
+            throw new NotFoundException( format( "Node %d not found", id ),
+                    new EntityNotFoundException( EntityType.NODE, id ) );
         }
         try ( Statement statement = threadToTransactionBridge.instance() )
         {
             if ( !statement.readOperations().nodeExists( id ) )
             {
-                throw new NotFoundException( format( "Node %d not found", id ) );
+                throw new NotFoundException( format( "Node %d not found", id ),
+                        new EntityNotFoundException( EntityType.NODE, id ) );
             }
 
             return nodeManager.newNodeProxyById( id );
@@ -1073,13 +1076,15 @@ public abstract class InternalAbstractGraphDatabase
     {
         if ( id < 0 || id > MAX_RELATIONSHIP_ID )
         {
-            throw new NotFoundException( format( "Relationship %d not found", id ) );
+            throw new NotFoundException( format( "Relationship %d not found", id ),
+                    new EntityNotFoundException( EntityType.RELATIONSHIP, id ));
         }
         try ( Statement statement = threadToTransactionBridge.instance() )
         {
             if ( !statement.readOperations().relationshipExists( id ) )
             {
-                throw new NotFoundException( format( "Relationship %d not found", id ) );
+                throw new NotFoundException( format( "Relationship %d not found", id ),
+                        new EntityNotFoundException( EntityType.RELATIONSHIP, id ));
             }
 
             return nodeManager.newRelationshipProxy( id );

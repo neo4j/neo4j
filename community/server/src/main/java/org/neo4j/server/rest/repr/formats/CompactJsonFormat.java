@@ -42,6 +42,9 @@ import org.neo4j.server.rest.repr.MappingWriter;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.RepresentationFormat;
 
+import static org.neo4j.server.rest.domain.JsonHelper.assertSupportedPropertyValue;
+import static org.neo4j.server.rest.domain.JsonHelper.readJson;
+
 @Service.Implementation( RepresentationFormat.class )
 public class CompactJsonFormat extends RepresentationFormat
 {
@@ -219,7 +222,7 @@ public class CompactJsonFormat extends RepresentationFormat
         if ( empty( input ) ) return Collections.emptyMap();
         try
         {
-            return JsonHelper.jsonToSingleValue( stripByteOrderMark( input ) );
+            return assertSupportedPropertyValue( readJson( stripByteOrderMark( input ) ) );
         }
         catch ( JsonParseException ex )
         {

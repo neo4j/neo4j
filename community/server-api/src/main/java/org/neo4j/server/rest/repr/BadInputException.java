@@ -19,7 +19,9 @@
  */
 package org.neo4j.server.rest.repr;
 
-public class BadInputException extends Exception
+import org.neo4j.kernel.api.exceptions.Status;
+
+public class BadInputException extends Exception implements Status.HasStatus
 {
     public BadInputException( Throwable cause )
     {
@@ -34,5 +36,11 @@ public class BadInputException extends Exception
     public BadInputException( String message, Throwable cause )
     {
         super( message, cause );
+    }
+
+    @Override
+    public Status status()
+    {
+        return Status.Request.InvalidFormat;
     }
 }

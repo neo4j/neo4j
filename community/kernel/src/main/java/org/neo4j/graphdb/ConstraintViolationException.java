@@ -19,13 +19,15 @@
  */
 package org.neo4j.graphdb;
 
+import org.neo4j.kernel.api.exceptions.Status;
+
 /**
  * Thrown when the database is asked to modify data in a way that violates one or more
  * constraints that it is expected to uphold.
  *
  * For instance, if removing a node that still has relationships.
  */
-public class ConstraintViolationException extends RuntimeException
+public class ConstraintViolationException extends RuntimeException implements Status.HasStatus
 {
     public ConstraintViolationException( String msg )
     {
@@ -35,5 +37,11 @@ public class ConstraintViolationException extends RuntimeException
     public ConstraintViolationException( String msg, Throwable cause )
     {
         super(msg, cause);
+    }
+
+    @Override
+    public Status status()
+    {
+        return Status.Schema.ConstraintViolation;
     }
 }

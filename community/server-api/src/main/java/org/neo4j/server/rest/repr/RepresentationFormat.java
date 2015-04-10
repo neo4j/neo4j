@@ -297,7 +297,7 @@ public abstract class RepresentationFormat implements InputFormat
         }
         catch ( NotFoundException e )
         {
-            throw new RelationshipNotFoundException();
+            throw new RelationshipNotFoundException( e );
         }
     }
 
