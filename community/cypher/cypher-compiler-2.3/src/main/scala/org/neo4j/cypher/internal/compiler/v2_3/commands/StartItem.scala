@@ -95,11 +95,16 @@ sealed abstract class SchemaIndexKind
 case object AnyIndex extends SchemaIndexKind
 case object UniqueIndex extends SchemaIndexKind
 
-trait QueryExpression[T] {
+trait QueryExpression[+T] {
   def expression: T
 
   def map[R](f: T => R): QueryExpression[R]
 }
+
+case class ScanQueryExpression[T](expression: T) extends QueryExpression[T] {
+  def map[R](f: (T) => R) = ScanQueryExpression(f(expression))
+}
+
 case class SingleQueryExpression[T](expression: T) extends QueryExpression[T] {
   def map[R](f: (T) => R) = SingleQueryExpression(f(expression))
 }
