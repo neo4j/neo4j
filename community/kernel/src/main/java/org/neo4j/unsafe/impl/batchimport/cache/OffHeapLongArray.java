@@ -28,8 +28,6 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 public class OffHeapLongArray extends OffHeapNumberArray implements LongArray
 {
     private final long defaultValue;
-    private long highestSetIndex = -1;
-    private long size;
 
     public OffHeapLongArray( long length, long defaultValue )
     {
@@ -47,28 +45,7 @@ public class OffHeapLongArray extends OffHeapNumberArray implements LongArray
     @Override
     public void set( long index, long value )
     {
-        long address = addressOf( index );
-        if ( UnsafeUtil.getLong( address ) == defaultValue )
-        {
-            size++;
-        }
-        UnsafeUtil.putLong( address, value );
-        if ( index > highestSetIndex )
-        {
-            highestSetIndex = index;
-        }
-    }
-
-    @Override
-    public long highestSetIndex()
-    {
-        return highestSetIndex;
-    }
-
-    @Override
-    public long size()
-    {
-        return size;
+        UnsafeUtil.putLong( addressOf( index ), value );
     }
 
     @Override
@@ -85,8 +62,6 @@ public class OffHeapLongArray extends OffHeapNumberArray implements LongArray
                 UnsafeUtil.putLong( adr, defaultValue );
             }
         }
-        highestSetIndex = -1;
-        size = 0;
     }
 
     @Override

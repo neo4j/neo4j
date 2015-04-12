@@ -17,28 +17,41 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.cache;
+package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
+
+import org.neo4j.unsafe.impl.batchimport.cache.NumberArray;
 
 /**
- * Base class for common functionality for any {@link NumberArray} where the data lives inside heap.
+ * Keeps simple stats about f.ex a {@link NumberArray}. Keeps {@link #size()} and {@link #highestIndex()},
+ * either {@link #register(long) registered per value} or {@link #set(long, long)} specifically.
  */
-abstract class HeapNumberArray implements NumberArray
+public class NumberArrayStats
 {
-    private final int itemSize;
+    private long size;
+    private long highestIndex = -1;
 
-    protected HeapNumberArray( int itemSize )
+    public void register( long index )
     {
-        this.itemSize = itemSize;
+        size++;
+        if ( index > highestIndex )
+        {
+            highestIndex = index;
+        }
     }
 
-    @Override
-    public void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor )
+    public void set( long size, long highestIndex )
     {
-        visitor.heapUsage( length() * itemSize ); // roughly
+        this.size = size;
+        this.highestIndex = highestIndex;
     }
 
-    @Override
-    public void close()
-    {   // Nothing to close
+    public long size()
+    {
+        return size;
+    }
+
+    public long highestIndex()
+    {
+        return highestIndex;
     }
 }

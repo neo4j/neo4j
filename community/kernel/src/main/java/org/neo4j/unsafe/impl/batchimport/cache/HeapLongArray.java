@@ -54,23 +54,13 @@ public class HeapLongArray extends HeapNumberArray implements LongArray
     @Override
     public void set( long index, long value )
     {
-        int intIndex = safeCastLongToInt( index );
-        if ( array[intIndex] == defaultValue )
-        {
-            size++;
-        }
-        array[intIndex] = value;
-        if ( index > highestSetIndex )
-        {
-            highestSetIndex = index;
-        }
+        array[safeCastLongToInt( index )] = value;
     }
 
     @Override
     public void clear()
     {
         Arrays.fill( array, defaultValue );
-        super.clear();
     }
 
     @Override
