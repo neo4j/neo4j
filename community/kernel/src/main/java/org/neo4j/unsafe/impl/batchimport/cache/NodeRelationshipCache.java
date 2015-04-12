@@ -151,9 +151,13 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Home
         return IdFieldManipulator.getCount( field );
     }
 
-    public void fixate()
+    public void fixateNodes()
     {
         array = array.fixate();
+    }
+
+    public void fixateGroups()
+    {
         relGroupCache.fixate();
     }
 

@@ -46,8 +46,6 @@ import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.URIHelper;
-import org.neo4j.server.rest.web.PropertyValueException;
-
 import static java.util.Arrays.asList;
 import static org.junit.Assert.*;
 import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;

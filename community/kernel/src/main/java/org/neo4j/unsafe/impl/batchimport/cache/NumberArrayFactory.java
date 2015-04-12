@@ -198,13 +198,23 @@ public interface NumberArrayFactory
         @Override
         public LongArray newLongArray( long length, long defaultValue )
         {
-            return newDynamicLongArray( fractionOf( length ), defaultValue );
+            // Here we want to have the property of a dynamic array which makes some parts of the array
+            // live on heap, some off. At the same time we want a fixed size array. Therefore first create
+            // the array as a dynamic array, make it grow to the requested length and then fixate.
+            DynamicLongArray array = newDynamicLongArray( fractionOf( length ), defaultValue );
+            array.ensureChunkAt( length-1 );
+            return array.fixate();
         }
 
         @Override
         public IntArray newIntArray( long length, int defaultValue )
         {
-            return newDynamicIntArray( fractionOf( length ), defaultValue );
+            // Here we want to have the property of a dynamic array which makes some parts of the array
+            // live on heap, some off. At the same time we want a fixed size array. Therefore first create
+            // the array as a dynamic array, make it grow to the requested length and then fixate.
+            DynamicIntArray array = newDynamicIntArray( fractionOf( length ), defaultValue );
+            array.ensureChunkAt( length-1 );
+            return array.fixate();
         }
 
         private long fractionOf( long length )
@@ -213,13 +223,13 @@ public interface NumberArrayFactory
         }
 
         @Override
-        public IntArray newDynamicIntArray( long chunkSize, int defaultValue )
+        public DynamicIntArray newDynamicIntArray( long chunkSize, int defaultValue )
         {
             return new DynamicIntArray( delegate, chunkSize, defaultValue );
         }
 
         @Override
-        public LongArray newDynamicLongArray( long chunkSize, long defaultValue )
+        public DynamicLongArray newDynamicLongArray( long chunkSize, long defaultValue )
         {
             return new DynamicLongArray( delegate, chunkSize, defaultValue );
         }

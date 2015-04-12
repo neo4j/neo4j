@@ -38,7 +38,6 @@ import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.rest.RESTDocsGenerator;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;

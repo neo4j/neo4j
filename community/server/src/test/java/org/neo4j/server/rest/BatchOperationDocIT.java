@@ -34,7 +34,6 @@ import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.tooling.GlobalGraphOperations;
 

@@ -20,17 +20,11 @@
 package org.neo4j.server.rest.web;
 
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.net.URI;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 import javax.ws.rs.core.Response;
 
-import org.apache.commons.configuration.Configuration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
