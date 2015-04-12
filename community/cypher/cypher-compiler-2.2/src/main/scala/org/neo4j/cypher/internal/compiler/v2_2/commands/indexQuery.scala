@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.commands
 
 import org.neo4j.cypher.internal.compiler.v2_2.{CypherTypeException, ExecutionContext}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.QueryState
+import org.neo4j.kernel.api.index.IndexDescriptor
 import scala.collection.GenTraversableOnce
 import org.neo4j.graphdb.Node
 import org.neo4j.cypher.internal.helpers.IsCollection
