@@ -35,8 +35,6 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.txstate.TxStateVisitor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.util.diffsets.ReadableDiffSets;
@@ -172,51 +170,6 @@ public class TxStateTest
 
         // THEN
         assertEquals( asSet( rule ), state.indexChanges().getAdded() );
-    }
-
-    @Test
-    public void shouldComputeIndexUpdatesOnAnEmptyTxState() throws Exception
-    {
-        // GIVEN
-        IndexDescriptor rule = new IndexDescriptor( 2, 3 );
-
-        // WHEN
-        ReadableDiffSets<Long> diffSets = state.indexUpdates( rule, null );
-
-        // THEN
-        assertTrue( diffSets.isEmpty() );
-    }
-
-    @Test
-    public void shouldComputeIndexUpdatesWhenThereAreNewNodes() throws Exception
-    {
-        // GIVEN
-        int labelId = 2;
-        int propertyKeyId1 = 3;
-        int propertyKeyId2 = 4;
-        long[] nodeIds = {42L, 43L, 44L};
-        IndexDescriptor rule = new IndexDescriptor( labelId, propertyKeyId1 );
-        for ( long nodeId : nodeIds )
-        {
-            state.nodeDoCreate( nodeId );
-            state.nodeDoAddLabel( labelId, nodeId );
-            Property propertyBefore = noNodeProperty( nodeId, propertyKeyId1 );
-            String value = "value" + nodeId;
-            DefinedProperty propertyAfter = stringProperty( propertyKeyId1, value );
-            if ( nodeId == 44L )
-            {
-                propertyBefore = noNodeProperty( nodeId, propertyKeyId2 );
-                propertyAfter = stringProperty( propertyKeyId2, value );
-            }
-            state.nodeDoReplaceProperty( nodeId, propertyBefore, propertyAfter );
-            state.indexDoUpdateProperty( rule, nodeId, null, propertyAfter );
-        }
-
-        // WHEN
-        ReadableDiffSets<Long> diffSets = state.indexUpdates( rule, null );
-
-        // THEN
-        assertEquals( asSet( nodeIds[0], nodeIds[1] ), diffSets.getAdded() );
     }
 
     @Test

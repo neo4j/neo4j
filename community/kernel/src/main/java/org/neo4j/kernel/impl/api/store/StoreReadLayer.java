@@ -131,9 +131,6 @@ public interface StoreReadLayer
     PrimitiveLongResourceIterator nodesGetFromIndexLookup( KernelStatement state, IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException;
 
-    PrimitiveLongResourceIterator nodesGetFromIndexScan( KernelStatement state, IndexDescriptor index )
-            throws IndexNotFoundKernelException;
-
     IndexDescriptor indexesGetForLabelAndPropertyKey( int labelId, int propertyKey );
 
     InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;

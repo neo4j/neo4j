@@ -30,7 +30,6 @@ import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
@@ -40,7 +39,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
 {
     private Map<Object, Set<Long>> data;
 
-    public Map<Object, Set<Long>> data()
+    public Map<Object,Set<Long>> data()
     {
         if ( data == null )
         {
@@ -72,13 +71,6 @@ class HashBasedIndex extends InMemoryIndexImplementation
     {
         Set<Long> nodes = data().get( propertyValue );
         return nodes == null ? PrimitiveLongCollections.emptyIterator() : toPrimitiveIterator( nodes.iterator() );
-    }
-
-    @Override
-    public PrimitiveLongIterator scan()
-    {
-        Iterable<Long> all = Iterables.flattenIterable( data.values() );
-        return toPrimitiveIterator( all.iterator() );
     }
 
     @Override

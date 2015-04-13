@@ -594,15 +594,6 @@ public class StateHandlingStatementOperations implements
         return resourceIterator( changeFilteredMatches, committed );
     }
 
-    @Override
-    public PrimitiveLongIterator nodesGetFromIndexScan( KernelStatement state, IndexDescriptor index ) throws
-            IndexNotFoundKernelException
-    {
-        PrimitiveLongResourceIterator committed = storeLayer.nodesGetFromIndexScan( state, index );
-        PrimitiveLongIterator changeFilteredMatches = filterIndexStateChanges( state, index, null, committed );
-        return resourceIterator( changeFilteredMatches, committed );
-    }
-
     private PrimitiveLongIterator filterExactIndexMatches( final KernelStatement state, IndexDescriptor index,
             Object value, PrimitiveLongResourceIterator committed )
     {

@@ -295,12 +295,6 @@ public final class Iterables
         return new FlattenIterable<>( asList(multiIterator) );
     }
 
-    public static <X, S extends Iterable<? extends X>, I extends Iterable<S>> Iterable<X> flattenIterable( I
-            multiIterator )
-    {
-        return new FlattenIterable<X, S>( multiIterator );
-    }
-
     @SafeVarargs
     public static <T> Iterable<T> mix( final Iterable<T>... iterables )
     {
