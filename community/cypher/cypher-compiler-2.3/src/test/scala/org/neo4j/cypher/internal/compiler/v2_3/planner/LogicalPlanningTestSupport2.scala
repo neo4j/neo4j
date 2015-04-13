@@ -40,7 +40,7 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
 
-import scala.language.implicitConversions
+import scala.language.reflectiveCalls
 
 case class SemanticPlan(plan: LogicalPlan, semanticTable: SemanticTable)
 

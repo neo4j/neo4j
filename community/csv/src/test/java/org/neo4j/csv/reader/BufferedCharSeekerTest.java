@@ -33,9 +33,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -524,6 +526,28 @@ public class BufferedCharSeekerTest
         assertNextValue( seeker, mark, COMMA, "1992" );
         assertTrue( mark.isEndOfLine() );
         assertFalse( seeker.seek( mark, COMMA ) );
+    }
+
+    @Test
+    public void shouldFailOnCharactersAfterEndQuote() throws Exception
+    {
+        // GIVEN
+        String data = "abc,\"def\"ghi,jkl";
+        seeker = seeker( data );
+
+        // WHEN
+        assertNextValue( seeker, mark, COMMA, "abc" );
+        try
+        {
+            seeker.seek( mark, COMMA );
+            fail( "Should've failed" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // THEN good
+            assertThat( e.getMessage(), containsString( ":0" ) );
+            assertThat( e.getMessage(), containsString( "after that ending quote" ) );
+        }
     }
 
     private String[][] randomWeirdValues( int cols, int rows, char... except )

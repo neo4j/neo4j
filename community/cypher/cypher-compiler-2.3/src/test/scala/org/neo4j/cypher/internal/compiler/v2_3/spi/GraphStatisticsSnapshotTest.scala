@@ -23,6 +23,8 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_3.{LabelId, PropertyKeyId, RelTypeId}
 
+import scala.language.reflectiveCalls
+
 class GraphStatisticsSnapshotTest extends CypherFunSuite {
   val graphStatistics = new GraphStatistics {
     var FACTOR = 1

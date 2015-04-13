@@ -142,6 +142,16 @@ public class BufferedCharSeeker implements CharSeeker, SourceTraceability
                     {   // Found a double quote, skip it and we're going down one more quote depth (quote-in-quote)
                         repositionChar( bufferPos++, ++skippedChars );
                     }
+                    else if ( nextCh != untilChar && !isNewLine( nextCh ) && nextCh != EOF_CHAR )
+                    {   // Found an ending quote of sorts, although the next char isn't a delimiter, newline, or EOF
+                        // so it looks like there's data characters after this end quote. We don't really support that.
+                        // So circle this back to the user saying there's something wrong with the field.
+                        throw new IllegalStateException( "At " + sourceDescription() + ":" + lineNumber() +
+                                " there's a field starting with a quote and whereas it ends that quote there seems " +
+                                " to be character in that field after that ending quote. That isn't supported." +
+                                " This is what I read: '" +
+                                new String( buffer, seekStartPos, bufferPos-seekStartPos ) + "'" );
+                    }
                     else
                     {   // Found an ending quote, skip it and switch mode
                         endOffset++;
