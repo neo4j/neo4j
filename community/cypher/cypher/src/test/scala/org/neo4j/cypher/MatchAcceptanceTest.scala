@@ -1480,14 +1480,13 @@ return b
     actual should equal(expected)
   }
 
-  // todo: broken for rule planner
   test("MATCH (a1)-[r]->(b1) WITH r LIMIT 1 OPTIONAL MATCH (a2)-[r]->(b2) RETURN a2, r, b2") {
     val node1 = createNode()
     val node2 = createNode()
     val relationship = relate(node1, node2)
 
     // when
-    val result = executeWithCostPlannerOnly("MATCH (a1)-[r]->(b1) WITH r LIMIT 1 OPTIONAL MATCH (a2)-[r]->(b2) RETURN a2, r, b2")
+    val result = executeWithAllPlanners("MATCH (a1)-[r]->(b1) WITH r LIMIT 1 OPTIONAL MATCH (a2)-[r]->(b2) RETURN a2, r, b2")
 
     // should give us all rels
     val actual = result.toList
@@ -1620,14 +1619,13 @@ return b
     actual should be(empty)
   }
 
-  // todo: broken for rule planner
   test("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)<-[r]-(b2) RETURN a1, r, b2") {
     val node1 = createNode()
     val node2 = createNode()
     val relationship = relate(node1, node2)
 
     // when
-    val result = executeWithCostPlannerOnly("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)<-[r]-(b2) RETURN a1, r, b2")
+    val result = executeWithAllPlanners("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)<-[r]-(b2) RETURN a1, r, b2")
 
     // should give us all rels
     val actual = result.toList

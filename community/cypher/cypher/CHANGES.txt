@@ -6,6 +6,7 @@ o Fixes #4341 - START clause ignores associated WHERE
 o Fixes #4331 - Alleged duplicate result column names
 o Fixes #4342 - NameSpacing Identifiers in StartItem which are not in scope
 o Fixes #4332 - ORDER BY not seeing identifiers from earlier scope
+o Fixes problems with relationships passing through WITH in RULE planner
 
 2.2.0
 -----
