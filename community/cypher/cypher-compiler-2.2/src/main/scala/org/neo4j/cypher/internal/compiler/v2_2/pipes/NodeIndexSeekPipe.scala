@@ -38,9 +38,9 @@ case class NodeIndexSeekPipe(ident: String,
                             (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends Pipe with RonjaPipe {
 
-  private val descriptor = new IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
+  val descriptor = new IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
 
-  private val indexFactory: (QueryState) => (Any) => Iterator[Node] =
+  val indexFactory: (QueryState) => (Any) => Iterator[Node] =
     if (unique)
       (state: QueryState) => (x: Any) => state.query.exactUniqueIndexSearch(descriptor, x).toIterator
     else

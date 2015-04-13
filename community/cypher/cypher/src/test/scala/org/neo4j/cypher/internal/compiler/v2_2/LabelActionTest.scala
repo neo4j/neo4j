@@ -123,8 +123,6 @@ class SnitchingQueryContext extends QueryContext {
 
   def exactIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node] = ???
 
-  def indexScan(index: IndexDescriptor): Iterator[Node] = ???
-
   def getNodesByLabel(id: Int): Iterator[Node] = ???
 
   def upgrade(context: QueryContext): LockingQueryContext = ???

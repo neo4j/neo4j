@@ -88,8 +88,8 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
           || !containsPropertyPredicate(identifier, property) =>
         SemanticError(
           """|Cannot use index hint in this context.
-             | Index hints require using a simple equality comparison or IN condition or checking property
-             | existance on a node in WHERE (either directly or as part of a top-level AND).
+             | Index hints require using a simple equality comparison or IN condition in WHERE (either directly or as part of a
+             | top-level AND).
              | Note that the label and property comparison must be specified on a
              | non-optional node""".stripLinesAndMargins, hint.position)
       case hint@UsingScanHint(Identifier(identifier), LabelName(labelName))
@@ -110,9 +110,6 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
         case Equals(other, Property(Identifier(id), PropertyKeyName(name))) if id == identifier && applicable(other) =>
           (acc, _) => acc :+ name
         case In(Property(Identifier(id), PropertyKeyName(name)),_) if id == identifier =>
-          (acc, _) => acc :+ name
-        case predicate@FunctionInvocation(_, _, IndexedSeq(Property(Identifier(id), PropertyKeyName(name))))
-          if id == identifier && predicate.function == Some(functions.Has) =>
           (acc, _) => acc :+ name
         case _: Where | _: And | _: Ands | _: Set[_] =>
           (acc, children) => children(acc)

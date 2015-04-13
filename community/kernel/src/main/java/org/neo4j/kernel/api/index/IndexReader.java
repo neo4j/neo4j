@@ -36,15 +36,41 @@ import static org.neo4j.register.Register.DoubleLong;
  */
 public interface IndexReader extends Resource
 {
-    /**
-     * Index lookup by value
-     */
     PrimitiveLongIterator lookup( Object value );
 
-    /**
-     * Index scan for all objects
-     */
-    PrimitiveLongIterator scan();
+    IndexReader EMPTY = new IndexReader()
+    {
+        @Override
+        public PrimitiveLongIterator lookup( Object value )
+        {
+            return PrimitiveLongCollections.emptyIterator();
+        }
+
+        // Used for checking index correctness
+        @Override
+        public int getIndexedCount( long nodeId, Object propertyValue )
+        {
+            return 0;
+        }
+
+        @Override
+        public Set<Class> valueTypesInIndex()
+        {
+            return Collections.emptySet();
+        }
+
+        @Override
+        public long sampleIndex( DoubleLong.Out result )
+        {
+            result.write( 0l, 0l );
+            return 0;
+        }
+
+        @Override
+        public void close()
+        {
+        }
+    };
 
     /**
      * Number of nodes indexed by the given property
@@ -63,7 +89,7 @@ public interface IndexReader extends Resource
      * @return the index size
      * @throws IndexNotFoundKernelException if the index is dropped while sampling
      */
-    long sampleIndex( DoubleLong.Out result ) throws IndexNotFoundKernelException;
+    public long sampleIndex( DoubleLong.Out result ) throws IndexNotFoundKernelException;
 
     class Delegator implements IndexReader
     {
@@ -78,12 +104,6 @@ public interface IndexReader extends Resource
         public PrimitiveLongIterator lookup( Object value )
         {
             return delegate.lookup( value );
-        }
-
-        @Override
-        public PrimitiveLongIterator scan()
-        {
-            return delegate.scan();
         }
 
         @Override
@@ -116,44 +136,4 @@ public interface IndexReader extends Resource
             return delegate.toString();
         }
     }
-
-    IndexReader EMPTY = new IndexReader()
-    {
-        @Override
-        public PrimitiveLongIterator lookup( Object value )
-        {
-            return PrimitiveLongCollections.emptyIterator();
-        }
-
-        @Override
-        public PrimitiveLongIterator scan()
-        {
-            return PrimitiveLongCollections.emptyIterator();
-        }
-
-        // Used for checking index correctness
-        @Override
-        public int getIndexedCount( long nodeId, Object propertyValue )
-        {
-            return 0;
-        }
-
-        @Override
-        public Set<Class> valueTypesInIndex()
-        {
-            return Collections.emptySet();
-        }
-
-        @Override
-        public long sampleIndex( DoubleLong.Out result )
-        {
-            result.write( 0l, 0l );
-            return 0;
-        }
-
-        @Override
-        public void close()
-        {
-        }
-    };
 }

@@ -24,7 +24,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.NumericUtils;
@@ -211,11 +210,6 @@ public class LuceneDocumentStructure
         result.setOmitNorms( true );
         result.setIndexOptions( IndexOptions.DOCS_ONLY );
         return result;
-    }
-
-    public Query newMatchAllQuery()
-    {
-        return new MatchAllDocsQuery();
     }
 
     public Query newQuery( Object value )

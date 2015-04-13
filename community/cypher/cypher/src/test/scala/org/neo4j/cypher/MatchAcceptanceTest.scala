@@ -1278,23 +1278,6 @@ return b
     ))
   }
 
-  // todo: broken for rule planner
-  test("should use the index for property existance queries") {
-    // given
-    val n = createLabeledNode(Map("email" -> "me@mine"), "User")
-    val m = createLabeledNode(Map("email" -> "you@yours"), "User")
-    val p = createLabeledNode(Map("emailx" -> "youtoo@yours"), "User")
-//    (1 to 100).foreach(e => createLabeledNode("User"))
-    graph.createIndex("User", "email")
-
-    // when
-    val result = executeWithCostPlannerOnly("MATCH (n:User) USING INDEX n:User(email) WHERE has(n.email) RETURN n")
-
-    // then
-    result.toList should equal(List(Map("n" -> n), Map("n" -> m)))
-    result.executionPlanDescription().toString should include("NodeIndexScan")
-  }
-
   test("should handle cyclic patterns") {
     // given
     val a = createNode("a")

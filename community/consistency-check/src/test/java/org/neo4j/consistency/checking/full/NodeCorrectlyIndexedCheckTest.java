@@ -23,10 +23,8 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -220,20 +218,6 @@ public class NodeCorrectlyIndexedCheckTest
                         return PrimitiveLongCollections.iterator( entries.get( value ) );
                     }
                     return emptyIterator();
-                }
-
-                @Override
-                public PrimitiveLongIterator scan()
-                {
-                    List<Long> ids = new ArrayList<>();
-                    for ( long[] longs : entries.values() )
-                    {
-                        for ( long id : longs )
-                        {
-                            ids.add( id );
-                        }
-                    }
-                    return PrimitiveLongCollections.toPrimitiveIterator( ids.iterator() );
                 }
 
                 @Override

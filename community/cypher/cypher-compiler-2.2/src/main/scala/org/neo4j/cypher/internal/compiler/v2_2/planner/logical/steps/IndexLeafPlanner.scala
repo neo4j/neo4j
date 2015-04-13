@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans._
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 
-abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
+abstract class IndexLeafPlanner extends LeafPlanner {
   def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext) = {
     implicit val semanticTable = context.semanticTable
     val predicates: Seq[Expression] = qg.selections.flatPredicates
@@ -75,7 +75,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
   protected def findIndexesFor(label: String, property: String)(implicit context: LogicalPlanningContext): Option[IndexDescriptor]
 }
 
-object uniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
+object uniqueIndexSeekLeafPlanner extends IndexLeafPlanner {
   protected def constructPlan(idName: IdName,
                               label: LabelToken,
                               propertyKey: PropertyKeyToken,
@@ -91,7 +91,7 @@ object uniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
     context.planContext.getUniqueIndexRule(label, property)
 }
 
-object indexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
+object indexSeekLeafPlanner extends IndexLeafPlanner {
   protected def constructPlan(idName: IdName,
                               label: LabelToken,
                               propertyKey: PropertyKeyToken,
