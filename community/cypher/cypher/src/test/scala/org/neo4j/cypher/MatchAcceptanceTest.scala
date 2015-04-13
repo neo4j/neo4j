@@ -1982,4 +1982,19 @@ return b
     executeWithAllPlanners("MATCH ()<-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
     executeWithAllPlanners("MATCH ()-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
   }
+
+  test("should use NodeByIdSeek for id array in identifier") {
+    // given
+    val a = createNode().getId
+    val b = createNode().getId
+    val c = createNode().getId
+    val d = createNode().getId
+    1.to(1000).foreach(_ => createNode())
+
+    // when
+    val result = executeWithCostPlannerOnly(s"profile WITH [$a,$b,$d] AS arr MATCH (n) WHERE id(n) IN arr return count(*)")
+
+    // then
+    result.toList should equal(List(Map("count(*)" -> 3)))
+  }
 }

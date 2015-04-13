@@ -43,6 +43,13 @@ object idSeekLeafPlanner extends LeafPlanner {
       case predicate@In(func@FunctionInvocation(_, _, IndexedSeq(idExpr: Identifier)), param@Parameter(_))
         if func.function == Some(functions.Id) =>
         (predicate, idExpr, EntityByIdParameter(param))
+
+      // MATCH (a)-[r]->b WHERE id(r) IN identifier
+      // MATCH a WHERE id(a) IN identifier
+      case predicate@In(func@FunctionInvocation(_, _, IndexedSeq(idExpr: Identifier)), identifier@Identifier(name))
+        if func.function == Some(functions.Id) &&
+           queryGraph.argumentIds(IdName(name)) =>
+        (predicate, idExpr, EntityByIdIdentifier(identifier))
     }
 
     val candidatePlans = idSeekPredicates.collect {

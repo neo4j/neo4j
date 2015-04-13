@@ -29,12 +29,21 @@ import org.neo4j.cypher.internal.compiler.v2_3.symbols.{CTNode, SymbolTable}
 sealed trait EntityByIdRhs {
   def expressions(ctx: ExecutionContext, state: QueryState): Iterable[Any]
 }
+
+case class EntityByIdExpression(expression: Expression) extends EntityByIdRhs {
+  def expressions(ctx: ExecutionContext, state: QueryState) =
+    expression(ctx)(state) match {
+      case IsCollection(values) => values
+    }
+}
+
 case class EntityByIdParameter(parameter: ParameterExpression) extends EntityByIdRhs {
   def expressions(ctx: ExecutionContext, state: QueryState) =
     parameter(ctx)(state) match {
       case IsCollection(values) => values
     }
 }
+
 case class EntityByIdExprs(exprs: Seq[Expression]) extends EntityByIdRhs {
   def expressions(ctx: ExecutionContext, state: QueryState) =
     exprs.map(_.apply(ctx)(state))

@@ -19,15 +19,24 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{Expression, Parameter}
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.{EntityByIdRhs => CommandEntityByIdRhs, EntityByIdParameter => CommandEntityByIdParameter, EntityByIdExprs => CommandEntityByIdExprs}
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_3.ast.{Expression, Identifier, Parameter}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{EntityByIdExpression => CommandEntityByIdExpression, EntityByIdExprs => CommandEntityByIdExprs, EntityByIdParameter => CommandEntityByIdParameter, EntityByIdRhs => CommandEntityByIdRhs}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
 
 sealed trait EntityByIdRhs {
   def mapExpressions(f: Expression => Expression): EntityByIdRhs
 
   def asEntityByIdRhs: CommandEntityByIdRhs
+}
+
+case class EntityByIdIdentifier(identifier: Identifier) extends EntityByIdRhs {
+  self =>
+
+  override def mapExpressions(f: Expression => Expression): EntityByIdIdentifier = self
+
+  def asEntityByIdRhs =
+    CommandEntityByIdExpression(identifier.asCommandExpression)
 }
 
 case class EntityByIdParameter(parameter: Parameter) extends EntityByIdRhs {
