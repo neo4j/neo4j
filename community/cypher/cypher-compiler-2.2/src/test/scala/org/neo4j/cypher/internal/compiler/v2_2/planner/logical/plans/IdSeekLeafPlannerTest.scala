@@ -74,6 +74,70 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     )
   }
 
+  test("node by id seek with a collection of node ids via previous identifier") {
+    // given
+    val identifier: Identifier = Identifier("n")_
+    val expr = In(
+      FunctionInvocation(FunctionName("id")_, identifier)_,
+      Identifier("arr")_
+    )_
+    val qg = QueryGraph(
+      selections = Selections(Set(Predicate(Set(IdName("n")), expr))),
+      patternNodes = Set(IdName("n")),
+      argumentIds = Set(IdName("arr"))
+    )
+
+    val factory = newMockedMetricsFactory
+    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
+      case _: NodeByIdSeek => Cost(1)
+      case _               => Cost(Double.MaxValue)
+    })
+    implicit val context = newMockedLogicalPlanningContext(
+      planContext = newMockedPlanContext,
+      metrics = factory.newMetrics(statistics)
+    )
+    when(context.semanticTable.isNode(identifier)).thenReturn(true)
+
+    // when
+    val resultPlans = idSeekLeafPlanner(qg)
+
+    // then
+    resultPlans should equal(
+      Seq(NodeByIdSeek(IdName("n"), EntityByIdIdentifier(Identifier("arr")_), Set("arr"))(solved))
+    )
+  }
+
+  test("node by id seek should fail with a collection of node ids via unbound identifier") {
+    // given
+    val identifier: Identifier = Identifier("n")_
+    val expr = In(
+      FunctionInvocation(FunctionName("id")_, identifier)_,
+      Identifier("arr")_
+    )_
+    val qg = QueryGraph(
+      selections = Selections(Set(Predicate(Set(IdName("n")), expr))),
+      patternNodes = Set(IdName("n")),
+      argumentIds = Set()
+    )
+
+    val factory = newMockedMetricsFactory
+    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
+      case _: NodeByIdSeek => Cost(1)
+      case _               => Cost(Double.MaxValue)
+    })
+    implicit val context = newMockedLogicalPlanningContext(
+      planContext = newMockedPlanContext,
+      metrics = factory.newMetrics(statistics)
+    )
+    when(context.semanticTable.isNode(identifier)).thenReturn(true)
+
+    // when
+    val resultPlans = idSeekLeafPlanner(qg)
+
+    // then
+    resultPlans should equal(Seq.empty)
+  }
+
   test("simple directed relationship by id seek with a collection of relationship ids") {
     // given
     val rIdent: Identifier = Identifier("r")_

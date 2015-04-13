@@ -272,4 +272,25 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       )(solved)
     )
   }
+
+  test("should build plans with NodeByIdSeek when providing id collection via identifier") {
+    implicit val plan = new given {
+      cost =  {
+        case (_: AllNodesScan, _) => 1000.0
+        case (_: NodeByIdSeek, _) => 2.0
+        case (_: NodeByLabelScan, _) => 1.0
+        case _ => Double.MaxValue
+      }
+    } planFor "WITH [0,1,3] AS arr MATCH (n) WHERE id(n) IN arr return count(*)"
+
+    plan.plan should equal(
+      Aggregation(
+        Apply(
+          Projection(SingleRow()(solved),Map("arr" -> Collection(List(SignedDecimalIntegerLiteral("0")_, SignedDecimalIntegerLiteral("1")_, SignedDecimalIntegerLiteral("3")_))_))(solved),
+          NodeByIdSeek(IdName("n"),EntityByIdIdentifier(Identifier("arr")_),Set(IdName("arr")))(solved)
+        )(solved),
+        Map(),Map("count(*)" -> CountStar()_)
+      )(solved)
+    )
+  }
 }
