@@ -132,22 +132,16 @@ public class PropertyCreator
         P primitive = primitiveRecordChange.forReadingLinkage();
         assert traverser.assertPropertyChain( primitive, propertyRecords );
         int newBlockSizeInBytes = block.getSize();
-        /*
-         * Here we could either iterate over the whole chain or just go for the first record
-         * which is the most likely to be the less full one. Currently we opt for the second
-         * to perform better.
-         */
+
+        // Scan the property record chain for a place to fit this property block
         PropertyRecord host = null;
-        long firstProp = primitive.getNextProp();
-        if ( firstProp != Record.NO_NEXT_PROPERTY.intValue() )
+        long prop = primitive.getNextProp();
+        while ( prop != Record.NO_NEXT_PROPERTY.intValue() )
         {
             // We do not store in map - might not have enough space
             RecordProxy<Long, PropertyRecord, PrimitiveRecord> change =
-                    propertyRecords.getOrLoad( firstProp, primitive );
+                    propertyRecords.getOrLoad( prop, primitive );
             PropertyRecord propRecord = change.forReadingLinkage();
-            assert propRecord.getPrevProp() == Record.NO_PREVIOUS_PROPERTY.intValue() : propRecord
-                                                                                        + " for "
-                                                                                        + primitive;
             assert propRecord.inUse() : propRecord;
             int propSize = propRecord.size();
             assert propSize > 0 : propRecord;
@@ -157,11 +151,14 @@ public class PropertyCreator
                 host = propRecord;
                 host.addPropertyBlock( block );
                 host.setChanged( primitive );
+                break;
             }
+            prop = propRecord.getNextProp();
         }
+
         if ( host == null )
         {
-            // First record in chain didn't fit, make new one
+            // There was no room for the propery block in any record in the chain, make new one
             host = propertyRecords.create( propertyRecordIdGenerator.nextId(), primitive ).forChangingData();
             if ( primitive.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
             {
