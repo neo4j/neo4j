@@ -46,7 +46,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     relate(nodeC, nodeD)
     relate(nodeB, nodeD)
 
-    val result = executeWithNewPlanner("MATCH p = shortestPath((src:A)-[*]->(dst:D)) RETURN nodes(p) AS nodes").columnAs[List[Node]]("nodes").toList
+    val result = executeWithAllPlanners("MATCH p = shortestPath((src:A)-[*]->(dst:D)) RETURN nodes(p) AS nodes").columnAs[List[Node]]("nodes").toList
 
     result should equal(List(List(nodeA, nodeB, nodeD)))
   }
@@ -61,7 +61,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     relate(nodeC, nodeD)
     relate(nodeB, nodeD)
 
-    val result = executeWithNewPlanner("OPTIONAL MATCH p = shortestPath((src:A)-[*]->(dst:D)) RETURN nodes(p) AS nodes").columnAs[List[Node]]("nodes").toList
+    val result = executeWithAllPlanners("OPTIONAL MATCH p = shortestPath((src:A)-[*]->(dst:D)) RETURN nodes(p) AS nodes").columnAs[List[Node]]("nodes").toList
 
     result should equal(List(List(nodeA, nodeB, nodeD)))
   }
@@ -76,7 +76,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     relate(nodeC, nodeD)
     val r4 = relate(nodeB, nodeD)
 
-    val result = executeWithNewPlanner("MATCH shortestPath((src:A)-[r*]->(dst:D)) RETURN r AS rels").columnAs[List[Node]]("rels").toList
+    val result = executeWithAllPlanners("MATCH shortestPath((src:A)-[r*]->(dst:D)) RETURN r AS rels").columnAs[List[Node]]("rels").toList
 
     result should equal(List(List(r1, r4)))
   }
@@ -87,18 +87,19 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     relate(nodeB, nodeC)
     relate(nodeC, nodeD)
 
-    val result = executeWithNewPlanner("MATCH p = shortestPath((src:A)-[*..1]->(dst:D)) RETURN nodes(p) AS nodes").columnAs[List[Node]]("nodes").toList
+    val result = executeWithAllPlanners("MATCH p = shortestPath((src:A)-[*..1]->(dst:D)) RETURN nodes(p) AS nodes").columnAs[List[Node]]("nodes").toList
 
     result should be(empty)
   }
 
+  // todo: broken for rule planner
   test("finds no shortest path due to start node being null") {
     // a-b-c-d
     relate(nodeA, nodeB)
     relate(nodeB, nodeC)
     relate(nodeC, nodeD)
 
-    val result = executeWithNewPlanner("OPTIONAL MATCH (src:Y) WITH src MATCH p = shortestPath(src-[*..1]->dst) RETURN nodes(p) AS nodes").columnAs[List[Node]]("nodes").toList
+    val result = executeWithCostPlannerOnly("OPTIONAL MATCH (src:Y) WITH src MATCH p = shortestPath(src-[*..1]->dst) RETURN nodes(p) AS nodes").columnAs[List[Node]]("nodes").toList
 
     result should equal(List())
   }
@@ -110,7 +111,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     relate(nodeC, nodeD)
 
     evaluating {
-      executeWithNewPlanner("MATCH p = shortestPath((src:A)-[*2..3]->(dst:D)) RETURN nodes(p) AS nodes").toList
+      executeWithAllPlanners("MATCH p = shortestPath((src:A)-[*2..3]->(dst:D)) RETURN nodes(p) AS nodes").toList
     } should produce[SyntaxException]
   }
 
@@ -124,7 +125,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     relate(nodeA, nodeD)
     relate(nodeD, nodeC)
 
-    val result = executeWithNewPlanner("MATCH p = allShortestPaths((src:A)-[*]->(dst:C)) RETURN nodes(p) AS nodes").columnAs[List[Node]]("nodes").toSet
+    val result = executeWithAllPlanners("MATCH p = allShortestPaths((src:A)-[*]->(dst:C)) RETURN nodes(p) AS nodes").columnAs[List[Node]]("nodes").toSet
     result should equal(Set(List(nodeA, nodeB, nodeC), List(nodeA, nodeD, nodeC)))
   }
 
@@ -135,7 +136,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     relate(nodeA, nodeB)
     relate(nodeB, nodeC)
 
-    val result = executeWithNewPlanner("match p = shortestpath((a:A)-[r*..1]->(n)) return nodes(p) as nodes").columnAs[List[Node]]("nodes").toSet
+    val result = executeWithAllPlanners("match p = shortestpath((a:A)-[r*..1]->(n)) return nodes(p) as nodes").columnAs[List[Node]]("nodes").toSet
     result should equal(Set(List(nodeA, nodeB)))
   }
 
@@ -146,7 +147,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     relate(nodeA, nodeB)
     relate(nodeB, nodeC)
 
-    val result = executeWithNewPlanner("match p = shortestpath((a:A)-[r*0..1]->(n)) return nodes(p) as nodes").columnAs[List[Node]]("nodes").toSet
+    val result = executeWithAllPlanners("match p = shortestpath((a:A)-[r*0..1]->(n)) return nodes(p) as nodes").columnAs[List[Node]]("nodes").toSet
     result should equal(Set(List(nodeA), List(nodeA, nodeB)))
   }
 
@@ -157,7 +158,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     relate(nodeA, nodeB)
     relate(nodeB, nodeC)
 
-    val result = executeWithNewPlanner("match p = shortestpath((a:A)-[r*1..1]->(n)) return nodes(p) as nodes").columnAs[List[Node]]("nodes").toSet
+    val result = executeWithAllPlanners("match p = shortestpath((a:A)-[r*1..1]->(n)) return nodes(p) as nodes").columnAs[List[Node]]("nodes").toSet
     result should equal(Set(List(nodeA, nodeB)))
   }
 
@@ -168,7 +169,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     relate(nodeA, nodeB)
     relate(nodeB, nodeC)
 
-    val result = executeWithNewPlanner("match p = shortestpath((a:A)-[r]->(n)) return nodes(p) as nodes").columnAs[List[Node]]("nodes").toSet
+    val result = executeWithAllPlanners("match p = shortestpath((a:A)-[r]->(n)) return nodes(p) as nodes").columnAs[List[Node]]("nodes").toSet
     result should equal(Set(List(nodeA, nodeB)))
   }
 
@@ -186,6 +187,6 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
                   |WITH pathNodes[0] AS p, pathNodes[3] as c
                   |RETURN length((c)-[:R]-(:B)-[:R]-(:B)-[:R]-(p)) AS res""".stripMargin
 
-    executeWithNewPlanner(query).toList should equal(List(Map("res" -> 1)))
+    executeWithAllPlanners(query).toList should equal(List(Map("res" -> 1)))
   }
 }

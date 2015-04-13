@@ -26,7 +26,7 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
     given()
 
     // When
-    val result = executeWithNewPlanner("MATCH (n:Crew) WHERE n.name = 'Neo' RETURN n")
+    val result = executeWithAllPlanners("MATCH (n:Crew) WHERE n.name = 'Neo' RETURN n")
 
     // Then
     result.executionPlanDescription().toString should include("NodeIndexSeek")
@@ -36,7 +36,7 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
     given()
 
     // When
-    val result = executeWithNewPlanner("MATCH (n:Crew) WHERE n.name = 'Neo' AND n.name = 'Morpheus' RETURN n")
+    val result = executeWithAllPlanners("MATCH (n:Crew) WHERE n.name = 'Neo' AND n.name = 'Morpheus' RETURN n")
 
     // Then
     result shouldBe empty
@@ -47,7 +47,7 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
     given()
 
     // When
-    val result = executeWithNewPlanner("MATCH (n:Matrix:Crew) WHERE n.name = 'Neo' RETURN n")
+    val result = executeWithAllPlanners("MATCH (n:Matrix:Crew) WHERE n.name = 'Neo' RETURN n")
 
     // Then
     result.executionPlanDescription().toString should include("NodeIndexSeek")
@@ -62,7 +62,7 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
     for (i <- 4 to 30) createLabeledNode(Map("id" -> i), "Prop")
 
     // When
-    val result = executeWithNewPlanner("unwind [1,2,3] as x match (n:Prop) where n.id = x return n;")
+    val result = executeWithAllPlanners("unwind [1,2,3] as x match (n:Prop) where n.id = x return n;")
 
     // Then
     result.toList should equal(List(Map("n" -> n1), Map("n" -> n2), Map("n" -> n3)))
@@ -89,7 +89,7 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
     graph.createIndex("L", "l")
     graph.createIndex("R", "r")
 
-    val result = executeWithNewPlanner("MATCH (l:L {l: 9})-[:REL]->(r:R {r: 23}) RETURN l, r")
+    val result = executeWithAllPlanners("MATCH (l:L {l: 9})-[:REL]->(r:R {r: 23}) RETURN l, r")
     result.toList should have size 100
     val found = result.executionPlanDescription().pipe.exists {
       case p: NodeIndexSeekPipe =>
@@ -101,7 +101,7 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTe
   }
 
   private def given() {
-    execute(
+    executeWithRulePlannerOnly(
       """CREATE (architect:Matrix { name:'The Architect' }),
         |       (smith:Matrix { name:'Agent Smith' }),
         |       (cypher:Matrix:Crew { name:'Cypher' }),

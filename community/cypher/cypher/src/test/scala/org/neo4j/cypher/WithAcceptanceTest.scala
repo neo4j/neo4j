@@ -26,7 +26,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     val b = createNode()
     relate(a, b)
 
-    val result = executeWithNewPlanner(
+    val result = executeWithAllPlanners(
       "MATCH a WITH a MATCH a-->b RETURN *"
     )
     result.toList should equal(List(Map("a" -> a, "b" -> b)))
@@ -39,7 +39,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
 
     relate(a,createNode())
 
-    val result = executeWithNewPlanner(
+    val result = executeWithAllPlanners(
       "MATCH a WITH a ORDER BY a.name LIMIT 1 MATCH a-->b RETURN a"
     )
     result.toList should equal(List(Map("a" -> a)))
@@ -49,7 +49,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     val a = createNode()
     val b = createNode()
 
-    val result = executeWithNewPlanner(
+    val result = executeWithAllPlanners(
       "MATCH a WITH a MATCH b RETURN *"
     )
     result.toSet should equal(Set(
@@ -65,7 +65,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     val b = createLabeledNode(Map("prop"->42), "End")
     createLabeledNode(Map("prop"->3), "End")
 
-    val result = executeWithNewPlanner(
+    val result = executeWithAllPlanners(
       "MATCH (a:Start) WITH a.prop AS property MATCH (b:End) WHERE property = b.prop RETURN b"
     )
     result.toSet should equal(Set(Map("b" -> b)))
@@ -76,7 +76,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     createLabeledNode(Map("prop" -> 3), "End")
     createLabeledNode(Map("prop" -> b.getId), "Start")
 
-    val result = executeWithNewPlanner(
+    val result = executeWithAllPlanners(
       "MATCH (a:Start) WITH a.prop AS property LIMIT 1 MATCH (b) WHERE id(b) = property RETURN b"
     )
     result.toSet should equal(Set(Map("b" -> b)))
@@ -87,7 +87,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     createNode("prop" -> "B", "id" -> a.getId)
     createNode("prop" -> "C", "id" -> 0)
 
-    val result = executeWithNewPlanner(
+    val result = executeWithAllPlanners(
       """MATCH (a)
         |WITH a.prop AS property, a.id as idToUse
         |ORDER BY property
@@ -104,7 +104,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     val b = createNode("B")
     createNode("C")
 
-    val result = executeWithNewPlanner(
+    val result = executeWithAllPlanners(
       "MATCH (a) WITH a WHERE a.name = 'B' RETURN a"
     )
     result.toSet should equal(Set(Map("a" -> b)))
@@ -119,7 +119,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     relate(a, createNode())
     relate(b, createNode())
 
-    val result = executeWithNewPlanner(
+    val result = executeWithAllPlanners(
       "MATCH (a)-->() WITH a, count(*) as relCount WHERE relCount > 1 RETURN a"
     )
     result.toSet should equal(Set(Map("a" -> a)))
@@ -130,7 +130,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     createNode("bar" -> "A")
     createNode("bar" -> "B")
 
-    val result = executeWithNewPlanner(
+    val result = executeWithAllPlanners(
       "MATCH (a) WITH a.bar as bars, count(*) as relCount ORDER BY a.bar RETURN *"
     )
 
@@ -142,7 +142,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     createNode("bar" -> "A")
     createNode("bar" -> "B")
 
-    val result = executeWithNewPlanner(
+    val result = executeWithAllPlanners(
       "MATCH (a) WITH DISTINCT a.bar as bars ORDER BY a.bar RETURN *"
     )
 
@@ -154,7 +154,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     createNode("bar" -> "A")
     createNode("bar" -> "B")
 
-    val result = executeWithNewPlanner(
+    val result = executeWithAllPlanners(
       "MATCH (a) WITH DISTINCT a.bar as bars WHERE a.bar = 'B' RETURN *"
     )
 
@@ -166,7 +166,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     val node2 = createNode()
     val rel = relate(node1, node2)
 
-    val result = executeWithNewPlanner(
+    val result = executeWithAllPlanners(
       "WITH {a} AS b, {b} AS tmp, {r} AS r WITH b AS a, r LIMIT 1 MATCH (a)-[r]->(b) RETURN a, r, b",
       "a" -> node1, "b" -> node2, "r" -> rel
     )
@@ -177,12 +177,12 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
   }
 
   test("nulls passing through WITH") {
-    executeWithNewPlanner("optional match (a:Start) with a match a-->b return *") should be (empty)
+    executeWithAllPlanners("optional match (a:Start) with a match a-->b return *") should be (empty)
   }
 
   test("WITH {foo: {bar: 'baz'}} AS nestedMap RETURN nestedMap.foo.bar") {
 
-    val result = executeWithNewPlanner(
+    val result = executeWithAllPlanners(
       "WITH {foo: {bar: 'baz'}} AS nestedMap RETURN nestedMap.foo.bar"
     )
     result.toSet should equal(Set(Map("nestedMap.foo.bar" -> "baz")))

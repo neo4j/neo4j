@@ -23,7 +23,7 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
   test("START r=rel(0) RETURN r") {
     val rel = relate(createNode(), createNode())
-    val result = execute("START r=rel(0) RETURN r").toList
+    val result = executeWithRulePlannerOnly("START r=rel(0) RETURN r").toList
 
     result should equal(List(Map("r"-> rel)))
   }
@@ -34,14 +34,14 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       graph.index.forRelationships("index").add(rel, "key", "value")
     }
 
-    val result = execute("""START r=rel:index(key = "value") RETURN r""").toList
+    val result = executeWithRulePlannerOnly("""START r=rel:index(key = "value") RETURN r""").toList
 
     result should equal(List(Map("r"-> rel)))
   }
 
   test("START n=node(0) RETURN n") {
     val node = createNode()
-    val result = execute("START n=node(0) RETURN n").toList
+    val result = executeWithRulePlannerOnly("START n=node(0) RETURN n").toList
 
     result should equal(List(Map("n"-> node)))
   }
@@ -52,7 +52,7 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       graph.index.forNodes("index").add(node, "key", "value")
     }
 
-    val result = executeWithNewPlanner("""START n=node:index(key = "value") RETURN n""").toList
+    val result = executeWithAllPlanners("""START n=node:index(key = "value") RETURN n""").toList
 
     result should equal(List(Map("n"-> node)))
   }
@@ -63,7 +63,7 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       graph.index.forRelationships("index").add(rel, "key", "value")
     }
 
-    val result = execute("""START r=rel:index("key:value") RETURN r""").toList
+    val result = executeWithRulePlannerOnly("""START r=rel:index("key:value") RETURN r""").toList
 
     result should equal(List(Map("r"-> rel)))
   }
@@ -74,7 +74,7 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       graph.index.forNodes("index").add(node, "key", "value")
     }
 
-    val result = executeWithNewPlanner("""START n=node:index("key:value") RETURN n""").toList
+    val result = executeWithAllPlanners("""START n=node:index("key:value") RETURN n""").toList
 
     result should equal(List(Map("n"-> node)))
   }
@@ -88,7 +88,7 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       graph.index.forNodes("index").add(otherNode, "key", "value")
     }
 
-    val result = executeWithNewPlanner("""START n=node:index("key:value") WHERE n.prop = 42 RETURN n""").toList
+    val result = executeWithAllPlanners("""START n=node:index("key:value") WHERE n.prop = 42 RETURN n""").toList
 
     result should equal(List(Map("n"-> node)))
   }
@@ -99,7 +99,7 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val c = createNode()
     val ab = relate(a, b)
     val ac = relate(a, c)
-    val result = execute(
+    val result = executeWithRulePlannerOnly(
       """start a=node(0), ab=relationship(0)
         |match (a)-[ab]->(b)
         |return b
@@ -114,7 +114,7 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val c = createNode()
     val ab = relate(a, b)
     val ac = relate(a, c)
-    val result = execute(
+    val result = executeWithRulePlannerOnly(
       """start a=node(0), b=node(1)
         |match (a)-[ab]->(b)
         |return b
@@ -133,7 +133,7 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val ac = relate(a, c)
     val bd = relate(b, d)
     val ce = relate(c, e)
-    val result = execute(
+    val result = executeWithRulePlannerOnly(
       """start a=node(0), ab=relationship(0), bd=relationship(2)
         |match (a)-[ab]->(b)-[bd]->(d)
         |return b, d
@@ -150,7 +150,7 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val ab = relate(a, b)
     val ac = relate(a, c)
     val ad = relate(a, d)
-    val result = execute(
+    val result = executeWithRulePlannerOnly(
       """start a=node(0), ab=relationship(0, 1)
         |match (a)-[ab]->(b)
         |return b
@@ -170,7 +170,7 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       graph.index.forRelationships("rels").add(rel, "key", "B")
     }
 
-    val result = execute("START n=node:nodes(key = 'A'), r=rel:rels(key = 'B') MATCH (n)-[r]->(b) RETURN b")
+    val result = executeWithRulePlannerOnly("START n=node:nodes(key = 'A'), r=rel:rels(key = 'B') MATCH (n)-[r]->(b) RETURN b")
     result.toList should equal(List(Map("b" -> resultNode)))
   }
 }
