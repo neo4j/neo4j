@@ -69,7 +69,10 @@ class IndexLookupBuilder extends PlanBuilder {
 
       case predicate@QueryToken(AnyInCollection(expression, _, Equals(Property(Identifier(id), prop),Identifier(_))))
         if id == hint.identifier && prop.name == hint.property => (predicate, ManyQueryExpression(expression))
-    }
+
+      case predicate@QueryToken(PropertyExists(expr@Identifier(id), prop))
+        if id == hint.identifier && prop.name == hint.property => (predicate, ScanQueryExpression(expr))
+  }
 
   private def extractInterestingStartItem(plan: ExecutionPlanInProgress): QueryToken[SchemaIndex] =
     plan.query.start.filter(interestingFilter).head.asInstanceOf[QueryToken[SchemaIndex]]
