@@ -447,16 +447,15 @@ public class EncodingIdMapper implements IdMapper
                 // of its kind. Not all values that there are duplicates of are considered collisions,
                 // read more in detectAndMarkCollisions(). So regardless we need to check previous/next
                 // if they are the same value.
-                if ( (mid > 0 && unsignedCompare( x, dataValue( mid - 1 ), CompareType.EQ )) ||
-                     (mid < trackerStats.highestIndex() && unsignedCompare( x, dataValue( mid + 1 ), CompareType.EQ ) ) )
+                if ( (mid > 0 && compareDataCache( x, mid - 1, CompareType.EQ )) ||
+                     (mid < trackerStats.highestIndex() && compareDataCache( x, mid + 1, CompareType.EQ ) ) )
                 {   // OK so there are actually multiple equal data values here, we need to go through them all
                     // to be sure we find the correct one.
                     return findFromCollisions( mid, midValue, inputId, groupId );
                 }
-                else
-                {   // This is the only value here, let's do a simple comparison with correct group id and return
-                    return groupOf( dataIndex ).id() == groupId ? dataIndex : -1;
-                }
+
+                // This is the only value here, let's do a simple comparison with correct group id and return
+                return groupOf( dataIndex ).id() == groupId ? dataIndex : -1;
             case LT:
                 low = mid + 1;
                 break;
@@ -501,12 +500,12 @@ public class EncodingIdMapper implements IdMapper
         val = clearCollision( val );
         assert val == encoder.encode( inputId );
 
-        while ( index > 0 && unsignedCompare( val, dataValue( index - 1 ), CompareType.EQ ) )
+        while ( index > 0 && compareDataCache( val, index - 1, CompareType.EQ ) )
         {
             index--;
         }
         long fromIndex = index;
-        while ( index < trackerStats.highestIndex() && unsignedCompare( val, dataValue( index + 1 ), CompareType.EQ ) )
+        while ( index < trackerStats.highestIndex() && compareDataCache( val, index + 1, CompareType.EQ ) )
         {
             index++;
         }
@@ -553,19 +552,16 @@ public class EncodingIdMapper implements IdMapper
         return lowestFound;
     }
 
-    static boolean compareDataCache( LongArray dataCache, IntArray tracker, int a, int b, CompareType compareType )
+    private boolean compareDataCache( long dataA, long b, CompareType compareType )
     {
-        int indexA = tracker.get( a );
-        int indexB = tracker.get( b );
-        if ( indexA == -1 || indexB == -1 )
+        int indexB = trackerCache.get( b );
+        if ( indexB == -1 )
         {
+            // This might happen if we have a hole in the node id sequence, for example if a node is anonymous
             return false;
         }
 
-        return unsignedCompare(
-                clearCollision( dataCache.get( indexA ) ),
-                clearCollision( dataCache.get( indexB ) ),
-                compareType );
+        return unsignedCompare( dataA, clearCollision( dataCache.get( indexB ) ), compareType );
     }
 
     @Override

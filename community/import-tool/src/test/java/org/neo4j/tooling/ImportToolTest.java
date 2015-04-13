@@ -70,6 +70,7 @@ import static org.neo4j.helpers.Exceptions.contains;
 import static org.neo4j.helpers.Exceptions.withMessage;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 import static org.neo4j.tooling.ImportTool.MULTI_FILE_DELIMITER;
 
@@ -458,6 +459,40 @@ public class ImportToolTest
 
         // THEN
         verifyData();
+    }
+
+    @Test
+    public void shouldBeAbleToImportAnonymousNodes() throws Exception
+    {
+        // GIVEN
+        List<String> nodeIds = asList( "1", "", "3" );
+        Configuration config = Configuration.COMMAS;
+        List<RelationshipDataLine> relationshipData = asList( relationship( "1", "3", "KNOWS" ) );
+
+        // WHEN
+        importTool(
+                "--into",          dbRule.getStoreDir().getAbsolutePath(),
+                "--nodes",         nodeData( true, config, nodeIds, alwaysTrue() ).getAbsolutePath(),
+                "--relationships", relationshipData( true, config, relationshipData.iterator(),
+                                   alwaysTrue(), true ).getAbsolutePath() );
+
+        // THEN
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( final String id : nodeIds )
+            {
+                assertNotNull( single( filter( new Predicate<Node>()
+                {
+                    @Override
+                    public boolean accept( Node node )
+                    {
+                        return node.getProperty( "id", "" ).equals( id );
+                    }
+                }, GlobalGraphOperations.at( db ).getAllNodes().iterator() ) ) );
+            }
+            tx.success();
+        }
     }
 
     protected void assertNodeHasLabels( Node node, String[] names )
