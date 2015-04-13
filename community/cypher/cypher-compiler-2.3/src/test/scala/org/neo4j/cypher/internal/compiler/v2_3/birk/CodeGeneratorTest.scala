@@ -26,7 +26,7 @@ import org.mockito.stubbing.Answer
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.NormalMode
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{Parameter, SignedDecimalIntegerLiteral, RelTypeName}
+import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{SemanticTable, LogicalPlanningTestSupport}
@@ -38,7 +38,6 @@ import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 
-//TODO This test should be removed at some point, maintaining a mocked database is not worth it
 class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   private val generator = new CodeGenerator(mock[SemanticTable])
@@ -288,6 +287,79 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     result.toSet should equal(Set(Map("a" -> "BAR")))
   }
 
+  test("project addition of two ints") {
+    val lhs = SignedDecimalIntegerLiteral("1")(null)
+    val rhs = SignedDecimalIntegerLiteral("3")(null)
+    val add = Add(lhs, rhs)(null)
+
+    val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> add))(solved))
+    val compiled = compile(plan)
+
+    //then
+    val result = getResult(compiled, "a")
+    result.toSet should equal(Set(Map("a" -> 4)))
+  }
+
+  test("project addition of int and double") {
+    val lhs = SignedDecimalIntegerLiteral("1")(null)
+    val rhs = DecimalDoubleLiteral("3.0")(null)
+    val add = Add(lhs, rhs)(null)
+
+    val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> add))(solved))
+    val compiled = compile(plan)
+
+    //then
+    val result = getResult(compiled, "a")
+    result.toSet should equal(Set(Map("a" -> (1L + 3.0))))
+  }
+
+  test("project addition of int and String") {
+    val lhs = SignedDecimalIntegerLiteral("1")(null)
+    val rhs = StringLiteral("two")(null)
+    val add = Add(lhs, rhs)(null)
+
+    val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> add))(solved))
+    val compiled = compile(plan)
+
+    //then
+    val result = getResult(compiled, "a")
+    result.toSet should equal(Set(Map("a" -> "1two")))
+  }
+
+  test("project addition of int and value from params") {
+    val lhs = SignedDecimalIntegerLiteral("1")(null)
+    val rhs = Parameter("FOO")(null)
+    val add = Add(lhs, rhs)(null)
+    val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> add))(solved))
+    val compiled = compile(plan, Map("FOO" -> Long.box(3L)))
+
+    //then
+    val result = getResult(compiled, "a")
+    result.toSet should equal(Set(Map("a" -> 4)))
+  }
+
+  test("project addition of two values coming from params") {
+    val lhs = Parameter("FOO")(null)
+    val rhs = Parameter("BAR")(null)
+    val add = Add(lhs, rhs)(null)
+    val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> add))(solved))
+    val compiled = compile(plan, Map("FOO" -> Long.box(3L), "BAR" -> Long.box(1L)))
+
+    //then
+    val result = getResult(compiled, "a")
+    result.toSet should equal(Set(Map("a" -> 4)))
+  }
+
+  test("project collection") {
+    val collection = Collection(Seq(Parameter("FOO")(null), Parameter("BAR")(null)))(null)
+    val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> collection))(solved))
+    val compiled = compile(plan, Map("FOO" -> Long.box(3L), "BAR" -> Long.box(1L)))
+
+    //then
+    val result = getResult(compiled, "a")
+    result.toSet should equal(Set(Map("a" -> List(3, 1))))
+  }
+
   private def compile(plan: LogicalPlan, params: Map[String, AnyRef] = Map.empty) = {
     val compiled = generator.generate(plan, newMockedPlanContext, Clock.SYSTEM_CLOCK)
     compiled.executionResultBuilder(statement, graphDatabaseService, NormalMode, params)
@@ -439,7 +511,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   private def getResult(plan: InternalExecutionResult, columns: String*) = {
-    val res= Seq.newBuilder[Map[String, AnyRef]]
+    val res= Seq.newBuilder[Map[String, Any]]
 
     plan.accept(new ResultVisitor[RuntimeException]() {
       override def visit(element: ResultRow): Boolean = {
@@ -447,8 +519,22 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
         true
       }
     })
-    res.result()
+    res.result().toSeq.withArraysAsLists
   }
 
+  /**
+   * Get rid of Arrays to make it easier to compare results by equality.
+   */
+  implicit class RichInternalExecutionResults(res: InternalExecutionResult) {
+    def toComparableList: Seq[Map[String, Any]] = res.toList.withArraysAsLists
+  }
 
+  implicit class RichMapSeq(res: Seq[Map[String, Any]]) {
+    def withArraysAsLists: Seq[Map[String, Any]] = res.map((map: Map[String, Any]) =>
+      map.map {
+        case (k, a: Array[_]) => k -> a.toList
+        case m => m
+      }
+    )
+  }
 }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher
 
+import java.util
+
 import org.neo4j.cypher.internal.PathImpl
 import org.neo4j.graphdb._
 
@@ -2067,6 +2069,22 @@ return b
 
     val result = executeWithAllPlannersAndRuntimes(query).toComparableList
     result should equal(List(asResult(props, "a")))
+  }
+
+  test("adding a property and a literal is supported in new runtime") {
+    val props = Map("prop" -> 1)
+    createNode(props)
+    val result = executeWithAllPlannersAndRuntimes("MATCH a RETURN a.prop + 1 AS FOO").toComparableList
+
+    result should equal(List(Map("FOO" -> 2)))
+  }
+
+  test("adding arrays is supported in new runtime") {
+    val props = Map("prop1" -> Array(1,2,3), "prop2" -> Array(4, 5))
+    createNode(props)
+    val result = executeWithAllPlannersAndRuntimes("MATCH a RETURN a.prop1 + a.prop2 AS FOO").toComparableList
+
+    result should equal(List(Map("FOO" -> List(1, 2, 3, 4, 5))))
   }
 
   /**

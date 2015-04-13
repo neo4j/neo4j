@@ -25,8 +25,8 @@ import java.util.concurrent.atomic.AtomicInteger
 import org.neo4j.cypher.internal.ExecutionMode
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
 import org.neo4j.cypher.internal.compiler.v2_3.{PropertyKeyId, CostPlannerName}
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{Literal, Parameter, Identifier, Property}
-import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaTypes.{INT, LONG, OBJECT}
+import org.neo4j.cypher.internal.compiler.v2_3.ast._
+import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaTypes.{INT, LONG, OBJECT, DOUBLE, STRING}
 import org.neo4j.cypher.internal.compiler.v2_3.birk.il._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{PlanFingerprint, CompiledPlan}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
@@ -80,6 +80,10 @@ object CodeGenerator {
     val LONG = "long"
     val INT = "int"
     val OBJECT = "Object"
+    val OBJECTARRAY = "Object[]"
+    val DOUBLE = "double"
+    val STRING = "String"
+    val NUMBER = "Number"
   }
 }
 
@@ -174,7 +178,7 @@ class CodeGenerator(semanticTable: SemanticTable) {
        |import org.neo4j.graphdb.Result;
        |import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription;
        |import org.neo4j.cypher.internal.ExecutionMode;
-       |import java.util.HashMap;
+       |import java.util.Map;
        |
        |$imports
        |
@@ -184,9 +188,9 @@ class CodeGenerator(semanticTable: SemanticTable) {
        |private final GraphDatabaseService db;
        |private final InternalPlanDescription description;
        |private final ExecutionMode executionMode;
-       |private final HashMap<String, Object> params;
+       |private final Map<String, Object> params;
        |
-       |public $className( Statement statement, GraphDatabaseService db, ExecutionMode executionMode, InternalPlanDescription description, HashMap<String, Object> params )
+       |public $className( Statement statement, GraphDatabaseService db, ExecutionMode executionMode, InternalPlanDescription description, Map<String, Object> params )
        |{
        |  this.ro = statement.readOperations( );
        |  this.db = db;
@@ -300,43 +304,54 @@ class CodeGenerator(semanticTable: SemanticTable) {
           val (x, action) = consume(stack.top, plan, stack.pop)
           (x, WhileLoop(relVar, ExpandC(variables(fromNode).name, relVar.name, dir, relTypes.map(t => variableName.next -> t.name).toMap,nodeVar.name, action), Instruction.empty))
 
-        case Projection(left, expressions)  =>
-          val projectionInstructions =
-            expressions.map {
-            case (identifier, nodeOrRel@Identifier(name)) if semanticTable.isNode(nodeOrRel) || semanticTable.isRelationship(nodeOrRel) =>
-              //just project the new names
-              variables += identifier -> variables(name)
-              None
+        case Projection(_, expressions)  =>
+          def findProjectionInstruction(expression: Expression): ProjectionInstruction = expression match {
+                case nodeOrRel@Identifier(name) if semanticTable.isNode(nodeOrRel) || semanticTable.isRelationship(nodeOrRel) =>
+                  ProjectNodeOrRelationship(variables(name))
 
-            case (identifier, Property(node@Identifier(name), propKey)) if semanticTable.isNode(node) =>
-              val token = propKey.id(semanticTable).map(_.id)
-              val projection = ProjectNodeProperty(token, propKey.name, variables(name).name, variableName)
-              variables += identifier -> projection.projectedVariable
-              Some(projection)
+                case Property(node@Identifier(name), propKey) if semanticTable.isNode(node) =>
+                  val token = propKey.id(semanticTable).map(_.id)
+                  ProjectNodeProperty(token, propKey.name, variables(name).name, variableName)
 
-            case (identifier, Property(rel@Identifier(name), propKey)) if semanticTable.isRelationship(rel) =>
-              val token = propKey.id(semanticTable).map(_.id)
-              val projection = ProjectRelProperty(token, propKey.name, variables(name).name, variableName)
-              variables += identifier -> projection.projectedVariable
-              Some(projection)
+                case Property(rel@Identifier(name), propKey) if semanticTable.isRelationship(rel) =>
+                  val token = propKey.id(semanticTable).map(_.id)
+                  ProjectRelProperty(token, propKey.name, variables(name).name, variableName)
 
-            case (identifier, Parameter(name)) =>
-              val projection = ProjectParameter(name)
-              variables += identifier -> projection.projectedVariable
-              Some(projection)
-            //TODO be smarter about boxing
-            case (identifier, lit: Literal) =>
-              val projection = ProjectLiteral(lit.value)
-              variables += identifier -> projection.projectedVariable
-              Some(projection)
+                case Parameter(name) => ProjectParameter(name)
 
-            case other => throw new CantCompileQueryException(s"Projections of $other not yet supported")
+                case lit: IntegerLiteral =>
+                  ProjectLiteral(JavaSymbol(s"${lit.value.toString}L", LONG))
 
-          }.flatten.toSeq
+                case lit: DoubleLiteral =>
+                  ProjectLiteral(JavaSymbol(lit.value.toString, DOUBLE))
+
+                case lit: StringLiteral =>
+                  ProjectLiteral(JavaSymbol(s""""${lit.value}"""", STRING))
+
+                case lit: Literal =>
+                  ProjectLiteral(JavaSymbol(lit.value.toString, OBJECT))
+
+                case Collection(exprs) =>
+                  ProjectCollection(exprs.map(findProjectionInstruction))
+
+                case Add(lhs, rhs) =>
+                  val leftOp = findProjectionInstruction(lhs)
+                  val rightOp = findProjectionInstruction(rhs)
+                  ProjectAddition(leftOp, rightOp)
+
+                case other => throw new CantCompileQueryException(s"Projections of $other not yet supported")
+              }
+
+          val projectionInstructions = expressions.map {
+              case (identifier, expression) =>
+                val instruction = findProjectionInstruction(expression)
+                variables += identifier -> instruction.projectedVariable
+                instruction
+            }.toSeq
 
           val (x, action) = consume(stack.top, plan, stack.pop)
 
-          (x, ProjectNodeProperties(projectionInstructions, action))
+          (x, ProjectProperties(projectionInstructions, action))
 
         case _ => throw new CantCompileQueryException(s"$plan is not yet supported")
       }

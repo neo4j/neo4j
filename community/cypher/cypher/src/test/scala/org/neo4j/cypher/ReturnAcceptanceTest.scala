@@ -293,7 +293,7 @@ return coalesce(a.title, a.name)""")
   }
 
   test("square function returns decimals") {
-    val result = executeWithAllPlannersAndRuntimes("return sqrt(12.96)").toList
+    val result = executeWithAllPlanners("return sqrt(12.96)").toList
 
     result should equal(List(Map("sqrt(12.96)" -> 3.6)))
   }
@@ -540,5 +540,17 @@ return coalesce(a.title, a.name)""")
     val result = executeWithAllPlannersAndRuntimes("RETURN 1")
 
     result.toList should equal(List(Map("1" -> 1)))
+  }
+
+  test("compiled runtime should support addition of collections") {
+    val result = executeWithAllPlannersAndRuntimes("RETURN [1,2,3] + [4, 5] AS FOO")
+
+    result.toComparableList should equal(List(Map("FOO" -> List(1, 2, 3, 4, 5))))
+  }
+
+  test("compiled runtime should support addition of item to collection") {
+    val result = executeWithAllPlannersAndRuntimes("""RETURN [1,2,3] + 4 AS FOO""")
+
+    result.toComparableList should equal(List(Map("FOO" -> List(1, 2, 3, 4))))
   }
 }

@@ -92,11 +92,11 @@ public class Javac
     }
 
     public static InternalExecutionResult newInstance( Class<InternalExecutionResult> clazz, Statement statement,
-                                                       GraphDatabaseService db, ExecutionMode executionMode, InternalPlanDescription description, HashMap<String, Object> params)
+                                                       GraphDatabaseService db, ExecutionMode executionMode, InternalPlanDescription description, Map<String, Object> params)
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException
     {
         Constructor<InternalExecutionResult> constructor =
-                clazz.getDeclaredConstructor( Statement.class, GraphDatabaseService.class, ExecutionMode.class, InternalPlanDescription.class , HashMap.class);
+                clazz.getDeclaredConstructor( Statement.class, GraphDatabaseService.class, ExecutionMode.class, InternalPlanDescription.class , Map.class);
         return constructor.newInstance( statement, db, executionMode, description, params );
     }
 

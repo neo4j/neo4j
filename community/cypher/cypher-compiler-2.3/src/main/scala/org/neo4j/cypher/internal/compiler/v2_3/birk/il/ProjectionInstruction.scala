@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.birk.il
 
-import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaTypes.OBJECT
-import org.neo4j.cypher.internal.compiler.v2_3.birk.{Namer, CodeGenerator, JavaSymbol}
-
+import org.neo4j.cypher.internal.compiler.v2_3.CypherTypeException
+import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaTypes.{DOUBLE, LONG, OBJECT, OBJECTARRAY, STRING}
+import org.neo4j.cypher.internal.compiler.v2_3.birk.{CodeGenerator, JavaSymbol, Namer}
 
 sealed trait ProjectionInstruction extends Instruction {
   def projectedVariable: JavaSymbol
@@ -34,7 +34,7 @@ case class ProjectNodeProperty(token: Option[Int], propName: String, nodeIdVar: 
   def generateInit() = if (token.isEmpty)
       s"""if ( $propKeyVar == -1 )
          |{
-         |$propKeyVar = ro.propertyKeyGetForName( "${propName}" );
+         |$propKeyVar = ro.propertyKeyGetForName( "$propName" );
          |}
        """.stripMargin
       else ""
@@ -53,10 +53,9 @@ case class ProjectRelProperty(token: Option[Int], propName: String, relIdVar: St
   def generateInit() =
     if (token.isEmpty)
       s"""if ( $propKeyVar == -1 )
-                            |{
-                            |$propKeyVar = ro.propertyKeyGetForName( "$propName" );
-                                                                                 |}
-       """.stripMargin
+         |{
+         |$propKeyVar = ro.propertyKeyGetForName( "$propName" );
+         |}""".stripMargin
     else ""
 
   override def _importedClasses() =
@@ -77,16 +76,61 @@ case class ProjectParameter(key: String) extends ProjectionInstruction {
   def fields() = ""
 }
 
-case class ProjectLiteral(literal: AnyRef) extends ProjectionInstruction {
+case class ProjectLiteral(projectedVariable: JavaSymbol) extends ProjectionInstruction {
 
   def generateInit() = ""
-
-  def projectedVariable = JavaSymbol(s"$literal", OBJECT)
 
   def fields() = ""
 }
 
-case class ProjectNodeProperties(projections:Seq[ProjectionInstruction], parent:Instruction) extends Instruction {
+case class ProjectNodeOrRelationship(projectedVariable: JavaSymbol) extends ProjectionInstruction {
+
+  def generateInit() = ""
+
+  def fields() = ""
+}
+
+case class ProjectAddition(lhs: ProjectionInstruction, rhs: ProjectionInstruction) extends ProjectionInstruction {
+
+  def projectedVariable: JavaSymbol = {
+    val leftTerm = lhs.projectedVariable
+    val rightTerm = rhs.projectedVariable
+    (leftTerm.javaType, rightTerm.javaType) match {
+      case (LONG, LONG) => JavaSymbol(s"${leftTerm.name} + ${rightTerm.name}", LONG)
+      case (LONG, DOUBLE) => JavaSymbol(s"${leftTerm.name} + ${rightTerm.name}", DOUBLE)
+      case (LONG, STRING) => JavaSymbol(s"${leftTerm.name} + ${rightTerm.name}", STRING)
+
+      case (DOUBLE, DOUBLE) => JavaSymbol(s"${leftTerm.name} + ${rightTerm.name}", DOUBLE)
+      case (DOUBLE, LONG) => JavaSymbol(s"${leftTerm.name} + ${rightTerm.name}", DOUBLE)
+      case (DOUBLE, STRING) => JavaSymbol(s"${leftTerm.name} + ${rightTerm.name}", STRING)
+
+      case (STRING, STRING) => JavaSymbol(s"${leftTerm.name} + ${rightTerm.name}", STRING)
+      case (STRING, LONG) => JavaSymbol(s"${leftTerm.name} + ${rightTerm.name}", STRING)
+      case (STRING, DOUBLE) => JavaSymbol(s"${leftTerm.name} + ${rightTerm.name}", STRING)
+
+      case (_, _) => JavaSymbol(s"CompiledMathHelper.add( ${leftTerm.name}, ${rightTerm.name} )", OBJECT)
+    }
+  }
+
+  def generateInit() = ""
+
+  def fields() = ""
+
+  override def _importedClasses(): Set[String] = Set("org.neo4j.cypher.internal.compiler.v2_3.birk.CompiledMathHelper")
+}
+
+case class ProjectCollection(instructions: Seq[ProjectionInstruction]) extends ProjectionInstruction {
+
+  override def children: Seq[Instruction] = instructions
+
+  def generateInit() = ""
+
+  def projectedVariable = JavaSymbol(instructions.map(_.projectedVariable.name).mkString("new Object[]{", ",", "}"), OBJECTARRAY)
+
+  def fields() = ""
+}
+
+case class ProjectProperties(projections:Seq[ProjectionInstruction], parent:Instruction) extends Instruction {
   override def generateCode()= generate(_.generateCode())
 
   override protected def children: Seq[Instruction] = projections :+ parent
