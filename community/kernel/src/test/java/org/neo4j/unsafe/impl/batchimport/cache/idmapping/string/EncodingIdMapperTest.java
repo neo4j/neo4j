@@ -435,6 +435,41 @@ public class EncodingIdMapperTest
         }
     }
 
+    @Test
+    public void shouldHandleHolesInIdSequence() throws Exception
+    {
+        // GIVEN
+        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP,
+                new LongEncoder(), new Radix.Long(), NO_MONITOR );
+        List<Object> ids = new ArrayList<>();
+        int skip = 1;
+        for ( int i = 0; i < 100; i += 2 )
+        {
+            if ( i > 0 && i%skip == 0 )
+            {
+                skip++;
+                if ( skip == 10 )
+                {
+                    skip = 1;
+                }
+            }
+            else
+            {
+                Long id = (long) i;
+                ids.add( id );
+                mapper.put( id, i, GLOBAL );
+            }
+        }
+        // WHEN
+        mapper.prepare( SimpleInputIteratorWrapper.wrap( "source", ids ), NONE );
+
+        // THEN
+        for ( Object id : ids )
+        {
+            assertEquals( ((Long)id).longValue(), mapper.get( id, GLOBAL ) );
+        }
+    }
+
     private class ValueGenerator implements InputIterable<Object>
     {
         private final int size;
