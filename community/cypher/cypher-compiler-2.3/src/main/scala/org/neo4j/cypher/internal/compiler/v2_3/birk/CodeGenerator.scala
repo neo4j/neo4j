@@ -19,12 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.birk
 
+import java.util
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.neo4j.cypher.internal.ExecutionMode
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
 import org.neo4j.cypher.internal.compiler.v2_3.{PropertyKeyId, CostPlannerName}
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{Identifier, Property}
-import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaTypes.{INT, LONG}
+import org.neo4j.cypher.internal.compiler.v2_3.ast.{Literal, Parameter, Identifier, Property}
+import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaTypes.{INT, LONG, OBJECT}
 import org.neo4j.cypher.internal.compiler.v2_3.birk.il._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{PlanFingerprint, CompiledPlan}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
@@ -37,6 +39,7 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.api.Statement
 
+import scala.collection.Map
 import scala.collection.immutable.Stack
 
 object CodeGenerator {
@@ -74,8 +77,9 @@ object CodeGenerator {
   def n = System.lineSeparator()
 
   object JavaTypes {
-    def LONG = "long"
-    def INT = "int"
+    val LONG = "long"
+    val INT = "int"
+    val OBJECT = "Object"
   }
 }
 
@@ -95,6 +99,7 @@ case class JavaSymbol(name: String, javaType: String)
 class CodeGenerator(semanticTable: SemanticTable) {
 
   import CodeGenerator.{n, nextClassName, packageName}
+  import scala.collection.JavaConverters._
 
   def generate(plan: LogicalPlan, planContext: PlanContext, clock: Clock) = {
     plan match {
@@ -114,12 +119,27 @@ class CodeGenerator(semanticTable: SemanticTable) {
         val idMap = LogicalPlanIdentificationBuilder(plan)
         val description: InternalPlanDescription = LogicalPlan2PlanDescription(plan, idMap)
 
-        val builder = (st: Statement, db: GraphDatabaseService, mode: ExecutionMode) => Javac.newInstance(clazz, st, db,  mode, description)
+        val builder = (st: Statement, db: GraphDatabaseService, mode: ExecutionMode, params: Map[String, Any]) => Javac.newInstance(clazz, st, db,  mode, description, asJavaHashMap(params))
 
         CompiledPlan(updating = false, None, fp, CostPlannerName, builder)
 
       case _ => throw new CantCompileQueryException("Can only compile plans with ProduceResult on top")
     }
+  }
+
+  private def asJavaHashMap(params: Map[String, Any]) = {
+    val jMap = new util.HashMap[String, Object]()
+    params.foreach {
+      case (key, value) => jMap.put(key, javaValue(value))
+    }
+    jMap
+  }
+
+  private def javaValue( value: Any ): Object = value match {
+    case iter: Seq[_] => iter.map( javaValue ).asJava
+    case iter: Map[_, _] => Eagerly.immutableMapValues( iter, javaValue ).asJava
+    case x: Any => x.asInstanceOf[AnyRef]
+
   }
 
   private def generateCodeFromAst(className: String, statements: Seq[Instruction]) = {
@@ -154,6 +174,7 @@ class CodeGenerator(semanticTable: SemanticTable) {
        |import org.neo4j.graphdb.Result;
        |import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription;
        |import org.neo4j.cypher.internal.ExecutionMode;
+       |import java.util.HashMap;
        |
        |$imports
        |
@@ -163,13 +184,15 @@ class CodeGenerator(semanticTable: SemanticTable) {
        |private final GraphDatabaseService db;
        |private final InternalPlanDescription description;
        |private final ExecutionMode executionMode;
+       |private final HashMap<String, Object> params;
        |
-       |public $className( Statement statement, GraphDatabaseService db, ExecutionMode executionMode, InternalPlanDescription description )
+       |public $className( Statement statement, GraphDatabaseService db, ExecutionMode executionMode, InternalPlanDescription description, HashMap<String, Object> params )
        |{
        |  this.ro = statement.readOperations( );
        |  this.db = db;
        |  this.executionMode = executionMode;
        |  this.description = description;
+       |  this.params = params;
        |}
        |
        |public ExecutionMode executionMode()
@@ -224,14 +247,18 @@ class CodeGenerator(semanticTable: SemanticTable) {
           val (methodHandle, actions) = consume(stack.top, plan, stack.pop)
           (methodHandle, Seq(WhileLoop(nodeVariable, ScanForLabel(label.name, labelToken), actions)))
 
-        case _: ProduceResult | _: Expand | _: Projection =>
-          produce(plan.lhs.get, stack.push(plan))
-
         case NodeHashJoin(_, lhs, rhs) =>
           val (Some(symbol), lAst) = produce(lhs, stack.push(plan))
           val lhsMethod = MethodInvocation(symbol.name, symbol.javaType, methodName.next(), lAst)
           val (x, r) = produce(rhs, stack.push(plan))
           (x, lhsMethod +: r)
+
+        case e: SingleRow =>
+          val (methodHandle, actions) = consume(stack.top, plan, stack.pop)
+          (methodHandle, Seq(actions))
+
+        case _: ProduceResult | _: Expand | _: Projection =>
+          produce(plan.lhs.get, stack.push(plan))
 
         case _ => throw new CantCompileQueryException(s"$plan is not yet supported")
       }
@@ -282,16 +309,26 @@ class CodeGenerator(semanticTable: SemanticTable) {
               None
 
             case (identifier, Property(node@Identifier(name), propKey)) if semanticTable.isNode(node) =>
-              val propValueVar = variableName.nextWithType("Object")
-              variables += identifier -> propValueVar
               val token = propKey.id(semanticTable).map(_.id)
-              Some(ProjectNodeProperty(propValueVar.name, token, propKey.name, variables(name).name))
+              val projection = ProjectNodeProperty(token, propKey.name, variables(name).name, variableName)
+              variables += identifier -> projection.projectedVariable
+              Some(projection)
 
             case (identifier, Property(rel@Identifier(name), propKey)) if semanticTable.isRelationship(rel) =>
-              val propValueVar = variableName.nextWithType("Object")
-              variables += identifier -> propValueVar
               val token = propKey.id(semanticTable).map(_.id)
-              Some(ProjectRelProperty(propValueVar.name,token, propKey.name, variables(name).name))
+              val projection = ProjectRelProperty(token, propKey.name, variables(name).name, variableName)
+              variables += identifier -> projection.projectedVariable
+              Some(projection)
+
+            case (identifier, Parameter(name)) =>
+              val projection = ProjectParameter(name)
+              variables += identifier -> projection.projectedVariable
+              Some(projection)
+            //TODO be smarter about boxing
+            case (identifier, lit: Literal) =>
+              val projection = ProjectLiteral(lit.value)
+              variables += identifier -> projection.projectedVariable
+              Some(projection)
 
             case other => throw new CantCompileQueryException(s"Projections of $other not yet supported")
 

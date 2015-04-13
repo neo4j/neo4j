@@ -26,7 +26,7 @@ import org.mockito.stubbing.Answer
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.NormalMode
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_3.ast.RelTypeName
+import org.neo4j.cypher.internal.compiler.v2_3.ast.{Parameter, SignedDecimalIntegerLiteral, RelTypeName}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{SemanticTable, LogicalPlanningTestSupport}
@@ -268,9 +268,29 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
       Map("a" -> cNode, "b" -> eNode, "c" -> gNode )
     ))
   }
-  private def compile(plan: LogicalPlan) = {
+
+  test("project literal") {
+    val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> SignedDecimalIntegerLiteral("1")(null)))(solved))
+    val compiled = compile(plan)
+
+    //then
+    val result = getResult(compiled, "a")
+    result.toSet should equal(Set(Map("a" -> 1)))
+  }
+
+  test("project parameter") {
+
+    val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> Parameter("FOO")(null)))(solved))
+    val compiled = compile(plan, Map("FOO" -> "BAR"))
+
+    //then
+    val result = getResult(compiled, "a")
+    result.toSet should equal(Set(Map("a" -> "BAR")))
+  }
+
+  private def compile(plan: LogicalPlan, params: Map[String, AnyRef] = Map.empty) = {
     val compiled = generator.generate(plan, newMockedPlanContext, Clock.SYSTEM_CLOCK)
-    compiled.executionResultBuilder(statement, graphDatabaseService, NormalMode)
+    compiled.executionResultBuilder(statement, graphDatabaseService, NormalMode, params)
   }
 
   /*
@@ -412,6 +432,18 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     plan.accept(new ResultVisitor[RuntimeException]() {
       override def visit(element: ResultRow): Boolean = {
         res += columns.map(col =>  col -> element.getNode(col)).toMap
+        true
+      }
+    })
+    res.result()
+  }
+
+  private def getResult(plan: InternalExecutionResult, columns: String*) = {
+    val res= Seq.newBuilder[Map[String, AnyRef]]
+
+    plan.accept(new ResultVisitor[RuntimeException]() {
+      override def visit(element: ResultRow): Boolean = {
+        res += columns.map(col =>  col -> element.get(col)).toMap
         true
       }
     })

@@ -77,6 +77,7 @@ public class Javac
             int number = 1;
             for ( Diagnostic<?> diagnostic : diagnosticsCollector.getDiagnostics() )
             {
+                sb.append( classBody );
                 String diagnosticMessage = diagnostic.getMessage( Locale.getDefault() );
                 sb.append( format( "%s  : %d Type : %s", diagnostic.getKind(), number, diagnosticMessage ) );
                 sb.append( format( " at column : %d", diagnostic.getColumnNumber() ) );
@@ -91,12 +92,12 @@ public class Javac
     }
 
     public static InternalExecutionResult newInstance( Class<InternalExecutionResult> clazz, Statement statement,
-                                                       GraphDatabaseService db, ExecutionMode executionMode, InternalPlanDescription description)
+                                                       GraphDatabaseService db, ExecutionMode executionMode, InternalPlanDescription description, HashMap<String, Object> params)
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException
     {
         Constructor<InternalExecutionResult> constructor =
-                clazz.getDeclaredConstructor( Statement.class, GraphDatabaseService.class, ExecutionMode.class, InternalPlanDescription.class );
-        return constructor.newInstance( statement, db, executionMode, description );
+                clazz.getDeclaredConstructor( Statement.class, GraphDatabaseService.class, ExecutionMode.class, InternalPlanDescription.class , HashMap.class);
+        return constructor.newInstance( statement, db, executionMode, description, params );
     }
 
     private static class InMemSource extends SimpleJavaFileObject

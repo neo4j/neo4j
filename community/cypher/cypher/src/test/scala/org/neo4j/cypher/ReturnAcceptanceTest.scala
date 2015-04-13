@@ -187,12 +187,12 @@ return coalesce(a.title, a.name)""")
   }
 
   test("arithmetics precedence test") {
-    val result = executeWithAllPlanners("return 12/4*3-2*4")
+    val result = executeWithAllPlannersAndRuntimes("return 12/4*3-2*4")
     result.toList should equal(List(Map("12/4*3-2*4" -> 1)))
   }
 
   test("arithmetics precedence with parenthesis test") {
-    val result = executeWithAllPlanners("return 12/4*(3-2*4)")
+    val result = executeWithAllPlannersAndRuntimes("return 12/4*(3-2*4)")
     result.toList should equal(List(Map("12/4*(3-2*4)" -> -15)))
   }
 
@@ -286,14 +286,14 @@ return coalesce(a.title, a.name)""")
   }
 
   test("long or double") {
-    val result = executeWithAllPlanners("return 1, 1.5").toList.head
+    val result = executeWithAllPlannersAndRuntimes("return 1, 1.5").toList.head
 
     result("1") should haveType[java.lang.Long]
     result("1.5") should haveType[java.lang.Double]
   }
 
   test("square function returns decimals") {
-    val result = executeWithAllPlanners("return sqrt(12.96)").toList
+    val result = executeWithAllPlannersAndRuntimes("return sqrt(12.96)").toList
 
     result should equal(List(Map("sqrt(12.96)" -> 3.6)))
   }
@@ -463,7 +463,7 @@ return coalesce(a.title, a.name)""")
   }
 
   test("allow queries with only return") {
-    val result = executeWithAllPlanners("RETURN 'Andres'").toList
+    val result = executeWithAllPlannersAndRuntimes("RETURN 'Andres'").toList
 
     result should equal(List(Map("'Andres'" -> "Andres")))
   }
@@ -534,5 +534,11 @@ return coalesce(a.title, a.name)""")
     )
 
     result shouldBe empty
+  }
+
+  test("compiled runtime should support literal expressions") {
+    val result = executeWithAllPlannersAndRuntimes("RETURN 1")
+
+    result.toList should equal(List(Map("1" -> 1)))
   }
 }

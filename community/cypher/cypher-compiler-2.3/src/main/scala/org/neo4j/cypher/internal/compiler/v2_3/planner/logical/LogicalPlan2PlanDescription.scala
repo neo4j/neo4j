@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_3.ast
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
@@ -65,6 +63,8 @@ object LogicalPlan2PlanDescription extends ((LogicalPlan, Map[LogicalPlan, Id]) 
 
       case Projection(lhs, expr) =>
         PlanDescriptionImpl(id = idMap(plan), "Projection", SingleChild(apply(lhs, idMap)), expr.values.toSeq.map(e => LegacyExpression(e.asCommandExpression)), symbols )
+
+      case row: SingleRow => new SingleRowPlanDescription(id = idMap(plan), Seq.empty, row.argumentIds.map(_.name))
 
       case x => throw new CantCompileQueryException(x.getClass.getSimpleName)
     }

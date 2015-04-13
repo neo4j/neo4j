@@ -19,14 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.birk.il
 
-import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator
+import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaTypes.OBJECT
+import org.neo4j.cypher.internal.compiler.v2_3.birk.{Namer, CodeGenerator, JavaSymbol}
 
-sealed trait ProjectionInstruction extends Instruction
 
-case class ProjectNodeProperty(propValueVar: String, token: Option[Int], propName: String, nodeIdVar: String) extends ProjectionInstruction {
-  private val propKeyVar = token.map(_.toString).getOrElse(propValueVar + propName)
+sealed trait ProjectionInstruction extends Instruction {
+  def projectedVariable: JavaSymbol
+  def generateCode() = ""
+}
 
-  def generateCode() = s"Object $propValueVar = ro.nodeGetProperty( $nodeIdVar, $propKeyVar ).value( null );"
+case class ProjectNodeProperty(token: Option[Int], propName: String, nodeIdVar: String, namer: Namer) extends ProjectionInstruction {
+  private val propKeyVar = token.map(_.toString).getOrElse(namer.next())
 
   def generateInit() = if (token.isEmpty)
       s"""if ( $propKeyVar == -1 )
@@ -40,11 +43,12 @@ case class ProjectNodeProperty(propValueVar: String, token: Option[Int], propNam
     Set("org.neo4j.kernel.api.properties.Property")
 
   override def fields() = if (token.isEmpty) s"private int $propKeyVar = -1;" else ""
+
+  def projectedVariable = JavaSymbol(s"ro.nodeGetProperty( $nodeIdVar, $propKeyVar ).value( null )", OBJECT)
 }
 
-case class ProjectRelProperty(propValueVar: String, token: Option[Int], propName: String, relIdVar: String) extends ProjectionInstruction {
-  private val propKeyVar = token.map(_.toString).getOrElse(propValueVar + propName)
-  def generateCode() = s"Object $propValueVar = ro.relationshipGetProperty( $relIdVar, $propKeyVar ).value( null );"
+case class ProjectRelProperty(token: Option[Int], propName: String, relIdVar: String, namer: Namer) extends ProjectionInstruction {
+  private val propKeyVar = token.map(_.toString).getOrElse(namer.next())
 
   def generateInit() =
     if (token.isEmpty)
@@ -59,9 +63,30 @@ case class ProjectRelProperty(propValueVar: String, token: Option[Int], propName
     Set("org.neo4j.kernel.api.properties.Property")
 
   override def fields() = if (token.isEmpty) s"private int $propKeyVar = -1;" else ""
+
+  def projectedVariable = JavaSymbol(s"ro.relationshipGetProperty( $relIdVar, $propKeyVar ).value( null )", OBJECT)
 }
 
-case class ProjectNodeProperties(projections:Seq[ProjectionInstruction], parent:Instruction) extends ProjectionInstruction {
+case class ProjectParameter(key: String) extends ProjectionInstruction {
+
+  def generateInit() = ""
+
+
+  def projectedVariable = JavaSymbol(s"""params.get( "$key" )""", OBJECT)
+
+  def fields() = ""
+}
+
+case class ProjectLiteral(literal: AnyRef) extends ProjectionInstruction {
+
+  def generateInit() = ""
+
+  def projectedVariable = JavaSymbol(s"$literal", OBJECT)
+
+  def fields() = ""
+}
+
+case class ProjectNodeProperties(projections:Seq[ProjectionInstruction], parent:Instruction) extends Instruction {
   override def generateCode()= generate(_.generateCode())
 
   override protected def children: Seq[Instruction] = projections :+ parent
