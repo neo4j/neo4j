@@ -219,6 +219,7 @@ public class MuninnPageCache implements PageCache
     {
         verifyHacks();
         verifyCachePageSizeIsPowerOfTwo( cachePageSize );
+        verifyMinimumPageCount( maxPages, cachePageSize );
 
         this.pageCacheId = pageCacheIdCounter.incrementAndGet();
         this.swapperFactory = swapperFactory;
@@ -273,6 +274,17 @@ public class MuninnPageCache implements PageCache
         {
             throw new IllegalArgumentException(
                     "Cache page size must be a power of two, but was " + cachePageSize );
+        }
+    }
+
+    private static void verifyMinimumPageCount( int maxPages, int cachePageSize )
+    {
+        int minimumPageCount = 2;
+        if ( maxPages < minimumPageCount )
+        {
+            throw new IllegalArgumentException( String.format(
+                    "Page cache must have at least %s pages (%s bytes of memory), but was given %s pages.",
+                    minimumPageCount, minimumPageCount * cachePageSize, maxPages ) );
         }
     }
 

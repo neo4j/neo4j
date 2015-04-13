@@ -210,6 +210,7 @@ public abstract class GraphDatabaseSettings
     @Internal
     public static final Setting<Long> mapped_memory_page_size = setting( "dbms.pagecache.pagesize", BYTES, "8192" );
 
+    @SuppressWarnings( "unchecked" )
     @Description( "The amount of memory to use for mapping the store files, in bytes (or kilobytes with the 'k' " +
                   "suffix, megabytes with 'm' and gigabytes with 'g'). If Neo4j is running on a dedicated server, " +
                   "then it is generally recommended to leave about 2-4 gigabytes for the operating system, give the " +
@@ -217,7 +218,7 @@ public abstract class GraphDatabaseSettings
                   "the page cache. The default page cache memory assumes the machine is dedicated to running " +
                   "Neo4j, and is heuristically set to 75% of RAM minus the max Java heap size." )
     public static final Setting<Long> pagecache_memory =
-            setting( "dbms.pagecache.memory", BYTES, defaultPageCacheMemory() );
+            setting( "dbms.pagecache.memory", BYTES, defaultPageCacheMemory(), min( 8192 * 2L ) );
 
     private static String defaultPageCacheMemory()
     {
