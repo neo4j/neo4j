@@ -73,5 +73,15 @@ angular.module('neo4jApp.utils', [])
         s = s + "" + String.fromCharCode ua[i]
       s
 
+    @escapeHTML = (string) ->
+      entityMap =
+        "&": "&amp;"
+        "<": "&lt;"
+        ">": "&gt;"
+        '"': '&quot;'
+        "'": '&#39;'
+        "/": '&#x2F;'
+      String(string).replace(/[&<>"'\/]/g, (s) -> entityMap[s])
+
     @
   ])

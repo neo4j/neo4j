@@ -31,16 +31,21 @@ angular.module('neo4jApp.controllers')
       # - Graph + Table
       # - Table only
       $scope.availableModes = []
-      $scope.availableModes.push('graph') if resp.table.nodes.length
-      $scope.availableModes.push('table') if resp.table.size?
-      $scope.availableModes.push('plan') if resp.table._response.plan
+      if not resp.errors
+        $scope.availableModes.push('graph') if resp.table.nodes.length
+        $scope.availableModes.push('table') if resp.table.size?
+        $scope.availableModes.push('plan') if resp.table._response.plan
+      $scope.availableModes.push('raw') if resp.raw
+      $scope.availableModes.push('errors') if resp.errors
 
       # Initialise tab state from user selected if any
       $scope.tab = $rootScope.stickyTab
 
       # Always pre-select the plan tab if available
-      if $scope.isAvailable('plan')
+      if $scope.isAvailable 'plan'
         $scope.tab = 'plan'
+      else if $scope.isAvailable 'errors'
+        $scope.tab = 'errors'
 
       # Otherwise try to detect the best mode
       if not $scope.tab?
@@ -63,14 +68,14 @@ angular.module('neo4jApp.controllers')
     $scope.resultStatistics = (frame) ->
       if frame?.response
         updatesMessages = []
-        if frame.response.table._response.columns.length
+        if frame.response.table?._response?.columns.length
           updatesMessages = $scope.updatesStatistics frame
         rowsStatistics = $scope.returnedRowsStatistics frame
         messages = [].concat(updatesMessages, rowsStatistics)
         $scope.formatStatisticsOutput messages
 
     $scope.graphStatistics = (frame) ->
-      if frame?.response
+      if frame?.response?.graph?
         graph = frame.response.graph
         plural = (collection, noun) ->
           "#{collection.length} #{noun}#{if collection.length is 1 then '' else 's'}"
@@ -101,7 +106,7 @@ angular.module('neo4jApp.controllers')
 
     $scope.returnedRowsStatistics = (frame) ->
       messages = []
-      if frame?.response
+      if frame?.response?.table?
         messages.push "returned #{frame.response.table.size} #{if frame.response.table.size is 1 then 'row' else 'rows'}"
         messages = getTimeString frame, messages, 'returnedRows'
         if (frame.response.table.size > frame.response.table.displayedSize)
@@ -110,7 +115,7 @@ angular.module('neo4jApp.controllers')
 
     $scope.updatesStatistics = (frame) ->
       messages = []
-      if frame?.response
+      if frame?.response?.table?
         stats = frame.response.table.stats
         nonZeroFields = $scope.getNonZeroStatisticsFields frame
         messages = ("#{field.verb} #{stats[field.field]} #{if stats[field.field] is 1 then field.singular else field.plural}" for field in nonZeroFields)
@@ -119,7 +124,7 @@ angular.module('neo4jApp.controllers')
 
     $scope.getNonZeroStatisticsFields = (frame) ->
       nonZeroFields = []
-      if frame?.response
+      if frame?.response?.table?
         stats = frame.response.table.stats
         fields = [
           {plural: 'constraints', singular: 'constraint', verb: 'added', field: 'constraints_added' }
@@ -137,6 +142,17 @@ angular.module('neo4jApp.controllers')
         nonZeroFields.push(field) for field in fields when stats[field.field] > 0
       nonZeroFields
 
+    $scope.rawStatistics = (frame) ->
+      return unless frame.response?.responseTime
+      "Request finished in #{frame.response.responseTime} ms."
+
+    $scope.getRequestTitle = (num_requests, index) ->
+      titles = [
+        ['Autocommitting Transaction'],
+        ['Open Transaction', 'Commit Transaction']
+      ]
+      titles[num_requests-1][index]
+
     getTimeString = (frame, messages, context) ->
       timeMessage = " in #{frame.response.responseTime} ms"
       if context is 'updates'
@@ -148,11 +164,6 @@ angular.module('neo4jApp.controllers')
         if frame.response.table._response.columns.length or (!frame.response.table._response.columns.length and !$scope.getNonZeroStatisticsFields(frame).length)
           messages[messages.length - 1] += timeMessage
       messages
-
-
-    $scope.rerunCommand = (frame) ->
-      $scope.$broadcast('reset.frame.views')
-      frame.exec()
 
     # Listen for export events bubbling up the controller hierarchy
     # and forward them down to the child controller that has access to

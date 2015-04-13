@@ -20,21 +20,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 'use strict';
 angular.module('neo4jApp.directives')
-  .directive('neoTable', [->
+  .directive('neoTable', ['Utils', (Utils) ->
       replace: yes
       restrict: 'E'
       link: (scope, elm, attr) ->
-        entityMap =
-          "&": "&amp;"
-          "<": "&lt;"
-          ">": "&gt;"
-          '"': '&quot;'
-          "'": '&#39;'
-          "/": '&#x2F;'
-
-        escapeHtml = (string) ->
-          String(string).replace(/[&<>"'\/]/g, (s) -> entityMap[s])
-
         emptyMarker = ->
           '<em>(empty)</em>'
 
@@ -53,13 +42,13 @@ angular.module('neo4jApp.directives')
         cell2html = (cell) ->
           if angular.isString(cell)
             return emptyMarker() unless cell.length
-            escapeHtml(cell)
+            Utils.escapeHTML(cell)
           else if angular.isArray(cell)
             "["+((cell2html(el) for el in cell).join(', '))+"]"
           else if angular.isObject(cell)
             json2html(cell)
           else
-            escapeHtml(JSON.stringify(cell))
+            Utils.escapeHTML(JSON.stringify(cell))
 
         # Manual rendering function due to performance reasons
         # (repeat watchers are expensive)

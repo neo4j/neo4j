@@ -356,6 +356,7 @@ angular.module('neo4jApp')
                 if response.size > Settings.maxRows
                   response.displayedSize = Settings.maxRows
                 q.resolve(
+                  raw: response.raw
                   responseTime: timer.stop().time()
                   table: response
                   graph: extractGraphModel(response, CypherGraphModel)

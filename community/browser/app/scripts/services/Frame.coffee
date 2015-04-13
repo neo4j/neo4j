@@ -91,10 +91,12 @@ angular.module('neo4jApp.services')
               (result) =>
                 @isLoading = no
                 @response = result
+                @requests = intrPromise?.transaction?.requests || []
               ,
               (result = {}) =>
                 @isLoading = no
-                @response = null
+                @response = result
+                @requests = intrPromise?.transaction?.requests || []
                 @setError result
             )
             @
