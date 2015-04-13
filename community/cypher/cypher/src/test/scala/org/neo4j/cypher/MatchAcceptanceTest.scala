@@ -1699,7 +1699,7 @@ return b
     val b = createLabeledNode("B")
     val r1 = relate(a, b)
 
-    val result = executeWithCostPlannerOnly("match (a:A) match p = shortestPath( a-[*]->(b:B) ) return p").toList.head("p").asInstanceOf[Path]
+    val result = executeWithAllPlanners("match (a:A) match p = shortestPath( a-[*]->(b:B) ) return p").toList.head("p").asInstanceOf[Path]
 
     graph.inTx {
       result.startNode() should equal(a)

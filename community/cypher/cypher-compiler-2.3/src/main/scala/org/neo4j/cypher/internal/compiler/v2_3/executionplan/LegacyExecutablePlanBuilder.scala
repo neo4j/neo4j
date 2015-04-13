@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.executionplan
 import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters.reattachAliasedExpressions
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{KeyToken, TokenType}
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders._
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.{DisconnectedShortestPathEndPointsBuilder, _}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.Converge.iterateUntilConverged
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
@@ -150,7 +150,8 @@ The Neo4j Team""")
       new LoadCSVBuilder,
       new StartPointBuilder,
       new MatchBuilder,
-      new ShortestPathBuilder
+      new ShortestPathBuilder,
+      new DisconnectedShortestPathEndPointsBuilder
     )
   }
 
