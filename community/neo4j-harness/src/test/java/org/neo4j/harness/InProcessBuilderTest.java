@@ -30,7 +30,7 @@ import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
-
+import java.util.NoSuchElementException;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -48,7 +48,6 @@ import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
-
 import static org.neo4j.harness.TestServerBuilders.newInProcessBuilder;
 
 public class InProcessBuilderTest
@@ -141,13 +140,15 @@ public class InProcessBuilderTest
 
     private void assertDBConfig( ServerControls server, String expected, String key ) throws JsonParseException
     {
-        JsonNode beans = HTTP.GET( server.httpURI().toString() + "db/manage/server/jmx/domain/org.neo4j/" ).get( "beans" ).get(0).get("attributes");
+        JsonNode beans = HTTP.GET(
+                server.httpURI().toString() + "db/manage/server/jmx/domain/org.neo4j/" ).get( "beans" );
+        JsonNode configurationBean = findNamedBean( beans, "Configuration" ).get( "attributes" );
         boolean foundKey = false;
-        for ( JsonNode bean : beans )
+        for ( JsonNode attribute : configurationBean )
         {
-            if(bean.get("name").asText().equals( key ))
+            if(attribute.get("name").asText().equals( key ))
             {
-                assertThat(bean.get("value").asText(), equalTo( expected ));
+                assertThat(attribute.get("value").asText(), equalTo( expected ));
                 foundKey = true;
                 break;
             }
@@ -156,6 +157,19 @@ public class InProcessBuilderTest
         {
             fail("No config key '" + key + "'.");
         }
+    }
+
+    private JsonNode findNamedBean( JsonNode beans, String beanName )
+    {
+        for ( JsonNode bean : beans )
+        {
+            JsonNode name = bean.get( "name" );
+            if ( name != null && name.asText().endsWith( ",name=" + beanName ) )
+            {
+                return bean;
+            }
+        }
+        throw new NoSuchElementException();
     }
 
     private void trustAllSSLCerts() throws NoSuchAlgorithmException, KeyManagementException
