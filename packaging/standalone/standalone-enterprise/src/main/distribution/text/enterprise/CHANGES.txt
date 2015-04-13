@@ -5,6 +5,43 @@ For Release Notes, see http://neo4j.com/release-notes/neo4j-${project.version}/
 Cypher:
 o NOTE: Support for Cypher version 2.0 and 2.1 will be removed in Neo4j 2.3
 
+Browser:
+o Shows to user that a result is empty and why it might be empty
+o Fixed issue with PNG plan visualization in IE
+o Added links to more information about system info data
+
+CSV:
+o CharReadable can now be instantiated with a specific charset that the data is encoded in
+
+Import tool:
+o Ability to specify input encoding (using --input-encoding)
+
+IO:
+o Page cache read performance improvements
+o Page cache flush performance improvements by ordering individual pages so that
+  the mapped files are written sequentially on disk
+
+Kernel:
+o Fixed issue where counts could get not up to date values in db created with importer
+o Importer doesn't set any empty array properties during import
+o Fixed issue where importer could assign wrong sets of properties on relationships
+  in the vicinity of "bad" relationships
+o Fixed issue with AIOOBE during property encoding in importer
+o Fixed race condition when taking a uniqueness constraint ONLINE which could let changes,
+  that would violate the constraint, to be committed.
+o Added ability to scan index in addition to scanning node store
+o Fixed issue where importer IdMapper collision detection would use excessive memory
+o Performance improvements to importer, specifically around preparing IdMapper  
+
+Server:
+o Fixed issue with 4xx HTTP response codes not including proper ClientError status
+o HTTP responses containing errors in the form of server stack traces now do so
+  using the key 'stackTrace' as opposed to 'stacktrace'
+
+HA:
+o Fixes a GC problem where memory could be indefinitely and unnecessarily kept after role switch
+o Properly resets the "health" state after a kernel panic has been handled
+  
 2.2.0
 -----
 Browser:
