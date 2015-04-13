@@ -1,3 +1,9 @@
+2.2.1
+-----
+o Fixed issue with 4xx HTTP response codes not including proper ClientError status
+o HTTP responses containing errors in the form of server stack traces now do so
+  using the key 'stackTrace' as opposed to 'stacktrace'
+
 2.2.0
 -----
 o Fixed bug with creating default user when auth is disabled

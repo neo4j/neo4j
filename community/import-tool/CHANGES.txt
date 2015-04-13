@@ -1,0 +1,3 @@
+2.2.1
+-----
+o Ability to specify input encoding (using --input-encoding)
