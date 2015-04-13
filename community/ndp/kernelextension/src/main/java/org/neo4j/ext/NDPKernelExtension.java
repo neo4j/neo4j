@@ -19,8 +19,6 @@
  */
 package org.neo4j.ext;
 
-import java.util.concurrent.TimeUnit;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
@@ -29,21 +27,17 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.ndp.runtime.internal.StandardSessions;
-import org.neo4j.ndp.transport.http.HttpTransport;
-import org.neo4j.ndp.transport.http.SessionRegistry;
 import org.neo4j.ndp.runtime.Sessions;
+import org.neo4j.ndp.runtime.internal.StandardSessions;
+import org.neo4j.ndp.transport.socket.SocketTransport;
 
 import static org.neo4j.helpers.Settings.BOOLEAN;
-import static org.neo4j.helpers.Settings.DURATION;
 import static org.neo4j.helpers.Settings.HOSTNAME_PORT;
 import static org.neo4j.helpers.Settings.setting;
-import static org.neo4j.kernel.impl.util.JobScheduler.Group.serverTransactionTimeout;
 
 /**
  * Wraps NDP and exposes it as a Kernel Extension.
@@ -57,17 +51,13 @@ public class NDPKernelExtension extends KernelExtensionFactory<NDPKernelExtensio
         public static final Setting<Boolean> ndp_enabled = setting("experimental.ndp.enabled", BOOLEAN,
                 "false" );
 
-        @Description( "Max time that sessions can be idle, after this interval a session will get closed." )
-        public static final Setting<Long> session_max_idle = setting("dbms.session.max_idle_time", DURATION, "300s" );
-
         @Description( "Host and port for the Neo4j Data Protocol http transport" )
-        public static final Setting<HostnamePort> http_address =
+        public static final Setting<HostnamePort> ndp_address =
                 setting("dbms.ndp.address", HOSTNAME_PORT, "localhost:7687" );
     }
 
     public interface Dependencies
     {
-        JobScheduler scheduler();
         Logging logging();
         Config config();
         GraphDatabaseService db();
@@ -85,28 +75,15 @@ public class NDPKernelExtension extends KernelExtensionFactory<NDPKernelExtensio
         final GraphDatabaseService gdb = dependencies.db();
         final GraphDatabaseAPI api = (GraphDatabaseAPI) gdb;
         final StringLogger log = dependencies.logging().getMessagesLog( Sessions.class );
-        final JobScheduler scheduler = dependencies.scheduler();
+        final HostnamePort address = config.get( Settings.ndp_address );
         final LifeSupport life = new LifeSupport();
 
         if(config.get( Settings.ndp_enabled ))
         {
             final Sessions env = life.add( new StandardSessions( api, log ) );
-            final SessionRegistry sessions = life.add( new SessionRegistry( env ) );
 
             // Start services
-
-            scheduler.scheduleRecurring( serverTransactionTimeout, new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    sessions.destroyIdleSessions( config.get( Settings.session_max_idle ), TimeUnit.MILLISECONDS );
-                }
-            }, 5, TimeUnit.SECONDS );
-
-            // create listeners
-            HostnamePort bindTo = config.get( Settings.http_address );
-            life.add( new HttpTransport( bindTo.getHost( "localhost" ), bindTo.getPort(), sessions, log ) );
+            life.add( new SocketTransport( address, log, env ) );
             log.info( "NDP Server extension loaded." );
         }
 

@@ -24,10 +24,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.ConnectException;
-import java.net.URI;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.util.Arrays;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -58,7 +61,7 @@ public class NDPExtensionIT
         db = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( tmpDir.getRoot().getAbsolutePath() )
                 .setConfig( NDPKernelExtension.Settings.ndp_enabled, "true" )
-                .setConfig( NDPKernelExtension.Settings.http_address, "localhost:8776" )
+                .setConfig( NDPKernelExtension.Settings.ndp_address, "localhost:8776" )
                 .newGraphDatabase();
 
         // Then
@@ -92,13 +95,21 @@ public class NDPExtensionIT
     {
         try
         {
-            URI.create( "http://"+host+":"+port ).toURL().openStream().close();
-            return true;
-        }
-        catch(FileNotFoundException e)
-        {
-            // ok, 404, which is fine for now
-            return true;
+            try(Socket socket = new Socket())
+            {
+                // Ok, we can connect - can we perform the version handshake?
+                socket.connect( new InetSocketAddress( host, port ) );
+                OutputStream out = socket.getOutputStream();
+                InputStream in = socket.getInputStream();
+
+                // Hard-coded handshake, a general "test client" would be useful further on.
+                out.write( new byte[]{ 0,0,0,1, 0,0,0,0, 0,0,0,0, 0,0,0,0 } );
+
+                byte[] accepted = new byte[4];
+                in.read( accepted );
+
+                return Arrays.equals( accepted, new byte[]{0,0,0,1} );
+            }
         }
         catch(ConnectException e)
         {

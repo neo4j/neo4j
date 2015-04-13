@@ -47,7 +47,6 @@ the relevant Commercial Agreement.
     <module>runtime</module>
     <module>packstream-v1</module>
     <module>messaging-v1</module>
-    <module>transport-http</module>
     <module>kernelextension</module>
     <module>transport-socket</module>
   </modules>
