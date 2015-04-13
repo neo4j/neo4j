@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.executionplan
 
+import org.neo4j.cypher.internal.compiler.v2_2.executionplan.builders.DisconnectedShortestPathEndPointsBuilder
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 import org.neo4j.cypher.internal.compiler.v2_2.ast.rewriters.reattachAliasedExpressions
 import org.neo4j.cypher.internal.compiler.v2_2.commands._
@@ -149,7 +150,8 @@ The Neo4j Team""")
       new LoadCSVBuilder,
       new StartPointBuilder,
       new MatchBuilder,
-      new ShortestPathBuilder
+      new ShortestPathBuilder,
+      new DisconnectedShortestPathEndPointsBuilder
     )
   }
 
