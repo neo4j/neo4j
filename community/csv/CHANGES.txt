@@ -1,3 +1,7 @@
+2.2.1
+-----
+o CharReadable can now be instantiated with a specific charset that the data is encoded in
+
 2.2.0
 -----
 o Fixed issue where file without new line at end would cause it to hang

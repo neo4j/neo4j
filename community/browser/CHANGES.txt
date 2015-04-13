@@ -1,3 +1,9 @@
+2.2.1
+-----
+o Shows to user that a result is empty and why it might be empty
+o Fixed issue with PNG plan visualization in IE
+o Added links to more information about system info data
+
 2.2.0
 -----
 o No longer rendering tables when objects are empty

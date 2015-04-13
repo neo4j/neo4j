@@ -1,3 +1,9 @@
+2.2.1
+-----
+o Page cache read performance improvements
+o Page cache flush performance improvements by ordering individual pages so that
+  the mapped files are written sequentially on disk
+
 2.2.0
 -----
 o Added automatic, continuous background flushing to the PageCache.

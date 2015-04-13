@@ -1,3 +1,8 @@
+2.2.1
+-----
+o Fixes a GC problem where memory could be indefinitely and unnecessarily kept after role switch
+o Properly resets the "health" state after a kernel panic has been handled
+
 2.2.0-RC1
 ---------
 o Fixed a bug where a slave would enter an infinite loop trying to switch to SLAVE for a stale master.

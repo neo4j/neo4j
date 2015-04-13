@@ -1,3 +1,16 @@
+2.2.1
+-----
+o Fixed issue where counts could get not up to date values in db created with importer
+o Importer doesn't set any empty array properties during import
+o Fixed issue where importer could assign wrong sets of properties on relationships
+  in the vicinity of "bad" relationships
+o Fixed issue with AIOOBE during property encoding in importer
+o Fixed race condition when taking a uniqueness constraint ONLINE which could let changes,
+  that would violate the constraint, to be committed.
+o Added ability to scan index in addition to scanning node store
+o Fixed issue where importer IdMapper collision detection would use excessive memory
+o Performance improvements to importer, specifically around preparing IdMapper
+
 2.2.0
 -----
 o Fixed issue where index wasn't properly recovered if one with the same label/property
