@@ -60,17 +60,14 @@ trait LogicalPlanningConfigurationAdHocSemanticTable {
     def addLabelIfUnknown(labelName: String) =
       if (!table.resolvedLabelIds.contains(labelName))
         table.resolvedLabelIds.put(labelName, LabelId(table.resolvedLabelIds.size))
-    def addPropertyKeyIfUnknown(property: String) =
-      if (!table.resolvedPropertyKeyNames.contains(property))
-        table.resolvedPropertyKeyNames.put(property, PropertyKeyId(table.resolvedPropertyKeyNames.size))
 
     indexes.foreach { case (label, property) =>
       addLabelIfUnknown(label)
-      addPropertyKeyIfUnknown(property)
+      table.resolvedPropertyKeyNames.put(property, PropertyKeyId(table.resolvedPropertyKeyNames.size))
     }
     uniqueIndexes.foreach { case (label, property) =>
       addLabelIfUnknown(label)
-      addPropertyKeyIfUnknown(property)
+      table.resolvedPropertyKeyNames.put(property, PropertyKeyId(table.resolvedPropertyKeyNames.size))
     }
     labelCardinality.keys.foreach(addLabelIfUnknown)
     knownLabels.foreach(addLabelIfUnknown)

@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.ManyQueryExpression
 import org.neo4j.cypher.internal.compiler.v2_2.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.{uniqueIndexSeekLeafPlanner, indexSeekLeafPlanner}
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.{indexSeekLeafPlanner, uniqueIndexSeekLeafPlanner}
 
 import scala.language.reflectiveCalls
 

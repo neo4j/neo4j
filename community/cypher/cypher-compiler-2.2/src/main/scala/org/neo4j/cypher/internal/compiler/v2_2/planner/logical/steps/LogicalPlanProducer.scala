@@ -161,8 +161,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   def planNodeIndexSeek(idName: IdName,
                         label: ast.LabelToken,
                         propertyKey: ast.PropertyKeyToken,
-                        valueExpr: QueryExpression[Expression],
-                        solvedPredicates: Seq[Expression] = Seq.empty,
+                        valueExpr: QueryExpression[Expression], solvedPredicates: Seq[Expression] = Seq.empty,
                         solvedHint: Option[UsingIndexHint] = None,
                         argumentIds: Set[IdName])(implicit context: LogicalPlanningContext) = {
     val solved = PlannerQuery(graph = QueryGraph.empty
@@ -172,21 +171,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
       .addArgumentIds(argumentIds.toSeq)
     )
     NodeIndexSeek(idName, label, propertyKey, valueExpr, argumentIds)(solved)
-  }
-
-  def planNodeIndexScan(idName: IdName,
-                        label: ast.LabelToken,
-                        propertyKey: ast.PropertyKeyToken,
-                        solvedPredicates: Seq[Expression] = Seq.empty,
-                        solvedHint: Option[UsingIndexHint] = None,
-                        argumentIds: Set[IdName])(implicit context: LogicalPlanningContext) = {
-    val solved = PlannerQuery(graph = QueryGraph.empty
-      .addPatternNodes(idName)
-      .addPredicates(solvedPredicates: _*)
-      .addHints(solvedHint)
-      .addArgumentIds(argumentIds.toSeq)
-    )
-    NodeIndexScan(idName, label, propertyKey, argumentIds)(solved)
   }
 
   def planLegacyHintSeek(idName: IdName, hint: LegacyIndexHint, argumentIds: Set[IdName])
