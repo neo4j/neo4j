@@ -30,6 +30,8 @@ import org.neo4j.graphdb.Direction
 
 import scala.collection.immutable
 
+import scala.language.reflectiveCalls
+
 class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("should plan for a single node pattern") {

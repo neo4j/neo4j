@@ -26,6 +26,8 @@ import org.neo4j.cypher.internal.compiler.v2_2.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v2_2.planner._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.steps.{uniqueIndexSeekLeafPlanner, indexSeekLeafPlanner}
 
+import scala.language.reflectiveCalls
+
 class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   val idName = IdName("n")
