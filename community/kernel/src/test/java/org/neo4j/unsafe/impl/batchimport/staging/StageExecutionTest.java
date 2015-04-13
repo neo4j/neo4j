@@ -33,6 +33,7 @@ import static org.junit.Assert.assertFalse;
 
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 import static org.neo4j.unsafe.impl.batchimport.staging.ControlledStep.stepWithAverageOf;
+import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
 
 public class StageExecutionTest
 {
@@ -44,7 +45,7 @@ public class StageExecutionTest
         steps.add( stepWithAverageOf( 10 ) );
         steps.add( stepWithAverageOf( 5 ) );
         steps.add( stepWithAverageOf( 30 ) );
-        StageExecution execution = new StageExecution( "Test", DEFAULT, steps, true );
+        StageExecution execution = new StageExecution( "Test", DEFAULT, steps, ORDER_SEND_DOWNSTREAM );
 
         // WHEN
         Iterator<Pair<Step<?>,Float>> ordered = execution.stepsOrderedBy( Keys.avg_processing_time, true ).iterator();
@@ -68,7 +69,7 @@ public class StageExecutionTest
         steps.add( stepWithAverageOf( 5 ) );
         steps.add( stepWithAverageOf( 30 ) );
         steps.add( stepWithAverageOf( 5 ) );
-        StageExecution execution = new StageExecution( "Test", DEFAULT, steps, true );
+        StageExecution execution = new StageExecution( "Test", DEFAULT, steps, ORDER_SEND_DOWNSTREAM );
 
         // WHEN
         Iterator<Pair<Step<?>,Float>> ordered = execution.stepsOrderedBy( Keys.avg_processing_time, false ).iterator();

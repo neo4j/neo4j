@@ -32,6 +32,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import static org.neo4j.unsafe.impl.batchimport.staging.ControlledStep.stepWithStats;
+import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
 import static org.neo4j.unsafe.impl.batchimport.stats.Keys.avg_processing_time;
 import static org.neo4j.unsafe.impl.batchimport.stats.Keys.done_batches;
 
@@ -154,7 +155,7 @@ public class DynamicProcessorAssignerTest
 
     private StageExecution[] executionOf( Configuration config, Step<?>... steps )
     {
-        StageExecution execution = new StageExecution( "Test", config, Arrays.asList( steps ), true );
+        StageExecution execution = new StageExecution( "Test", config, Arrays.asList( steps ), ORDER_SEND_DOWNSTREAM );
         return new StageExecution[] {execution};
     }
 }

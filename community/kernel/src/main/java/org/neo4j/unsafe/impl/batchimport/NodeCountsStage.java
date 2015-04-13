@@ -35,7 +35,7 @@ public class NodeCountsStage extends Stage
     public NodeCountsStage( Configuration config, NodeLabelsCache cache, NodeStore nodeStore,
             int highLabelId, CountsAccessor.Updater countsUpdater, StatsProvider... additionalStatsProviders )
     {
-        super( "Node counts", config, false );
+        super( "Node counts", config );
         add( new ReadNodeRecordsStep( control(), config, nodeStore ) );
         add( new RecordProcessorStep<>( control(), "COUNT", config, new NodeCountsProcessor(
                 nodeStore, cache, highLabelId, countsUpdater ), true, additionalStatsProviders ) );
