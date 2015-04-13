@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_3.pipes.matching
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import commands.Predicate
-import pipes.QueryState
-import org.neo4j.graphdb.{Relationship, Node, Direction, PropertyContainer}
-import collection.Map
+import org.neo4j.cypher.internal.compiler.v2_3.commands.Predicate
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
+import org.neo4j.graphdb.{Direction, Node, PropertyContainer, Relationship}
+
+import scala.collection.Map
 
 class PatternMatchingBuilder(patternGraph: PatternGraph,
                              predicates: Seq[Predicate],
@@ -68,11 +69,6 @@ class PatternMatchingBuilder(patternGraph: PatternGraph,
     cartesian(toList).map(_.reduceLeft(_ ++ _))
   }
 
-  private def createNullValuesForOptionalElements(matchedGraph: ExecutionContext): ExecutionContext = {
-    val m = (patternGraph.keySet -- matchedGraph.keySet).map(_ -> null).toStream
-    matchedGraph.newWith(m)
-  }
-
   // This method takes  a Seq of Seq and produces the cartesian product of all inner Seqs
   // I'm committing this code, but it's all Tobias' doing.
   private def cartesian[T](lst: Seq[Seq[T]]): Seq[Seq[T]] =
@@ -85,7 +81,6 @@ class PatternMatchingBuilder(patternGraph: PatternGraph,
       new PatternMatcher(boundPairs, predicates, source, state, identifiersInClause)
 
   private def extractBoundMatchingPairs(bindings: Map[String, Any]): Map[String, MatchingPair] = bindings.flatMap {
-
     case (key, node: Node) if patternGraph.contains(key)        => Seq(key -> MatchingPair(patternGraph(key), node))
     case (key, rel: Relationship) if patternGraph.contains(key) =>
       val pRel = patternGraph(key).asInstanceOf[PatternRelationship]
@@ -95,7 +90,12 @@ class PatternMatchingBuilder(patternGraph: PatternGraph,
         val t2 = endNode.key -> MatchingPair(endNode, rel.getEndNode)
         val t3 = pRel.key -> MatchingPair(pRel, rel)
 
-        Seq(t1, t2, t3)
+        // Check that found end nodes correspond to what is already in scope
+        if (bindings.get(t1._1).forall(_ == t1._2.entity) &&
+            bindings.get(t2._1).forall(_ == t2._2.entity))
+          Seq(t1, t2, t3)
+        else
+          Seq.empty
       }
 
       pRel.dir match {

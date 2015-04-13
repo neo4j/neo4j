@@ -63,10 +63,12 @@ case class MatchPattern(nodes:Seq[String], relationships:Seq[MatchRelationship])
 
   def disconnectedPatternsWithout (identifiers:Seq[String]): Seq[MatchPattern] =
     disconnectedPatterns.
-      filterNot( _.containsAnyNodeIdentifier( identifiers ) ).
+      filterNot( _.containsIdentifierNamed( identifiers ) ).
       filter(_.nonEmpty)
 
-  def containsAnyNodeIdentifier(identifiers: Seq[String]): Boolean = nodes.exists( identifiers.contains(_) )
+  def containsIdentifierNamed(identifiers: Seq[String]): Boolean =
+    nodes.exists(identifiers.contains) ||
+    relationships.flatMap(_.name).exists(identifiers.contains)
 
   def disconnectedPatterns : Seq[MatchPattern] = if (nodes.isEmpty) {
     Seq(this)

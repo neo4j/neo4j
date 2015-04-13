@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{MatchPattern, Matc
 
 class MatchPatternTest extends CypherFunSuite {
 
-  test("should_find_disjoint_graph_with_single_nodes") {
+  test("should find disjoint graph with single nodes") {
     // Given
     val pattern = new MatchPattern(Seq("A", "B"), Seq())
 
@@ -35,12 +35,12 @@ class MatchPatternTest extends CypherFunSuite {
     )
   }
 
-  test("should_be_non_empty_if_it_contains_a_node") {
+  test("should be non empty if it contains a node") {
     // When and then
     new MatchPattern(Seq("A"), Seq()).nonEmpty should equal(true)
   }
 
-  test("should_find_single_graph_for_simple_rel") {
+  test("should find single graph for simple rel") {
     // Given
     val pattern = new MatchPattern(Seq("A", "B"), Seq(MatchRelationship(None, "A", "B")))
 
@@ -48,7 +48,7 @@ class MatchPatternTest extends CypherFunSuite {
     pattern.disconnectedPatterns should equal(Seq(pattern))
   }
 
-  test("should_find_deeply_nested_disjoint_graphs") {
+  test("should find deeply nested disjoint graphs") {
     // Given
     val pattern = new MatchPattern(Seq("A", "B", "C", "D"),
         Seq(MatchRelationship(None, "A", "B"), MatchRelationship(None, "B", "D")))
@@ -60,7 +60,7 @@ class MatchPatternTest extends CypherFunSuite {
     )
   }
 
-  test("should_list_subgraphs_without_specified_points") {
+  test("should list subgraphs without specified points") {
     // Given
     val pattern = new MatchPattern(Seq("A", "B", "C"), Seq(MatchRelationship(None, "A", "B")))
 
@@ -68,5 +68,13 @@ class MatchPatternTest extends CypherFunSuite {
     pattern.disconnectedPatternsWithout(Seq("B")) should equal(Seq(
       new MatchPattern(Seq("C"), Seq()))
     )
+  }
+
+  test("should not consider patterns bound by relationships as unbounded") {
+    // Given
+    val pattern = new MatchPattern(Seq("A", "B"), Seq(MatchRelationship(Some("r"), "A", "B")))
+
+    // When and then
+    pattern.disconnectedPatternsWithout(Seq("r")) should equal(Seq.empty)
   }
 }
