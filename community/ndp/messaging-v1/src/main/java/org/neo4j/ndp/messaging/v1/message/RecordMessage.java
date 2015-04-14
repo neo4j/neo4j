@@ -64,8 +64,8 @@ public class RecordMessage implements Message
     public String toString()
     {
         return "ItemMessage{" +
-                "datas=" + value +
-                '}';
+               "datas=" + value +
+               '}';
     }
 
     public Record record()

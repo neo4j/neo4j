@@ -60,8 +60,8 @@ public class MessageFormatTest
         assertSerializes( new RunMessage( "CREATE (n) RETURN åäö" ) );
         assertSerializes( new DiscardAllMessage() );
         assertSerializes( new PullAllMessage() );
-        assertSerializes( new RecordMessage( record( 1l, "b", 2l )));
-        assertSerializes( new SuccessMessage( new HashMap<String, Object>() ) );
+        assertSerializes( new RecordMessage( record( 1l, "b", 2l ) ) );
+        assertSerializes( new SuccessMessage( new HashMap<String,Object>() ) );
         assertSerializes( new FailureMessage( new Neo4jError( Status.General.UnknownFailure, "Err" ) ) );
         assertSerializes( new IgnoredMessage() );
         assertSerializes( new AcknowledgeFailureMessage() );
@@ -117,28 +117,28 @@ public class MessageFormatTest
     @Test
     public void shouldSerializeNode() throws Throwable
     {
-        assertSerializesNeoValue( new ValueNode(12l, asList( label( "User" ), label( "Banana" )),
-                map( "name", "Bob", "age", 14  )) );
+        assertSerializesNeoValue( new ValueNode( 12l, asList( label( "User" ), label( "Banana" ) ),
+                map( "name", "Bob", "age", 14 ) ) );
     }
 
     @Test
     public void shouldSerializeRelationship() throws Throwable
     {
-        assertSerializesNeoValue( new ValueRelationship(12l, 1l, 2l, DynamicRelationshipType.withName( "KNOWS" ),
-                map( "name", "Bob", "age", 14  )) );
+        assertSerializesNeoValue( new ValueRelationship( 12l, 1l, 2l, DynamicRelationshipType.withName( "KNOWS" ),
+                map( "name", "Bob", "age", 14 ) ) );
     }
 
     @Test
     public void shouldSerializePath() throws Throwable
     {
         assertSerializesNeoValue( new ValuePath(
-                new ValueNode(12l, asList( label( "User" ), label( "Banana" )),
-                        map( "name", "Bob", "age", 14  )),
-                new ValueRelationship(1l, 12l, 13l, DynamicRelationshipType.withName( "KNOWS" ),
-                        map( "name", "Bob", "age", 14  )),
-                new ValueNode(13l, asList( label( "User" ), label( "Banana" )),
-                        map( "name", "Bob", "age", new int[]{1,2,3}  ))
-        ));
+                new ValueNode( 12l, asList( label( "User" ), label( "Banana" ) ),
+                        map( "name", "Bob", "age", 14 ) ),
+                new ValueRelationship( 1l, 12l, 13l, DynamicRelationshipType.withName( "KNOWS" ),
+                        map( "name", "Bob", "age", 14 ) ),
+                new ValueNode( 13l, asList( label( "User" ), label( "Banana" ) ),
+                        map( "name", "Bob", "age", new int[]{1, 2, 3} ) )
+        ) );
     }
 
     private void assertSerializes( Message msg ) throws IOException
@@ -146,7 +146,7 @@ public class MessageFormatTest
         assertThat( serializeAndDeserialize( msg ), equalTo( msg ) );
     }
 
-    private <T extends Message> T serializeAndDeserialize(T msg) throws IOException
+    private <T extends Message> T serializeAndDeserialize( T msg ) throws IOException
     {
 
         MessageFormat.Reader reader = format.newReader();
@@ -168,18 +168,18 @@ public class MessageFormatTest
         {
             reader.reset( channel ).read( messages );
         }
-        catch(Throwable e)
+        catch ( Throwable e )
         {
-            throw new AssertionError( "Failed to unpack message, wire data was:\n" + serialized + "["+channel
-                    .getBytes().length+"b]", e );
+            throw new AssertionError( "Failed to unpack message, wire data was:\n" + serialized + "[" + channel
+                    .getBytes().length + "b]", e );
         }
 
-        return (T)messages.asList().get(0);
+        return (T) messages.asList().get( 0 );
     }
 
     private void assertSerializesNeoValue( Object val ) throws IOException
     {
-        assertSerializes( new RecordMessage( record( val ) ));
+        assertSerializes( new RecordMessage( record( val ) ) );
     }
 
 }

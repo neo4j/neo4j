@@ -20,8 +20,6 @@
 package org.neo4j.packstream;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.charset.Charset;
@@ -33,7 +31,6 @@ import java.util.Map;
 import static java.lang.Integer.toHexString;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-
 import static org.neo4j.packstream.PackValue.EMPTY_BYTE_ARRAY;
 import static org.neo4j.packstream.PackValue.EMPTY_LIST_OF_VALUES;
 import static org.neo4j.packstream.PackValue.EMPTY_MAP_OF_VALUES;
@@ -162,114 +159,83 @@ public class PackStream
 
     public static class Packer
     {
-        private final ByteBuffer buffer;
-        private WritableByteChannel channel;
+        private PackOutput out;
 
-        public Packer( WritableByteChannel channel )
+        public Packer( PackOutput out )
         {
-            this( channel, DEFAULT_BUFFER_CAPACITY );
-            this.reset(channel);
+            this.out = out;
         }
 
-        public Packer( WritableByteChannel channel, int bufferCapacity )
+        public void reset( PackOutput out )
         {
-            this(bufferCapacity);
-            this.reset(channel);
-        }
-
-        public Packer( int bufferCapacity )
-        {
-            this.buffer = ByteBuffer.allocateDirect( bufferCapacity ).order( ByteOrder.BIG_ENDIAN );
+            this.out = out;
         }
 
         public void reset( WritableByteChannel channel )
         {
-            this.channel = channel;
-            this.buffer.clear();
-        }
-
-        private void ensure( int size ) throws IOException
-        {
-            if ( buffer.remaining() < size )
-            {
-                flush();
-            }
+            ((BufferedChannelOutput) out).reset( channel );
         }
 
         public void flush() throws IOException
         {
-            buffer.flip();
-            do { channel.write( buffer ); } while( buffer.remaining() > 0 );
-            buffer.clear();
+            out.flush();
         }
 
         public void packRaw( byte[] data ) throws IOException
         {
-            int index = 0;
-            while(index < data.length)
-            {
-                int amountToWrite = Math.min( buffer.remaining(), data.length - index );
-
-                buffer.put( data, index, amountToWrite );
-                index += amountToWrite;
-
-                if(buffer.remaining() == 0)
-                {
-                    flush();
-                }
-            }
+            out.put( data, 0, data.length );
         }
 
-        public ByteBuffer packNull() throws IOException
+        public void packNull() throws IOException
         {
-            ensure( 1 );
-            return buffer.put( NULL );
+            out.ensure( 1 )
+               .put( NULL );
         }
 
         public void pack( boolean value ) throws IOException
         {
-            ensure( 1 );
-            buffer.put( value ? TRUE : FALSE );
+            out.ensure( 1 )
+               .put( value ? TRUE : FALSE );
         }
 
         public void pack( long value ) throws IOException
         {
             if ( value >= MINUS_2_TO_THE_4 && value < PLUS_2_TO_THE_7)
             {
-                ensure( 1 );
-                buffer.put( (byte) value );
+                out.ensure( 1 )
+                   .put( (byte) value );
             }
             else if ( value >= MINUS_2_TO_THE_7 && value < MINUS_2_TO_THE_4 )
             {
-                ensure( 2 );
-                buffer.put( INT_8 );
-                buffer.put( (byte) value );
+                out.ensure( 2 )
+                   .put( INT_8 )
+                   .put( (byte) value );
             }
             else if ( value >= MINUS_2_TO_THE_15 && value < PLUS_2_TO_THE_15 )
             {
-                ensure( 3 );
-                buffer.put( INT_16 );
-                buffer.putShort( (short) value );
+                out.ensure( 3 )
+                   .put( INT_16 )
+                   .putShort( (short) value );
             }
             else if ( value >= MINUS_2_TO_THE_31 && value < PLUS_2_TO_THE_31 )
             {
-                ensure( 5 );
-                buffer.put( INT_32 );
-                buffer.putInt( (int) value );
+                out.ensure( 5 )
+                   .put( INT_32 )
+                   .putInt( (int) value );
             }
             else
             {
-                ensure( 9 );
-                buffer.put( INT_64 );
-                buffer.putLong( value );
+                out.ensure( 9 )
+                   .put( INT_64 )
+                   .putLong( value );
             }
         }
 
         public void pack( double value ) throws IOException
         {
-            ensure( 9 );
-            buffer.put( FLOAT_64 );
-            buffer.putDouble( value );
+            out.ensure( 9 )
+               .put( FLOAT_64 )
+               .putDouble( value );
         }
 
         public void pack( byte[] values ) throws IOException
@@ -360,21 +326,21 @@ public class PackStream
         {
             if ( size <= Byte.MAX_VALUE )
             {
-                ensure( 2 );
-                buffer.put( BYTES_8 );
-                buffer.put( (byte) size );
+                out.ensure( 2 )
+                   .put( BYTES_8 )
+                   .put( (byte) size );
             }
             else if ( size <= Short.MAX_VALUE )
             {
-                ensure( 3 );
-                buffer.put( BYTES_16 );
-                buffer.putShort( (short) size );
+                out.ensure( 3 )
+                   .put( BYTES_16 )
+                   .putShort( (short) size );
             }
             else
             {
-                ensure( 5 );
-                buffer.put( BYTES_32 );
-                buffer.putInt( size );
+                out.ensure( 5 )
+                   .put( BYTES_32 )
+                   .putInt( size );
             }
         }
 
@@ -382,26 +348,26 @@ public class PackStream
         {
             if ( size < 0x10 )
             {
-                ensure( 1 );
-                buffer.put( (byte) (TINY_TEXT | size) );
+                out.ensure( 1 )
+                   .put( (byte) (TINY_TEXT | size) );
             }
             else if ( size <= Byte.MAX_VALUE )
             {
-                ensure( 2 );
-                buffer.put( TEXT_8 );
-                buffer.put( (byte) size );
+                out.ensure( 2 )
+                   .put( TEXT_8 )
+                   .put( (byte) size );
             }
             else if ( size <= Short.MAX_VALUE )
             {
-                ensure( 3 );
-                buffer.put( TEXT_16 );
-                buffer.putShort( (short) size );
+                out.ensure( 3 )
+                   .put( TEXT_16 )
+                   .putShort( (short) size );
             }
             else
             {
-                ensure( 5 );
-                buffer.put( TEXT_32 );
-                buffer.putInt( size );
+                out.ensure( 5 )
+                   .put( TEXT_32 )
+                   .putInt( size );
             }
         }
 
@@ -409,26 +375,26 @@ public class PackStream
         {
             if ( size < 0x10 )
             {
-                ensure( 1 );
-                buffer.put( (byte) (TINY_LIST | size) );
+                out.ensure( 1 )
+                   .put( (byte) (TINY_LIST | size) );
             }
             else if ( size <= Byte.MAX_VALUE )
             {
-                ensure( 2 );
-                buffer.put( LIST_8 );
-                buffer.put( (byte) size );
+                out.ensure( 2 )
+                   .put( LIST_8 )
+                   .put( (byte) size );
             }
             else if ( size <= Short.MAX_VALUE )
             {
-                ensure( 3 );
-                buffer.put( LIST_16 );
-                buffer.putShort( (short) size );
+                out.ensure( 3 )
+                   .put( LIST_16 )
+                   .putShort( (short) size );
             }
             else
             {
-                ensure( 5 );
-                buffer.put( LIST_32 );
-                buffer.putInt( size );
+                out.ensure( 5 )
+                   .put( LIST_32 )
+                   .putInt( size );
             }
         }
 
@@ -436,26 +402,26 @@ public class PackStream
         {
             if ( size < 0x10 )
             {
-                ensure( 1 );
-                buffer.put( (byte) (TINY_MAP | size) );
+                out.ensure( 1 )
+                   .put( (byte) (TINY_MAP | size) );
             }
             else if ( size <= Byte.MAX_VALUE )
             {
-                ensure( 2 );
-                buffer.put( MAP_8 );
-                buffer.put( (byte) size );
+                out.ensure( 2 )
+                   .put( MAP_8 )
+                   .put( (byte) size );
             }
             else if ( size <= Short.MAX_VALUE )
             {
-                ensure( 3 );
-                buffer.put( MAP_16 );
-                buffer.putShort( (short) size );
+                out.ensure( 3 )
+                   .put( MAP_16 )
+                   .putShort( (short) size );
             }
             else
             {
-                ensure( 5 );
-                buffer.put( MAP_32 );
-                buffer.putInt( size );
+                out.ensure( 5 )
+                   .put( MAP_32 )
+                   .putInt( size );
             }
         }
 
@@ -463,23 +429,23 @@ public class PackStream
         {
             if ( size < 0x10 )
             {
-                ensure( 2 );
-                buffer.put( (byte) (TINY_STRUCT | size) );
-                buffer.put( (byte) signature );
+                out.ensure( 2 )
+                   .put( (byte) (TINY_STRUCT | size) )
+                   .put( (byte) signature );
             }
             else if ( size <= Byte.MAX_VALUE )
             {
-                ensure( 3 );
-                buffer.put( STRUCT_8 );
-                buffer.put( (byte) size );
-                buffer.put( (byte) signature );
+                out.ensure( 3 )
+                   .put( STRUCT_8 )
+                   .put( (byte) size )
+                   .put( (byte) signature );
             }
             else if ( size <= Short.MAX_VALUE )
             {
-                ensure( 4 );
-                buffer.put( STRUCT_16 );
-                buffer.putShort( (short) size );
-                buffer.put( (byte) signature );
+                out.ensure( 4 )
+                   .put( STRUCT_16 )
+                   .putShort( (short) size )
+                   .put( (byte) signature );
             }
             else
             {
@@ -492,9 +458,7 @@ public class PackStream
 
     public static class Unpacker
     {
-
-        private final ByteBuffer buffer;
-        private ReadableByteChannel channel;
+        private PackInput in;
 
         public Unpacker( ReadableByteChannel channel )
         {
@@ -505,61 +469,28 @@ public class PackStream
         public Unpacker( int bufferCapacity )
         {
             assert bufferCapacity >= 8 : "Buffer must be at least 8 bytes.";
-            this.buffer = ByteBuffer.allocateDirect( bufferCapacity ).order( ByteOrder.BIG_ENDIAN );
+            this.in = new BufferedChannelInput( bufferCapacity );
+        }
+
+        public Unpacker( PackInput in )
+        {
+            this.in = in;
         }
 
         public Unpacker reset( ReadableByteChannel ch )
         {
-            this.channel = ch;
-            this.buffer.position(0);
-            this.buffer.limit(0);
+            ((BufferedChannelInput)in).reset( ch );
             return this;
         }
 
         public boolean hasNext() throws IOException
         {
-            return buffer.remaining() > 0 || attempt( 1 );
-        }
-
-        private void ensure( int numBytes ) throws IOException
-        {
-            if(!attempt( numBytes ))
-            {
-                throw new EndOfStream( "Unexpected end of stream while trying to read " + numBytes + " bytes." );
-            }
-        }
-
-        private boolean attempt( int numBytes ) throws IOException
-        {
-            if(buffer.remaining() >= numBytes)
-            {
-                return true;
-            }
-
-            if(buffer.remaining() > 0)
-            {
-                // If there is data remaining in the buffer, shift that remaining data to the beginning of the buffer.
-                buffer.compact();
-            }
-            else
-            {
-                buffer.clear();
-            }
-
-            int count;
-            do
-            {
-                count = channel.read( buffer );
-            } while( count >= 0 && (buffer.position() < numBytes && buffer.remaining() != 0));
-
-            buffer.flip();
-            return buffer.remaining() >= numBytes;
+            return in.remaining() > 0 || in.attempt( 1 );
         }
 
         public long unpackStructHeader() throws IOException
         {
-            ensure( 1 );
-            final byte markerByte = buffer.get();
+            final byte markerByte = in.ensure( 1 ).get();
             final byte markerHighNibble = (byte) (markerByte & 0xF0);
             final byte markerLowNibble = (byte) (markerByte & 0x0F);
 
@@ -574,14 +505,12 @@ public class PackStream
 
         public char unpackStructSignature() throws IOException
         {
-            ensure( 1 );
-            return (char) buffer.get();
+            return (char) in.ensure( 1 ).get();
         }
 
         public long unpackListHeader() throws IOException
         {
-            ensure( 1 );
-            final byte markerByte = buffer.get();
+            final byte markerByte = in.ensure( 1 ).get();
             final byte markerHighNibble = (byte) (markerByte & 0xF0);
             final byte markerLowNibble  = (byte) (markerByte & 0x0F);
 
@@ -597,8 +526,7 @@ public class PackStream
 
         public long unpackMapHeader() throws IOException
         {
-            ensure( 1 );
-            final byte markerByte = buffer.get();
+            final byte markerByte = in.ensure( 1 ).get();
             final byte markerHighNibble = (byte) (markerByte & 0xF0);
             final byte markerLowNibble = (byte) (markerByte & 0x0F);
 
@@ -614,27 +542,24 @@ public class PackStream
 
         public long unpackLong() throws IOException
         {
-            ensure( 1 );
-            final byte markerByte = buffer.get();
+            final byte markerByte = in.ensure( 1 ).get();
             if ( markerByte >= MINUS_2_TO_THE_4) { return markerByte; }
             switch(markerByte)
             {
-            case INT_8:   ensure(1); return buffer.get();
-            case INT_16:  ensure(2); return buffer.getShort();
-            case INT_32:  ensure(4); return buffer.getInt();
-            case INT_64:  ensure(8); return buffer.getLong();
+            case INT_8:   return in.ensure( 1 ).get();
+            case INT_16:  return in.ensure( 2 ).getShort();
+            case INT_32:  return in.ensure( 4 ).getInt();
+            case INT_64:  return in.ensure( 8 ).getLong();
             default: throw new Unexpected( "Expected an integer, but got: " + toHexString( markerByte ));
             }
         }
 
         public double unpackDouble() throws IOException
         {
-            ensure( 1 );
-            final byte markerByte = buffer.get();
+            final byte markerByte = in.ensure( 1 ).get();
             if(markerByte == FLOAT_64)
             {
-                ensure( 8 );
-                return buffer.getDouble();
+                return in.ensure( 8 ).getDouble();
             }
             throw new Unexpected( "Expected a double, but got: " + toHexString( markerByte ));
         }
@@ -646,8 +571,7 @@ public class PackStream
 
         public byte[] unpackUtf8() throws IOException
         {
-            ensure( 1 );
-            final byte markerByte = buffer.get();
+            final byte markerByte = in.ensure( 1 ).get();
             final byte markerHighNibble = (byte) (markerByte & 0xF0);
             final byte markerLowNibble = (byte) (markerByte & 0x0F);
 
@@ -668,26 +592,24 @@ public class PackStream
                     throw new Overflow( "TEXT_32 too long for Java" );
                 }
             }
-            default: throw new Unexpected( "Expected a string, but got: " + toHexString( markerByte ));
+            default: throw new Unexpected( "Expected a string, but got: " + toHexString( markerByte & 0xFF ));
             }
         }
 
         public boolean unpackBoolean() throws IOException
         {
-            ensure( 1 );
-            final byte markerByte = buffer.get();
+            final byte markerByte = in.ensure( 1 ).get();
             switch(markerByte)
             {
             case TRUE: return true;
             case FALSE: return false;
-            default: throw new Unexpected( "Expected a boolean, but got: " + toHexString( markerByte ));
+            default: throw new Unexpected( "Expected a boolean, but got: " + toHexString( markerByte & 0xFF ));
             }
         }
 
         public PackValue unpack() throws IOException
         {
-            ensure( 1 );
-            final byte markerByte = buffer.get();
+            final byte markerByte = in.ensure( 1 ).get();
             final byte markerHighNibble = (byte) (markerByte & 0xF0);
             final byte markerLowNibble = (byte) (markerByte & 0x0F);
 
@@ -705,28 +627,23 @@ public class PackStream
             }
             else if ( markerByte == FLOAT_64 )
             {
-                ensure( 8 );
-                return new PackValue.FloatValue( buffer.getDouble() );
+                return new PackValue.FloatValue( in.ensure( 8 ).getDouble() );
             }
             else if ( markerByte == INT_8 )
             {
-                ensure( 1 );
-                return PackValue.IntegerValue.getInstance( buffer.get() );
+                return PackValue.IntegerValue.getInstance( in.ensure( 1 ).get() );
             }
             else if ( markerByte == INT_16 )
             {
-                ensure( 2 );
-                return PackValue.IntegerValue.getInstance( buffer.getShort() );
+                return PackValue.IntegerValue.getInstance( in.ensure( 2 ).getShort() );
             }
             else if ( markerByte == INT_32 )
             {
-                ensure( 4 );
-                return PackValue.IntegerValue.getInstance( buffer.getInt() );
+                return PackValue.IntegerValue.getInstance( in.ensure( 4 ).getInt() );
             }
             else if ( markerByte == INT_64 )
             {
-                ensure( 8 );
-                return PackValue.IntegerValue.getInstance( buffer.getLong() );
+                return PackValue.IntegerValue.getInstance( in.ensure( 8 ).getLong() );
             }
             else if ( markerByte == BYTES_8 )
             {
@@ -842,20 +759,17 @@ public class PackStream
 
         private int unpackUINT8() throws IOException
         {
-            ensure( 1 );
-            return buffer.get() & 0xFF;
+            return in.ensure( 1 ).get() & 0xFF;
         }
 
         private int unpackUINT16() throws IOException
         {
-            ensure( 2 );
-            return buffer.getShort() & 0xFFFF;
+            return in.ensure( 2 ).getShort() & 0xFFFF;
         }
 
         private long unpackUINT32() throws IOException
         {
-            ensure( 4 );
-            return buffer.getInt() & 0xFFFFFFFFL;
+            return in.ensure( 4 ).getInt() & 0xFFFFFFFFL;
         }
 
         private byte[] unpackBytes( int size ) throws IOException
@@ -865,13 +779,18 @@ public class PackStream
             int index = 0;
             while(index < size)
             {
-                int toRead = Math.min( buffer.remaining(), size - index );
-                buffer.get( heapBuffer, index, toRead );
+                int toRead = Math.min( in.remaining(), size - index );
+                in.get( heapBuffer, index, toRead );
                 index += toRead;
 
-                if(buffer.remaining() == 0 && index < size)
+                if(in.remaining() == 0 && index < size)
                 {
-                    ensure( Math.min(size - index, buffer.capacity()) );
+                    in.attemptUpTo( size - index );
+                    if(in.remaining() == 0)
+                    {
+                        throw new EndOfStream( "Expected " + (size - index) + " bytes available, " +
+                                                "but no more bytes accessible from underlying stream." );
+                    }
                 }
             }
             return heapBuffer;
@@ -906,8 +825,7 @@ public class PackStream
 
         public PackType peekNextType() throws IOException
         {
-            ensure( 1 );
-            final byte markerByte = buffer.get(buffer.position());
+            final byte markerByte = in.ensure( 1 ).peek();
             final byte markerHighNibble = (byte) (markerByte & 0xF0);
 
             switch(markerHighNibble)

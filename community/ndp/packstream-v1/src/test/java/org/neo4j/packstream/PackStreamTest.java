@@ -72,14 +72,14 @@ public class PackStreamTest
         {
             this.output = new ByteArrayOutputStream();
             this.writable = Channels.newChannel( this.output );
-            this.packer = new PackStream.Packer( this.writable );
+            this.packer = new PackStream.Packer( new BufferedChannelOutput( this.writable ) );
         }
 
         public Machine( int bufferSize )
         {
             this.output = new ByteArrayOutputStream();
             this.writable = Channels.newChannel( this.output );
-            this.packer = new PackStream.Packer( this.writable, bufferSize );
+            this.packer = new PackStream.Packer( new BufferedChannelOutput( this.writable, bufferSize) );
         }
 
         public void reset()

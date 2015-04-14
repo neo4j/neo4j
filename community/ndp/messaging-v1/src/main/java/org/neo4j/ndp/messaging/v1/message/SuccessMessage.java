@@ -25,7 +25,7 @@ import org.neo4j.ndp.messaging.v1.MessageHandler;
 
 public class SuccessMessage implements Message
 {
-    private final Map<String, Object> metadata;
+    private final Map<String,Object> metadata;
 
     public SuccessMessage( Map<String,Object> metadata )
     {
@@ -66,7 +66,12 @@ public class SuccessMessage implements Message
     public String toString()
     {
         return "SuccessMessage{" +
-                "metadata=" + metadata +
-                '}';
+               "metadata=" + metadata +
+               '}';
+    }
+
+    public Map<String,Object> meta()
+    {
+        return metadata;
     }
 }

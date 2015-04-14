@@ -23,7 +23,6 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.Result;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.ndp.runtime.internal.CypherAdapterStream;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -31,7 +30,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.runtime.internal.runner.StreamMatchers.equalsStream;
-import static org.neo4j.runtime.internal.runner.StreamMatchers.record;
+import static org.neo4j.runtime.internal.runner.StreamMatchers.eqRecord;
 
 public class CypherCursorAdapterTest
 {
@@ -51,7 +50,7 @@ public class CypherCursorAdapterTest
         // Then
         assertThat( cursor, equalsStream(
                 new String[]{"name"},
-                record(equalTo("bob")),
-                record(equalTo("Steve Brook"))) );
+                eqRecord( equalTo( "bob" ) ),
+                eqRecord( equalTo( "Steve Brook" ) )) );
     }
 }

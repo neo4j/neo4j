@@ -31,12 +31,11 @@ public class BytePrinter
     /**
      * Print a full byte array as nicely formatted groups of hex numbers.
      * Output looks like:
-     *
+     * <p/>
      * 01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08
      * 01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08
-     *
      */
-    public static void print( byte [] bytes, PrintStream out )
+    public static void print( byte[] bytes, PrintStream out )
     {
         print( wrap( bytes ), out, 0, bytes.length );
     }
@@ -44,7 +43,7 @@ public class BytePrinter
     /**
      * Print a full byte buffer as nicely formatted groups of hex numbers.
      * Output looks like:
-     *
+     * <p/>
      * 01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08
      * 01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08
      *
@@ -59,7 +58,7 @@ public class BytePrinter
     /**
      * Print a subsection of a byte buffer as nicely formatted groups of hex numbers.
      * Output looks like:
-     *
+     * <p/>
      * 01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08
      * 01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08
      *
@@ -68,16 +67,19 @@ public class BytePrinter
      */
     public static void print( ByteBuffer bytes, PrintStream out, int offset, int length )
     {
-        for(int i=offset;i<offset + length;i++)
+        for ( int i = offset; i < offset + length; i++ )
         {
             print( bytes.get( i ), out );
-            if((i - offset + 1) % 32 == 0)
+            if ( (i - offset + 1) % 32 == 0 )
             {
-                out.println(  );
-            } else if((i - offset + 1) % 8 == 0)
+                out.println();
+            }
+            else if ( (i - offset + 1) % 8 == 0 )
             {
                 out.print( "    " );
-            } else {
+            }
+            else
+            {
                 out.print( " " );
             }
         }
@@ -96,7 +98,7 @@ public class BytePrinter
 
     /**
      * This should not be in this class, move to a dedicated ascii-art class when appropriate.
-     *
+     * <p/>
      * Use this to standardize the width of some text output to all be left-justified and space-padded
      * on the right side to fill up the given column width.
      *
@@ -106,12 +108,12 @@ public class BytePrinter
      */
     public static String ljust( String str, int columnWidth )
     {
-        return String.format( "%-" + columnWidth + "s", str);
+        return String.format( "%-" + columnWidth + "s", str );
     }
 
     /**
      * This should not be in this class, move to a dedicated ascii-art class when appropriate.
-     *
+     * <p/>
      * Use this to standardize the width of some text output to all be right-justified and space-padded
      * on the left side to fill up the given column width.
      *
@@ -121,23 +123,24 @@ public class BytePrinter
      */
     public static String rjust( String str, int columnWidth )
     {
-        return String.format( "%" + columnWidth + "s", str);
+        return String.format( "%" + columnWidth + "s", str );
     }
 
     /**
      * Convert a single byte to a human-readable hex number. The number will always be two characters wide.
+     *
      * @param b
      * @return
      */
-    public static String hex(byte b)
+    public static String hex( byte b )
     {
-        return String.format("%02x", b);
+        return String.format( "%02x", b );
     }
 
     /**
      * Convert a subsection of a byte buffer to a human readable string of nicely formatted hex numbers.
      * Output looks like:
-     *
+     * <p/>
      * 01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08
      * 01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08
      *
@@ -152,9 +155,9 @@ public class BytePrinter
         {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             PrintStream ps = null;
-            ps = new PrintStream(baos, true, "UTF-8");
+            ps = new PrintStream( baos, true, "UTF-8" );
             print( bytes, ps, offset, length );
-            return baos.toString("UTF-8");
+            return baos.toString( "UTF-8" );
         }
         catch ( UnsupportedEncodingException e )
         {
@@ -165,14 +168,14 @@ public class BytePrinter
     /**
      * Convert a full byte buffer to a human readable string of nicely formatted hex numbers.
      * Output looks like:
-     *
+     * <p/>
      * 01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08
      * 01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08
      *
      * @param bytes
      * @return
      */
-    public static String hex(ByteBuffer bytes)
+    public static String hex( ByteBuffer bytes )
     {
         return hex( bytes, 0, bytes.capacity() );
     }
@@ -180,15 +183,15 @@ public class BytePrinter
     /**
      * Convert a full byte buffer to a human readable string of nicely formatted hex numbers.
      * Output looks like:
-     *
+     * <p/>
      * 01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08
      * 01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08    01 02 03 04 05 06 07 08
      *
      * @param bytes
      * @return
      */
-    public static String hex(byte[] bytes)
-        {
-            return hex( wrap( bytes ) );
-        }
+    public static String hex( byte[] bytes )
+    {
+        return hex( wrap( bytes ) );
+    }
 }

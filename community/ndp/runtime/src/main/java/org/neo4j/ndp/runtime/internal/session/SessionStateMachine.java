@@ -489,21 +489,27 @@ public class SessionStateMachine implements Session, SessionState
     @SuppressWarnings( "unchecked" )
     private void after()
     {
-        if(currentCallback != null)
+        try
         {
-            try
+            if ( currentCallback != null )
             {
-                currentCallback.completed( currentAttachment );
-            }
-            finally
-            {
-                currentCallback = null;
-                currentAttachment = null;
+                try
+                {
+                    currentCallback.completed( currentAttachment );
+                }
+                finally
+                {
+                    currentCallback = null;
+                    currentAttachment = null;
+                }
             }
         }
-        if( hasTransaction() )
+        finally
         {
-            txBridge.unbindTransactionFromCurrentThread();
+            if ( hasTransaction() )
+            {
+                txBridge.unbindTransactionFromCurrentThread();
+            }
         }
     }
 

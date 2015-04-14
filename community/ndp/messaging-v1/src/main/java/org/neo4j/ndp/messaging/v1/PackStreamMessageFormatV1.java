@@ -40,9 +40,13 @@ import org.neo4j.ndp.messaging.v1.infrastructure.ValueNode;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValuePath;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueRelationship;
 import org.neo4j.ndp.messaging.v1.message.Message;
+import org.neo4j.ndp.runtime.internal.Neo4jError;
+import org.neo4j.packstream.BufferedChannelInput;
+import org.neo4j.packstream.BufferedChannelOutput;
+import org.neo4j.packstream.PackInput;
+import org.neo4j.packstream.PackOutput;
 import org.neo4j.packstream.PackStream;
 import org.neo4j.packstream.PackType;
-import org.neo4j.ndp.runtime.internal.Neo4jError;
 import org.neo4j.stream.Record;
 
 import static org.neo4j.ndp.runtime.internal.Neo4jError.codeFromString;
@@ -50,21 +54,8 @@ import static org.neo4j.stream.Records.record;
 
 public class PackStreamMessageFormatV1 implements MessageFormat
 {
-    public static final String CONTENT_TYPE = "application/vnd.neo4j.v1+packstream";
-
-    public static interface MessageTypes
-    {
-        byte MSG_ACK_FAILURE = 0x0F;
-        byte MSG_RUN = 0x10;
-        byte MSG_DISCARD_ALL = 0x2F;
-        byte MSG_PULL_ALL = 0x3F;
-
-        byte MSG_RECORD = 0x71;
-        byte MSG_SUCCESS = 0x70;
-        byte MSG_IGNORED = 0x7E;
-        byte MSG_FAILURE = 0x7F;
-    }
-
+    public static final int VERSION = 1;
+    public static final String CONTENT_TYPE = "application/vnd.neo4j.v" + VERSION + "+packstream";
     public static final char NODE = 'N';
     public static final char RELATIONSHIP = 'R';
     public static final char PATH = 'P';
@@ -81,9 +72,51 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         return new Reader();
     }
 
+    @Override
+    public int version()
+    {
+        return VERSION;
+    }
+
+    public static interface MessageTypes
+    {
+        byte MSG_ACK_FAILURE = 0x0F;
+        byte MSG_RUN = 0x10;
+        byte MSG_DISCARD_ALL = 0x2F;
+        byte MSG_PULL_ALL = 0x3F;
+
+        byte MSG_RECORD = 0x71;
+        byte MSG_SUCCESS = 0x70;
+        byte MSG_IGNORED = 0x7E;
+        byte MSG_FAILURE = 0x7F;
+    }
+
     public static class Writer implements MessageFormat.Writer
     {
-        private final PackStream.Packer packer = new PackStream.Packer(8192);
+        private final PackStream.Packer packer;
+        private final Runnable onMessageComplete;
+
+        public Writer()
+        {
+            this( new BufferedChannelOutput( 8192 ), new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    // no-op
+                }
+            } );
+        }
+
+        /**
+         * @param output interface to write messages to
+         * @param onMessageComplete invoked for each message, after it's done writing to the output
+         */
+        public Writer( PackOutput output, Runnable onMessageComplete )
+        {
+            this.onMessageComplete = onMessageComplete;
+            packer = new PackStream.Packer( output );
+        }
 
         @Override
         public Writer reset( WritableByteChannel channel )
@@ -106,6 +139,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             packer.packStructHeader( 2, (char) MessageTypes.MSG_RUN );
             packer.pack( statement );
             packRawMap( params );
+            onMessageComplete.run();
         }
 
         @Override
@@ -113,6 +147,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 throws IOException
         {
             packer.packStructHeader( 0, (char) MessageTypes.MSG_PULL_ALL );
+            onMessageComplete.run();
         }
 
         @Override
@@ -120,12 +155,14 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 throws IOException
         {
             packer.packStructHeader( 0, (char) MessageTypes.MSG_DISCARD_ALL );
+            onMessageComplete.run();
         }
 
         @Override
         public void handleAckFailureMessage() throws IOException
         {
             packer.packStructHeader( 0, (char) MessageTypes.MSG_ACK_FAILURE );
+            onMessageComplete.run();
         }
 
         @Override
@@ -139,6 +176,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             {
                 packValue( fields[i] );
             }
+            onMessageComplete.run();
         }
 
         @Override
@@ -147,6 +185,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         {
             packer.packStructHeader( 1, (char) MessageTypes.MSG_SUCCESS );
             packRawMap( metadata );
+            onMessageComplete.run();
         }
 
         @Override
@@ -161,12 +200,14 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
             packer.pack( "message" );
             packValue( cause.message() );
+            onMessageComplete.run();
         }
 
         @Override
         public void handleIgnoredMessage() throws IOException
         {
             packer.packStructHeader( 0, (char) MessageTypes.MSG_IGNORED );
+            onMessageComplete.run();
         }
 
         @Override
@@ -190,27 +231,27 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             // Note: below uses instanceof for quick implementation, this should be swapped over to a dedicated
             // visitable type that the serializer can simply visit. This would create explicit contract for what can
             // be serialized and allow performant method dispatch rather than if branching.
-            if(obj == null)
+            if ( obj == null )
             {
                 packer.packNull();
             }
-            else if(obj instanceof Boolean)
+            else if ( obj instanceof Boolean )
             {
                 packer.pack( (boolean) obj );
             }
-            else if(obj instanceof Byte || obj instanceof Short || obj instanceof Integer || obj instanceof Long)
+            else if ( obj instanceof Byte || obj instanceof Short || obj instanceof Integer || obj instanceof Long )
             {
                 packer.pack( ((Number) obj).longValue() );
             }
-            else if(obj instanceof Float || obj instanceof Double)
+            else if ( obj instanceof Float || obj instanceof Double )
             {
                 packer.pack( ((Number) obj).doubleValue() );
             }
-            else if(obj instanceof String)
+            else if ( obj instanceof String )
             {
                 packer.pack( (String) obj );
             }
-            else if(obj instanceof Map )
+            else if ( obj instanceof Map )
             {
                 Map<Object,Object> map = (Map<Object,Object>) obj;
 
@@ -221,7 +262,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                     packValue( entry.getValue() );
                 }
             }
-            else if(obj instanceof Collection )
+            else if ( obj instanceof Collection )
             {
                 List list = (List) obj;
                 packer.packListHeader( list.size() );
@@ -230,77 +271,77 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                     packValue( item );
                 }
             }
-            else if(obj instanceof byte[])
+            else if ( obj instanceof byte[] )
             {
                 // Pending decision
                 throw new UnsupportedOperationException( "Binary values cannot be packed." );
             }
-            else if(obj instanceof short[])
+            else if ( obj instanceof short[] )
             {
-                short[] arr = (short[])obj;
+                short[] arr = (short[]) obj;
                 packer.packListHeader( arr.length );
-                for ( int i = 0; i <arr.length; i++ )
+                for ( int i = 0; i < arr.length; i++ )
                 {
                     packer.pack( arr[i] );
                 }
             }
-            else if(obj instanceof int[])
+            else if ( obj instanceof int[] )
             {
-                int[] arr = (int[])obj;
+                int[] arr = (int[]) obj;
                 packer.packListHeader( arr.length );
-                for ( int i = 0; i <arr.length; i++ )
+                for ( int i = 0; i < arr.length; i++ )
                 {
                     packer.pack( arr[i] );
                 }
             }
-            else if(obj instanceof long[])
+            else if ( obj instanceof long[] )
             {
-                long[] arr = (long[])obj;
+                long[] arr = (long[]) obj;
                 packer.packListHeader( arr.length );
-                for ( int i = 0; i <arr.length; i++ )
+                for ( int i = 0; i < arr.length; i++ )
                 {
                     packer.pack( arr[i] );
                 }
             }
-            else if(obj instanceof float[])
+            else if ( obj instanceof float[] )
             {
-                float[] arr = (float[])obj;
+                float[] arr = (float[]) obj;
                 packer.packListHeader( arr.length );
-                for ( int i = 0; i <arr.length; i++ )
+                for ( int i = 0; i < arr.length; i++ )
                 {
                     packValue( arr[i] );
                 }
             }
-            else if(obj instanceof double[])
+            else if ( obj instanceof double[] )
             {
-                double[] arr = (double[])obj;
+                double[] arr = (double[]) obj;
                 packer.packListHeader( arr.length );
-                for ( int i = 0; i <arr.length; i++ )
+                for ( int i = 0; i < arr.length; i++ )
                 {
                     packValue( arr[i] );
                 }
             }
-            else if(obj instanceof boolean[])
+            else if ( obj instanceof boolean[] )
             {
-                boolean[] arr = (boolean[])obj;
+                boolean[] arr = (boolean[]) obj;
                 packer.packListHeader( arr.length );
-                for ( int i = 0; i <arr.length; i++ )
+                for ( int i = 0; i < arr.length; i++ )
                 {
                     packValue( arr[i] );
                 }
             }
-            else if(obj.getClass().isArray())
+            else if ( obj.getClass().isArray() )
             {
-                Object[] arr = (Object[])obj;
+                Object[] arr = (Object[]) obj;
                 packer.packListHeader( arr.length );
-                for ( int i = 0; i <arr.length; i++ )
+                for ( int i = 0; i < arr.length; i++ )
                 {
                     packValue( arr[i] );
                 }
             }
-            else if(obj instanceof Node )
+            else if ( obj instanceof Node )
             {
-                Node node = (Node)obj;
+                Node node = (Node) obj;
                 packer.packStructHeader( 3, NODE );
                 packer.pack( "node/" + node.getId() );
 
@@ -311,7 +352,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                     packer.pack( label.name() );
                 }
 
-                Collection<String> propertyKeys = Iterables.toList(node.getPropertyKeys());
+                Collection<String> propertyKeys = Iterables.toList( node.getPropertyKeys() );
                 packer.packMapHeader( propertyKeys.size() );
                 for ( String propertyKey : propertyKeys )
                 {
@@ -319,9 +360,9 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                     packValue( node.getProperty( propertyKey ) );
                 }
             }
-            else if(obj instanceof Relationship )
+            else if ( obj instanceof Relationship )
             {
-                Relationship rel = (Relationship)obj;
+                Relationship rel = (Relationship) obj;
                 packer.packStructHeader( 5, RELATIONSHIP );
                 packer.pack( "rel/" + rel.getId() );
                 packer.pack( "node/" + rel.getStartNode().getId() );
@@ -329,7 +370,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
                 packer.pack( rel.getType().name() );
 
-                Collection<String> propertyKeys = Iterables.toList(rel.getPropertyKeys());
+                Collection<String> propertyKeys = Iterables.toList( rel.getPropertyKeys() );
                 packer.packMapHeader( propertyKeys.size() );
                 for ( String propertyKey : propertyKeys )
                 {
@@ -337,7 +378,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                     packValue( rel.getProperty( propertyKey ) );
                 }
             }
-            else if(obj instanceof Path )
+            else if ( obj instanceof Path )
             {
                 Path path = (Path) obj;
                 packer.packStructHeader( 1, PATH );
@@ -357,7 +398,17 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
     public static class Reader implements MessageFormat.Reader
     {
-        private final PackStream.Unpacker unpacker = new PackStream.Unpacker( 8192 );
+        private final PackStream.Unpacker unpacker;
+
+        public Reader()
+        {
+            this( new BufferedChannelInput( 8192 ) );
+        }
+
+        public Reader( PackInput input )
+        {
+            unpacker = new PackStream.Unpacker( input );
+        }
 
         @Override
         public boolean hasNext() throws IOException
@@ -372,17 +423,33 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         public <E extends Exception> void read( MessageHandler<E> output ) throws IOException, E
         {
             unpacker.unpackStructHeader();
-            int type = (int)unpacker.unpackLong();
-            switch( type )
+            int type = (int) unpacker.unpackLong();
+            switch ( type )
             {
-            case MessageTypes.MSG_RUN:         unpackRunMessage( output); break;
-            case MessageTypes.MSG_DISCARD_ALL: unpackDiscardAllMessage( output ); break;
-            case MessageTypes.MSG_PULL_ALL:    unpackPullAllMessage( output ); break;
-            case MessageTypes.MSG_RECORD:      unpackRecordMessage( output ); break;
-            case MessageTypes.MSG_SUCCESS:     unpackSuccessMessage( output ); break;
-            case MessageTypes.MSG_FAILURE:     unpackFailureMessage( output ); break;
-            case MessageTypes.MSG_ACK_FAILURE: unpackAckFailureMessage( output ); break;
-            case MessageTypes.MSG_IGNORED:     unpackIgnoredMessage( output ); break;
+            case MessageTypes.MSG_RUN:
+                unpackRunMessage( output );
+                break;
+            case MessageTypes.MSG_DISCARD_ALL:
+                unpackDiscardAllMessage( output );
+                break;
+            case MessageTypes.MSG_PULL_ALL:
+                unpackPullAllMessage( output );
+                break;
+            case MessageTypes.MSG_RECORD:
+                unpackRecordMessage( output );
+                break;
+            case MessageTypes.MSG_SUCCESS:
+                unpackSuccessMessage( output );
+                break;
+            case MessageTypes.MSG_FAILURE:
+                unpackFailureMessage( output );
+                break;
+            case MessageTypes.MSG_ACK_FAILURE:
+                unpackAckFailureMessage( output );
+                break;
+            case MessageTypes.MSG_IGNORED:
+                unpackIgnoredMessage( output );
+                break;
             default:
                 throw new IOException( "Unknown message type: " + type );
             }
@@ -460,15 +527,15 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         private Map<String,Object> unpackRawMap() throws IOException
         {
             int size = (int) unpacker.unpackMapHeader();
-            if(size == 0)
+            if ( size == 0 )
             {
                 return Collections.EMPTY_MAP;
             }
-            Map<String, Object> map = new HashMap<>( size, 1 );
+            Map<String,Object> map = new HashMap<>( size, 1 );
             for ( int i = 0; i < size; i++ )
             {
                 String key = unpacker.unpackString();
-                map.put(key, unpackValue() );
+                map.put( key, unpackValue() );
             }
             return map;
         }
@@ -476,12 +543,16 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         private Object unpackValue() throws IOException
         {
             PackType valType = unpacker.peekNextType();
-            switch( valType )
+            switch ( valType )
             {
-            case TEXT: return unpacker.unpackString();
-            case INTEGER: return unpacker.unpackLong();
-            case FLOAT: return unpacker.unpackDouble();
-            case BOOLEAN: return unpacker.unpackBoolean();
+            case TEXT:
+                return unpacker.unpackString();
+            case INTEGER:
+                return unpacker.unpackLong();
+            case FLOAT:
+                return unpacker.unpackDouble();
+            case BOOLEAN:
+                return unpacker.unpackBoolean();
             case NULL:
                 // still need to move past the null value
                 unpacker.unpack();
@@ -489,7 +560,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             case LIST:
             {
                 int size = (int) unpacker.unpackListHeader();
-                if(size == 0)
+                if ( size == 0 )
                 {
                     return Collections.EMPTY_LIST;
                 }
@@ -503,11 +574,11 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             case MAP:
             {
                 int size = (int) unpacker.unpackMapHeader();
-                if(size == 0)
+                if ( size == 0 )
                 {
                     return Collections.EMPTY_MAP;
                 }
-                Map<String, Object> map = new HashMap<>(size, 1);
+                Map<String,Object> map = new HashMap<>( size, 1 );
                 for ( int j = 0; j < size; j++ )
                 {
                     String key = unpacker.unpackString();
@@ -520,7 +591,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             {
                 unpacker.unpackStructHeader();
                 char signature = unpacker.unpackStructSignature();
-                switch(signature)
+                switch ( signature )
                 {
                 case NODE:
                 {
@@ -528,7 +599,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
 
                     int numLabels = (int) unpacker.unpackListHeader();
                     List<Label> labels;
-                    if(numLabels > 0)
+                    if ( numLabels > 0 )
                     {
                         labels = new ArrayList<>( numLabels );
                         for ( int i = 0; i < numLabels; i++ )
@@ -558,19 +629,21 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 }
                 case PATH:
                 {
-                    int length = (int)unpacker.unpackListHeader();
-                    // Note, this obviously assumes blindly that the client will send us paths of manageble sizes, opening
+                    int length = (int) unpacker.unpackListHeader();
+                    // Note, this obviously assumes blindly that the client will send us paths of manageble sizes,
+                    // opening
                     // the door for a bad client to make us allocate a ton of extra RAM. The assumption here is that
                     // the client has gone through a handshake and we trust her. That said, this is still wasteful, so
                     // look into more efficient ways to handle this if we ever take paths as input arguments.
                     PropertyContainer[] entities = new PropertyContainer[length];
                     for ( int i = 0; i < length; i++ )
                     {
-                        entities[i] = (PropertyContainer)unpackValue();
+                        entities[i] = (PropertyContainer) unpackValue();
                     }
                     return new ValuePath( entities );
                 }
-                default: throw new IOException( "Unknown struct type: " + signature );
+                default:
+                    throw new IOException( "Unknown struct type: " + signature );
                 }
             }
             default:
@@ -582,7 +655,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         {
             int numProps = (int) unpacker.unpackMapHeader();
             Map<String,Object> map;
-            if(numProps > 0)
+            if ( numProps > 0 )
             {
                 map = new HashMap<>( numProps, 1 );
                 for ( int j = 0; j < numProps; j++ )

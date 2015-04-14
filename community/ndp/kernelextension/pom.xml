@@ -47,7 +47,12 @@ the relevant Commercial Agreement.
   <dependencies>
     <dependency>
       <groupId>org.neo4j.ndp</groupId>
-      <artifactId>neo4j-ndp-transport-http</artifactId>
+      <artifactId>neo4j-ndp-transport-socket</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.ndp</groupId>
+      <artifactId>neo4j-ndp-runtime</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
