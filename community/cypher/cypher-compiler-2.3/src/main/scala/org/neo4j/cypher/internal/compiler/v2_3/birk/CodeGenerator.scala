@@ -100,16 +100,16 @@ class Namer(prefix: String) {
 
 case class JavaSymbol(name: String, javaType: String)
 
-class CodeGenerator(semanticTable: SemanticTable) {
+class CodeGenerator {
 
   import CodeGenerator.{n, nextClassName, packageName}
   import scala.collection.JavaConverters._
 
-  def generate(plan: LogicalPlan, planContext: PlanContext, clock: Clock) = {
+  def generate(plan: LogicalPlan, planContext: PlanContext, clock: Clock, semanticTable: SemanticTable) = {
     plan match {
       case _: ProduceResult =>
         val className = nextClassName()
-        val planStatements: Seq[Instruction] = createResultAst(plan)
+        val planStatements: Seq[Instruction] = createResultAst(plan, semanticTable)
         val source = generateCodeFromAst(className, planStatements)
         val clazz = Javac.compile(s"$packageName.$className",source )
 
@@ -230,7 +230,7 @@ class CodeGenerator(semanticTable: SemanticTable) {
        |}""".stripMargin
   }
 
-  private def createResultAst(plan: LogicalPlan): Seq[Instruction] = {
+  private def createResultAst(plan: LogicalPlan, semanticTable: SemanticTable): Seq[Instruction] = {
     var variables: Map[String, JavaSymbol] = Map.empty
     var probeTables: Map[NodeHashJoin, CodeThunk] = Map.empty
     val variableName = new Namer("v")

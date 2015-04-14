@@ -40,7 +40,7 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator
 
 class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  private val generator = new CodeGenerator(mock[SemanticTable])
+  private val generator = new CodeGenerator()
 
   test("all nodes scan") { // MATCH a RETURN a
     //given
@@ -361,7 +361,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   private def compile(plan: LogicalPlan, params: Map[String, AnyRef] = Map.empty) = {
-    val compiled = generator.generate(plan, newMockedPlanContext, Clock.SYSTEM_CLOCK)
+    val compiled = generator.generate(plan, newMockedPlanContext, Clock.SYSTEM_CLOCK, mock[SemanticTable])
     compiled.executionResultBuilder(statement, graphDatabaseService, NormalMode, params)
   }
 
