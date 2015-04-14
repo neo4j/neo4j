@@ -43,6 +43,7 @@ import javax.tools.ToolProvider;
 
 import sun.tools.java.CompilerError;
 
+import org.neo4j.cypher.internal.ExecutionMode;
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult;
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription;
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException;
@@ -76,6 +77,7 @@ public class Javac
             int number = 1;
             for ( Diagnostic<?> diagnostic : diagnosticsCollector.getDiagnostics() )
             {
+                sb.append( classBody );
                 String diagnosticMessage = diagnostic.getMessage( Locale.getDefault() );
                 sb.append( format( "%s  : %d Type : %s", diagnostic.getKind(), number, diagnosticMessage ) );
                 sb.append( format( " at column : %d", diagnostic.getColumnNumber() ) );
@@ -90,12 +92,12 @@ public class Javac
     }
 
     public static InternalExecutionResult newInstance( Class<InternalExecutionResult> clazz, Statement statement,
-                                                       GraphDatabaseService db, InternalPlanDescription description)
+                                                       GraphDatabaseService db, ExecutionMode executionMode, InternalPlanDescription description, Map<String, Object> params)
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException
     {
         Constructor<InternalExecutionResult> constructor =
-                clazz.getDeclaredConstructor( Statement.class, GraphDatabaseService.class, InternalPlanDescription.class );
-        return constructor.newInstance( statement, db, description );
+                clazz.getDeclaredConstructor( Statement.class, GraphDatabaseService.class, ExecutionMode.class, InternalPlanDescription.class , Map.class);
+        return constructor.newInstance( statement, db, executionMode, description, params );
     }
 
     private static class InMemSource extends SimpleJavaFileObject

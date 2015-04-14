@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 
 object LogicalPlan2PlanDescription extends ((LogicalPlan, Map[LogicalPlan, Id]) => InternalPlanDescription) {
+  import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
+
   override def apply(plan: LogicalPlan, idMap: Map[LogicalPlan, Id]): InternalPlanDescription = {
     val symbols = plan.availableSymbols.map(_.name)
     val planDescription = plan match {
@@ -44,7 +46,7 @@ object LogicalPlan2PlanDescription extends ((LogicalPlan, Map[LogicalPlan, Id]) 
       case NodeIndexUniqueSeek(IdName(id), label, propKey, value, arguments) =>
         PlanDescriptionImpl(id = idMap(plan), "NodeIndexUniqueSeek", NoChildren, Seq(Index(label.name, propKey.name)), symbols)
 
-      case ProduceResult(nodes, rels, inner) =>
+      case ProduceResult(nodes, rels, _, inner) =>
         PlanDescriptionImpl(id = idMap(plan), "Results", SingleChild(apply(inner, idMap)), Seq(), symbols)
 
       case Expand(inner, IdName(fromName), dir, typeNames, IdName(toName), IdName(relName), mode) =>
@@ -58,6 +60,11 @@ object LogicalPlan2PlanDescription extends ((LogicalPlan, Map[LogicalPlan, Id]) 
       case NodeHashJoin(nodes, lhs, rhs) =>
         val children = TwoChildren(apply(lhs, idMap), apply(rhs, idMap))
         PlanDescriptionImpl(id = idMap(plan), "NodeHashJoin", children, Seq(KeyNames(nodes.toSeq.map(_.name))), symbols)
+
+      case Projection(lhs, expr) =>
+        PlanDescriptionImpl(id = idMap(plan), "Projection", SingleChild(apply(lhs, idMap)), expr.values.toSeq.map(e => LegacyExpression(e.asCommandExpression)), symbols )
+
+      case row: SingleRow => new SingleRowPlanDescription(id = idMap(plan), Seq.empty, row.argumentIds.map(_.name))
 
       case x => throw new CantCompileQueryException(x.getClass.getSimpleName)
     }

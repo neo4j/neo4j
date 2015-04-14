@@ -187,12 +187,12 @@ return coalesce(a.title, a.name)""")
   }
 
   test("arithmetics precedence test") {
-    val result = executeWithAllPlanners("return 12/4*3-2*4")
+    val result = executeWithAllPlannersAndRuntimes("return 12/4*3-2*4")
     result.toList should equal(List(Map("12/4*3-2*4" -> 1)))
   }
 
   test("arithmetics precedence with parenthesis test") {
-    val result = executeWithAllPlanners("return 12/4*(3-2*4)")
+    val result = executeWithAllPlannersAndRuntimes("return 12/4*(3-2*4)")
     result.toList should equal(List(Map("12/4*(3-2*4)" -> -15)))
   }
 
@@ -286,7 +286,7 @@ return coalesce(a.title, a.name)""")
   }
 
   test("long or double") {
-    val result = executeWithAllPlanners("return 1, 1.5").toList.head
+    val result = executeWithAllPlannersAndRuntimes("return 1, 1.5").toList.head
 
     result("1") should haveType[java.lang.Long]
     result("1.5") should haveType[java.lang.Double]
@@ -463,7 +463,7 @@ return coalesce(a.title, a.name)""")
   }
 
   test("allow queries with only return") {
-    val result = executeWithAllPlanners("RETURN 'Andres'").toList
+    val result = executeWithAllPlannersAndRuntimes("RETURN 'Andres'").toList
 
     result should equal(List(Map("'Andres'" -> "Andres")))
   }
@@ -488,7 +488,7 @@ return coalesce(a.title, a.name)""")
 
   test("should be able to alias expressions") {
     createNode("id" -> 42)
-    val result = executeWithAllPlanners("match (a) return a.id as a, a.id")
+    val result = executeWithAllPlannersAndRuntimes("match (a) return a.id as a, a.id")
     result.toList should equal(List(Map("a" -> 42, "a.id" -> 42)))
   }
 
@@ -534,5 +534,23 @@ return coalesce(a.title, a.name)""")
     )
 
     result shouldBe empty
+  }
+
+  test("compiled runtime should support literal expressions") {
+    val result = executeWithAllPlannersAndRuntimes("RETURN 1")
+
+    result.toList should equal(List(Map("1" -> 1)))
+  }
+
+  test("compiled runtime should support addition of collections") {
+    val result = executeWithAllPlannersAndRuntimes("RETURN [1,2,3] + [4, 5] AS FOO")
+
+    result.toComparableList should equal(List(Map("FOO" -> List(1, 2, 3, 4, 5))))
+  }
+
+  test("compiled runtime should support addition of item to collection") {
+    val result = executeWithAllPlannersAndRuntimes("""RETURN [1,2,3] + 4 AS FOO""")
+
+    result.toComparableList should equal(List(Map("FOO" -> List(1, 2, 3, 4))))
   }
 }

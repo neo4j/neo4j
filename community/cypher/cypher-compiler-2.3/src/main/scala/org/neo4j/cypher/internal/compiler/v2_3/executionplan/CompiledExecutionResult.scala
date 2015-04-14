@@ -23,10 +23,12 @@ import java.io.{PrintWriter, StringWriter}
 import java.util
 import java.util.Collections
 
+import org.neo4j.cypher.internal.{ExecutionMode, ProfileMode, ExplainMode}
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
 import org.neo4j.cypher.internal.compiler.v2_3.notification.InternalNotification
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
+import org.neo4j.graphdb.QueryExecutionType._
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.{QueryExecutionType, ResourceIterator}
 
@@ -78,9 +80,9 @@ abstract class CompiledExecutionResult extends InternalExecutionResult {
     innerIterator.close()
   }
 
-  override def planDescriptionRequested: Boolean = ???
+  override def planDescriptionRequested: Boolean =  executionMode == ExplainMode || executionMode == ProfileMode
 
-  override def executionType: QueryExecutionType = ???
+  override def executionType: QueryExecutionType =  if (executionMode == ProfileMode) profiled(queryType) else query(queryType)
 
   override def notifications = Iterable.empty[InternalNotification]
 
@@ -93,6 +95,11 @@ abstract class CompiledExecutionResult extends InternalExecutionResult {
     ensureIterator()
     innerIterator.next()
   }
+
+  def executionMode: ExecutionMode
+
+  //TODO when allowing writes this should be moved to the generated class
+  protected def queryType: QueryType = QueryType.READ_ONLY
 
   private def ensureIterator() = {
     if (innerIterator == null) {

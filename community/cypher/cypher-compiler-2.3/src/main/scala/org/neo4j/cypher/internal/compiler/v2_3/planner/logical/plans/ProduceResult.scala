@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression
 
-case class ProduceResult(nodes: Seq[String], relationships: Seq[String], inner: LogicalPlan) extends LogicalPlan {
+case class ProduceResult(nodes: Seq[String], relationships: Seq[String], other: Seq[String], inner: LogicalPlan) extends LogicalPlan {
   val lhs = Some(inner)
 
   def solved = inner.solved

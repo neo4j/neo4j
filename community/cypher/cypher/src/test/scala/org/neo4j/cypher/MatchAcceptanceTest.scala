@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher
 
+import java.util
+
 import org.neo4j.cypher.internal.PathImpl
 import org.neo4j.graphdb._
 
@@ -120,7 +122,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val n2: Node = createNode()
     relate(n1, n2, "KNOWS")
 
-    val result = executeWithAllPlanners(
+    val result = executeWithAllPlannersAndRuntimes(
       s"match (n1)-[rel:KNOWS]->(n2) RETURN n1, n2"
     )
 
@@ -134,7 +136,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate(n1, n2, "KNOWS")
     relate(n1, n3, "KNOWS")
 
-    val result = executeWithAllPlanners(
+    val result = executeWithAllPlannersAndRuntimes(
       s"match (start)-[rel:KNOWS]->(x) return x"
     )
 
@@ -961,7 +963,7 @@ return b
     val b = createNode()
     relate(a, b, "REL")
 
-    val result = executeWithAllPlanners("match (a)-[:REL|:REL]->(b) return b").toList
+    val result = executeWithAllPlannersAndRuntimes("match (a)-[:REL|:REL]->(b) return b").toList
 
     result should equal (List(Map("b" -> b)))
   }
@@ -1098,7 +1100,7 @@ return b
     relate(a, b2)
 
     // when
-    val result = executeWithAllPlanners(s"MATCH a-->(b:foo) RETURN b")
+    val result = executeWithAllPlannersAndRuntimes(s"MATCH a-->(b:foo) RETURN b")
 
     // THEN
     result.toList should equal (List(Map("b" -> b1)))
@@ -1802,7 +1804,7 @@ return b
     //WHEN
     val first = eengine.execute(query).toList
     val second = eengine.execute(query).toList
-    val check = executeWithAllPlanners("MATCH (f:Folder) RETURN f.name").toSet
+    val check = executeWithAllPlannersAndRuntimes("MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN
     first should equal(second)
@@ -1833,7 +1835,7 @@ return b
     //WHEN
     val first = eengine.execute(query).toList
     val second = eengine.execute(query).toList
-    val check = executeWithAllPlanners("MATCH (f:Folder) RETURN f.name").toSet
+    val check = executeWithAllPlannersAndRuntimes("MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN
     first should equal(second)
@@ -1997,4 +1999,102 @@ return b
     // then
     result.toList should equal(List(Map("count(*)" -> 3)))
   }
+
+  test("should return null as value for non-existent property") {
+    createNode(Map("foo" -> 1))
+
+    val query = "MATCH a RETURN a.bar"
+
+    val result = executeWithAllPlannersAndRuntimes(query).toList
+    result should equal(List(Map("a.bar" -> null)))
+  }
+
+  test("should return property value for matched node") {
+    val props = Map("prop" -> 1)
+    createNode(props)
+
+    val query = "MATCH a RETURN a.prop"
+
+    val result = executeWithAllPlannersAndRuntimes(query).toComparableList
+    result should equal(List(asResult(props, "a")))
+  }
+
+  test("should return property value for matched relationship") {
+    relate(createNode(), createNode(), "prop" -> 1)
+
+    val query = "MATCH a-[r]->b RETURN r.prop"
+
+    val result = executeWithAllPlannersAndRuntimes(query).toComparableList
+    result should equal(List(asResult(Map("prop" -> 1), "r")))
+  }
+
+  test("should return property value for matched node and relationship") {
+    val nodeProp = Map("nodeProp" -> 1)
+    relate(createNode(nodeProp), createNode(), "relProp" -> 2)
+
+    val query = "MATCH a-[r]->b RETURN a.nodeProp, r.relProp"
+
+    val result = executeWithAllPlannersAndRuntimes(query).toComparableList
+    result should equal(List(asResult(Map("nodeProp" -> 1), "a") ++ asResult(Map("relProp" -> 2), "r")))
+  }
+
+  test("should be able to project both nodes and relationships") {
+    val a = createNode()
+    val r = relate(a, createNode())
+
+    val query = "MATCH a-[r]->b RETURN a AS FOO, r AS BAR"
+
+    val result = executeWithAllPlannersAndRuntimes(query).toComparableList
+    result should equal(List(Map("FOO" -> a, "BAR" -> r)))
+  }
+
+  test("should return null as value for non-existent relationship property") {
+    relate(createNode(), createNode(), "prop" -> 1)
+
+    val query = "MATCH a-[r]->b RETURN r.foo"
+
+    val result = executeWithAllPlannersAndRuntimes(query).toComparableList
+    result should equal(List(Map("r.foo" -> null)))
+  }
+
+  test("should return multiple property values for matched node") {
+    val props = Map(
+      "name" -> "Philip J. Fry",
+      "age" -> 2046,
+      "seasons" -> Array(1, 2, 3, 4, 5, 6, 7))
+
+    createNode(props)
+
+    val query = "MATCH a RETURN a.name, a.age, a.seasons"
+
+    val result = executeWithAllPlannersAndRuntimes(query).toComparableList
+    result should equal(List(asResult(props, "a")))
+  }
+
+  test("adding a property and a literal is supported in new runtime") {
+    val props = Map("prop" -> 1)
+    createNode(props)
+    val result = executeWithAllPlannersAndRuntimes("MATCH a RETURN a.prop + 1 AS FOO").toComparableList
+
+    result should equal(List(Map("FOO" -> 2)))
+  }
+
+  test("adding arrays is supported in new runtime") {
+    val props = Map("prop1" -> Array(1,2,3), "prop2" -> Array(4, 5))
+    createNode(props)
+    val result = executeWithAllPlannersAndRuntimes("MATCH a RETURN a.prop1 + a.prop2 AS FOO").toComparableList
+
+    result should equal(List(Map("FOO" -> List(1, 2, 3, 4, 5))))
+  }
+
+  /**
+   * Append identifier to keys and transform value arrays to lists
+   */
+  private def asResult(data: Map[String, Any], id: String) =
+    data.map {
+      case (k, v) => (s"$id.$k", v)
+    }.mapValues {
+      case v: Array[_] => v.toList
+      case v => v
+    }
 }
