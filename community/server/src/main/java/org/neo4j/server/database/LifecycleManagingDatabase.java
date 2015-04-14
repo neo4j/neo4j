@@ -23,9 +23,9 @@ import java.io.File;
 import java.util.Map;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 
@@ -38,15 +38,17 @@ public class LifecycleManagingDatabase implements Database
     public static final GraphFactory EMBEDDED = new GraphFactory()
     {
         @Override
-        public GraphDatabaseAPI newGraphDatabase( String storeDir, Map<String,String> params, Dependencies dependencies )
+        public GraphDatabaseAPI newGraphDatabase( String storeDir, Map<String,String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
         {
-            return new EmbeddedGraphDatabase( storeDir, params, dependencies );
+            params.put( CommunityFacadeFactory.Configuration.store_dir.name(), storeDir );
+
+            return new CommunityFacadeFactory().newFacade( params, dependencies );
         }
     };
 
     public interface GraphFactory
     {
-        GraphDatabaseAPI newGraphDatabase( String storeDir, Map<String,String> params, Dependencies dependencies );
+        GraphDatabaseAPI newGraphDatabase( String storeDir, Map<String,String> params, GraphDatabaseFacadeFactory.Dependencies dependencies );
     }
 
     public static Database.Factory lifecycleManagingDatabase( final GraphFactory graphDbFactory )
@@ -54,7 +56,7 @@ public class LifecycleManagingDatabase implements Database
         return new Factory()
         {
             @Override
-            public Database newDatabase(Config config, Dependencies dependencies)
+            public Database newDatabase(Config config, GraphDatabaseFacadeFactory.Dependencies dependencies)
             {
                 return new LifecycleManagingDatabase( config, graphDbFactory, dependencies );
             }
@@ -63,13 +65,13 @@ public class LifecycleManagingDatabase implements Database
 
     private final Config dbConfig;
     private final GraphFactory dbFactory;
-    private final Dependencies dependencies;
+    private final GraphDatabaseFacadeFactory.Dependencies dependencies;
     private final Log log;
 
     private boolean isRunning = false;
     private GraphDatabaseAPI graph;
 
-    public LifecycleManagingDatabase(Config dbConfig, GraphFactory dbFactory, Dependencies dependencies)
+    public LifecycleManagingDatabase(Config dbConfig, GraphFactory dbFactory, GraphDatabaseFacadeFactory.Dependencies dependencies)
     {
         this.dbConfig = dbConfig;
         this.dbFactory = dbFactory;

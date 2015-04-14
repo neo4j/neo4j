@@ -19,18 +19,11 @@
  */
 package org.neo4j.server.webadmin.rest;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
-
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
@@ -38,7 +31,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.database.Database;
@@ -50,6 +43,12 @@ import org.neo4j.server.rrd.JobScheduler;
 import org.neo4j.server.rrd.RrdFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.server.EntityOutputFormat;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class MonitorServiceDocTest implements JobScheduler
 {
@@ -92,7 +91,7 @@ public class MonitorServiceDocTest implements JobScheduler
     @Before
     public void setUp() throws Exception
     {
-        database = new WrappedDatabase( (InternalAbstractGraphDatabase) new TestGraphDatabaseFactory().newImpermanentDatabase() );
+        database = new WrappedDatabase( (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase() );
 
         rrdDb = new RrdFactory( new Config(), NullLogProvider.getInstance() ).createRrdDbAndSampler( database, this );
 

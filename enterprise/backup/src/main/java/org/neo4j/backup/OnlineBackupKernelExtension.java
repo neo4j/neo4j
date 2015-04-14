@@ -53,6 +53,10 @@ import static org.neo4j.backup.OnlineBackupSettings.online_backup_server;
 
 public class OnlineBackupKernelExtension implements Lifecycle
 {
+
+    private Object startBindingListener;
+    private Object bindingListener;
+
     public interface BackupProvider
     {
         TheBackupInterface newBackup();
@@ -133,17 +137,20 @@ public class OnlineBackupKernelExtension implements Lifecycle
 
                 try
                 {
+                    startBindingListener = new StartBindingListener();
                     graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberEvents.class).addClusterMemberListener(
-                            new StartBindingListener() );
+                            (ClusterMemberListener) startBindingListener );
 
-                    graphDatabaseAPI.getDependencyResolver().resolveDependency( BindingNotifier.class ).addBindingListener( new BindingListener()
-                            {
-                                @Override
-                                public void listeningAt( URI myUri )
-                                {
-                                    me = myUri;
-                                }
-                            } );
+                    bindingListener = new BindingListener()
+                    {
+                        @Override
+                        public void listeningAt( URI myUri )
+                        {
+                            me = myUri;
+                        }
+                    };
+                    graphDatabaseAPI.getDependencyResolver().resolveDependency( BindingNotifier.class ).addBindingListener(
+                            (BindingListener) bindingListener );
                 }
                 catch ( NoClassDefFoundError | IllegalArgumentException e )
                 {
@@ -168,6 +175,11 @@ public class OnlineBackupKernelExtension implements Lifecycle
 
             try
             {
+                graphDatabaseAPI.getDependencyResolver().resolveDependency( ClusterMemberEvents.class).removeClusterMemberListener(
+                        (ClusterMemberListener) startBindingListener );
+                graphDatabaseAPI.getDependencyResolver().resolveDependency( BindingNotifier.class ).removeBindingListener(
+                        (BindingListener) bindingListener );
+
                 ClusterMemberAvailability client = getClusterMemberAvailability();
                 client.memberIsUnavailable( BACKUP );
             }

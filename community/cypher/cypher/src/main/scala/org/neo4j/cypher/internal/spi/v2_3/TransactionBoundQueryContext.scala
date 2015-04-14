@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.spi.v2_3
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.{BeansAPIRelationshipIterator, JavaConversionSupport}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.compiler.v2_3.{EntityNotFoundException, FailedIndexException}
@@ -28,18 +28,18 @@ import org.neo4j.graphdb.DynamicRelationshipType._
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.collection.IteratorUtil
+import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
+import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.api.KernelStatement
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase}
+import org.neo4j.kernel.impl.core.{RelationshipProxy, ThreadToStatementContextBridge}
 import org.neo4j.tooling.GlobalGraphOperations
+
 import scala.collection.JavaConverters._
 import scala.collection.{Iterator, mutable}
-import org.neo4j.kernel.impl.core.RelationshipProxy
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.BeansAPIRelationshipIterator
 
 final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
                                          var tx: Transaction,
@@ -296,7 +296,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     statement.schemaWriteOperations().constraintDrop(new UniquenessConstraint(labelId, propertyKeyId))
 
   override def hasLocalFileAccess: Boolean = graph match {
-    case iagdb: InternalAbstractGraphDatabase => iagdb.getConfig.get(GraphDatabaseSettings.allow_file_urls)
+    case db: GraphDatabaseAPI => db.getDependencyResolver.resolveDependency(classOf[Config]).get(GraphDatabaseSettings.allow_file_urls)
     case _ => true
   }
 

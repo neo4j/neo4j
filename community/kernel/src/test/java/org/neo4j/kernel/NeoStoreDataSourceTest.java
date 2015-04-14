@@ -19,17 +19,19 @@
  */
 package org.neo4j.kernel;
 
-import static org.mockito.Mockito.mock;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.NeoStoreDataSourceRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
+
+import static org.mockito.Mockito.mock;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class NeoStoreDataSourceTest
 {
@@ -52,7 +54,7 @@ public class NeoStoreDataSourceTest
         try
         {
             KernelHealth kernelHealth = new KernelHealth( mock( KernelPanicEventGenerator.class ),
-                    NullLogProvider.getInstance() );
+                    NullLogProvider.getInstance().getLog( KernelHealth.class ) );
 
             theDataSource = ds.getDataSource( dir, fs.get(), pageCacheRule.getPageCache( fs.get() ),
                     stringMap(), kernelHealth );

@@ -19,6 +19,10 @@
  */
 package org.neo4j.server.rrd;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Map;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -28,11 +32,7 @@ import org.rrd4j.DsType;
 import org.rrd4j.core.RrdDb;
 import org.rrd4j.core.RrdDef;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Map;
-
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.configuration.Configurator;
@@ -45,9 +45,11 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.Double.NaN;
+
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.test.Mute.muteAll;
 
 public class RrdFactoryTest
@@ -158,8 +160,7 @@ public class RrdFactoryTest
     public void shouldCreateRrdFileInDbSubdirectory() throws Exception
     {
         String storeDir = testDirectory.directory().getAbsolutePath();
-        db = new WrappedDatabase( (InternalAbstractGraphDatabase)
-                new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir ) );
+        db = new WrappedDatabase((GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir ) );
         TestableRrdFactory factory = createRrdFactory();
 
         // When

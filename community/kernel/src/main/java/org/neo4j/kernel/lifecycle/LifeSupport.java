@@ -446,6 +446,40 @@ public class LifeSupport
         return status == LifecycleStatus.STARTED;
     }
 
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder(  );
+        toString(0, sb);
+        return sb.toString();
+    }
+
+    private void toString(int indent, StringBuilder sb)
+    {
+        for ( int i = 0; i < indent; i++ )
+        {
+            sb.append( ' ' );
+        }
+        sb.append("Lifecycle status:" + status.name()).append( '\n' );
+        for ( LifecycleInstance instance : instances )
+        {
+            if (instance.instance instanceof LifeSupport)
+            {
+                ((LifeSupport)instance.instance).toString( indent+3, sb );
+            } else
+            {
+                for ( int i = 0; i < indent+3; i++ )
+                {
+                    sb.append( ' ' );
+                }
+                sb.append( instance.toString() ).append( '\n' );
+
+            }
+
+        }
+
+    }
+
     private class LifecycleInstance
             implements Lifecycle
     {

@@ -19,8 +19,8 @@
  */
 package org.neo4j.server.database;
 
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
@@ -28,7 +28,7 @@ public interface Database extends Lifecycle
 {
     interface Factory
     {
-        Database newDatabase(Config config, InternalAbstractGraphDatabase.Dependencies dependencies);
+        Database newDatabase(Config config, CommunityFacadeFactory.Dependencies dependencies);
     }
 
     public String getLocation();

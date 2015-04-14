@@ -36,9 +36,9 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
@@ -51,10 +51,10 @@ import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterv1;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.Math.max;
 
@@ -179,7 +179,7 @@ public class StoreCopyClient
             throws IOException
     {
         // Clear up the current temp directory if there
-        File storeDir = config.get( InternalAbstractGraphDatabase.Configuration.store_dir );
+        File storeDir = config.get( GraphDatabaseFacadeFactory.Configuration.store_dir );
         File tempStore = new File( storeDir, TEMP_COPY_DIRECTORY_NAME );
         cleanDirectory( tempStore );
 
@@ -291,6 +291,7 @@ public class StoreCopyClient
                 .setUserLogProvider( NullLogProvider.getInstance() )
                 .setKernelExtensions( kernelExtensions )
                 .newEmbeddedDatabaseBuilder( tempStore.getAbsolutePath() )
+                .setConfig( "online_backup_enabled", Settings.FALSE )
                 .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.allow_store_upgrade,
                         config.get( GraphDatabaseSettings.allow_store_upgrade ).toString() )

@@ -19,17 +19,17 @@
  */
 package org.neo4j.ha;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
-
 import java.io.File;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestName;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -53,8 +53,10 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 
 import static java.lang.System.currentTimeMillis;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;

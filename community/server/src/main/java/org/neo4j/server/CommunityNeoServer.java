@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ConfigurationBuilder;
@@ -58,12 +58,12 @@ import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManag
 @Deprecated
 public class CommunityNeoServer extends AbstractNeoServer
 {
-    public CommunityNeoServer( ConfigurationBuilder configurator, InternalAbstractGraphDatabase.Dependencies dependencies, LogProvider logProvider )
+    public CommunityNeoServer( ConfigurationBuilder configurator, GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider logProvider )
     {
         this( configurator, lifecycleManagingDatabase( EMBEDDED ), dependencies, logProvider );
     }
 
-    public CommunityNeoServer( ConfigurationBuilder configurator, Database.Factory dbFactory, InternalAbstractGraphDatabase.Dependencies dependencies, LogProvider logProvider )
+    public CommunityNeoServer( ConfigurationBuilder configurator, Database.Factory dbFactory, GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider logProvider )
     {
         super( configurator, dbFactory, dependencies, logProvider );
     }
@@ -99,7 +99,7 @@ public class CommunityNeoServer extends AbstractNeoServer
     protected WebServer createWebServer()
     {
 		return new Jetty9WebServer( logProvider, configurator.configuration());
-	}
+    }
 
     @Override
     public Iterable<AdvertisableService> getServices()

@@ -31,7 +31,8 @@ import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.visualization.asciidoc.AsciidocHelper
 import org.neo4j.cypher.javacompat.GraphImpl
 import org.neo4j.cypher._
-import org.neo4j.test.{ ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription }
+import org.neo4j.test.{GraphDatabaseServiceCleaner, ImpermanentGraphDatabase, TestGraphDatabaseFactory,
+GraphDescription}
 import org.scalatest.Assertions
 import org.junit.Before
 import org.junit.After
@@ -221,7 +222,7 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
     allQueriesWriter = new OutputStreamWriter(new FileOutputStream(new File("target/all-queries.asciidoc"), true), "UTF-8")
     db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
 
-    db.asInstanceOf[ImpermanentGraphDatabase].cleanContent()
+    GraphDatabaseServiceCleaner.cleanDatabaseContent(db);
 
     db.inTx {
       nodeIndex = db.index().forNodes("nodeIndexName")

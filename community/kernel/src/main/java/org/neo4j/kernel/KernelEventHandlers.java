@@ -26,7 +26,6 @@ import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 
 /**
  * Handle the collection of kernel event handlers, and fire events as needed.
@@ -40,9 +39,9 @@ public class KernelEventHandlers
     private final List<KernelEventHandler> kernelEventHandlers = new CopyOnWriteArrayList<>();
     private final Log log;
 
-    public KernelEventHandlers( LogProvider logProvider )
+    public KernelEventHandlers( Log log )
     {
-        this.log = logProvider.getLog( getClass() );
+        this.log = log;
     }
 
     @Override

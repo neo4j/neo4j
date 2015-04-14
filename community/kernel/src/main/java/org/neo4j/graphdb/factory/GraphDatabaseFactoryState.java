@@ -23,8 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -85,9 +85,9 @@ public class GraphDatabaseFactoryState
         this.monitors = monitors;
     }
 
-    public Dependencies databaseDependencies()
+    public GraphDatabaseFacadeFactory.Dependencies databaseDependencies()
     {
-        return newDependencies().
+        return  newDependencies().
                 monitors(monitors).
                 userLogProvider(userLogProvider).
                 settingsClasses(settingsClasses).

@@ -24,6 +24,11 @@ import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+
+import static org.neo4j.helpers.collection.MapUtil.copyAndPut;
 
 /**
  * An implementation of {@link GraphDatabaseService} that is used to embed Neo4j
@@ -44,7 +49,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
  * @deprecated This will be moved to internal packages in the next major release.
  */
 @Deprecated
-public class EmbeddedGraphDatabase extends InternalAbstractGraphDatabase
+public class EmbeddedGraphDatabase extends GraphDatabaseFacade
 {
     private static final Iterable<Class<?>> SETTINGS_CLASSES = Arrays.<Class<?>>asList( GraphDatabaseSettings.class );
 
@@ -53,9 +58,14 @@ public class EmbeddedGraphDatabase extends InternalAbstractGraphDatabase
      */
     public EmbeddedGraphDatabase( String storeDir,
                                   Map<String, String> params,
-                                  Dependencies dependencies )
+                                  GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
-        super( storeDir, params, dependencies );
-        run();
+        create( copyAndPut( params, GraphDatabaseSettings.store_dir.name(), storeDir ), dependencies );
+    }
+
+    protected void create(Map<String, String> params,
+                                      GraphDatabaseFacadeFactory.Dependencies dependencies)
+    {
+        new CommunityFacadeFactory().newFacade( params, dependencies, this );
     }
 }

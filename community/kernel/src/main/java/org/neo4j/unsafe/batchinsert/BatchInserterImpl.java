@@ -34,7 +34,6 @@ import java.util.Map.Entry;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
 import org.neo4j.graphdb.ConstraintViolationException;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
@@ -129,6 +128,7 @@ import org.neo4j.kernel.impl.transaction.state.RelationshipCreator;
 import org.neo4j.kernel.impl.transaction.state.RelationshipGroupGetter;
 import org.neo4j.kernel.impl.transaction.state.RelationshipLocker;
 import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -247,8 +247,18 @@ public class BatchInserterImpl implements BatchInserter
         indexStore = life.add( new IndexConfigStore( this.storeDir, fileSystem ) );
         schemaCache = new SchemaCache( neoStore.getSchemaStore() );
 
+        Dependencies deps = new Dependencies();
+        deps.satisfyDependencies( fileSystem, config, logService, new NeoStoreSupplier()
+                        {
+                            @Override
+                            public NeoStore get()
+                            {
+                                return neoStore;
+                            }
+                        } );
+
         KernelExtensions extensions = life
-                .add( new KernelExtensions( kernelExtensions, new DependencyResolverImpl(),
+                .add( new KernelExtensions( kernelExtensions, deps,
                                             UnsatisfiedDependencyStrategies.ignore() ) );
 
         SchemaIndexProvider provider = extensions.resolveDependency( SchemaIndexProvider.class,
@@ -1091,38 +1101,6 @@ public class BatchInserterImpl implements BatchInserter
         private UnsupportedOperationException unsupportedException()
         {
             return new UnsupportedOperationException( "Batch inserter doesn't support this" );
-        }
-    }
-
-    private class DependencyResolverImpl extends DependencyResolver.Adapter
-    {
-        @Override
-        public <T> T resolveDependency( Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException
-        {
-            if ( type.isInstance( fileSystem ) )
-            {
-                return type.cast( fileSystem );
-            }
-            if ( type.isInstance( config ) )
-            {
-                return type.cast( config );
-            }
-            if ( type.isInstance( logService ) )
-            {
-                return type.cast( logService );
-            }
-            if ( NeoStoreSupplier.class.isAssignableFrom( type ) )
-            {
-                return type.cast( new NeoStoreSupplier()
-                {
-                    @Override
-                    public NeoStore get()
-                    {
-                        return neoStore;
-                    }
-                } );
-            }
-            throw new IllegalArgumentException( "Unknown dependency " + type );
         }
     }
 }

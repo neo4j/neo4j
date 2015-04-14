@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.adversaries.ClassGuardedAdversary;
 import org.neo4j.adversaries.CountingAdversary;
@@ -39,6 +39,10 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension;
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.test.TargetDirectory;
 
@@ -68,11 +72,26 @@ public class PartialTransactionFailureIT
         adversary.disable();
 
         String storeDir = dir.directory().getAbsolutePath();
-        final EmbeddedGraphDatabase db = new TestEmbeddedGraphDatabase( storeDir, stringMap() ) {
+        final EmbeddedGraphDatabase db = new TestEmbeddedGraphDatabase( storeDir, stringMap() )
+        {
             @Override
-            protected FileSystemAbstraction createFileSystemAbstraction()
+            protected void create( Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
             {
-                return new AdversarialFileSystemAbstraction( adversary );
+                new CommunityFacadeFactory()
+                {
+                    @Override
+                    protected PlatformModule createPlatform( Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                    {
+                        return new PlatformModule( params, dependencies, graphDatabaseFacade )
+                        {
+                            @Override
+                            protected FileSystemAbstraction createFileSystemAbstraction()
+                            {
+                                return new AdversarialFileSystemAbstraction( adversary );
+                            }
+                        };
+                    }
+                }.newFacade( params, dependencies, this );
             }
         };
 
@@ -197,10 +216,10 @@ public class PartialTransactionFailureIT
                     dependencies() );
         }
 
-        private static Dependencies dependencies()
+        private static GraphDatabaseFacadeFactory.Dependencies dependencies()
         {
             GraphDatabaseFactoryState state = new GraphDatabaseFactoryState();
-            state.addKernelExtensions( Arrays.asList(
+            state.setKernelExtensions( Arrays.asList(
                     new InMemoryIndexProviderFactory(),
                     new InMemoryLabelScanStoreExtension() ) );
             return state.databaseDependencies();

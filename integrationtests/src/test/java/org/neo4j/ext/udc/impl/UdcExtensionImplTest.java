@@ -47,7 +47,7 @@ import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.rest.web.CollectUserAgentFilter;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -608,7 +608,7 @@ public class UdcExtensionImplTest
 
     private void destroy( GraphDatabaseService dbToDestroy ) throws IOException
     {
-        @SuppressWarnings("deprecation") InternalAbstractGraphDatabase db = (InternalAbstractGraphDatabase) dbToDestroy;
+        @SuppressWarnings("deprecation") GraphDatabaseAPI db = (GraphDatabaseAPI) dbToDestroy;
         dbToDestroy.shutdown();
         FileUtils.deleteDirectory( new File( db.getStoreDir() ) );
     }

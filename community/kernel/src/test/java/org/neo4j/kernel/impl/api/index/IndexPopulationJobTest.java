@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.mockito.Matchers;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,6 +26,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.mockito.Matchers;
 
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.DynamicLabel;
@@ -41,6 +41,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.index.IndexConfiguration;
@@ -59,11 +60,11 @@ import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.register.Register.DoubleLong;
@@ -71,12 +72,12 @@ import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.DoubleLatch;
-import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.String.format;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
@@ -92,6 +93,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -580,7 +582,7 @@ public class IndexPopulationJobTest
         return new InMemoryIndexProvider().getPopulator( 21, descriptor, indexConfig, samplingConfig );
     }
 
-    private ImpermanentGraphDatabase db;
+    private GraphDatabaseAPI db;
 
     private final Label FIRST = DynamicLabel.label( "FIRST" );
     private final Label SECOND = DynamicLabel.label( "SECOND" );
@@ -598,7 +600,7 @@ public class IndexPopulationJobTest
     @Before
     public void before() throws Exception
     {
-        db = (ImpermanentGraphDatabase) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
         ctxSupplier = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
         counts = db.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get().getCounts();
         stateHolder = new KernelSchemaStateStore( NullLogProvider.getInstance() );

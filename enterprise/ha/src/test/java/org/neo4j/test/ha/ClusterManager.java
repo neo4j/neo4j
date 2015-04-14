@@ -19,12 +19,6 @@
  */
 package org.neo4j.test.ha;
 
-import org.neo4j.function.Predicate;
-import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.logging.Log;
-import org.w3c.dom.Document;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -47,6 +41,8 @@ import java.util.concurrent.TimeUnit;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.w3c.dom.Document;
+
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.ExecutorLifecycleAdapter;
@@ -60,6 +56,7 @@ import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
+import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -70,7 +67,6 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -80,15 +76,21 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.com.master.Slaves;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
+
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.io.fs.FileUtils.copyRecursively;
 
@@ -784,7 +786,8 @@ public class ClusterManager
             }
             for ( HighlyAvailableGraphDatabaseProxy member : members.values() )
             {
-                insertInitialData( member.get(), name, member.get().getConfig().get( ClusterSettings.server_id ) );
+                insertInitialData( member.get(), name, member.get().getDependencyResolver().resolveDependency( Config
+                        .class ).get( ClusterSettings.server_id ) );
             }
         }
 
@@ -1008,7 +1011,7 @@ public class ClusterManager
                         ClusterSettings.cluster_server.name(), "0.0.0.0:" + clusterUri.getPort(),
                         GraphDatabaseSettings.store_dir.name(),
                         new File( parent, "arbiter" + serverId ).getAbsolutePath() );
-                Config config1 = new Config( config, InternalAbstractGraphDatabase.Configuration.class,
+                Config config1 = new Config( config, GraphDatabaseFacadeFactory.Configuration.class,
                         GraphDatabaseSettings.class );
 
                 ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
@@ -1090,13 +1093,13 @@ public class ClusterManager
         public InstanceId getServerId( HighlyAvailableGraphDatabase member )
         {
             assertMember( member );
-            return member.getConfig().get( ClusterSettings.server_id );
+            return member.getDependencyResolver().resolveDependency( Config.class ).get( ClusterSettings.server_id );
         }
 
         public File getStoreDir( HighlyAvailableGraphDatabase member )
         {
             assertMember( member );
-            return member.getConfig().get( GraphDatabaseSettings.store_dir );
+            return member.getDependencyResolver().resolveDependency( Config.class ).get( GraphDatabaseSettings.store_dir );
         }
 
         public void sync( HighlyAvailableGraphDatabase... except ) throws InterruptedException

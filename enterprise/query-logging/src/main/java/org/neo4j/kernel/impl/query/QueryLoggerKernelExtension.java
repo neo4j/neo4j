@@ -59,7 +59,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
     {
         if ( ! deps.config().get( GraphDatabaseSettings.log_queries ) )
         {
-            return null;
+            return new LifecycleAdapter();
         }
 
         return new LifecycleAdapter() {

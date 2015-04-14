@@ -229,14 +229,26 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
 
     private org.neo4j.ext.udc.Edition determineEdition( String classPath )
     {
-        if ( classPath.contains( "neo4j-ha" ) )
+        try
         {
-            return org.neo4j.ext.udc.Edition.enterprise;
+            getClass().getClassLoader().loadClass( "org.neo4j.kernel.ha.HighlyAvailableGraphDatabase" );
+            return Edition.enterprise;
         }
-        if ( classPath.contains( "neo4j-management" ) )
+        catch ( ClassNotFoundException e )
         {
-            return org.neo4j.ext.udc.Edition.advanced;
+            // Not Enterprise
         }
+
+        try
+        {
+            getClass().getClassLoader().loadClass( "org.neo4j.management.Neo4jManager" );
+            return Edition.advanced;
+        }
+        catch ( ClassNotFoundException e )
+        {
+            // Not Advanced
+        }
+
         return Edition.community;
     }
 

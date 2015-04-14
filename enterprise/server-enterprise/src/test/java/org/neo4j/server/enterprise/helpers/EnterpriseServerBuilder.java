@@ -22,7 +22,7 @@ package org.neo4j.server.enterprise.helpers;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.CommunityNeoServer;
@@ -63,7 +63,7 @@ public class EnterpriseServerBuilder extends CommunityServerBuilder
     }
 
     @Override
-    protected CommunityNeoServer build( File configFile, ConfigurationBuilder configurator, InternalAbstractGraphDatabase.Dependencies dependencies )
+    protected CommunityNeoServer build(File configFile, ConfigurationBuilder configurator, GraphDatabaseFacadeFactory.Dependencies dependencies)
     {
         return new TestEnterpriseNeoServer( configurator, configFile, dependencies, logProvider );
     }
@@ -72,7 +72,7 @@ public class EnterpriseServerBuilder extends CommunityServerBuilder
     {
         private final File configFile;
 
-        public TestEnterpriseNeoServer( ConfigurationBuilder propertyFileConfigurator, File configFile, InternalAbstractGraphDatabase.Dependencies dependencies, LogProvider logProvider )
+        public TestEnterpriseNeoServer( ConfigurationBuilder propertyFileConfigurator, File configFile, GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider logProvider )
         {
             super( propertyFileConfigurator, dependencies, logProvider );
             this.configFile = configFile;

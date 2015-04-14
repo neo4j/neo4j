@@ -68,7 +68,10 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
         // Try parent
         if (parent != null)
         {
-            return parent.get().resolveDependency( type, selector );
+            DependencyResolver dependencyResolver = parent.get();
+
+            if (dependencyResolver !=null)
+                return dependencyResolver.resolveDependency( type, selector );
         }
 
         // Out of options
@@ -123,6 +126,14 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
         } while (type != null);
 
         return dependency;
+    }
+
+    public void satisfyDependencies(Object... dependencies)
+    {
+        for ( Object dependency : dependencies )
+        {
+            satisfyDependency( dependency );
+        }
     }
 
     private <T> void addInterfaces( Class[] interfaces, T dependency )

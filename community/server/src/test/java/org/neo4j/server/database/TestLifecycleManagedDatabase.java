@@ -31,7 +31,7 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
-import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.AssertableLogProvider;
@@ -71,7 +71,7 @@ public class TestLifecycleManagedDatabase
         databaseDirectory = createTempDir();
 
         dbFactory = mock( LifecycleManagingDatabase.GraphFactory.class );
-        when(dbFactory.newGraphDatabase( any( String.class ), any( Map.class ), any( Dependencies.class ) ))
+        when(dbFactory.newGraphDatabase( any( String.class ), any( Map.class ), any( GraphDatabaseFacadeFactory.Dependencies.class ) ))
                 .thenReturn( dbRule.getGraphDatabaseAPI() );
         theDatabase = newDatabase();
     }

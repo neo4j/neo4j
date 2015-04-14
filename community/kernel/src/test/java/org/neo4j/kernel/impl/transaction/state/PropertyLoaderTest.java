@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
 import org.neo4j.kernel.impl.store.AbstractRecordStore;
@@ -41,11 +41,13 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+
 import static org.neo4j.helpers.collection.Iterables.toList;
 import static org.neo4j.kernel.api.properties.DefinedProperty.intProperty;
 
@@ -141,7 +143,7 @@ public class PropertyLoaderTest
 
     private NeoStore neoStore()
     {
-        return db.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( NeoStore.class );
+        return db.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get();
     }
 
     private void setUpNode( long id, int... propertyValues )

@@ -27,7 +27,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.WrappingNeoServerBootstrapper;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
@@ -39,7 +39,7 @@ public class ExecutionTimeLimitTest
 // ------------------------------ FIELDS ------------------------------
 
     private WrappingNeoServerBootstrapper testBootstrapper;
-    private InternalAbstractGraphDatabase db;
+    private GraphDatabaseAPI db;
     private long wait;
 
 // -------------------------- OTHER METHODS --------------------------
@@ -76,7 +76,7 @@ public class ExecutionTimeLimitTest
     @SuppressWarnings("deprecation")
     public void setUp() throws Exception
     {
-        db = new ImpermanentGraphDatabase()
+        db =    new ImpermanentGraphDatabase()
         {
             @Override
             public Node getNodeById( long id )

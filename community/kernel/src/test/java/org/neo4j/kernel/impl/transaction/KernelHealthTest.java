@@ -42,7 +42,7 @@ public class KernelHealthTest
     {
         // GIVEN
         KernelPanicEventGenerator generator = mock( KernelPanicEventGenerator.class );
-        KernelHealth kernelHealth = new KernelHealth( generator, NullLogProvider.getInstance() );
+        KernelHealth kernelHealth = new KernelHealth( generator, NullLogProvider.getInstance().getLog( KernelHealth.class ) );
         kernelHealth.healed();
 
         // WHEN
@@ -59,7 +59,7 @@ public class KernelHealthTest
     {
         // GIVEN
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        KernelHealth kernelHealth = new KernelHealth( mock( KernelPanicEventGenerator.class ), logProvider );
+        KernelHealth kernelHealth = new KernelHealth( mock( KernelPanicEventGenerator.class ), logProvider.getLog( KernelHealth.class ) );
         kernelHealth.healed();
 
         // WHEN
