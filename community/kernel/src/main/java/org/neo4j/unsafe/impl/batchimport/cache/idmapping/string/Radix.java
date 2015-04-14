@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
+import org.neo4j.function.Factory;
 import org.neo4j.register.Register.IntRegister;
 
 import static java.lang.Math.pow;
@@ -31,6 +32,24 @@ import static org.neo4j.register.Registers.newIntRegister;
  */
 public abstract class Radix
 {
+    public static final Factory<Radix> LONG = new Factory<Radix>()
+    {
+        @Override
+        public Radix newInstance()
+        {
+            return new Radix.Long();
+        }
+    };
+
+    public static final Factory<Radix> STRING = new Factory<Radix>()
+    {
+        @Override
+        public Radix newInstance()
+        {
+            return new Radix.String();
+        }
+    };
+
     protected final int[] radixIndexCount = new int[(int) pow( 2, RadixCalculator.RADIX_BITS - 1 )];
 
     public int registerRadixOf( long value )

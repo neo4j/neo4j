@@ -215,7 +215,7 @@ public class EncodingIdMapperTest
     public void shouldRefuseCollisionsBasedOnSameInputId() throws Exception
     {
         // GIVEN
-        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), new Radix.String(),
+        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), Radix.STRING,
                 NO_MONITOR );
         InputIterable<Object> ids = wrap( "source", Arrays.<Object>asList( "10", "9", "10" ) );
         Group group = new Group.Adapter( GLOBAL.id(), "global" );
@@ -244,7 +244,7 @@ public class EncodingIdMapperTest
     public void shouldIncludeSourceLocationsOfCollisions() throws Exception
     {
         // GIVEN
-        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), new Radix.String(),
+        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), Radix.STRING,
                 NO_MONITOR );
         final List<Object> idList = Arrays.<Object>asList( "10", "9", "10" );
         InputIterable<Object> ids = wrap( "source", idList );
@@ -278,7 +278,7 @@ public class EncodingIdMapperTest
         Monitor monitor = mock( Monitor.class );
         Encoder encoder = mock( Encoder.class );
         when( encoder.encode( any() ) ).thenReturn( 12345L );
-        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, encoder, new Radix.String(), monitor );
+        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, encoder, Radix.STRING, monitor );
         InputIterable<Object> ids = wrap( "source", Arrays.<Object>asList( "10", "9" ) );
         try ( ResourceIterator<Object> iterator = ids.iterator() )
         {
@@ -320,7 +320,7 @@ public class EncodingIdMapperTest
         when( encoder.encode( a2 ) ).thenReturn( 1L );
         when( encoder.encode( e ) ).thenReturn( 2L );
         when( encoder.encode( f ) ).thenReturn( 1L );
-        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, encoder, new Radix.String(), monitor );
+        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, encoder, Radix.STRING, monitor );
         InputIterable<Object> ids = wrap( "source", Arrays.<Object>asList( "a", "b", "c", "a", "e", "f" ) );
         Group.Adapter groupA = new Group.Adapter( 1, "A" );
         Group.Adapter groupB = new Group.Adapter( 2, "B" );
@@ -358,7 +358,7 @@ public class EncodingIdMapperTest
     {
         // GIVEN
         Monitor monitor = mock( Monitor.class );
-        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), new Radix.String(),
+        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), Radix.STRING,
                 monitor );
         InputIterable<Object> ids = wrap( "source", Arrays.<Object>asList( "10", "9", "10" ) );
         Groups groups = new Groups();
@@ -385,7 +385,7 @@ public class EncodingIdMapperTest
     public void shouldOnlyFindInputIdsInSpecificGroup() throws Exception
     {
         // GIVEN
-        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), new Radix.String(),
+        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), Radix.STRING,
                 NO_MONITOR );
         InputIterable<Object> ids = wrap( "source", Arrays.<Object>asList( "8", "9", "10" ) );
         Groups groups = new Groups();
@@ -417,7 +417,7 @@ public class EncodingIdMapperTest
     public void shouldHandleManyGroups() throws Exception
     {
         // GIVEN
-        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new LongEncoder(), new Radix.String(),
+        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new LongEncoder(), Radix.STRING,
                 NO_MONITOR );
         int size = 100;
 
@@ -498,9 +498,9 @@ public class EncodingIdMapperTest
             }
 
             @Override
-            Radix radix()
+            Factory<Radix> radix()
             {
-                return new Radix.Long();
+                return Radix.LONG;
             }
 
             @Override
@@ -525,9 +525,9 @@ public class EncodingIdMapperTest
             }
 
             @Override
-            Radix radix()
+            Factory<Radix> radix()
             {
-                return new Radix.String();
+                return Radix.STRING;
             }
 
             @Override
@@ -554,9 +554,9 @@ public class EncodingIdMapperTest
             }
 
             @Override
-            Radix radix()
+            Factory<Radix> radix()
             {
-                return new Radix.String();
+                return Radix.STRING;
             }
 
             @Override
@@ -610,7 +610,7 @@ public class EncodingIdMapperTest
 
         abstract Encoder encoder();
 
-        abstract Radix radix();
+        abstract Factory<Radix> radix();
 
         abstract Factory<Object> data( Random random );
     }
