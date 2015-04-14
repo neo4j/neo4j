@@ -29,6 +29,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.webadmin.console.ConsoleSessionCreator;
@@ -54,12 +55,12 @@ public class SessionFactoryImpl implements ConsoleSessionFactory
     }
 
     @Override
-    public ScriptSession createSession( String engineName, Database database )
+    public ScriptSession createSession( String engineName, Database database, LogProvider logProvider )
     {
         engineName = engineName.toLowerCase();
         if ( engineCreators.containsKey( engineName ) )
         {
-            return getOrInstantiateSession( database, engineName + "-console-session", engineCreators.get( engineName ) );
+            return getOrInstantiateSession( database, engineName + "-console-session", engineCreators.get( engineName ), logProvider );
         }
 
         throw new IllegalArgumentException( "Unknown console engine '" + engineName + "'." );
@@ -71,12 +72,12 @@ public class SessionFactoryImpl implements ConsoleSessionFactory
         return engineCreators.keySet();
     }
 
-    private ScriptSession getOrInstantiateSession( Database database, String key, ConsoleSessionCreator creator )
+    private ScriptSession getOrInstantiateSession( Database database, String key, ConsoleSessionCreator creator, LogProvider logProvider )
     {
         Object session = httpSession.getAttribute( key );
         if ( session == null )
         {
-            session = creator.newSession( database, cypherExecutor, request );
+            session = creator.newSession( database, cypherExecutor, request, logProvider );
             httpSession.setAttribute( key, session );
         }
         return (ScriptSession) session;

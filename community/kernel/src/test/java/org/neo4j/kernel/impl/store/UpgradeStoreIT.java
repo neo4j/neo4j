@@ -51,7 +51,7 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -353,7 +353,7 @@ public class UpgradeStoreIT
                 new DefaultIdGeneratorFactory(),
                 pageCache,
                 fs,
-                StringLogger.DEV_NULL,
+                NullLogProvider.getInstance(),
                 StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
                 monitors );
         RelationshipTypeTokenStore store = new RelationshipTypeTokenStoreWithOneOlderVersion(
@@ -390,7 +390,7 @@ public class UpgradeStoreIT
                     new NoLimitIdGeneratorFactory(),
                     pageCache,
                     fs,
-                    StringLogger.DEV_NULL,
+                    NullLogProvider.getInstance(),
                     stringStore,
                     StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
                     monitors );

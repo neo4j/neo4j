@@ -29,9 +29,6 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageProcessor;
@@ -41,6 +38,8 @@ import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.statemachine.StateMachine;
 import org.neo4j.cluster.statemachine.StateTransitionListener;
 import org.neo4j.cluster.timeout.Timeouts;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.cluster.com.message.Message.CONVERSATION_ID;
 import static org.neo4j.cluster.com.message.Message.CREATED_BY;
@@ -62,7 +61,7 @@ public class StateMachines
         void finishedProcessing( Message message );
     }
 
-    private final Logger logger = LoggerFactory.getLogger( StateMachines.class );
+    private final Log log;
 
     private final Monitor monitor;
     private final MessageSender sender;
@@ -78,11 +77,12 @@ public class StateMachines
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock( true );
     private final String instanceIdHeaderValue;
 
-    public StateMachines( Monitor monitor, MessageSource source,
+    public StateMachines( LogProvider logProvider, Monitor monitor, MessageSource source,
                           final MessageSender sender,
                           Timeouts timeouts,
                           DelayedDirectExecutor executor, Executor stateMachineExecutor, InstanceId instanceId )
     {
+        this.log = logProvider.getLog( getClass() );
         this.monitor = monitor;
         this.sender = sender;
         this.executor = executor;
@@ -179,7 +179,7 @@ public class StateMachines
                                     }
                                     catch ( Throwable e )
                                     {
-                                        logger.warn( "Outgoing message processor threw exception", e );
+                                        log.warn( "Outgoing message processor threw exception", e );
                                     }
                                 }
 
@@ -211,7 +211,7 @@ public class StateMachines
                         }
                         catch ( Exception e )
                         {
-                            logger.warn( "Error processing message " + message, e );
+                            log.warn( "Error processing message " + message, e );
                         }
                     }
                 }

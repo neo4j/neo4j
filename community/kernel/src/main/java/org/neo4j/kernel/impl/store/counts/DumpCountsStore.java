@@ -36,10 +36,10 @@ import org.neo4j.kernel.impl.store.kvstore.MetadataVisitor;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
 import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
 import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownKey.Visitor
 {
@@ -59,12 +59,12 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
         {
             if ( fs.isDirectory( path ) )
             {
-                StoreFactory factory = new StoreFactory( fs, path, pages, DEV_NULL, new Monitors() );
+                StoreFactory factory = new StoreFactory( fs, path, pages, NullLogProvider.getInstance(), new Monitors() );
                 life.add( factory.newCountsStore() ).accept( new DumpCountsStore( out, factory ) );
             }
             else
             {
-                CountsTracker tracker = new CountsTracker( DEV_NULL, fs, pages, path );
+                CountsTracker tracker = new CountsTracker( NullLogProvider.getInstance(), fs, pages, path );
                 if ( fs.fileExists( path ) )
                 {
                     tracker.visitFile( path, new DumpCountsStore( out ) );

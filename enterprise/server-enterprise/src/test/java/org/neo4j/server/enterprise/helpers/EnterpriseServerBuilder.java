@@ -19,35 +19,34 @@
  */
 package org.neo4j.server.enterprise.helpers;
 
-import static org.neo4j.server.helpers.LoggingFactory.IMPERMANENT_LOGGING;
-
 import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.enterprise.EnterpriseNeoServer;
 import org.neo4j.server.helpers.CommunityServerBuilder;
-import org.neo4j.server.helpers.LoggingFactory;
 import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.rest.web.DatabaseActions;
 
 public class EnterpriseServerBuilder extends CommunityServerBuilder
 {
-    protected EnterpriseServerBuilder( LoggingFactory loggingFactory )
+    protected EnterpriseServerBuilder( LogProvider logProvider )
     {
-        super( loggingFactory );
+        super( logProvider );
     }
 
     public static EnterpriseServerBuilder server()
     {
-        return server( IMPERMANENT_LOGGING );
+        return server( NullLogProvider.getInstance() );
     }
 
-    public static EnterpriseServerBuilder server( LoggingFactory loggingFactory )
+    public static EnterpriseServerBuilder server( LogProvider logProvider )
     {
-        return new EnterpriseServerBuilder( loggingFactory );
+        return new EnterpriseServerBuilder( logProvider );
     }
 
     @Override
@@ -64,18 +63,18 @@ public class EnterpriseServerBuilder extends CommunityServerBuilder
     }
 
     @Override
-    protected CommunityNeoServer build(File configFile, ConfigurationBuilder configurator, InternalAbstractGraphDatabase.Dependencies dependencies)
+    protected CommunityNeoServer build( File configFile, ConfigurationBuilder configurator, InternalAbstractGraphDatabase.Dependencies dependencies )
     {
-        return new TestEnterpriseNeoServer( configurator, configFile, dependencies );
+        return new TestEnterpriseNeoServer( configurator, configFile, dependencies, logProvider );
     }
 
     private class TestEnterpriseNeoServer extends EnterpriseNeoServer
     {
         private final File configFile;
 
-        public TestEnterpriseNeoServer( ConfigurationBuilder propertyFileConfigurator, File configFile, InternalAbstractGraphDatabase.Dependencies dependencies )
+        public TestEnterpriseNeoServer( ConfigurationBuilder propertyFileConfigurator, File configFile, InternalAbstractGraphDatabase.Dependencies dependencies, LogProvider logProvider )
         {
-            super( propertyFileConfigurator, dependencies );
+            super( propertyFileConfigurator, dependencies, logProvider );
             this.configFile = configFile;
         }
 

@@ -265,16 +265,17 @@ public class HAClusterStartupIT
         return instanceDir;
     }
 
-    private void assertAllStoreConsistent() throws ConsistencyCheckIncompleteException
+    private void assertAllStoreConsistent() throws ConsistencyCheckIncompleteException, IOException
     {
         assertAllStoreConsistent( master, slave1, slave2 );
     }
 
     private void assertAllStoreConsistent( HighlyAvailableGraphDatabase master,
                                            HighlyAvailableGraphDatabase... slaves )
-            throws ConsistencyCheckIncompleteException
+            throws ConsistencyCheckIncompleteException, IOException
     {
         assertConsistentStore( new File( master.getStoreDir() ) );
+
         for ( HighlyAvailableGraphDatabase slave : slaves )
         {
             assertConsistentStore( new File( slave.getStoreDir() ) );

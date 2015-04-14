@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.notification.CartesianProductNotification
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.helpers.Clock
-import org.neo4j.kernel.impl.util.StringLogger._
+import org.neo4j.logging.NullLog
 
 class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
 
@@ -87,7 +87,7 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
     CypherCompilerFactory.costBasedCompiler(
       graph, 128, 0.5, 1000L, Clock.SYSTEM_CLOCK,
       new WrappedMonitors2_3(kernelMonitors),
-      new StringInfoLogger2_3(DEV_NULL),
+      new StringInfoLogger2_3(NullLog.getInstance),
       plannerName = CostPlannerName,
       runtimeName = InterpretedRuntimeName,
       rewriterSequencer = RewriterStepSequencer.newValidating

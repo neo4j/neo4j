@@ -26,7 +26,7 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 import org.neo4j.ndp.messaging.v1.MessageFormat;
 import org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1;
 import org.neo4j.ndp.messaging.v1.msgprocess.TransportBridge;
@@ -51,10 +51,10 @@ public class SocketProtocolV1 implements SocketProtocol
 
     private final TransportBridge bridge;
     private final Session session;
-    private final StringLogger log;
+    private final Log log;
     private final AtomicInteger inFlight = new AtomicInteger( 0 );
 
-    public SocketProtocolV1( final StringLogger log, Session session )
+    public SocketProtocolV1( final Log log, Session session )
     {
         this.log = log;
         this.session = session;

@@ -40,10 +40,8 @@ import javax.rmi.ssl.SslRMIServerSocketFactory;
 import org.neo4j.helpers.Service;
 import org.neo4j.jmx.impl.ManagementSupport;
 import org.neo4j.kernel.KernelData;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
-
-import static java.lang.String.format;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.logging.Log;
 
 @Service.Implementation( ManagementSupport.class )
 public class HotspotManagementSupport extends AdvancedManagementSupport
@@ -52,8 +50,8 @@ public class HotspotManagementSupport extends AdvancedManagementSupport
     protected JMXServiceURL getJMXServiceURL( KernelData kernel )
     {
         JMXServiceURL url = null;
-        StringLogger logger = kernel.graphDatabase().getDependencyResolver().resolveDependency( Logging.class )
-                .getMessagesLog( HotspotManagementSupport.class );
+        Log log = kernel.graphDatabase().getDependencyResolver().resolveDependency( LogService.class )
+                .getInternalLog( HotspotManagementSupport.class );
         try
         {
             Class<?> cal = Class.forName( "sun.management.ConnectorAddressLink" );
@@ -76,15 +74,15 @@ public class HotspotManagementSupport extends AdvancedManagementSupport
         }
         catch ( InvocationTargetException e )
         {
-            logger.warn( "Failed to load local JMX connection URL.", e.getTargetException() );
+            log.warn( "Failed to load local JMX connection URL.", e.getTargetException() );
         }
         catch ( LinkageError e )
         {
-            logger.warn( "Failed to load local JMX connection URL.", e );
+            log.warn( "Failed to load local JMX connection URL.", e );
         }
         catch ( Exception e )
         {
-            logger.warn( "Failed to load local JMX connection URL.", e );
+            log.warn( "Failed to load local JMX connection URL.", e );
         }
         // No previous connection server -- create one!
         if ( url == null )
@@ -101,8 +99,8 @@ public class HotspotManagementSupport extends AdvancedManagementSupport
             if ( port > 0 )
             {
                 boolean useSSL = Boolean.parseBoolean( kernel.getConfig().getParams().get( "jmx.use_ssl" ) );
-                logger.debug( format( "Creating new MBean server on port %s%s", port, useSSL ? " using ssl" : "" ) );
-                JMXConnectorServer server = createServer( port, useSSL, logger );
+                log.debug( "Creating new MBean server on port %s%s", port, useSSL ? " using ssl" : "" );
+                JMXConnectorServer server = createServer( port, useSSL, log );
                 if ( server != null )
                 {
                     try
@@ -111,7 +109,7 @@ public class HotspotManagementSupport extends AdvancedManagementSupport
                     }
                     catch ( IOException e )
                     {
-                        logger.warn( "Failed to start MBean server", e );
+                        log.warn( "Failed to start MBean server", e );
                         server = null;
                     }
                     if ( server != null )
@@ -123,7 +121,7 @@ public class HotspotManagementSupport extends AdvancedManagementSupport
                         }
                         catch ( Exception e )
                         {
-                            logger.warn( "Failed to register MBean server as JMX bean", e );
+                            log.warn( "Failed to register MBean server as JMX bean", e );
                         }
                         url = server.getAddress();
                     }
@@ -237,7 +235,7 @@ public class HotspotManagementSupport extends AdvancedManagementSupport
         }
     }
 
-    private JMXConnectorServer createServer( int port, boolean useSSL, StringLogger logger )
+    private JMXConnectorServer createServer( int port, boolean useSSL, Log log )
     {
         MBeanServer server = getMBeanServer();
         final JMXServiceURL url;
@@ -247,7 +245,7 @@ public class HotspotManagementSupport extends AdvancedManagementSupport
         }
         catch ( MalformedURLException e )
         {
-            logger.warn( "Failed to start JMX Server", e );
+            log.warn( "Failed to start JMX Server", e );
             return null;
         }
         Map<String, Object> env = new HashMap<String, Object>();
@@ -262,7 +260,7 @@ public class HotspotManagementSupport extends AdvancedManagementSupport
         }
         catch ( IOException e )
         {
-            logger.warn( "Failed to start JMX Server", e );
+            log.warn( "Failed to start JMX Server", e );
             return null;
         }
     }

@@ -27,7 +27,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.helpers.collection.Iterables.addAll;
@@ -46,20 +46,20 @@ public class GraphDatabaseDependencies implements InternalAbstractGraphDatabase.
     }
 
     private final Monitors monitors;
-    private final Logging logging;
+    private final LogProvider userLogProvider;
     private final List<Class<?>> settingsClasses;
     private final List<KernelExtensionFactory<?>> kernelExtensions;
     private final List<QueryEngineProvider> queryEngineProviders;
 
     private GraphDatabaseDependencies(
             Monitors monitors,
-            Logging logging,
+            LogProvider userLogProvider,
             List<Class<?>> settingsClasses,
             List<KernelExtensionFactory<?>> kernelExtensions,
             List<QueryEngineProvider> queryEngineProviders )
     {
         this.monitors = monitors;
-        this.logging = logging;
+        this.userLogProvider = userLogProvider;
         this.settingsClasses = settingsClasses;
         this.kernelExtensions = kernelExtensions;
         this.queryEngineProviders = queryEngineProviders;
@@ -68,39 +68,39 @@ public class GraphDatabaseDependencies implements InternalAbstractGraphDatabase.
     // Builder DSL
     public GraphDatabaseDependencies monitors( Monitors monitors )
     {
-        return new GraphDatabaseDependencies( monitors, logging, settingsClasses, kernelExtensions,
+        return new GraphDatabaseDependencies( monitors, userLogProvider, settingsClasses, kernelExtensions,
                                               queryEngineProviders );
     }
 
-    public GraphDatabaseDependencies logging( Logging logging )
+    public GraphDatabaseDependencies userLogProvider( LogProvider userLogProvider )
     {
-        return new GraphDatabaseDependencies( monitors, logging, settingsClasses, kernelExtensions,
+        return new GraphDatabaseDependencies( monitors, userLogProvider, settingsClasses, kernelExtensions,
                                               queryEngineProviders );
     }
 
     public GraphDatabaseDependencies settingsClasses( List<Class<?>> settingsClasses )
     {
-        return new GraphDatabaseDependencies( monitors, logging, settingsClasses, kernelExtensions,
+        return new GraphDatabaseDependencies( monitors, userLogProvider, settingsClasses, kernelExtensions,
                                               queryEngineProviders );
     }
 
     public GraphDatabaseDependencies settingsClasses( Class<?>... settingsClass )
     {
         settingsClasses.addAll( Arrays.asList( settingsClass ) );
-        return new GraphDatabaseDependencies( monitors, logging, settingsClasses, kernelExtensions,
+        return new GraphDatabaseDependencies( monitors, userLogProvider, settingsClasses, kernelExtensions,
                                               queryEngineProviders );
     }
 
     public GraphDatabaseDependencies kernelExtensions( Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
-        return new GraphDatabaseDependencies( monitors, logging, settingsClasses,
+        return new GraphDatabaseDependencies( monitors, userLogProvider, settingsClasses,
                                               addAll( new ArrayList<KernelExtensionFactory<?>>(), kernelExtensions ),
                                               queryEngineProviders );
     }
 
     public GraphDatabaseDependencies queryEngineProviders( Iterable<QueryEngineProvider> queryEngineProviders )
     {
-        return new GraphDatabaseDependencies( monitors, logging, settingsClasses, kernelExtensions,
+        return new GraphDatabaseDependencies( monitors, userLogProvider, settingsClasses, kernelExtensions,
                                               addAll( this.queryEngineProviders, queryEngineProviders ) );
     }
 
@@ -112,9 +112,9 @@ public class GraphDatabaseDependencies implements InternalAbstractGraphDatabase.
     }
 
     @Override
-    public Logging logging()
+    public LogProvider userLogProvider()
     {
-        return logging;
+        return userLogProvider;
     }
 
     @Override

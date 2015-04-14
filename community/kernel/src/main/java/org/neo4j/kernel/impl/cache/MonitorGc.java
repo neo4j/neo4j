@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.cache;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.logging.Log;
 
 import static org.neo4j.helpers.Settings.DURATION;
 import static org.neo4j.helpers.Settings.setting;
@@ -36,13 +36,13 @@ public class MonitorGc implements Lifecycle
     }
 
     private final Config config;
-    private final StringLogger logger;
+    private final Log log;
     private volatile MeasureDoNothing monitorGc;
 
-    public MonitorGc( Config config, StringLogger logger )
+    public MonitorGc( Config config, Log log )
     {
         this.config = config;
-        this.logger = logger;
+        this.log = log;
     }
 
     @Override
@@ -53,7 +53,7 @@ public class MonitorGc implements Lifecycle
     @Override
     public void start() throws Throwable
     {
-        monitorGc = new MeasureDoNothing( "GC-Monitor", logger, config.get( Configuration.gc_monitor_wait_time ),
+        monitorGc = new MeasureDoNothing( "GC-Monitor", log, config.get( Configuration.gc_monitor_wait_time ),
                 config.get( Configuration.gc_monitor_threshold ) );
         monitorGc.start();
     }

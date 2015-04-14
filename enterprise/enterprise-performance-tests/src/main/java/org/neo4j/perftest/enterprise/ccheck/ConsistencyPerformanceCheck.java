@@ -41,8 +41,8 @@ import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.perftest.enterprise.generator.DataGenerator;
 import org.neo4j.perftest.enterprise.util.Configuration;
 import org.neo4j.perftest.enterprise.util.Parameters;
@@ -137,22 +137,20 @@ public class ConsistencyPerformanceCheck
 
     private static DirectStoreAccess createScannableStores( String storeDir, Config tuningConfiguration )
     {
-        StringLogger logger = StringLogger.DEV_NULL;
-
         Monitors monitors = new Monitors();
         StoreFactory factory = new StoreFactory(
                 tuningConfiguration,
                 new DefaultIdGeneratorFactory(),
                 pageCache,
                 fileSystem,
-                logger,
+                NullLogProvider.getInstance(),
                 monitors );
 
         NeoStore neoStore = factory.newNeoStore( true );
 
         SchemaIndexProvider indexes = new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, tuningConfiguration );
         return new DirectStoreAccess( new StoreAccess( neoStore ),
-                new LuceneLabelScanStoreBuilder( storeDir, neoStore, fileSystem, logger ).build(), indexes );
+                new LuceneLabelScanStoreBuilder( storeDir, neoStore, fileSystem, NullLogProvider.getInstance() ).build(), indexes );
     }
 
     private static Config buildTuningConfiguration( Configuration configuration )

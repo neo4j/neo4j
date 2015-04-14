@@ -19,23 +19,25 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import org.neo4j.logging.Log;
+
 import static java.lang.String.format;
 
 public class DurationLogger implements AutoCloseable
 {
-    private final StringLogger logger;
+    private final Log log;
     private final String tag;
 
     private long start = 0l;
     private long end = 0l;
     private String outcome = "Not finished";
 
-    public DurationLogger( StringLogger logger, String tag )
+    public DurationLogger( Log log, String tag )
     {
-        this.logger = logger;
+        this.log = log;
         this.tag = tag;
         start = System.currentTimeMillis();
-        logger.debug( format( "Started: %s", tag ) );
+        log.debug( format( "Started: %s", tag ) );
     }
 
     public void markAsFinished()
@@ -55,11 +57,11 @@ public class DurationLogger implements AutoCloseable
         long duration = end - start;
         if ( outcome == null )
         {
-            logger.debug( format( "Finished: %s in %d ms", tag, duration ) );
+            log.debug( format( "Finished: %s in %d ms", tag, duration ) );
         }
         else
         {
-            logger.warn( format( "%s: %s in %d ms", outcome, tag, duration ) );
+            log.warn( format( "%s: %s in %d ms", outcome, tag, duration ) );
         }
     }
 }

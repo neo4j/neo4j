@@ -62,7 +62,7 @@ import org.neo4j.kernel.impl.transaction.log.WritableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterv1;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -275,7 +275,7 @@ public class TransactionRecordStateTest
         Config configuration = StoreFactory.configForStoreDir( new Config( stringMap( config ) ), storeDir );
         StoreFactory storeFactory = new StoreFactory( configuration, new DefaultIdGeneratorFactory(),
                 pageCacheRule.getPageCache( fsr.get() ),
-                fsr.get(), StringLogger.DEV_NULL, new Monitors() );
+                fsr.get(), NullLogProvider.getInstance(), new Monitors() );
         return cleanup.add( storeFactory.newNeoStore( true ) );
     }
 

@@ -20,6 +20,7 @@
 package org.neo4j.ha;
 
 import java.io.File;
+import java.util.logging.Level;
 
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -47,7 +48,7 @@ import static org.neo4j.test.ha.ClusterManager.fromXml;
 public class MultipleClusterTest
 {
     @Rule
-    public LoggerRule logging = new LoggerRule();
+    public LoggerRule logging = new LoggerRule( Level.OFF );
 
     @Test
     public void runTwoClusters() throws Throwable

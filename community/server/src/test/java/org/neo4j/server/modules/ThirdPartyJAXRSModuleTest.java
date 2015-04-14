@@ -26,7 +26,7 @@ import java.util.List;
 import org.junit.Test;
 
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.configuration.ServerSettings;
@@ -63,7 +63,7 @@ public class ThirdPartyJAXRSModuleTest
         when( config.get( ServerSettings.third_party_packages ) ).thenReturn( jaxRsPackages );
         when( neoServer.getConfigurationBuilder().configuration() ).thenReturn( config );
         
-        ThirdPartyJAXRSModule module = new ThirdPartyJAXRSModule(webServer, config, DevNullLoggingService.DEV_NULL, neoServer );
+        ThirdPartyJAXRSModule module = new ThirdPartyJAXRSModule(webServer, config, NullLogProvider.getInstance(), neoServer );
         module.start();
 
         verify( webServer ).addJAXRSPackages( any( List.class ), anyString(), anyCollection() );

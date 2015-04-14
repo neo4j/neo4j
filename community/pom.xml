@@ -35,6 +35,7 @@
     <module>primitive-collections</module>
     <module>io</module>
     <module>csv</module>
+    <module>logging</module>
     <module>kernel</module>
     <module>jmx</module>
     <module>udc</module>

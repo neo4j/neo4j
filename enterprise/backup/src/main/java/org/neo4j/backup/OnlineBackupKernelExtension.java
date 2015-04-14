@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -65,14 +65,14 @@ public class OnlineBackupKernelExtension implements Lifecycle
 
     private final Config config;
     private final GraphDatabaseAPI graphDatabaseAPI;
-    private final Logging logging;
+    private final LogProvider logProvider;
     private final Monitors monitors;
     private BackupServer server;
     private final BackupProvider backupProvider;
     private volatile URI me;
 
     public OnlineBackupKernelExtension( Config config, final GraphDatabaseAPI graphDatabaseAPI,
-                                        final KernelPanicEventGenerator kpeg, final Logging logging,
+                                        final KernelPanicEventGenerator kpeg, final LogProvider logProvider,
                                         final Monitors monitors )
     {
         this( config, graphDatabaseAPI, new BackupProvider()
@@ -101,17 +101,17 @@ public class OnlineBackupKernelExtension implements Lifecycle
                             }
                         } );
             }
-        }, monitors, logging );
+        }, monitors, logProvider );
     }
 
     public OnlineBackupKernelExtension( Config config, GraphDatabaseAPI graphDatabaseAPI, BackupProvider provider,
-                                        Monitors monitors, Logging logging )
+                                        Monitors monitors, LogProvider logProvider )
     {
         this.config = config;
         this.graphDatabaseAPI = graphDatabaseAPI;
         this.backupProvider = provider;
         this.monitors = monitors;
-        this.logging = logging;
+        this.logProvider = logProvider;
     }
 
     @Override
@@ -127,7 +127,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
             try
             {
                 server = new BackupServer( backupProvider.newBackup(), config.get( online_backup_server ),
-                        logging, monitors.newMonitor( ByteCounterMonitor.class, BackupServer.class ), monitors.newMonitor( RequestMonitor.class, BackupServer.class ) );
+                        logProvider, monitors.newMonitor( ByteCounterMonitor.class, BackupServer.class ), monitors.newMonitor( RequestMonitor.class, BackupServer.class ) );
                 server.init();
                 server.start();
 

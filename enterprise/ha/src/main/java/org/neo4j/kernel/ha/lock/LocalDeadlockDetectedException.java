@@ -19,13 +19,14 @@
  */
 package org.neo4j.kernel.ha.lock;
 
+import java.io.StringWriter;
 import java.util.Arrays;
 
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.locking.DumpLocksVisitor;
 import org.neo4j.kernel.impl.locking.LockType;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.util.StringBuilderStringLogger;
+import org.neo4j.logging.FormattedLog;
 
 import static java.lang.String.format;
 
@@ -52,10 +53,12 @@ public class LocalDeadlockDetectedException extends DeadlockDetectedException
     private static String constructHelpfulDiagnosticsMessage( Locks.Client client, Locks lockManager,
                                                   Locks.ResourceType resourceType, long[] resourceIds, LockType type )
     {
-        StringBuilder builder = new StringBuilder( format(
+        StringWriter stringWriter = new StringWriter();
+        stringWriter.append( format(
                 "%s tried to apply local %s lock on %s(%s) after acquired on master. Currently these locks exist:%n",
-                client, type, resourceType, Arrays.toString(resourceIds) ) );
-        lockManager.accept( new DumpLocksVisitor(new StringBuilderStringLogger(builder)) );
-        return builder.toString();
+                client, type, resourceType, Arrays.toString( resourceIds ) ) );
+
+        lockManager.accept( new DumpLocksVisitor( FormattedLog.toWriter( stringWriter ) ) );
+        return stringWriter.toString();
     }
 }

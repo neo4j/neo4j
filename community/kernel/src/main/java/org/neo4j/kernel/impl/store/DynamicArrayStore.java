@@ -33,7 +33,7 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.util.Bits;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.System.arraycopy;
@@ -57,12 +57,12 @@ public class DynamicArrayStore extends AbstractDynamicStore
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             FileSystemAbstraction fileSystemAbstraction,
-            StringLogger stringLogger,
+            LogProvider logProvider,
             StoreVersionMismatchHandler versionMismatchHandler,
             Monitors monitors )
     {
         super( fileName, configuration, idType, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
+                fileSystemAbstraction, logProvider, versionMismatchHandler, monitors );
     }
 
     @Override

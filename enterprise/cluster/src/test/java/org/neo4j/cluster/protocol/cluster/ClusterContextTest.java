@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.concurrent.Executor;
 
 import org.junit.Test;
-import org.mockito.Matchers;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
@@ -35,8 +34,7 @@ import org.neo4j.cluster.protocol.election.ElectionRole;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -52,9 +50,6 @@ public class ClusterContextTest
         HeartbeatContext heartbeatContext = mock(HeartbeatContext.class);
         when( heartbeatContext.getFailed() ).thenReturn( Collections.<InstanceId>emptySet() );
 
-        Logging logging = mock( Logging.class );
-        when ( logging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
-
         MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, Iterables.<ElectionRole, ElectionRole
                 >iterable(
                 new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ),
@@ -65,7 +60,7 @@ public class ClusterContextTest
                     {
                         command.run();
                     }
-                }, logging,
+                }, NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class )
@@ -102,9 +97,6 @@ public class ClusterContextTest
         HeartbeatContext heartbeatContext = mock(HeartbeatContext.class);
         when( heartbeatContext.getFailed() ).thenReturn( Collections.<InstanceId>emptySet() );
 
-        Logging logging = mock( Logging.class );
-        when ( logging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
-
         MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, Iterables.<ElectionRole, ElectionRole
                 >iterable(
                 new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ),
@@ -115,7 +107,7 @@ public class ClusterContextTest
                     {
                         command.run();
                     }
-                }, logging,
+                }, NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class )
@@ -145,9 +137,6 @@ public class ClusterContextTest
         HeartbeatContext heartbeatContext = mock(HeartbeatContext.class);
         when( heartbeatContext.getFailed() ).thenReturn( Collections.<InstanceId>emptySet() );
 
-        Logging logging = mock( Logging.class );
-        when ( logging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
-
         MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, Iterables.<ElectionRole, ElectionRole
                 >iterable(
                 new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ),
@@ -158,7 +147,7 @@ public class ClusterContextTest
                     {
                         command.run();
                     }
-                }, logging,
+                }, NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class )
@@ -195,9 +184,6 @@ public class ClusterContextTest
         HeartbeatContext heartbeatContext = mock(HeartbeatContext.class);
         when( heartbeatContext.getFailed() ).thenReturn( Collections.<InstanceId>emptySet() );
 
-        Logging logging = mock( Logging.class );
-        when ( logging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
-
         MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, Iterables.<ElectionRole, ElectionRole
                 >iterable(
                 new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ),
@@ -208,7 +194,7 @@ public class ClusterContextTest
                     {
                         command.run();
                     }
-                }, logging,
+                }, NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class )

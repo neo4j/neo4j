@@ -22,7 +22,6 @@ package org.neo4j.server.webadmin.rest;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.logging.DevNullLoggingService.DEV_NULL;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -36,6 +35,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -66,7 +67,7 @@ public class Neo4jShellConsoleSessionDocTest implements ConsoleSessionFactory
         this.consoleService = new ConsoleService(
                 this,
                 database,
-                DEV_NULL,
+                NullLogProvider.getInstance(),
                 new OutputFormat( new JsonFormat(), uri, null ) );
     }
 
@@ -77,7 +78,7 @@ public class Neo4jShellConsoleSessionDocTest implements ConsoleSessionFactory
     }
 
     @Override
-    public ScriptSession createSession( String engineName, Database database )
+    public ScriptSession createSession( String engineName, Database database, LogProvider logProvider )
     {
         return new ShellSession( database.getGraph() );
     }

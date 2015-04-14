@@ -26,7 +26,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.util.Arrays.asList;
@@ -147,9 +147,9 @@ public class GraphDatabaseFactory
         return this;
     }
 
-    public GraphDatabaseFactory setLogging( Logging logging )
+    public GraphDatabaseFactory setUserLogProvider( LogProvider userLogProvider )
     {
-        getCurrentState().setLogging( logging );
+        getCurrentState().setUserLogProvider( userLogProvider );
         return this;
     }
 

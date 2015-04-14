@@ -35,7 +35,8 @@ import javax.ws.rs.core.UriBuilder;
 
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.Charsets;
-import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.security.UriPathWildcardMatcher;
 import org.neo4j.server.security.auth.AuthManager;
@@ -60,12 +61,12 @@ public class AuthorizationFilter implements Filter
     private final UriPathWildcardMatcher passwordChangeWhitelist = new UriPathWildcardMatcher( "/user/*" );
 
     private final AuthManager authManager;
-    private final ConsoleLogger log;
+    private final Log log;
 
-    public AuthorizationFilter( AuthManager authManager, ConsoleLogger log )
+    public AuthorizationFilter( AuthManager authManager, LogProvider logProvider )
     {
         this.authManager = authManager;
-        this.log = log;
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override

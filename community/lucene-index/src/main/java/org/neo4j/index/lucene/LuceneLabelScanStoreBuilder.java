@@ -32,8 +32,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.kernel.impl.transaction.state.SimpleNeoStoreSupplier;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.SingleLoggingService;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.fullStoreLabelUpdateStream;
 
@@ -49,19 +48,19 @@ public class LuceneLabelScanStoreBuilder
     private final String storeDir;
     private final NeoStoreSupplier neoStoreSupplier;
     private final FileSystemAbstraction fileSystem;
-    private final SingleLoggingService logger;
+    private final LogProvider logProvider;
 
     private LuceneLabelScanStore labelScanStore = null;
 
     public LuceneLabelScanStoreBuilder( String storeDir,
                                         NeoStore neoStore,
                                         FileSystemAbstraction fileSystem,
-                                        StringLogger logger )
+                                        LogProvider logProvider )
     {
         this.storeDir = storeDir;
         this.neoStoreSupplier = new SimpleNeoStoreSupplier( neoStore );
         this.fileSystem = fileSystem;
-        this.logger = new SingleLoggingService( logger );
+        this.logProvider = logProvider;
     }
 
     public LabelScanStore build()
@@ -76,7 +75,7 @@ public class LuceneLabelScanStoreBuilder
                     new File( new File( new File( storeDir, "schema" ), "label" ), "lucene" ),
                     fileSystem, IndexWriterFactories.tracking(),
                     fullStoreLabelUpdateStream( neoStoreSupplier ),
-                    LuceneLabelScanStore.loggerMonitor( logger ) );
+                    LuceneLabelScanStore.loggerMonitor( logProvider ) );
 
             try
             {

@@ -44,7 +44,7 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -140,7 +140,7 @@ public class TestDynamicStore
                 ID_GENERATOR_FACTORY,
                 pageCache,
                 fs.get(),
-                StringLogger.DEV_NULL,
+                NullLogProvider.getInstance(),
                 monitors ).createDynamicArrayStore( fileName, blockSize );
     }
 
@@ -154,7 +154,7 @@ public class TestDynamicStore
                 ID_GENERATOR_FACTORY,
                 pageCache,
                 fs.get(),
-                StringLogger.DEV_NULL,
+                NullLogProvider.getInstance(),
                 StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
                 new Monitors() );
     }

@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.function.Consumer;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 import org.neo4j.ndp.messaging.v1.MessageFormat;
 import org.neo4j.ndp.messaging.v1.PackStreamMessageFormatV1;
 import org.neo4j.ndp.runtime.Session;
@@ -50,7 +50,7 @@ public class ChannelMessageProcessor
     private final AtomicInteger inFlight = new AtomicInteger();
     private final TransportBridge transportBridge;
 
-    private final StringLogger log;
+    private final Log log;
     private final Consumer<Session> onFatalSessionError;
 
     /**
@@ -82,7 +82,7 @@ public class ChannelMessageProcessor
     private Session session;
     private Runnable onAllMessagesCompleted;
 
-    public ChannelMessageProcessor( StringLogger log, Consumer<Session> onFatalSessionError )
+    public ChannelMessageProcessor( Log log, Consumer<Session> onFatalSessionError )
     {
         this.log = log;
         this.onFatalSessionError = onFatalSessionError;

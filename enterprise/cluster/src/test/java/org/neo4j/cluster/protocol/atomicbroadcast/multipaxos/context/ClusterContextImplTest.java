@@ -39,7 +39,7 @@ import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.NullLogProvider;
 
 public class ClusterContextImplTest
 {
@@ -60,7 +60,7 @@ public class ClusterContextImplTest
         CommonContextState commonContextState = mock( CommonContextState.class );
         when( commonContextState.configuration() ).thenReturn( clusterConfiguration );
 
-        ClusterContext context = new ClusterContextImpl(me, commonContextState, mock( Logging.class ),
+        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
                 mock( Timeouts.class ), mock ( Executor.class ), mock( ObjectOutputStreamFactory.class ), mock(
                 ObjectInputStreamFactory.class ), mock( LearnerContext.class ), mock( HeartbeatContext.class ) );
 
@@ -94,7 +94,7 @@ public class ClusterContextImplTest
         CommonContextState commonContextState = mock( CommonContextState.class );
         when( commonContextState.configuration() ).thenReturn( clusterConfiguration );
 
-        ClusterContext context = new ClusterContextImpl(me, commonContextState, mock( Logging.class ),
+        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
                 mock( Timeouts.class ), mock ( Executor.class ), mock( ObjectOutputStreamFactory.class ), mock(
                 ObjectInputStreamFactory.class ), mock( LearnerContext.class ), mock( HeartbeatContext.class ) );
 
@@ -124,7 +124,7 @@ public class ClusterContextImplTest
 
         CommonContextState commonContextState = mock( CommonContextState.class, RETURNS_MOCKS );
 
-        ClusterContext context = new ClusterContextImpl(me, commonContextState, mock( Logging.class ),
+        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
                 mock( Timeouts.class ), mock ( Executor.class ), mock( ObjectOutputStreamFactory.class ), mock(
                 ObjectInputStreamFactory.class ), mock( LearnerContext.class ), mock( HeartbeatContext.class ) );
 
@@ -154,7 +154,7 @@ public class ClusterContextImplTest
 
         CommonContextState commonContextState = mock( CommonContextState.class, RETURNS_MOCKS );
 
-        ClusterContext context = new ClusterContextImpl(me, commonContextState, mock( Logging.class ),
+        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
                 mock( Timeouts.class ), mock ( Executor.class ), mock( ObjectOutputStreamFactory.class ), mock(
                 ObjectInputStreamFactory.class ), mock( LearnerContext.class ), mock( HeartbeatContext.class ) );
 
@@ -182,7 +182,6 @@ public class ClusterContextImplTest
         InstanceId elector = new InstanceId( 2 );
 
         CommonContextState commonContextState = mock( CommonContextState.class, RETURNS_MOCKS );
-        Logging logging = mock( Logging.class );
         Timeouts timeouts = mock( Timeouts.class );
         Executor executor = mock( Executor.class );
 
@@ -190,7 +189,7 @@ public class ClusterContextImplTest
 
         ArgumentCaptor<HeartbeatListener> listenerCaptor = ArgumentCaptor.forClass( HeartbeatListener.class );
 
-        ClusterContext context = new ClusterContextImpl(me, commonContextState, logging,
+        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
                 timeouts, executor, mock( ObjectOutputStreamFactory.class ), mock(
                 ObjectInputStreamFactory.class ), mock( LearnerContext.class ), heartbeatContext );
 
@@ -222,7 +221,6 @@ public class ClusterContextImplTest
         InstanceId elector = new InstanceId( 2 );
 
         CommonContextState commonContextState = mock( CommonContextState.class, RETURNS_MOCKS );
-        Logging logging = mock( Logging.class );
         Timeouts timeouts = mock( Timeouts.class );
         Executor executor = mock( Executor.class );
 
@@ -230,7 +228,7 @@ public class ClusterContextImplTest
 
         ArgumentCaptor<HeartbeatListener> listenerCaptor = ArgumentCaptor.forClass( HeartbeatListener.class );
 
-        ClusterContext context = new ClusterContextImpl(me, commonContextState, logging,
+        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
                 timeouts, executor, mock( ObjectOutputStreamFactory.class ), mock(
                 ObjectInputStreamFactory.class ), mock( LearnerContext.class ), heartbeatContext );
 

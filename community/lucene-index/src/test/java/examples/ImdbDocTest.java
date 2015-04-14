@@ -624,7 +624,7 @@ public class ImdbDocTest
 //    }
 
     @Test
-    public void batchInsert()
+    public void batchInsert() throws Exception
     {
         Neo4jTestCase.deleteFileOrDirectory( new File(
                 "target/neo4jdb-batchinsert" ) );

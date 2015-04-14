@@ -59,7 +59,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReaderFactory;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.FormattedLog;
 
 import static java.lang.String.format;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -228,7 +228,7 @@ class RebuildFromLogs
                 GraphDatabaseSettings.class, ConsistencyCheckSettings.class );
         new FullCheck( tuningConfiguration, ProgressMonitorFactory.textual( System.err ) )
                 .execute( new DirectStoreAccess( stores, dataSource.getLabelScanStore(), dataSource.getDependencyResolver().resolveDependency( SchemaIndexProvider.class ) ),
-                        StringLogger.SYSTEM );
+                        FormattedLog.toOutputStream( System.out ) );
     }
 
     private static void printUsage( String... msgLines )

@@ -44,7 +44,8 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.Logger;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.helpers.collection.IteratorUtil.first;
@@ -84,7 +85,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             FileSystemAbstraction fileSystemAbstraction,
-            StringLogger stringLogger,
+            LogProvider logProvider,
             DynamicStringStore stringPropertyStore,
             PropertyKeyTokenStore propertyKeyTokenStore,
             DynamicArrayStore arrayPropertyStore,
@@ -92,7 +93,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
             Monitors monitors )
     {
         super( fileName, configuration, IdType.PROPERTY, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
+                fileSystemAbstraction, logProvider, versionMismatchHandler, monitors );
         this.stringPropertyStore = stringPropertyStore;
         this.propertyKeyTokenStore = propertyKeyTokenStore;
         this.arrayPropertyStore = arrayPropertyStore;
@@ -631,7 +632,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     }
 
     @Override
-    public void logVersions(StringLogger.LineLogger logger )
+    public void logVersions( Logger logger )
     {
         super.logVersions( logger );
         propertyKeyTokenStore.logVersions( logger );
@@ -640,7 +641,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     }
 
     @Override
-    public void logIdUsage(StringLogger.LineLogger logger )
+    public void logIdUsage( Logger logger )
     {
         super.logIdUsage(logger);
         propertyKeyTokenStore.logIdUsage( logger );

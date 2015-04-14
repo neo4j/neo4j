@@ -31,14 +31,14 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.query.{QueryEngineProvider, QueryExecutionMonitor, QuerySession}
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
-import org.neo4j.kernel.impl.util.StringLogger
 import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase, api, monitoring}
+import org.neo4j.logging.{NullLogProvider, LogProvider}
 
 import scala.collection.JavaConverters._
 
 trait StringCacheMonitor extends CypherCacheMonitor[String, api.Statement]
 
-class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL) {
+class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = NullLogProvider.getInstance()) {
 
   require(graph != null, "Can't work with a null graph database")
 
@@ -49,12 +49,13 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   private val lastTxId: () => Long =
       graphAPI.getDependencyResolver.resolveDependency( classOf[TransactionIdStore]).getLastCommittedTransactionId
   protected val kernelMonitors: monitoring.Monitors = graphAPI.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])
-  protected val compiler = createCompiler(logger)
+  protected val compiler = createCompiler
 
+  private val log = logProvider.getLog( getClass )
   private val cacheMonitor = kernelMonitors.newMonitor(classOf[StringCacheMonitor])
   kernelMonitors.addMonitorListener( new StringCacheMonitor {
     override def cacheDiscard(query: String) {
-      logger.info(s"Discarded stale query from the query cache: $query")
+      log.info(s"Discarded stale query from the query cache: $query")
     }
   })
 
@@ -121,7 +122,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   @throws(classOf[SyntaxException])
   protected def planQuery(queryText: String): (PreparedPlanExecution, TransactionInfo) = {
-    logger.debug(queryText)
+    log.debug(queryText)
 
     val preParsedQuery = preParseQuery(queryText)
     val executionMode = preParsedQuery.executionMode
@@ -198,7 +199,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
 
   def prettify(query: String): String = Prettifier(query)
 
-  private def createCompiler(logger: StringLogger): CypherCompiler = {
+  private def createCompiler: CypherCompiler = {
     val version = CypherVersion(optGraphSetting[String](
       graph, GraphDatabaseSettings.cypher_parser_version, CypherVersion.vDefault.name))
     val planner = PlannerName(optGraphSetting[String](
@@ -208,11 +209,11 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
     if ((version != CypherVersion.v2_2 && version != CypherVersion.v2_3) && (planner == CostPlannerName || planner == IDPPlannerName || planner == DPPlannerName)) {
       val message = s"Cannot combine configurations: ${GraphDatabaseSettings.cypher_parser_version.name}=${version.name} " +
         s"with ${GraphDatabaseSettings.cypher_planner.name} = ${planner.name}"
-      logger.error(message)
+      log.error(message)
       throw new IllegalStateException(message)
     }
     val optionParser = CypherOptionParser(kernelMonitors.newMonitor(classOf[ParserMonitor[CypherQueryWithOptions]]))
-    new CypherCompiler(graph, kernel, kernelMonitors, version, planner, runtime, optionParser, logger)
+    new CypherCompiler(graph, kernel, kernelMonitors, version, planner, runtime, optionParser, logProvider)
   }
 
   private def getPlanCacheSize: Int =

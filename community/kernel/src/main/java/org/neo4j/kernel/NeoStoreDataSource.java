@@ -30,6 +30,7 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
+import org.neo4j.function.Consumer;
 import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.ResourceIterator;
@@ -134,7 +135,6 @@ import org.neo4j.kernel.impl.transaction.state.RecoveryVisitor;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.info.DiagnosticsExtractor;
 import org.neo4j.kernel.info.DiagnosticsManager;
@@ -142,7 +142,9 @@ import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.Logger;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 
@@ -216,17 +218,17 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         NEO_STORE_VERSIONS( "Store versions:" )
                 {
                     @Override
-                    void dump( NeoStoreDataSource source, StringLogger.LineLogger log )
+                    void dump( NeoStoreDataSource source, Logger logger )
                     {
-                        source.neoStoreModule.neoStore().logVersions( log );
+                        source.neoStoreModule.neoStore().logVersions( logger );
                     }
                 },
         NEO_STORE_ID_USAGE( "Id usage:" )
                 {
                     @Override
-                    void dump( NeoStoreDataSource source, StringLogger.LineLogger log )
+                    void dump( NeoStoreDataSource source, Logger logger )
                     {
-                        source.neoStoreModule.neoStore().logIdUsage( log );
+                        source.neoStoreModule.neoStore().logIdUsage( logger );
                     }
                 };
 
@@ -238,19 +240,12 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         }
 
         @Override
-        public void dumpDiagnostics( final NeoStoreDataSource source, DiagnosticsPhase phase, StringLogger log )
+        public void dumpDiagnostics( final NeoStoreDataSource source, DiagnosticsPhase phase, Logger logger )
         {
             if ( applicable( phase ) )
             {
-                log.logLongMessage( message, new Visitor<StringLogger.LineLogger,RuntimeException>()
-                {
-                    @Override
-                    public boolean visit( StringLogger.LineLogger logger )
-                    {
-                        dump( source, logger );
-                        return false;
-                    }
-                }, true );
+                logger.log( message );
+                dump( source, logger );
             }
         }
 
@@ -259,15 +254,15 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
             return phase.isInitialization() || phase.isExplicitlyRequested();
         }
 
-        abstract void dump( NeoStoreDataSource source, StringLogger.LineLogger log );
+        abstract void dump( NeoStoreDataSource source, Logger logger );
     }
 
     public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
     private final Monitors monitors;
     private final Tracers tracers;
 
-    private final StringLogger msgLog;
-    private final Logging logging;
+    private final Log msgLog;
+    private final LogProvider logProvider;
     private final DependencyResolver dependencyResolver;
     private final TokenNameLookup tokenNameLookup;
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
@@ -329,8 +324,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
      * core API are now slowly accumulating in the Kernel implementation. Over time, these components should be
      * refactored into bigger components that wrap the very granular things we depend on here.
      */
-    public NeoStoreDataSource( Config config, StoreFactory sf, StringLogger stringLogger, JobScheduler scheduler,
-            Logging logging,
+    public NeoStoreDataSource( Config config, StoreFactory sf, LogProvider logProvider, JobScheduler scheduler,
             TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver,
             PropertyKeyTokenHolder propertyKeyTokens, LabelTokenHolder labelTokens,
             RelationshipTypeTokenHolder relationshipTypeTokens, Locks lockManager,
@@ -350,7 +344,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         this.tokenNameLookup = tokenNameLookup;
         this.dependencyResolver = dependencyResolver;
         this.scheduler = scheduler;
-        this.logging = logging;
+        this.logProvider = logProvider;
         this.propertyKeyTokenHolder = propertyKeyTokens;
         this.labelTokens = labelTokens;
         this.relationshipTypeTokens = relationshipTypeTokens;
@@ -372,7 +366,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         this.tracers = tracers;
 
         readOnly = config.get( Configuration.read_only );
-        msgLog = stringLogger;
+        msgLog = logProvider.getLog( getClass() );
         this.storeFactory = sf;
         this.lockService = new ReentrantLockService();
         this.legacyIndexProviderLookup = new LegacyIndexApplier.ProviderLookup()
@@ -426,7 +420,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
                 SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE );
 
         // Monitor listeners
-        LoggingLogFileMonitor loggingLogMonitor = new LoggingLogFileMonitor( logging.getMessagesLog( getClass() ) );
+        LoggingLogFileMonitor loggingLogMonitor = new LoggingLogFileMonitor( msgLog );
         monitors.addMonitorListener( loggingLogMonitor );
         monitors.addMonitorListener( new RecoveryVisitor.Monitor()
         {
@@ -453,14 +447,14 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
 
             IndexingModule indexingModule = buildIndexing( config, scheduler, indexProvider, lockService,
                     tokenNameLookup,
-                    logging, indexingServiceMonitor, neoStoreModule.neoStore(), cacheModule.updateableSchemaState() );
+                    logProvider, indexingServiceMonitor, neoStoreModule.neoStore(), cacheModule.updateableSchemaState() );
 
             StoreLayerModule storeLayerModule = buildStoreLayer( config, neoStoreModule.neoStore(),
                     propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
                     indexingModule.indexingService(), cacheModule.schemaCache() );
 
             TransactionLogModule transactionLogModule =
-                    buildTransactionLogs( config, logging, indexingModule.labelScanStore(),
+                    buildTransactionLogs( config, logProvider, indexingModule.labelScanStore(),
                             fs, neoStoreModule.neoStore(), cacheModule.cacheAccess(), indexingModule.indexingService(),
                             indexProviders.values() );
 
@@ -497,7 +491,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
             }
             catch ( Exception closeException )
             {
-                msgLog.logMessage( "Couldn't close neostore after startup failure" );
+                msgLog.error( "Couldn't close neostore after startup failure" );
             }
             throw Exceptions.launderedException( e );
         }
@@ -515,7 +509,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
             }
             catch ( Exception closeException )
             {
-                msgLog.logMessage( "Couldn't close neostore after startup failure" );
+                msgLog.error( "Couldn't close neostore after startup failure" );
             }
             throw Exceptions.launderedException( e );
         }
@@ -580,8 +574,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
             LabelTokenHolder labelTokens, RelationshipTypeTokenHolder relationshipTypeTokens,
             PropertyKeyTokenHolder propertyKeyTokenHolder )
     {
-        final UpdateableSchemaState updateableSchemaState = new KernelSchemaStateStore( logging.getMessagesLog(
-                KernelSchemaStateStore.class ) );
+        final UpdateableSchemaState updateableSchemaState = new KernelSchemaStateStore( logProvider );
 
         final SchemaCache schemaCache = new SchemaCache( Collections.<SchemaRule>emptyList() );
 
@@ -626,7 +619,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
 
     private IndexingModule buildIndexing( Config config, JobScheduler scheduler, SchemaIndexProvider indexProvider,
             LockService lockService, TokenNameLookup tokenNameLookup,
-            Logging logging, IndexingService.Monitor indexingServiceMonitor,
+            LogProvider logProvider, IndexingService.Monitor indexingServiceMonitor,
             NeoStore neoStore, UpdateableSchemaState updateableSchemaState )
     {
         final DefaultSchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( indexProvider );
@@ -634,7 +627,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         final IndexingService indexingService = IndexingService.create(
                 new IndexSamplingConfig( config ), scheduler, providerMap,
                 new NeoStoreIndexStoreView( lockService, neoStore ), tokenNameLookup, updateableSchemaState,
-                toList( new SchemaStorage( neoStore.getSchemaStore() ).allIndexRules() ), logging,
+                toList( new SchemaStorage( neoStore.getSchemaStore() ).allIndexRules() ), logProvider,
                 indexingServiceMonitor );
         final IntegrityValidator integrityValidator = new IntegrityValidator( neoStore, indexingService );
 
@@ -712,7 +705,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         };
     }
 
-    private TransactionLogModule buildTransactionLogs( Config config, Logging logging,
+    private TransactionLogModule buildTransactionLogs( Config config, LogProvider logProvider,
             LabelScanStore labelScanStore,
             FileSystemAbstraction fileSystemAbstraction,
             NeoStore neoStore, CacheAccessBackDoor cacheAccess,
@@ -763,13 +756,13 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         LogPruneStrategy logPruneStrategy = LogPruneStrategyFactory.fromConfigValue( fs, logFileInformation,
                 logFiles, neoStore, config.get( config.get(InternalAbstractGraphDatabase.Configuration.ephemeral) ? InternalAbstractGraphDatabase.Configuration.ephemeral_keep_logical_logs : GraphDatabaseSettings.keep_logical_logs ) );
 
-        monitors.addMonitorListener( new LogPruning( logPruneStrategy, logging ) );
+        monitors.addMonitorListener( new LogPruning( logPruneStrategy, logProvider ) );
 
         final LogRotationControl logRotationControl = new LogRotationControl( neoStore, indexingService, labelScanStore,
                 indexProviders );
 
         final LogRotation logRotation = new LogRotationImpl( monitors.newMonitor( LogRotation.Monitor.class ),
-                logFile, logRotationControl, kernelHealth, logging );
+                logFile, logRotationControl, kernelHealth, logProvider );
 
         final LogicalTransactionStore logicalTransactionStore =
                 new PhysicalLogicalTransactionStore( logFile, logRotation,

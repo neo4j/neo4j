@@ -29,7 +29,7 @@ import java.util.Set;
 import org.junit.Test;
 
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TargetDirectory;
 
 import static java.lang.Runtime.getRuntime;
@@ -56,7 +56,7 @@ public class DumpProcessInformationTest
 
         // WHEN
         // dumping process information for that spawned process (knowing it's in the expected position)
-        DumpProcessInformation dumper = new DumpProcessInformation( new DevNullLoggingService(), directory );
+        DumpProcessInformation dumper = new DumpProcessInformation( NullLogProvider.getInstance(), directory );
         Pair<Long, String> pid = single( dumper.getJPids( containsString( DumpableProcess.class.getSimpleName() ) ) );
         File threaddumpFile = dumper.doThreadDump( pid );
         process.destroy();

@@ -42,7 +42,7 @@ import org.neo4j.kernel.api.index.Reservation;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 import static org.neo4j.kernel.impl.util.JobScheduler.Group.indexPopulation;
@@ -64,7 +64,7 @@ public class PopulatingIndexProxy implements IndexProxy
                                  FlippableIndexProxy flipper,
                                  IndexStoreView storeView,
                                  UpdateableSchemaState updateableSchemaState,
-                                 Logging logging,
+                                 LogProvider logProvider,
                                  String indexUserDescription,
                                  SchemaIndexProvider.Descriptor providerDescriptor,
                                  IndexingService.Monitor monitor )
@@ -75,7 +75,7 @@ public class PopulatingIndexProxy implements IndexProxy
         this.providerDescriptor = providerDescriptor;
         this.job = new IndexPopulationJob( descriptor, configuration, providerDescriptor,
                 indexUserDescription, failureDelegateFactory, writer, flipper, storeView,
-                updateableSchemaState, logging, monitor );
+                updateableSchemaState, logProvider, monitor );
     }
 
     @Override

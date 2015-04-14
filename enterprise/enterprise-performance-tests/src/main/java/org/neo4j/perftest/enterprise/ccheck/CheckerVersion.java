@@ -24,7 +24,7 @@ import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLog;
 
 enum CheckerVersion
 {
@@ -33,7 +33,7 @@ enum CheckerVersion
         @Override
         void run( ProgressMonitorFactory progress, DirectStoreAccess directStoreAccess, Config tuningConfiguration ) throws ConsistencyCheckIncompleteException
         {
-            new FullCheck( tuningConfiguration, progress ).execute( directStoreAccess, StringLogger.DEV_NULL );
+            new FullCheck( tuningConfiguration, progress ).execute( directStoreAccess, NullLog.getInstance() );
         }
     };
 

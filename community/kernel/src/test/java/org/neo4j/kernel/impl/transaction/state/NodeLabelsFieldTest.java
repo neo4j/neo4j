@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.util.Bits;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
@@ -460,7 +460,7 @@ public class NodeLabelsFieldTest
                 new DefaultIdGeneratorFactory(),
                 pageCacheRule.getPageCache( fs.get() ),
                 fs.get(),
-                StringLogger.DEV_NULL,
+                NullLogProvider.getInstance(),
                 monitors );
         storeFactory.createNodeStore();
         nodeStore = storeFactory.newNodeStore();

@@ -20,6 +20,7 @@
 package org.neo4j.kernel;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -27,6 +28,8 @@ import java.util.Map;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.function.Consumer;
+import org.neo4j.function.Consumers;
 import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
@@ -123,6 +126,7 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
+import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
@@ -151,7 +155,6 @@ import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
 import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
@@ -160,9 +163,10 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
-import org.neo4j.kernel.logging.DefaultLogging;
-import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.logging.RollingLogMonitor;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.tooling.GlobalGraphOperations;
@@ -199,11 +203,7 @@ public abstract class InternalAbstractGraphDatabase
          */
         Monitors monitors();
 
-        /**
-         * Allowed to be null. Null means that no external {@link Logging} was created, let the
-         * database create its own logging.
-         */
-        Logging logging();
+        LogProvider userLogProvider();
 
         Iterable<Class<?>> settingsClasses();
 
@@ -241,9 +241,9 @@ public abstract class InternalAbstractGraphDatabase
     private final Dependencies dependencies;
     protected KernelExtensions kernelExtensions;
     protected File storeDir;
-    protected Logging logging;
+    protected LogService logService;
     protected StoreId storeId;
-    protected StringLogger msgLog;
+    protected Log msgLog;
     protected StoreLockerLifecycleAdapter storeLocker;
     protected KernelEventHandlers kernelEventHandlers;
     protected TransactionEventHandlers transactionEventHandlers;
@@ -292,7 +292,6 @@ public abstract class InternalAbstractGraphDatabase
         this.dependencies = dependencies;
         config = new Config( params, getSettingsClasses(
                 dependencies.settingsClasses(), dependencies.kernelExtensions() ) );
-        this.logging = dependencies.logging();
         this.monitors = dependencies.monitors();
 
         this.storeDir = config.get( Configuration.store_dir );
@@ -330,7 +329,7 @@ public abstract class InternalAbstractGraphDatabase
         return new TransactionCounters();
     }
 
-    private Tracers createTracers( Config config, StringLogger msgLog )
+    private Tracers createTracers( Config config, Log msgLog )
     {
         String desiredImplementationName = config.get( Configuration.tracer );
         return new Tracers( desiredImplementationName, msgLog );
@@ -381,12 +380,14 @@ public abstract class InternalAbstractGraphDatabase
         KernelDiagnostics.register( diagnosticsManager, InternalAbstractGraphDatabase.this, neoDataSource );
         if ( isMaster )
         {
-            new RemoveOrphanConstraintIndexesOnStartup( neoDataSource.getKernel(), logging ).perform();
+            new RemoveOrphanConstraintIndexesOnStartup( neoDataSource.getKernel(), logService.getInternalLogProvider() ).perform();
         }
     }
 
     protected void create()
     {
+        jobScheduler = life.add( createJobScheduler() );
+
         this.kernelExtensions = new KernelExtensions(
                 dependencies.kernelExtensions(),
                 getDependencyResolver(),
@@ -396,12 +397,9 @@ public abstract class InternalAbstractGraphDatabase
 
         fileSystem = createFileSystemAbstraction();
 
-        // If no logging was passed in from the outside then create logging and register
-        // with this life
-        if ( this.logging == null )
-        {
-            this.logging = createLogging();
-        }
+        logService = createLogService();
+
+        msgLog = logService.getInternalLog( getClass() );
 
         // Component monitoring
         if ( this.monitors == null )
@@ -412,9 +410,7 @@ public abstract class InternalAbstractGraphDatabase
         transactionMonitor = createTransactionCounters();
 
         storeMigrationProcess = new StoreUpgrader( createUpgradeConfiguration(), fileSystem,
-                monitors.newMonitor( StoreUpgrader.Monitor.class ), logging );
-
-        this.msgLog = logging.getMessagesLog( getClass() );
+                monitors.newMonitor( StoreUpgrader.Monitor.class ), logService.getInternalLogProvider() );
 
         config.setLogger( msgLog );
 
@@ -425,27 +421,16 @@ public abstract class InternalAbstractGraphDatabase
 
         new JvmChecker( msgLog, new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
 
-        jobScheduler = life.add( createJobScheduler() );
-
         pageCache = createPageCache();
         life.add( new PageCacheLifecycle( pageCache ) );
 
-        kernelEventHandlers = new KernelEventHandlers( logging.getMessagesLog( KernelEventHandlers.class ) );
+        kernelEventHandlers = new KernelEventHandlers( logService.getInternalLogProvider() );
 
         diagnosticsManager = life.add( createDiagnosticsManager() );
-        monitors.addMonitorListener( new RollingLogMonitor()
-        {
-            @Override
-            public void rolledOver()
-            {
-                // Add diagnostics at the top of every log file
-                diagnosticsManager.dumpAll();
-            }
-        } );
 
         kernelPanicEventGenerator = new KernelPanicEventGenerator( kernelEventHandlers );
 
-        kernelHealth = new KernelHealth( kernelPanicEventGenerator, logging );
+        kernelHealth = new KernelHealth( kernelPanicEventGenerator, logService.getInternalLogProvider() );
 
         // TODO please fix the bad dependencies instead of doing this. Before the removal of JTA
         // this was the place of the XaDataSourceManager. NeoStoreXaDataSource is create further down than
@@ -461,12 +446,11 @@ public abstract class InternalAbstractGraphDatabase
 
         idGeneratorFactory = createIdGeneratorFactory();
 
-        StringLogger messagesLog = logging.getMessagesLog( StoreMigrator.class );
         VisibleMigrationProgressMonitor progressMonitor =
-                new VisibleMigrationProgressMonitor( messagesLog, System.out );
+                new VisibleMigrationProgressMonitor( logService.getInternalLog( StoreMigrator.class ) );
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( fileSystem ) );
         storeMigrationProcess.addParticipant( new StoreMigrator(
-                progressMonitor, fileSystem, upgradableDatabase, config, logging ) );
+                progressMonitor, fileSystem, upgradableDatabase, config, logService ) );
 
         propertyKeyTokenHolder = life.add( new PropertyKeyTokenHolder( createPropertyKeyCreator() ) );
         labelTokenHolder = life.add( new LabelTokenHolder( createLabelIdCreator() ) );
@@ -535,7 +519,7 @@ public abstract class InternalAbstractGraphDatabase
 
     protected DiagnosticsManager createDiagnosticsManager()
     {
-        return new DiagnosticsManager( logging.getMessagesLog( DiagnosticsManager.class ) );
+        return new DiagnosticsManager( logService.getInternalLogProvider().getLog( DiagnosticsManager.class ) );
     }
 
     protected UpgradeConfiguration createUpgradeConfiguration()
@@ -636,7 +620,6 @@ public abstract class InternalAbstractGraphDatabase
         try
         {
             msgLog.info( "Shutdown started" );
-            msgLog.flush();
             availabilityGuard.shutdown();
             life.shutdown();
         }
@@ -650,7 +633,7 @@ public abstract class InternalAbstractGraphDatabase
     protected StoreFactory createStoreFactory()
     {
         return new StoreFactory( config, idGeneratorFactory, pageCache, fileSystem,
-                logging.getMessagesLog( StoreFactory.class ), monitors );
+                logService.getInternalLogProvider(), monitors );
     }
 
     protected PageCache createPageCache()
@@ -661,7 +644,7 @@ public abstract class InternalAbstractGraphDatabase
 
         if ( config.get( GraphDatabaseSettings.dump_configuration ) )
         {
-            pageCacheFactory.dumpConfiguration( logging.getMessagesLog( PageCache.class ) );
+            pageCacheFactory.dumpConfiguration( logService.getInternalLog( PageCache.class ) );
         }
         return pageCache;
     }
@@ -831,8 +814,7 @@ public abstract class InternalAbstractGraphDatabase
             }
             else if ( key.equals( "" ) )
             {
-                logging.getMessagesLog( InternalAbstractGraphDatabase.class )
-                       .info( "No locking implementation specified, defaulting to '" + candidateId + "'" );
+                msgLog.info( "No locking implementation specified, defaulting to '" + candidateId + "'" );
                 return candidate.newInstance( ResourceTypes.values() );
             }
         }
@@ -843,23 +825,48 @@ public abstract class InternalAbstractGraphDatabase
         }
         else if ( key.equals( "" ) )
         {
-            logging.getMessagesLog( InternalAbstractGraphDatabase.class )
-                   .info( "No locking implementation specified, defaulting to 'community'" );
+            msgLog.info( "No locking implementation specified, defaulting to 'community'" );
             return new CommunityLockManger();
         }
 
         throw new IllegalArgumentException( "No lock manager found with the name '" + key + "'." );
     }
 
-    protected Logging createLogging()
+    protected LogService createLogService()
     {
-        return life.add( DefaultLogging.createDefaultLogging( config, monitors ) );
+        LogProvider userLogProvider = dependencies.userLogProvider();
+        if ( userLogProvider == null )
+        {
+            userLogProvider = NullLogProvider.getInstance();
+        }
+
+        long internalLogRotationThreshold = config.get( GraphDatabaseSettings.store_internal_log_rotation_threshold );
+        int internalLogRotationDelay = config.get( GraphDatabaseSettings.store_internal_log_rotation_delay );
+        int internalLogMaxArchives = config.get( GraphDatabaseSettings.store_internal_log_archive_count );
+        LogService logService;
+        try
+        {
+            logService = new StoreLogService( userLogProvider, fileSystem, storeDir,
+                    internalLogRotationThreshold, internalLogRotationDelay, internalLogMaxArchives,
+                    jobScheduler, new Consumer<LogProvider>()
+            {
+                @Override
+                public void accept( LogProvider logProvider )
+                {
+                    diagnosticsManager.dumpAll( logProvider.getLog( DiagnosticsManager.class ) );
+                }
+            } );
+        } catch ( IOException ex )
+        {
+            throw new RuntimeException( ex );
+        }
+        return life.add( logService );
     }
 
     protected void createNeoDataSource()
     {
         neoDataSource = new NeoStoreDataSource( config,
-                storeFactory, logging.getMessagesLog( NeoStoreDataSource.class ), jobScheduler, logging,
+                storeFactory, logService.getInternalLogProvider(), jobScheduler,
                 new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ),
                 dependencyResolver, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,
                 lockManager, this, transactionEventHandlers,
@@ -1295,8 +1302,6 @@ public abstract class InternalAbstractGraphDatabase
         // Kept here to have it not be publicly documented.
         public static final Setting<String> lock_manager = setting( "lock_manager", STRING, "" );
 
-        public static final Setting<String> log_configuration_file = setting( "log.configuration", STRING,
-                "neo4j-logback.xml" );
         public static final Setting<String> tracer =
                 setting( "dbms.tracer", Settings.STRING, (String) null ); // 'null' default.
     }
@@ -1422,13 +1427,13 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return type.cast( InternalAbstractGraphDatabase.this );
             }
-            else if ( StringLogger.class.isAssignableFrom( type ) && type.isInstance( msgLog ) )
+            else if ( Log.class.isAssignableFrom( type ) && type.isInstance( msgLog ) )
             {
                 return type.cast( msgLog );
             }
-            else if ( Logging.class.isAssignableFrom( type ) && type.isInstance( logging ) )
+            else if ( LogService.class.isAssignableFrom( type ) && type.isInstance( logService ) )
             {
-                return type.cast( logging );
+                return type.cast( logService );
             }
             else if ( IndexConfigStore.class.isAssignableFrom( type ) && type.isInstance( indexStore ) )
             {

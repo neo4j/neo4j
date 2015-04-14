@@ -32,7 +32,7 @@ import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.ha.BranchedDataPolicy;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -146,7 +146,7 @@ public class TestBranchedData
         for ( File file : nonNull( dir.listFiles() ) )
         {
             String fileName = file.getName();
-            if ( !fileName.equals( StringLogger.DEFAULT_NAME ) && !file.getName().startsWith( "branched-" ) )
+            if ( !fileName.equals( StoreLogService.INTERNAL_LOG_NAME ) && !file.getName().startsWith( "branched-" ) )
             {
                 assertTrue( FileUtils.renameFile( file, new File( branchDir, file.getName() ) ) );
             }

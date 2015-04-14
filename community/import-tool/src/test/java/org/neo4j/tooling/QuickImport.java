@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.helpers.Args;
-import org.neo4j.kernel.logging.SystemOutLogging;
+import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
@@ -67,7 +67,7 @@ public class QuickImport
         Input input = new CsvDataGeneratorInput(
                 bareboneNodeHeader( idType, extractors ), bareboneRelationshipHeader( idType, extractors ),
                 COMMAS, nodeCount, relationshipCount, new Groups(), idType, labelCount, relationshipTypeCount );
-        BatchImporter importer = new ParallelBatchImporter( dir, DEFAULT, new SystemOutLogging(), defaultVisible() );
+        BatchImporter importer = new ParallelBatchImporter( dir, DEFAULT, FormattedLogProvider.toOutputStream( System.out ), defaultVisible() );
         importer.doImport( input );
     }
 }

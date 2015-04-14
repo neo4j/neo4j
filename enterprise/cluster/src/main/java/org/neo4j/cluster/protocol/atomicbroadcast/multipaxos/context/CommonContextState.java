@@ -23,7 +23,7 @@ import java.net.URI;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 
 class CommonContextState
 {
@@ -110,10 +110,10 @@ class CommonContextState
         this.configuration = configuration;
     }
 
-    public CommonContextState snapshot( StringLogger logger )
+    public CommonContextState snapshot( Log log )
     {
         return new CommonContextState( boundAt, lastKnownLearnedInstanceInCluster, nextInstanceId,
-                configuration.snapshot(logger) );
+                configuration.snapshot(log) );
     }
 
     @Override

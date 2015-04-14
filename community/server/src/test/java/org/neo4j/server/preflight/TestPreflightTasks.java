@@ -21,60 +21,55 @@ package org.neo4j.server.preflight;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.Mute;
 
-import org.neo4j.kernel.logging.Logging;
-import org.neo4j.test.BufferingLogging;
-
-import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.test.Mute.muteAll;
-
-import static org.neo4j.kernel.logging.DevNullLoggingService.DEV_NULL;
 
 public class TestPreflightTasks
 {
     @Test
     public void shouldPassWithNoRules()
     {
-        PreFlightTasks check = new PreFlightTasks( DEV_NULL );
+        PreFlightTasks check = new PreFlightTasks( NullLogProvider.getInstance() );
         assertTrue( check.run() );
     }
 
     @Test
     public void shouldRunAllHealthChecksToCompletionIfNonFail()
     {
-        PreFlightTasks check = new PreFlightTasks( DEV_NULL, getPassingRules() );
+        PreFlightTasks check = new PreFlightTasks( NullLogProvider.getInstance(), getPassingRules() );
         assertTrue( check.run() );
     }
 
     @Test
     public void shouldFailIfOneOrMoreHealthChecksFail()
     {
-        PreFlightTasks check = new PreFlightTasks( DEV_NULL, getWithOneFailingRule() );
+        PreFlightTasks check = new PreFlightTasks( NullLogProvider.getInstance(), getWithOneFailingRule() );
         assertFalse( check.run() );
     }
 
     @Test
     public void shouldLogFailedRule()
     {
-        Logging logging = new BufferingLogging();
-        PreFlightTasks check = new PreFlightTasks( logging, getWithOneFailingRule() );
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        PreFlightTasks check = new PreFlightTasks( logProvider, getWithOneFailingRule() );
         check.run();
 
-        // Previously we tested on "SEVERE: blah blah" but that's a string
-        // depending
-        // on the regional settings of the OS.
-        assertThat( logging.toString(), containsString( "blah blah" ) );
+        logProvider.assertExactly(
+                inLog( PreFlightTasks.class ).error( "blah blah" )
+        );
     }
 
     @Test
     public void shouldAdvertiseFailedRule()
     {
-        PreFlightTasks check = new PreFlightTasks( DEV_NULL, getWithOneFailingRule() );
+        PreFlightTasks check = new PreFlightTasks( NullLogProvider.getInstance(), getWithOneFailingRule() );
         check.run();
         assertNotNull( check.failedTask() );
     }

@@ -33,11 +33,12 @@ import org.junit.Test;
 import org.junit.rules.TestName;
 
 import org.neo4j.kernel.GraphDatabaseDependencies;
-import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.logging.NullLog;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
@@ -79,8 +80,8 @@ public class StartupTimeoutDocIT
     public void shouldNotFailIfStartupTakesLessTimeThanTimeout() throws IOException
     {
         ConfigurationBuilder configurator = buildProperties().withStartupTimeout( 100 ).atPort( 7480 ).build();
-        server = new CommunityNeoServer( configurator, GraphDatabaseDependencies.newDependencies().logging(
-                DevNullLoggingService.DEV_NULL ) )
+        server = new CommunityNeoServer( configurator,
+                GraphDatabaseDependencies.newDependencies().userLogProvider( NullLogProvider.getInstance() ), NullLogProvider.getInstance() )
         {
             @Override
             protected Iterable<ServerModule> createServerModules()
@@ -122,8 +123,8 @@ public class StartupTimeoutDocIT
             final boolean preventMovingFurtherThanStartingModules )
     {
         final AtomicReference<Runnable> timerStartSignal = new AtomicReference<>();
-        CommunityNeoServer server = new CommunityNeoServer( configurator, GraphDatabaseDependencies.newDependencies()
-                .logging( DevNullLoggingService.DEV_NULL ) )
+        CommunityNeoServer server = new CommunityNeoServer( configurator,
+                GraphDatabaseDependencies.newDependencies().userLogProvider( NullLogProvider.getInstance() ), NullLogProvider.getInstance() )
         {
             @Override
             protected InterruptThreadTimer createInterruptStartupTimer()
@@ -236,7 +237,7 @@ public class StartupTimeoutDocIT
         serverProperties.setProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY, serverPropertiesFilename );
         serverProperties.store( new FileWriter( serverPropertiesFilename ), null );
 
-        return new ConfiguratorBuilder( new PropertyFileConfigurator( new File( serverPropertiesFilename ) ) );
+        return new ConfiguratorBuilder( new PropertyFileConfigurator( new File( serverPropertiesFilename ), NullLog.getInstance() ) );
     }
 
     @Rule

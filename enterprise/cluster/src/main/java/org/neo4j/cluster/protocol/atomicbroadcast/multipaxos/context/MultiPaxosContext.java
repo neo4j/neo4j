@@ -36,7 +36,7 @@ import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.ElectionRole;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 
 /**
  * Context that implements all the context interfaces used by the Paxos state machines.
@@ -60,7 +60,7 @@ public class MultiPaxosContext
                               Iterable<ElectionRole> roles,
                               ClusterConfiguration configuration,
                               Executor executor,
-                              Logging logging,
+                              LogProvider logProvider,
                               ObjectInputStreamFactory objectInputStreamFactory,
                               ObjectOutputStreamFactory objectOutputStreamFactory,
                               AcceptorInstanceStore instanceStore,
@@ -70,13 +70,13 @@ public class MultiPaxosContext
         commonState = new CommonContextState(configuration);
         paxosInstances = new PaxosInstanceStore();
 
-        heartbeatContext = new HeartbeatContextImpl(me, commonState, logging, timeouts, executor );
-        learnerContext = new LearnerContextImpl(me, commonState, logging, timeouts, paxosInstances, instanceStore, objectInputStreamFactory, objectOutputStreamFactory, heartbeatContext );
-        clusterContext = new ClusterContextImpl(me, commonState, logging, timeouts, executor, objectOutputStreamFactory, objectInputStreamFactory, learnerContext, heartbeatContext );
-        electionContext = new ElectionContextImpl( me, commonState, logging, timeouts, roles, clusterContext, heartbeatContext, electionCredentialsProvider );
-        proposerContext = new ProposerContextImpl(me, commonState, logging, timeouts, paxosInstances );
-        acceptorContext = new AcceptorContextImpl(me, commonState, logging, timeouts, instanceStore);
-        atomicBroadcastContext = new AtomicBroadcastContextImpl(me, commonState, logging, timeouts, executor, heartbeatContext );
+        heartbeatContext = new HeartbeatContextImpl(me, commonState, logProvider, timeouts, executor );
+        learnerContext = new LearnerContextImpl(me, commonState, logProvider, timeouts, paxosInstances, instanceStore, objectInputStreamFactory, objectOutputStreamFactory, heartbeatContext );
+        clusterContext = new ClusterContextImpl(me, commonState, logProvider, timeouts, executor, objectOutputStreamFactory, objectInputStreamFactory, learnerContext, heartbeatContext );
+        electionContext = new ElectionContextImpl( me, commonState, logProvider, timeouts, roles, clusterContext, heartbeatContext, electionCredentialsProvider );
+        proposerContext = new ProposerContextImpl(me, commonState, logProvider, timeouts, paxosInstances );
+        acceptorContext = new AcceptorContextImpl(me, commonState, logProvider, timeouts, instanceStore);
+        atomicBroadcastContext = new AtomicBroadcastContextImpl(me, commonState, logProvider, timeouts, executor, heartbeatContext );
 
         heartbeatContext.setCircularDependencies( clusterContext, learnerContext );
     }
@@ -135,32 +135,32 @@ public class MultiPaxosContext
 
     /** Create a state snapshot. The snapshot will not duplicate services, and expects the caller to duplicate
      * {@link AcceptorInstanceStore}, since that is externally provided.  */
-    public MultiPaxosContext snapshot(Logging logging, Timeouts timeouts, Executor executor,
+    public MultiPaxosContext snapshot(LogProvider logProvider, Timeouts timeouts, Executor executor,
                                       AcceptorInstanceStore instanceStore,
                                       ObjectInputStreamFactory objectInputStreamFactory,
                                       ObjectOutputStreamFactory objectOutputStreamFactory,
                                       ElectionCredentialsProvider electionCredentialsProvider)
     {
-        CommonContextState commonStateSnapshot = commonState.snapshot(logging.getMessagesLog( ClusterConfiguration.class ) );
+        CommonContextState commonStateSnapshot = commonState.snapshot(logProvider.getLog( ClusterConfiguration.class ) );
         PaxosInstanceStore paxosInstancesSnapshot = paxosInstances.snapshot();
 
         HeartbeatContextImpl snapshotHeartbeatContext =
-                heartbeatContext.snapshot( commonStateSnapshot, logging, timeouts, executor );
+                heartbeatContext.snapshot( commonStateSnapshot, logProvider, timeouts, executor );
         LearnerContextImpl snapshotLearnerContext =
-                learnerContext.snapshot( commonStateSnapshot, logging, timeouts, paxosInstancesSnapshot, instanceStore,
+                learnerContext.snapshot( commonStateSnapshot, logProvider, timeouts, paxosInstancesSnapshot, instanceStore,
                         objectInputStreamFactory, objectOutputStreamFactory, snapshotHeartbeatContext );
         ClusterContextImpl snapshotClusterContext =
-                clusterContext.snapshot( commonStateSnapshot, logging, timeouts, executor, objectOutputStreamFactory,
+                clusterContext.snapshot( commonStateSnapshot, logProvider, timeouts, executor, objectOutputStreamFactory,
                         objectInputStreamFactory, snapshotLearnerContext, snapshotHeartbeatContext );
         ElectionContextImpl snapshotElectionContext =
-                electionContext.snapshot( commonStateSnapshot, logging, timeouts, snapshotClusterContext,
+                electionContext.snapshot( commonStateSnapshot, logProvider, timeouts, snapshotClusterContext,
                         snapshotHeartbeatContext, electionCredentialsProvider );
         ProposerContextImpl snapshotProposerContext =
-                proposerContext.snapshot( commonStateSnapshot, logging, timeouts, paxosInstancesSnapshot );
+                proposerContext.snapshot( commonStateSnapshot, logProvider, timeouts, paxosInstancesSnapshot );
         AcceptorContextImpl snapshotAcceptorContext =
-                acceptorContext.snapshot( commonStateSnapshot, logging, timeouts, instanceStore );
+                acceptorContext.snapshot( commonStateSnapshot, logProvider, timeouts, instanceStore );
         AtomicBroadcastContextImpl snapshotAtomicBroadcastContext =
-                atomicBroadcastContext.snapshot( commonStateSnapshot, logging, timeouts, executor, snapshotHeartbeatContext );
+                atomicBroadcastContext.snapshot( commonStateSnapshot, logProvider, timeouts, executor, snapshotHeartbeatContext );
 
         snapshotHeartbeatContext.setCircularDependencies( snapshotClusterContext, snapshotLearnerContext );
 

@@ -20,6 +20,7 @@
 package org.neo4j.consistency.store;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckSettings;
@@ -27,7 +28,7 @@ import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -38,7 +39,7 @@ public class StoreAssertions
     {
     }
 
-    public static void assertConsistentStore( File dir ) throws ConsistencyCheckIncompleteException
+    public static void assertConsistentStore( File dir ) throws ConsistencyCheckIncompleteException, IOException
     {
         final Config configuration =
                 new Config(
@@ -52,7 +53,7 @@ public class StoreAssertions
                         dir.getAbsolutePath(),
                         configuration,
                         ProgressMonitorFactory.NONE,
-                        StringLogger.SYSTEM_ERR
+                        NullLogProvider.getInstance()
                 );
 
         assertTrue( result.isSuccessful() );

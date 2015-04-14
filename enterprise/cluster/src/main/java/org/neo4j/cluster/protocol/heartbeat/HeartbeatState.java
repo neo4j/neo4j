@@ -101,7 +101,7 @@ public enum HeartbeatState
                                 break;
                             }
 
-                            context.getLogger( HeartbeatState.class ).debug( "Received " + state );
+                            context.getLog( HeartbeatState.class ).debug( "Received " + state );
 
                             if ( state.getServer() == null )
                             {
@@ -152,7 +152,7 @@ public enum HeartbeatState
                         {
 
                             InstanceId server = message.getPayload();
-                            context.getLogger( HeartbeatState.class )
+                            context.getLog( HeartbeatState.class )
                                     .debug( "Received timed out for server " + server );
                             // Check if this node is no longer a part of the cluster
                             if ( context.getMembers().containsKey( server ) )
@@ -226,7 +226,7 @@ public enum HeartbeatState
                         case suspicions:
                         {
                             HeartbeatMessage.SuspicionsState suspicions = message.getPayload();
-                            context.getLogger( HeartbeatState.class )
+                            context.getLog( HeartbeatState.class )
                                     .debug( "Received suspicions as " + suspicions );
 
                             URI from = new URI( message.getHeader( Message.FROM ) );
@@ -244,7 +244,7 @@ public enum HeartbeatState
 
                         case leave:
                         {
-                            context.getLogger( HeartbeatState.class ).debug( "Received leave" );
+                            context.getLog( HeartbeatState.class ).debug( "Received leave" );
                             return start;
                         }
 

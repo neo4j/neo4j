@@ -38,7 +38,7 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.OtherThreadExecutor;
@@ -184,7 +184,7 @@ public class TestGraphProperties
                 new DefaultIdGeneratorFactory(),
                 pageCacheRule.getPageCache( fs.get() ),
                 fs.get(),
-                StringLogger.DEV_NULL,
+                NullLogProvider.getInstance(),
                 monitors );
         NeoStore neoStore = storeFactory.newNeoStore( false );
         long prop = neoStore.getGraphNextProp();

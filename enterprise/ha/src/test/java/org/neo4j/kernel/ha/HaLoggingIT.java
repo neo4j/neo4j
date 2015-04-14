@@ -26,14 +26,14 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterRule;
 
 import static java.util.Arrays.asList;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
-import static org.neo4j.kernel.impl.util.StringLogger.DEFAULT_NAME;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsJoined;
 import static org.neo4j.test.ha.ClusterManager.clusterWithAdditionalClients;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;
@@ -62,8 +62,8 @@ public class HaLoggingIT
         // -- look at the slave and see notices of startup diagnostics
         String logMessage = "Just a test for that logging continues as expected";
         HighlyAvailableGraphDatabase db = cluster.getAnySlave();
-        StringLogger logger = db.getDependencyResolver().resolveDependency( StringLogger.class );
-        logger.logMessage( logMessage, true );
+        LogService logService = db.getDependencyResolver().resolveDependency( LogService.class );
+        logService.getInternalLog( getClass() ).info( logMessage, true );
 
         // WHEN
         // -- the slave switches role to become master, logging continues
@@ -72,7 +72,7 @@ public class HaLoggingIT
         cluster.shutdown( master );
         cluster.await( masterAvailable( master ) );
         cluster.await( masterSeesMembers( 2 ) );
-        logger.logMessage( logMessage, true );
+        logService.getInternalLog( getClass() ).info( logMessage );
 
         // THEN
         int count = findLoggingLines( db, logMessage );
@@ -82,7 +82,7 @@ public class HaLoggingIT
     private int findLoggingLines( HighlyAvailableGraphDatabase db, String toLookFor )
     {
         int count = 0;
-        for ( String line : asIterable( new File( cluster.getStoreDir( db ), DEFAULT_NAME ), "UTF-8" ) )
+        for ( String line : asIterable( new File( cluster.getStoreDir( db ), StoreLogService.INTERNAL_LOG_NAME ), "UTF-8" ) )
             if ( line.endsWith( toLookFor ) )
                 count++;
         return count;

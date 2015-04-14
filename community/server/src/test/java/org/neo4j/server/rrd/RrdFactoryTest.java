@@ -34,7 +34,7 @@ import java.util.Map;
 
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.RrdDbWrapper;
@@ -205,7 +205,7 @@ public class RrdFactoryTest
 
         public TestableRrdFactory( Config config, String tempRrdFile )
         {
-            super( config, DevNullLoggingService.DEV_NULL );
+            super( config, NullLogProvider.getInstance() );
             this.tempRrdFile = tempRrdFile;
         }
 

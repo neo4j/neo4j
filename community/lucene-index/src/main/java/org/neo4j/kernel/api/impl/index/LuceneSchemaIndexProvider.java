@@ -46,11 +46,11 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.kernel.impl.store.StoreVersionMismatchHandler.ALLOW_OLD_VERSION;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 {
@@ -156,7 +156,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
             @Override
             public SchemaStore provide( File dir, PageCache pageCache )
             {
-                return new StoreFactory( fs, dir, pageCache, DEV_NULL, new Monitors(), ALLOW_OLD_VERSION ).newSchemaStore();
+                return new StoreFactory( fs, dir, pageCache, NullLogProvider.getInstance(), new Monitors(), ALLOW_OLD_VERSION ).newSchemaStore();
             }
         } );
     }

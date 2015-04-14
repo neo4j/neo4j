@@ -32,8 +32,8 @@ import org.neo4j.kernel.impl.store.format.TestFormatWithHeader;
 import org.neo4j.kernel.impl.store.format.TestHeaderlessStoreFormat;
 import org.neo4j.kernel.impl.store.format.TestRecord;
 import org.neo4j.kernel.impl.store.standard.StandardStore;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 
@@ -67,7 +67,7 @@ public class StandardStoreTest
     {
         // Given
         Store<TestRecord, TestCursor> store = life.add(new StandardStore<>( new TestHeaderlessStoreFormat(), new File("/store"),
-                new TestStoreIdGenerator(), pageCache, fsRule.get(), StringLogger.DEV_NULL ));
+                new TestStoreIdGenerator(), pageCache, fsRule.get(), NullLogProvider.getInstance() ));
 
         long firstId = store.allocate();
         long secondId = store.allocate();
@@ -87,7 +87,7 @@ public class StandardStoreTest
         life.shutdown();
 
         store = new StandardStore<>( new TestHeaderlessStoreFormat(), new File("/store"),
-                new TestStoreIdGenerator(), pageCache, fsRule.get(), StringLogger.DEV_NULL );
+                new TestStoreIdGenerator(), pageCache, fsRule.get(), NullLogProvider.getInstance() );
         store.init();
         store.start();
 
@@ -102,7 +102,7 @@ public class StandardStoreTest
     {
         // Given
         Store<TestRecord, TestCursor> store = life.add(new StandardStore<>( new TestFormatWithHeader(14), new File("/store"),
-                new TestStoreIdGenerator(), pageCache, fsRule.get(), StringLogger.DEV_NULL ));
+                new TestStoreIdGenerator(), pageCache, fsRule.get(), NullLogProvider.getInstance() ));
 
         long recordId = store.allocate();
 
@@ -118,7 +118,7 @@ public class StandardStoreTest
         life.shutdown();
 
         store = new StandardStore<>( new TestFormatWithHeader(14), new File("/store"),
-                new TestStoreIdGenerator(), pageCache, fsRule.get(), StringLogger.DEV_NULL );
+                new TestStoreIdGenerator(), pageCache, fsRule.get(), NullLogProvider.getInstance() );
         store.init();
         store.start();
 
@@ -132,7 +132,7 @@ public class StandardStoreTest
     {
         // Given
         Store<TestRecord, TestCursor> store = life.add(new StandardStore<>( new TestHeaderlessStoreFormat(), new File("/store"),
-                new TestStoreIdGenerator(), pageCache, fsRule.get(), StringLogger.DEV_NULL ));
+                new TestStoreIdGenerator(), pageCache, fsRule.get(), NullLogProvider.getInstance() ));
 
         long firstId  = store.allocate();
         long secondId = store.allocate();

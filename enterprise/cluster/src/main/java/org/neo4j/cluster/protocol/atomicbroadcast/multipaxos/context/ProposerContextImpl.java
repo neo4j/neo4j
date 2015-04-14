@@ -34,7 +34,7 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerContext;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ProposerMessage;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 
 class ProposerContextImpl
         extends AbstractContextImpl
@@ -49,20 +49,20 @@ class ProposerContextImpl
     private final PaxosInstanceStore paxosInstances;
 
     ProposerContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState,
-                         Logging logging,
+                         LogProvider logProvider,
                          Timeouts timeouts, PaxosInstanceStore paxosInstances )
     {
-        super( me, commonState, logging, timeouts );
+        super( me, commonState, logProvider, timeouts );
         this.paxosInstances = paxosInstances;
         pendingValues = new LinkedList<>(  );
         bookedInstances = new HashMap<>();
     }
 
-    private ProposerContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState, Logging logging,
+    private ProposerContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState, LogProvider logProvider,
                                  Timeouts timeouts, Deque<Message> pendingValues,
                                  Map<InstanceId, Message> bookedInstances, PaxosInstanceStore paxosInstances )
     {
-        super( me, commonState, logging, timeouts );
+        super( me, commonState, logProvider, timeouts );
         this.pendingValues = pendingValues;
         this.bookedInstances = bookedInstances;
         this.paxosInstances = paxosInstances;
@@ -180,7 +180,7 @@ class ProposerContextImpl
                 {
                     instance.getAcceptors().remove( commonState.configuration().getMembers().get( value.getJoin()));
 
-                    getLogger( ProposerContext.class ).debug( "For booked instance " + instance +
+                    getLog( ProposerContext.class ).debug( "For booked instance " + instance +
                             " removed gone member "
                             + commonState.configuration().getMembers().get( value.getJoin() )
                             + " added joining member " +
@@ -200,7 +200,7 @@ class ProposerContextImpl
                 PaxosInstance instance = paxosInstances.getPaxosInstance( instanceId );
                 if ( instance.getAcceptors() != null )
                 {
-                    getLogger( ProposerContext.class ).debug( "For booked instance " + instance +
+                    getLog( ProposerContext.class ).debug( "For booked instance " + instance +
                             " removed leaving member "
                             + value.getLeave() + " (at URI " +
                             commonState.configuration().getMembers().get( value.getLeave() )
@@ -211,10 +211,10 @@ class ProposerContextImpl
         }
     }
 
-    public ProposerContextImpl snapshot( CommonContextState commonStateSnapshot, Logging logging, Timeouts timeouts,
+    public ProposerContextImpl snapshot( CommonContextState commonStateSnapshot, LogProvider logProvider, Timeouts timeouts,
                                          PaxosInstanceStore paxosInstancesSnapshot )
     {
-        return new ProposerContextImpl( me, commonStateSnapshot, logging, timeouts, new LinkedList<>( pendingValues ),
+        return new ProposerContextImpl( me, commonStateSnapshot, logProvider, timeouts, new LinkedList<>( pendingValues ),
                 new HashMap<>(bookedInstances), paxosInstancesSnapshot );
     }
 

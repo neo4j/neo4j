@@ -42,11 +42,11 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
+import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.NeoStore.Position;
 import org.neo4j.kernel.impl.store.record.NeoStoreUtil;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -509,7 +509,7 @@ public class TestBackup
 
     private static boolean checkLogFileExistence( String directory )
     {
-        return new File( directory, StringLogger.DEFAULT_NAME ).exists();
+        return new File( directory, StoreLogService.INTERNAL_LOG_NAME ).exists();
     }
 
     private long lastTxChecksumOf( File storeDir )

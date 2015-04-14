@@ -27,6 +27,8 @@ import javax.ws.rs.core.Response;
 
 import org.junit.Test;
 
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
@@ -38,9 +40,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import static org.neo4j.kernel.logging.DevNullLoggingService.DEV_NULL;
 
 public class ConsoleServiceDocTest
 {
@@ -49,8 +48,8 @@ public class ConsoleServiceDocTest
     @Test
     public void correctRepresentation() throws URISyntaxException, UnsupportedEncodingException
     {
-        ConsoleService consoleService = new ConsoleService( new ShellOnlyConsoleSessionFactory(), databaseMock(),
-                DEV_NULL, new OutputFormat( new JsonFormat(), uri, null ) );
+        ConsoleService consoleService = new ConsoleService( new ShellOnlyConsoleSessionFactory(), mock( Database.class ),
+                NullLogProvider.getInstance(), new OutputFormat( new JsonFormat(), uri, null ) );
 
         Response consoleResponse = consoleService.getServiceDefinition();
 
@@ -64,19 +63,12 @@ public class ConsoleServiceDocTest
     public void advertisesAvailableConsoleEngines() throws URISyntaxException, UnsupportedEncodingException
     {
         ConsoleService consoleServiceWithJustShellEngine = new ConsoleService( new ShellOnlyConsoleSessionFactory(),
-                databaseMock(), DEV_NULL, new OutputFormat( new JsonFormat(), uri, null ) );
+                mock( Database.class ), NullLogProvider.getInstance(), new OutputFormat( new JsonFormat(), uri, null ) );
 
         String response = decode( consoleServiceWithJustShellEngine.getServiceDefinition());
 
         assertThat( response, containsString( "\"engines\" : [ \"shell\" ]" ) );
 
-    }
-
-    private Database databaseMock()
-    {
-        Database db = mock( Database.class );
-        when( db.getLogging() ).thenReturn( DEV_NULL );
-        return db;
     }
 
     private String decode( final Response response ) throws UnsupportedEncodingException
@@ -87,7 +79,7 @@ public class ConsoleServiceDocTest
     private static class ShellOnlyConsoleSessionFactory implements ConsoleSessionFactory
     {
         @Override
-        public ScriptSession createSession(String engineName, Database database)
+        public ScriptSession createSession( String engineName, Database database, LogProvider logProvider )
         {
             return null;
         }

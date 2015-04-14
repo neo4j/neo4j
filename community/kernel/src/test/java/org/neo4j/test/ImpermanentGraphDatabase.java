@@ -20,6 +20,7 @@
 package org.neo4j.test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,10 +32,9 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.info.DiagnosticsManager;
-import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.logging.SingleLoggingService;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.logging.StoreLogService;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.Settings.TRUE;
@@ -145,37 +145,6 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     }
 
     @Override
-    protected DiagnosticsManager createDiagnosticsManager()
-    {
-        return new DiagnosticsManager( StringLogger.DEV_NULL )
-        {
-            @Override
-            public void init() throws Throwable
-            {
-                // Do nothing
-            }
-
-            @Override
-            public void start()
-            {
-                // Do nothing
-            }
-
-            @Override
-            public void stop() throws Throwable
-            {
-                // Do nothing
-            }
-
-            @Override
-            public void shutdown()
-            {
-                // Do nothing
-            }
-        };
-    }
-
-    @Override
     public void shutdown()
     {
         if ( TRACK_UNCLOSED_DATABASE_INSTANCES )
@@ -205,9 +174,17 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     }
 
     @Override
-    protected Logging createLogging()
+    protected LogService createLogService()
     {
-        return life.add( new SingleLoggingService( StringLogger.loggerDirectory( fileSystem, storeDir ) ) );
+        StoreLogService logService;
+        try
+        {
+            logService = new StoreLogService( NullLogProvider.getInstance(), fileSystem, storeDir, jobScheduler );
+        } catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+        return life.add( logService );
     }
 
     public void cleanContent()

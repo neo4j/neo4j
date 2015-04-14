@@ -26,7 +26,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.TopLevelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLog;
 import org.neo4j.ndp.runtime.internal.StatementRunner;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -41,7 +41,7 @@ public class SessionStateMachineTest
     private final ThreadToStatementContextBridge txBridge = mock( ThreadToStatementContextBridge.class );
     private final Transaction tx = mock( TopLevelTransaction.class );
     private final SessionStateMachine machine = new SessionStateMachine(
-            db, txBridge, mock( StatementRunner.class ), StringLogger.DEV_NULL );
+            db, txBridge, mock( StatementRunner.class ), NullLog.getInstance() );
 
     @Test
     public void initialStateShouldBeIdle()
@@ -49,7 +49,7 @@ public class SessionStateMachineTest
         // When
         SessionStateMachine machine = new SessionStateMachine(
                 mock( GraphDatabaseService.class ), mock( ThreadToStatementContextBridge.class ),
-                mock( StatementRunner.class ), StringLogger.DEV_NULL );
+                mock( StatementRunner.class ), NullLog.getInstance() );
 
         // Then
         assertThat( machine.state(), equalTo( SessionStateMachine.State.IDLE ) );

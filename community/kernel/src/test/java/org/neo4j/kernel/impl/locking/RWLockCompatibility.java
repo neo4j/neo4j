@@ -126,7 +126,7 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
     }
 
     @Test
-    public void testMultipleThreads()
+    public void testMultipleThreads() throws Exception
     {
         LockWorker t1 = new LockWorker( "T1", locks );
         LockWorker t2 = new LockWorker( "T2", locks );

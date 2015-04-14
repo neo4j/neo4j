@@ -27,6 +27,7 @@ import java.util.Map;
 import org.neo4j.desktop.config.Installation;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.FormattedLog;
 import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
@@ -53,7 +54,9 @@ public class DesktopConfigurator implements ConfigurationBuilder
         Map<String,String> newMap = new HashMap<>( map );
 
         // re-read server properties, then add to config
-        ConfigurationBuilder propertyFileConfig = new PropertyFileConfigurator( installation.getServerConfigurationsFile() );
+        ConfigurationBuilder propertyFileConfig = new PropertyFileConfigurator(
+                installation.getServerConfigurationsFile(),
+                FormattedLog.toOutputStream( System.out ) );
         newMap.putAll( propertyFileConfig.configuration().getParams() );
 
         this.compositeConfig.applyChanges( newMap );

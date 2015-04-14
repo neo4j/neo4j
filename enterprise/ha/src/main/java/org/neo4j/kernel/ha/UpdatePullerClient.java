@@ -24,26 +24,26 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.JobScheduler.JobHandle;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 public class UpdatePullerClient extends LifecycleAdapter
 {
     private final JobScheduler scheduler;
-    private final StringLogger logger;
+    private final Log log;
     private final UpdatePuller updatePuller;
     private final AvailabilityGuard availabilityGuard;
     private final long pullIntervalMillis;
     private JobHandle intervalJobHandle;
 
-    public UpdatePullerClient( long pullIntervalMillis, JobScheduler scheduler, final Logging logging,
+    public UpdatePullerClient( long pullIntervalMillis, JobScheduler scheduler, LogProvider logProvider,
             UpdatePuller updatePullingThread, AvailabilityGuard availabilityGuard )
     {
         this.pullIntervalMillis = pullIntervalMillis;
         this.scheduler = scheduler;
         this.availabilityGuard = availabilityGuard;
-        this.logger = logging.getMessagesLog( getClass() );
+        this.log = logProvider.getLog( getClass() );
         updatePuller = updatePullingThread;
     }
 
@@ -74,7 +74,7 @@ public class UpdatePullerClient extends LifecycleAdapter
                     }
                     catch ( InterruptedException e )
                     {
-                        logger.error( "Pull updates failed", e );
+                        log.error( "Pull updates failed", e );
                     }
                 }
             }, pullIntervalMillis, pullIntervalMillis, TimeUnit.MILLISECONDS );

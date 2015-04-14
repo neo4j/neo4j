@@ -32,8 +32,8 @@ import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdRange;
-import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
@@ -164,7 +164,7 @@ public class HaIdGeneratorFactoryTest
         master = mock( Master.class );
         masterDelegate = new DelegateInvocationHandler<>( Master.class );
         fs = new EphemeralFileSystemAbstraction();
-        fac  = new HaIdGeneratorFactory( masterDelegate, new DevNullLoggingService(),
+        fac  = new HaIdGeneratorFactory( masterDelegate, NullLogProvider.getInstance(),
                 mock( RequestContextFactory.class ) );
     }
     

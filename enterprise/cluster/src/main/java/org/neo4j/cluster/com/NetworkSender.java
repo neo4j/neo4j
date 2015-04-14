@@ -62,9 +62,9 @@ import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 /**
  * TCP version of sending messages. This handles sending messages from state machines to other instances
@@ -107,18 +107,18 @@ public class NetworkSender
     private final Monitor monitor;
     private Configuration config;
     private final NetworkReceiver receiver;
-    private StringLogger msgLog;
+    private Log msgLog;
     private URI me;
 
     private Map<URI, Channel> connections = new ConcurrentHashMap<URI, Channel>();
     private Iterable<NetworkChannelsListener> listeners = Listeners.newListeners();
 
-    public NetworkSender( Monitor monitor, Configuration config, NetworkReceiver receiver, Logging logging )
+    public NetworkSender( Monitor monitor, Configuration config, NetworkReceiver receiver, LogProvider logProvider )
     {
         this.monitor = monitor;
         this.config = config;
         this.receiver = receiver;
-        this.msgLog = logging.getMessagesLog( getClass() );
+        this.msgLog = logProvider.getLog( getClass() );
         me = URI.create( CLUSTER_SCHEME + "://0.0.0.0:" + config.port() );
         receiver.addNetworkChannelsListener( new NetworkReceiver.NetworkChannelsListener()
         {

@@ -46,8 +46,6 @@ import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.logging.DevNullLoggingService;
-import org.neo4j.kernel.logging.Logging;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.OtherThreadRule;
 
@@ -70,12 +68,11 @@ public class MasterImplTest
     {
         // Given
         MasterImpl.SPI spi = mock( MasterImpl.SPI.class );
-        Logging logging = new DevNullLoggingService();
         Config config = config( 20 );
 
         when( spi.isAccessible() ).thenReturn( false );
 
-        MasterImpl instance = new MasterImpl( spi, mock( MasterImpl.Monitor.class ), logging, config );
+        MasterImpl instance = new MasterImpl( spi, mock( MasterImpl.Monitor.class ), config );
         instance.start();
 
         // When
@@ -95,13 +92,12 @@ public class MasterImplTest
     {
         // Given
         MasterImpl.SPI spi = mockedSpi();
-        Logging logging = new DevNullLoggingService();
         Config config = config( 20 );
 
         when( spi.isAccessible() ).thenReturn( true );
         when( spi.getTransactionChecksum( anyLong() ) ).thenReturn( 1L );
 
-        MasterImpl instance = new MasterImpl( spi, mock( MasterImpl.Monitor.class ), logging, config );
+        MasterImpl instance = new MasterImpl( spi, mock( MasterImpl.Monitor.class ), config );
         instance.start();
         HandshakeResult handshake = instance.handshake( 1, new StoreId() ).response();
 
@@ -128,8 +124,7 @@ public class MasterImplTest
         when( spi.getTransactionChecksum( anyLong() ) ).thenReturn( 1L );
         mockEmptyResponse( spi );
 
-        MasterImpl instance = new MasterImpl( spi, mock( MasterImpl.Monitor.class ),
-                new DevNullLoggingService(), config );
+        MasterImpl instance = new MasterImpl( spi, mock( MasterImpl.Monitor.class ), config );
         instance.start();
         Response<HandshakeResult> response = instance.handshake( 1, new StoreId() );
         HandshakeResult handshake = response.response();
@@ -182,8 +177,7 @@ public class MasterImplTest
             } ).when( client ).acquireExclusive( any( ResourceType.class ), Matchers.<long[]>anyVararg() );
             when( spi.acquireClient() ).thenReturn( client );
             Config config = config( 20 );
-            final MasterImpl master = new MasterImpl( spi, mock( Monitor.class ),
-                    new DevNullLoggingService(), config, 20 );
+            final MasterImpl master = new MasterImpl( spi, mock( Monitor.class ), config, 20 );
             master.start();
             HandshakeResult handshake = master.handshake( 1, new StoreId() ).response();
 
@@ -225,8 +219,7 @@ public class MasterImplTest
         when( spi.getTransactionChecksum( anyLong() ) ).thenReturn( 1L );
         mockEmptyResponse( spi );
 
-        MasterImpl master = new MasterImpl( spi, mock( MasterImpl.Monitor.class ),
-                new DevNullLoggingService(), config );
+        MasterImpl master = new MasterImpl( spi, mock( MasterImpl.Monitor.class ), config );
         master.start();
         HandshakeResult handshake = master.handshake( 1, new StoreId() ).response();
 
@@ -260,7 +253,7 @@ public class MasterImplTest
         when( spi.acquireClient()).thenReturn( locks );
         mockEmptyResponse( spi );
 
-        MasterImpl master = new MasterImpl( spi, mock( MasterImpl.Monitor.class ), new DevNullLoggingService(), config );
+        MasterImpl master = new MasterImpl( spi, mock( MasterImpl.Monitor.class ), config );
         master.start();
         HandshakeResult handshake = master.handshake( 1, new StoreId() ).response();
 

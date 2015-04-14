@@ -24,33 +24,33 @@ import org.jboss.netty.logging.InternalLogLevel;
 import org.jboss.netty.logging.InternalLogger;
 import org.jboss.netty.logging.InternalLoggerFactory;
 
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 public class NettyLoggerFactory
     extends InternalLoggerFactory
 {
-    private Logging logging;
+    private LogProvider logProvider;
 
-    public NettyLoggerFactory( Logging logging )
+    public NettyLoggerFactory( LogProvider logProvider )
     {
-        this.logging = logging;
+        this.logProvider = logProvider;
     }
 
     @Override
     public InternalLogger newInstance( String name )
     {
-        StringLogger logger;
+        Class<?> clazz;
         try
         {
-            logger = logging.getMessagesLog( getClass().getClassLoader().loadClass( name ) );
+            clazz = getClass().getClassLoader().loadClass( name );
         }
         catch ( ClassNotFoundException e )
         {
-            logger = logging.getMessagesLog( getClass() );
+            clazz = getClass();
         }
 
-        final StringLogger finalLogger = logger;
+        final Log log = logProvider.getLog( clazz );
         return new AbstractInternalLogger()
         {
             @Override
@@ -86,49 +86,49 @@ public class NettyLoggerFactory
             @Override
             public void debug( String msg )
             {
-                finalLogger.debug( msg );
+                log.debug( msg );
             }
 
             @Override
             public void debug( String msg, Throwable cause )
             {
-                finalLogger.debug( msg, cause );
+                log.debug( msg, cause );
             }
 
             @Override
             public void info( String msg )
             {
-                finalLogger.info( msg );
+                log.info( msg );
             }
 
             @Override
             public void info( String msg, Throwable cause )
             {
-                finalLogger.info( msg, cause );
+                log.info( msg, cause );
             }
 
             @Override
             public void warn( String msg )
             {
-                finalLogger.warn( msg );
+                log.warn( msg );
             }
 
             @Override
             public void warn( String msg, Throwable cause )
             {
-                finalLogger.warn( msg, cause );
+                log.warn( msg, cause );
             }
 
             @Override
             public void error( String msg )
             {
-                finalLogger.error( msg );
+                log.error( msg );
             }
 
             @Override
             public void error( String msg, Throwable cause )
             {
-                finalLogger.error( msg, cause );
+                log.error( msg, cause );
             }
         };
     }

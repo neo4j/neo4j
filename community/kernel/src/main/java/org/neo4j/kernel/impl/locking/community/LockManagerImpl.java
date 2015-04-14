@@ -22,12 +22,12 @@ package org.neo4j.kernel.impl.locking.community;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.function.Consumer;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Logger;
 
 public class LockManagerImpl implements LockManager
 {
@@ -88,20 +88,27 @@ public class LockManagerImpl implements LockManager
     }
 
     @Override
-    public void dumpLocksOnResource( Object resource, Logging logging )
+    public void dumpLocksOnResource( final Object resource, Logger logger )
     {
-        StringLogger logger = logging.getMessagesLog( LockManager.class );
-        RWLock lock;
+        final RWLock lock;
         synchronized ( resourceLockMap )
         {
             if ( !resourceLockMap.containsKey( resource ) )
             {
-                logger.info( "No locks on " + resource );
+                logger.log( "No locks on " + resource );
                 return;
             }
             lock = resourceLockMap.get( resource );
         }
-        logger.logLongMessage( "Dump locks on resource " + resource, lock );
+        logger.bulk( new Consumer<Logger>()
+        {
+            @Override
+            public void accept( Logger bulkLogger )
+            {
+                bulkLogger.log( "Dump locks on resource %s", resource );
+                lock.logTo( bulkLogger );
+            }
+        } );
     }
 
     /**

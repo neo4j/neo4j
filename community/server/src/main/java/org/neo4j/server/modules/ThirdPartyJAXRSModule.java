@@ -23,8 +23,8 @@ import java.util.Collection;
 import java.util.List;
 
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
@@ -40,14 +40,14 @@ public class ThirdPartyJAXRSModule implements ServerModule
 
     private final ExtensionInitializer extensionInitializer;
 	private List<ThirdPartyJaxRsPackage> packages;
-    private final ConsoleLogger log;
+    private final Log log;
 
-    public ThirdPartyJAXRSModule( WebServer webServer, Config config, Logging logging,
+    public ThirdPartyJAXRSModule( WebServer webServer, Config config, LogProvider logProvider,
             NeoServer neoServer )
     {
     	this.webServer = webServer;
     	this.config = config;
-    	this.log = logging.getConsoleLog( getClass() );
+    	this.log = logProvider.getLog( getClass() );
         extensionInitializer = new ExtensionInitializer( neoServer );
     }
 
@@ -60,7 +60,7 @@ public class ThirdPartyJAXRSModule implements ServerModule
             List<String> packageNames = packagesFor( tpp );
             Collection<Injectable<?>> injectables = extensionInitializer.initializePackages( packageNames );
             webServer.addJAXRSPackages( packageNames, tpp.getMountPoint(), injectables );
-            log.log( "Mounted unmanaged extension [%s] at [%s]", tpp.getPackageName(), tpp.getMountPoint() );
+            log.info( "Mounted unmanaged extension [%s] at [%s]", tpp.getPackageName(), tpp.getMountPoint() );
         }
     }
 

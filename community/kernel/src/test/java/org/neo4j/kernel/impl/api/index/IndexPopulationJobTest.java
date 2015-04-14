@@ -59,13 +59,13 @@ import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.impl.util.TestLogger;
-import org.neo4j.kernel.logging.DevNullLoggingService;
-import org.neo4j.kernel.logging.SingleLoggingService;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.register.Register.DoubleLong;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
@@ -78,6 +78,8 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.String.format;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
@@ -96,8 +98,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.util.TestLogger.LogCall.error;
-import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class IndexPopulationJobTest
 {
@@ -250,7 +251,7 @@ public class IndexPopulationJobTest
                 Matchers.<Visitor<NodePropertyUpdate, RuntimeException>>any() ) ).thenReturn( storeScan );
 
         final IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, storeView,
-                StringLogger.DEV_NULL, false );
+                NullLogProvider.getInstance(), false );
 
         OtherThreadExecutor<Void> populationJobRunner = cleanup.add( new OtherThreadExecutor<Void>(
                 "Population job test runner", null ) );
@@ -287,18 +288,19 @@ public class IndexPopulationJobTest
     {
         // Given
         createNode( map( name, "irrelephant" ), FIRST );
-        TestLogger logger = new TestLogger();
+        AssertableLogProvider logProvider = new AssertableLogProvider();
         FlippableIndexProxy index = mock( FlippableIndexProxy.class );
         IndexPopulator populator = spy( inMemoryPopulator( false ) );
-        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, indexStoreView, logger, false );
+        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, indexStoreView, logProvider, false );
 
         // When
         job.run();
 
         // Then
-        logger.assertExactly(
-                info( "Index population started: [:FIRST(name)]" ),
-                info( "Index population completed. Index is now online: [:FIRST(name)]" )
+        LogMatcherBuilder match = inLog( IndexPopulationJob.class );
+        logProvider.assertExactly(
+                match.info( "Index population started: [%s]", ":FIRST(name)" ),
+                match.info( "Index population completed. Index is now online: [%s]", ":FIRST(name)" )
         );
     }
 
@@ -307,19 +309,22 @@ public class IndexPopulationJobTest
     {
         // Given
         createNode( map( name, "irrelephant" ), FIRST );
-        TestLogger logger = new TestLogger();
+        AssertableLogProvider logProvider = new AssertableLogProvider();
         FlippableIndexProxy index = mock( FlippableIndexProxy.class );
         IndexPopulator populator = spy( inMemoryPopulator( false ) );
-        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, indexStoreView, logger, false );
+        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, indexStoreView, logProvider, false );
 
-        IllegalStateException failure = new IllegalStateException( "not successful" );
+        Throwable failure = new IllegalStateException( "not successful" );
         doThrow( failure ).when( populator ).create();
 
         // When
         job.run();
 
         // Then
-        logger.assertAtLeastOnce( error( "Failed to populate index: [:FIRST(name)]", failure ) );
+        LogMatcherBuilder match = inLog( IndexPopulationJob.class );
+        logProvider.assertAtLeastOnce(
+                match.error( is( "Failed to populate index: [:FIRST(name)]" ), sameInstance( failure ) )
+        );
     }
 
     @Test
@@ -330,7 +335,7 @@ public class IndexPopulationJobTest
         IndexPopulator populator = spy( inMemoryPopulator( false ) );
         IndexPopulationJob job =
                 newIndexPopulationJob( FIRST, name, failureDelegateFactory, populator,
-                        new FlippableIndexProxy(), indexStoreView, new TestLogger(), false );
+                        new FlippableIndexProxy(), indexStoreView, NullLogProvider.getInstance(), false );
 
 
         IllegalStateException failure = new IllegalStateException( "not successful" );
@@ -353,10 +358,10 @@ public class IndexPopulationJobTest
     public void shouldCloseAndFailOnFailure() throws Exception
     {
         createNode( map( name, "irrelephant" ), FIRST );
-        TestLogger logger = new TestLogger();
+        LogProvider logProvider = NullLogProvider.getInstance();
         FlippableIndexProxy index = mock( FlippableIndexProxy.class );
         IndexPopulator populator = spy( inMemoryPopulator( false ) );
-        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, indexStoreView, logger, false );
+        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, indexStoreView, logProvider, false );
 
         String failureMessage = "not successful";
         IllegalStateException failure = new IllegalStateException( failureMessage );
@@ -379,10 +384,10 @@ public class IndexPopulationJobTest
     public void shouldFailIfDeferredConstraintViolated() throws Exception
     {
         createNode( map( name, "irrelephant" ), FIRST );
-        TestLogger logger = new TestLogger();
+        LogProvider logProvider = NullLogProvider.getInstance();
         FlippableIndexProxy index = new FlippableIndexProxy( mock( IndexProxy.class ) );
         IndexPopulator populator = spy( inMemoryPopulator( false ) );
-        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, indexStoreView, logger, true );
+        IndexPopulationJob job = newIndexPopulationJob( FIRST, name, populator, index, indexStoreView, logProvider, true );
 
         IndexEntryConflictException failure = new PreexistingIndexEntryConflictException( "duplicate value", 0, 1 );
         doThrow( failure ).when( populator ).verifyDeferredConstraints( indexStoreView );
@@ -596,7 +601,7 @@ public class IndexPopulationJobTest
         db = (ImpermanentGraphDatabase) new TestGraphDatabaseFactory().newImpermanentDatabase();
         ctxSupplier = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
         counts = db.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get().getCounts();
-        stateHolder = new KernelSchemaStateStore( DevNullLoggingService.DEV_NULL.getMessagesLog( KernelSchemaStateStore.class ) );
+        stateHolder = new KernelSchemaStateStore( NullLogProvider.getInstance() );
         indexStoreView = newStoreView();
 
         try ( Transaction tx = db.beginTx() )
@@ -620,24 +625,24 @@ public class IndexPopulationJobTest
                                                       FlippableIndexProxy flipper, boolean constraint )
     {
         return newIndexPopulationJob( label, propertyKey, populator, flipper, indexStoreView,
-                StringLogger.DEV_NULL, constraint );
+                NullLogProvider.getInstance(), constraint );
     }
 
     private IndexPopulationJob newIndexPopulationJob( Label label, String propertyKey,
                                                       IndexPopulator populator,
                                                       FlippableIndexProxy flipper, IndexStoreView storeView,
-                                                      StringLogger logger,
+                                                      LogProvider logProvider,
                                                       boolean constraint )
     {
         return newIndexPopulationJob( label, propertyKey,
-                mock( FailedIndexProxyFactory.class ), populator, flipper, storeView, logger, constraint );
+                mock( FailedIndexProxyFactory.class ), populator, flipper, storeView, logProvider, constraint );
     }
 
     private IndexPopulationJob newIndexPopulationJob( Label label, String propertyKey,
                                                       FailedIndexProxyFactory failureDelegateFactory,
                                                       IndexPopulator populator,
                                                       FlippableIndexProxy flipper, IndexStoreView storeView,
-                                                      StringLogger logger, boolean constraint )
+                                                      LogProvider logProvider, boolean constraint )
     {
         IndexDescriptor descriptor = indexDescriptor( label, propertyKey );
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
@@ -646,7 +651,7 @@ public class IndexPopulationJobTest
                 format( ":%s(%s)", label.name(), propertyKey ),
                 failureDelegateFactory,
                 populator, flipper, storeView,
-                stateHolder, new SingleLoggingService( logger ), IndexingService.NO_MONITOR );
+                stateHolder, logProvider, IndexingService.NO_MONITOR );
     }
 
     private IndexDescriptor indexDescriptor( Label label, String propertyKey )

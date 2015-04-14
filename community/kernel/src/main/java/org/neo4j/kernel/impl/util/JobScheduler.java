@@ -62,6 +62,11 @@ public interface JobScheduler extends Lifecycle
         indexSamplingController,
         indexSampling,
         pageCacheEviction,
+
+        /**
+         * Rotates internal diagnostic logs
+         */
+        internalLogRotation,
     }
 
     interface JobHandle

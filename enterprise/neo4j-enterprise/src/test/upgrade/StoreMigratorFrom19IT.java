@@ -49,9 +49,9 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
@@ -240,9 +240,8 @@ public class StoreMigratorFrom19IT
 
     private StoreUpgrader newStoreUpgrader()
     {
-        DevNullLoggingService logging = new DevNullLoggingService();
-        StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR, logging );
-        upgrader.addParticipant( new StoreMigrator( monitor, fs, logging ) );
+        StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR, NullLogProvider.getInstance() );
+        upgrader.addParticipant( new StoreMigrator( monitor, fs, NullLogService.getInstance() ) );
         return upgrader;
     }
 
@@ -264,7 +263,7 @@ public class StoreMigratorFrom19IT
                 new DefaultIdGeneratorFactory(),
                 pageCache,
                 fs,
-                StringLogger.DEV_NULL,
+                NullLogProvider.getInstance(),
                 new Monitors() );
     }
 

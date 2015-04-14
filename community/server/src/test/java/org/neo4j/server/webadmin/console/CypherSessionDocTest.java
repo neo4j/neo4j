@@ -27,7 +27,7 @@ import static org.mockito.Mockito.mock;
 import org.junit.Test;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;
@@ -47,7 +47,7 @@ public class CypherSessionDocTest
         executor.start();
         try
         {
-            CypherSession session = new CypherSession( executor, DevNullLoggingService.DEV_NULL, mock(HttpServletRequest.class));
+            CypherSession session = new CypherSession( executor, NullLogProvider.getInstance(), mock( HttpServletRequest.class ) );
             Pair<String, String> result = session.evaluate( "create (a) return a" );
             assertThat( result.first(), containsString( "Node[0]" ) );
         }

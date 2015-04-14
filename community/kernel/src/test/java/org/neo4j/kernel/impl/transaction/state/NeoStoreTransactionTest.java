@@ -101,8 +101,8 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
-import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.logging.SingleLoggingService;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
@@ -145,12 +145,12 @@ import static org.neo4j.kernel.impl.store.StoreFactory.configForStoreDir;
 import static org.neo4j.kernel.impl.store.UniquenessConstraintRule.uniquenessConstraintRule;
 import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class NeoStoreTransactionTest
 {
     public static final String LONG_STRING = "string value long enough not to be stored as a short string";
     private static final long[] none = new long[0];
+    private static final LogProvider NULL_LOG_PROVIDER = NullLogProvider.getInstance();
     @ClassRule
     public static PageCacheRule pageCacheRule = new PageCacheRule();
     @SuppressWarnings( "deprecation" )
@@ -1407,7 +1407,7 @@ public class NeoStoreTransactionTest
                 idGeneratorFactory,
                 pageCache,
                 fs,
-                DEV_NULL,
+                NULL_LOG_PROVIDER,
                 new Monitors() );
         neoStore = storeFactory.createNeoStore();
         neoStore.rebuildCountStoreIfNeeded();
@@ -1553,9 +1553,9 @@ public class NeoStoreTransactionTest
         public CapturingIndexingService( IndexProxySetup proxySetup, SchemaIndexProviderMap providerMap,
                                          IndexMapReference indexMapRef, IndexStoreView storeView,
                                          Iterable<IndexRule> indexRules, IndexSamplingController samplingController,
-                                         Logging logging, Monitor monitor )
+                                         LogProvider logProvider, Monitor monitor )
         {
-            super( proxySetup, providerMap, indexMapRef, storeView, indexRules, samplingController, null, logging,
+            super( proxySetup, providerMap, indexMapRef, storeView, indexRules, samplingController, null, logProvider,
                     monitor );
         }
 
@@ -1571,18 +1571,17 @@ public class NeoStoreTransactionTest
     {
         NeoStoreIndexStoreView storeView = new NeoStoreIndexStoreView( locks, neoStore );
         SchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( NO_INDEX_PROVIDER );
-        Logging logging = new SingleLoggingService( DEV_NULL );
         IndexingService.Monitor monitor = IndexingService.NO_MONITOR;
-        UpdateableSchemaState schemaState = new KernelSchemaStateStore( logging.getMessagesLog( KernelSchemaStateStore.class ) );
+        UpdateableSchemaState schemaState = new KernelSchemaStateStore( NULL_LOG_PROVIDER );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( new Config() );
         TokenNameLookup tokenNameLookup = mock( TokenNameLookup.class );
         IndexMapReference indexMapRef = new IndexMapReference();
         IndexSamplingControllerFactory
                 samplingFactory = new IndexSamplingControllerFactory(
-                samplingConfig, storeView, null, tokenNameLookup, logging
+                samplingConfig, storeView, null, tokenNameLookup, NULL_LOG_PROVIDER
         );
         IndexProxySetup proxySetup =
-                new IndexProxySetup( samplingConfig, storeView, providerMap, schemaState, null, null, logging );
+                new IndexProxySetup( samplingConfig, storeView, providerMap, schemaState, null, null, NULL_LOG_PROVIDER );
         IndexSamplingController samplingController = samplingFactory.create( indexMapRef );
         return new CapturingIndexingService(
                 proxySetup,
@@ -1591,7 +1590,7 @@ public class NeoStoreTransactionTest
                 storeView,
                 Collections.<IndexRule>emptyList(),
                 samplingController,
-                logging,
+                NULL_LOG_PROVIDER,
                 monitor
         );
     }

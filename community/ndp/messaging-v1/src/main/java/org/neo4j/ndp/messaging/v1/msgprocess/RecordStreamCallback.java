@@ -21,13 +21,13 @@ package org.neo4j.ndp.messaging.v1.msgprocess;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 import org.neo4j.stream.Record;
 import org.neo4j.stream.RecordStream;
 
 public class RecordStreamCallback extends MessageProcessingCallback<RecordStream>
 {
-    public RecordStreamCallback( StringLogger log )
+    public RecordStreamCallback( Log log )
     {
         super( log );
     }

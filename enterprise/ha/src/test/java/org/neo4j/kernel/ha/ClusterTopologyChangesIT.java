@@ -50,7 +50,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.ha.com.master.InvalidEpochException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.ha.ClusterManager;
@@ -291,7 +291,7 @@ public class ClusterTopologyChangesIT
         Config config = new Config( configMap, InternalAbstractGraphDatabase.Configuration.class,
                 GraphDatabaseSettings.class );
 
-        return new ClusterClient( new Monitors(), ClusterClient.adapt( config ), new DevNullLoggingService(),
+        return new ClusterClient( new Monitors(), ClusterClient.adapt( config ), NullLogService.getInstance(),
                 new NotElectableElectionCredentialsProvider(), new ObjectStreamFactory(), new ObjectStreamFactory() );
     }
 

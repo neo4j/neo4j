@@ -59,9 +59,9 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 
@@ -95,7 +95,7 @@ public class IndexingService extends LifecycleAdapter
     private final SchemaIndexProviderMap providerMap;
     private final IndexMapReference indexMapRef;
     private final Iterable<IndexRule> indexRules;
-    private final StringLogger logger;
+    private final Log log;
     private final TokenNameLookup tokenNameLookup;
     private final Monitor monitor;
     private final PrimitiveLongSet recoveredNodeIds = Primitive.longSet( 20 );
@@ -157,7 +157,7 @@ public class IndexingService extends LifecycleAdapter
                                Iterable<IndexRule> indexRules,
                                IndexSamplingController samplingController,
                                TokenNameLookup tokenNameLookup,
-                               Logging logging,
+                               LogProvider logProvider,
                                Monitor monitor )
     {
         this.proxySetup = proxySetup;
@@ -168,7 +168,7 @@ public class IndexingService extends LifecycleAdapter
         this.samplingController = samplingController;
         this.tokenNameLookup = tokenNameLookup;
         this.monitor = monitor;
-        this.logger = logging.getMessagesLog( getClass() );
+        this.log = logProvider.getLog( getClass() );
     }
 
     public static IndexingService create( IndexSamplingConfig samplingConfig,
@@ -178,7 +178,7 @@ public class IndexingService extends LifecycleAdapter
                                           TokenNameLookup tokenNameLookup,
                                           UpdateableSchemaState updateableSchemaState,
                                           Iterable<IndexRule> indexRules,
-                                          Logging logging, Monitor monitor )
+                                          LogProvider logProvider, Monitor monitor )
     {
         if ( providerMap == null || providerMap.getDefaultProvider() == null )
         {
@@ -190,14 +190,14 @@ public class IndexingService extends LifecycleAdapter
 
         IndexMapReference indexMapRef = new IndexMapReference();
         IndexSamplingControllerFactory factory =
-                new IndexSamplingControllerFactory( samplingConfig, storeView, scheduler, tokenNameLookup, logging );
+                new IndexSamplingControllerFactory( samplingConfig, storeView, scheduler, tokenNameLookup, logProvider );
         IndexSamplingController indexSamplingController = factory.create( indexMapRef );
         IndexProxySetup proxySetup = new IndexProxySetup(
-                samplingConfig, storeView, providerMap, updateableSchemaState, tokenNameLookup, scheduler, logging
+                samplingConfig, storeView, providerMap, updateableSchemaState, tokenNameLookup, scheduler, logProvider
         );
 
         return new IndexingService( proxySetup, providerMap, indexMapRef, storeView, indexRules,
-                indexSamplingController, tokenNameLookup, logging, monitor );
+                indexSamplingController, tokenNameLookup, logProvider, monitor );
     }
 
     /**
@@ -217,7 +217,7 @@ public class IndexingService extends LifecycleAdapter
             SchemaIndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
             SchemaIndexProvider provider = providerMap.apply( providerDescriptor );
             InternalIndexState initialState = provider.getInitialState( indexId );
-            logger.info( proxySetup.indexStateInfo( "init", indexId, initialState, descriptor ) );
+            log.info( proxySetup.indexStateInfo( "init", indexId, initialState, descriptor ) );
             boolean constraint = indexRule.isConstraintIndex();
 
             switch ( initialState )
@@ -263,7 +263,7 @@ public class IndexingService extends LifecycleAdapter
             {
                 InternalIndexState state = proxy.getState();
                 IndexDescriptor descriptor = proxy.getDescriptor();
-                logger.info( proxySetup.indexStateInfo( "start", indexId, state, descriptor ) );
+                log.info( proxySetup.indexStateInfo( "start", indexId, state, descriptor ) );
                 switch ( state )
                 {
                     case ONLINE:
@@ -538,9 +538,9 @@ public class IndexingService extends LifecycleAdapter
 
     private void applyRecoveredUpdates() throws IOException
     {
-        if ( logger.isDebugEnabled() )
+        if ( log.isDebugEnabled() )
         {
-            logger.debug( "Applying recovered updates: " + recoveredNodeIds );
+            log.debug( "Applying recovered updates: " + recoveredNodeIds );
         }
         monitor.applyingRecoveredData( recoveredNodeIds );
         if ( !recoveredNodeIds.isEmpty() )
@@ -683,14 +683,14 @@ public class IndexingService extends LifecycleAdapter
 
     public void triggerIndexSampling( IndexSamplingMode mode )
     {
-        logger.info( "Manual trigger for sampling all indexes [" + mode + "]" );
+        log.info( "Manual trigger for sampling all indexes [" + mode + "]" );
         samplingController.sampleIndexes( mode );
     }
 
     public void triggerIndexSampling( IndexDescriptor descriptor, IndexSamplingMode mode )
     {
         String description = descriptor.userDescription( tokenNameLookup );
-        logger.info( "Manual trigger for sampling index " + description + " [" + mode + "]" );
+        log.info( "Manual trigger for sampling index " + description + " [" + mode + "]" );
         samplingController.sampleIndex( descriptor, mode );
     }
 
@@ -774,7 +774,7 @@ public class IndexingService extends LifecycleAdapter
             }
             catch ( IOException e )
             {
-                logger.error( "Unable to close index", e );
+                log.error( "Unable to close index", e );
             }
         }
 
@@ -786,7 +786,7 @@ public class IndexingService extends LifecycleAdapter
             }
             catch ( Exception e )
             {
-                logger.error( "Error awaiting index to close", e );
+                log.error( "Error awaiting index to close", e );
             }
         }
     }

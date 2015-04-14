@@ -28,7 +28,7 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 
 /**
@@ -47,13 +47,13 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord>
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             FileSystemAbstraction fileSystemAbstraction,
-            StringLogger stringLogger,
+            LogProvider logProvider,
             DynamicStringStore nameStore,
             StoreVersionMismatchHandler versionMismatchHandler,
             Monitors monitors )
     {
         super(fileName, config, IdType.PROPERTY_KEY_TOKEN, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler, monitors );
+                fileSystemAbstraction, logProvider, nameStore, versionMismatchHandler, monitors );
     }
 
     @Override

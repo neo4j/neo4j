@@ -21,7 +21,6 @@ package org.neo4j.cluster;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.cluster.com.message.Message;
@@ -36,8 +35,7 @@ import org.neo4j.cluster.statemachine.StateTransitionListener;
 import org.neo4j.cluster.timeout.TimeoutStrategy;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.Listeners;
-import org.neo4j.kernel.logging.DefaultLogging;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
 
 /**
  * TODO
@@ -52,7 +50,7 @@ public class TestProtocolServer
     private final DelayedDirectExecutor stateMachineExecutor;
     private URI serverUri;
 
-    public TestProtocolServer( TimeoutStrategy timeoutStrategy, ProtocolServerFactory factory, URI serverUri,
+    public TestProtocolServer( LogProvider logProvider, TimeoutStrategy timeoutStrategy, ProtocolServerFactory factory, URI serverUri,
                                InstanceId instanceId, AcceptorInstanceStore acceptorInstanceStore,
                                ElectionCredentialsProvider electionCredentialsProvider )
     {
@@ -60,8 +58,7 @@ public class TestProtocolServer
         this.receiver = new TestMessageSource();
         this.sender = new TestMessageSender();
 
-        stateMachineExecutor = new DelayedDirectExecutor(
-                DefaultLogging.createDefaultLogging( Collections.<String, String>emptyMap(), new Monitors() ) );
+        stateMachineExecutor = new DelayedDirectExecutor( logProvider );
 
         server = factory.newProtocolServer( instanceId, timeoutStrategy, receiver, sender, acceptorInstanceStore,
                 electionCredentialsProvider, stateMachineExecutor, new ObjectStreamFactory(), new ObjectStreamFactory() );

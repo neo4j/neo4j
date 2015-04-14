@@ -22,77 +22,83 @@ package org.neo4j.consistency.report;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.helpers.ObjectUtil;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
 
 public class InconsistencyMessageLogger implements InconsistencyLogger
 {
-    private final StringLogger logger;
-    private static final String ERROR = "ERROR:", WARNING = "WARNING:";
+    private final Log log;
     public static final String LINE_SEPARATOR = System.getProperty( "line.separator" );
     public static final String TAB = "\t";
 
-    public InconsistencyMessageLogger( StringLogger logger )
+    public InconsistencyMessageLogger( Log log )
     {
-        this.logger = logger;
+        this.log = log;
     }
 
     @Override
     public void error( RecordType recordType, AbstractBaseRecord record, String message, Object... args )
     {
-        log( record( entry( ERROR, message ), record ), args );
+        log.error( buildMessage( message, record, args ) );
     }
 
     @Override
     public void error( RecordType recordType, AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord,
                        String message, Object... args )
     {
-        log( diff( entry( ERROR, message ), oldRecord, newRecord ), args );
+        log.error( buildMessage( message, oldRecord, newRecord, args ) );
     }
 
     @Override
     public void warning( RecordType recordType, AbstractBaseRecord record, String message, Object... args )
     {
-        log( record( entry( WARNING, message ), record ), args );
+        log.warn( buildMessage( message, record, args ) );
     }
 
     @Override
     public void warning( RecordType recordType, AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord,
                          String message, Object... args )
     {
-        log( diff( entry( WARNING, message ), oldRecord, newRecord ), args );
+        log.warn( buildMessage( message, oldRecord, newRecord, args ) );
     }
 
-    private static StringBuilder entry( String type, String message )
+    private static String buildMessage( String message, AbstractBaseRecord record, Object[] args )
     {
-        StringBuilder log = new StringBuilder( type );
-        for ( String line : message.split( "\n" ) )
+        StringBuilder builder = joinLines( message ).append( LINE_SEPARATOR ).append( TAB ).append( record );
+        appendArgs( builder, args );
+        return builder.toString();
+    }
+
+    private static String buildMessage( String message, AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord, Object[] args )
+    {
+        StringBuilder builder = joinLines( message );
+        builder.append( LINE_SEPARATOR ).append( TAB ).append( "- " ).append( oldRecord );
+        builder.append( LINE_SEPARATOR ).append( TAB ).append( "+ " ).append( newRecord );
+        appendArgs( builder, args );
+        return builder.toString();
+    }
+
+    private static StringBuilder joinLines( String message )
+    {
+        String[] lines = message.split( "\n" );
+        StringBuilder builder = new StringBuilder( lines[0].trim() );
+        for ( int i = 1; i < lines.length; i++ )
         {
-            log.append( ' ' ).append( line.trim() );
+            builder.append( ' ' ).append( lines[i].trim() );
         }
-        return log;
+        return builder;
     }
 
-    private static StringBuilder record( StringBuilder log, AbstractBaseRecord record )
+    private static StringBuilder appendArgs( StringBuilder builder, Object[] args )
     {
-        return log.append( LINE_SEPARATOR ).append( TAB ).append( record );
-    }
-
-    private static StringBuilder diff( StringBuilder log, AbstractBaseRecord oldRecord, AbstractBaseRecord newRecord )
-    {
-        return log.append( LINE_SEPARATOR ).append( TAB ).append( "- " ).append( oldRecord )
-                .append( LINE_SEPARATOR ).append( TAB ).append( "+ " ).append( newRecord );
-    }
-
-    private void log( StringBuilder log, Object[] args )
-    {
-        if ( args != null && args.length > 0 )
+        if ( args == null || args.length == 0 )
         {
-            log.append( LINE_SEPARATOR ).append( TAB ).append( "Inconsistent with:" );
-            for ( Object arg : args )
-            {
-                log.append( ' ' ).append( ObjectUtil.toString( arg ) );
-            }
+            return builder;
         }
-        logger.logMessage( log.toString(), true );
+        builder.append( LINE_SEPARATOR ).append( TAB ).append( "Inconsistent with:" );
+        for ( Object arg : args )
+        {
+            builder.append( ' ' ).append( ObjectUtil.toString( arg ) );
+        }
+        return builder;
     }
 }

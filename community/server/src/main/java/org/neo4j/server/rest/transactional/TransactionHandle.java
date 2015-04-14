@@ -36,7 +36,8 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.transactional.error.InternalBeginTransactionError;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.web.QuerySessionProvider;
@@ -70,20 +71,20 @@ public class TransactionHandle implements TransactionTerminationHandle
     private final QueryExecutionEngine engine;
     private final TransactionRegistry registry;
     private final TransactionUriScheme uriScheme;
-    private final StringLogger log;
+    private final Log log;
     private final long id;
     private final QuerySessionProvider sessionFactory;
     private TransitionalTxManagementKernelTransaction context;
 
     public TransactionHandle( TransitionalPeriodTransactionMessContainer txManagerFacade, QueryExecutionEngine engine,
-                              TransactionRegistry registry, TransactionUriScheme uriScheme, StringLogger log,
+                              TransactionRegistry registry, TransactionUriScheme uriScheme, LogProvider logProvider,
                               QuerySessionProvider sessionFactory )
     {
         this.txManagerFacade = txManagerFacade;
         this.engine = engine;
         this.registry = registry;
         this.uriScheme = uriScheme;
-        this.log = log;
+        this.log = logProvider.getLog( getClass() );
         this.id = registry.begin( this );
         this.sessionFactory = sessionFactory;
     }

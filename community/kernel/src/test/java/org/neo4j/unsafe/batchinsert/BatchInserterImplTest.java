@@ -52,7 +52,7 @@ public class BatchInserterImplTest
     }
 
     @Test
-    public void testCreatesStoreLockFile()
+    public void testCreatesStoreLockFile() throws Exception
     {
         // Given
         File file = TargetDirectory.forTest( getClass() ).makeGraphDbDir();

@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.core;
 import java.lang.Thread.State;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -109,10 +107,6 @@ public class NodeTest
         // do some evil stuff
         Node node = getGraphDb().createNode();
         node.delete();
-        Logger log = Logger
-            .getLogger( "org.neo4j.kernel.impl.core.NeoConstraintsListener" );
-        Level level = log.getLevel();
-        log.setLevel( Level.OFF );
         try
         {
             node.setProperty( "key1", new Integer( 1 ) );
@@ -121,7 +115,6 @@ public class NodeTest
         catch ( Exception e )
         { // good
         }
-        log.setLevel( level );
     }
 
     @Test

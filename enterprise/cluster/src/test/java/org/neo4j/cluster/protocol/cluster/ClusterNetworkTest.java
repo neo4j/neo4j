@@ -24,7 +24,6 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -37,15 +36,16 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
 
-import ch.qos.logback.classic.LoggerContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.slf4j.LoggerFactory;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -59,14 +59,10 @@ import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InMemoryAcceptorInstanceStore;
 import org.neo4j.cluster.protocol.election.ServerIdElectionCredentialsProvider;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.LoggerRule;
 
@@ -149,7 +145,7 @@ public class ClusterNetworkTest
     static List<Cluster> in = new ArrayList<Cluster>();
 
     @ClassRule
-    public static LoggerRule logger = new LoggerRule();
+    public static LoggerRule logger = new LoggerRule( Level.OFF );
 
     List<AtomicReference<ClusterConfiguration>> configurations = new ArrayList<AtomicReference<ClusterConfiguration>>();
 
@@ -169,23 +165,18 @@ public class ClusterNetworkTest
         out.clear();
         in.clear();
 
-        LogbackService logbackService = new LogbackService( new Config( Collections.<String, String>emptyMap(),
-                InternalAbstractGraphDatabase.Configuration.class, GraphDatabaseSettings.class ), new LoggerContext() );
-
         for ( int i = 0; i < nrOfServers; i++ )
         {
             final URI uri = new URI( "neo4j://localhost:800" + (i + 1) );
 
+            LogProvider logProvider = NullLogProvider.getInstance();
+
             Monitors monitors = new Monitors();
             NetworkedServerFactory factory = new NetworkedServerFactory( life,
-                    new MultiPaxosServerFactory( new ClusterConfiguration( "default",
-                            StringLogger.SYSTEM ),
-                            new LogbackService( new Config( Collections.<String, String>emptyMap(),
-                                    InternalAbstractGraphDatabase.Configuration.class, GraphDatabaseSettings.class ),
-                                    (LoggerContext) LoggerFactory.getILoggerFactory()), monitors.newMonitor(
-                            StateMachines.Monitor.class )
+                    new MultiPaxosServerFactory( new ClusterConfiguration( "default", logProvider ),
+                            logProvider, monitors.newMonitor( StateMachines.Monitor.class )
                     ),
-                    new FixedTimeoutStrategy( 1000 ), logbackService, new ObjectStreamFactory(), new ObjectStreamFactory(),
+                    new FixedTimeoutStrategy( 1000 ), logProvider, new ObjectStreamFactory(), new ObjectStreamFactory(),
                     monitors.newMonitor( NetworkReceiver.Monitor.class ), monitors.newMonitor( NetworkSender.Monitor.class ), monitors.newMonitor( NamedThreadFactory.Monitor.class )
             );
 
@@ -234,7 +225,7 @@ public class ClusterNetworkTest
             public void run()
             {
                 long now = System.currentTimeMillis() - start;
-                logger.getLogger().debug( "Round " + i + ", time:" + now );
+                logger.getLogger().fine( "Round " + i + ", time:" + now );
 
                 script.tick( now );
 
@@ -248,12 +239,12 @@ public class ClusterNetworkTest
         // Let messages settle
         Thread.sleep( script.getLength() + 1000 );
 
-        logger.getLogger().debug( "All nodes leave" );
+        logger.getLogger().fine( "All nodes leave" );
 
         // All leave
         for ( Cluster cluster : new ArrayList<Cluster>( in ) )
         {
-            logger.getLogger().debug( "Leaving:" + cluster );
+            logger.getLogger().fine( "Leaving:" + cluster );
             cluster.leave();
             Thread.sleep( 100 );
         }
@@ -273,7 +264,7 @@ public class ClusterNetworkTest
             @Override
             public void enteredCluster( ClusterConfiguration clusterConfiguration )
             {
-                logger.getLogger().debug( uri + " entered cluster:" + clusterConfiguration.getMemberURIs() );
+                logger.getLogger().fine( uri + " entered cluster:" + clusterConfiguration.getMemberURIs() );
                 config.set( new ClusterConfiguration( clusterConfiguration ) );
                 in.add( cluster );
             }
@@ -281,14 +272,14 @@ public class ClusterNetworkTest
             @Override
             public void joinedCluster( InstanceId instanceId, URI member )
             {
-                logger.getLogger().debug( uri + " sees a join from " + instanceId + " at URI " + member.toString() );
+                logger.getLogger().fine( uri + " sees a join from " + instanceId + " at URI " + member.toString() );
                 config.get().joined( instanceId, member );
             }
 
             @Override
             public void leftCluster( InstanceId instanceId, URI member )
             {
-                logger.getLogger().debug( uri + " sees a leave:" + instanceId );
+                logger.getLogger().fine( uri + " sees a leave:" + instanceId );
                 config.get().left( instanceId );
             }
 
@@ -302,14 +293,14 @@ public class ClusterNetworkTest
             @Override
             public void elected( String role, InstanceId instanceId, URI electedMember )
             {
-                logger.getLogger().debug( uri + " sees an election:" + instanceId +
+                logger.getLogger().fine( uri + " sees an election:" + instanceId +
                         "was elected as " + role + " on URI " + electedMember );
             }
 
             @Override
             public void unelected( String role, InstanceId instanceId, URI electedMember )
             {
-                logger.getLogger().debug( uri + " sees an unelection:" + instanceId +
+                logger.getLogger().fine( uri + " sees an unelection:" + instanceId +
                         "was removed from " + role + " on URI " + electedMember );
             }
         } );
@@ -371,7 +362,7 @@ public class ClusterNetworkTest
                         if ( cluster.equals( joinCluster ) )
                         {
                             out.remove( cluster );
-                            logger.getLogger().debug( "Join:" + cluster.toString() );
+                            logger.getLogger().fine( "Join:" + cluster.toString() );
                             if ( joinServers.length == 0 )
                             {
                                 if ( in.isEmpty() )
@@ -391,12 +382,12 @@ public class ClusterNetworkTest
                                             try
                                             {
                                                 ClusterConfiguration clusterConfiguration = result.get();
-                                                logger.getLogger().debug( "**** Cluster configuration:" +
+                                                logger.getLogger().fine( "**** Cluster configuration:" +
                                                         clusterConfiguration );
                                             }
                                             catch ( Exception e )
                                             {
-                                                logger.getLogger().debug( "**** Node " + joinServer + " could not " +
+                                                logger.getLogger().fine( "**** Node " + joinServer + " could not " +
                                                         "join cluster:" + e
                                                         .getMessage() );
                                                 out.add( cluster );
@@ -424,7 +415,7 @@ public class ClusterNetworkTest
                                         try
                                         {
                                             ClusterConfiguration clusterConfiguration = result.get();
-                                            logger.getLogger().debug( "**** Cluster configuration:" +
+                                            logger.getLogger().fine( "**** Cluster configuration:" +
                                                     clusterConfiguration );
                                         }
                                         catch ( Exception e )
@@ -435,7 +426,7 @@ public class ClusterNetworkTest
                                             }
                                             else
                                             {
-                                                logger.getLogger().debug( "*** Incorrectly configured cluster? "
+                                                logger.getLogger().fine( "*** Incorrectly configured cluster? "
                                                         + e.getCause().getMessage() );
                                             }
                                         }
@@ -483,7 +474,7 @@ public class ClusterNetworkTest
                         {
                             in.remove( cluster );
                             cluster.leave();
-                            logger.getLogger().debug( "Leave:" + cluster.toString() );
+                            logger.getLogger().fine( "Leave:" + cluster.toString() );
                             break;
                         }
                     }
@@ -533,7 +524,7 @@ public class ClusterNetworkTest
         {
             if ( time == 0 )
             {
-                logger.getLogger().debug( "Random seed:" + seed );
+                logger.getLogger().fine( "Random seed:" + seed );
             }
 
             if ( random.nextDouble() >= 0.9 )
@@ -558,7 +549,7 @@ public class ClusterNetworkTest
                             e.printStackTrace();
                         }
                     }
-                    logger.getLogger().debug( "Enter cluster:" + cluster.toString() );
+                    logger.getLogger().fine( "Enter cluster:" + cluster.toString() );
 
                 }
                 else if ( !in.isEmpty() )
@@ -566,7 +557,7 @@ public class ClusterNetworkTest
                     int idx = random.nextInt( in.size() );
                     Cluster cluster = in.remove( idx );
                     cluster.leave();
-                    logger.getLogger().debug( "Leave cluster:" + cluster.toString() );
+                    logger.getLogger().fine( "Leave cluster:" + cluster.toString() );
                 }
             }
         }

@@ -29,12 +29,11 @@ import org.junit.rules.TemporaryFolder;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.NullLog;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 
 import static org.junit.Assert.fail;
-
-import static org.neo4j.kernel.logging.ConsoleLogger.DEV_NULL;
 
 public class Neo4jHAPropertiesMustExistRuleTest
 {
@@ -160,7 +159,7 @@ public class Neo4jHAPropertiesMustExistRuleTest
 
     private Config propertiesWithConfigFileLocation( File propertyFile )
     {
-        PropertyFileConfigurator config = new PropertyFileConfigurator( propertyFile, DEV_NULL );
+        PropertyFileConfigurator config = new PropertyFileConfigurator( propertyFile, NullLog.getInstance() );
         Map<String, String> params = config.configuration().getParams();
         params.put( Configurator.NEO_SERVER_CONFIG_FILE_KEY, propertyFile.getAbsolutePath() );
         config.configuration().applyChanges( params );

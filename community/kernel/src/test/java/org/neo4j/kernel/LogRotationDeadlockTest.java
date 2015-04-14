@@ -21,7 +21,6 @@ package org.neo4j.kernel;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.Matchers;
 
 import java.io.IOException;
 import java.util.concurrent.Future;
@@ -51,8 +50,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.OtherThreadRule;
@@ -75,8 +73,6 @@ public class LogRotationDeadlockTest
         TransactionIdStore txIdStore = new DeadSimpleTransactionIdStore();
         LogFile logFile = mock( LogFile.class );
         when( logFile.getWriter() ).thenReturn( new InMemoryLogChannel() );
-        Logging logging = mock( Logging.class );
-        when ( logging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
         final Barrier.Control inBetweenCommittedAndClosed = new Barrier.Control();
         LogRotationControl rotationControl = new LogRotationControl( txIdStore, mock( IndexingService.class ),
                 mock( LabelScanStore.class ), Iterables.<IndexImplementation,IndexImplementation>iterable() )
@@ -90,7 +86,7 @@ public class LogRotationDeadlockTest
         };
         KernelHealth health = mock( KernelHealth.class );
         LogRotationImpl rotation = new LogRotationImpl( mock( LogRotation.Monitor.class ), logFile,
-                rotationControl, health, logging );
+                rotationControl, health, NullLogProvider.getInstance() );
 
         // controlled batching transaction appender that will halt a committer
         TransactionAppender appender = new BatchingPhysicalTransactionAppender( logFile, rotation,

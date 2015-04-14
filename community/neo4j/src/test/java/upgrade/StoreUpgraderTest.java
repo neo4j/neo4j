@@ -39,6 +39,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
+import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
@@ -52,8 +53,8 @@ import org.neo4j.kernel.impl.storemigration.legacystore.v19.Legacy19Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v21.Legacy21Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
@@ -87,7 +88,6 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateAl
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
 import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
-import static org.neo4j.kernel.logging.DevNullLoggingService.DEV_NULL;
 
 @RunWith(Parameterized.class)
 public class StoreUpgraderTest
@@ -276,7 +276,7 @@ public class StoreUpgraderTest
     public void upgradedNeoStoreShouldHaveNewUpgradeTimeAndUpgradeId() throws Exception
     {
         // Given
-        fileSystem.deleteFile( new File( dbDirectory, StringLogger.DEFAULT_NAME ) );
+        fileSystem.deleteFile( new File( dbDirectory, StoreLogService.INTERNAL_LOG_NAME ) );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
 
         // When
@@ -284,7 +284,7 @@ public class StoreUpgraderTest
 
         // Then
         NeoStore neoStore = new StoreFactory( fileSystem, dbDirectory, pageCache,
-                StringLogger.DEV_NULL, mock( Monitors.class ) ).newNeoStore( false );
+                NullLogProvider.getInstance(), mock( Monitors.class ) ).newNeoStore( false );
 
         assertThat( neoStore.getUpgradeTransaction(), equalTo( neoStore.getLastCommittedTransaction() ) );
         assertThat( neoStore.getUpgradeTime(), not( equalTo( NeoStore.FIELD_NOT_INITIALIZED ) ) );
@@ -298,7 +298,7 @@ public class StoreUpgraderTest
     public void upgradeShouldNotLeaveLeftoverAndMigrationDirs() throws Exception
     {
         // Given
-        fileSystem.deleteFile( new File( dbDirectory, StringLogger.DEFAULT_NAME ) );
+        fileSystem.deleteFile( new File( dbDirectory, StoreLogService.INTERNAL_LOG_NAME ) );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
 
         // When
@@ -312,7 +312,7 @@ public class StoreUpgraderTest
     public void upgraderShouldCleanupLegacyLeftoverAndMigrationDirs() throws Exception
     {
         // Given
-        fileSystem.deleteFile( new File( dbDirectory, StringLogger.DEFAULT_NAME ) );
+        fileSystem.deleteFile( new File( dbDirectory, StoreLogService.INTERNAL_LOG_NAME ) );
         fileSystem.mkdir( new File( dbDirectory, StoreUpgrader.MIGRATION_DIRECTORY ) );
         fileSystem.mkdir( new File( dbDirectory, StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY ) );
         fileSystem.mkdir( new File( dbDirectory, StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY + "_1" ) );
@@ -321,7 +321,7 @@ public class StoreUpgraderTest
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
 
         // When
-        StoreMigrator migrator = spy( new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem, DEV_NULL ) );
+        StoreMigrator migrator = spy( new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem, NullLogService.getInstance() ) );
         when( migrator.needsMigration( dbDirectory ) ).thenReturn( false );
         newUpgrader( ALLOW_UPGRADE, migrator, StoreUpgrader.NO_MONITOR ).migrateIfNeeded( dbDirectory,
                 schemaIndexProvider, pageCache );
@@ -375,7 +375,7 @@ public class StoreUpgraderTest
     {
         StoreMigrator defaultMigrator = new StoreMigrator(
                 new SilentMigrationProgressMonitor(), fileSystem,
-                DEV_NULL );
+                NullLogService.getInstance() );
         return newUpgrader( upgradeConfig, defaultMigrator, StoreUpgrader.NO_MONITOR );
     }
 
@@ -383,14 +383,13 @@ public class StoreUpgraderTest
     {
         StoreMigrator defaultMigrator = new StoreMigrator(
                 new SilentMigrationProgressMonitor(), fileSystem,
-                DEV_NULL );
+                NullLogService.getInstance() );
         return newUpgrader( ALLOW_UPGRADE, defaultMigrator, monitor );
     }
 
     private StoreUpgrader newUpgrader( UpgradeConfiguration upgradeConfig, StoreMigrator migrator, Monitor monitor )
     {
-        DevNullLoggingService logging = new DevNullLoggingService();
-        StoreUpgrader upgrader = new StoreUpgrader( upgradeConfig, fileSystem, monitor, logging );
+        StoreUpgrader upgrader = new StoreUpgrader( upgradeConfig, fileSystem, monitor, NullLogProvider.getInstance() );
         upgrader.addParticipant( migrator );
         return upgrader;
     }

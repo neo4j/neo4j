@@ -106,15 +106,11 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreInjectedTransactionValida
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.LogbackWeakDependency;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
-import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
-import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
 
 /**
  * This has all the functionality of an embedded database, with the addition of services
@@ -195,15 +191,18 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         super.create();
 
+        // Set Netty logger
+        InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory( logService.getInternalLogProvider() ) );
+
         life.add( requestContextFactory );
 
         life.add( responseUnpacker );
 
         UpdatePuller updatePuller = dependencies.satisfyDependency( life.add(
                 new UpdatePuller( memberStateMachine, requestContextFactory, master, lastUpdateTime,
-                        logging, serverId, invalidEpochHandler ) ) );
+                        logService.getInternalLogProvider(), serverId, invalidEpochHandler ) ) );
         dependencies.satisfyDependency( life.add( new UpdatePullerClient( config.get( HaSettings.pull_interval ),
-                jobScheduler, logging, updatePuller, availabilityGuard ) ) );
+                jobScheduler, logService.getInternalLogProvider(), updatePuller, availabilityGuard ) ) );
         dependencies.satisfyDependency( life.add( new UpdatePullingTransactionObligationFulfiller(
                 updatePuller, memberStateMachine, serverId, dependencies ) ) );
 
@@ -255,19 +254,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     }
 
     @Override
-    protected Logging createLogging()
-    {
-        Logging loggingService = life.add( LogbackWeakDependency.tryLoadLogbackService( config,
-                NEW_LOGGER_CONTEXT,
-                DEFAULT_TO_CLASSIC, monitors ) );
-
-        // Set Netty logger
-        InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory( loggingService ) );
-
-        return loggingService;
-    }
-
-    @Override
     protected void createTxHook()
     {
         DelegateInvocationHandler<ClusterMemberEvents> clusterEventsDelegateInvocationHandler =
@@ -312,11 +298,11 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
 
         clusterClient =
-                dependencies.satisfyDependency( new ClusterClient( monitors, ClusterClient.adapt( config ), logging,
+                dependencies.satisfyDependency( new ClusterClient( monitors, ClusterClient.adapt( config ), logService,
                         electionCredentialsProvider,
                         objectStreamFactory, objectStreamFactory ) );
         PaxosClusterMemberEvents localClusterEvents = new PaxosClusterMemberEvents( clusterClient, clusterClient,
-                clusterClient, clusterClient, logging, new org.neo4j.function.Predicate<PaxosClusterMemberEvents.ClusterMembersSnapshot>()
+                clusterClient, clusterClient, logService.getInternalLogProvider(), new org.neo4j.function.Predicate<PaxosClusterMemberEvents.ClusterMembersSnapshot>()
         {
             @Override
             public boolean test( PaxosClusterMemberEvents.ClusterMembersSnapshot item )
@@ -368,7 +354,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         HighAvailabilityMemberContext localMemberContext = new SimpleHighAvailabilityMemberContext( clusterClient
                 .getServerId(), config.get( HaSettings.slave_only ) );
         PaxosClusterMemberAvailability localClusterMemberAvailability = new PaxosClusterMemberAvailability(
-                clusterClient.getServerId(), clusterClient, clusterClient, logging, objectStreamFactory,
+                clusterClient.getServerId(), clusterClient, clusterClient, logService.getInternalLogProvider(), objectStreamFactory,
                 objectStreamFactory );
 
         memberContextDelegateInvocationHandler.setDelegate( localMemberContext );
@@ -379,14 +365,13 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 config.get( ClusterSettings.server_id ) ) );
         memberStateMachine = new HighAvailabilityMemberStateMachine( memberContext, availabilityGuard, members,
                 clusterEvents,
-                clusterClient, logging.getMessagesLog( HighAvailabilityMemberStateMachine.class ) );
+                clusterClient, logService.getInternalLogProvider() );
 
-        HighAvailabilityConsoleLogger highAvailabilityConsoleLogger = new HighAvailabilityConsoleLogger( logging
-                .getConsoleLog( HighAvailabilityConsoleLogger.class ), config.get( ClusterSettings
-                .server_id ) );
-        availabilityGuard.addListener( highAvailabilityConsoleLogger );
-        clusterEvents.addClusterMemberListener( highAvailabilityConsoleLogger );
-        clusterClient.addClusterListener( highAvailabilityConsoleLogger );
+        HighAvailabilityLogger highAvailabilityLogger = new HighAvailabilityLogger( logService
+                .getUserLogProvider(), config.get( ClusterSettings.server_id ) );
+        availabilityGuard.addListener( highAvailabilityLogger );
+        clusterEvents.addClusterMemberListener( highAvailabilityLogger );
+        clusterClient.addClusterListener( highAvailabilityLogger );
 
         paxosLife.add( clusterClient );
         paxosLife.add( memberStateMachine );
@@ -427,7 +412,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         final DelegateInvocationHandler<TransactionCommitProcess> commitProcessDelegate =
                 new DelegateInvocationHandler<>( TransactionCommitProcess.class );
 
-        DefaultSlaveFactory slaveFactory = dependencies.satisfyDependency( new DefaultSlaveFactory( logging, monitors,
+        DefaultSlaveFactory slaveFactory = dependencies.satisfyDependency( new DefaultSlaveFactory( logService.getInternalLogProvider(), monitors,
                 config.get( HaSettings.com_chunk_size ).intValue() ) );
 
         Slaves slaves = dependencies.satisfyDependency(
@@ -471,10 +456,10 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected IdGeneratorFactory createIdGeneratorFactory()
     {
-        idGeneratorFactory = new HaIdGeneratorFactory( masterDelegateInvocationHandler, logging,
+        idGeneratorFactory = new HaIdGeneratorFactory( masterDelegateInvocationHandler, logService.getInternalLogProvider(),
                 requestContextFactory );
 
-        ConsoleLogger consoleLog = logging.getConsoleLog( HighAvailabilityModeSwitcher.class );
+        Log userLog = logService.getUserLog( HighAvailabilityModeSwitcher.class );
 
         invalidEpochHandler = new InvalidEpochExceptionHandler()
         {
@@ -485,23 +470,23 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             }
         };
 
-        MasterClientResolver masterClientResolver = new MasterClientResolver( logging, responseUnpacker,
+        MasterClientResolver masterClientResolver = new MasterClientResolver( logService.getInternalLogProvider(), responseUnpacker,
                 invalidEpochHandler,
                 config.get( HaSettings.read_timeout ).intValue(),
                 config.get( HaSettings.lock_read_timeout ).intValue(),
                 config.get( HaSettings.max_concurrent_channels_per_slave ),
                 config.get( HaSettings.com_chunk_size ).intValue() );
 
-        SwitchToSlave switchToSlaveInstance = new SwitchToSlave( consoleLog, config, getDependencyResolver(),
+        SwitchToSlave switchToSlaveInstance = new SwitchToSlave( logService, config, getDependencyResolver(),
                 (HaIdGeneratorFactory) idGeneratorFactory,
-                logging, masterDelegateInvocationHandler, clusterMemberAvailability,
+                masterDelegateInvocationHandler, clusterMemberAvailability,
                 requestContextFactory, kernelExtensions.listFactories(), masterClientResolver,
                 monitors.newMonitor( ByteCounterMonitor.class, SlaveServer.class ),
                 monitors.newMonitor( RequestMonitor.class, SlaveServer.class ),
                 monitors.newMonitor( SwitchToSlave.Monitor.class ),
                 monitors.newMonitor( StoreCopyClient.Monitor.class ) );
 
-        SwitchToMaster switchToMasterInstance = new SwitchToMaster( logging, consoleLog, this,
+        SwitchToMaster switchToMasterInstance = new SwitchToMaster( logService, this,
                 (HaIdGeneratorFactory) idGeneratorFactory, config, dependencies.provideDependency( SlaveFactory.class ),
                 masterDelegateInvocationHandler, clusterMemberAvailability, dataSourceManager,
                 monitors.newMonitor( ByteCounterMonitor.class, MasterServer.class ),
@@ -509,7 +494,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 monitors.newMonitor( MasterImpl.Monitor.class, MasterImpl.class ) );
 
         highAvailabilityModeSwitcher = new HighAvailabilityModeSwitcher( switchToSlaveInstance, switchToMasterInstance,
-                clusterClient, clusterMemberAvailability, getDependencyResolver(), config.get( ClusterSettings.server_id ), logging );
+                clusterClient, clusterMemberAvailability, getDependencyResolver(), config.get( ClusterSettings.server_id ), logService );
 
         clusterClient.addBindingListener( highAvailabilityModeSwitcher );
         memberStateMachine.addHighAvailabilityMemberListener( highAvailabilityModeSwitcher );

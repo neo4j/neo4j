@@ -23,6 +23,7 @@ import java.util.Arrays;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.advanced.modules.JMXManagementModule;
 import org.neo4j.server.configuration.ConfigurationBuilder;
@@ -31,14 +32,14 @@ import org.neo4j.server.modules.ServerModule;
 
 public class AdvancedNeoServer extends CommunityNeoServer
 {
-    public AdvancedNeoServer( ConfigurationBuilder configurator, Database.Factory dbFactory, InternalAbstractGraphDatabase.Dependencies dependencies)
+    public AdvancedNeoServer( ConfigurationBuilder configurator, Database.Factory dbFactory, InternalAbstractGraphDatabase.Dependencies dependencies, LogProvider logProvider )
     {
-        super(configurator, dbFactory, dependencies);
+        super( configurator, dbFactory, dependencies, logProvider );
     }
 
-	public AdvancedNeoServer( ConfigurationBuilder configurator, InternalAbstractGraphDatabase.Dependencies dependencies)
+    public AdvancedNeoServer( ConfigurationBuilder configurator, InternalAbstractGraphDatabase.Dependencies dependencies, LogProvider logProvider )
     {
-        super( configurator, dependencies );
+        super( configurator, dependencies, logProvider );
     }
 
     @Override

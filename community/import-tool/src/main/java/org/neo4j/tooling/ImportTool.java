@@ -36,15 +36,17 @@ import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.storemigration.FileOperation;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.util.Converters;
+import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.logging.ClassicLoggingService;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
@@ -56,12 +58,10 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactory;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
-import static java.lang.System.out;
 import static java.nio.charset.Charset.defaultCharset;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.badCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.collect;
@@ -240,7 +240,7 @@ public class ImportTool
      *
      * @param incomingArguments arguments for specifying input and configuration for the import.
      */
-    public static void main( String[] incomingArguments )
+    public static void main( String[] incomingArguments ) throws IOException
     {
         main( incomingArguments, false );
     }
@@ -252,7 +252,7 @@ public class ImportTool
      * @param defaultSettingsSuitableForTests default configuration geared towards unit/integration
      * test environments, for example lower default buffer sizes.
      */
-    public static void main( String[] incomingArguments, boolean defaultSettingsSuitableForTests )
+    public static void main( String[] incomingArguments, boolean defaultSettingsSuitableForTests ) throws IOException
     {
         Args args = Args.parse( incomingArguments );
         if ( asksForUsage( args ) )
@@ -303,14 +303,16 @@ public class ImportTool
         }
 
         LifeSupport life = new LifeSupport();
-        Logging logging = life.add( new ClassicLoggingService(
-                new Config( stringMap( store_dir.name(), storeDir.getAbsolutePath() ) ) ) );
+
+        JobScheduler jobScheduler = life.add( new Neo4jJobScheduler() );
+        LogService logService = life.add( new StoreLogService( NullLogProvider.getInstance(), fs, storeDir, jobScheduler ) );
+
         life.start();
         org.neo4j.unsafe.impl.batchimport.Configuration config =
                 importConfiguration( processors, badFileName, defaultSettingsSuitableForTests );
         BatchImporter importer = new ParallelBatchImporter( storeDir.getPath(),
                 config,
-                logging,
+                logService.getInternalLogProvider(),
                 ExecutionMonitors.defaultVisible() );
         boolean success = false;
         try
@@ -327,7 +329,7 @@ public class ImportTool
             File badFile = config.badFile( storeDir );
             if ( badFile.exists() )
             {
-                out.println( "There were bad entries which were skipped and logged into " +
+                System.out.println( "There were bad entries which were skipped and logged into " +
                         badFile.getAbsolutePath() );
             }
 

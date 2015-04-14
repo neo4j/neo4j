@@ -24,7 +24,7 @@ import java.io.OutputStream;
 import java.net.URI;
 
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
 import org.neo4j.server.rest.web.QuerySessionProvider;
 import org.neo4j.server.rest.web.TransactionUriScheme;
@@ -54,20 +54,20 @@ public class TransactionFacade
     private final TransitionalPeriodTransactionMessContainer kernel;
     private final QueryExecutionEngine engine;
     private final TransactionRegistry registry;
-    private final StringLogger log;
+    private final LogProvider logProvider;
 
     public TransactionFacade( TransitionalPeriodTransactionMessContainer kernel, QueryExecutionEngine engine,
-                              TransactionRegistry registry, StringLogger log )
+                              TransactionRegistry registry, LogProvider logProvider )
     {
         this.kernel = kernel;
         this.engine = engine;
         this.registry = registry;
-        this.log = log;
+        this.logProvider = logProvider;
     }
 
     public TransactionHandle newTransactionHandle( TransactionUriScheme uriScheme ) throws TransactionLifecycleException
     {
-        return new TransactionHandle( kernel, engine, registry, uriScheme, log, QuerySessionProvider.provider );
+        return new TransactionHandle( kernel, engine, registry, uriScheme, logProvider, QuerySessionProvider.provider );
     }
 
     public TransactionHandle findTransactionHandle( long txId ) throws TransactionLifecycleException
@@ -87,6 +87,6 @@ public class TransactionFacade
 
     public ExecutionResultSerializer serializer( OutputStream output, URI baseUri )
     {
-        return new ExecutionResultSerializer( output, baseUri, log );
+        return new ExecutionResultSerializer( output, baseUri, logProvider );
     }
 }

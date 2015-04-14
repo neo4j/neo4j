@@ -138,11 +138,6 @@ terms of the relevant Commercial Agreement.
       <plugin>
         <groupId>org.neo4j.build.plugins</groupId>
         <artifactId>license-maven-plugin</artifactId>
-        <configuration>
-          <excludes>
-            <exclude>**/logback.xml</exclude>
-          </excludes>
-        </configuration>
       </plugin>
 
       <plugin>

@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
+import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -46,7 +47,7 @@ public final class BatchInserters
      * @param storeDir the store directory
      * @return a new {@link BatchInserter}
      */
-    public static BatchInserter inserter( String storeDir )
+    public static BatchInserter inserter( String storeDir ) throws IOException
     {
         return inserter( storeDir, stringMap() );
     }
@@ -58,7 +59,7 @@ public final class BatchInserters
      * @param config configuration settings to use
      * @return a new {@link BatchInserter}
      */
-    public static BatchInserter inserter( String storeDir, Map<String,String> config )
+    public static BatchInserter inserter( String storeDir, Map<String,String> config ) throws IOException
     {
         return inserter( storeDir, new DefaultFileSystemAbstraction(), config );
     }
@@ -69,7 +70,7 @@ public final class BatchInserters
      * @param storeDir the store directory
      * @return a new {@link BatchInserter}
      */
-    public static BatchInserter inserter( String storeDir, FileSystemAbstraction fileSystem )
+    public static BatchInserter inserter( String storeDir, FileSystemAbstraction fileSystem ) throws IOException
     {
         return inserter( storeDir, fileSystem, stringMap() );
     }
@@ -83,13 +84,13 @@ public final class BatchInserters
      */
     @SuppressWarnings( { "unchecked", "rawtypes" } )
     public static BatchInserter inserter( String storeDir, FileSystemAbstraction fileSystem,
-            Map<String,String> config )
+            Map<String,String> config ) throws IOException
     {
         return inserter( storeDir, fileSystem, config, (Iterable) Service.load( KernelExtensionFactory.class ) );
     }
 
     public static BatchInserter inserter( String storeDir, FileSystemAbstraction fileSystem,
-            Map<String, String> config, Iterable<KernelExtensionFactory<?>> kernelExtensions )
+            Map<String, String> config, Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
     {
         return new BatchInserterImpl( storeDir, fileSystem, config, kernelExtensions );
     }

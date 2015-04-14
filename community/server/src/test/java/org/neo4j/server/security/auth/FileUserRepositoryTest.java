@@ -37,11 +37,11 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystem;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemProvider;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.kernel.impl.util.Charsets;
-import org.neo4j.kernel.impl.util.TestLogging;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
-import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -49,8 +49,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.util.TestLogger.LogCall.error;
-import static org.neo4j.kernel.logging.DevNullLoggingService.DEV_NULL;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 @RunWith(Parameterized.class)
 public class FileUserRepositoryTest
@@ -78,7 +77,7 @@ public class FileUserRepositoryTest
     public void shouldStoreAndRetriveUsersByName() throws Exception
     {
         // Given
-        FileUserRepository users = new FileUserRepository( authFile, DEV_NULL );
+        FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
         User user = new User( "jake", Credential.INACCESSIBLE, true );
         users.create( user );
 
@@ -93,11 +92,11 @@ public class FileUserRepositoryTest
     public void shouldPersistUsers() throws Throwable
     {
         // Given
-        FileUserRepository users = new FileUserRepository( authFile, DEV_NULL );
+        FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
         User user = new User( "jake", Credential.INACCESSIBLE, true );
         users.create( user );
 
-        users = new FileUserRepository( authFile, DEV_NULL );
+        users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
         users.start();
 
         // When
@@ -111,7 +110,7 @@ public class FileUserRepositoryTest
     public void shouldNotFindUserAfterDelete() throws Throwable
     {
         // Given
-        FileUserRepository users = new FileUserRepository( authFile, DEV_NULL );
+        FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
         User user = new User( "jake", Credential.INACCESSIBLE, true );
         users.create( user );
 
@@ -126,7 +125,7 @@ public class FileUserRepositoryTest
     public void shouldNotAllowComplexNames() throws Exception
     {
         // Given
-        FileUserRepository users = new FileUserRepository( authFile, DEV_NULL );
+        FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
 
         // When
         assertTrue( users.isValidName( "neo4j" ) );
@@ -166,7 +165,7 @@ public class FileUserRepositoryTest
 
         Path authFile = moveFailingFileSystem.getPath( "dbms", "auth.db" );
 
-        FileUserRepository users = new FileUserRepository( authFile, DEV_NULL );
+        FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
         users.start();
         User user = new User( "jake", Credential.INACCESSIBLE, true );
 
@@ -189,7 +188,7 @@ public class FileUserRepositoryTest
     public void shouldThrowIfUpdateChangesName() throws Throwable
     {
         // Given
-        FileUserRepository users = new FileUserRepository( authFile, DEV_NULL );
+        FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
         User user = new User( "jake", Credential.INACCESSIBLE, true );
         users.create( user );
 
@@ -211,7 +210,7 @@ public class FileUserRepositoryTest
     public void shouldThrowIfExistingUserDoesNotMatch() throws Throwable
     {
         // Given
-        FileUserRepository users = new FileUserRepository( authFile, DEV_NULL );
+        FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
         User user = new User( "jake", Credential.INACCESSIBLE, true );
         users.create( user );
         User modifiedUser = new User( "jake", Credential.forPassword( "foo" ), false );
@@ -232,18 +231,21 @@ public class FileUserRepositoryTest
     public void shouldIgnoreInvalidEntries() throws Throwable
     {
         // Given
-        TestLogging testLogging = new TestLogging();
+        AssertableLogProvider logProvider = new AssertableLogProvider();
         Files.createDirectories( authFile.getParent() );
         Files.write( authFile,
                 "neo4j:fc4c600b43ffe4d5857b4439c35df88f:SHA-256,A42E541F276CF17036DB7818F8B09B1C229AAD52A17F69F4029617F3A554640F,FB7E8AE08A6A7C741F678AD22217808F:\n".getBytes( Charsets.UTF_8 ) );
 
         // When
-        FileUserRepository users = new FileUserRepository( authFile, testLogging );
+        FileUserRepository users = new FileUserRepository( authFile, logProvider );
         users.start();
 
         // Then
         assertThat( users.numberOfUsers(), equalTo( 0 ) );
-        testLogging.getMessagesLog( FileUserRepository.class ).assertExactly(
-                error( format( "Ignoring authorization file \"%s\" (wrong number of line fields [line 1])", authFile.toAbsolutePath() ) ) );
+        logProvider.assertExactly(
+                inLog( FileUserRepository.class ).error(
+                        "Ignoring authorization file \"%s\" (%s)", authFile.toAbsolutePath(), "wrong number of line fields [line 1]"
+                )
+        );
     }
 }

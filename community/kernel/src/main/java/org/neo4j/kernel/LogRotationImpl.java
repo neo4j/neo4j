@@ -26,8 +26,8 @@ import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 /**
  * Default implementation of the LogRotation interface.
@@ -39,17 +39,17 @@ public class LogRotationImpl
     private final LogFile logFile;
     private final LogRotationControl logRotationControl;
     private final KernelHealth kernelHealth;
-    private final StringLogger msgLog;
+    private final Log msgLog;
 
     public LogRotationImpl( Monitor monitor, LogFile logFile,
-            LogRotationControl logRotationControl, KernelHealth kernelHealth, Logging logging )
+            LogRotationControl logRotationControl, KernelHealth kernelHealth, LogProvider logProvider )
     {
         this.monitor = monitor;
         this.logFile = logFile;
         this.logRotationControl = logRotationControl;
         this.kernelHealth = kernelHealth;
 
-        msgLog = logging.getMessagesLog( getClass() );
+        msgLog = logProvider.getLog( getClass() );
     }
 
     @Override

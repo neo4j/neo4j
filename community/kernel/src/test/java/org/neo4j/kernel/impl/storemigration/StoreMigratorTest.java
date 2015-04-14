@@ -30,11 +30,11 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.legacystore.v20.Legacy20Store;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
-import org.neo4j.kernel.logging.DevNullLoggingService;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
@@ -59,9 +59,9 @@ public class StoreMigratorTest
         // GIVEN a legacy database
         File storeDirectory = createNeoStoreWithOlderVersion( Legacy20Store.LEGACY_VERSION );
         // and a state of the migration saying that it has done the actual migration
-        Logging logging = new DevNullLoggingService();
+        LogService logService = NullLogService.getInstance();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        StoreMigrator migrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fs, logging );
+        StoreMigrator migrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fs, logService );
         File migrationDir = new File( storeDirectory, StoreUpgrader.MIGRATION_DIRECTORY );
         fs.mkdirs( migrationDir );
         assertTrue( migrator.needsMigration( storeDirectory ) );
@@ -69,12 +69,12 @@ public class StoreMigratorTest
         migrator.close();
 
         // WHEN simulating resuming the migration
-        migrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fs, logging );
+        migrator = new StoreMigrator( new SilentMigrationProgressMonitor(), fs, logService );
         migrator.moveMigratedFiles( migrationDir, storeDirectory );
 
         // THEN starting the new store should be successful
         StoreFactory storeFactory = new StoreFactory( fs, storeDirectory, pageCache,
-                logging.getMessagesLog( getClass() ), new Monitors() );
+                logService.getInternalLogProvider(), new Monitors() );
         storeFactory.newNeoStore( false ).close();
     }
 

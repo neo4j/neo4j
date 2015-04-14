@@ -20,7 +20,9 @@
 package org.neo4j.server;
 
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.logging.ConsoleLogger;
+import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.ServerConfigurator;
@@ -66,19 +68,19 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
     }
 
     @Override
-    protected Configurator createConfigurator( ConsoleLogger log )
+    protected Configurator createConfigurator( Log log )
     {
         return new ConfigurationBuilder.ConfigurationBuilderWrappingConfigurator( createConfigurationBuilder( log ) ) ;
     }
 
     @Override
-    protected ConfigurationBuilder createConfigurationBuilder( ConsoleLogger log )
+    protected ConfigurationBuilder createConfigurationBuilder( Log log )
     {
         return configurator;
     }
 
 	@Override
-	protected NeoServer createNeoServer() {
-		return new WrappingNeoServer(db, configurator);
+	protected NeoServer createNeoServer( ConfigurationBuilder configurator, GraphDatabaseDependencies dependencies, LogProvider userLogProvider ) {
+		return new WrappingNeoServer(db, this.configurator );
 	}
 }

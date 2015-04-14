@@ -49,17 +49,14 @@ import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.InvalidEpochException;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.slave.InvalidEpochExceptionHandler;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.logging.BufferingLogger;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.OnDemandJobScheduler;
 
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -73,6 +70,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.kernel.ha.UpdatePuller.NEXT_TICKET;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class UpdatePullerTest
 {
@@ -85,11 +83,11 @@ public class UpdatePullerTest
     private final AvailabilityGuard availabilityGuard = mock( AvailabilityGuard.class );
     private final LastUpdateTime lastUpdateTime = mock( LastUpdateTime.class );
     private final Master master = mock( Master.class );
-    private final ErrorTrackingLogging logging = new ErrorTrackingLogging();
+    private final AssertableLogProvider logProvider = new AssertableLogProvider();
     private final RequestContextFactory requestContextFactory = mock( RequestContextFactory.class );
     private final InvalidEpochExceptionHandler invalidEpochHandler = mock( InvalidEpochExceptionHandler.class );
     private final UpdatePuller updatePuller = new UpdatePuller( stateMachine, requestContextFactory,
-            master, lastUpdateTime, logging, myId, invalidEpochHandler );
+            master, lastUpdateTime, logProvider, myId, invalidEpochHandler );
 
     public final @Rule CleanupRule cleanup = new CleanupRule();
 
@@ -110,7 +108,7 @@ public class UpdatePullerTest
         final UpdatePullerClient puller = new UpdatePullerClient(
                 1,
                 scheduler,
-                logging,
+                NullLogProvider.getInstance(),
                 updatePuller,
                 availabilityGuard );
 
@@ -131,7 +129,7 @@ public class UpdatePullerTest
         final UpdatePullerClient puller = new UpdatePullerClient(
                 1,
                 scheduler,
-                logging,
+                NullLogProvider.getInstance(),
                 updatePuller,
                 availabilityGuard );
 
@@ -163,7 +161,7 @@ public class UpdatePullerTest
         final UpdatePullerClient puller = new UpdatePullerClient(
                 1,
                 scheduler,
-                logging,
+                NullLogProvider.getInstance(),
                 updatePuller,
                 availabilityGuard );
 
@@ -192,7 +190,7 @@ public class UpdatePullerTest
         final UpdatePullerClient puller = new UpdatePullerClient(
                 1,
                 scheduler,
-                logging,
+                NullLogProvider.getInstance(),
                 updatePuller,
                 availabilityGuard );
 
@@ -221,7 +219,7 @@ public class UpdatePullerTest
         final UpdatePullerClient puller = new UpdatePullerClient(
                 1,
                 scheduler,
-                logging,
+                NullLogProvider.getInstance(),
                 updatePuller,
                 availabilityGuard );
 
@@ -256,7 +254,7 @@ public class UpdatePullerTest
         final UpdatePullerClient puller = new UpdatePullerClient(
                 1,
                 scheduler,
-                logging,
+                NullLogProvider.getInstance(),
                 updatePuller,
                 availabilityGuard );
 
@@ -385,8 +383,9 @@ public class UpdatePullerTest
     public void shouldCopeWithHardExceptionsLikeOutOfMemory() throws Exception
     {
         // GIVEN
+        OutOfMemoryError oom = new OutOfMemoryError();
         when( master.pullUpdates( any( RequestContext.class ) ) )
-                .thenThrow( OutOfMemoryError.class )
+                .thenThrow( oom )
                 .thenReturn( Response.EMPTY );
         updatePuller.unpause();
 
@@ -394,7 +393,9 @@ public class UpdatePullerTest
         updatePuller.await( NEXT_TICKET, true );
 
         // THEN the OOM should be caught and logged
-        assertTrue( logging.hasSeenError( OutOfMemoryError.class ) );
+        logProvider.assertAtLeastOnce(
+                inLog( UpdatePuller.class ).error( org.hamcrest.Matchers.any( String.class ), sameInstance( oom ) )
+        );
 
         // WHEN that has passed THEN we should still be making pull attempts.
         updatePuller.await( NEXT_TICKET, true );
@@ -410,7 +411,7 @@ public class UpdatePullerTest
         {
             super( mock( HighAvailabilityMemberContext.class ), mock( AvailabilityGuard.class ),
                     mock( ClusterMembers.class ), mock( ClusterMemberEvents.class ), mock( Election.class ),
-                    mock( StringLogger.class ) );
+                    NullLogProvider.getInstance() );
             this.myId = myId;
             this.uri = URI.create( "ha://me" );
         }
@@ -428,60 +429,6 @@ public class UpdatePullerTest
                 listener.masterIsElected( new HighAvailabilityMemberChangeEvent(
                         HighAvailabilityMemberState.PENDING, HighAvailabilityMemberState.TO_MASTER, myId, uri ) );
             }
-        }
-    }
-
-    private static class ErrorTrackingLogging extends LifecycleAdapter implements Logging
-    {
-        private final List<Throwable> errors = new ArrayList<>();
-        private final StringLogger logger = new ErrorTrackingLogger( errors );
-
-        @Override
-        public StringLogger getMessagesLog( Class loggingClass )
-        {
-            return logger;
-        }
-
-        @Override
-        public ConsoleLogger getConsoleLog( Class loggingClass )
-        {
-            throw new UnsupportedOperationException( "Shouldn't be required" );
-        }
-
-        boolean hasSeenError( Class<?> cls )
-        {
-            for ( Throwable throwable : errors )
-            {
-                if ( throwable.getClass().equals( cls ) )
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-    }
-
-    private static class ErrorTrackingLogger extends BufferingLogger
-    {
-        private final List<Throwable> errors;
-
-        public ErrorTrackingLogger( List<Throwable> errors )
-        {
-            this.errors = errors;
-        }
-
-        @Override
-        public synchronized void logMessage( String msg, Throwable cause )
-        {
-            errors.add( cause );
-            super.logMessage( msg, cause );
-        }
-
-        @Override
-        public synchronized void logMessage( String msg, Throwable cause, boolean flush )
-        {
-            errors.add( cause );
-            super.logMessage( msg, cause, flush );
         }
     }
 }

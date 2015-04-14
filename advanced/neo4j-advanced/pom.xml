@@ -148,11 +148,6 @@
                   <artifactId>logback-core</artifactId>
                   <version>1.0.0</version>
                 </additionnalDependency>
-                <additionnalDependency>
-                  <groupId>org.slf4j</groupId>
-                  <artifactId>slf4j-api</artifactId>
-                  <version>1.6.4</version>
-                </additionnalDependency>
               </additionnalDependencies>
               <outputDirectory>${project.build.directory}/site/apidocs</outputDirectory>
               <sourcepath>${project.build.directory}/javadoc-sources</sourcepath>

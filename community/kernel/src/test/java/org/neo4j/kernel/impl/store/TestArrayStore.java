@@ -41,11 +41,9 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.StoreVersionMismatchHandler;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.util.Bits;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
@@ -76,7 +74,7 @@ public class TestArrayStore
                 idGeneratorFactory,
                 pageCache,
                 fs,
-                StringLogger.DEV_NULL,
+                NullLogProvider.getInstance(),
                 monitors );
         File fileName = new File( dir, "arraystore" );
         factory.createDynamicArrayStore( fileName, 120 );
@@ -87,7 +85,7 @@ public class TestArrayStore
                 idGeneratorFactory,
                 pageCache,
                 fs,
-                StringLogger.DEV_NULL,
+                NullLogProvider.getInstance(),
                 StoreVersionMismatchHandler.FORCE_CURRENT_VERSION,
                 monitors );
     }

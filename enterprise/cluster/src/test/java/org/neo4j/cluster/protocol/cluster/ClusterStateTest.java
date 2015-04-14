@@ -43,7 +43,8 @@ import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.com.message.TrackingMessageHolder;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage.ConfigurationRequestState;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage.ConfigurationResponseState;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.logging.NullLog;
+import org.neo4j.logging.NullLogProvider;
 
 public class ClusterStateTest
 {
@@ -56,7 +57,7 @@ public class ClusterStateTest
         when( context.isCurrentlyAlive( any( InstanceId.class ) ) ).thenReturn( true );
         when( context.getMembers() ).thenReturn( existingMembers );
         when( context.getConfiguration() ).thenReturn( clusterConfiguration( existingMembers ) );
-        when( context.getLogger( any( Class.class ) ) ).thenReturn( StringLogger.DEV_NULL );
+        when( context.getLog( any( Class.class ) ) ).thenReturn( NullLog.getInstance() );
         TrackingMessageHolder outgoing = new TrackingMessageHolder();
         Message<ClusterMessage> message = to( configurationRequest, uri( 1 ), configuration( 2 ) )
                 .setHeader( Message.FROM, uri( 2 ).toString() );
@@ -76,7 +77,7 @@ public class ClusterStateTest
     {
         // GIVEN
         ClusterContext context = mock( ClusterContext.class );
-        when( context.getLogger( any( Class.class ) ) ).thenReturn( StringLogger.DEV_NULL );
+        when( context.getLog( any( Class.class ) ) ).thenReturn( NullLog.getInstance() );
         TrackingMessageHolder outgoing = new TrackingMessageHolder();
         Map<InstanceId, URI> members = members( 1, 2 );
         
@@ -95,7 +96,7 @@ public class ClusterStateTest
         // GIVEN
         ClusterContext context = mock( ClusterContext.class );
         Map<InstanceId, URI> existingMembers = members( 1, 2 );
-        when( context.getLogger( any( Class.class ) ) ).thenReturn( StringLogger.DEV_NULL );
+        when( context.getLog( any( Class.class ) ) ).thenReturn( NullLog.getInstance() );
         when( context.getJoiningInstances() ).thenReturn( Collections.<URI>emptyList() );
         when( context.hasJoinBeenDenied() ).thenReturn( true );
         when( context.getJoinDeniedConfigurationResponseState() )
@@ -121,7 +122,7 @@ public class ClusterStateTest
         when( context.isCurrentlyAlive( id( 2 ) ) ).thenReturn( true );
         when( context.getMembers() ).thenReturn( existingMembers );
         when( context.getConfiguration() ).thenReturn( clusterConfiguration( existingMembers ) );
-        when( context.getLogger( any( Class.class ) ) ).thenReturn( StringLogger.DEV_NULL );
+        when( context.getLog( any( Class.class ) ) ).thenReturn( NullLog.getInstance() );
         when( context.getUriForId( id( 2 ) ) ).thenReturn( uri( 2 ) );
         TrackingMessageHolder outgoing = new TrackingMessageHolder();
         Message<ClusterMessage> message = to( configurationRequest, uri( 1 ), configuration( 2 ) )
@@ -143,7 +144,7 @@ public class ClusterStateTest
 
     private ClusterConfiguration clusterConfiguration( Map<InstanceId, URI> members )
     {
-        ClusterConfiguration config = new ClusterConfiguration( "ClusterStateTest", StringLogger.DEV_NULL );
+        ClusterConfiguration config = new ClusterConfiguration( "ClusterStateTest", NullLogProvider.getInstance() );
         config.setMembers( members );
         return config;
     }

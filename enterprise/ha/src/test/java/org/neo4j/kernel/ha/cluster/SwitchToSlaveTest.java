@@ -52,8 +52,7 @@ import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 import static org.junit.Assert.fail;
@@ -127,8 +126,8 @@ public class SwitchToSlaveTest
     @SuppressWarnings( "unchecked" )
     private static SwitchToSlave newSwitchToSlaveSpy()
     {
-        return spy( new SwitchToSlave( ConsoleLogger.DEV_NULL, configMock(), dependencyResolverMock(),
-                mock( HaIdGeneratorFactory.class ), new DevNullLoggingService(),
+        return spy( new SwitchToSlave( NullLogService.getInstance(), configMock(), dependencyResolverMock(),
+                mock( HaIdGeneratorFactory.class ),
                 mock( DelegateInvocationHandler.class ),
                 mock( ClusterMemberAvailability.class ), mock( RequestContextFactory.class ),
                 Iterables.<KernelExtensionFactory<?>>empty(), mock( MasterClientResolver.class ),

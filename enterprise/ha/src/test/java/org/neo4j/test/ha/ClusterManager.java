@@ -19,8 +19,10 @@
  */
 package org.neo4j.test.ha;
 
-import ch.qos.logback.classic.LoggerContext;
 import org.neo4j.function.Predicate;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.logging.Log;
 import org.w3c.dom.Document;
 
 import java.io.File;
@@ -78,12 +80,9 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.com.master.Slaves;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.logging.LogbackService;
-import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.String.format;
@@ -385,8 +384,8 @@ public class ClusterManager
                 // Everyone sees everyone else as available!
                 for( HighlyAvailableGraphDatabase database : cluster.getAllMembers() )
                 {
-                    StringLogger logger = database.getDependencyResolver().resolveDependency( StringLogger.class );
-                    logger.debug( this.toString() );
+                    Log log = database.getDependencyResolver().resolveDependency( LogService.class ).getInternalLog( getClass() );
+                    log.debug( this.toString() );
                 }
                 return true;
             }
@@ -1012,10 +1011,9 @@ public class ClusterManager
                 Config config1 = new Config( config, InternalAbstractGraphDatabase.Configuration.class,
                         GraphDatabaseSettings.class );
 
-                Logging clientLogging = life.add( new LogbackService( config1, new LoggerContext() ) );
                 ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
                 ClusterClient clusterClient = new ClusterClient( new Monitors(), ClusterClient.adapt( config1 ),
-                        clientLogging, new NotElectableElectionCredentialsProvider(), objectStreamFactory,
+                        NullLogService.getInstance(), new NotElectableElectionCredentialsProvider(), objectStreamFactory,
                         objectStreamFactory );
 
                 arbiters.add( new ClusterMembers( clusterClient, clusterClient, new ClusterMemberEvents()
@@ -1128,8 +1126,8 @@ public class ClusterManager
         {
             for ( HighlyAvailableGraphDatabase db : getAllMembers() )
             {
-                Logging logging = db.getDependencyResolver().resolveDependency( Logging.class );
-                StringLogger messagesLog = logging.getMessagesLog( HighlyAvailableGraphDatabase.class );
+                LogService logService = db.getDependencyResolver().resolveDependency( LogService.class );
+                Log messagesLog = logService.getInternalLog( HighlyAvailableGraphDatabase.class );
                 messagesLog.info( message );
             }
         }

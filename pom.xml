@@ -28,7 +28,6 @@
     <licensing.phase>compile</licensing.phase>
     <lucene.version>3.6.2</lucene.version>
     <powermock.version>1.5.5</powermock.version>
-    <slf4j-api.version>1.7.7</slf4j-api.version>
     <logback-classic.version>1.1.2</logback-classic.version>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
     <hsqldb.version>2.3.2</hsqldb.version>
@@ -621,16 +620,6 @@ public class ComponentVersion extends Version
         <groupId>ch.qos.logback</groupId>
         <artifactId>logback-access</artifactId>
         <version>${logback-classic.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-api</artifactId>
-        <version>${slf4j-api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>jcl-over-slf4j</artifactId>
-        <version>${slf4j-api.version}</version>
       </dependency>
       <dependency>
         <groupId>org.codehaus.janino</groupId>

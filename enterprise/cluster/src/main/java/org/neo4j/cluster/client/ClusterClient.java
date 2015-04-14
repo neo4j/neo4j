@@ -75,10 +75,11 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.helpers.NamedThreadFactory.daemon;
@@ -262,7 +263,7 @@ public class ClusterClient extends LifecycleAdapter
 
     private final ProtocolServer server;
 
-    public ClusterClient( final Monitors monitors, final Configuration config, final Logging logging,
+    public ClusterClient( final Monitors monitors, final Configuration config, final LogService logService,
                           ElectionCredentialsProvider electionCredentialsProvider,
                           ObjectInputStreamFactory objectInputStreamFactory,
                           ObjectOutputStreamFactory objectOutputStreamFactory )
@@ -281,13 +282,15 @@ public class ClusterClient extends LifecycleAdapter
                 .timeout( ClusterMessage.leaveTimedout, config.leaveTimeout() )
                 .timeout( ElectionMessage.electionTimeout, config.electionTimeout() );
 
+        final LogProvider internalLogProvider = logService.getInternalLogProvider();
+
         MultiPaxosServerFactory protocolServerFactory = new MultiPaxosServerFactory( new ClusterConfiguration( config
-                        .getClusterName(), logging.getMessagesLog( ClusterConfiguration.class ) ), logging, monitors.newMonitor( StateMachines.Monitor.class )
+                        .getClusterName(), internalLogProvider ), internalLogProvider, monitors.newMonitor( StateMachines.Monitor.class )
         );
 
         InMemoryAcceptorInstanceStore acceptorInstanceStore = new InMemoryAcceptorInstanceStore();
 
-        InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory( logging ) );
+        InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory( internalLogProvider ) );
 
         NetworkReceiver receiver = new NetworkReceiver( monitors.newMonitor( NetworkReceiver.Monitor.class ),
                 new NetworkReceiver.Configuration()
@@ -309,7 +312,7 @@ public class ClusterClient extends LifecycleAdapter
             {
                 return config.name();
             }
-        }, logging );
+        }, internalLogProvider );
 
         NetworkSender sender = new NetworkSender( monitors.newMonitor( NetworkSender.Monitor.class ),
                 new NetworkSender.Configuration()
@@ -325,7 +328,7 @@ public class ClusterClient extends LifecycleAdapter
             {
                 return config.getAddress().getPort();
             }
-        }, receiver, logging );
+        }, receiver, internalLogProvider );
 
         ExecutorLifecycleAdapter stateMachineExecutor = new ExecutorLifecycleAdapter( new Factory<ExecutorService>()
         {
@@ -351,7 +354,7 @@ public class ClusterClient extends LifecycleAdapter
                 server.listeningAt( me );
                 if ( logger == null )
                 {
-                    logger = new StateTransitionLogger( logging );
+                    logger = new StateTransitionLogger( internalLogProvider );
                     server.addStateTransitionListener( logger );
                 }
             }
@@ -359,13 +362,13 @@ public class ClusterClient extends LifecycleAdapter
             @Override
             public void channelOpened( URI to )
             {
-                logging.getMessagesLog( NetworkReceiver.class ).info( to + " connected to me at " + server.boundAt() );
+                internalLogProvider.getLog( NetworkReceiver.class ).info( to + " connected to me at " + server.boundAt() );
             }
 
             @Override
             public void channelClosed( URI to )
             {
-                logging.getMessagesLog( NetworkReceiver.class ).info( to + " disconnected from me at " + server
+                internalLogProvider.getLog( NetworkReceiver.class ).info( to + " disconnected from me at " + server
                         .boundAt() );
             }
         } );
@@ -402,7 +405,7 @@ public class ClusterClient extends LifecycleAdapter
             {
                 return config.clusterJoinTimeout();
             }
-        }, server, logging ) );
+        }, server, logService ) );
 
         cluster = server.newClient( Cluster.class );
         broadcast = server.newClient( AtomicBroadcast.class );

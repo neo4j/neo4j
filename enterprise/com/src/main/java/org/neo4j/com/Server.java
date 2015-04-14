@@ -58,9 +58,9 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
@@ -111,7 +111,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     private final T requestTarget;
     private final Map<Channel,Pair<RequestContext,AtomicLong /*time last heard of*/>> connectedSlaveChannels =
             new ConcurrentHashMap<>();
-    private final StringLogger msgLog;
+    private final Log msgLog;
     private final Map<Channel,PartialRequest> partialRequests = new ConcurrentHashMap<>();
     private final Configuration config;
     private final int frameLength;
@@ -135,7 +135,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     private long oldChannelThresholdMillis;
     private int chunkSize;
 
-    public Server( T requestTarget, Configuration config, Logging logging, int frameLength,
+    public Server( T requestTarget, Configuration config, LogProvider logProvider, int frameLength,
                    ProtocolVersion protocolVersion, TxChecksumVerifier txVerifier, Clock clock, ByteCounterMonitor
             byteCounterMonitor, RequestMonitor requestMonitor )
     {
@@ -143,7 +143,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         this.config = config;
         this.frameLength = frameLength;
         this.applicationProtocolVersion = protocolVersion.getApplicationProtocol();
-        this.msgLog = logging.getMessagesLog( getClass() );
+        this.msgLog = logProvider.getLog( getClass() );
         this.txVerifier = txVerifier;
         this.clock = clock;
         this.byteCounterMonitor = byteCounterMonitor;
@@ -217,7 +217,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
 
         if ( ex != null )
         {
-            msgLog.logMessage( "Failed to bind server to " + socketAddress, ex );
+            msgLog.error( "Failed to bind server to " + socketAddress, ex );
             bootstrap.releaseExternalResources();
             targetCallExecutor.shutdownNow();
             unfinishedTransactionExecutor.shutdownNow();
@@ -227,13 +227,13 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
 
         channelGroup = new DefaultChannelGroup();
         channelGroup.add( channel );
-        msgLog.logMessage( className + " communication server started and bound to " + socketAddress );
+        msgLog.info( className + " communication server started and bound to " + socketAddress );
     }
 
     @Override
     public void stop() throws Throwable
     {
-        msgLog.logMessage( getClass().getSimpleName() + " communication server shutting down and unbinding from  " + socketAddress );
+        msgLog.info( getClass().getSimpleName() + " communication server shutting down and unbinding from  " + socketAddress );
         // Close all open connections
         shuttingDown = true;
 
@@ -278,7 +278,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
                         long age = System.currentTimeMillis() - channel.getValue().other().get();
                         if ( age > oldChannelThresholdMillis )
                         {
-                            msgLog.logMessage( "Found a silent channel " + channel + ", " + age );
+                            msgLog.info( "Found a silent channel " + channel + ", " + age );
                             channels.put( channel.getKey(), Boolean.TRUE );
                         }
                         else if ( age > oldChannelThresholdMillis / 2 )
@@ -418,7 +418,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         catch ( Throwable failure ) // Unknown error trying to finish off the tx
         {
             submitSilent( unfinishedTransactionExecutor, newTransactionFinisher( slave ) );
-            msgLog.logMessage( "Could not finish off dead channel", failure );
+            msgLog.warn( "Could not finish off dead channel", failure );
         }
     }
 
@@ -564,7 +564,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         }
         catch ( IOException e )
         {
-            msgLog.logMessage( "Couldn't send cause of error to client", exception );
+            msgLog.warn( "Couldn't send cause of error to client", exception );
         }
     }
 

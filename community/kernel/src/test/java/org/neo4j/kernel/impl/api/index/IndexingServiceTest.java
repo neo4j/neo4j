@@ -55,18 +55,16 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.impl.util.TestLogger;
-import org.neo4j.kernel.impl.util.TestLogging;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.lifecycle.LifecycleException;
-import org.neo4j.kernel.logging.Logging;
 import org.neo4j.register.Register;
 import org.neo4j.register.Register.DoubleLongRegister;
 
@@ -105,14 +103,16 @@ import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.RECOVERY;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.TRIGGER_REBUILD_ALL;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.kernel.impl.store.record.IndexRule.constraintIndexRule;
 import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
-import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.test.AwaitAnswer.afterAwaiting;
 
 public class IndexingServiceTest
 {
+    private static final LogMatcherBuilder logMatch = inLog( IndexingService.class );
+
     @Rule
     public final LifeRule life = new LifeRule();
     private final int labelId = 7;
@@ -123,7 +123,7 @@ public class IndexingServiceTest
     private final IndexAccessor accessor = mock( IndexAccessor.class, RETURNS_MOCKS );
     private final IndexStoreView storeView  = mock( IndexStoreView.class );
     private final TokenNameLookup nameLookup = mock( TokenNameLookup.class );
-    private final TestLogging logging = new TestLogging();
+    private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Test
     public void shouldBringIndexOnlineAndFlipOverToIndexAccessor() throws Exception
@@ -280,7 +280,6 @@ public class IndexingServiceTest
     public void shouldLogIndexStateOnInit() throws Exception
     {
         // given
-        TestLogger logger = new TestLogger();
         SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
         when( provider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         SchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( provider );
@@ -293,7 +292,7 @@ public class IndexingServiceTest
         IndexingService indexingService = life.add( IndexingService.create( new IndexSamplingConfig( new Config() ),
                 mock( JobScheduler.class ), providerMap, mock( IndexStoreView.class ), mockLookup,
                 mock( UpdateableSchemaState.class ), asList( onlineIndex, populatingIndex, failedIndex ),
-                mockLogging( logger ), IndexingService.NO_MONITOR ) );
+                logProvider, IndexingService.NO_MONITOR ) );
 
 
         when( provider.getInitialState( onlineIndex.getId() ) ).thenReturn( ONLINE );
@@ -309,10 +308,10 @@ public class IndexingServiceTest
         life.init();
 
         // then
-        logger.assertExactly(
-                info( "IndexingService.init: index 1 on :LabelOne(propertyOne) is ONLINE" ),
-                info( "IndexingService.init: index 2 on :LabelOne(propertyTwo) is POPULATING" ),
-                info( "IndexingService.init: index 3 on :LabelTwo(propertyTwo) is FAILED" )
+        logProvider.assertExactly(
+                logMatch.info( "IndexingService.init: index 1 on :LabelOne(propertyOne) is ONLINE" ),
+                logMatch.info( "IndexingService.init: index 2 on :LabelOne(propertyTwo) is POPULATING" ),
+                logMatch.info( "IndexingService.init: index 3 on :LabelTwo(propertyTwo) is FAILED" )
         );
     }
 
@@ -320,7 +319,6 @@ public class IndexingServiceTest
     public void shouldLogIndexStateOnStart() throws Exception
     {
         // given
-        TestLogger logger = new TestLogger();
         SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
         when( provider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         SchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( provider );
@@ -332,7 +330,7 @@ public class IndexingServiceTest
 
         IndexingService indexingService = IndexingService.create( new IndexSamplingConfig( new Config() ),
                 mock( JobScheduler.class ), providerMap, storeView, mockLookup, mock( UpdateableSchemaState.class ),
-                asList( onlineIndex, populatingIndex, failedIndex ), mockLogging( logger ), IndexingService.NO_MONITOR );
+                asList( onlineIndex, populatingIndex, failedIndex ), logProvider, IndexingService.NO_MONITOR );
 
         when( provider.getInitialState( onlineIndex.getId() ) ).thenReturn( ONLINE );
         when( provider.getInitialState( populatingIndex.getId() ) ).thenReturn( InternalIndexState.POPULATING );
@@ -346,19 +344,18 @@ public class IndexingServiceTest
         when(mockLookup.propertyKeyGetName( 2 )).thenReturn( "propertyTwo" );
         when( storeView.indexSample( any( IndexDescriptor.class ), any( DoubleLongRegister.class ) ) ).thenReturn( newDoubleLongRegister( 32l, 32l ) );
 
-        logger.clear();
+        logProvider.clear();
 
         // when
         indexingService.start();
 
         // then
         verify( provider ).getPopulationFailure( 3 );
-        logger.assertAtLeastOnce(
-                info( "IndexingService.start: index 1 on :LabelOne(propertyOne) is ONLINE" ) );
-        logger.assertAtLeastOnce(
-                info( "IndexingService.start: index 2 on :LabelOne(propertyTwo) is POPULATING" ) );
-        logger.assertAtLeastOnce(
-                info( "IndexingService.start: index 3 on :LabelTwo(propertyTwo) is FAILED" ) );
+        logProvider.assertAtLeastOnce(
+                logMatch.info( "IndexingService.start: index 1 on :LabelOne(propertyOne) is ONLINE" ),
+                logMatch.info( "IndexingService.start: index 2 on :LabelOne(propertyTwo) is POPULATING" ),
+                logMatch.info( "IndexingService.start: index 3 on :LabelTwo(propertyTwo) is FAILED" )
+        );
     }
 
     @Test
@@ -473,8 +470,9 @@ public class IndexingServiceTest
         indexingService.triggerIndexSampling( mode );
 
         // then
-        logging.getMessagesLog( IndexingService.class ).assertAtLeastOnce(
-                info( "Manual trigger for sampling all indexes [" + mode + "]" ) );
+        logProvider.assertAtLeastOnce(
+                logMatch.info( "Manual trigger for sampling all indexes [" + mode + "]" )
+        );
     }
 
     @Test
@@ -490,8 +488,9 @@ public class IndexingServiceTest
 
         // then
         String userDescription = descriptor.userDescription( nameLookup );
-        logging.getMessagesLog( IndexingService.class ).assertAtLeastOnce(
-                info( "Manual trigger for sampling index " + userDescription + " [" + mode + "]" ) );
+        logProvider.assertAtLeastOnce(
+                logMatch.info( "Manual trigger for sampling index " + userDescription + " [" + mode + "]" )
+        );
     }
 
     @Test
@@ -769,13 +768,6 @@ public class IndexingServiceTest
         };
     }
 
-    private static Logging mockLogging( StringLogger logger )
-    {
-        Logging logging = mock( Logging.class );
-        when( logging.getMessagesLog( any( Class.class ) ) ).thenReturn( logger );
-        return logging;
-    }
-
     private NodePropertyUpdate add( long nodeId, Object propertyValue )
     {
         return NodePropertyUpdate.add( nodeId, propertyKeyId, propertyValue, new long[]{labelId} );
@@ -819,7 +811,7 @@ public class IndexingServiceTest
                         nameLookup,
                         schemaState,
                         loop( iterator( rules ) ),
-                        logging,
+                        logProvider,
                         monitor )
         );
     }
