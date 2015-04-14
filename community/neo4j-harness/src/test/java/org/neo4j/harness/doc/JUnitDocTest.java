@@ -23,7 +23,13 @@ import java.net.URI;
 
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.neo4j.function.Function;
+import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.junit.Neo4jRule;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.test.Mute;
 import org.neo4j.test.server.HTTP;
 
@@ -36,7 +42,20 @@ public class JUnitDocTest
     // START SNIPPET: useJUnitRule
     @Rule
     public Neo4jRule neo4j = new Neo4jRule()
-            .withFixture( "CREATE (admin:Admin)" );
+            .withFixture( "CREATE (admin:Admin)" )
+            .withFixture( new Function<GraphDatabaseService, Void>()
+            {
+                @Override
+                public Void apply( GraphDatabaseService graphDatabaseService ) throws RuntimeException
+                {
+                    try (Transaction tx = graphDatabaseService.beginTx())
+                    {
+                        graphDatabaseService.createNode( DynamicLabel.label( "Admin" ));
+                        tx.success();
+                    }
+                    return null;
+                }
+            } );
 
     @Test
     public void shouldWorkWithServer() throws Exception
@@ -49,6 +68,14 @@ public class JUnitDocTest
 
         // Then it should reply
         assertEquals(200, response.status());
+
+        // and we have access to underlying GraphDatabaseService
+        try (Transaction tx = neo4j.getGraphDatabaseService().beginTx()) {
+            assertEquals( 2, IteratorUtil.count(
+                    neo4j.getGraphDatabaseService().findNodes( DynamicLabel.label( "Admin" ) )
+            ));
+            tx.success();
+        }
     }
     // END SNIPPET: useJUnitRule
 

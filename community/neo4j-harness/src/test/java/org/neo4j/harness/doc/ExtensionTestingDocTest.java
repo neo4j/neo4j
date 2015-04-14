@@ -25,8 +25,15 @@ import javax.ws.rs.core.Response;
 
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.neo4j.function.Function;
+import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.ServerControls;
 import org.neo4j.harness.TestServerBuilders;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.test.Mute;
 import org.neo4j.test.server.HTTP;
 
@@ -34,7 +41,8 @@ import static org.junit.Assert.*;
 
 public class ExtensionTestingDocTest
 {
-    @Rule public Mute mute = Mute.muteAll();
+    @Rule
+    public Mute mute = Mute.muteAll();
 
     // START SNIPPET: testExtension
     @Path("")
@@ -60,6 +68,35 @@ public class ExtensionTestingDocTest
 
             // Then
             assertEquals( 200, response.status() );
+        }
+    }
+
+    @Test
+    public void testMyExtensionWithFunctionFixture() throws Exception
+    {
+        // Given
+        try ( ServerControls server = TestServerBuilders.newInProcessBuilder()
+                .withExtension( "/myExtension", MyUnmanagedExtension.class )
+                .withFixture( new Function<GraphDatabaseService, Void>()
+                {
+                    @Override
+                    public Void apply( GraphDatabaseService graphDatabaseService ) throws RuntimeException
+                    {
+                        try ( Transaction tx = graphDatabaseService.beginTx() )
+                        {
+                            graphDatabaseService.createNode( DynamicLabel.label( "User" ) );
+                            tx.success();
+                        }
+                        return null;
+                    }
+                } )
+                .newServer() )
+        {
+            // When
+            Result result = server.getGraphDatabaseService().execute( "MATCH (n:User) return n" );
+
+            // Then
+            assertEquals( 1, IteratorUtil.count( result ) );
         }
     }
     // END SNIPPET: testExtension

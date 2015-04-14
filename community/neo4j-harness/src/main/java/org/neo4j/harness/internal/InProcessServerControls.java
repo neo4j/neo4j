@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.harness.ServerControls;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileUtils;
@@ -89,5 +90,10 @@ public class InProcessServerControls implements ServerControls
         // Pure paranoia, and a silly check - but this decreases the likelihood that we delete something that isn't
         // our randomly generated folder significantly.
         return name.length() == 32;
+    }
+
+    public GraphDatabaseService getGraphDatabaseService()
+    {
+        return server.getDatabase().getGraph();
     }
 }

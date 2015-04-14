@@ -25,6 +25,9 @@ import java.net.URI;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+
+import org.neo4j.function.Function;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.harness.ServerControls;
 import org.neo4j.harness.TestServerBuilder;
@@ -117,6 +120,20 @@ public class Neo4jRule implements TestRule, TestServerBuilder
         return this;
     }
 
+    @Override
+    public Neo4jRule withFixture( Function<GraphDatabaseService, Void> fixtureFunction )
+    {
+        builder = builder.withFixture( fixtureFunction );
+        return this;
+    }
+
+    @Override
+    public Neo4jRule copyFrom( File sourceDirectory )
+    {
+        builder = builder.copyFrom( sourceDirectory );
+        return this;
+    }
+
     public URI httpURI()
     {
         if(controls == null)
@@ -133,5 +150,9 @@ public class Neo4jRule implements TestRule, TestServerBuilder
             throw new IllegalStateException( "Cannot access instance URI before or after the test runs." );
         }
         return controls.httpURI();
+    }
+
+    public GraphDatabaseService getGraphDatabaseService() {
+        return controls.getGraphDatabaseService();
     }
 }
