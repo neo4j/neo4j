@@ -19,15 +19,16 @@
  */
 package org.neo4j.ndp.messaging.v1;
 
-import org.junit.Test;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueNode;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValuePath;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueRelationship;
@@ -40,12 +41,13 @@ import org.neo4j.ndp.messaging.v1.message.PullAllMessage;
 import org.neo4j.ndp.messaging.v1.message.RecordMessage;
 import org.neo4j.ndp.messaging.v1.message.RunMessage;
 import org.neo4j.ndp.messaging.v1.message.SuccessMessage;
-import org.neo4j.ndp.messaging.v1.util.BytePrinter;
 import org.neo4j.ndp.runtime.internal.Neo4jError;
 
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.stream.Records.record;
@@ -162,7 +164,7 @@ public class MessageFormatTest
     private <T extends Message> T unpack( MessageFormat.Reader reader, RecordingByteChannel channel )
     {
         // Unpack
-        String serialized = BytePrinter.hex( channel.getBytes() );
+        String serialized = HexPrinter.hex( channel.getBytes() );
         RecordingMessageHandler messages = new RecordingMessageHandler();
         try
         {

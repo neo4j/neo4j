@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
+import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -226,10 +227,12 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
     }
 
     private final PrintStream out;
+    private final HexPrinter printer;
 
     protected DumpStore( PrintStream out )
     {
         this.out = out;
+        this.printer = new HexPrinter( out ).withBytesGroupingFormat( 16, 4, "  " ).withLineNumberDigits( 8 );
     }
 
     public final void dump( STORE store, long[] ids ) throws Exception
@@ -291,40 +294,38 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
             out.print( record );
             buffer.clear();
             fileChannel.read( buffer, id * size );
-            buffer.flip();
-            if ( record.inUse() )
-            {
-                dumpHex( buffer, id * size );
-            }
-            else if ( allZero( buffer ) )
-            {
-                out.printf( ": all zeros @ 0x%x - 0x%x%n", id * size, (id + 1) * size );
-            }
-            else
-            {
-                dumpHex( buffer, id * size );
-            }
+            dumpHex( record, buffer, id, size );
         }
 
         return record.inUse();
     }
 
+    void dumpHex( RECORD record, ByteBuffer buffer, long id, int size )
+    {
+        printer.withLineNumberOffset( id * size );
+        if ( record.inUse() )
+        {
+            printer.append( buffer );
+        }
+        else if ( allZero( buffer ) )
+        {
+            out.printf( ": all zeros @ 0x%x - 0x%x", id * size, (id + 1) * size );
+        }
+        else
+        {
+            printer.append( buffer );
+        }
+        out.printf( "%n" );
+    }
+
     private boolean allZero( ByteBuffer buffer )
     {
-        int pos = buffer.position();
-        try
+        for ( int i = 0; i < buffer.position(); i++ )
         {
-            while ( buffer.remaining() > 0 )
+            if ( buffer.get( i ) != 0 )
             {
-                if ( buffer.get() != 0 )
-                {
-                    return false;
-                }
+                return false;
             }
-        }
-        finally
-        {
-            buffer.position( pos );
         }
         return true;
     }
@@ -332,23 +333,5 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
     protected Object transform( RECORD record ) throws Exception
     {
         return record.inUse() ? record : null;
-    }
-
-    private void dumpHex( ByteBuffer buffer, long offset )
-    {
-        for ( int count = 0; buffer.remaining() > 0; count++, offset++ )
-        {
-            int b = buffer.get();
-            if ( count % 16 == 0 )
-            {
-                out.printf( "%n    @ 0x%08x: ", offset );
-            }
-            else if ( count % 4 == 0 )
-            {
-                out.print( " " );
-            }
-            out.printf( " %x%x", 0xF & (b >> 4), 0xF & b );
-        }
-        out.println();
     }
 }
