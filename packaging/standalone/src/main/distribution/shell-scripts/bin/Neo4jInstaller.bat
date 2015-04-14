@@ -8,13 +8,21 @@ setlocal ENABLEEXTENSIONS
 set serviceName=Neo4j-Server
 set serviceDisplayName="Neo4j Graph Database"
 set serviceStartType=auto
-set classpath="-DserverClasspath=lib/*.jar;system/lib/*.jar;plugins/**/*.jar;./conf*"
-set mainclass="-DserverMainClass=org.neo4j.server.Bootstrapper"
-set configFile="conf\neo4j-wrapper.conf"
-set loggingProperties="-Djava.util.logging.config.file=%~dps0..\conf\windows-wrapper-logging.properties"
+set classpath="\"-DserverClasspath=lib/*.jar;system/lib/*.jar;plugins/**/*.jar;./conf*\""
+set mainclass="\"-DserverMainClass=org.neo4j.server.Bootstrapper\""
+set configFile="\"conf\neo4j-wrapper.conf\""
+set loggingProperties="\"-Djava.util.logging.config.file=%~dps0..\conf\windows-wrapper-logging.properties\""
 set wrapperJarFilename=windows-service-wrapper-5.jar
 
-goto :main %1
+if NOT [%2]==[] set serviceName=%2
+if NOT [%3]==[] set serviceDisplayName=%3
+
+if NOT %serviceName: =% == %serviceName% goto :usage
+
+rem if NOT "%2" == "" set serviceName=%2
+rem if NOT "%3" == "" set serviceDisplayName="%3"
+
+goto :main %1 %2 %3
 
 
 
@@ -67,7 +75,7 @@ goto :main %1
   set javaPath=%javaPath:###"=%
   set javaPath=%javaPath:###=%
 
-  set binPath="\"%javaPath%\bin\java.exe\" %loggingProperties% -DworkingDir="%~dps0.." -DconfigFile=%configFile% %classpath% %mainclass% -Dorg.neo4j.cluster.logdirectory="%~dps0..\data\log" -jar %~dps0%wrapperJarFilename%  %serviceName%"
+  set binPath="\"%javaPath%\bin\java.exe\" %loggingProperties% -DworkingDir=\"%~dps0..\" -DconfigFile=%configFile% %classpath% %mainclass% -Dorg.neo4j.cluster.logdirectory=\"%~dps0..\data\log\" -jar \"%~dps0%wrapperJarFilename%\"  %serviceName%"
 
   sc create "%serviceName%" binPath= %binPath% DisplayName= "%serviceDisplayName:"=%" start= %serviceStartType%
   sc start %serviceName%
@@ -101,7 +109,9 @@ goto :main %1
   goto :eof
 
 :usage
-  echo Usage: %~0Neo4jInstaller.bat ^<install^|remove^>
+  echo Usage: %~0Neo4jInstaller.bat ^<install^|remove^> [service name] [service display name]
+  echo        - Service Name - Optional, must NOT contain spaces
+  echo        - Service Display Name - Optional, The name displayed in the services window, surround with quotes to use spaces
   goto:eof
 
 :main
