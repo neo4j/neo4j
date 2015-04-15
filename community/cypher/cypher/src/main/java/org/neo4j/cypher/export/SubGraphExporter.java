@@ -50,9 +50,9 @@ public class SubGraphExporter
 
     public void export( PrintWriter out )
     {
+        appendNodes( out );
         appendIndexes( out );
         appendConstraints( out );
-        appendNodes( out );
         appendRelationships( out );
     }
 
