@@ -29,7 +29,6 @@ import java.util.Map;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.MapConfiguration;
 
-import org.neo4j.function.Consumer;
 import org.neo4j.helpers.TimeUtil;
 import org.neo4j.kernel.info.DiagnosticsExtractor;
 import org.neo4j.kernel.info.DiagnosticsPhase;

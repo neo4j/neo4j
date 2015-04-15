@@ -50,7 +50,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 
-import org.neo4j.function.Consumer;
 import org.neo4j.logging.Logger;
 
 enum SystemDiagnostics implements DiagnosticsProvider

@@ -29,7 +29,6 @@ import java.util.Map;
 import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Consumer;
-import org.neo4j.function.Consumers;
 import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;

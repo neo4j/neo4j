@@ -50,7 +50,6 @@ import static org.neo4j.helpers.Settings.matches;
 import static org.neo4j.helpers.Settings.max;
 import static org.neo4j.helpers.Settings.min;
 import static org.neo4j.helpers.Settings.options;
-import static org.neo4j.helpers.Settings.port;
 import static org.neo4j.helpers.Settings.setting;
 
 /**

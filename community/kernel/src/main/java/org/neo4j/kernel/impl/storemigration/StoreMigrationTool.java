@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;

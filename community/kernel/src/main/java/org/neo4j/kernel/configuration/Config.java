@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.neo4j.function.Consumer;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Functions;

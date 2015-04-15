@@ -27,7 +27,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 import org.neo4j.logging.NullLogger;
 
-import java.io.IOException;
 import java.io.PrintWriter;
 
 public class ConsistencyReportLog extends AbstractLog

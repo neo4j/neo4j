@@ -26,7 +26,6 @@ import java.util.logging.Logger;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.GraphDatabaseDependencies;
-import org.neo4j.logging.DuplicatingLogProvider;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
@@ -42,7 +41,6 @@ import org.neo4j.server.logging.JettyLogBridge;
 import org.neo4j.server.web.ServerInternalSettings;
 
 import static java.lang.String.format;
-import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 
 /**
  * @deprecated This class is for internal use only and will be moved to an internal package in a future release.
