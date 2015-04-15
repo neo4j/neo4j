@@ -248,10 +248,10 @@ public class AssertableLogProvider implements LogProvider
         private final Matcher<String> contextMatcher;
         private final Matcher<Level> levelMatcher;
         private final Matcher<String> messageMatcher;
-        private final Matcher<Object[]> argumentsMatcher;
+        private final Matcher<? extends Object[]> argumentsMatcher;
         private final Matcher<? extends Throwable> throwableMatcher;
 
-        public LogMatcher( Matcher<String> contextMatcher, Matcher<Level> levelMatcher, Matcher<String> messageMatcher, Matcher<Object[]> argumentsMatcher, Matcher<? extends Throwable> throwableMatcher )
+        public LogMatcher( Matcher<String> contextMatcher, Matcher<Level> levelMatcher, Matcher<String> messageMatcher, Matcher<? extends Object[]> argumentsMatcher, Matcher<? extends Throwable> throwableMatcher )
         {
             this.contextMatcher = contextMatcher;
             this.levelMatcher = levelMatcher;
@@ -315,12 +315,7 @@ public class AssertableLogProvider implements LogProvider
 
         public LogMatcher debug( String format, Object... arguments )
         {
-            return new LogMatcher( contextMatcher, DEBUG_LEVEL_MATCHER, equalTo( format ), arrayContaining( arguments ), NULL_THROWABLE_MATCHER );
-        }
-
-        public LogMatcher debug( String format, Matcher<Object[]> argumentsMatcher )
-        {
-            return new LogMatcher( contextMatcher, DEBUG_LEVEL_MATCHER, equalTo( format ), argumentsMatcher, NULL_THROWABLE_MATCHER );
+            return new LogMatcher( contextMatcher, DEBUG_LEVEL_MATCHER, equalTo( format ), arrayContaining( ensureMatchers( arguments ) ), NULL_THROWABLE_MATCHER );
         }
 
         public LogMatcher info( String message )
@@ -340,12 +335,7 @@ public class AssertableLogProvider implements LogProvider
 
         public LogMatcher info( String format, Object... arguments )
         {
-            return new LogMatcher( contextMatcher, INFO_LEVEL_MATCHER, equalTo( format ), arrayContaining( arguments ), NULL_THROWABLE_MATCHER );
-        }
-
-        public LogMatcher info( String format, Matcher<Object[]> argumentsMatcher )
-        {
-            return new LogMatcher( contextMatcher, INFO_LEVEL_MATCHER, equalTo( format ), argumentsMatcher, NULL_THROWABLE_MATCHER );
+            return new LogMatcher( contextMatcher, INFO_LEVEL_MATCHER, equalTo( format ), arrayContaining( ensureMatchers( arguments ) ), NULL_THROWABLE_MATCHER );
         }
 
         public LogMatcher warn( String message )
@@ -365,12 +355,7 @@ public class AssertableLogProvider implements LogProvider
 
         public LogMatcher warn( String format, Object... arguments )
         {
-            return new LogMatcher( contextMatcher, WARN_LEVEL_MATCHER, equalTo( format ), arrayContaining( arguments ), NULL_THROWABLE_MATCHER );
-        }
-
-        public LogMatcher warn( String format, Matcher<Object[]> argumentsMatcher )
-        {
-            return new LogMatcher( contextMatcher, WARN_LEVEL_MATCHER, equalTo( format ), argumentsMatcher, NULL_THROWABLE_MATCHER );
+            return new LogMatcher( contextMatcher, WARN_LEVEL_MATCHER, equalTo( format ), arrayContaining( ensureMatchers( arguments ) ), NULL_THROWABLE_MATCHER );
         }
 
         public LogMatcher error( String message )
@@ -390,12 +375,23 @@ public class AssertableLogProvider implements LogProvider
 
         public LogMatcher error( String format, Object... arguments )
         {
-            return new LogMatcher( contextMatcher, ERROR_LEVEL_MATCHER, equalTo( format ), arrayContaining( arguments ), NULL_THROWABLE_MATCHER );
+            return new LogMatcher( contextMatcher, ERROR_LEVEL_MATCHER, equalTo( format ), arrayContaining( ensureMatchers( arguments ) ), NULL_THROWABLE_MATCHER );
         }
 
-        public LogMatcher error( String format, Matcher<Object[]> argumentsMatcher )
+        @SuppressWarnings( "unchecked" )
+        private Matcher<Object>[] ensureMatchers( Object... arguments )
         {
-            return new LogMatcher( contextMatcher, ERROR_LEVEL_MATCHER, equalTo( format ), argumentsMatcher, NULL_THROWABLE_MATCHER );
+            List<Matcher> matchers = new ArrayList<>();
+            for ( Object arg : arguments )
+            {
+                if ( arg instanceof Matcher )
+                {
+                    matchers.add( (Matcher) arg );
+                } else {
+                    matchers.add( equalTo( arg ) );
+                }
+            }
+            return matchers.toArray( new Matcher[arguments.length] );
         }
     }
 
