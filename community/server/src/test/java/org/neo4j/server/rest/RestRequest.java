@@ -36,7 +36,6 @@ import com.sun.jersey.api.client.filter.HTTPBasicAuthFilter;
 
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.server.HTTP;
 
 public class RestRequest {
