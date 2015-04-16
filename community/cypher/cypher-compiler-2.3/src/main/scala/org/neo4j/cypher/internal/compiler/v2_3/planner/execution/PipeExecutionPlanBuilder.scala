@@ -77,13 +77,13 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
           NodeByLabelScanPipe(id, label)()
 
         case NodeByIdSeek(IdName(id), nodeIdExpr, _) =>
-          NodeByIdSeekPipe(id, nodeIdExpr.asEntityByIdRhs)()
+          NodeByIdSeekPipe(id, nodeIdExpr.asCommandEntityByIdRhs)()
 
         case DirectedRelationshipByIdSeek(IdName(id), relIdExpr, IdName(fromNode), IdName(toNode), _) =>
-          DirectedRelationshipByIdSeekPipe(id, relIdExpr.asEntityByIdRhs, toNode, fromNode)()
+          DirectedRelationshipByIdSeekPipe(id, relIdExpr.asCommandEntityByIdRhs, toNode, fromNode)()
 
         case UndirectedRelationshipByIdSeek(IdName(id), relIdExpr, IdName(fromNode), IdName(toNode), _) =>
-          UndirectedRelationshipByIdSeekPipe(id, relIdExpr.asEntityByIdRhs, toNode, fromNode)()
+          UndirectedRelationshipByIdSeekPipe(id, relIdExpr.asCommandEntityByIdRhs, toNode, fromNode)()
 
         case NodeIndexSeek(IdName(id), label, propertyKey, valueExpr, _) =>
           NodeIndexSeekPipe(id, label, propertyKey, valueExpr.map(buildExpression), unique = false)()

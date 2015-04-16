@@ -60,7 +60,6 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       // then
       resultPlans shouldBe empty
     }
-
   }
 
   test("index scan when there is an index on the property") {
@@ -77,7 +76,6 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
         case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(`lit42`))), _)) =>  ()
       }
     }
-
   }
 
   test("plans index seeks when identifier exists as an argument") {
@@ -112,7 +110,6 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       // then
       resultPlans shouldBe empty
     }
-
   }
 
   test("unique index scan when there is an unique index on the property") {
