@@ -33,10 +33,13 @@ import org.neo4j.csv.reader.Extractors;
 import org.neo4j.function.Factory;
 import org.neo4j.function.Functions;
 import org.neo4j.unsafe.impl.batchimport.input.DuplicateHeaderException;
+import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -236,7 +239,7 @@ public class DataFactoriesTest
     @Test
     public void shouldParseGroupName() throws Exception
     {
-     // GIVEN
+        // GIVEN
         CharSeeker seeker = seeker( ":START_ID(GroupOne)\t:END_ID(GroupTwo)\ttype:TYPE\tdate:long\tmore:long[]" );
         IdType idType = IdType.ACTUAL;
         Extractors extractors = new Extractors( '\t' );
@@ -252,6 +255,46 @@ public class DataFactoriesTest
                 entry( "date", Type.PROPERTY, extractors.long_() ),
                 entry( "more", Type.PROPERTY, extractors.longArray() ) ), header.entries() );
         seeker.close();
+    }
+
+    @Test
+    public void shouldFailOnUnexpectedNodeHeaderType() throws Exception
+    {
+        // GIVEN
+        CharSeeker seeker = seeker( ":ID,:START_ID" );
+        IdType idType = IdType.ACTUAL;
+
+        // WHEN
+        try
+        {
+            Header header = DataFactories.defaultFormatNodeFileHeader().create( seeker, COMMAS, idType );
+            fail( "Should have failed" );
+        }
+        catch ( InputException e )
+        {
+            // THEN
+            assertThat( e.getMessage(), containsString( "START_ID" ) );
+        }
+    }
+
+    @Test
+    public void shouldFailOnUnexpectedRelationshipHeaderType() throws Exception
+    {
+        // GIVEN
+        CharSeeker seeker = seeker( ":LABEL,:START_ID,:END_ID,:TYPE" );
+        IdType idType = IdType.ACTUAL;
+
+        // WHEN
+        try
+        {
+            Header header = DataFactories.defaultFormatRelationshipFileHeader().create( seeker, COMMAS, idType );
+            fail( "Should have failed" );
+        }
+        catch ( InputException e )
+        {
+            // THEN
+            assertThat( e.getMessage(), containsString( "LABEL" ) );
+        }
     }
 
     private CharSeeker seeker( String data )
