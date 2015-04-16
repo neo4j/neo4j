@@ -42,8 +42,11 @@ angular.module('neo4jApp.directives')
             exportService.downloadPNGFromSVG(svg, 'graph')
             svg.remove()
           )
+          scope.$on('reset.frame.views', ->
+            while elm[0].firstChild
+              elm[0].removeChild elm[0].firstChild
+          )
 
-          unbind()
 
       dir.getDimensions = (view) ->
         boundingBox = view.boundingBox()

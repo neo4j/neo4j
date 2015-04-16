@@ -150,6 +150,10 @@ angular.module('neo4jApp.controllers')
       messages
 
 
+    $scope.rerunCommand = (frame) ->
+      $scope.$broadcast('reset.frame.views')
+      frame.exec()
+
     # Listen for export events bubbling up the controller hierarchy
     # and forward them down to the child controller that has access to
     # the required SVG elements.

@@ -51,7 +51,10 @@ angular.module('neo4jApp.directives')
                   visit(child)
             visit plan.root
             display()
-          unbind()
+          scope.$on('reset.frame.views', ->
+            while elm[0].firstChild
+              elm[0].removeChild elm[0].firstChild
+          )
 
       dir.getDimensions = (element)->
         node = d3.select(element)
