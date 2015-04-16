@@ -1,8 +1,8 @@
-h4 Favorites
-  a.create-folder(ng-click='folderService.create()')
-    .fa.fa-plus
-    | New folder
 .inner
+  h4 Favorites
+    a.create-folder(ng-click='folderService.create()')
+      .fa.fa-plus
+      | New folder
   .droppable(ng-repeat='folder in folders')
     h5.folder(ng-click='folderService.expand(folder)', ng-if="folder.id != 'root'", ng-class="{folded: !folder.expanded}")
       i.fa.fa-caret-right(ng-class="{'fa-rotate-90': folder.expanded}")
