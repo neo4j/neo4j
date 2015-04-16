@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{EntityByIdRhs => CommandEntityByIdRhs}
 
-case class NodeByIdSeek(idName: IdName, nodeIds: EntityByIdRhs, argumentIds: Set[IdName])
-                       (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalLeafPlan with LogicalPlanWithoutExpressions {
+case class EntityByIdRhs(expr: Expression, sizeHint: Option[Int] = None) {
+  def map(f: Expression => Expression): EntityByIdRhs = copy(expr = f(expr))
 
-  def availableSymbols: Set[IdName] = argumentIds + idName
+  def asCommandEntityByIdRhs: CommandEntityByIdRhs = CommandEntityByIdRhs(expr.asCommandExpression)
 }

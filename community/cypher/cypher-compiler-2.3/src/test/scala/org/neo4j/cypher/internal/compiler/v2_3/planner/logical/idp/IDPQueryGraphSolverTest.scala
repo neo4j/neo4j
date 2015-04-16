@@ -763,7 +763,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
       val plan = queryGraphSolver.plan(cfg.qg)
       plan should equal(
-        DirectedRelationshipByIdSeek("r", EntityByIdExprs(Seq(SignedDecimalIntegerLiteral("42")(pos))), "a", "b", Set.empty)(null)
+        DirectedRelationshipByIdSeek("r", EntityByIdRhs(Collection(Seq(SignedDecimalIntegerLiteral("42")(pos)))(pos), Some(1)), "a", "b", Set.empty)(null)
       )
 
       verify(monitor).initTableFor(cfg.qg, 0)

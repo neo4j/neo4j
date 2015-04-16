@@ -32,5 +32,5 @@ case class DirectedRelationshipByIdSeek(idName: IdName,
   def availableSymbols: Set[IdName] = argumentIds ++ Set(idName, startNode, endNode)
 
   override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
-    copy(relIds = relIds.mapExpressions(f(argumentIds, _)))(solved)
+    copy(relIds = relIds.map(f(argumentIds, _)))(solved)
 }

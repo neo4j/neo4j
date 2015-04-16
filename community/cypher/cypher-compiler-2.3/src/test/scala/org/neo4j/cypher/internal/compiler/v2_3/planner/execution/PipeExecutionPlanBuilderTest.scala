@@ -21,13 +21,12 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.execution
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
-import org.neo4j.cypher.internal.compiler.v2_3.ast.{Collection, SignedDecimalIntegerLiteral, SignedIntegerLiteral}
+import org.neo4j.cypher.internal.compiler.v2_3.ast.{Collection, Expression, SignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{True, expressions => legacy}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.PipeInfo
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.{EntityByIdExprs => PipeEntityByIdExprs, _}
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Cardinality
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{EntityByIdExprs => PlanEntityByIdExprs, _}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{EntityByIdRhs => PlanEntityByIdRhs, _}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{EntityByIdRhs => PipeEntityByIdRhs, _}
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.Clock
 
@@ -73,65 +72,65 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
   }
 
   test("simple node by id seek query") {
-    val astLiteral: SignedIntegerLiteral = SignedDecimalIntegerLiteral("42")_
-    val logicalPlan = NodeByIdSeek(IdName("n"), PlanEntityByIdExprs(Seq(astLiteral)), Set.empty)_
+    val astLiteral: Expression = Collection(Seq(SignedDecimalIntegerLiteral("42")_))_
+    val logicalPlan = NodeByIdSeek(IdName("n"), PlanEntityByIdRhs(astLiteral, Some(1)), Set.empty)_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(NodeByIdSeekPipe("n", PipeEntityByIdExprs(Seq(astLiteral.asCommandExpression)))())
+    pipeInfo.pipe should equal(NodeByIdSeekPipe("n", PipeEntityByIdRhs(astLiteral.asCommandExpression))())
   }
 
   test("simple node by id seek query with multiple values") {
     val astCollection: Collection = Collection(
       Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_)
     )_
-    val logicalPlan = NodeByIdSeek(IdName("n"), PlanEntityByIdExprs(Seq(astCollection)), Set.empty)_
+    val logicalPlan = NodeByIdSeek(IdName("n"), PlanEntityByIdRhs(astCollection, Some(3)), Set.empty)_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(NodeByIdSeekPipe("n", PipeEntityByIdExprs(Seq(astCollection.asCommandExpression)))())
+    pipeInfo.pipe should equal(NodeByIdSeekPipe("n", PipeEntityByIdRhs(astCollection.asCommandExpression))())
   }
 
   test("simple relationship by id seek query") {
-    val astLiteral: SignedIntegerLiteral = SignedDecimalIntegerLiteral("42")_
+    val astLiteral: Expression = Collection(Seq(SignedDecimalIntegerLiteral("42")_))_
     val fromNode = "from"
     val toNode = "to"
-    val logicalPlan = DirectedRelationshipByIdSeek(IdName("r"), PlanEntityByIdExprs(Seq(astLiteral)), IdName(fromNode), IdName(toNode), Set.empty)_
+    val logicalPlan = DirectedRelationshipByIdSeek(IdName("r"), PlanEntityByIdRhs(astLiteral, Some(1)), IdName(fromNode), IdName(toNode), Set.empty)_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(DirectedRelationshipByIdSeekPipe("r", PipeEntityByIdExprs(Seq(astLiteral.asCommandExpression)), toNode, fromNode)())
+    pipeInfo.pipe should equal(DirectedRelationshipByIdSeekPipe("r", PipeEntityByIdRhs(astLiteral.asCommandExpression), toNode, fromNode)())
   }
 
   test("simple relationship by id seek query with multiple values") {
-    val astCollection: Seq[SignedIntegerLiteral] =
-      Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_)
+    val astCollection: Expression =
+      Collection(Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_))_
 
     val fromNode = "from"
     val toNode = "to"
-    val logicalPlan = DirectedRelationshipByIdSeek(IdName("r"), PlanEntityByIdExprs(astCollection), IdName(fromNode), IdName(toNode), Set.empty)_
+    val logicalPlan = DirectedRelationshipByIdSeek(IdName("r"), PlanEntityByIdRhs(astCollection, Some(3)), IdName(fromNode), IdName(toNode), Set.empty)_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(DirectedRelationshipByIdSeekPipe("r", PipeEntityByIdExprs(astCollection.map(_.asCommandExpression)), toNode, fromNode)())
+    pipeInfo.pipe should equal(DirectedRelationshipByIdSeekPipe("r", PipeEntityByIdRhs(astCollection.asCommandExpression), toNode, fromNode)())
   }
 
   test("simple undirected relationship by id seek query with multiple values") {
-    val astCollection: Seq[SignedIntegerLiteral] =
-      Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_)
+    val astCollection: Expression =
+      Collection(Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_))_
 
     val fromNode = "from"
     val toNode = "to"
-    val logicalPlan = UndirectedRelationshipByIdSeek(IdName("r"), PlanEntityByIdExprs(astCollection), IdName(fromNode), IdName(toNode), Set.empty)_
+    val logicalPlan = UndirectedRelationshipByIdSeek(IdName("r"), PlanEntityByIdRhs(astCollection, Some(3)), IdName(fromNode), IdName(toNode), Set.empty)_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(UndirectedRelationshipByIdSeekPipe("r", PipeEntityByIdExprs(astCollection.map(_.asCommandExpression)), toNode, fromNode)())
+    pipeInfo.pipe should equal(UndirectedRelationshipByIdSeekPipe("r", PipeEntityByIdRhs(astCollection.asCommandExpression), toNode, fromNode)())
   }
 
   test("simple cartesian product") {
