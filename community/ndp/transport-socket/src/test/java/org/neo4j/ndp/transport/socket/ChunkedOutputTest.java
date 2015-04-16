@@ -22,19 +22,21 @@ package org.neo4j.ndp.transport.socket;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
+
+import java.nio.ByteBuffer;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import java.nio.ByteBuffer;
+import org.neo4j.kernel.impl.util.HexPrinter;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.ndp.messaging.v1.util.BytePrinter.hex;
 
 public class ChunkedOutputTest
 {
@@ -51,8 +53,8 @@ public class ChunkedOutputTest
 
         // Then
         assertThat( writtenData.limit(), equalTo( 7 ) );
-        assertThat( hex( writtenData, 0, 7 ),
-                equalTo( "00 03 01 00 02 00 00 " ) );
+        assertThat( HexPrinter.hex( writtenData, 0, 7 ),
+                equalTo( "00 03 01 00 02 00 00" ) );
     }
 
     @Test
@@ -67,9 +69,9 @@ public class ChunkedOutputTest
 
         // Then
         assertThat( writtenData.limit(), equalTo( 32 ) );
-        assertThat( hex( writtenData, 0, 32 ),
+        assertThat( HexPrinter.hex( writtenData, 0, 32 ),
                 equalTo( "00 08 00 00 00 00 00 00    00 01 00 08 00 00 00 00    " +
-                         "00 00 00 02 00 08 00 00    00 00 00 00 00 03 00 00\n" ) );
+                         "00 00 00 02 00 08 00 00    00 00 00 00 00 03 00 00" ) );
     }
 
     @Before
