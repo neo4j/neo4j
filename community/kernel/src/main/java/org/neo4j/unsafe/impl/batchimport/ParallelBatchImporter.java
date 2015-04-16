@@ -30,9 +30,9 @@ import org.neo4j.helpers.Format;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.api.CountsAccessor;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
@@ -124,7 +124,7 @@ public class ParallelBatchImporter implements BatchImporter
         NodeLabelsCache nodeLabelsCache = null;
         long startTime = currentTimeMillis();
         boolean hasBadEntries = false;
-        File badFile = config.badFile( storeDir );
+        File badFile = new File( storeDir, Configuration.BAD_FILE_NAME );
         try ( BatchingNeoStore neoStore = new BatchingNeoStore( fileSystem, storeDir, config,
                     writeMonitor, logProvider, monitors, writerFactory, additionalInitialIds );
               OutputStream badOutput = new BufferedOutputStream( fileSystem.openAsOutputStream( badFile, false ) );

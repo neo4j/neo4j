@@ -101,9 +101,8 @@ public abstract class PageCacheTest<T extends PageCache>
     @Rule
     public RepeatRule repeatRule = new RepeatRule();
 
+    protected static final File file = new File( "a" );
     protected static ExecutorService executor;
-
-    protected final File file = new File( "a" );
 
     protected int recordSize = 9;
     protected int maxPages = 20;
@@ -326,6 +325,18 @@ public abstract class PageCacheTest<T extends PageCache>
     public void cachePageSizeMustBePowerOfTwo() throws IOException
     {
         getPageCache( fs, maxPages, 31, PageCacheTracer.NULL );
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void mustHaveAtLeastTwoPages() throws Exception
+    {
+        getPageCache( fs, 1, pageCachePageSize, PageCacheTracer.NULL );
+    }
+
+    @Test
+    public void mustAcceptTwoPagesAsMinimumConfiguration() throws Exception
+    {
+        getPageCache( fs, 2, pageCachePageSize, PageCacheTracer.NULL );
     }
 
     @Test( timeout = 1000 )

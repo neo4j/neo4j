@@ -152,6 +152,14 @@ public class CsvInput implements Input
                                     @Override
                                     public void validate( InputRelationship entity )
                                     {
+                                        if ( entity.startNode() == null )
+                                        {
+                                            throw new DataException( entity + " is missing " + Type.START_ID + " field" );
+                                        }
+                                        if ( entity.endNode() == null )
+                                        {
+                                            throw new DataException( entity + " is missing " + Type.END_ID + " field" );
+                                        }
                                         if ( !entity.hasTypeId() && entity.type() == null )
                                         {
                                             throw new DataException( entity + " is missing " + Type.TYPE + " field" );

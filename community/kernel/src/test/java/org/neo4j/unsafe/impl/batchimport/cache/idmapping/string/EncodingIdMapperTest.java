@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -49,7 +50,9 @@ import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.SimpleInputIterator;
 import org.neo4j.unsafe.impl.batchimport.input.SimpleInputIteratorWrapper;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -63,6 +66,7 @@ import static java.lang.System.currentTimeMillis;
 
 import static org.neo4j.helpers.progress.ProgressListener.NONE;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper.NO_MONITOR;
+import static org.neo4j.unsafe.impl.batchimport.input.Collectors.badCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.Group.GLOBAL;
 import static org.neo4j.unsafe.impl.batchimport.input.SimpleInputIteratorWrapper.wrap;
 
@@ -232,6 +236,39 @@ public class EncodingIdMapperTest
         // THEN
         verify( collector, times( 1 ) ).collectDuplicateNode( "10", 2, GLOBAL.name(), "source:1", "source:3" );
         verifyNoMoreInteractions( collector );
+    }
+
+    @Test
+    public void shouldIncludeSourceLocationsOfCollisions() throws Exception
+    {
+        // GIVEN
+        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, new StringEncoder(), new Radix.String(),
+                NO_MONITOR );
+        final List<Object> idList = Arrays.<Object>asList( "10", "9", "10" );
+        InputIterable<Object> ids = wrap( "source", idList );
+
+        Group group = new Group.Adapter( GLOBAL.id(), "global" );
+        try ( ResourceIterator<Object> iterator = ids.iterator() )
+        {
+            for ( int i = 0; iterator.hasNext(); i++ )
+            {
+                mapper.put( iterator.next(), i, group );
+            }
+        }
+
+        // WHEN
+        try
+        {
+            mapper.prepare( ids, badCollector( new ByteArrayOutputStream(), 0 ), NONE );
+            fail( "Should have failed" );
+        }
+        catch ( DuplicateInputIdException e )
+        {
+            // THEN
+            assertThat( e.getMessage(), containsString( "10" ) );
+            assertThat( e.getMessage(), containsString( "source:1" ) );
+            assertThat( e.getMessage(), containsString( "source:3" ) );
+        }
     }
 
     @Test
