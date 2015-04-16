@@ -20,6 +20,7 @@
 package org.neo4j.server;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
@@ -59,7 +60,10 @@ public class NeoServerPortConflictDocIT extends ExclusiveServerTestBase
             }
 
             logProvider.assertAtLeastOnce(
-                    AssertableLogProvider.inLog( containsString( "CommunityNeoServer" ) ).error( "Failed to start Neo Server on port %d: %s", 9999, "java.net.BindException: Address already in use" )
+                    AssertableLogProvider.inLog( containsString( "CommunityNeoServer" ) ).error(
+                            "Failed to start Neo Server on port %d: %s",
+                            9999, startsWith( "java.net.BindException: Address already in use" )
+                    )
             );
             server.stop();
         }

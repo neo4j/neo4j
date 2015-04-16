@@ -213,7 +213,7 @@ public class BatchInserterImpl implements BatchInserter
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 
         JobScheduler jobScheduler = life.add( new Neo4jJobScheduler() );
-        logService = new StoreLogService( NullLogProvider.getInstance(), fileSystem, this.storeDir, jobScheduler );
+        logService = life.add( new StoreLogService( NullLogProvider.getInstance(), fileSystem, this.storeDir, jobScheduler ) );
         msgLog = logService.getInternalLog( getClass() );
         storeLocker = new StoreLocker( fileSystem );
         storeLocker.checkLock( this.storeDir );
