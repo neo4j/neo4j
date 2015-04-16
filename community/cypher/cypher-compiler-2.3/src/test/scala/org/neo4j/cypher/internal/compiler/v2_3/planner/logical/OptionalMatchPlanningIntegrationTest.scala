@@ -31,7 +31,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
 
   test("should build plans containing joins") {
     (new given {
-      cost =  {
+      cost = {
         case (_: AllNodesScan, _) => 2000000.0
         case (_: NodeByLabelScan, _) => 20.0
         case (_: Expand, _) => 10.0
@@ -40,12 +40,9 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
         case _ => Double.MaxValue
       }
     } planFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b").plan should equal(
-      Projection(
-        OuterHashJoin(Set("b"),
-          Expand(NodeByLabelScan("a", LazyLabel("X"), Set.empty)(solved), "a", Direction.OUTGOING, Seq(), "b", "r1")(solved),
-          Expand(NodeByLabelScan("c", LazyLabel("Y"), Set.empty)(solved), "c", Direction.INCOMING, Seq(), "b", "r2")(solved)
-        )(solved),
-        expressions = Map("b" -> ident("b"))
+      OuterHashJoin(Set("b"),
+        Expand(NodeByLabelScan("a", LazyLabel("X"), Set.empty)(solved), "a", Direction.OUTGOING, Seq(), "b", "r1")(solved),
+        Expand(NodeByLabelScan("c", LazyLabel("Y"), Set.empty)(solved), "c", Direction.INCOMING, Seq(), "b", "r2")(solved)
       )(solved)
     )
   }
@@ -58,7 +55,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
 
   test("should build simple optional expand") {
     planFor("MATCH n OPTIONAL MATCH n-[:NOT_EXIST]->x RETURN n").plan.endoRewrite(unnestOptional) match {
-      case Projection(OptionalExpand(
+      case OptionalExpand(
       AllNodesScan(IdName("n"), _),
       IdName("n"),
       Direction.OUTGOING,
@@ -67,13 +64,13 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       _,
       _,
       _
-      ), _) => ()
+      ) => ()
     }
   }
 
   test("should build optional ProjectEndpoints") {
     planFor("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)<-[r]-(b2) RETURN a1, r, b2").plan match {
-      case Projection(
+      case
       Apply(
       Limit(
       Expand(
@@ -83,14 +80,14 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       Argument(args), IdName("r"), IdName("b2"), false, IdName("a1"), true, None, true, SimplePatternLength
       )
       )
-      ), _) =>
+      ) =>
         args should equal(Set(IdName("r"), IdName("a1")))
     }
   }
 
   test("should build optional ProjectEndpoints with extra predicates") {
     planFor("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a2)<-[r]-(b2) WHERE a1 = a2 RETURN a1, r, b2").plan match {
-      case Projection(Apply(
+      case Apply(
       Limit(Expand(AllNodesScan(IdName("b1"), _), _, _, _, _, _, _), _),
       Optional(
       Selection(
@@ -101,7 +98,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       )
       )
       )
-      ), _) =>
+      ) =>
         args should equal(Set(IdName("r"), IdName("a1")))
         val predicate: Expression = Equals(Identifier("a1")_, Identifier("a2")_)_
         predicates should equal(Seq(predicate))
@@ -110,7 +107,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
 
   test("should build optional ProjectEndpoints with extra predicates 2") {
     planFor("MATCH (a1)-[r]->(b1) WITH r LIMIT 1 OPTIONAL MATCH (a2)-[r]->(b2) RETURN a2, r, b2").plan  match {
-      case Projection(Apply(
+      case Apply(
       Limit(Expand(AllNodesScan(IdName("b1"), _), _, _, _, _, _, _), _),
       Optional(
       ProjectEndpoints(
@@ -118,7 +115,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       IdName("r"), IdName("a2"), false, IdName("b2"), false, None, true, SimplePatternLength
       )
       )
-      ), _) =>
+      ) =>
         args should equal(Set(IdName("r")))
     }
   }
@@ -126,14 +123,11 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   test("should solve multiple optional matches") {
     val plan = planFor("MATCH a OPTIONAL MATCH (a)-[:R1]->(x1) OPTIONAL MATCH (a)-[:R2]->(x2) RETURN a, x1, x2").plan.endoRewrite(unnestOptional)
     plan should equal(
-      Projection(
+      OptionalExpand(
         OptionalExpand(
-          OptionalExpand(
-            AllNodesScan(IdName("a"), Set.empty)(solved),
-            IdName("a"), Direction.OUTGOING, List(RelTypeName("R1") _), IdName("x1"), IdName("  UNNAMED27"), ExpandAll, Seq.empty)(solved),
-          IdName("a"), Direction.OUTGOING, List(RelTypeName("R2") _), IdName("x2"), IdName("  UNNAMED58"), ExpandAll, Seq.empty)(solved),
-        Map("a" -> ident("a"), "x1" -> ident("x1"), "x2" -> ident("x2"))
-      )(solved)
+          AllNodesScan(IdName("a"), Set.empty)(solved),
+          IdName("a"), Direction.OUTGOING, List(RelTypeName("R1") _), IdName("x1"), IdName("  UNNAMED27"), ExpandAll, Seq.empty)(solved),
+        IdName("a"), Direction.OUTGOING, List(RelTypeName("R2") _), IdName("x2"), IdName("  UNNAMED58"), ExpandAll, Seq.empty)(solved)
     )
   }
 
@@ -146,11 +140,8 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
     val allNodesN:LogicalPlan = AllNodesScan(IdName("n"),Set())(s)
     val predicate: Expression = In(Property(ident("m"), PropertyKeyName("prop") _) _, Collection(List(SignedDecimalIntegerLiteral("42") _)) _) _
     plan should equal(
-      Projection(
-        OptionalExpand( allNodesN, IdName( "n" ), Direction.BOTH, Seq.empty, IdName( "m" ), IdName( "r" ), ExpandAll,
-          Vector( predicate ) )( s ),
-        Map("m" -> ident("m"))
-      )(s)
+      OptionalExpand(allNodesN, IdName("n"), Direction.BOTH, Seq.empty, IdName("m"), IdName("r"), ExpandAll,
+        Vector(predicate))(s)
     )
   }
 }

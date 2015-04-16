@@ -51,7 +51,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(ProjectionNewPipe(SingleRowPipe(), Map("42" -> legacy.Literal(42)))())
+    pipeInfo.pipe should equal(ProjectionPipe(SingleRowPipe(), Map("42" -> legacy.Literal(42)))())
   }
 
   test("simple pattern query") {

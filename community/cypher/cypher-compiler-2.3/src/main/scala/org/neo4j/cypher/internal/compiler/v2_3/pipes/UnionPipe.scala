@@ -21,13 +21,16 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{NoChildren, InternalPlanDescription, PlanDescriptionImpl, TwoChildren}
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{InternalPlanDescription, PlanDescriptionImpl, TwoChildren}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 
 case class UnionPipe(sources: List[Pipe], columns:List[String])(implicit val monitor: PipeMonitor) extends Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = new UnionIterator(sources, state)
 
-  def planDescription: InternalPlanDescription = PlanDescriptionImpl(this.id, "Union", NoChildren, Seq.empty, identifiers) // TODO: This is wrong. Missing children
+  def planDescription: InternalPlanDescription =
+    sources.map(_.planDescription).reduce[InternalPlanDescription] {
+      case (l, r) => new PlanDescriptionImpl(this.id, "Union", TwoChildren(l, r), Seq.empty, identifiers)
+    }
 
   def symbols: SymbolTable = new SymbolTable(columns.map(k => k -> CTAny).toMap)
 
@@ -49,7 +52,7 @@ case class NewUnionPipe(l: Pipe, r: Pipe)
   def planDescriptionWithoutCardinality: InternalPlanDescription =
     new PlanDescriptionImpl(this.id, "Union", TwoChildren(l.planDescription, r.planDescription), Seq.empty, identifiers)
 
-  def symbols: SymbolTable = l.symbols
+  def symbols: SymbolTable = l.symbols intersect r.symbols
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
     l.createResults(state) ++ r.createResults(state)
