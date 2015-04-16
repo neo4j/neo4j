@@ -171,19 +171,36 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
   test("query that lacks support from Birk") {
     given(
       "CREATE ()")
+    .withCypherVersion(CypherVersion.v2_3)
+    .withRuntime(CompiledRuntimeName)
+    .shouldHaveCypherVersion(CypherVersion.v2_3)
+    .shouldHaveRuntime(InterpretedRuntimeName)
+  }
+
+  test("query that should go through Birk") {
+    given(
+      "MATCH a-->b RETURN a")
       .withCypherVersion(CypherVersion.v2_3)
       .withRuntime(CompiledRuntimeName)
       .shouldHaveCypherVersion(CypherVersion.v2_3)
-      .shouldHaveRuntime(InterpretedRuntimeName)
-      .shouldHavePlanner(RulePlannerName)
+      .shouldHaveRuntime(CompiledRuntimeName)
+      .shouldHavePlanner(CostPlannerName)
   }
 
-  test("children should be empty") {
-    given("match n return n").planDescription.getChildren.size() should equal(0)
+  test("AllNodesScan should be the only child of the plan") {
+    val description = given("match n return n").planDescription
+    val children = description.getChildren
+    children should have size 1
+    children.get(0).getName should be("AllNodesScan")
   }
 
-  test("DbHits should be properly formatted") {
-    given("match n return n").planDescription.getArguments.get("DbHits") should equal(1)
+  test("DbHits should should contain proper values") {
+    val description = given("match n return n").planDescription
+    println(description)
+    val children = description.getChildren
+    children should have size 1
+    description.getArguments.get("DbHits") should equal(0) // ProduceResults has no hits
+    children.get(0).getArguments.get("DbHits") should equal(1) // AllNodesScan has 1 hit
   }
 
   test("Rows should be properly formatted") {

@@ -69,7 +69,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   def solvedWithEstimation(cardinality: Cardinality) = CardinalityEstimation.lift(PlannerQuery.empty, cardinality)
 
   implicit class LogicalPlanningEnvironment[C <: LogicalPlanningConfiguration](config: C) {
-    lazy val semanticTable = config.computeSemanticTable
+    lazy val semanticTable = config.updateSemanticTableWithTokens(SemanticTable())
 
     def metricsFactory = new MetricsFactory {
       def newCostModel() =
@@ -172,14 +172,18 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       val semanticState = semanticChecker.check(queryString, parsedStatement, devNullLogger, mkException)
       val (rewrittenStatement, _, postConditions) = astRewriter.rewrite(queryString, parsedStatement, semanticState)
 
-      CostBasedExecutablePlanBuilder.rewriteStatement(rewrittenStatement, semanticState.scopeTree, semanticTable, rewriterSequencer, postConditions, mock[AstRewritingMonitor]) match {
+      val table = SemanticTable(types = semanticState.typeTable, recordedScopes = semanticState.recordedScopes)
+      config.updateSemanticTableWithTokens(table)
+
+      CostBasedExecutablePlanBuilder.rewriteStatement(rewrittenStatement, semanticState.scopeTree, table, rewriterSequencer, postConditions, mock[AstRewritingMonitor]) match {
         case (ast: Query, newTable) =>
           tokenResolver.resolve(ast)(newTable, planContext)
           val unionQuery = ast.asUnionQuery
           val metrics = metricsFactory.newMetrics(planContext.statistics)
           val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
-          val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, newTable, queryGraphSolver, QueryGraphSolverInput.empty)
-          (planner.plan(unionQuery)(context), newTable)
+          val context = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, table, queryGraphSolver, QueryGraphSolverInput.empty)
+          val plan = planner.plan(unionQuery)(context)
+          (plan, table)
       }
     }
 

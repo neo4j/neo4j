@@ -22,7 +22,7 @@ package org.neo4j.cypher
 class UnionAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
   test("should be able to create text output from union queries") {
     // When
-    val result = executeWithRulePlanner("merge (a) return a union merge (a) return a")
+    val result = executeWithAllPlanners("MATCH (a:A) RETURN a AS a UNION MATCH (a:B) RETURN a AS a")
 
     // Then
     result.columns should not be empty
