@@ -27,15 +27,15 @@ import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{NoChildren, Plan
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.{CTNode, SymbolTable}
 import org.neo4j.cypher.internal.helpers.{IsCollection, CollectionSupport}
 
-case class EntityByIdRhs(expr: Expression) {
+case class SeekArgs(coll: Expression) {
   def expressions(ctx: ExecutionContext, state: QueryState): Iterable[Any] = {
-    expr(ctx)(state) match {
+    coll(ctx)(state) match {
       case IsCollection (values) => values
     }
   }
 }
 
-case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: EntityByIdRhs)
+case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: SeekArgs)
                            (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends Pipe
   with CollectionSupport

@@ -68,9 +68,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     // then
     resultPlans should equal(
-      Seq(NodeByIdSeek(IdName("n"), EntityByIdRhs(Collection(Seq(
+      Seq(NodeByIdSeek(IdName("n"), MultiSeekRhs(Collection(Seq(
         SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_
-      ))_, Some(3)), Set.empty)(solved))
+      ))_), Set.empty)(solved))
     )
   }
 
@@ -103,7 +103,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     // then
     resultPlans should equal(
-      Seq(NodeByIdSeek(IdName("n"), EntityByIdRhs(Identifier("arr")_), Set("arr"))(solved))
+      Seq(NodeByIdSeek(IdName("n"), MultiSeekRhs(Identifier("arr")_), Set("arr"))(solved))
     )
   }
 
@@ -202,9 +202,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val resultPlans = idSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Seq(DirectedRelationshipByIdSeek(IdName("r"), EntityByIdRhs(Collection(Seq(
+    resultPlans should equal(Seq(DirectedRelationshipByIdSeek(IdName("r"), MultiSeekRhs(Collection(Seq(
       SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_
-    ))_, Some(3)), from, end, Set.empty)(solved)))
+    ))_), from, end, Set.empty)(solved)))
   }
 
   test("simple undirected relationship by id seek with a collection of relationship ids") {
@@ -239,9 +239,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val resultPlans = idSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Seq(UndirectedRelationshipByIdSeek(IdName("r"), EntityByIdRhs(Collection(Seq(
+    resultPlans should equal(Seq(UndirectedRelationshipByIdSeek(IdName("r"), MultiSeekRhs(Collection(Seq(
       SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_
-    ))_, Some(3)), from, end, Set.empty)(solved)))
+    ))_), from, end, Set.empty)(solved)))
   }
 
   test("simple undirected typed relationship by id seek with a collection of relationship ids") {
@@ -285,7 +285,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     resultPlans should equal(
       Seq(Selection(
         Seq(Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("X")_)_),
-        UndirectedRelationshipByIdSeek(IdName("r"), EntityByIdRhs(Collection(Seq(SignedDecimalIntegerLiteral("42")_))_, Some(1)), from, end, Set.empty)(solved)
+        UndirectedRelationshipByIdSeek(IdName("r"), MultiSeekRhs(Collection(Seq(SignedDecimalIntegerLiteral("42")_))_), from, end, Set.empty)(solved)
       )(solved))
     )
   }
@@ -337,7 +337,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
             Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("Y")_)(pos)
           ))_
         ),
-        UndirectedRelationshipByIdSeek(IdName("r"), EntityByIdRhs(Collection(Seq(SignedDecimalIntegerLiteral("42")_))_, Some(1)), from, end, Set.empty)(solved)
+        UndirectedRelationshipByIdSeek(IdName("r"), MultiSeekRhs(Collection(Seq(SignedDecimalIntegerLiteral("42")_))_), from, end, Set.empty)(solved)
     )(solved)))
   }
 }

@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 
 
-case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: EntityByIdRhs, toNode: String, fromNode: String)
+case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs, toNode: String, fromNode: String)
                                            (val estimatedCardinality: Option[Double] = None)
                                            (implicit pipeMonitor: PipeMonitor)
   extends Pipe

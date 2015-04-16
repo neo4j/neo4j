@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.cardinality
 
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans.{SeekRhs, Seek, IdName}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.logical.{Cardinality, Multiplier, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{Selections, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.GraphStatistics
@@ -42,9 +42,9 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     case False() =>
       Selectivity(0)
 
-    // WHERE x.prop IN [...]
-    case In(Property(Identifier(name), propertyKey), Collection(expressions)) =>
-      calculateSelectivityForPropertyEquality(name, expressions, selections, propertyKey)
+    // WHERE x.prop =/IN ...
+    case Seek(Property(Identifier(name), propertyKey), rhs) =>
+      calculateSelectivityForPropertyEquality(name, rhs, selections, propertyKey)
 
     // Implicit relation uniqueness predicates
     case Not(Equals(lhs: Identifier, rhs: Identifier))
@@ -59,15 +59,10 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       val selectivities = expressions.toSeq.map(apply)
       combiner.orTogetherSelectivities(selectivities).get // We can trust the AST to never have empty ORs
 
-    // WHERE id(x) = {param}
-    case In(func@FunctionInvocation(_, _, IndexedSeq(_)), Parameter(_))
+    // WHERE id(x) =/IN [...]
+    case Seek(func@FunctionInvocation(_, _, IndexedSeq(_)), rhs)
       if func.function == Some(functions.Id) =>
-      DEFAULT_NUMBER_OF_ID_LOOKUPS / stats.nodesWithLabelCardinality(None)
-
-    // WHERE id(x) IN [...]
-    case In(func@FunctionInvocation(_, _, IndexedSeq(_)), c: Collection)
-      if func.function == Some(functions.Id) =>
-      c.expressions.size / stats.nodesWithLabelCardinality(None)
+      rhs.sizeHint.map(Cardinality(_)).getOrElse(DEFAULT_NUMBER_OF_ID_LOOKUPS) / stats.nodesWithLabelCardinality(None)
 
     // WHERE <expr> = <expr>
     case _: Equals =>
@@ -97,10 +92,10 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     labelCardinality / nodeCardinality
   }
 
-  private def calculateSelectivityForPropertyEquality(identifier: String, expressions: Seq[Expression], selections: Selections, propertyKey: PropertyKeyName)
+  private def calculateSelectivityForPropertyEquality(identifier: String, rhs: SeekRhs, selections: Selections, propertyKey: PropertyKeyName)
                                                      (implicit semanticTable: SemanticTable): Selectivity = {
     val labels = selections.labelsOnNode(IdName(identifier))
-    val indexSelectivities: Seq[Selectivity] = labels.toSeq.flatMap {
+    val indexSelectivities = labels.toSeq.flatMap {
       labelName =>
         (labelName.id, propertyKey.id) match {
           case (Some(labelId), Some(propertyKeyId)) =>
@@ -111,11 +106,10 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
         }
     }
 
-    val expandedSelectivities = Stream.from(0).take(expressions.size).flatMap(_ => indexSelectivities)
+    val itemSelectivity = combiner.orTogetherSelectivities(indexSelectivities).getOrElse(DEFAULT_EQUALITY_SELECTIVITY)
+    val size = rhs.sizeHint.getOrElse(DEFAULT_NUMBER_OF_INDEX_LOOKUPS.amount.toInt)
+    val selectivity = combiner.orTogetherSelectivities(1.to(size).map(_ => itemSelectivity)).getOrElse(DEFAULT_EQUALITY_SELECTIVITY)
 
-    val selectivity: Option[Selectivity] = combiner.orTogetherSelectivities(expandedSelectivities)
-
-    selectivity.
-      getOrElse(DEFAULT_EQUALITY_SELECTIVITY * Multiplier(expressions.size)) // If no index exist, use default equality selectivity
+    selectivity
   }
 }

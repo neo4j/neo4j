@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{NoChildren, Plan
 import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 
-case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: EntityByIdRhs, toNode: String, fromNode: String)
+case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs, toNode: String, fromNode: String)
                                              (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends Pipe
   with CollectionSupport
