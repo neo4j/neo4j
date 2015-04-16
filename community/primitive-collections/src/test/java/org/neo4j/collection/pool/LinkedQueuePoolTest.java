@@ -70,15 +70,21 @@ public class LinkedQueuePoolTest
         ExecutorService executor = Executors.newCachedThreadPool();
 
         // WHEN
-        acquireFromPool( pool, 5, executor );
+        List<FlyweightHolder<Object>> flyweightHolders = acquireFromPool( pool, 5, executor );
 
         executor.shutdown();
+        for ( FlyweightHolder<Object> flyweightHolder : flyweightHolders )
+        {
+            flyweightHolder.release();
+        }
         executor.awaitTermination( 10, TimeUnit.SECONDS );
 
         // THEN
+        // clock didn't tick, these two are not set
         assertEquals( -1, stateMonitor.currentPeakSize.get() );
-        assertEquals( -1, stateMonitor.targetSize.get() ); // that means the target size was not updated
-        assertEquals( 0, stateMonitor.disposed.get() ); // no disposed happened, since the count to update is 10
+        assertEquals( -1, stateMonitor.targetSize.get() );
+        // no disposed happened, since the count to update is 5
+        assertEquals( 0, stateMonitor.disposed.get() );
     }
 
     @Test
@@ -91,16 +97,23 @@ public class LinkedQueuePoolTest
         ExecutorService executor = Executors.newCachedThreadPool();
 
         // WHEN
-        acquireFromPool( pool, 15, executor );
+        List<FlyweightHolder<Object>> flyweightHolders = acquireFromPool( pool, 15, executor );
 
         executor.shutdown();
+        for ( FlyweightHolder<Object> flyweightHolder : flyweightHolders )
+        {
+            flyweightHolder.release();
+        }
         executor.awaitTermination( 10, TimeUnit.SECONDS );
 
         // THEN
+        // The clock hasn't ticked, so these two should be unset
         assertEquals( -1, stateMonitor.currentPeakSize.get() );
-        assertEquals( 15, stateMonitor.created.get() );
         assertEquals( -1, stateMonitor.targetSize.get() );
-        assertEquals( 0, stateMonitor.disposed.get() );
+        // We obviously created 15 threads
+        assertEquals( 15, stateMonitor.created.get() );
+        // And of those 10 are not needed and therefore disposed on release (min size is 5)
+        assertEquals( 10, stateMonitor.disposed.get() );
     }
 
     @Test
@@ -345,9 +358,7 @@ public class LinkedQueuePoolTest
         }
     }
 
-    private LinkedQueuePool<Object> getLinkedQueuePool( StatefulMonitor stateMonitor,
-                                                     FakeClock clock,
-                                                     int minSize )
+    private LinkedQueuePool<Object> getLinkedQueuePool( StatefulMonitor stateMonitor, FakeClock clock, int minSize )
     {
         return new LinkedQueuePool<>( minSize, new Factory<Object>()
             {
@@ -360,7 +371,8 @@ public class LinkedQueuePoolTest
             new LinkedQueuePool.CheckStrategy.TimeoutCheckStrategy( 100, clock ), stateMonitor );
     }
 
-    private <R> List<FlyweightHolder<R>>  acquireFromPool( final LinkedQueuePool<R> pool, int times, Executor executor ) throws InterruptedException
+    private <R> List<FlyweightHolder<R>>  acquireFromPool( final LinkedQueuePool<R> pool, int times, Executor executor )
+            throws InterruptedException
     {
         List<FlyweightHolder<R>> acquirers = new LinkedList<>();
         final CountDownLatch latch = new CountDownLatch( times );
