@@ -26,6 +26,8 @@ import symbols._
 case class Collection(expressions: Seq[Expression])(val position: InputPosition) extends Expression {
   def semanticCheck(ctx: SemanticContext) = expressions.semanticCheck(ctx) chain specifyType(possibleTypes)
 
+  def map(f: Expression => Expression) = copy(expressions = expressions.map(f))(position)
+
   private def possibleTypes: TypeGenerator = state => expressions match {
     case Seq() => CTCollection(CTAny).covariant
     case _     => expressions.leastUpperBoundsOfTypes(state).wrapInCollection

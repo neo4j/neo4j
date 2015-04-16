@@ -37,13 +37,13 @@ object QueryPlannerConfiguration {
     leafPlanners = LeafPlannerList(
       argumentLeafPlanner,
 
-      // MATCH n WHERE id(n) = {id} RETURN n
+      // MATCH n WHERE id(n) IN ... RETURN n
       idSeekLeafPlanner,
 
-      // MATCH n WHERE n.prop = {val} RETURN n
+      // MATCH n WHERE n.prop IN ... RETURN n
       uniqueIndexSeekLeafPlanner,
 
-      // MATCH n WHERE n.prop = {val} RETURN n
+      // MATCH n WHERE n.prop IN ... RETURN n
       indexSeekLeafPlanner,
 
       // MATCH n WHERE has(n.prop) RETURN n

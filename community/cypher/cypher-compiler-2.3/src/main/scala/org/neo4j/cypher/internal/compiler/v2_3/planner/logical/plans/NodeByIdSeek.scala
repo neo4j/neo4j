@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
 
-case class NodeByIdSeek(idName: IdName, nodeIds: EntityByIdRhs, argumentIds: Set[IdName])
+case class NodeByIdSeek(idName: IdName, nodeIds: SeekRhs, argumentIds: Set[IdName])
                        (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalLeafPlan with LogicalPlanWithoutExpressions {
 

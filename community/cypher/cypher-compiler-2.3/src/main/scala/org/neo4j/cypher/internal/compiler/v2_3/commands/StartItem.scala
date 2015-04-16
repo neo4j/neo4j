@@ -113,7 +113,6 @@ case class ManyQueryExpression[T](expression: T) extends QueryExpression[T] {
   def map[R](f: (T) => R) = ManyQueryExpression(f(expression))
 }
 
-
 case class SchemaIndex(identifier: String, label: String, property: String, kind: SchemaIndexKind, query: Option[QueryExpression[Expression]])
   extends StartItem(identifier, query.map(q => Arguments.LegacyExpression(q.expression)).toSeq :+ Arguments.Index(label, property))
   with ReadOnlyStartItem with Hint with NodeStartItemIdentifiers {

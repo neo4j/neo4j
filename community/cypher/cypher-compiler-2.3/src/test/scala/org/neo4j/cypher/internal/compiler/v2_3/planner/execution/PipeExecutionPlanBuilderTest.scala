@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionCo
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{Collection, Expression, SignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{True, expressions => legacy}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.PipeInfo
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{SeekArgs => PipeEntityByIdRhs, _}
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{EntityByIdRhs => PlanEntityByIdRhs, _}
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.{EntityByIdRhs => PipeEntityByIdRhs, _}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.Clock
 
@@ -73,7 +73,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
   test("simple node by id seek query") {
     val astLiteral: Expression = Collection(Seq(SignedDecimalIntegerLiteral("42")_))_
-    val logicalPlan = NodeByIdSeek(IdName("n"), PlanEntityByIdRhs(astLiteral, Some(1)), Set.empty)_
+    val logicalPlan = NodeByIdSeek(IdName("n"), MultiSeekRhs(astLiteral), Set.empty)_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -85,7 +85,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
     val astCollection: Collection = Collection(
       Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_)
     )_
-    val logicalPlan = NodeByIdSeek(IdName("n"), PlanEntityByIdRhs(astCollection, Some(3)), Set.empty)_
+    val logicalPlan = NodeByIdSeek(IdName("n"), MultiSeekRhs(astCollection), Set.empty)_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -97,7 +97,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
     val astLiteral: Expression = Collection(Seq(SignedDecimalIntegerLiteral("42")_))_
     val fromNode = "from"
     val toNode = "to"
-    val logicalPlan = DirectedRelationshipByIdSeek(IdName("r"), PlanEntityByIdRhs(astLiteral, Some(1)), IdName(fromNode), IdName(toNode), Set.empty)_
+    val logicalPlan = DirectedRelationshipByIdSeek(IdName("r"), MultiSeekRhs(astLiteral), IdName(fromNode), IdName(toNode), Set.empty)_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -111,7 +111,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
     val fromNode = "from"
     val toNode = "to"
-    val logicalPlan = DirectedRelationshipByIdSeek(IdName("r"), PlanEntityByIdRhs(astCollection, Some(3)), IdName(fromNode), IdName(toNode), Set.empty)_
+    val logicalPlan = DirectedRelationshipByIdSeek(IdName("r"), MultiSeekRhs(astCollection), IdName(fromNode), IdName(toNode), Set.empty)_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -125,7 +125,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
     val fromNode = "from"
     val toNode = "to"
-    val logicalPlan = UndirectedRelationshipByIdSeek(IdName("r"), PlanEntityByIdRhs(astCollection, Some(3)), IdName(fromNode), IdName(toNode), Set.empty)_
+    val logicalPlan = UndirectedRelationshipByIdSeek(IdName("r"), MultiSeekRhs(astCollection), IdName(fromNode), IdName(toNode), Set.empty)_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
