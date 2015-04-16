@@ -103,6 +103,15 @@ class CypherCompatibilityTest extends CypherFunSuite {
     }
   }
 
+  test("should fail if asked to execute query with COST instead to fallback to RULE") {
+    runWithConfig() {
+      engine =>
+        engine.execute("MATCH (n:Movie) SET n.title = 'The Movie'")
+        engine.execute("PLANNER RULE MATCH (n:Movie) SET n.title = 'The Movie'")
+        intercept[InvalidArgumentException](engine.execute("PLANNER COST MATCH (n:Movie) SET n.title = 'The Movie'"))
+    }
+  }
+
   private def assertProfiled(engine: ExecutionEngine, q: String) {
     val result = engine.execute(q)
     val ignored = result.toList
