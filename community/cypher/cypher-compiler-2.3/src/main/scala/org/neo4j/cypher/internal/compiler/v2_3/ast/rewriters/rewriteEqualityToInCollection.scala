@@ -30,6 +30,8 @@ case object rewriteEqualityToInCollection extends Rewriter {
 
   override def apply(that: AnyRef) = bottomUp(instance)(that)
 
+  // TODO: Consider removing this and replace matching of In/Equals with matching of Seek
+
   private val instance: Rewriter = Rewriter.lift {
     // a.prop = b.prop are not rewritten, since they can't be turned into index lookups anyway
     case e@Equals(_:Property, _:Property) => e

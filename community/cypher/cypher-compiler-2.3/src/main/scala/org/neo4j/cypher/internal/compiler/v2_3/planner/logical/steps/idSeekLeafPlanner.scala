@@ -31,18 +31,12 @@ object idSeekLeafPlanner extends LeafPlanner {
     val predicates: Seq[Expression] = queryGraph.selections.flatPredicates
     val arguments = queryGraph.argumentIds.map(n => Identifier(n.name)(null))
 
-    val idSeekPredicates: Seq[(In, Identifier, EntityByIdRhs)] = predicates.collect {
-      // MATCH (a)-[r]->b WHERE id(r) IN [...]
-      // MATCH a WHERE id(a) IN value
-      case predicate@In(func@FunctionInvocation(_, _, IndexedSeq(idExpr: Identifier)), idsExpr@Collection(idValueExprs))
-        if func.function == Some(functions.Id) && idsExpr.dependencies.forall(arguments) && !arguments(idExpr) =>
-        (predicate, idExpr, EntityByIdRhs(idsExpr, Some(idValueExprs.size)))
-
+    val idSeekPredicates: Seq[(Expression, Identifier, SeekRhs)] = predicates.collect {
       // MATCH (a)-[r]->b WHERE id(r) IN expr
       // MATCH a WHERE id(a) IN {param}
-      case predicate@In(func@FunctionInvocation(_, _, IndexedSeq(idExpr: Identifier)), idsExpr)
-        if func.function == Some(functions.Id) && idsExpr.dependencies.forall(arguments) && !arguments(idExpr) =>
-        (predicate, idExpr, EntityByIdRhs(idsExpr))
+      case predicate@Seek(func@FunctionInvocation(_, _, IndexedSeq(idExpr: Identifier)), rhs)
+        if func.function == Some(functions.Id) && rhs.expr.dependencies.forall(arguments) && !arguments(idExpr) =>
+        (predicate, idExpr, rhs)
     }
 
     val candidatePlans = idSeekPredicates.collect {
@@ -60,7 +54,7 @@ object idSeekLeafPlanner extends LeafPlanner {
     candidatePlans
   }
 
-  private def planRelationshipByIdSeek(relationship: PatternRelationship, idValues: EntityByIdRhs, predicates: Seq[Expression], argumentIds: Set[IdName])
+  private def planRelationshipByIdSeek(relationship: PatternRelationship, idValues: SeekRhs, predicates: Seq[Expression], argumentIds: Set[IdName])
                                       (implicit context: LogicalPlanningContext): LogicalPlan = {
     val (left, right) = relationship.nodes
     val name = relationship.name

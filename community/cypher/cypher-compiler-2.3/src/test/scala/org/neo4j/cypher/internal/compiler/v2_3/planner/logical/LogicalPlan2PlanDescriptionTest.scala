@@ -25,13 +25,14 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.ManyQueryExpression
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{LabelName, _}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{EntityByIdRhs => PlanEntityByIdRhs, _}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.compiler.v2_3.{InputPosition, LabelId, PropertyKeyId}
 import org.neo4j.graphdb.Direction
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPropertyChecks {
+
   test("tests") {
 
     implicit def emptySolvedWithCardinality(i: Int): PlannerQuery with CardinalityEstimation =
@@ -57,7 +58,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       , NodeByLabelScan(IdName("node"), LazyLabel("X"), Set.empty)(33) ->
         PlanDescriptionImpl(id, "NodeByLabelScan", NoChildren, Seq(LabelName("X"), EstimatedRows(33)), Set("node"))
 
-      , NodeByIdSeek(IdName("node"), PlanEntityByIdRhs(Collection(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos)), Set.empty)(333) ->
+      , NodeByIdSeek(IdName("node"), MultiSeekRhs(Collection(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos)), Set.empty)(333) ->
         PlanDescriptionImpl(id, "NodeByIdSeek", NoChildren, Seq(EstimatedRows(333)), Set("node"))
 
       , NodeIndexSeek(IdName("x"), LabelToken("Label", LabelId(0)), PropertyKeyToken("Prop", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(StringLiteral("Andres")(pos)))(pos)), Set.empty)(23) ->

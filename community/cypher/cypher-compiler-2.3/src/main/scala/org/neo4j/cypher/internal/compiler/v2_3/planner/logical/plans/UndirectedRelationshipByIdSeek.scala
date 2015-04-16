@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
 
 case class UndirectedRelationshipByIdSeek(idName: IdName,
-                                          relIds: EntityByIdRhs,
+                                          relIds: SeekRhs,
                                           leftNode: IdName,
                                           rightNode: IdName,
                                           argumentIds: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
