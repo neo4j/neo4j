@@ -1,5 +1,7 @@
 .code-bar
   ul.actions.list-inline
+    li.dropdown(dropdown="", ng-show='frame.type == "cypher" && !getNonZeroStatisticsFields(frame).length')
+      a.button.fa.fa-refresh(ng-click="rerunCommand(frame)", tooltip='Re-run statement', tooltip-placement='bottom')
     li.dropdown(dropdown="", ng-show='frame.type == "http"')
       a.button.fa.fa-download.dropdown-toggle(dropdown-toggle="")
       ul.dropdown-menu
