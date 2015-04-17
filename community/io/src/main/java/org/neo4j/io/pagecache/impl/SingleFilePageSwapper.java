@@ -95,6 +95,10 @@ public class SingleFilePageSwapper implements PageSwapper
             {
                 return page.swapIn( channel, offset, filePageSize );
             }
+            else
+            {
+                page.clear();
+            }
         }
         catch ( ClosedChannelException e )
         {

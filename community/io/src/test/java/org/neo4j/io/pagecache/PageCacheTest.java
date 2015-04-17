@@ -68,6 +68,7 @@ import org.neo4j.io.pagecache.randomharness.Command;
 import org.neo4j.io.pagecache.randomharness.PageCountRecordFormat;
 import org.neo4j.io.pagecache.randomharness.Phase;
 import org.neo4j.io.pagecache.randomharness.RandomPageCacheTestHarness;
+import org.neo4j.io.pagecache.randomharness.Record;
 import org.neo4j.io.pagecache.randomharness.RecordFormat;
 import org.neo4j.io.pagecache.randomharness.StandardRecordFormat;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
@@ -78,6 +79,7 @@ import org.neo4j.test.RepeatRule;
 
 import static java.lang.Long.toHexString;
 import static org.hamcrest.Matchers.both;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -3846,5 +3848,51 @@ public abstract class PageCacheTest<T extends PageCache>
             swapOutLatch.await();
             verifyRecordsInFile( file, recordsPerFilePage );
         }
+    }
+
+    @Test
+    public void mustReadZerosFromBeyondEndOfFile() throws Exception
+    {
+        StandardRecordFormat recordFormat = new StandardRecordFormat();
+        File[] files = {
+                new File( "1" ), new File( "2" ), new File( "3" ), new File( "4" ), new File( "5" ), new File( "6" ),
+                new File( "7" ), new File( "8" ), new File( "9" ), new File( "0" ), new File( "A" ), new File( "B" ),
+        };
+        for ( int fileId = 0; fileId < files.length; fileId++ )
+        {
+            File file = files[fileId];
+            StoreChannel channel = fs.open( file, "rw" );
+            for ( int recordId = 0; recordId < fileId + 1; recordId++ )
+            {
+                Record record = recordFormat.createRecord( file, recordId );
+                recordFormat.writeRecord( record, channel );
+            }
+            channel.close();
+        }
+
+        int pageSize = nextPowerOf2( recordFormat.getRecordSize() * (files.length + 1) );
+        getPageCache( fs, 2, pageSize, PageCacheTracer.NULL );
+
+        int fileId = files.length;
+        while ( fileId --> 0 )
+        {
+            File file = files[fileId];
+            try ( PagedFile pf = pageCache.map( file, pageSize );
+                  PageCursor cursor = pf.io( 0, PF_SHARED_LOCK ) )
+            {
+                int pageCount = 0;
+                while( cursor.next() )
+                {
+                    pageCount++;
+                    recordFormat.assertRecordsWrittenCorrectly( cursor );
+                }
+                assertThat( "pages in file " + file, pageCount, greaterThan( 0 ) );
+            }
+        }
+    }
+
+    private int nextPowerOf2( int i )
+    {
+        return 1 << (32 - Integer.numberOfLeadingZeros( i ) );
     }
 }
