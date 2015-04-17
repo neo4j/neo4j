@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.neo4j.graphdb.Direction;
 
 /**
@@ -189,7 +191,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Home
         private static final int INDEX_LOOP = 3;
 
         private LongArray array;
-        private int nextFreeId = 0;
+        private final AtomicInteger nextFreeId = new AtomicInteger();
 
         RelGroupCache( NumberArrayFactory arrayFactory, long chunkSize )
         {
@@ -216,7 +218,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Home
 
         private int nextFreeId()
         {
-            return nextFreeId++;
+            return nextFreeId.getAndIncrement();
         }
 
         private void initializeGroup( long relGroupIndex, int type )

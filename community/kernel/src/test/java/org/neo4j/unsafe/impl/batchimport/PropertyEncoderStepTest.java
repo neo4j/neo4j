@@ -85,7 +85,7 @@ public class PropertyEncoderStepTest
         step.setDownstream( downstream );
 
         // WHEN
-        step.start( false );
+        step.start( 0 );
         step.receive( 0, smallbatch() );
         step.endOfUpstream();
         awaitCompleted( step, control );
