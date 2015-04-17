@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{ManyQueryExpression, QueryExpression, SingleQueryExpression}
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.SeekArgs
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.{ManySeekArgs, SeekArgs}
 
 object Seek {
   def unapply(v: Any) = v match {
@@ -51,7 +51,7 @@ case class SingleSeekRhs(expr: Expression) extends SeekRhs {
     SingleQueryExpression(expr)
 
   def asCommandSeekArgs: SeekArgs =
-    SeekArgs(Collection(Seq(expr))(expr.position).asCommandExpression)
+    ManySeekArgs(Collection(Seq(expr))(expr.position).asCommandExpression)
 }
 
 case class MultiSeekRhs(expr: Expression) extends SeekRhs {
@@ -69,5 +69,5 @@ case class MultiSeekRhs(expr: Expression) extends SeekRhs {
     ManyQueryExpression(expr)
 
   def asCommandSeekArgs: SeekArgs =
-    SeekArgs(expr.asCommandExpression)
+    ManySeekArgs(expr.asCommandExpression)
 }

@@ -44,7 +44,7 @@ class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
 
     // when
     val result: Iterator[ExecutionContext] =
-      DirectedRelationshipByIdSeekPipe("a", SeekArgs(Collection(Literal(17))), to, from)().createResults(queryState)
+      DirectedRelationshipByIdSeekPipe("a", SingleSeekArg(Literal(17)), to, from)().createResults(queryState)
 
     // then
     result.toList should equal(List(Map("a" -> rel, "to" -> endNode, "from" -> startNode)))
@@ -67,7 +67,7 @@ class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
     val relName = "a"
     // whens
     val result =
-      DirectedRelationshipByIdSeekPipe(relName, SeekArgs(Collection(Literal(42), Literal(21))), to, from)().createResults(queryState)
+      DirectedRelationshipByIdSeekPipe(relName, ManySeekArgs(Collection(Literal(42), Literal(21))), to, from)().createResults(queryState)
 
     // then
     result.toList should equal(List(
@@ -87,7 +87,7 @@ class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
 
     // when
     val result: Iterator[ExecutionContext] =
-      DirectedRelationshipByIdSeekPipe("a", SeekArgs(Collection(Literal(null))), to, from)().createResults(queryState)
+      DirectedRelationshipByIdSeekPipe("a", SingleSeekArg(Literal(null)), to, from)().createResults(queryState)
 
     // then
     result.toList should be(empty)

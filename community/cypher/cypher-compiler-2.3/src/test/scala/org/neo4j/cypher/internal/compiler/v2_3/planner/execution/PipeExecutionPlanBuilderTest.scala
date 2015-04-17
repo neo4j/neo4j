@@ -22,9 +22,10 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.execution
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{Collection, Expression, SignedDecimalIntegerLiteral}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{True, expressions => legacy}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.PipeInfo
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.{SeekArgs => PipeEntityByIdRhs, _}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.graphdb.Direction
@@ -73,36 +74,36 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
   test("simple node by id seek query") {
     val astLiteral: Expression = Collection(Seq(SignedDecimalIntegerLiteral("42")_))_
-    val logicalPlan = NodeByIdSeek(IdName("n"), MultiSeekRhs(astLiteral), Set.empty)_
+    val logicalPlan = NodeByIdSeek(IdName("n"), ManySeekableArgs(astLiteral), Set.empty)_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(NodeByIdSeekPipe("n", PipeEntityByIdRhs(astLiteral.asCommandExpression))())
+    pipeInfo.pipe should equal(NodeByIdSeekPipe("n", SingleSeekArg(Literal(42)))())
   }
 
   test("simple node by id seek query with multiple values") {
     val astCollection: Collection = Collection(
       Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_)
     )_
-    val logicalPlan = NodeByIdSeek(IdName("n"), MultiSeekRhs(astCollection), Set.empty)_
+    val logicalPlan = NodeByIdSeek(IdName("n"), ManySeekableArgs(astCollection), Set.empty)_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(NodeByIdSeekPipe("n", PipeEntityByIdRhs(astCollection.asCommandExpression))())
+    pipeInfo.pipe should equal(NodeByIdSeekPipe("n", ManySeekArgs(astCollection.asCommandExpression))())
   }
 
   test("simple relationship by id seek query") {
     val astLiteral: Expression = Collection(Seq(SignedDecimalIntegerLiteral("42")_))_
     val fromNode = "from"
     val toNode = "to"
-    val logicalPlan = DirectedRelationshipByIdSeek(IdName("r"), MultiSeekRhs(astLiteral), IdName(fromNode), IdName(toNode), Set.empty)_
+    val logicalPlan = DirectedRelationshipByIdSeek(IdName("r"), ManySeekableArgs(astLiteral), IdName(fromNode), IdName(toNode), Set.empty)_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(DirectedRelationshipByIdSeekPipe("r", PipeEntityByIdRhs(astLiteral.asCommandExpression), toNode, fromNode)())
+    pipeInfo.pipe should equal(DirectedRelationshipByIdSeekPipe("r", SingleSeekArg(Literal(42)), toNode, fromNode)())
   }
 
   test("simple relationship by id seek query with multiple values") {
@@ -111,12 +112,12 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
     val fromNode = "from"
     val toNode = "to"
-    val logicalPlan = DirectedRelationshipByIdSeek(IdName("r"), MultiSeekRhs(astCollection), IdName(fromNode), IdName(toNode), Set.empty)_
+    val logicalPlan = DirectedRelationshipByIdSeek(IdName("r"), ManySeekableArgs(astCollection), IdName(fromNode), IdName(toNode), Set.empty)_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(DirectedRelationshipByIdSeekPipe("r", PipeEntityByIdRhs(astCollection.asCommandExpression), toNode, fromNode)())
+    pipeInfo.pipe should equal(DirectedRelationshipByIdSeekPipe("r", ManySeekArgs(astCollection.asCommandExpression), toNode, fromNode)())
   }
 
   test("simple undirected relationship by id seek query with multiple values") {
@@ -125,12 +126,12 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
     val fromNode = "from"
     val toNode = "to"
-    val logicalPlan = UndirectedRelationshipByIdSeek(IdName("r"), MultiSeekRhs(astCollection), IdName(fromNode), IdName(toNode), Set.empty)_
+    val logicalPlan = UndirectedRelationshipByIdSeek(IdName("r"), ManySeekableArgs(astCollection), IdName(fromNode), IdName(toNode), Set.empty)_
     val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(UndirectedRelationshipByIdSeekPipe("r", PipeEntityByIdRhs(astCollection.asCommandExpression), toNode, fromNode)())
+    pipeInfo.pipe should equal(UndirectedRelationshipByIdSeekPipe("r", ManySeekArgs(astCollection.asCommandExpression), toNode, fromNode)())
   }
 
   test("simple cartesian product") {

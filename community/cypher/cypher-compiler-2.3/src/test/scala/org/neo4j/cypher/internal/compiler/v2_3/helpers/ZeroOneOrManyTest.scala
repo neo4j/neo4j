@@ -17,13 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
+package org.neo4j.cypher.internal.compiler.v2_3.helpers
 
-import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-case class NodeByIdSeek(idName: IdName, nodeIds: SeekableArgs, argumentIds: Set[IdName])
-                       (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalLeafPlan with LogicalPlanWithoutExpressions {
+class ZeroOneOrManyTest extends CypherFunSuite {
 
-  def availableSymbols: Set[IdName] = argumentIds + idName
+  test("zero") {
+    ZeroOneOrMany(Seq.empty) should be(Zero)
+  }
+
+  test("one") {
+    ZeroOneOrMany(Seq('a)) should be(One('a))
+  }
+
+  test("many") {
+    ZeroOneOrMany(Seq('a, 'b)) should be(Many(Seq('a, 'b)))
+  }
 }

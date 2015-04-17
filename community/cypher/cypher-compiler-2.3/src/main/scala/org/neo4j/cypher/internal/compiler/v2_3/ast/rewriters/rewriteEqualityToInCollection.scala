@@ -30,24 +30,9 @@ case object rewriteEqualityToInCollection extends Rewriter {
 
   override def apply(that: AnyRef) = bottomUp(instance)(that)
 
-  // TODO: Consider removing this and replace matching of In/Equals with matching of Seek
+  // TODO: Consider removing this or introducing proper Seek ast nodes
 
   private val instance: Rewriter = Rewriter.lift {
-    // a.prop = b.prop are not rewritten, since they can't be turned into index lookups anyway
-    case e@Equals(_:Property, _:Property) => e
-
-    // id(a) = id(b) are also not rewritten to IN predicates since they can't be optimized at later stages
-    case e@Equals(a:FunctionInvocation, b:FunctionInvocation)
-      if a.function == Some(functions.Id) && b.function == Some(functions.Id) => e
-
-    // id(a) = b.prop is also not rewritten to IN predicates as they cannot be optimized later on
-    case e@Equals(a:FunctionInvocation, b:Property)
-      if a.function == Some(functions.Id) => e
-
-    // a.prop = id(b) is also not rewritten to IN predicates as they cannot be optimized later on
-    case e@Equals(a:Property, b:FunctionInvocation)
-      if b.function == Some(functions.Id) => e
-
     // id(a) = value => id(a) IN [value]
     case predicate@Equals(func@FunctionInvocation(_, _, IndexedSeq(idExpr)), idValueExpr)
       if func.function == Some(functions.Id) =>
