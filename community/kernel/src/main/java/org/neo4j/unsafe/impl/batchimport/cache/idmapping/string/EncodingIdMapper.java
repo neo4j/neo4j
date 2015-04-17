@@ -35,6 +35,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.LongBitsManipulator;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.ParallelSort.Comparator;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 
@@ -45,6 +46,7 @@ import static java.lang.String.format;
 import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToInt;
 import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedCompare;
 import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedDifference;
+import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.ParallelSort.DEFAULT;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.SourceInformation.encodeSourceInformation;
 
 /**
@@ -124,7 +126,6 @@ public class EncodingIdMapper implements IdMapper
     private final LongArray collisionNodeIdCache;
     // These 3 caches below are needed only during duplicate input id detection, but referenced here so
     // that the memory visitor can see them when they are active.
-    private LongArray collisionDataCache;
     private LongArray collisionSourceDataCache;
     private IntArray collisionTrackerCache;
 
@@ -250,7 +251,7 @@ public class EncodingIdMapper implements IdMapper
             try
             {
                 sortBuckets = new ParallelSort( radix, dataCache, dataCacheStats, trackerCache, trackerStats,
-                        processorsForSorting, progress ).run();
+                        processorsForSorting, progress, DEFAULT ).run();
 
                 if ( detectAndMarkCollisions( progress ) > 0 )
                 {
@@ -404,7 +405,6 @@ public class EncodingIdMapper implements IdMapper
         NumberArrayStats collisionDataCacheStats = new NumberArrayStats();
         List<String> sourceDescriptions = new ArrayList<>();
         String lastSourceDescription = null;
-        collisionDataCache = newLongArray( cacheFactory, CACHE_CHUNK_SIZE );
         collisionSourceDataCache = newLongArray( cacheFactory, CACHE_CHUNK_SIZE );
         for ( long i = 0; ids.hasNext(); )
         {
@@ -423,7 +423,6 @@ public class EncodingIdMapper implements IdMapper
                             id, id.getClass().getSimpleName(), clearCollision( eId ), eIdFromInputId );
                     int collisionIndex = collisionValues.size();
                     collisionValues.add( id );
-                    collisionDataCache.set( collisionIndex, eId );
                     collisionNodeIdCache.set( collisionIndex, i );
                     radix.registerRadixOf( eId );
                     collisionDataCacheStats.register( collisionIndex );
@@ -446,7 +445,6 @@ public class EncodingIdMapper implements IdMapper
         detectDuplicateInputIds( radix, collisionDataCacheStats, sourceDescriptions, collector );
 
         // We won't be needing these anymore
-        collisionDataCache = null;
         collisionSourceDataCache = null;
         collisionTrackerCache = null;
     }
@@ -454,9 +452,50 @@ public class EncodingIdMapper implements IdMapper
     private void detectDuplicateInputIds( Radix radix, NumberArrayStats collisionDataCacheStats,
             List<String> sourceDescriptions, Collector collector ) throws InterruptedException
     {
+        // We do this collision sort using ParallelSort which has the data cache and the tracker cache,
+        // the tracker cache gets sorted, data cache stays intact. In the collision data case we actually
+        // have one more layer in here so we have tracker cache pointing to collisionDataIndexCache
+        // pointing to dataCache. This can be done using the ParallelSort.Comparator abstraction.
+        //
+        // The Comparator below takes into account dataIndex for each eId its comparing so that an extra
+        // comparison based on dataIndex is done if it's comparing two equal eIds. We do this so that
+        // stretches of multiple equal eIds are sorted by dataIndex order, to be able to write an efficient
+        // duplication scanning below and to have deterministic duplication reporting.
+        Comparator comparator = new Comparator()
+        {
+            @Override
+            public boolean lt( long left, long pivot )
+            {
+                long leftEId = dataCache.get( left );
+                long pivotEId = dataCache.get( pivot );
+                if ( DEFAULT.lt( leftEId, pivotEId ) )
+                {
+                    return true;
+                }
+                if ( leftEId == pivotEId )
+                {
+                    return left < pivot;
+                }
+                return false;
+            }
+
+            @Override
+            public boolean ge( long right, long pivot )
+            {
+                long rightEId = dataCache.get( right );
+                long pivotEId = dataCache.get( pivot );
+                if ( DEFAULT.ge( rightEId, pivotEId ) )
+                {
+                    return rightEId == pivotEId ? right > pivot : true;
+                }
+                return false;
+            }
+        };
+
         NumberArrayStats collisionTrackerCacheStats = new NumberArrayStats();
-        new ParallelSort( radix, collisionDataCache, collisionDataCacheStats,
-                collisionTrackerCache, collisionTrackerCacheStats, processorsForSorting, ProgressListener.NONE ).run();
+        new ParallelSort( radix, collisionNodeIdCache, collisionDataCacheStats,
+                collisionTrackerCache, collisionTrackerCacheStats, processorsForSorting,
+                ProgressListener.NONE, comparator ).run();
         // Here we have a populated C
         // We want to detect duplicate input ids within the
         long previousEid = 0;
@@ -466,7 +505,7 @@ public class EncodingIdMapper implements IdMapper
         for ( int i = 0; i < collisionTrackerCacheStats.size(); i++ )
         {
             int collisionIndex = collisionTrackerCache.get( i );
-            long eid = collisionDataCache.get( collisionIndex );
+            long eid = dataCache.get( collisionNodeIdCache.get( collisionIndex ) );
             long sourceInformation = collisionSourceDataCache.get( collisionIndex );
             source.decode( sourceInformation );
             long dataIndex = collisionNodeIdCache.get( i );
@@ -529,11 +568,6 @@ public class EncodingIdMapper implements IdMapper
         {
             cursor = 0;
         }
-    }
-
-    private IdGroup groupById( int groupId )
-    {
-        return idGroups[groupId];
     }
 
     private IdGroup groupOf( long dataIndex )
@@ -690,7 +724,6 @@ public class EncodingIdMapper implements IdMapper
     {
         nullSafeAcceptMemoryStatsVisitor( visitor, dataCache );
         nullSafeAcceptMemoryStatsVisitor( visitor, trackerCache );
-        nullSafeAcceptMemoryStatsVisitor( visitor, collisionDataCache );
         nullSafeAcceptMemoryStatsVisitor( visitor, collisionTrackerCache );
         nullSafeAcceptMemoryStatsVisitor( visitor, collisionSourceDataCache );
         nullSafeAcceptMemoryStatsVisitor( visitor, collisionNodeIdCache );
