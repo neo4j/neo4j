@@ -51,14 +51,11 @@ abstract class IndexLeafPlanner extends LeafPlanner {
       }
     }
 
-    val availableIdentifiers = qg.argumentIds.map(n => Identifier(n.name)(null))
+    val arguments = qg.argumentIds.map(n => Identifier(n.name)(null))
 
     predicates.collect {
-      case inPredicate@In(Property(identifier@Identifier(name), propertyKeyName), valueExpr)
-        if valueExpr.dependencies.forall(availableIdentifiers) &&
-          !qg.argumentIds.contains(IdName(name)) =>
-
-        producePlanFor(name, propertyKeyName, inPredicate, ManyQueryExpression(valueExpr))
+      case predicate@PropertySeek(lhs, rhs) if rhs.dependencies.forall(arguments) && !arguments(lhs.ident) =>
+        producePlanFor(lhs.name, lhs.propertyKey, predicate, rhs.asQueryExpression)
     }.flatten
   }
 
@@ -110,7 +107,7 @@ object indexSeekLeafPlanner extends IndexLeafPlanner {
 object legacyHintLeafPlanner extends LeafPlanner {
   def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext) = {
     qg.hints.toSeq.collect {
-      case hint: LegacyIndexHint =>
+      case hint: LegacyIndexHint if !qg.argumentIds(IdName(hint.identifier.name)) =>
         context.logicalPlanProducer.planLegacyHintSeek(IdName(hint.identifier.name), hint, qg.argumentIds)
     }
   }

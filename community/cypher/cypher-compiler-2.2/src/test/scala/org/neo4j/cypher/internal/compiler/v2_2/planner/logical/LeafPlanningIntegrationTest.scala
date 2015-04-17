@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
-import org.neo4j.cypher.internal.compiler.v2_2.commands.ManyQueryExpression
+import org.neo4j.cypher.internal.compiler.v2_2.commands.{SingleQueryExpression, ManyQueryExpression}
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_2.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v2_2.planner.LogicalPlanningTestSupport2
@@ -108,7 +108,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } planFor "MATCH (n:Awesome) WHERE id(n) = 42 RETURN n").plan should equal (
       Selection(
         List(HasLabels(Identifier("n")_, Seq(LabelName("Awesome")_))_),
-        NodeByIdSeek("n", EntityByIdExprs(Seq(SignedDecimalIntegerLiteral("42")_)), Set.empty)(solved)
+        NodeByIdSeek("n", MultiSeekRhs(Collection(Seq(SignedDecimalIntegerLiteral("42")_))_), Set.empty)(solved)
       )(solved)
     )
   }
@@ -119,7 +119,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } planFor "MATCH (n:Awesome) WHERE id(n) IN {param} RETURN n").plan should equal (
       Selection(
         List(HasLabels(Identifier("n")_, Seq(LabelName("Awesome")_))_),
-        NodeByIdSeek("n", EntityByIdParameter(Parameter("param")_), Set.empty)(solved)
+        NodeByIdSeek("n", MultiSeekRhs(Parameter("param")_), Set.empty)(solved)
       )(solved)
     )
   }
@@ -127,14 +127,14 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should build plans for directed rel by ID when the predicate is IN and rhs is a param") {
     (new given {
     } planFor "MATCH (a)-[r]->(b) WHERE id(r) IN {param} RETURN a, r, b").plan should equal (
-      DirectedRelationshipByIdSeek("r", EntityByIdParameter(Parameter("param")_), "a", "b", Set.empty)(solved)
+      DirectedRelationshipByIdSeek("r", MultiSeekRhs(Parameter("param")_), "a", "b", Set.empty)(solved)
     )
   }
 
   test("should build plans for undirected rel by ID when the predicate is IN and rhs is a param") {
     (new given {
     } planFor "MATCH (a)-[r]-(b) WHERE id(r) IN {param} RETURN a, r, b").plan should equal (
-      UndirectedRelationshipByIdSeek("r", EntityByIdParameter(Parameter("param")_), "a", "b", Set.empty)(solved)
+      UndirectedRelationshipByIdSeek("r", MultiSeekRhs(Parameter("param")_), "a", "b", Set.empty)(solved)
     )
   }
 
@@ -144,7 +144,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } planFor "MATCH (n:Awesome) WHERE id(n) IN [42, 64] RETURN n").plan should equal (
       Selection(
         List(HasLabels(Identifier("n")_, Seq(LabelName("Awesome")_))_),
-        NodeByIdSeek("n", EntityByIdExprs(Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("64")_)), Set.empty)(solved)
+        NodeByIdSeek("n", MultiSeekRhs(Collection(Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("64")_))_), Set.empty)(solved)
       )(solved)
     )
   }
@@ -287,7 +287,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       Aggregation(
         Apply(
           Projection(SingleRow()(solved),Map("arr" -> Collection(List(SignedDecimalIntegerLiteral("0")_, SignedDecimalIntegerLiteral("1")_, SignedDecimalIntegerLiteral("3")_))_))(solved),
-          NodeByIdSeek(IdName("n"),EntityByIdIdentifier(Identifier("arr")_),Set(IdName("arr")))(solved)
+          NodeByIdSeek(IdName("n"), MultiSeekRhs(Identifier("arr")_),Set(IdName("arr")))(solved)
         )(solved),
         Map(),Map("count(*)" -> CountStar()_)
       )(solved)

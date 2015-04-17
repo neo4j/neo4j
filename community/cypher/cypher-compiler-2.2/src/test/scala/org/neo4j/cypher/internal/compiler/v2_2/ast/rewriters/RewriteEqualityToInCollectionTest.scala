@@ -61,22 +61,6 @@ class RewriteEqualityToInCollectionTest extends CypherFunSuite with AstRewriting
       "WITH 42 as x MATCH (a) WHERE a.prop IN [x]")
   }
 
-  test("MATCH a,b WHERE id(a) = b.prop (dependencies on the RHS)") {
-    shouldNotRewrite("MATCH a,b WHERE id(a) = b.prop")
-  }
-
-  test("MATCH a,b WHERE a.prop = id(b) (dependencies on the RHS)") {
-    shouldNotRewrite("MATCH a,b WHERE a.prop = id(b)")
-  }
-
-  test("MATCH a,b WHERE a.prop = b.prop (dependencies on the RHS)") {
-    shouldNotRewrite("MATCH a,b WHERE a.prop = b.prop")
-  }
-
-  test("MATCH a,b WHERE id(a) = id(b) (dependencies on the RHS)") {
-    shouldNotRewrite("MATCH a,b WHERE id(a) = id(b)")
-  }
-
   private def shouldRewrite(from: String, to: String) {
     val original = parser.parse(from).asInstanceOf[Query]
     val expected = parser.parse(to).asInstanceOf[Query]

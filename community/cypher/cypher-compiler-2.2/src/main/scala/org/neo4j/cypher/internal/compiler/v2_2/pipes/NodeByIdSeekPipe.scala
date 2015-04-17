@@ -27,30 +27,15 @@ import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{NoChildren, Plan
 import org.neo4j.cypher.internal.compiler.v2_2.symbols.{CTNode, SymbolTable}
 import org.neo4j.cypher.internal.helpers.{IsCollection, CollectionSupport}
 
-sealed trait EntityByIdRhs {
-  def expressions(ctx: ExecutionContext, state: QueryState): Iterable[Any]
-}
-
-case class EntityByIdExpression(expression: Expression) extends EntityByIdRhs {
-  def expressions(ctx: ExecutionContext, state: QueryState) =
-    expression(ctx)(state) match {
-      case IsCollection(values) => values
+case class SeekArgs(coll: Expression) {
+  def expressions(ctx: ExecutionContext, state: QueryState): Iterable[Any] = {
+    coll(ctx)(state) match {
+      case IsCollection (values) => values
     }
+  }
 }
 
-case class EntityByIdParameter(parameter: ParameterExpression) extends EntityByIdRhs {
-  def expressions(ctx: ExecutionContext, state: QueryState) =
-    parameter(ctx)(state) match {
-      case IsCollection(values) => values
-    }
-}
-
-case class EntityByIdExprs(exprs: Seq[Expression]) extends EntityByIdRhs {
-  def expressions(ctx: ExecutionContext, state: QueryState) =
-    exprs.map(_.apply(ctx)(state))
-}
-
-case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: EntityByIdRhs)
+case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: SeekArgs)
                            (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends Pipe
   with CollectionSupport

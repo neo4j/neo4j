@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_2.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_2.planner.{CardinalityEstimation, PlannerQuery}
 
 case class DirectedRelationshipByIdSeek(idName: IdName,
-                                        relIds: EntityByIdRhs,
+                                        relIds: SeekRhs,
                                         startNode: IdName,
                                         endNode: IdName,
                                         argumentIds: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
@@ -32,5 +32,5 @@ case class DirectedRelationshipByIdSeek(idName: IdName,
   def availableSymbols: Set[IdName] = argumentIds ++ Set(idName, startNode, endNode)
 
   override def mapExpressions(f: (Set[IdName], Expression) => Expression): LogicalPlan =
-    copy(relIds = relIds.mapExpressions(f(argumentIds, _)))(solved)
+    copy(relIds = relIds.map(f(argumentIds, _)))(solved)
 }

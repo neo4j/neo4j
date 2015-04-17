@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_2.planDescription
 
 import org.neo4j.cypher.internal.compiler.v2_2.commands
-import org.neo4j.cypher.internal.compiler.v2_2.pipes.{Pipe, RonjaPipe, EntityByIdRhs => PipeEntityByIdRhs}
+import org.neo4j.cypher.internal.compiler.v2_2.pipes.{Pipe, RonjaPipe, SeekArgs => PipeEntityByIdRhs}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.graphdb.Direction
 
