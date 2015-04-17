@@ -56,7 +56,6 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
   test("should fallback to Rule for updates in 2.3") {
     given("create() return 1")
       .withCypherVersion(CypherVersion.v2_3)
-      .withPlanner(CostPlannerName)
       .shouldHaveCypherVersion(CypherVersion.v2_3)
       .shouldHavePlanner(RulePlannerName)
   }
