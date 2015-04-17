@@ -22,19 +22,58 @@ package org.neo4j.cypher.internal.compiler.v2_2.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v2_2.ast._
 import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_2.commands.{ManyQueryExpression, QueryExpression, SingleQueryExpression}
+import org.neo4j.cypher.internal.compiler.v2_2.functions
 import org.neo4j.cypher.internal.compiler.v2_2.pipes.SeekArgs
 
 object Seek {
   def unapply(v: Any) = v match {
-    case Equals(lhs, rhs) => Some(lhs -> SingleSeekRhs(rhs))
     case In(lhs, rhs) => Some(lhs -> MultiSeekRhs(rhs))
+    case Equals(lhs, rhs) => Some(lhs -> SingleSeekRhs(rhs))
     case _ => None
   }
 }
 
-trait SeekRhs {
+object IdSeek {
+  def unapply(v: Any) = v match {
+    case Seek(func@FunctionInvocation(_, _, IndexedSeq(ident: Identifier)), rhs)
+      if func.function == Some(functions.Id) && !rhs.dependencies(ident) =>
+      Some(IdSeekLhs(func, ident) -> rhs)
+    case _ =>
+      None
+  }
+}
+
+object PropertySeek {
+  def unapply(v: Any) = v match {
+    case Seek(prop@Property(ident: Identifier, propertyKey), rhs)
+      if !rhs.dependencies(ident) =>
+      Some(PropertySeekLhs(prop, ident) -> rhs)
+    case _ =>
+      None
+  }
+}
+
+sealed trait SeekLhs[T <: Expression] {
+  def expr: T
+  def ident: Identifier
+
+  def name = ident.name
+}
+
+case class IdSeekLhs(expr: FunctionInvocation, ident: Identifier)
+  extends SeekLhs[FunctionInvocation]
+
+case class PropertySeekLhs(expr: Property, ident: Identifier)
+  extends SeekLhs[Property] {
+
+  def propertyKey = expr.propertyKey
+}
+
+sealed trait SeekRhs {
   def expr: Expression
   def sizeHint: Option[Int]
+
+  def dependencies: Set[Identifier] = expr.dependencies
 
   def map(f: Expression => Expression): SeekRhs
 
@@ -43,7 +82,7 @@ trait SeekRhs {
 }
 
 case class SingleSeekRhs(expr: Expression) extends SeekRhs {
-  def sizeHint = None
+  def sizeHint = Some(1)
 
   override def map(f: Expression => Expression) = copy(f(expr))
 
