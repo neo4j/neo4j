@@ -34,6 +34,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
 
+import static java.util.Objects.*;
+
 /**
  * A {@link Log} implementation that applies a simple formatting to each log message.
  */
@@ -195,6 +197,8 @@ public class FormattedLog extends AbstractLog
         @Override
         protected void writeLog( PrintWriter out, String message )
         {
+            requireNonNull( message, "message" );
+
             lineStart( out );
             out.write( message );
             out.println();
@@ -203,19 +207,30 @@ public class FormattedLog extends AbstractLog
         @Override
         protected void writeLog( PrintWriter out, String message, Throwable throwable )
         {
+            requireNonNull( message, "message" );
+
             lineStart( out );
             out.write( message );
-            out.write( ' ' );
-            out.write( throwable.getMessage() );
-            out.println();
-            throwable.printStackTrace( out );
+            if ( throwable != null )
+            {
+                if ( throwable.getMessage() != null )
+                {
+                    out.write( ' ' );
+                    out.write( throwable.getMessage() );
+                }
+                out.println();
+                throwable.printStackTrace( out );
+            }
         }
 
         @Override
         protected void writeLog( PrintWriter out, String format, Object[] arguments )
         {
+            requireNonNull( format, "format" );
+
+            String message = String.format( format, arguments );
             lineStart( out );
-            out.format( format, arguments );
+            out.write( message );
             out.println();
         }
 
