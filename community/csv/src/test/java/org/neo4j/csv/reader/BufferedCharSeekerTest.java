@@ -41,6 +41,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
 
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
@@ -548,6 +549,52 @@ public class BufferedCharSeekerTest
             assertThat( e.getMessage(), containsString( ":0" ) );
             assertThat( e.getMessage(), containsString( "after that ending quote" ) );
         }
+    }
+
+    @Test
+    public void shouldParseMultilineFieldWhereEndQuoteIsOnItsOwnLine() throws Exception
+    {
+        // GIVEN
+        String data = lines(
+                "1,\"Bar\"",
+                "2,\"Bar",
+                "",
+                "Quux",
+                "\"",
+                "3,\"Bar",
+                "",
+                "Quux\"",
+                "" );
+        seeker = seeker( data );
+
+        // THEN
+        assertNextValue( seeker, mark, COMMA, "1" );
+        assertNextValue( seeker, mark, COMMA, "Bar" );
+        assertNextValue( seeker, mark, COMMA, "2" );
+        assertNextValue( seeker, mark, COMMA, lines(
+                "Bar",
+                "",
+                "Quux",
+                "" ) );
+        assertNextValue( seeker, mark, COMMA, "3" );
+        assertNextValue( seeker, mark, COMMA, lines(
+                "Bar",
+                "",
+                "Quux" ) );
+    }
+
+    private String lines( String... lines )
+    {
+        StringBuilder builder = new StringBuilder();
+        for ( String line : lines )
+        {
+            if ( builder.length() > 0 )
+            {
+                builder.append( format( "%n" ) );
+            }
+            builder.append( line );
+        }
+        return builder.toString();
     }
 
     private String[][] randomWeirdValues( int cols, int rows, char... except )
