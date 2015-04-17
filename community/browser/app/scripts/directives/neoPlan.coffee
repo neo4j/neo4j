@@ -46,7 +46,9 @@ angular.module('neo4jApp.directives')
 
           listenerExportSVG = scope.$on('export.plan.svg', ->
             svg = SVGUtils.prepareForExport(elm, dir.getDimensions(elm.get(0)))
-            exportService.download('plan.svg', 'image/svg+xml', new XMLSerializer().serializeToString(svg.node()))
+            svgData = new XMLSerializer().serializeToString(svg.node())
+            svgData = svgData.replace(/&nbsp;/g, "&#160;") #Workaround for non-breaking space support
+            exportService.download('plan.svg', 'image/svg+xml', svgData)
             svg.remove()
           )
           listenerExportPNG = scope.$on('export.plan.png', ->

@@ -53,6 +53,7 @@ angular.module('neo.exportable', ['neo.csv'])
 
       downloadPNGFromSVG: (svgObj, filename) ->
         svgData = new XMLSerializer().serializeToString(svgObj.node())
+        svgData = svgData.replace(/&nbsp;/g, "&#160;") #Workaround for non-breaking space support
         canvas = document.createElement("canvas")
         canvas.width = svgObj.attr('width')
         canvas.height = svgObj.attr('height')
