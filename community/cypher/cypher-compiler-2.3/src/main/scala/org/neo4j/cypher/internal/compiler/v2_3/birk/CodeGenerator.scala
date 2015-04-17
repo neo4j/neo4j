@@ -23,18 +23,17 @@ import java.util
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.neo4j.cypher.internal.ExecutionMode
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
-import org.neo4j.cypher.internal.compiler.v2_3.{PropertyKeyId, CostPlannerName}
+import org.neo4j.cypher.internal.compiler.v2_3.CostPlannerName
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaTypes.{INT, LONG, OBJECT, DOUBLE, STRING}
 import org.neo4j.cypher.internal.compiler.v2_3.birk.il._
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{PlanFingerprint, CompiledPlan}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledPlan, PlanFingerprint}
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v2_3.planner.{SemanticTable, CantCompileQueryException}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LogicalPlanIdentificationBuilder,
-LogicalPlan2PlanDescription}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_3.spi.{PlanContext, InstrumentedGraphStatistics}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LogicalPlan2PlanDescription, LogicalPlanIdentificationBuilder}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantCompileQueryException, SemanticTable}
+import org.neo4j.cypher.internal.compiler.v2_3.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.api.Statement
@@ -43,10 +42,27 @@ import scala.collection.Map
 import scala.collection.immutable.Stack
 
 object CodeGenerator {
+  def generateClass( instructions: Seq[Instruction] ) = {
+    val className = nextClassName()
+    val source = generateCodeFromInstructions(className, instructions)
+//    print(indentNicely(source))
+    Javac.compile(s"$packageName.$className",source )
+  }
+
+  object JavaTypes {
+    val LONG = "long"
+    val INT = "int"
+    val OBJECT = "Object"
+    val OBJECTARRAY = "Object[]"
+    val DOUBLE = "double"
+    val STRING = "String"
+    val NUMBER = "Number"
+  }
+
   private val packageName = "org.neo4j.cypher.internal.compiler.v2_3.birk.generated"
   private val nameCounter = new AtomicInteger(0)
 
-  def nextClassName(): String = {
+  private def nextClassName(): String = {
     val x = nameCounter.getAndIncrement
     s"GeneratedExecutionPlan$x"
   }
@@ -76,91 +92,21 @@ object CodeGenerator {
 
   def n = System.lineSeparator()
 
-  object JavaTypes {
-    val LONG = "long"
-    val INT = "int"
-    val OBJECT = "Object"
-    val OBJECTARRAY = "Object[]"
-    val DOUBLE = "double"
-    val STRING = "String"
-    val NUMBER = "Number"
-  }
-}
-
-class Namer(prefix: String) {
-  var varCounter = 0
-
-  def next(): String = {
-    varCounter += 1
-    prefix + varCounter
-  }
-
-  def nextWithType(typ: String): JavaSymbol = JavaSymbol(next(), typ)
-}
-
-case class JavaSymbol(name: String, javaType: String)
-
-class CodeGenerator {
-
-  import CodeGenerator.{n, nextClassName, packageName}
-  import scala.collection.JavaConverters._
-
-  def generate(plan: LogicalPlan, planContext: PlanContext, clock: Clock, semanticTable: SemanticTable) = {
-    plan match {
-      case _: ProduceResult =>
-        val className = nextClassName()
-        val planStatements: Seq[Instruction] = createResultAst(plan, semanticTable)
-        val source = generateCodeFromAst(className, planStatements)
-        val clazz = Javac.compile(s"$packageName.$className",source )
-
-        val fp = planContext.statistics match {
-          case igs: InstrumentedGraphStatistics =>
-            Some(PlanFingerprint(clock.currentTimeMillis(), planContext.txIdProvider(), igs.snapshot.freeze))
-          case _ =>
-            None
-        }
-
-        val idMap = LogicalPlanIdentificationBuilder(plan)
-        val description: InternalPlanDescription = LogicalPlan2PlanDescription(plan, idMap)
-
-        val builder = (st: Statement, db: GraphDatabaseService, mode: ExecutionMode, params: Map[String, Any]) => Javac.newInstance(clazz, st, db,  mode, description, asJavaHashMap(params))
-
-        CompiledPlan(updating = false, None, fp, CostPlannerName, builder)
-
-      case _ => throw new CantCompileQueryException("Can only compile plans with ProduceResult on top")
-    }
-  }
-
-  private def asJavaHashMap(params: Map[String, Any]) = {
-    val jMap = new util.HashMap[String, Object]()
-    params.foreach {
-      case (key, value) => jMap.put(key, javaValue(value))
-    }
-    jMap
-  }
-
-  private def javaValue( value: Any ): Object = value match {
-    case iter: Seq[_] => iter.map( javaValue ).asJava
-    case iter: Map[_, _] => Eagerly.immutableMapValues( iter, javaValue ).asJava
-    case x: Any => x.asInstanceOf[AnyRef]
-
-  }
-
-  private def generateCodeFromAst(className: String, statements: Seq[Instruction]) = {
+  private def generateCodeFromInstructions(className: String, instructions: Seq[Instruction]) = {
     val importLines: Set[String] =
-      statements.
+      instructions.
         map(_.importedClasses()).
         reduceOption(_ ++ _).
         getOrElse(Set.empty)
 
-    val imports = if(importLines.nonEmpty)
-      importLines.toSeq.sorted.mkString("import ", s";${n}import ", ";")
+    val imports = if ( importLines.nonEmpty )
+      importLines.toSeq.sorted.mkString( "import ", s";${n}import ", ";" )
     else
       ""
-    val fields = statements.map(_.fields().trim).reduce(_ + n + _)
-    val init = statements.map(_.generateInit().trim).reduce(_ + n + _)
-    val methodBody = statements.map(_.generateCode().trim).reduce(_ + n + _)
-    val privateMethods = statements.flatMap(_.methods).distinct.sortBy(_.name)
+    val fields = instructions.map(_.fields().trim).reduce(_ + n + _)
+    val init = instructions.map(_.generateInit().trim).reduce(_ + n + _)
+    val methodBody = instructions.map(_.generateCode().trim).reduce(_ + n + _)
+    val privateMethods = instructions.flatMap(_.methods).distinct.sortBy(_.name)
     val privateMethodText = privateMethods.map(_.generateCode.trim).reduceOption(_ + n + _).getOrElse("")
 
     //TODO move imports to set and merge with the other imports, or use full paths
@@ -230,7 +176,7 @@ class CodeGenerator {
        |}""".stripMargin
   }
 
-  private def createResultAst(plan: LogicalPlan, semanticTable: SemanticTable): Seq[Instruction] = {
+  private def createInstructions(plan: LogicalPlan, semanticTable: SemanticTable): Seq[Instruction] = {
     var variables: Map[String, JavaSymbol] = Map.empty
     var probeTables: Map[NodeHashJoin, CodeThunk] = Map.empty
     val variableName = new Namer("v")
@@ -361,4 +307,62 @@ class CodeGenerator {
 
     result
   }
+}
+
+class Namer(prefix: String) {
+  var varCounter = 0
+
+  def next(): String = {
+    varCounter += 1
+    prefix + varCounter
+  }
+
+  def nextWithType(typ: String): JavaSymbol = JavaSymbol(next(), typ)
+}
+
+case class JavaSymbol(name: String, javaType: String)
+
+class CodeGenerator {
+
+  import CodeGenerator.{generateClass, createInstructions}
+  import scala.collection.JavaConverters._
+
+  def generate(plan: LogicalPlan, planContext: PlanContext, clock: Clock, semanticTable: SemanticTable) = {
+    plan match {
+      case _: ProduceResult =>
+        val clazz = generateClass( createInstructions( plan, semanticTable ) )
+
+        val fp = planContext.statistics match {
+          case igs: InstrumentedGraphStatistics =>
+            Some(PlanFingerprint(clock.currentTimeMillis(), planContext.txIdProvider(), igs.snapshot.freeze))
+          case _ =>
+            None
+        }
+
+        val idMap = LogicalPlanIdentificationBuilder(plan)
+        val description: InternalPlanDescription = LogicalPlan2PlanDescription(plan, idMap)
+
+        val builder = (st: Statement, db: GraphDatabaseService, mode: ExecutionMode, params: Map[String, Any]) => Javac.newInstance(clazz, st, db,  mode, description, asJavaHashMap(params))
+
+        CompiledPlan(updating = false, None, fp, CostPlannerName, builder)
+
+      case _ => throw new CantCompileQueryException("Can only compile plans with ProduceResult on top")
+    }
+  }
+
+  private def asJavaHashMap(params: Map[String, Any]) = {
+    val jMap = new util.HashMap[String, Object]()
+    params.foreach {
+      case (key, value) => jMap.put(key, javaValue(value))
+    }
+    jMap
+  }
+
+  private def javaValue( value: Any ): Object = value match {
+    case iter: Seq[_] => iter.map( javaValue ).asJava
+    case iter: Map[_, _] => Eagerly.immutableMapValues( iter, javaValue ).asJava
+    case x: Any => x.asInstanceOf[AnyRef]
+  }
+
+
 }

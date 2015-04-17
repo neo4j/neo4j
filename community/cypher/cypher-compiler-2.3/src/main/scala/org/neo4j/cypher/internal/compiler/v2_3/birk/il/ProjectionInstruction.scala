@@ -19,13 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.birk.il
 
-import org.neo4j.cypher.internal.compiler.v2_3.CypherTypeException
 import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaTypes.{DOUBLE, LONG, OBJECT, OBJECTARRAY, STRING}
 import org.neo4j.cypher.internal.compiler.v2_3.birk.{CodeGenerator, JavaSymbol, Namer}
 
 sealed trait ProjectionInstruction extends Instruction {
   def projectedVariable: JavaSymbol
   def generateCode() = ""
+}
+
+object ProjectionInstruction {
+  def literal( value:Long ):ProjectionInstruction = ProjectLiteral( JavaSymbol( value.toString + "L", LONG ) )
+  def literal( value:Double ):ProjectionInstruction = ProjectLiteral( JavaSymbol( value.toString, DOUBLE ) )
+  def literal( value:String ):ProjectionInstruction = ProjectLiteral( JavaSymbol( s""""$value"""", STRING ) )
+  def literal( value:Boolean ):ProjectionInstruction = ???
+  def parameter( key:String ):ProjectionInstruction = ProjectParameter( key )
+
+  def add( lhs:ProjectionInstruction, rhs:ProjectionInstruction ):ProjectionInstruction = ProjectAddition( lhs, rhs )
 }
 
 case class ProjectNodeProperty(token: Option[Int], propName: String, nodeIdVar: String, namer: Namer) extends ProjectionInstruction {
