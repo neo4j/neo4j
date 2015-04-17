@@ -77,6 +77,8 @@ object Cost {
 
 case class Cardinality(amount: Double) extends Ordered[Cardinality] {
 
+  self =>
+
   def compare(that: Cardinality) = amount.compare(that.amount)
   def *(that: Multiplier): Cardinality = amount * that.coefficient
   def *(that: Selectivity): Cardinality = amount * that.factor
@@ -89,6 +91,9 @@ case class Cardinality(amount: Double) extends Ordered[Cardinality] {
   def map(f: Double => Double): Cardinality = f(amount)
 
   def inverse = Multiplier(1.0d / amount)
+
+  def min(other: Cardinality) = if (amount < other.amount) self else other
+  def max(other: Cardinality) = if (amount > other.amount) self else other
 }
 
 object Cardinality {
