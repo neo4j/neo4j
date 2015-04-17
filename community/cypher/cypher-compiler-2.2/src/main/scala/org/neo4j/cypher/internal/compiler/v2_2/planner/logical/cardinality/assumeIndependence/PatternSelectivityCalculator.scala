@@ -45,8 +45,8 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
     val allNodes = stats.nodesWithLabelCardinality(None)
     val lhs = pattern.nodes._1
     val rhs = pattern.nodes._2
-    val labelsOnLhs: Seq[TokenSpec[LabelId]] = mapToLabelTokenSpecs(selections.labelsOnNode(lhs).toSeq ++ labels.getOrElse(lhs, Seq.empty))
-    val labelsOnRhs: Seq[TokenSpec[LabelId]] = mapToLabelTokenSpecs(selections.labelsOnNode(rhs).toSeq ++ labels.getOrElse(rhs, Seq.empty))
+    val labelsOnLhs: Seq[TokenSpec[LabelId]] = mapToLabelTokenSpecs(selections.labelsOnNode(lhs) ++ labels.getOrElse(lhs, Set.empty))
+    val labelsOnRhs: Seq[TokenSpec[LabelId]] = mapToLabelTokenSpecs(selections.labelsOnNode(rhs) ++ labels.getOrElse(rhs, Set.empty))
 
     val lhsCardinality = allNodes * calculateLabelSelectivity(labelsOnLhs)
     val rhsCardinality = allNodes * calculateLabelSelectivity(labelsOnRhs)
@@ -55,7 +55,7 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
     if (lhsCardinality == Cardinality.EMPTY || lhsCardinality == Cardinality.EMPTY)
       Selectivity(1)
     else {
-      val types = mapToRelTokenSpecs(pattern.types)
+      val types: Seq[TokenSpec[RelTypeId]] = mapToRelTokenSpecs(pattern.types.toSet)
 
       pattern.length match {
         case SimplePatternLength =>
@@ -77,15 +77,14 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
           val maxRelCount = lhsCardinality * rhsCardinality * Cardinality(Math.pow(allNodes.amount, max - 1))
 
           val selectivityPerLengthAndStep: Seq[Seq[Selectivity]] =
-            for {
-              length <- min to max
-            }
-            yield
-              for (i <- 1 to length)
+            for (length <- min to max)
               yield {
-                val labelsOnL = if (i == 1) labelsOnLhs else Seq(Unspecified())
-                val labelsOnR = if (i == length) labelsOnRhs else Seq(Unspecified())
-                calculateSelectivityForSingleRelHop(types, labelsOnL, labelsOnR, pattern.dir, maxRelCount)
+                for (i <- 1 to length)
+                  yield {
+                    val labelsOnL: Seq[TokenSpec[LabelId]] = if (i == 1) labelsOnLhs else Seq(Unspecified())
+                    val labelsOnR: Seq[TokenSpec[LabelId]] = if (i == length) labelsOnRhs else Seq(Unspecified())
+                    calculateSelectivityForSingleRelHop(types, labelsOnL, labelsOnR, pattern.dir, maxRelCount)
+                  }
               }
           val selectivityPerLength = selectivityPerLengthAndStep.flatMap(combiner.andTogetherSelectivities)
           combiner.orTogetherSelectivities(selectivityPerLength).getOrElse(throw new InternalException("There is no spoon."))
@@ -99,13 +98,14 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
                                                   dir: Direction,
                                                   maxRelCount: Cardinality): Selectivity = {
 
+    // (a:A:B)-[r:T1|T2]->(c:C:D)    WHERE a:A AND a:B and type(r) = "T1" OR type(r) = "T2"
     val selectivitiesPerTypeAndLabel: Seq[Seq[Selectivity]] = types map { typ =>
       for {
         lhsLabel <- labelsOnLhs
-        rhsLabel <- labelsOnRhs // (a:A:B)-[r:T1|T2]->(c:C:D)    WHERE a:A AND a:B and type(r) = "T1" OR type(r) = "T2"
+        rhsLabel <- labelsOnRhs
       } yield {
         (lhsLabel, typ, rhsLabel) match {
-          //          If the rel-type or either label are unknown to the schema, we know no matches will be had
+          // If the rel-type or either label are unknown to the schema, we know no matches will be had
           case (SpecifiedButUnknown(), _, _) | (_, SpecifiedButUnknown(), _) | (_, _, SpecifiedButUnknown()) =>
             Selectivity.ZERO
 
@@ -117,9 +117,10 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
 
           case _ if dir == Direction.BOTH =>
             combiner.orTogetherSelectivities(
-              Seq(stats.cardinalityByLabelsAndRelationshipType(lhsLabel.id, typ.id, rhsLabel.id) / maxRelCount getOrElse Selectivity.ONE,
-                stats.cardinalityByLabelsAndRelationshipType(rhsLabel.id, typ.id, lhsLabel.id) / maxRelCount getOrElse Selectivity.ONE)
-            ).get
+              Seq(
+                (stats.cardinalityByLabelsAndRelationshipType(lhsLabel.id, typ.id, rhsLabel.id) / maxRelCount) getOrElse Selectivity.ONE,
+                (stats.cardinalityByLabelsAndRelationshipType(rhsLabel.id, typ.id, lhsLabel.id) / maxRelCount) getOrElse Selectivity.ONE
+              )).get
         }
       }
     }
@@ -140,11 +141,11 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
   }
 
   // These two methods should be one, but I failed to conjure up the proper Scala type magic to make it work
-  private def mapToLabelTokenSpecs(input: Seq[LabelName])(implicit semanticTable: SemanticTable): Seq[TokenSpec[LabelId]] =
+  private def mapToLabelTokenSpecs(input: Set[LabelName])(implicit semanticTable: SemanticTable): Seq[TokenSpec[LabelId]] =
     if (input.isEmpty)
       Seq(Unspecified())
     else
-      input.map {
+      input.toSeq.map {
         case label =>
           label.
             id.
@@ -153,11 +154,11 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
       }
 
 
-  private def mapToRelTokenSpecs(input: Seq[RelTypeName])(implicit semanticTable: SemanticTable): Seq[TokenSpec[RelTypeId]] =
+  private def mapToRelTokenSpecs(input: Set[RelTypeName])(implicit semanticTable: SemanticTable): Seq[TokenSpec[RelTypeId]] =
     if (input.isEmpty)
       Seq(Unspecified())
     else
-      input.map {
+      input.toSeq.map {
         case rel =>
           rel.
             id.
@@ -165,6 +166,3 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
             getOrElse(SpecifiedButUnknown())
       }
 }
-
-
-
