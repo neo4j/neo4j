@@ -177,4 +177,30 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     //THEN
     result.toList should equal (List(Map("count(*)" -> 100)))
   }
+
+  test("aggregation around named paths works") {
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+    val d = createNode()
+    val e = createNode()
+    val f = createNode()
+
+    relate(a, b)
+
+    relate(c, d)
+    relate(d, e)
+    relate(e, f)
+
+    val result = executeWithAllPlanners(
+      """match p = a-[*]->b
+        |return collect(nodes(p)) as paths, length(p) as l order by length(p)""".stripMargin)
+
+    val expected =
+      List(Map("l" -> 1, "paths" -> List(List(a, b), List(c, d), List(d, e), List(e, f))),
+           Map("l" -> 2, "paths" -> List(List(c, d, e), List(d, e, f))),
+           Map("l" -> 3, "paths" -> List(List(c, d, e, f))))
+
+    result.toList should be (expected)
+  }
 }
