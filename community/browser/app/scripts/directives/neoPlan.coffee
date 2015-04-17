@@ -27,22 +27,14 @@ angular.module('neo4jApp.directives')
       dir =
         restrict: 'A'
       dir.link = (scope, elm, attr) ->
-        unbind = scope.$watch attr.queryPlan, (originalPlan) ->
+        unbinds = []
+        watchQueryPlan = scope.$watch attr.queryPlan, (originalPlan) ->
           return unless originalPlan
           plan = JSON.parse(JSON.stringify(originalPlan))
           display = () ->
             neo.queryPlan(elm.get(0)).display(plan)
           display()
-          scope.$on('export.plan.svg', ->
-            svg = SVGUtils.prepareForExport(elm, dir.getDimensions(elm.get(0)))
-            exportService.download('plan.svg', 'image/svg+xml', new XMLSerializer().serializeToString(svg.node()))
-            svg.remove()
-          )
-          scope.$on('export.plan.png', ->
-            svg = SVGUtils.prepareForExport elm, dir.getDimensions(elm.get(0))
-            exportService.downloadPNGFromSVG(svg, 'plan')
-            svg.remove()
-          )
+
           scope.toggleExpanded = (expanded) ->
             visit = (operator) ->
               operator.expanded = expanded
@@ -51,10 +43,27 @@ angular.module('neo4jApp.directives')
                   visit(child)
             visit plan.root
             display()
-          scope.$on('reset.frame.views', ->
+
+          listenerExportSVG = scope.$on('export.plan.svg', ->
+            svg = SVGUtils.prepareForExport(elm, dir.getDimensions(elm.get(0)))
+            exportService.download('plan.svg', 'image/svg+xml', new XMLSerializer().serializeToString(svg.node()))
+            svg.remove()
+          )
+          listenerExportPNG = scope.$on('export.plan.png', ->
+            svg = SVGUtils.prepareForExport elm, dir.getDimensions(elm.get(0))
+            exportService.downloadPNGFromSVG(svg, 'plan')
+            svg.remove()
+          )
+          listenerResetFrame = scope.$on('reset.frame.views', ->
+            for unbind in unbinds
+              unbind()
+            unbinds = []
             while elm[0].firstChild
               elm[0].removeChild elm[0].firstChild
           )
+          unbinds.push listenerExportSVG
+          unbinds.push listenerExportPNG
+          unbinds.push listenerResetFrame
 
       dir.getDimensions = (element)->
         node = d3.select(element)
