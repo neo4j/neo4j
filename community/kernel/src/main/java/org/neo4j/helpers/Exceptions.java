@@ -45,6 +45,18 @@ public class Exceptions
         return exception;
     }
 
+    public static <T extends Throwable> T withSuppressed( T exception, Throwable... suppressed )
+    {
+        if ( suppressed != null )
+        {
+            for ( Throwable s : suppressed )
+            {
+                exception.addSuppressed( s );
+            }
+        }
+        return exception;
+    }
+
     public static RuntimeException launderedException( Throwable exception )
     {
         return launderedException( UNEXPECTED_MESSAGE, exception );

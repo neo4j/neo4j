@@ -20,8 +20,11 @@
 package org.neo4j.helpers;
 
 import org.junit.Test;
+
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class TestExceptions
@@ -96,6 +99,23 @@ public class TestExceptions
 
         // THEN
         assertEquals( prependedMessage, exception.getMessage() );
+    }
+
+    @Test
+    public void shouldAddSuppressedExceptions()
+    {
+        // Given
+        RuntimeException exception = new RuntimeException();
+
+        RuntimeException suppressed1 = new RuntimeException();
+        RuntimeException suppressed2 = new RuntimeException();
+
+        // When
+        RuntimeException result = Exceptions.withSuppressed( exception, suppressed1, suppressed2 );
+
+        // Then
+        assertSame( exception, result );
+        assertArrayEquals( new Throwable[]{suppressed1, suppressed2}, result.getSuppressed() );
     }
 
     private static class LevelOneException extends Exception

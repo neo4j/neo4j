@@ -54,6 +54,7 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.Clock;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
@@ -320,7 +321,7 @@ public abstract class InternalAbstractGraphDatabase
     protected void run()
     {
         create();
-        boolean failed = false;
+        Throwable error = null;
         try
         {
             enableAvailabilityLogging(); // Done after create to avoid a redundant "database is now unavailable"
@@ -330,16 +331,27 @@ public abstract class InternalAbstractGraphDatabase
         }
         catch ( final Throwable throwable )
         {
-            failed = true;
-            throw new RuntimeException( "Error starting " + getClass().getName() + ", " + storeDir.getAbsolutePath(),
+            error = new RuntimeException( "Error starting " + getClass().getName() + ", " + storeDir.getAbsolutePath(),
                     throwable );
         }
         finally
         {
-            if ( failed )
+            if ( error != null )
             {
-                shutdown();
+                try
+                {
+                    shutdown();
+                }
+                catch ( Throwable shutdownError )
+                {
+                    error = Exceptions.withSuppressed( shutdownError, error );
+                }
             }
+        }
+
+        if ( error != null )
+        {
+            throw Exceptions.launderedException( error );
         }
     }
 
