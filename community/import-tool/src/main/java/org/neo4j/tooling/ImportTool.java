@@ -36,6 +36,7 @@ import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.Version;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storemigration.FileOperation;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
@@ -46,7 +47,6 @@ import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.ClassicLoggingService;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.tooling.import_tool.ComponentVersion;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.DuplicateInputIdException;
@@ -62,7 +62,6 @@ import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
 import static java.lang.System.out;
 import static java.nio.charset.Charset.defaultCharset;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -404,7 +403,7 @@ public class ImportTool
         {
             System.err.println( "Duplicate input ids that would otherwise clash can be put into separate id space,"
                     + " read more about how to use id spaces in the manual:"
-                    + " http://neo4j.com/docs/" + ComponentVersion.getKernel().getVersion() +
+                    + " http://neo4j.com/docs/" + Version.getKernel().getVersion() +
                     "/import-tool-header-format.html#_id_spaces" );
         }
 
