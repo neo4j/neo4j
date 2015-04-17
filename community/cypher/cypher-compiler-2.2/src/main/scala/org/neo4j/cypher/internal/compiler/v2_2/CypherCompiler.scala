@@ -77,7 +77,15 @@ object CypherCompilerFactory {
     val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
     val queryPlanner = new DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
     val planner = CostBasedPipeBuilderFactory(monitors, metricsFactory, planningMonitor, clock, queryPlanner = queryPlanner, rewriterSequencer = rewriterSequencer, plannerName = plannerName)
-    val pipeBuilder = new LegacyVsNewPipeBuilder(new LegacyPipeBuilder(monitors, rewriterSequencer), planner, planBuilderMonitor)
+
+    // falling back to legacy planner is allowed only when no cost-based planner is picked explicitly (e.g., COST, IDP)
+    val pipeBuilder = plannerName match {
+      case ConservativePlannerName =>
+        new LegacyVsNewPipeBuilder(new LegacyPipeBuilder(monitors, rewriterSequencer), planner, planBuilderMonitor)
+      case _ =>
+        new ErrorReportingPipeBuilder(planner)
+    }
+
     val execPlanBuilder = new ExecutionPlanBuilder(graph, statsDivergenceThreshold, queryPlanTTL, clock, pipeBuilder)
     val planCacheFactory = () => new LRUCache[Statement, ExecutionPlan](queryCacheSize)
     monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), monitorTag)
