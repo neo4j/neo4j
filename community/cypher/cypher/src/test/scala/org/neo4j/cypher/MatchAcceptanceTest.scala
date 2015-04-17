@@ -1981,4 +1981,13 @@ return b
     // then
     result.toList should equal(List(Map("count(*)" -> 3)))
   }
+
+  test("should type var length identifiers correctly as collection of relationships") {
+    createNode()
+    val r = relate(createNode(), createNode())
+
+    val result = executeWithAllPlanners("match ()-[r*0..1]-() return last(r) as l").toList
+
+    result should equal(List(Map("l" -> null), Map("l" -> null), Map("l" -> r), Map("l" -> null), Map("l" -> r)))
+  }
 }
