@@ -19,10 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.birk.il
 
-import org.neo4j.cypher.internal.compiler.v2_3.birk.il.ProjectionInstruction.{add, parameter}
+import org.neo4j.cypher.internal.compiler.v2_3.birk.il.ProjectionInstruction.{add, sub, parameter}
 import org.scalatest._
 
 class ProjectionInstructionCompilationTest extends FunSuite with Matchers with CodeGenSugar {
+  // addition
+
   { // literal + literal
     def adding( lhs:ProjectionInstruction, rhs:ProjectionInstruction ) = evaluate(
       ProjectProperties( Seq.empty, ProduceResults( Map.empty, Map.empty,
@@ -69,7 +71,56 @@ class ProjectionInstructionCompilationTest extends FunSuite with Matchers with C
       override def rhs( value: Any ) = literal(value)
     } )
   }
-  
+
+  // subtraction
+
+  { // literal - literal
+    def subtracting( lhs:ProjectionInstruction, rhs:ProjectionInstruction ) = evaluate(
+      ProjectProperties( Seq.empty, ProduceResults( Map.empty, Map.empty,
+        Map( "result" -> sub( lhs, rhs ).projectedVariable.name ) ) ) )
+
+    verifySubtraction( subtracting, new SimpleOperands[ProjectionInstruction]("literal") {
+      override def value( value: Any ) = literal( value )
+    } )
+  }
+
+  { // parameter - parameter
+    val subtraction: ProjectionInstruction = sub( parameter( "lhs" ), parameter( "rhs" ) )
+    val clazz = compile( ProjectProperties( Seq( subtraction ), ProduceResults( Map.empty, Map.empty,
+      Map( "result" -> subtraction.projectedVariable.name ) ) ) )
+    def subtracting( lhs:Any, rhs:Any ) = evaluate( newInstance( clazz, params = Map( "lhs" -> lhs, "rhs" -> rhs ) ) )
+
+    verifySubtraction( subtracting, new SimpleOperands[Any]("parameter") {
+      override def value( value: Any ) = value
+    } )
+  }
+
+  { // literal - parameter
+    def subtracting( lhs:ProjectionInstruction, rhs: Any ) = {
+      val subtraction: ProjectionInstruction = sub( lhs, parameter( "rhs" ) )
+      evaluate( newInstance( compile( ProjectProperties( Seq( subtraction ), ProduceResults( Map.empty, Map.empty,
+        Map( "result" -> subtraction.projectedVariable.name ) ) ) ), params = Map( "rhs" -> rhs ) ) )
+    }
+
+    verifySubtraction( subtracting, new Operands[ProjectionInstruction,Any]("literal","parameter") {
+      override def lhs( value: Any ) = literal(value)
+      override def rhs( value: Any ) = value
+    } )
+  }
+
+  { // parameter - literal
+    def subtracting( lhs:Any, rhs: ProjectionInstruction ) = {
+      val subtraction: ProjectionInstruction = sub( parameter( "lhs" ), rhs )
+      evaluate( newInstance( compile( ProjectProperties( Seq( subtraction ), ProduceResults( Map.empty, Map.empty,
+        Map( "result" -> subtraction.projectedVariable.name ) ) ) ), params = Map( "lhs" -> lhs ) ) )
+    }
+
+    verifySubtraction( subtracting, new Operands[Any, ProjectionInstruction]("parameter","literal") {
+      override def lhs( value: Any ) = value
+      override def rhs( value: Any ) = literal(value)
+    } )
+  }
+
   type Operator[Lhs,Rhs] = (Lhs, Rhs) => List[Map[String, Any]]
 
   private def verifyAddition[Lhs,Rhs]( add: Operator[Lhs,Rhs], value: Operands[Lhs,Rhs] ) = {
@@ -82,6 +133,15 @@ class ProjectionInstructionCompilationTest extends FunSuite with Matchers with C
     verify( add, 11.6, "+", 3, value, 14.6 )
     verify( add, 2.5, "+", 4.5, value, 7.0 )
     verify( add, Long.MaxValue, "+", Long.MinValue, value, -1 )
+  }
+
+  private def verifySubtraction[Lhs,Rhs]( sub: Operator[Lhs,Rhs], value: Operands[Lhs,Rhs] ) = {
+    verify( sub, 9, "-", 7, value, 2 )
+    verify( sub, Long.MaxValue, "-", Int.MaxValue, value, Long.MaxValue - Int.MaxValue )
+    verify( sub, 3.25, "-", 3, value, 0.25 )
+    verify( sub, 3.21, "-", 1.23, value, 1.98 )
+    verify( sub, -1, "-", -2, value, 1 )
+    verify( sub, -1.25, "-", -2.5, value, 1.25 )
   }
 
   abstract class Operands[Lhs,Rhs](val left:String, val right:String) {

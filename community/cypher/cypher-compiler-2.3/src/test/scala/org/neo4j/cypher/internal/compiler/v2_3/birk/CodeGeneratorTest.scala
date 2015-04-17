@@ -300,6 +300,19 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     result.toSet should equal(Set(Map("a" -> 4)))
   }
 
+  test("project subtraction of two ints") {
+    val lhs = SignedDecimalIntegerLiteral("7")(null)
+    val rhs = SignedDecimalIntegerLiteral("5")(null)
+    val add = Subtract(lhs, rhs)(null)
+
+    val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> add))(solved))
+    val compiled = compile(plan)
+
+    //then
+    val result = getResult(compiled, "a")
+    result.toSet should equal(Set(Map("a" -> 2)))
+  }
+
   test("project addition of int and double") {
     val lhs = SignedDecimalIntegerLiteral("1")(null)
     val rhs = DecimalDoubleLiteral("3.0")(null)

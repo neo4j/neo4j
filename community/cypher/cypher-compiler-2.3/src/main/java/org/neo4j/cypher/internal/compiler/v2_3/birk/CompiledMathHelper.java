@@ -87,6 +87,34 @@ public final class CompiledMathHelper
                                        " and " + rhs.getClass().getSimpleName(), null );
     }
 
+    public static Object subtract( Object lhs, Object rhs )
+    {
+        if ( lhs == null || rhs == null )
+        {
+            return null;
+        }
+
+        if ( lhs instanceof Number && rhs instanceof Number )
+        {
+            if ( lhs instanceof Double || rhs instanceof Double ||
+                 lhs instanceof Float || rhs instanceof Float )
+            {
+                return ((Number) lhs).doubleValue() - ((Number) rhs).doubleValue();
+            }
+            if ( lhs instanceof Long || rhs instanceof Long ||
+                 lhs instanceof Integer || rhs instanceof Integer ||
+                 lhs instanceof Short || rhs instanceof Short ||
+                 lhs instanceof Byte || rhs instanceof Byte )
+            {
+                return ((Number) lhs).longValue() - ((Number) rhs).longValue();
+            }
+            // other numbers we cannot subtract
+        }
+
+        throw new CypherTypeException( "Cannot add " + lhs.getClass().getSimpleName() +
+                                       " and " + rhs.getClass().getSimpleName(), null );
+    }
+
     /**
      * Both a1 and a2 must be arrays
      */

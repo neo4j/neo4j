@@ -285,6 +285,11 @@ object CodeGenerator {
                   val rightOp = findProjectionInstruction(rhs)
                   ProjectAddition(leftOp, rightOp)
 
+                case Subtract(lhs, rhs) =>
+                  val leftOp = findProjectionInstruction(lhs)
+                  val rightOp = findProjectionInstruction(rhs)
+                  ProjectSubtraction(leftOp, rightOp)
+
                 case other => throw new CantCompileQueryException(s"Projections of $other not yet supported")
               }
 
