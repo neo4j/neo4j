@@ -2116,6 +2116,15 @@ return b
     result should equal(List(Map("FOO" -> List(1, 2, 3, 4, 5))))
   }
 
+  test("should type var length identifiers correctly as collection of relationships") {
+    createNode()
+    val r = relate(createNode(), createNode())
+
+    val result = executeWithAllPlanners("match ()-[r*0..1]-() return last(r) as l").toList
+
+    result should equal(List(Map("l" -> null), Map("l" -> null), Map("l" -> r), Map("l" -> null), Map("l" -> r)))
+  }
+
   /**
    * Append identifier to keys and transform value arrays to lists
    */

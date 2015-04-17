@@ -231,7 +231,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   }
 
   test("reports RULE planner when showing plan description") {
-    val executionPlanDescription = eengine.execute("CYPHER 2.2 planner=cost create ()").executionPlanDescription()
+    val executionPlanDescription = eengine.execute("CYPHER 2.2 create ()").executionPlanDescription()
 
     executionPlanDescription.toString should not include "Planner COST"
     executionPlanDescription.toString should include("Planner RULE" + System.lineSeparator())
