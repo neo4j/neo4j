@@ -28,25 +28,31 @@ angular.module('neo4jApp.directives')
         require: 'ngController'
         restrict: 'A'
       dir.link = (scope, elm, attr, ngCtrl) ->
-        unbind = scope.$watch attr.graphData, (graph) ->
+        unbinds = []
+        watchGraphData = scope.$watch attr.graphData, (graph) ->
           return unless graph
           ngCtrl.render(graph)
 
-          scope.$on('export.graph.svg', ->
+          listenerExportSVG = scope.$on('export.graph.svg', ->
             svg = SVGUtils.prepareForExport elm, dir.getDimensions(ngCtrl.getGraphView())
             exportService.download('graph.svg', 'image/svg+xml', new XMLSerializer().serializeToString(svg.node()))
             svg.remove()
           )
-          scope.$on('export.graph.png', ->
+          listenerExportPNG = scope.$on('export.graph.png', ->
             svg = SVGUtils.prepareForExport elm, dir.getDimensions(ngCtrl.getGraphView())
             exportService.downloadPNGFromSVG(svg, 'graph')
             svg.remove()
           )
-          scope.$on('reset.frame.views', ->
+          listenerResetFrame = scope.$on('reset.frame.views', ->
+            for unbind in unbinds
+              unbind()
+            unbinds = []
             while elm[0].firstChild
               elm[0].removeChild elm[0].firstChild
           )
-
+          unbinds.push listenerExportSVG
+          unbinds.push listenerExportPNG
+          unbinds.push listenerResetFrame
 
       dir.getDimensions = (view) ->
         boundingBox = view.boundingBox()
