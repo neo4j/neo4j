@@ -95,6 +95,8 @@ sealed abstract class SchemaIndexKind
 case object AnyIndex extends SchemaIndexKind
 case object UniqueIndex extends SchemaIndexKind
 
+// TODO Unify with Seekable
+
 trait QueryExpression[+T] {
   def expression: T
 

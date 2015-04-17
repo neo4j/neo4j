@@ -54,10 +54,8 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner {
     val arguments = qg.argumentIds.map(n => Identifier(n.name)(null))
 
     predicates.collect {
-      case inPredicate@Seek(Property(identifier@Identifier(name), propertyKeyName), rhs)
-        if rhs.expr.dependencies.forall(arguments) && !arguments(identifier) =>
-
-        producePlanFor(name, propertyKeyName, inPredicate, rhs.asQueryExpression)
+      case predicate@PropertySeekable(lhs, rhs) if rhs.dependencies.forall(arguments) && !arguments(lhs.ident) =>
+        producePlanFor(lhs.name, lhs.propertyKey, predicate, rhs.asQueryExpression)
     }.flatten
   }
 

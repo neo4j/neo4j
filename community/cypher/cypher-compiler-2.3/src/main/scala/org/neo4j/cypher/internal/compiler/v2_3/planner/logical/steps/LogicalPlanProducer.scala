@@ -67,7 +67,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   }
 
   def planDirectedRelationshipByIdSeek(idName: IdName,
-                                       relIds: SeekRhs,
+                                       relIds: SeekableArgs,
                                        startNode: IdName,
                                        endNode: IdName,
                                        pattern: PatternRelationship,
@@ -83,7 +83,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
   }
 
   def planUndirectedRelationshipByIdSeek(idName: IdName,
-                                         relIds: SeekRhs,
+                                         relIds: SeekableArgs,
                                          leftNode: IdName,
                                          rightNode: IdName,
                                          pattern: PatternRelationship,
@@ -134,7 +134,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends Colle
     Selection(predicates, left)(left.solved)
   }
 
-  def planNodeByIdSeek(idName: IdName, nodeIds: SeekRhs,
+  def planNodeByIdSeek(idName: IdName, nodeIds: SeekableArgs,
                        solvedPredicates: Seq[Expression] = Seq.empty,
                        argumentIds: Set[IdName])(implicit context: LogicalPlanningContext) = {
     val solved = PlannerQuery(graph = QueryGraph.empty

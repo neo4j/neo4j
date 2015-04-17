@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.ManyQueryExpression
+import org.neo4j.cypher.internal.compiler.v2_3.commands.{SingleQueryExpression, ManyQueryExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_3.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.LogicalPlanningTestSupport2
@@ -134,7 +134,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           "n",
           LabelToken("Awesome", LabelId(0)),
           PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)),
-          ManyQueryExpression(Collection(Seq(SignedDecimalIntegerLiteral("42") _)) _),
+          SingleQueryExpression(SignedDecimalIntegerLiteral("42")_),
           Set.empty)(solved)
       )(solved))
   }
@@ -149,7 +149,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         "n",
         LabelToken("Awesome", LabelId(0)),
         PropertyKeyToken(PropertyKeyName("prop")_, PropertyKeyId(0)),
-        ManyQueryExpression(Collection(Seq(SignedDecimalIntegerLiteral("42")_))_),
+        SingleQueryExpression(SignedDecimalIntegerLiteral("42")_),
         Set.empty)(solved)
     )
   }
@@ -160,7 +160,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } planFor "MATCH (n:Awesome) WHERE n.prop = 42 RETURN n"
 
     plan.plan should equal(
-      NodeIndexUniqueSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(SignedDecimalIntegerLiteral("42")_))_), Set.empty)(solved)
+      NodeIndexUniqueSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(0)), SingleQueryExpression(SignedDecimalIntegerLiteral("42")_), Set.empty)(solved)
     )
   }
 
@@ -172,7 +172,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     plan.plan should equal(
       NodeIndexUniqueSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(0)),
-        ManyQueryExpression(Collection(Seq(SignedDecimalIntegerLiteral("42")_))_), Set.empty)(solved)
+        SingleQueryExpression(SignedDecimalIntegerLiteral("42")_), Set.empty)(solved)
     )
   }
 
@@ -182,7 +182,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } planFor "MATCH (n:Awesome) WHERE id(n) = 42 RETURN n").plan should equal (
       Selection(
         List(HasLabels(Identifier("n")_, Seq(LabelName("Awesome")_))_),
-        NodeByIdSeek("n", MultiSeekRhs(Collection(Seq(SignedDecimalIntegerLiteral("42")_))_), Set.empty)(solved)
+        NodeByIdSeek("n", ManySeekableArgs(Collection(Seq(SignedDecimalIntegerLiteral("42")_))_), Set.empty)(solved)
       )(solved)
     )
   }
@@ -193,7 +193,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } planFor "MATCH (n:Awesome) WHERE id(n) IN {param} RETURN n").plan should equal (
       Selection(
         List(HasLabels(Identifier("n")_, Seq(LabelName("Awesome")_))_),
-        NodeByIdSeek("n", MultiSeekRhs(Parameter("param")_), Set.empty)(solved)
+        NodeByIdSeek("n", ManySeekableArgs(Parameter("param")_), Set.empty)(solved)
       )(solved)
     )
   }
@@ -201,14 +201,14 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should build plans for directed rel by ID when the predicate is IN and rhs is a param") {
     (new given {
     } planFor "MATCH (a)-[r]->(b) WHERE id(r) IN {param} RETURN a, r, b").plan should equal (
-      DirectedRelationshipByIdSeek("r", MultiSeekRhs(Parameter("param")_), "a", "b", Set.empty)(solved)
+      DirectedRelationshipByIdSeek("r", ManySeekableArgs(Parameter("param")_), "a", "b", Set.empty)(solved)
     )
   }
 
   test("should build plans for undirected rel by ID when the predicate is IN and rhs is a param") {
     (new given {
     } planFor "MATCH (a)-[r]-(b) WHERE id(r) IN {param} RETURN a, r, b").plan should equal (
-      UndirectedRelationshipByIdSeek("r", MultiSeekRhs(Parameter("param")_), "a", "b", Set.empty)(solved)
+      UndirectedRelationshipByIdSeek("r", ManySeekableArgs(Parameter("param")_), "a", "b", Set.empty)(solved)
     )
   }
 
@@ -218,7 +218,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } planFor "MATCH (n:Awesome) WHERE id(n) IN [42, 64] RETURN n").plan should equal (
       Selection(
         List(HasLabels(Identifier("n")_, Seq(LabelName("Awesome")_))_),
-        NodeByIdSeek("n", MultiSeekRhs(Collection(Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("64")_))_), Set.empty)(solved)
+        NodeByIdSeek("n", ManySeekableArgs(Collection(Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("64")_))_), Set.empty)(solved)
       )(solved)
     )
   }
@@ -231,7 +231,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
               IdName("n"),
               LabelToken("Awesome", _),
               PropertyKeyToken("prop", _),
-              ManyQueryExpression(Collection(_)), _) => ()
+              SingleQueryExpression(SignedDecimalIntegerLiteral("42")), _) => ()
     }
   }
 
@@ -281,7 +281,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } planFor "MATCH (n) USING INDEX n:Awesome(prop) WHERE n:Awesome AND n.prop = 42 RETURN n"
 
     plan.plan should equal(
-      NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(SignedDecimalIntegerLiteral("42")_))_), Set.empty)(solved)
+      NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(0)), SingleQueryExpression(SignedDecimalIntegerLiteral("42")_), Set.empty)(solved)
     )
   }
 
@@ -291,7 +291,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } planFor "MATCH (n) USING INDEX n:Awesome(prop) WHERE n:Awesome AND n.prop = 42 RETURN *"
 
     plan.plan should equal(
-      NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(SignedDecimalIntegerLiteral("42")_))_), Set.empty)(solved)
+      NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(0)), SingleQueryExpression(SignedDecimalIntegerLiteral("42")_), Set.empty)(solved)
     )
   }
 
@@ -304,7 +304,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan.plan should equal(
       Selection(
         List(In(Property(ident("n"), PropertyKeyName("prop1")_)_, Collection(Seq(SignedDecimalIntegerLiteral("42")_))_)_),
-        NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop2", PropertyKeyId(1)), ManyQueryExpression(Collection(Seq(SignedDecimalIntegerLiteral("3")_))_), Set.empty)(solved)
+        NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop2", PropertyKeyId(1)), SingleQueryExpression(SignedDecimalIntegerLiteral("3")_), Set.empty)(solved)
       )(solved)
     )
   }
@@ -315,7 +315,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } planFor "MATCH (n) USING INDEX n:Awesome(prop) WHERE n:Awesome AND n.prop = 42 RETURN n"
 
     plan.plan should equal(
-      NodeIndexUniqueSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(SignedDecimalIntegerLiteral("42")_))_), Set.empty)(solved)
+      NodeIndexUniqueSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(0)), SingleQueryExpression(SignedDecimalIntegerLiteral("42")_), Set.empty)(solved)
     )
   }
 
@@ -328,7 +328,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan.plan should equal(
       Selection(
         List(In(Property(ident("n"), PropertyKeyName("prop1")_)_, Collection(Seq(SignedDecimalIntegerLiteral("42")_))_)_),
-        NodeIndexUniqueSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop2", PropertyKeyId(1)), ManyQueryExpression(Collection(Seq(SignedDecimalIntegerLiteral("3")_))_), Set.empty)(solved)
+        NodeIndexUniqueSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop2", PropertyKeyId(1)), SingleQueryExpression(SignedDecimalIntegerLiteral("3")_), Set.empty)(solved)
       )(solved)
     )
   }
@@ -342,7 +342,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan.plan should equal(
       Selection(
         List(In(Property(ident("n"), PropertyKeyName("prop1")_)_, Collection(Seq(SignedDecimalIntegerLiteral("42")_))_)_),
-        NodeIndexUniqueSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop2", PropertyKeyId(1)), ManyQueryExpression(Collection(Seq(SignedDecimalIntegerLiteral("3")_))_), Set.empty)(solved)
+        NodeIndexUniqueSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop2", PropertyKeyId(1)), SingleQueryExpression(SignedDecimalIntegerLiteral("3")_), Set.empty)(solved)
       )(solved)
     )
   }
@@ -361,7 +361,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       Aggregation(
         Apply(
           Projection(SingleRow()(solved),Map("arr" -> Collection(List(SignedDecimalIntegerLiteral("0")_, SignedDecimalIntegerLiteral("1")_, SignedDecimalIntegerLiteral("3")_))_))(solved),
-          NodeByIdSeek(IdName("n"), MultiSeekRhs(Identifier("arr")_),Set(IdName("arr")))(solved)
+          NodeByIdSeek(IdName("n"), ManySeekableArgs(Identifier("arr")_),Set(IdName("arr")))(solved)
         )(solved),
         Map(),Map("count(*)" -> CountStar()_)
       )(solved)

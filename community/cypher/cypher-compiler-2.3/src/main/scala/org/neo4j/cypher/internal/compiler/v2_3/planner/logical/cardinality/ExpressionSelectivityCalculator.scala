@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.cardinality
 
+import org.neo4j.cypher.internal.compiler.v2_3.LabelId
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, Seek, SeekRhs}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, _}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{Selections, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics._
-import org.neo4j.cypher.internal.compiler.v2_3.{LabelId, functions}
 
 trait Expression2Selectivity {
   def apply(exp: Expression)(implicit semanticTable: SemanticTable, selections: Selections): Selectivity
@@ -43,8 +43,8 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       Selectivity(0)
 
     // WHERE x.prop =/IN ...
-    case Seek(Property(Identifier(name), propertyKey), rhs) =>
-      calculateSelectivityForPropertyEquality(name, rhs, selections, propertyKey)
+    case PropertySeekable(lhs, rhs) =>
+      calculateSelectivityForPropertyEquality(lhs.name, rhs, selections, lhs.propertyKey)
 
     // Implicit relation uniqueness predicates
     case Not(Equals(lhs: Identifier, rhs: Identifier))
@@ -60,8 +60,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       combiner.orTogetherSelectivities(selectivities).get // We can trust the AST to never have empty ORs
 
     // WHERE id(x) =/IN [...]
-    case Seek(func@FunctionInvocation(_, _, IndexedSeq(_)), rhs)
-      if func.function == Some(functions.Id) =>
+    case IdSeekable(_, rhs) =>
       rhs.sizeHint.map(Cardinality(_)).getOrElse(DEFAULT_NUMBER_OF_ID_LOOKUPS) / stats.nodesWithLabelCardinality(None)
 
     // WHERE <expr> = <expr>
@@ -92,7 +91,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     labelCardinality / nodeCardinality
   }
 
-  private def calculateSelectivityForPropertyEquality(identifier: String, rhs: SeekRhs, selections: Selections, propertyKey: PropertyKeyName)
+  private def calculateSelectivityForPropertyEquality(identifier: String, rhs: SeekableArgs, selections: Selections, propertyKey: PropertyKeyName)
                                                      (implicit semanticTable: SemanticTable): Selectivity = {
     val labels = selections.labelsOnNode(IdName(identifier))
     val indexSelectivities = labels.toSeq.flatMap {
