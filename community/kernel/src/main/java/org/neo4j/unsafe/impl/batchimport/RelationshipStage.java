@@ -29,6 +29,9 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStore;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.WriterFactory;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 
+import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_PROCESS;
+import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
+
 /**
  * Imports the first part of relationships, namely the relationship record itself and its properties.
  * Only the "next" pointers are set at this stage. The "prev" pointers are set in a later stage.
@@ -39,14 +42,14 @@ public class RelationshipStage extends Stage
             InputIterable<InputRelationship> relationships, IdMapper idMapper,
             BatchingNeoStore neoStore, NodeRelationshipCache cache, boolean specificIds )
     {
-        super( "Relationships", config, specificIds );
-        add( new InputIteratorBatcherStep<>( control(), config,
-                relationships.iterator(), InputRelationship.class ) );
+        super( "Relationships", config, ORDER_SEND_DOWNSTREAM | ORDER_PROCESS );
+        add( new InputIteratorBatcherStep<>( control(), config, relationships.iterator(), InputRelationship.class ) );
 
         RelationshipStore relationshipStore = neoStore.getRelationshipStore();
         PropertyStore propertyStore = neoStore.getPropertyStore();
         add( new RelationshipPreparationStep( control(), config, idMapper ) );
         add( new PropertyEncoderStep<>( control(), config, neoStore.getPropertyKeyRepository(), propertyStore ) );
+        add( new ParallelizeByNodeIdStep( control(), config ) );
         add( new RelationshipEncoderStep( control(), config,
                 neoStore.getRelationshipTypeRepository(), cache, specificIds ) );
         add( new EntityStoreUpdaterStep<>( control(), config,

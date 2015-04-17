@@ -32,7 +32,7 @@ public class RelationshipLinkbackStage extends Stage
 {
     public RelationshipLinkbackStage( Configuration config, RelationshipStore store, NodeRelationshipCache cache )
     {
-        super( "Relationship --> Relationship", config, false );
+        super( "Relationship --> Relationship", config );
         add( new ReadRelationshipRecordsBackwardsStep( control(), config, store ) );
         add( new RecordProcessorStep<>( control(), "LINK", config,
                 new RelationshipLinkbackProcessor( cache ), false ) );

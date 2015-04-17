@@ -39,7 +39,7 @@ public class CalculateDenseNodesStage extends Stage
             NodeRelationshipCache cache, IdMapper idMapper,
             Collector badCollector, InputCache inputCache ) throws IOException
     {
-        super( "Calculate dense nodes", config, false );
+        super( "Calculate dense nodes", config );
         add( new InputIteratorBatcherStep<>( control(), config,
                 relationships.iterator(), InputRelationship.class ) );
         if ( !relationships.supportsMultiplePasses() )

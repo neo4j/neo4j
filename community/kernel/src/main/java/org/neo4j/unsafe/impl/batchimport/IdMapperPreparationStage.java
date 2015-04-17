@@ -37,7 +37,7 @@ public class IdMapperPreparationStage extends Stage
     public IdMapperPreparationStage( Configuration config, IdMapper idMapper, InputIterable<InputNode> nodes,
             InputCache inputCache, Collector collector, StatsProvider memoryUsageStats )
     {
-        super( "Prepare node index", config, false );
+        super( "Prepare node index", config );
         add( new IdMapperPreparationStep( control(), config,
                 idMapper, idsOf( nodes.supportsMultiplePasses() ? nodes : inputCache.nodes() ),
                 collector, memoryUsageStats ) );

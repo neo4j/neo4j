@@ -39,11 +39,21 @@ import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 public interface Step<T> extends Parallelizable
 {
     /**
-     * Starts the processing in this step.
-     *
-     * @param orderedTickets whether or not tickets leave each step in order of ticket number.
+     * Whether or not tickets arrive in {@link #receive(long, Object)} ordered by ticket number.
      */
-    void start( boolean orderedTickets );
+    int ORDER_SEND_DOWNSTREAM = 0x1;
+
+    /**
+     * Whether or not actual processing of batches are ordered by ticket number.
+     */
+    int ORDER_PROCESS = 0x2;
+
+    /**
+     * Starts the processing in this step, such that calls to {@link #receive(long, Object)} can be accepted.
+     *
+     * @param orderingGuarantees which ordering guarantees that will be upheld.
+     */
+    void start( int orderingGuarantees );
 
     /**
      * @return name of this step.
