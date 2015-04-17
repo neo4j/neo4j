@@ -552,10 +552,21 @@ public class BufferedCharSeekerTest
     }
 
     @Test
-    public void shouldParseMultilineFieldWhereEndQuoteIsOnItsOwnLine() throws Exception
+    public void shouldParseMultilineFieldWhereEndQuoteIsOnItsOwnLineSingleCharNewline() throws Exception
+    {
+        shouldParseMultilineFieldWhereEndQuoteIsOnItsOwnLine( "\n" );
+    }
+
+    @Test
+    public void shouldParseMultilineFieldWhereEndQuoteIsOnItsOwnLinePlatformNewline() throws Exception
+    {
+        shouldParseMultilineFieldWhereEndQuoteIsOnItsOwnLine( "%n" );
+    }
+
+    private void shouldParseMultilineFieldWhereEndQuoteIsOnItsOwnLine( String newline ) throws Exception
     {
         // GIVEN
-        String data = lines(
+        String data = lines( newline,
                 "1,\"Bar\"",
                 "2,\"Bar",
                 "",
@@ -571,26 +582,26 @@ public class BufferedCharSeekerTest
         assertNextValue( seeker, mark, COMMA, "1" );
         assertNextValue( seeker, mark, COMMA, "Bar" );
         assertNextValue( seeker, mark, COMMA, "2" );
-        assertNextValue( seeker, mark, COMMA, lines(
+        assertNextValue( seeker, mark, COMMA, lines( newline,
                 "Bar",
                 "",
                 "Quux",
                 "" ) );
         assertNextValue( seeker, mark, COMMA, "3" );
-        assertNextValue( seeker, mark, COMMA, lines(
+        assertNextValue( seeker, mark, COMMA, lines( newline,
                 "Bar",
                 "",
                 "Quux" ) );
     }
 
-    private String lines( String... lines )
+    private String lines( String newline, String... lines )
     {
         StringBuilder builder = new StringBuilder();
         for ( String line : lines )
         {
             if ( builder.length() > 0 )
             {
-                builder.append( format( "%n" ) );
+                builder.append( format( newline ) );
             }
             builder.append( line );
         }
