@@ -22,36 +22,36 @@ package org.neo4j.logging;
 import org.junit.Test;
 
 import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Date;
 import java.util.IllegalFormatException;
 
-import org.neo4j.function.Supplier;
-import org.neo4j.logging.FormattedLog.FormattedLogger;
+import org.neo4j.function.Suppliers;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
 
 public class FormattedLogTest
 {
+    private static final Date FIXED_DATE = new Date( 467612604343L );
+
     @Test
     public void loggerWriteLogShouldNotWriteAnythingForNullMessage()
     {
         // Given
-        PrintWriter writer = mock( PrintWriter.class );
-        FormattedLogger logger = newFormattedLogger();
+        StringWriter writer = new StringWriter();
+        Log log = FormattedLog.toPrintWriter( new PrintWriter( writer ) );
 
         try
         {
             // When
-            logger.writeLog( writer, null );
-            fail( "Should have thrown " + NullPointerException.class );
+            log.info( null );
+            fail( "Should have thrown " + IllegalArgumentException.class );
         }
-        catch ( NullPointerException npe )
+        catch ( IllegalArgumentException npe )
         {
             // Then
-            verifyZeroInteractions( writer );
+            assertEquals( "", writer.toString() );
         }
     }
 
@@ -59,19 +59,19 @@ public class FormattedLogTest
     public void loggerWriteLogShouldNotWriteAnythingForNullMessageAndNotNullThrowable()
     {
         // Given
-        PrintWriter writer = mock( PrintWriter.class );
-        FormattedLogger logger = newFormattedLogger();
+        StringWriter writer = new StringWriter();
+        Log log = FormattedLog.toPrintWriter( new PrintWriter( writer ) );
 
         try
         {
             // When
-            logger.writeLog( writer, null, new RuntimeException() );
+            log.info( null, new RuntimeException() );
             fail( "Should have thrown " + NullPointerException.class );
         }
         catch ( NullPointerException npe )
         {
             // Then
-            verifyZeroInteractions( writer );
+            assertEquals( "", writer.toString() );
         }
     }
 
@@ -82,15 +82,14 @@ public class FormattedLogTest
         String message = "I need your clothes, your boots and your motorcycle";
         Throwable throwable = null;
 
-        PrintWriter writer = mock( PrintWriter.class );
-        FormattedLogger logger = newFormattedLogger();
+        StringWriter writer = new StringWriter();
+        Log log = newFormattedLog( writer );
 
         // When
-        logger.writeLog( writer, message, throwable );
+        log.info( message, throwable );
 
         // Then
-        verify( writer ).write( message );
-        verify( writer, never() ).write( (String) null );
+        assertEquals( "1984-10-26 04:23:24.343 INFO  [test] I need your clothes, your boots and your motorcycle\n", writer.toString() );
     }
 
     @Test
@@ -98,37 +97,41 @@ public class FormattedLogTest
     {
         // Given
         String message = "The more contact I have with humans, the more I learn";
-        Throwable throwable = mock( Throwable.class );
+        Throwable throwable = new Throwable() {
+            @Override
+            public void printStackTrace( PrintWriter s )
+            {
+                s.append( "<stacktrace>" );
+            }
+        };
 
-        PrintWriter writer = mock( PrintWriter.class );
-        FormattedLogger logger = newFormattedLogger();
+        StringWriter writer = new StringWriter();
+        Log log = newFormattedLog( writer );
 
         // When
-        logger.writeLog( writer, message, throwable );
+        log.info( message, throwable );
 
         // Then
-        verify( writer ).write( message );
-        verify( writer, never() ).write( (String) null );
-        verify( throwable ).printStackTrace( writer );
+        assertEquals( "1984-10-26 04:23:24.343 INFO  [test] The more contact I have with humans, the more I learn\n<stacktrace>", writer.toString() );
     }
 
     @Test
     public void loggerWriteLogShouldNotWriteAnythingForNullMessageFormatAndNotNullArguments()
     {
         // Given
-        PrintWriter writer = mock( PrintWriter.class );
-        FormattedLogger logger = newFormattedLogger();
+        StringWriter writer = new StringWriter();
+        Log log = newFormattedLog( writer );
 
         try
         {
             // When
-            logger.writeLog( writer, null, new Object[]{"argument1", "argument2"} );
+            log.info( null, "argument1", "argument2" );
             fail( "Should have thrown " + NullPointerException.class );
         }
         catch ( NullPointerException npe )
         {
             // Then
-            verifyZeroInteractions( writer );
+            assertEquals( "", writer.toString() );
         }
     }
 
@@ -136,25 +139,25 @@ public class FormattedLogTest
     public void loggerWriteLogShouldNotWriteAnythingForMessageFormatAndInvalidArguments()
     {
         // Given
-        PrintWriter writer = mock( PrintWriter.class );
-        FormattedLogger logger = newFormattedLogger();
+        StringWriter writer = new StringWriter();
+        Log log = newFormattedLog( writer );
 
         try
         {
             // When
-            logger.writeLog( writer, "i expect string and double here [%s, %d] ", new Object[]{"foo", new Object()} );
+            log.info( "i expect string and double here [%s, %d] ", "foo", new Object() );
             fail( "Should have thrown " + IllegalFormatException.class );
         }
         catch ( IllegalFormatException ife )
         {
             // Then
-            verifyZeroInteractions( writer );
+            assertEquals( "", writer.toString() );
         }
     }
 
     @SuppressWarnings( "unchecked" )
-    private static FormattedLogger newFormattedLogger()
+    private static FormattedLog newFormattedLog( StringWriter writer )
     {
-        return new FormattedLogger( mock( Supplier.class ), new Object(), "test", true );
+        return new FormattedLog( Suppliers.singleton( FIXED_DATE ), Suppliers.singleton( new PrintWriter( writer ) ), null, "test", true, true );
     }
 }
