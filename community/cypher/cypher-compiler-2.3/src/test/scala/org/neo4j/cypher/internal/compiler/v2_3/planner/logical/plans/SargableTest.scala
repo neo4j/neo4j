@@ -23,14 +23,14 @@ import org.mockito.Mockito
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 
-class SeekableTest extends CypherFunSuite with AstConstructionTestSupport {
+class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
 
   val expr1 = mock[Expression]
   val expr2 = mock[Expression]
 
   val nodeA = ident("a")
 
-  test("Seek finds Equals") {
+  test("Seekable finds Equals") {
     assertMatches(Equals(expr1, expr2)_) {
       case Seekable(lhs, rhs) =>
         lhs should equal(expr1)
@@ -38,7 +38,7 @@ class SeekableTest extends CypherFunSuite with AstConstructionTestSupport {
     }
   }
 
-  test("Seek finds In") {
+  test("Seekable finds In") {
     assertMatches(In(expr1, expr2)_) {
       case Seekable(lhs, rhs) =>
         lhs should equal(expr1)
@@ -46,11 +46,11 @@ class SeekableTest extends CypherFunSuite with AstConstructionTestSupport {
     }
   }
 
-  test("MultiSeekRhs has size hint for collections") {
+  test("ManySeekableArgs has size hint for collections") {
     ManySeekableArgs(Collection(Seq(expr1, expr2))_).sizeHint should equal(Some(2))
   }
 
-  test("IdSeek works") {
+  test("IdSeekable works") {
     val leftExpr: FunctionInvocation = FunctionInvocation(FunctionName("id") _, nodeA)_
     Mockito.when(expr2.dependencies).thenReturn(Set.empty[Identifier])
     val expr: Equals = Equals(leftExpr, expr2) _
@@ -65,7 +65,7 @@ class SeekableTest extends CypherFunSuite with AstConstructionTestSupport {
     }
   }
 
-  test("IdSeek does not match if rhs depends on lhs identifier") {
+  test("IdSeekable does not match if rhs depends on lhs identifier") {
     val leftExpr: FunctionInvocation = FunctionInvocation(FunctionName("id") _, nodeA)_
     Mockito.when(expr2.dependencies).thenReturn(Set(nodeA))
     val expr: Equals = Equals(leftExpr, expr2) _
@@ -75,7 +75,7 @@ class SeekableTest extends CypherFunSuite with AstConstructionTestSupport {
     }
   }
 
-  test("IdSeek does not match if function is not the id function") {
+  test("IdSeekable does not match if function is not the id function") {
     val leftExpr: FunctionInvocation = FunctionInvocation(FunctionName("rand") _, nodeA)_
     Mockito.when(expr2.dependencies).thenReturn(Set.empty[Identifier])
     val expr: Equals = Equals(leftExpr, expr2) _
@@ -85,7 +85,7 @@ class SeekableTest extends CypherFunSuite with AstConstructionTestSupport {
     }
   }
 
-  test("PropertySeek works with plain expressions") {
+  test("PropertySeekable works with plain expressions") {
     val leftExpr: Property = Property(nodeA, PropertyKeyName("id")_)_
     val expr: Expression = In(leftExpr, expr2)_
     Mockito.when(expr2.dependencies).thenReturn(Set.empty[Identifier])
@@ -100,7 +100,7 @@ class SeekableTest extends CypherFunSuite with AstConstructionTestSupport {
     }
   }
 
-  test("PropertySeek works with collection expressions") {
+  test("PropertySeekable works with collection expressions") {
     val leftExpr: Property = Property(nodeA, PropertyKeyName("id")_)_
     val rightExpr: Collection = Collection(Seq(expr1, expr2))_
     val expr: Expression = In(leftExpr, rightExpr)_
@@ -117,13 +117,26 @@ class SeekableTest extends CypherFunSuite with AstConstructionTestSupport {
     }
   }
 
-  test("PropertySeek does not match if rhs depends on lhs identifier") {
+  test("PropertySeekable does not match if rhs depends on lhs identifier") {
     val leftExpr: Property = Property(nodeA, PropertyKeyName("id")_)_
     Mockito.when(expr2.dependencies).thenReturn(Set(nodeA))
     val expr: Expression = In(leftExpr, expr2)_
 
     assertDoesNotMatch(expr) {
       case PropertySeekable(_, _) => (/* oh noes */)
+    }
+  }
+
+  test("PropertyScannable works") {
+    val propertyExpr: Property = Property(nodeA, PropertyKeyName("name")_)_
+    val expr: FunctionInvocation = FunctionInvocation(FunctionName("has") _, propertyExpr)_
+
+    assertMatches(expr) {
+      case PropertyScannable(scannable) =>
+        scannable.expr should equal(expr)
+        scannable.property should equal(propertyExpr)
+        scannable.ident should equal(nodeA)
+        scannable.propertyKey should equal(propertyExpr.propertyKey)
     }
   }
 

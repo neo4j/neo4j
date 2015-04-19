@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.functions
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{PropertyScannable, IdName, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LeafPlanner, LogicalPlanningContext}
 
 object indexScanLeafPlanner extends LeafPlanner {
@@ -33,20 +33,22 @@ object indexScanLeafPlanner extends LeafPlanner {
 
     predicates.collect {
       // MATCH (n:User) WHERE has(n.prop) RETURN n
-      case predicate@FunctionInvocation(_, _, IndexedSeq(Property(Identifier(name), propertyKeyName))) if predicate.function == Some(functions.Has) =>
+      case predicate@PropertyScannable(scannable) =>
+        val name = scannable.name
+        val propertyKey = scannable.propertyKey
+        val propertyKeyName = propertyKey.name
 
         val idName = IdName(name)
         for (labelPredicate <- labelPredicates.getOrElse(idName, Set.empty);
              labelName <- labelPredicate.labels;
-             indexDescriptor <- findIndexesFor(labelName.name, propertyKeyName.name);
+             indexDescriptor <- findIndexesFor(labelName.name, propertyKeyName);
              labelId <- labelName.id)
           yield {
-            val propertyName = propertyKeyName.name
             val hint = qg.hints.collectFirst {
-              case hint@UsingIndexHint(Identifier(`name`), `labelName`, Identifier(`propertyName`)) => hint
+              case hint@UsingIndexHint(Identifier(`name`), `labelName`, Identifier(`propertyKeyName`)) => hint
             }
             context.logicalPlanProducer.planNodeIndexScan(idName, LabelToken(labelName, labelId),
-              PropertyKeyToken(propertyKeyName, propertyKeyName.id.head), Seq(predicate, labelPredicate),
+              PropertyKeyToken(propertyKey, propertyKey.id.head), Seq(predicate, labelPredicate),
               hint, qg.argumentIds)
           }
 

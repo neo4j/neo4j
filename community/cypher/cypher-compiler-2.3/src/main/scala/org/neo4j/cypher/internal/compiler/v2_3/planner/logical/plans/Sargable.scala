@@ -54,6 +54,16 @@ object PropertySeekable {
   }
 }
 
+object PropertyScannable {
+  def unapply(v: Any) = v match {
+    case func@FunctionInvocation(_, _, IndexedSeq(property@Property(ident: Identifier, _)))
+      if func.function == Some(functions.Has) =>
+      Some(PropertyScannable(func, ident, property))
+    case _ =>
+      None
+  }
+}
+
 sealed trait Sargable[T <: Expression] {
   def expr: T
   def ident: Identifier
@@ -72,6 +82,14 @@ case class PropertySeekable(expr: Property, ident: Identifier, args: SeekableArg
   extends Sargable[Property] {
 
   def propertyKey = expr.propertyKey
+}
+
+sealed trait Scannable[T <: Expression] extends Sargable[T]
+
+case class PropertyScannable(expr: FunctionInvocation, ident: Identifier, property: Property)
+  extends Scannable[FunctionInvocation] {
+
+  def propertyKey = property.propertyKey
 }
 
 sealed trait SeekableArgs {
