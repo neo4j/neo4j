@@ -102,7 +102,7 @@ public class EncodingIdMapper implements IdMapper
     // where the 7 most significant bits in that byte denotes length of original string.
     // See StringEncoder.
     private static LongBitsManipulator COLLISION_BIT = new LongBitsManipulator( 56, 1 );
-    public static int CACHE_CHUNK_SIZE = 1_000_000; // 8MB a piece
+    private static int DEFAULT_CACHE_CHUNK_SIZE = 1_000_000; // 8MB a piece
 
     private final NumberArrayFactory cacheFactory;
     // Encoded values added in #put, in the order in which they are put. Indexes in the array are the actual node ids,
@@ -133,14 +133,13 @@ public class EncodingIdMapper implements IdMapper
 
     private IdGroup[] idGroups = new IdGroup[10];
     private IdGroup currentIdGroup;
-//    private int idGroupsCursor;
     private final Monitor monitor;
-
+    private final int chunkSize;
     private final Factory<Radix> radixFactory;
 
     public EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Factory<Radix> radixFactory, Monitor monitor )
     {
-        this( cacheFactory, encoder, radixFactory, monitor, CACHE_CHUNK_SIZE, Runtime.getRuntime().availableProcessors() - 1 );
+        this( cacheFactory, encoder, radixFactory, monitor, DEFAULT_CACHE_CHUNK_SIZE, Runtime.getRuntime().availableProcessors() - 1 );
     }
 
     public EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Factory<Radix> radixFactory,
@@ -148,6 +147,7 @@ public class EncodingIdMapper implements IdMapper
     {
         this.monitor = monitor;
         this.cacheFactory = cacheFactory;
+        this.chunkSize = chunkSize;
         this.processorsForSorting = max( processorsForSorting, 1 );
         this.dataCache = newLongArray( cacheFactory, chunkSize );
         this.encoder = encoder;
@@ -403,7 +403,7 @@ public class EncodingIdMapper implements IdMapper
         NumberArrayStats collisionDataCacheStats = new NumberArrayStats();
         List<String> sourceDescriptions = new ArrayList<>();
         String lastSourceDescription = null;
-        collisionSourceDataCache = newLongArray( cacheFactory, CACHE_CHUNK_SIZE );
+        collisionSourceDataCache = newLongArray( cacheFactory, chunkSize );
         for ( long i = 0; ids.hasNext(); )
         {
             long j = 0;
@@ -503,17 +503,18 @@ public class EncodingIdMapper implements IdMapper
         for ( int i = 0; i < collisionTrackerCacheStats.size(); i++ )
         {
             int collisionIndex = collisionTrackerCache.get( i );
-            long eid = dataCache.get( collisionNodeIdCache.get( collisionIndex ) );
+            long dataIndex = collisionNodeIdCache.get( collisionIndex );
+            long eid = dataCache.get( dataIndex );
             long sourceInformation = collisionSourceDataCache.get( collisionIndex );
             source.decode( sourceInformation );
-            IdGroup group = groupOf( collisionNodeIdCache.get( i ) );
+            IdGroup group = groupOf( dataIndex );
             int groupId = group.id();
             if ( i == 0 || (eid == previousEid && previousGroupId == groupId ) )
             {   // Potential duplicate
                 Object inputId = collisionValues.get( collisionIndex );
                 int detectorIndex = detector.add( inputId, sourceInformation );
                 if ( detectorIndex != -1 )
-                {
+                {   // Duplicate
                     String firstDataPoint = detector.sourceInformation( detectorIndex ).describe( sourceDescriptions );
                     String otherDataPoint = source.describe( sourceDescriptions );
                     throw new DuplicateInputIdException( inputId, group.name(), firstDataPoint, otherDataPoint );
@@ -601,7 +602,7 @@ public class EncodingIdMapper implements IdMapper
                      (mid < trackerStats.highestIndex() && unsignedCompare( x, dataValue( mid + 1 ), CompareType.EQ ) ) )
                 {   // OK so there are actually multiple equal data values here, we need to go through them all
                     // to be sure we find the correct one.
-                    return findFromEIdRange( mid, midValue, inputId, groupId );
+                    return findFromEIdRange( mid, midValue, inputId, x, groupId );
                 }
                 // This is the only value here, let's do a simple comparison with correct group id and return
                 return groupOf( dataIndex ).id() == groupId ? dataIndex : -1;
@@ -644,10 +645,10 @@ public class EncodingIdMapper implements IdMapper
         return -1;
     }
 
-    private long findFromEIdRange( long index, long val, Object inputId , int groupId )
+    private long findFromEIdRange( long index, long val, Object inputId, long x, int groupId )
     {
         val = clearCollision( val );
-        assert val == encoder.encode( inputId );
+        assert val == x;
 
         while ( index > 0 && unsignedCompare( val, dataValue( index - 1 ), CompareType.EQ ) )
         {
