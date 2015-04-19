@@ -20,9 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.functions
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{PropertyScannable, IdName, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{AsPropertyScannable, IdName, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LeafPlanner, LogicalPlanningContext}
 
 object indexScanLeafPlanner extends LeafPlanner {
@@ -33,7 +32,7 @@ object indexScanLeafPlanner extends LeafPlanner {
 
     predicates.collect {
       // MATCH (n:User) WHERE has(n.prop) RETURN n
-      case predicate@PropertyScannable(scannable) =>
+      case predicate@AsPropertyScannable(scannable) =>
         val name = scannable.name
         val propertyKey = scannable.propertyKey
         val propertyKeyName = propertyKey.name

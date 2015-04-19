@@ -32,7 +32,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("Seekable finds Equals") {
     assertMatches(Equals(expr1, expr2)_) {
-      case Seekable(lhs, rhs) =>
+      case WithSeekableArgs(lhs, rhs) =>
         lhs should equal(expr1)
         rhs should equal(SingleSeekableArg(expr2))
     }
@@ -40,7 +40,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("Seekable finds In") {
     assertMatches(In(expr1, expr2)_) {
-      case Seekable(lhs, rhs) =>
+      case WithSeekableArgs(lhs, rhs) =>
         lhs should equal(expr1)
         rhs should equal(ManySeekableArgs(expr2))
     }
@@ -56,12 +56,12 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     val expr: Equals = Equals(leftExpr, expr2) _
 
     assertMatches(expr) {
-      case IdSeekable(lhs, rhs) =>
-        lhs.ident should equal(nodeA)
-        lhs.expr should equal(leftExpr)
-        lhs.name should equal(nodeA.name)
-        rhs.expr should equal(expr2)
-        rhs.sizeHint should equal(Some(1))
+      case AsIdSeekable(seekable) =>
+        seekable.ident should equal(nodeA)
+        seekable.expr should equal(leftExpr)
+        seekable.name should equal(nodeA.name)
+        seekable.args.expr should equal(expr2)
+        seekable.args.sizeHint should equal(Some(1))
     }
   }
 
@@ -71,7 +71,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     val expr: Equals = Equals(leftExpr, expr2) _
 
     assertDoesNotMatch(expr) {
-      case IdSeekable(_, _) => (/* oh noes */)
+      case AsIdSeekable(_) => (/* oh noes */)
     }
   }
 
@@ -81,7 +81,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     val expr: Equals = Equals(leftExpr, expr2) _
 
     assertDoesNotMatch(expr) {
-      case IdSeekable(_, _) => (/* oh noes */)
+      case AsIdSeekable(_) => (/* oh noes */)
     }
   }
 
@@ -91,12 +91,12 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     Mockito.when(expr2.dependencies).thenReturn(Set.empty[Identifier])
 
     assertMatches(expr) {
-      case PropertySeekable(lhs, rhs) =>
-        lhs.ident should equal(nodeA)
-        lhs.expr should equal(leftExpr)
-        lhs.name should equal(nodeA.name)
-        rhs.expr should equal(expr2)
-        rhs.sizeHint should equal(None)
+      case AsPropertySeekable(seekable) =>
+        seekable.ident should equal(nodeA)
+        seekable.expr should equal(leftExpr)
+        seekable.name should equal(nodeA.name)
+        seekable.args.expr should equal(expr2)
+        seekable.args.sizeHint should equal(None)
     }
   }
 
@@ -108,12 +108,12 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     Mockito.when(expr2.dependencies).thenReturn(Set.empty[Identifier])
 
     assertMatches(expr) {
-      case PropertySeekable(lhs, rhs) =>
-        lhs.ident should equal(nodeA)
-        lhs.expr should equal(leftExpr)
-        lhs.name should equal(nodeA.name)
-        rhs.expr should equal(rightExpr)
-        rhs.sizeHint should equal(Some(2))
+      case AsPropertySeekable(seekable) =>
+        seekable.ident should equal(nodeA)
+        seekable.expr should equal(leftExpr)
+        seekable.name should equal(nodeA.name)
+        seekable.args.expr should equal(rightExpr)
+        seekable.args.sizeHint should equal(Some(2))
     }
   }
 
@@ -123,7 +123,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     val expr: Expression = In(leftExpr, expr2)_
 
     assertDoesNotMatch(expr) {
-      case PropertySeekable(_, _) => (/* oh noes */)
+      case AsPropertySeekable(_) => (/* oh noes */)
     }
   }
 
@@ -132,7 +132,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     val expr: FunctionInvocation = FunctionInvocation(FunctionName("has") _, propertyExpr)_
 
     assertMatches(expr) {
-      case PropertyScannable(scannable) =>
+      case AsPropertyScannable(scannable) =>
         scannable.expr should equal(expr)
         scannable.property should equal(propertyExpr)
         scannable.ident should equal(nodeA)

@@ -43,8 +43,8 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       Selectivity(0)
 
     // WHERE x.prop =/IN ...
-    case PropertySeekable(lhs, rhs) =>
-      calculateSelectivityForPropertyEquality(lhs.name, rhs, selections, lhs.propertyKey)
+    case AsPropertySeekable(seekable) =>
+      calculateSelectivityForPropertyEquality(seekable.name, seekable.args, selections, seekable.propertyKey)
 
     // Implicit relation uniqueness predicates
     case Not(Equals(lhs: Identifier, rhs: Identifier))
@@ -60,8 +60,8 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       combiner.orTogetherSelectivities(selectivities).get // We can trust the AST to never have empty ORs
 
     // WHERE id(x) =/IN [...]
-    case IdSeekable(_, rhs) =>
-      rhs.sizeHint.map(Cardinality(_)).getOrElse(DEFAULT_NUMBER_OF_ID_LOOKUPS) / stats.nodesWithLabelCardinality(None)
+    case AsIdSeekable(seekable) =>
+      seekable.args.sizeHint.map(Cardinality(_)).getOrElse(DEFAULT_NUMBER_OF_ID_LOOKUPS) / stats.nodesWithLabelCardinality(None)
 
     // WHERE <expr> = <expr>
     case _: Equals =>

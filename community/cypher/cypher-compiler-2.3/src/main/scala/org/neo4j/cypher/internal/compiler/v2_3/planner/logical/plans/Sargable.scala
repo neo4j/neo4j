@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.functions
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{Many, One, Zero, ZeroOneOrMany}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{ManySeekArgs, SingleSeekArg, SeekArgs}
 
-object Seekable {
+object WithSeekableArgs {
   def unapply(v: Any) = v match {
     case In(lhs, rhs) => Some(lhs -> ManySeekableArgs(rhs))
     case Equals(lhs, rhs) => Some(lhs -> SingleSeekableArg(rhs))
@@ -34,27 +34,27 @@ object Seekable {
   }
 }
 
-object IdSeekable {
+object AsIdSeekable {
   def unapply(v: Any) = v match {
-    case Seekable(func@FunctionInvocation(_, _, IndexedSeq(ident: Identifier)), rhs)
+    case WithSeekableArgs(func@FunctionInvocation(_, _, IndexedSeq(ident: Identifier)), rhs)
       if func.function == Some(functions.Id) && !rhs.dependencies(ident) =>
-      Some(IdSeekable(func, ident, rhs) -> rhs)
+      Some(IdSeekable(func, ident, rhs))
     case _ =>
       None
   }
 }
 
-object PropertySeekable {
+object AsPropertySeekable {
   def unapply(v: Any) = v match {
-    case Seekable(prop@Property(ident: Identifier, propertyKey), rhs)
+    case WithSeekableArgs(prop@Property(ident: Identifier, propertyKey), rhs)
       if !rhs.dependencies(ident) =>
-      Some(PropertySeekable(prop, ident, rhs) -> rhs)
+      Some(PropertySeekable(prop, ident, rhs))
     case _ =>
       None
   }
 }
 
-object PropertyScannable {
+object AsPropertyScannable {
   def unapply(v: Any) = v match {
     case func@FunctionInvocation(_, _, IndexedSeq(property@Property(ident: Identifier, _)))
       if func.function == Some(functions.Has) =>
@@ -75,11 +75,11 @@ sealed trait Seekable[T <: Expression] extends Sargable[T] {
   def args: SeekableArgs
 }
 
-case class IdSeekable(expr: FunctionInvocation, ident: Identifier, arg: SeekableArgs)
-  extends Sargable[FunctionInvocation]
+case class IdSeekable(expr: FunctionInvocation, ident: Identifier, args: SeekableArgs)
+  extends Seekable[FunctionInvocation]
 
 case class PropertySeekable(expr: Property, ident: Identifier, args: SeekableArgs)
-  extends Sargable[Property] {
+  extends Seekable[Property] {
 
   def propertyKey = expr.propertyKey
 }
