@@ -44,7 +44,11 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
     // WHERE x.prop IN [...]
     case In(Property(Identifier(name), propertyKey), Collection(expressions)) =>
-      calculateSelectivityForPropertyEquality(name, expressions, selections, propertyKey)
+      calculateSelectivityForPropertyEquality(name, expressions.size, selections, propertyKey)
+
+    // WHERE x.prop IN <expr>
+    case In(Property(Identifier(name), propertyKey), expression) =>
+      calculateSelectivityForPropertyEquality(name, DEFAULT_NUMBER_OF_INDEX_LOOKUPS.amount.toInt, selections, propertyKey)
 
     // Implicit relation uniqueness predicates
     case Not(Equals(lhs: Identifier, rhs: Identifier))
@@ -97,10 +101,10 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     labelCardinality / nodeCardinality
   }
 
-  private def calculateSelectivityForPropertyEquality(identifier: String, expressions: Seq[Expression], selections: Selections, propertyKey: PropertyKeyName)
+  private def calculateSelectivityForPropertyEquality(identifier: String, sizeHint: Int, selections: Selections, propertyKey: PropertyKeyName)
                                                      (implicit semanticTable: SemanticTable): Selectivity = {
     val labels = selections.labelsOnNode(IdName(identifier))
-    val indexSelectivities: Seq[Selectivity] = labels.toSeq.flatMap {
+    val indexSelectivities = labels.toSeq.flatMap {
       labelName =>
         (labelName.id, propertyKey.id) match {
           case (Some(labelId), Some(propertyKeyId)) =>
@@ -111,11 +115,11 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
         }
     }
 
-    val expandedSelectivities = Stream.from(0).take(expressions.size).flatMap(_ => indexSelectivities)
+    val expandedSelectivities = Stream.from(0).take(sizeHint).flatMap(_ => indexSelectivities)
 
     val selectivity: Option[Selectivity] = combiner.orTogetherSelectivities(expandedSelectivities)
 
     selectivity.
-      getOrElse(DEFAULT_EQUALITY_SELECTIVITY * Multiplier(expressions.size)) // If no index exist, use default equality selectivity
+      getOrElse(DEFAULT_EQUALITY_SELECTIVITY * Multiplier(sizeHint)) // If no index exist, use default equality selectivity
   }
 }
