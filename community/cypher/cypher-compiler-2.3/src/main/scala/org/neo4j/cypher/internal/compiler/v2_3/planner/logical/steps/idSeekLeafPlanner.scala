@@ -34,8 +34,8 @@ object idSeekLeafPlanner extends LeafPlanner {
     val idSeekPredicates: Seq[(Expression, Identifier, SeekableArgs)] = predicates.collect {
       // MATCH (a)-[r]->b WHERE id(r) IN expr
       // MATCH a WHERE id(a) IN {param}
-      case predicate@IdSeekable(lhs, rhs) if rhs.dependencies.forall(arguments) && !arguments(lhs.ident) =>
-        (predicate, lhs.ident, rhs)
+      case predicate@AsIdSeekable(seekable) if seekable.args.dependencies.forall(arguments) && !arguments(seekable.ident) =>
+        (predicate, seekable.ident, seekable.args)
     }
 
     val candidatePlans = idSeekPredicates.collect {
