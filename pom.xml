@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
-    <version>40</version>
+    <version>41</version>
     <relativePath/>
   </parent>
 
