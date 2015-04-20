@@ -8,6 +8,32 @@ o Added new warning mechanism. The first supported warning is generated for quer
   unintended catesian product
 o Cypher may now use full index scans to solve queries containing has(n.prop) if apropriate
 
+Server:
+o User has ability to configure jettys max header sizes with added configuration options:
+    - org.neo4j.server.webserver.max.request.header
+    - org.neo4j.server.webserver.max.response.header
+
+Kernel:
+o Object cache (i.e. node/relationship/property data cached as java objects in heap) has been removed.
+  This reduces heap usage as well as code complexity, while for most use cases maintaining or
+  surpassing performance levels of 2.2.x. The following settings have been removed:
+    - cache_type
+    - node_cache_size
+    - relationship_cache_size
+    - node_cache_array_fraction
+    - relationship_cache_array_fraction
+    - cache.memory_ratio
+    - high_performance_cache_min_log_interval
+o When setting properties on node/relationship existing property record chain is scanned for room
+  to fit the new property before creating a new property record. This will have writes pay
+  a small cost, but benefit readers as the property store will be more dense.
+
+Import tool:
+o Added ability to skip duplicate nodes, i.e. multiple nodes with the same ID in the same id space.
+  Maximum total number of bad entries (nodes and relationships) during an import is still controlled
+  using --bad-tolerance=<max bad entries>. Skipping of bad relationships/nodes can be enabled/disabled
+  individually with --skip-duplicate-nodes and --skip-bad-relationships.
+
 2.2.1
 -----
 Cypher:
