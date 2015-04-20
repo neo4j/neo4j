@@ -71,6 +71,7 @@ import static org.neo4j.collection.primitive.PrimitiveIntCollections.alwaysTrue;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.ArrayUtil.join;
+import static org.neo4j.helpers.Exceptions.contains;
 import static org.neo4j.helpers.Exceptions.withMessage;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
@@ -929,7 +930,7 @@ public class ImportToolTest
     private void assertExceptionContains( Exception e, String message, Class<? extends Exception> type )
             throws Exception
     {
-        if ( !type.equals( e.getClass() ) && !e.getMessage().contains( message ) )
+        if ( !contains( e, message, type ) )
         {   // Rethrow the exception since we'd like to see what it was instead
             throw withMessage( e,
                     format( "Expected exception to contain cause '%s', %s. but was %s", message, type, e ) );
