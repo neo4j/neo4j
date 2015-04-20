@@ -84,7 +84,7 @@ case class Cardinality(amount: Double) extends Ordered[Cardinality] {
   def *(that: Selectivity): Cardinality = amount * that.factor
   def +(that: Cardinality): Cardinality = amount + that.amount
   def *(that: Cardinality): Cardinality = amount * that.amount
-  def /(that: Cardinality): Selectivity = amount / that.amount
+  def /(that: Cardinality): Option[Selectivity] = if (that.amount == 0) None else Some(amount / that.amount)
   def *(that: CostPerRow): Cost = amount * that.cost
   def *(that: Cost): Cost = amount * that.gummyBears
   def ^(a: Int): Cardinality = Math.pow(amount, a)

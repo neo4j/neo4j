@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.AstRewritingTestSupport
-import org.neo4j.cypher.internal.compiler.v2_3.{SyntaxExceptionCreator, SemanticState, inSequence}
+import org.neo4j.cypher.internal.compiler.v2_3.{SemanticState, SyntaxExceptionCreator, inSequence}
 import org.neo4j.graphdb.Direction
 
 class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport {
@@ -77,6 +77,45 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
         ))(pos), None, None, None)(pos)
 
     val expected: Query = Query(None, SingleQuery(List(MATCH, WITH, RETURN))(pos))(pos)
+
+    rewritten should equal(expected)
+  }
+
+  test("Aggregating WITH downstreams" ) {
+    val rewritten = projectionInlinedAst("MATCH p = (a) WITH length(p) as l, count(*) as x WITH l, x RETURN l + x")
+    val a = ident("a")
+    val p = ident("p")
+    val l = ident("l")
+    val x = ident("x")
+    val MATCH =
+      Match(optional = false,
+        Pattern(List(
+          EveryPath(
+              NodePattern(Some(a), List(), None, naked = false)(pos))
+        ))(pos), List(), None)(pos)
+
+    val pathExpression = PathExpression(NodePathStep(a, NilPathStep))(pos)
+    val WITH1 =
+      With(distinct = false,
+        ReturnItems(includeExisting = false, Seq(
+          AliasedReturnItem(FunctionInvocation(FunctionName("length")(pos), pathExpression)(pos), l)(pos),
+          AliasedReturnItem(CountStar()(pos), x)(pos)
+        ))(pos), None, None, None, None)(pos)
+
+    val WITH2 =
+      With(distinct = false,
+        ReturnItems(includeExisting = false, Seq(
+          AliasedReturnItem(l, l)(pos),
+          AliasedReturnItem(x, x)(pos)
+        ))(pos), None, None, None, None)(pos)
+
+    val RETURN =
+      Return(distinct = false,
+        ReturnItems(includeExisting = false, Seq(
+          AliasedReturnItem(Add(l, x)(pos), ident("l + x"))(pos)
+        ))(pos), None, None, None)(pos)
+
+    val expected: Query = Query(None, SingleQuery(List(MATCH, WITH1, WITH2, RETURN))(pos))(pos)
 
     rewritten should equal(expected)
   }

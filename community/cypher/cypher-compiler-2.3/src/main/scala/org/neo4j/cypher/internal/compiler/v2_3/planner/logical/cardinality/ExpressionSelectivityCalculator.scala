@@ -31,7 +31,7 @@ trait Expression2Selectivity {
   def apply(exp: Expression)(implicit semanticTable: SemanticTable, selections: Selections): Selectivity
 }
 
-case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: SelectivityCombiner) extends Expression2Selectivity  {
+case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: SelectivityCombiner) extends Expression2Selectivity {
 
   def apply(exp: Expression)(implicit semanticTable: SemanticTable, selections: Selections): Selectivity = exp match {
     // WHERE a:Label
@@ -61,7 +61,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
     // WHERE id(x) =/IN [...]
     case AsIdSeekable(seekable) =>
-      seekable.args.sizeHint.map(Cardinality(_)).getOrElse(DEFAULT_NUMBER_OF_ID_LOOKUPS) / stats.nodesWithLabelCardinality(None)
+      (seekable.args.sizeHint.map(Cardinality(_)).getOrElse(DEFAULT_NUMBER_OF_ID_LOOKUPS) / stats.nodesWithLabelCardinality(None)) getOrElse Selectivity.ONE
 
     // WHERE <expr> = <expr>
     case _: Equals =>
@@ -82,16 +82,14 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
   }
 
   private def calculateSelectivityForLabel(label: Option[LabelId]): Selectivity = {
-    val nodeCardinality: Cardinality = stats.nodesWithLabelCardinality(None)
-    if (nodeCardinality == Cardinality.EMPTY) {
-      return 1.0
-    }
-
-    val labelCardinality: Cardinality = label.map(l => stats.nodesWithLabelCardinality(Some(l))).getOrElse(0.0)
-    labelCardinality / nodeCardinality
+    val labelCardinality: Cardinality = label.map(l => stats.nodesWithLabelCardinality(Some(l))).getOrElse(Cardinality.EMPTY)
+    labelCardinality / stats.nodesWithLabelCardinality(None) getOrElse Selectivity.ONE
   }
 
-  private def calculateSelectivityForPropertyEquality(identifier: String, rhs: SeekableArgs, selections: Selections, propertyKey: PropertyKeyName)
+  private def calculateSelectivityForPropertyEquality(identifier: String,
+                                                      rhs: SeekableArgs,
+                                                      selections: Selections,
+                                                      propertyKey: PropertyKeyName)
                                                      (implicit semanticTable: SemanticTable): Selectivity = {
     val labels = selections.labelsOnNode(IdName(identifier))
     val indexSelectivities = labels.toSeq.flatMap {
@@ -101,7 +99,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
             stats.indexSelectivity(labelId, propertyKeyId)
 
           case _ =>
-            Some(Selectivity(0))
+            Some(Selectivity.ZERO)
         }
     }
 

@@ -51,4 +51,21 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite with LogicalPlanCo
 
     result should equal(Selectivity.ONE)
   }
+
+  test("should not consider label selectivity twice") {
+    val stats: GraphStatistics = mock[GraphStatistics]
+    when(stats.nodesWithLabelCardinality(any())).thenReturn(Cardinality(1))
+    when(stats.cardinalityByLabelsAndRelationshipType(any(), any(), any())).thenReturn(Cardinality(42))
+
+    val calculator = PatternSelectivityCalculator(stats, IndependenceCombiner)
+    val relationship = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+
+    val label = LabelName("L")(pos)
+
+    implicit val semanticTable = new SemanticTable(resolvedLabelIds = mutable.Map("L" -> LabelId(0)))
+    implicit val selections = Selections(Set(Predicate(Set[IdName]("a"), HasLabels(ident("a"), Seq(label))(pos))))
+    val result = calculator.apply(relationship, Map(IdName("a") -> Set(label)))
+
+    result should equal(Selectivity(42))
+  }
 }

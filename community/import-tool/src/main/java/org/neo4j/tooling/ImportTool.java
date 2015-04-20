@@ -19,15 +19,6 @@
  */
 package org.neo4j.tooling;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.lang.Thread.UncaughtExceptionHandler;
-import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Map.Entry;
-
 import org.neo4j.function.Function;
 import org.neo4j.function.Function2;
 import org.neo4j.helpers.Args;
@@ -36,19 +27,15 @@ import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.Version;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.storemigration.FileOperation;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
-import org.neo4j.kernel.impl.util.Converters;
-import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
-import org.neo4j.kernel.impl.util.Validator;
-import org.neo4j.kernel.impl.util.Validators;
+import org.neo4j.kernel.impl.util.*;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.tooling.import_tool.ComponentVersion;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.DuplicateInputIdException;
@@ -61,20 +48,24 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactory;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
-import static java.nio.charset.Charset.defaultCharset;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.lang.Thread.UncaughtExceptionHandler;
+import java.nio.charset.Charset;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Map.Entry;
 
+import static java.nio.charset.Charset.defaultCharset;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.badCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.collect;
-import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_NODE_DECORATOR;
-import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.additiveLabels;
-import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.defaultRelationshipType;
+import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.*;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.data;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.*;
 
 /**
  * User-facing command line tool around a {@link BatchImporter}.
@@ -429,7 +420,7 @@ public class ImportTool
         {
             System.err.println( "Duplicate input ids that would otherwise clash can be put into separate id space,"
                     + " read more about how to use id spaces in the manual:"
-                    + " http://neo4j.com/docs/" + ComponentVersion.getKernel().getVersion() +
+                    + " http://neo4j.com/docs/" + Version.getKernel().getVersion() +
                     "/import-tool-header-format.html#_id_spaces" );
         }
 

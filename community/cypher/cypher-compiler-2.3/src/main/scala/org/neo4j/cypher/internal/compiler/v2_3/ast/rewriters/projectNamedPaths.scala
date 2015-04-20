@@ -43,7 +43,7 @@ case object projectNamedPaths extends Rewriter {
     case expr: Expression =>
       replacer.stop(expr)
 
-    case clause@With(_, ri: ReturnItems, _, _, _, _) =>
+    case clause@With(_, ri: ReturnItems, _, _, _, _) if !ri.containsAggregate =>
       val pathDependencies = clause.treeFold(Set.empty[Identifier]) {
         case step:PathStep => (acc, children) => children(acc ++ step.dependencies)
         case _ => (acc, children) => children(acc)
