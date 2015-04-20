@@ -1,3 +1,11 @@
+2.3-M01
+-------
+
+Cypher:
+o Added new warning mechanism. The first supported warning is generated for queries that contain a potentially
+  unintended catesian product
+o Cypher may now use full index scans to solve queries containing has(n.prop) if apropriate
+
 2.2.2
 -----
 o Fixes problem when using named paths and aggregation
