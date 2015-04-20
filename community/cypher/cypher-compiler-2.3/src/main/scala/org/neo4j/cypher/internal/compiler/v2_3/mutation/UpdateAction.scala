@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{AstNode, EffectfulAstNode}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.{Effectful, QueryState}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v2_3.symbols._
@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 trait UpdateAction extends TypeSafe with AstNode[UpdateAction] {
   self =>
 
-  def exec(context: ExecutionContext, state: QueryState): Iterator[ExecutionContext]
+  def exec(context: ExecutionContext, state: pipes.QueryState): Iterator[ExecutionContext]
 
   def identifiers: Seq[(String, CypherType)]
 
@@ -45,7 +45,7 @@ trait UpdateAction extends TypeSafe with AstNode[UpdateAction] {
   def effects(symbols: SymbolTable): Effects = {
     val collector = new EffectsCollector(localEffects(symbols), self, symbols)
     visitFirst {
-      case (effectful: Effectful) => collector.register(effectful).withEffects(effectful.localEffects.toWriteEffects())
+      case (effectful: pipes.Effectful) => collector.register(effectful).withEffects(effectful.localEffects.toWriteEffects())
       case (effectfulAst: EffectfulAstNode[_]) => collector.register(effectfulAst).withEffects(effectfulAst.localEffects(symbols).toWriteEffects())
       case (update: UpdateAction) =>
         val oldSymbols = collector.symbols(update)
