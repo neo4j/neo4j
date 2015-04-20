@@ -83,7 +83,7 @@ class ExecutionEngineIT extends CypherFunSuite {
     val plan = db.execute("PROFILE MATCH (a) RETURN a").getExecutionPlanDescription
 
     //then
-    plan.getArguments().get("planner") should equal("RULE")
+    plan.getArguments.get("planner") should equal("RULE")
   }
 
   test("should be able to force COST as default when using cypher 2.2") {

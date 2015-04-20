@@ -19,22 +19,21 @@
  */
 package org.neo4j.cypher
 
-sealed abstract class CypherVersion(versionName: String) {
-  val name = CypherOptionName.asCanonicalName(versionName)
+sealed abstract class CypherRuntime(runtimeName: String) {
+  val name = CypherOptionName.asCanonicalName(runtimeName)
 }
 
-object CypherVersion {
+object CypherRuntime {
 
-  case object v1_9 extends CypherVersion("1.9")
-  case object v2_2 extends CypherVersion("2.2")
-  case object v2_3 extends CypherVersion("2.3")
+  case object default extends CypherRuntime("default")
+  case object interpreted extends CypherRuntime("interpreted")
+  case object compiled extends CypherRuntime("compiled")
 
-  def apply(versionName: String) = findVersionByExactName(CypherOptionName.asCanonicalName(versionName)).getOrElse {
-    throw new SyntaxException(s"Supported versions are: ${allVersions.map(_.name).mkString(", ")}")
+  def apply(name: String) = findRuntimeByExactName(CypherOptionName.asCanonicalName(name)).getOrElse {
+    throw new SyntaxException(s"Supported runtimes are: ${allRuntimes.map(_.name).mkString(", ")}")
   }
 
-  def findVersionByExactName(versionName: String) = allVersions.find( _.name == versionName )
+  def findRuntimeByExactName(name: String) = allRuntimes.find( _.name == name )
 
-  val vDefault = v2_3
-  val allVersions = Seq(v1_9, v2_2, v2_3)
+  val allRuntimes = Seq(default, interpreted, compiled)
 }

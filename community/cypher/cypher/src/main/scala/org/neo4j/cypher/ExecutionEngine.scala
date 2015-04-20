@@ -202,11 +202,11 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
   private def createCompiler: CypherCompiler = {
     val version = CypherVersion(optGraphSetting[String](
       graph, GraphDatabaseSettings.cypher_parser_version, CypherVersion.vDefault.name))
-    val planner = PlannerName(optGraphSetting[String](
-      graph, GraphDatabaseSettings.cypher_planner, PlannerName.default.name))
-    val runtime = RuntimeName(optGraphSetting[String](
-      graph, GraphDatabaseSettings.cypher_runtime, RuntimeName.default.name))
-    if ((version != CypherVersion.v2_2 && version != CypherVersion.v2_3) && (planner == CostPlannerName || planner == IDPPlannerName || planner == DPPlannerName)) {
+    val planner = CypherPlanner(optGraphSetting[String](
+      graph, GraphDatabaseSettings.cypher_planner, CypherPlanner.default.name))
+    val runtime = CypherRuntime(optGraphSetting[String](
+      graph, GraphDatabaseSettings.cypher_runtime, CypherRuntime.default.name))
+    if ((version != CypherVersion.v2_2 && version != CypherVersion.v2_3) && (planner == CypherPlanner.cost || planner == CypherPlanner.idp || planner == CypherPlanner.dp)) {
       val message = s"Cannot combine configurations: ${GraphDatabaseSettings.cypher_parser_version.name}=${version.name} " +
         s"with ${GraphDatabaseSettings.cypher_planner.name} = ${planner.name}"
       log.error(message)

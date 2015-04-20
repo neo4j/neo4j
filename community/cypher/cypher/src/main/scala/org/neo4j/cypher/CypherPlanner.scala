@@ -19,22 +19,23 @@
  */
 package org.neo4j.cypher
 
-sealed abstract class CypherVersion(versionName: String) {
-  val name = CypherOptionName.asCanonicalName(versionName)
+sealed abstract class CypherPlanner(plannerName: String) {
+  val name = CypherOptionName.asCanonicalName(plannerName)
 }
 
-object CypherVersion {
+object CypherPlanner {
 
-  case object v1_9 extends CypherVersion("1.9")
-  case object v2_2 extends CypherVersion("2.2")
-  case object v2_3 extends CypherVersion("2.3")
+  case object default extends CypherPlanner("default")
+  case object cost extends CypherPlanner("cost")
+  case object idp extends CypherPlanner("idp")
+  case object dp extends CypherPlanner("dp")
+  case object rule extends CypherPlanner("rule")
 
-  def apply(versionName: String) = findVersionByExactName(CypherOptionName.asCanonicalName(versionName)).getOrElse {
-    throw new SyntaxException(s"Supported versions are: ${allVersions.map(_.name).mkString(", ")}")
+  def apply(name: String) = findPlannerByExactName(CypherOptionName.asCanonicalName(name)).getOrElse {
+    throw new SyntaxException(s"Supported planners are: ${allPlanners.map(_.name).mkString(", ")}")
   }
 
-  def findVersionByExactName(versionName: String) = allVersions.find( _.name == versionName )
+  def findPlannerByExactName(name: String) = allPlanners.find( _.name == name )
 
-  val vDefault = v2_3
-  val allVersions = Seq(v1_9, v2_2, v2_3)
+  val allPlanners = Seq(default, cost, idp, dp, rule)
 }
