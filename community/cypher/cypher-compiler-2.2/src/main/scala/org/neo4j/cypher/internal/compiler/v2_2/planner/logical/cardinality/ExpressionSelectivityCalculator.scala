@@ -31,7 +31,7 @@ trait Expression2Selectivity {
   def apply(exp: Expression)(implicit semanticTable: SemanticTable, selections: Selections): Selectivity
 }
 
-case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: SelectivityCombiner) extends Expression2Selectivity  {
+case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: SelectivityCombiner) extends Expression2Selectivity {
 
   def apply(exp: Expression)(implicit semanticTable: SemanticTable, selections: Selections): Selectivity = exp match {
     // WHERE a:Label
@@ -64,14 +64,12 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       combiner.orTogetherSelectivities(selectivities).get // We can trust the AST to never have empty ORs
 
     // WHERE id(x) = {param}
-    case In(func@FunctionInvocation(_, _, IndexedSeq(_)), Parameter(_))
-      if func.function == Some(functions.Id) =>
-      DEFAULT_NUMBER_OF_ID_LOOKUPS / stats.nodesWithLabelCardinality(None)
+    case In(func@FunctionInvocation(_, _, IndexedSeq(_)), Parameter(_)) if func.function == Some(functions.Id) =>
+      DEFAULT_NUMBER_OF_ID_LOOKUPS / stats.nodesWithLabelCardinality(None) getOrElse Selectivity.ONE
 
     // WHERE id(x) IN [...]
-    case In(func@FunctionInvocation(_, _, IndexedSeq(_)), c: Collection)
-      if func.function == Some(functions.Id) =>
-      c.expressions.size / stats.nodesWithLabelCardinality(None)
+    case In(func@FunctionInvocation(_, _, IndexedSeq(_)), c: Collection) if func.function == Some(functions.Id) =>
+      Cardinality(c.expressions.size) / stats.nodesWithLabelCardinality(None) getOrElse Selectivity.ONE
 
     // WHERE <expr> = <expr>
     case _: Equals =>
@@ -92,13 +90,8 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
   }
 
   private def calculateSelectivityForLabel(label: Option[LabelId]): Selectivity = {
-    val nodeCardinality: Cardinality = stats.nodesWithLabelCardinality(None)
-    if (nodeCardinality == Cardinality.EMPTY) {
-      return 1.0
-    }
-
-    val labelCardinality: Cardinality = label.map(l => stats.nodesWithLabelCardinality(Some(l))).getOrElse(0.0)
-    labelCardinality / nodeCardinality
+    val labelCardinality: Cardinality = label.map(l => stats.nodesWithLabelCardinality(Some(l))).getOrElse(Cardinality.EMPTY)
+    labelCardinality / stats.nodesWithLabelCardinality(None) getOrElse Selectivity.ONE
   }
 
   private def calculateSelectivityForPropertyEquality(identifier: String, sizeHint: Int, selections: Selections, propertyKey: PropertyKeyName)
