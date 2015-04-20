@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.commands.ManyQueryExpression
+import org.neo4j.cypher.internal.compiler.v2_3.commands.SingleQueryExpression
 import org.neo4j.cypher.internal.compiler.v2_3.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.{uniqueIndexSeekLeafPlanner, indexSeekLeafPlanner}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.{indexSeekLeafPlanner, uniqueIndexSeekLeafPlanner}
 
 import scala.language.reflectiveCalls
 
@@ -60,7 +60,6 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       // then
       resultPlans shouldBe empty
     }
-
   }
 
   test("index scan when there is an index on the property") {
@@ -74,10 +73,9 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(`lit42`))), _)) =>  ()
+        case Seq(NodeIndexSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _)) =>  ()
       }
     }
-
   }
 
   test("plans index seeks when identifier exists as an argument") {
@@ -94,7 +92,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(`x`))), _)) => ()
+        case Seq(NodeIndexSeek(`idName`, _, _, SingleQueryExpression(`x`), _)) => ()
       }
     }
   }
@@ -112,7 +110,6 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       // then
       resultPlans shouldBe empty
     }
-
   }
 
   test("unique index scan when there is an unique index on the property") {
@@ -126,7 +123,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexUniqueSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(`lit42`))), _)) => ()
+        case Seq(NodeIndexUniqueSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _)) => ()
       }
     }
   }
@@ -144,7 +141,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(`lit42`))), _)) => ()
+        case Seq(NodeIndexSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _)) => ()
       }
 
       resultPlans.map(_.solved.graph) should beLike {
@@ -166,7 +163,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexUniqueSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(`lit42`))), _)) => ()
+        case Seq(NodeIndexUniqueSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _)) => ()
       }
 
       resultPlans.map(_.solved.graph) should beLike {

@@ -27,6 +27,7 @@ object GraphStatistics {
   val DEFAULT_PREDICATE_SELECTIVITY      = Selectivity(0.75)
   val DEFAULT_EQUALITY_SELECTIVITY       = Selectivity(0.1)
   val DEFAULT_NUMBER_OF_ID_LOOKUPS       = Cardinality(25)
+  val DEFAULT_NUMBER_OF_INDEX_LOOKUPS    = Cardinality(25)
   val DEFAULT_REL_UNIQUENESS_SELECTIVITY = Selectivity(1.0 - 1 / 100 /*rel-cardinality*/)
 }
 

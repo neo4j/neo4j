@@ -20,36 +20,38 @@
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expression, ParameterExpression}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, ReadsNodes}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{CollectionSupport, IsCollection}
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.{CTNode, SymbolTable}
 
-sealed trait EntityByIdRhs {
+sealed trait SeekArgs {
   def expressions(ctx: ExecutionContext, state: QueryState): Iterable[Any]
 }
 
-case class EntityByIdExpression(expression: Expression) extends EntityByIdRhs {
-  def expressions(ctx: ExecutionContext, state: QueryState) =
-    expression(ctx)(state) match {
-      case IsCollection(values) => values
+object SeekArgs {
+  object empty extends SeekArgs {
+    def expressions(ctx: ExecutionContext, state: QueryState): Iterable[Any] = Iterable.empty
+  }
+}
+
+case class SingleSeekArg(expr: Expression) extends SeekArgs {
+  def expressions(ctx: ExecutionContext, state: QueryState): Iterable[Any] =
+    expr(ctx)(state) match {
+      case value => Iterable(value)
     }
 }
 
-case class EntityByIdParameter(parameter: ParameterExpression) extends EntityByIdRhs {
-  def expressions(ctx: ExecutionContext, state: QueryState) =
-    parameter(ctx)(state) match {
+case class ManySeekArgs(coll: Expression) extends SeekArgs {
+  def expressions(ctx: ExecutionContext, state: QueryState): Iterable[Any] = {
+    coll(ctx)(state) match {
       case IsCollection(values) => values
     }
+  }
 }
 
-case class EntityByIdExprs(exprs: Seq[Expression]) extends EntityByIdRhs {
-  def expressions(ctx: ExecutionContext, state: QueryState) =
-    exprs.map(_.apply(ctx)(state))
-}
-
-case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: EntityByIdRhs)
+case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: SeekArgs)
                            (val estimatedCardinality: Option[Double] = None)(implicit pipeMonitor: PipeMonitor)
   extends Pipe
   with CollectionSupport
