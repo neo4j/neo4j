@@ -39,7 +39,16 @@ import java.util.TimeZone;
  */
 public class FormattedLog extends AbstractLog
 {
-    static final Function<OutputStream, PrintWriter> OUTPUT_STREAM_CONVERTER = new Function<OutputStream, PrintWriter>() {
+    private static final Supplier<Date> DEFAULT_CURRENT_DATE_SUPPLIER = new Supplier<Date>()
+    {
+        @Override
+        public Date get()
+        {
+            return new Date();
+        }
+    };
+    static final Function<OutputStream, PrintWriter> OUTPUT_STREAM_CONVERTER = new Function<OutputStream, PrintWriter>()
+    {
         @Override
         public PrintWriter apply( OutputStream outputStream )
         {
@@ -49,6 +58,7 @@ public class FormattedLog extends AbstractLog
     private static final TimeZone UTC = TimeZone.getTimeZone( "UTC" );
     private static final Charset UTF_8 = Charset.forName( "UTF-8" );
 
+    private final Supplier<Date> currentDateSupplier;
     private final Supplier<PrintWriter> writerSupplier;
     private final Object lock;
     private final String category;
@@ -72,16 +82,16 @@ public class FormattedLog extends AbstractLog
      * Creates a {@link FormattedLog} instance that writes messages to {@link OutputStream}s obtained from the specified
      * {@link Supplier}. The OutputStream is obtained from the Supplier before every log message is written.
      *
-     * @param outSupplier A supplier for an output stream to write to
-     * @param lock An object used to synchronize each write
-     * @param category A String to be written into each log message (may be empty or null)
+     * @param outSupplier  A supplier for an output stream to write to
+     * @param lock         An object used to synchronize each write
+     * @param category     A String to be written into each log message (may be empty or null)
      * @param debugEnabled Enable writing of debug messages
-     * @param autoFlush Flush the output after every log message
+     * @param autoFlush    Flush the output after every log message
      * @return A {@link FormattedLog} instance
      */
     public static FormattedLog toOutputStream( Supplier<OutputStream> outSupplier, Object lock, String category, boolean debugEnabled, boolean autoFlush )
     {
-        return new FormattedLog( Suppliers.adapted( outSupplier, OUTPUT_STREAM_CONVERTER ), lock, category, debugEnabled, autoFlush );
+        return new FormattedLog( DEFAULT_CURRENT_DATE_SUPPLIER, Suppliers.adapted( outSupplier, OUTPUT_STREAM_CONVERTER ), lock, category, debugEnabled, autoFlush );
     }
 
     /**
@@ -104,19 +114,20 @@ public class FormattedLog extends AbstractLog
 
     /**
      * @param writerSupplier A supplier for a {@link Writer} to write to
-     * @param lock An object used to synchronize each write
-     * @param category A String to be written into each log message (may be empty or null)
-     * @param debugEnabled Enable writing of debug messages
-     * @param autoFlush Flush the output after every log message
+     * @param lock           An object used to synchronize each write
+     * @param category       A String to be written into each log message (may be empty or null)
+     * @param debugEnabled   Enable writing of debug messages
+     * @param autoFlush      Flush the output after every log message
      * @return A {@link FormattedLog} instance that writes to the specified OutputStream
      */
     public static FormattedLog toPrintWriter( Supplier<PrintWriter> writerSupplier, Object lock, String category, boolean debugEnabled, boolean autoFlush )
     {
-        return new FormattedLog( writerSupplier, lock, category, debugEnabled, autoFlush );
+        return new FormattedLog( DEFAULT_CURRENT_DATE_SUPPLIER, writerSupplier, lock, category, debugEnabled, autoFlush );
     }
 
-    protected FormattedLog( Supplier<PrintWriter> writerSupplier, Object maybeLock, String category, boolean debugEnabled, boolean autoFlush )
+    FormattedLog( Supplier<Date> currentDateSupplier, Supplier<PrintWriter> writerSupplier, Object maybeLock, String category, boolean debugEnabled, boolean autoFlush )
     {
+        this.currentDateSupplier = currentDateSupplier;
         this.writerSupplier = writerSupplier;
         this.lock = ( maybeLock != null ) ? maybeLock : this;
         this.category = category;
@@ -128,10 +139,10 @@ public class FormattedLog extends AbstractLog
         String warnPrefix = ( category != null && !category.isEmpty() ) ? "WARN  [" + category + "]" : "WARN ";
         String errorPrefix = ( category != null && !category.isEmpty() ) ? "ERROR [" + category + "]" : "ERROR";
 
-        this.debugLogger = ( debugEnabled ) ? new FormattedLogger( writerSupplier, lock, debugPrefix, autoFlush ) : NullLogger.getInstance();
-        this.infoLogger = new FormattedLogger( writerSupplier, lock, infoPrefix, autoFlush );
-        this.warnLogger = new FormattedLogger( writerSupplier, lock, warnPrefix, autoFlush );
-        this.errorLogger = new FormattedLogger( writerSupplier, lock, errorPrefix, autoFlush );
+        this.debugLogger = ( debugEnabled ) ? new FormattedLogger( currentDateSupplier, writerSupplier, lock, debugPrefix, autoFlush ) : NullLogger.getInstance();
+        this.infoLogger = new FormattedLogger( currentDateSupplier, writerSupplier, lock, infoPrefix, autoFlush );
+        this.warnLogger = new FormattedLogger( currentDateSupplier, writerSupplier, lock, warnPrefix, autoFlush );
+        this.errorLogger = new FormattedLogger( currentDateSupplier, writerSupplier, lock, errorPrefix, autoFlush );
     }
 
     @Override
@@ -171,7 +182,7 @@ public class FormattedLog extends AbstractLog
         synchronized (lock)
         {
             writer = writerSupplier.get();
-            consumer.accept( new FormattedLog( Suppliers.singleton( writer ), lock, category, debugEnabled, false ) );
+            consumer.accept( new FormattedLog( currentDateSupplier, Suppliers.singleton( writer ), lock, category, debugEnabled, false ) );
         }
         if ( autoFlush )
         {
@@ -179,14 +190,16 @@ public class FormattedLog extends AbstractLog
         }
     }
 
-    public static class FormattedLogger extends AbstractPrintWriterLogger
+    private static class FormattedLogger extends AbstractPrintWriterLogger
     {
+        private final Supplier<Date> currentDateSupplier;
         private final String prefix;
         private final DateFormat format;
 
-        public FormattedLogger( Supplier<PrintWriter> writerSupplier, Object lock, String prefix, boolean autoFlush )
+        public FormattedLogger( Supplier<Date> currentDateSupplier, Supplier<PrintWriter> writerSupplier, Object lock, String prefix, boolean autoFlush )
         {
             super( writerSupplier, lock, autoFlush );
+            this.currentDateSupplier = currentDateSupplier;
             this.prefix = prefix;
             format = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss.SSS" );
             format.setTimeZone( UTC );
@@ -205,24 +218,19 @@ public class FormattedLog extends AbstractLog
         {
             lineStart( out );
             out.write( message );
-            out.write( ' ' );
-            out.write( throwable.getMessage() );
+            if ( throwable.getMessage() != null )
+            {
+                out.write( ' ' );
+                out.write( throwable.getMessage() );
+            }
             out.println();
             throwable.printStackTrace( out );
         }
 
         @Override
-        protected void writeLog( PrintWriter out, String format, Object[] arguments )
-        {
-            lineStart( out );
-            out.format( format, arguments );
-            out.println();
-        }
-
-        @Override
         protected Logger getBulkLogger( PrintWriter out, Object lock )
         {
-            return new FormattedLogger( Suppliers.singleton( out ), lock, prefix, false );
+            return new FormattedLogger( currentDateSupplier, Suppliers.singleton( out ), lock, prefix, false );
         }
 
         private void lineStart( PrintWriter out )
@@ -235,7 +243,7 @@ public class FormattedLog extends AbstractLog
 
         private String time()
         {
-            return format.format( new Date() );
+            return format.format( currentDateSupplier.get() );
         }
     }
 }
