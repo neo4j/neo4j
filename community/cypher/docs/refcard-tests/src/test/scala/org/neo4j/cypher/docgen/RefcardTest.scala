@@ -21,6 +21,7 @@ package org.neo4j.cypher.docgen
 
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_3.prettifier.Prettifier
 import org.neo4j.graphdb.index.Index
 import org.junit.Test
 import scala.collection.JavaConverters._
@@ -35,7 +36,6 @@ import org.scalatest.Assertions
 import org.junit.Before
 import org.junit.After
 import org.neo4j.cypher.internal.helpers.GraphIcing
-import org.neo4j.cypher.internal.compiler.v2_0.prettifier.Prettifier
 
 /*
 Use this base class for refcard tests

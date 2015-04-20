@@ -71,10 +71,6 @@ class CypherCompiler(graph: GraphDatabaseService,
 
   private val compatibilityFor1_9 = CompatibilityFor1_9(graph, queryCacheSize, kernelMonitors)
 
-  private val compatibilityFor2_0 = CompatibilityFor2_0(graph, queryCacheSize, kernelMonitors)
-
-  private val compatibilityFor2_1 = CompatibilityFor2_1(graph, queryCacheSize, kernelMonitors, kernelAPI)
-
   private val compatibilityFor2_2Rule = CompatibilityFor2_2Rule(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI)
   private val compatibilityFor2_2Cost = CompatibilityFor2_2Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, log, CostPlanner2_2)
   private val compatibilityFor2_2IDP = CompatibilityFor2_2Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, log, IDPPlanner2_2)
@@ -92,8 +88,8 @@ class CypherCompiler(graph: GraphDatabaseService,
 
   private val compatibilityFor2_3 = CompatibilityFor2_3Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, log, ConservativePlannerName, InterpretedRuntimeName)
 
-  private final val VERSIONS_WITH_FIXED_PLANNER: Set[CypherVersion] = Set(v1_9, v2_0, v2_1)
-  private final val VERSIONS_WITH_FIXED_RUNTIME: Set[CypherVersion] = Set(v1_9, v2_0, v2_1, v2_2)
+  private final val VERSIONS_WITH_FIXED_PLANNER: Set[CypherVersion] = Set(v1_9)
+  private final val VERSIONS_WITH_FIXED_RUNTIME: Set[CypherVersion] = Set(v1_9, v2_2)
 
   private final val ILLEGAL_PLANNER_RUNTIME_COMBINATIONS: Set[(PlannerName, RuntimeName)] = Set((RulePlannerName, CompiledRuntimeName))
 
@@ -129,8 +125,6 @@ class CypherCompiler(graph: GraphDatabaseService,
       case (CypherVersion.v2_2, DPPlannerName, _)                                => compatibilityFor2_2DP.produceParsedQuery(statementAsText)
       case (CypherVersion.v2_2, RulePlannerName, _)                              => compatibilityFor2_2Rule.produceParsedQuery(statementAsText)
       case (CypherVersion.v2_2, _, _)                                            => compatibilityFor2_2.produceParsedQuery(statementAsText)
-      case (CypherVersion.v2_1, _, _)                                            => compatibilityFor2_1.parseQuery(preParsedQuery.statement)
-      case (CypherVersion.v2_0, _, _)                                            => compatibilityFor2_0.parseQuery(preParsedQuery.statement)
       case (CypherVersion.v1_9, _, _)                                            => compatibilityFor1_9.parseQuery(preParsedQuery.statement)
     }
   }

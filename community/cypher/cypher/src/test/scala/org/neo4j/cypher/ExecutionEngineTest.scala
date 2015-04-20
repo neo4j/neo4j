@@ -1016,7 +1016,7 @@ order by a.COL1""")
       writer.println("1,2,3")
       writer.println("4,5,6")
     }
-    val result = eengine.execute(s"cypher 2.1 using periodic commit load csv from '$url' as line create x return x")
+    val result = eengine.execute(s"cypher 2.2 using periodic commit load csv from '$url' as line create x return x")
     result should have size 2
   }
 

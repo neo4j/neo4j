@@ -19,9 +19,10 @@
  */
 package org.neo4j.shell;
 
+import org.junit.Test;
+
 import java.io.PrintWriter;
 
-import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
@@ -63,7 +64,7 @@ public class ShellDocTest
         assertTrue( parser.options().containsKey( "a" ) );
         assertTrue( parser.arguments().isEmpty() );
     }
-    
+
     @Test
     public void parsingUnrecognizedOptionShouldFail() throws Exception
     {
@@ -91,7 +92,7 @@ public class ShellDocTest
         assertEquals( "value", parser.arguments().get( 1 ) );
         assertShellException( "set -tsd" );
     }
-    
+
     @Test
     public void testEnableRemoteShellOnCustomPort() throws Exception
     {
@@ -248,7 +249,7 @@ public class ShellDocTest
                 "return zionist.name;",
                 "Trinity",
                 "Morpheus' friends, looking up Morpheus by name in the Neo4j autoindex" );
-        doc.add( "cypher 2.0 start morpheus = node:node_auto_index(name='Morpheus') " +
+        doc.add( "cypher 2.2 start morpheus = node:node_auto_index(name='Morpheus') " +
                 "match morpheus-[:KNOWS]-zionist " +
                 "return zionist.name;",
                 "Cypher",
@@ -281,7 +282,7 @@ public class ShellDocTest
             assertTrue( "Could not find the node connecting the root and Neo nodes.", foundRootAndNeoRelationship );
             tx.success();
         }
-        
+
         try ( PrintWriter writer = doc.getWriter( "shell-matrix-example-graph" );
                 Transaction tx = db.beginTx() )
         {

@@ -91,15 +91,6 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       .shouldHavePlanner(CostPlannerName)
   }
 
-  test("should fail when using planner together with older versions") {
-    intercept[InvalidArgumentException] {
-      given("match n return n")
-        .withCypherVersion(CypherVersion.v2_1)
-        .withPlanner(CostPlannerName)
-        .planDescription
-    }
-  }
-
   test("should report RULE if we ask it for UNION queries") {
     given(
       """MATCH p=(n:Person {first_name: 'Shawna'})-[:FRIEND_OF]-(m:Person)
