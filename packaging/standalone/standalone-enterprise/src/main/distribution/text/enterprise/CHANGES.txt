@@ -1,5 +1,13 @@
 For Release Notes, see http://neo4j.com/release-notes/neo4j-${project.version}/
 
+2.3-M01
+-------
+
+Cypher:
+o Added new warning mechanism. The first supported warning is generated for queries that contain a potentially
+unintended catesian product
+o Cypher may now use full index scans to solve queries containing has(n.prop) if apropriate
+
 2.2.1
 -----
 Cypher:
@@ -31,7 +39,7 @@ o Fixed race condition when taking a uniqueness constraint ONLINE which could le
   that would violate the constraint, to be committed.
 o Added ability to scan index in addition to scanning node store
 o Fixed issue where importer IdMapper collision detection would use excessive memory
-o Performance improvements to importer, specifically around preparing IdMapper  
+o Performance improvements to importer, specifically around preparing IdMapper
 
 Server:
 o Fixed issue with 4xx HTTP response codes not including proper ClientError status
@@ -41,7 +49,7 @@ o HTTP responses containing errors in the form of server stack traces now do so
 HA:
 o Fixes a GC problem where memory could be indefinitely and unnecessarily kept after role switch
 o Properly resets the "health" state after a kernel panic has been handled
-  
+
 2.2.0
 -----
 Browser:
