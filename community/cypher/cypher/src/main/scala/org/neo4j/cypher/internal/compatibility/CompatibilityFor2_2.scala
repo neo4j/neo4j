@@ -28,15 +28,15 @@ import org.neo4j.cypher.internal.compiler.v2_2.executionplan.{ExecutionPlan => E
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.InternalPlanDescription.Arguments.{DbHits, Planner, Rows, Version}
 import org.neo4j.cypher.internal.compiler.v2_2.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v2_2.spi.MapToPublicExceptions
+import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v2_2.{CypherCompilerFactory, CypherException => CypherException_v2_2, _}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.iteratorToVisitable
-import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.spi.v2_2.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
 import org.neo4j.cypher.{ArithmeticException, CypherTypeException, EntityNotFoundException, FailedIndexException, IncomparableValuesException, IndexHintException, InternalException, InvalidArgumentException, InvalidSemanticsException, LabelScanHintException, LoadCsvStatusWrapCypherException, LoadExternalResourceException, MergeConstraintConflictException, NodeStillHasRelationshipsException, ParameterNotFoundException, ParameterWrongTypeException, PatternException, PeriodicCommitInOpenTransactionException, ProfilerStatisticsNotReadyException, SyntaxException, UniquePathNotUniqueException, UnknownLabelException, _}
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{GraphDatabaseService, QueryExecutionType, ResourceIterator}
-import org.neo4j.helpers.{Assertion, Clock}
+import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{KernelAPI, Statement}
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
@@ -140,10 +140,10 @@ trait CompatibilityFor2_2 {
   val kernelAPI: KernelAPI
 
   protected val rewriterSequencer: (String) => RewriterStepSequencer = {
-    import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer._
+    import org.neo4j.cypher.internal.compiler.v2_2.tracing.rewriters.RewriterStepSequencer._
     import org.neo4j.helpers.Assertion._
 
-    if (assertionsEnabled()) newValidating else newPlain
+    if (assertionsEnabled()) newValidating _ else newPlain _
   }
 
   protected val compiler: v2_2.CypherCompiler
@@ -340,10 +340,10 @@ case class CompatibilityFor2_2Cost(graph: GraphDatabaseService,
                                    kernelAPI: KernelAPI,
                                    log: Log,
                                    plannerName: CostBasedPlannerName) extends CompatibilityFor2_2 {
-  // TODO: just add inherited rewriterSequencer here once 2.2.1 has been released
 
   protected val compiler = CypherCompilerFactory.costBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, WrappedMonitors2_2(kernelMonitors), StringInfoLogger2_2(log), plannerName
+    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, WrappedMonitors2_2(kernelMonitors),
+    StringInfoLogger2_2(log), plannerName, rewriterSequencer
   )
 }
 
@@ -354,9 +354,9 @@ case class CompatibilityFor2_2Rule(graph: GraphDatabaseService,
                                    clock: Clock,
                                    kernelMonitors: KernelMonitors,
                                    kernelAPI: KernelAPI) extends CompatibilityFor2_2 {
-  // TODO: just add inherited rewriterSequencer here once 2.2.1 has been released
 
   protected val compiler = CypherCompilerFactory.ruleBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, WrappedMonitors2_2(kernelMonitors)
+    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, WrappedMonitors2_2(kernelMonitors),
+    rewriterSequencer
   )
 }

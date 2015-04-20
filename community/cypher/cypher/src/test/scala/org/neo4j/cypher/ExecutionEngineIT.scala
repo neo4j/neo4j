@@ -40,7 +40,7 @@ class ExecutionEngineIT extends CypherFunSuite {
 
     //then
     plan1.getArguments.get("planner") should equal("COST")
-    plan2.getArguments.get("planner") should equal("RULE")
+    plan2.getArguments.get("planner") should equal("COST")
   }
 
   test("by default when using cypher 2.3 some queries should default to COST and others to RULE") {
