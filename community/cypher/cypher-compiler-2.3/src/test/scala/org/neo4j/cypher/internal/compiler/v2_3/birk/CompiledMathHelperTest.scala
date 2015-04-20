@@ -112,7 +112,7 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
     try {
       Right(block)
     } catch {
-      case ex => Left(ex)
+      case ex: Throwable => Left(ex)
     }
 
 }
