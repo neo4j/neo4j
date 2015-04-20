@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.birk;
 
-import org.neo4j.cypher.internal.compiler.v2_3.CypherTypeException;
-
 import java.lang.reflect.Array;
-import java.util.Arrays;
+
+import org.neo4j.cypher.internal.compiler.v2_3.CypherTypeException;
 
 /**
  * This is a helper class used by compiled plans for doing basic math operations
@@ -39,64 +38,81 @@ public final class CompiledMathHelper
     /**
      * Utility function for doing addition
      */
-    public static Object add( Object op1, Object op2 )
+    public static Object add( Object lhs, Object rhs )
     {
-        if ( op1 == null || op2 == null )
+        if ( lhs == null || rhs == null )
         {
             return null;
         }
 
-        if ( op1 instanceof String || op2 instanceof String )
+        if ( lhs instanceof String || rhs instanceof String )
         {
-            return String.valueOf( op1 ) + String.valueOf( op2 );
+            return String.valueOf( lhs ) + String.valueOf( rhs );
         }
 
-        //array multiplication
-        Class<?> op1Class = op1.getClass();
-        Class<?> op2Class = op2.getClass();
+        // array addition
+        Class<?> op1Class = lhs.getClass();
+        Class<?> op2Class = rhs.getClass();
         if ( op1Class.isArray() && op2Class.isArray())
         {
-            return addArrays( op1, op2 );
+            return addArrays( lhs, rhs );
         }
         else if ( op1Class.isArray() )
         {
-            return addArrayWithObject( op1, op2 );
+            return addArrayWithObject( lhs, rhs );
         }
         else if ( op2Class.isArray() )
         {
-            return addObjectWithArray( op1, op2 );
+            return addObjectWithArray( lhs, rhs );
         }
 
-
-        //From here down we assume we are dealing with numbers
-        if( !(op1 instanceof Number) || !(op2 instanceof Number) ){
-            throw new CypherTypeException( "Cannot add " + op1.getClass().getSimpleName() + " and " + op2.getClass()
-                    .getSimpleName(), null );
-        }
-
-        if ( op1 instanceof Long || op2 instanceof Long )
+        if ( lhs instanceof Number && rhs instanceof Number )
         {
-            return ((Number) op1).longValue() + ((Number) op2).longValue();
+            if ( lhs instanceof Double || rhs instanceof Double ||
+                 lhs instanceof Float || rhs instanceof Float )
+            {
+                return ((Number) lhs).doubleValue() + ((Number) rhs).doubleValue();
+            }
+            if ( lhs instanceof Long || rhs instanceof Long ||
+                 lhs instanceof Integer || rhs instanceof Integer ||
+                 lhs instanceof Short || rhs instanceof Short ||
+                 lhs instanceof Byte || rhs instanceof Byte )
+            {
+                return ((Number) lhs).longValue() + ((Number) rhs).longValue();
+            }
+            // other numbers we cannot add
         }
 
-        if ( op1 instanceof Double || op2 instanceof Double )
+        throw new CypherTypeException( "Cannot add " + lhs.getClass().getSimpleName() +
+                                       " and " + rhs.getClass().getSimpleName(), null );
+    }
+
+    public static Object subtract( Object lhs, Object rhs )
+    {
+        if ( lhs == null || rhs == null )
         {
-            return ((Number) op1).doubleValue() + ((Number) op2).doubleValue();
+            return null;
         }
 
-        if ( op1 instanceof Float || op2 instanceof Float )
+        if ( lhs instanceof Number && rhs instanceof Number )
         {
-            return ((Number) op1).floatValue() + ((Number) op2).floatValue();
+            if ( lhs instanceof Double || rhs instanceof Double ||
+                 lhs instanceof Float || rhs instanceof Float )
+            {
+                return ((Number) lhs).doubleValue() - ((Number) rhs).doubleValue();
+            }
+            if ( lhs instanceof Long || rhs instanceof Long ||
+                 lhs instanceof Integer || rhs instanceof Integer ||
+                 lhs instanceof Short || rhs instanceof Short ||
+                 lhs instanceof Byte || rhs instanceof Byte )
+            {
+                return ((Number) lhs).longValue() - ((Number) rhs).longValue();
+            }
+            // other numbers we cannot subtract
         }
 
-        if ( op1 instanceof Integer || op2 instanceof Integer )
-        {
-            return ((Number) op1).intValue() + ((Number) op2).intValue();
-        }
-
-
-        throw new CypherTypeException( "Cannot add " + op1.getClass().getSimpleName() + " and " + op2.getClass()
-            .getSimpleName(), null );
+        throw new CypherTypeException( "Cannot add " + lhs.getClass().getSimpleName() +
+                                       " and " + rhs.getClass().getSimpleName(), null );
     }
 
     /**

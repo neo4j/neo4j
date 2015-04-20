@@ -19,13 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.birk.il
 
-import org.neo4j.cypher.internal.compiler.v2_3.CypherTypeException
-import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaTypes.{DOUBLE, LONG, OBJECT, OBJECTARRAY, STRING}
+import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaTypes.{DOUBLE, LONG, OBJECT, OBJECTARRAY, STRING, NUMBER}
 import org.neo4j.cypher.internal.compiler.v2_3.birk.{CodeGenerator, JavaSymbol, Namer}
 
 sealed trait ProjectionInstruction extends Instruction {
   def projectedVariable: JavaSymbol
   def generateCode() = ""
+}
+
+object ProjectionInstruction {
+  def literal( value:Long ):ProjectionInstruction = ProjectLiteral( JavaSymbol( value.toString + "L", LONG ) )
+  def literal( value:Double ):ProjectionInstruction = ProjectLiteral( JavaSymbol( value.toString, DOUBLE ) )
+  def literal( value:String ):ProjectionInstruction = ProjectLiteral( JavaSymbol( s""""$value"""", STRING ) )
+  def literal( value:Boolean ):ProjectionInstruction = ???
+  def parameter( key:String ):ProjectionInstruction = ProjectParameter( key )
+
+  def add( lhs:ProjectionInstruction, rhs:ProjectionInstruction ):ProjectionInstruction = ProjectAddition( lhs, rhs )
+  def sub( lhs:ProjectionInstruction, rhs:ProjectionInstruction ):ProjectionInstruction = ProjectSubtraction( lhs, rhs )
 }
 
 case class ProjectNodeProperty(token: Option[Int], propName: String, nodeIdVar: String, namer: Namer) extends ProjectionInstruction {
@@ -109,6 +119,29 @@ case class ProjectAddition(lhs: ProjectionInstruction, rhs: ProjectionInstructio
       case (STRING, DOUBLE) => JavaSymbol(s"${leftTerm.name} + ${rightTerm.name}", STRING)
 
       case (_, _) => JavaSymbol(s"CompiledMathHelper.add( ${leftTerm.name}, ${rightTerm.name} )", OBJECT)
+    }
+  }
+
+  def generateInit() = ""
+
+  def fields() = ""
+
+  override def _importedClasses(): Set[String] = Set("org.neo4j.cypher.internal.compiler.v2_3.birk.CompiledMathHelper")
+}
+
+case class ProjectSubtraction(lhs: ProjectionInstruction, rhs: ProjectionInstruction) extends ProjectionInstruction {
+
+  def projectedVariable: JavaSymbol = {
+    val leftTerm = lhs.projectedVariable
+    val rightTerm = rhs.projectedVariable
+    (leftTerm.javaType, rightTerm.javaType) match {
+      case (LONG, LONG) => JavaSymbol(s"${leftTerm.name} - ${rightTerm.name}", LONG)
+      case (LONG, DOUBLE) => JavaSymbol(s"${leftTerm.name} - ${rightTerm.name}", DOUBLE)
+
+      case (DOUBLE, DOUBLE) => JavaSymbol(s"${leftTerm.name} - ${rightTerm.name}", DOUBLE)
+      case (DOUBLE, LONG) => JavaSymbol(s"${leftTerm.name} - ${rightTerm.name}", DOUBLE)
+
+      case (_, _) => JavaSymbol(s"CompiledMathHelper.subtract( ${leftTerm.name}, ${rightTerm.name} )", NUMBER)
     }
   }
 

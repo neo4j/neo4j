@@ -32,6 +32,7 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
     Seq(
       1 !,
       6789 !,
+      3.14 !,
       null,
       "a",
       true !,
@@ -42,9 +43,15 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
     forAll(getTable(CompiledMathHelper.add)) {
       case (null,                 _,                    Right(result)) => result should equal(null)
       case (_,                    null,                 Right(result)) => result should equal(null)
+
+      case (l: java.lang.Double,  r: Number,            Right(result)) => result should equal(l + r.doubleValue())
+      case (l: Number,            r: java.lang.Double,  Right(result)) => result should equal(l.doubleValue() + r)
+      case (l: java.lang.Float,   r: Number,            Right(result)) => result should equal(l + r.doubleValue())
+      case (l: Number,            r: java.lang.Float,   Right(result)) => result should equal(l.doubleValue() + r)
+      case (l: Number,            r: Number,            Right(result)) => result should equal(l.longValue() + r.longValue())
+
       case (l: Number,            r: String,            Right(result)) => result should equal(l.toString + r)
       case (l: String,            r: Number,            Right(result)) => result should equal(l.toString + r)
-      case (l: Number,            r: Number,            Right(result)) => result should equal(l.longValue() + r.longValue())
       case (l: String,            r: String,            Right(result)) => result should equal(l + r)
       case (l: String,            r: java.lang.Boolean, Right(result)) => result should equal(l + r)
       case (l: java.lang.Boolean, r: String,            Right(result)) => result should equal(l + r)
@@ -57,8 +64,34 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
     }
   }
 
-  implicit class A(i: Int) { def ! = i: java.lang.Integer }
-  implicit class B(i: Boolean) { def ! = i: java.lang.Boolean }
+  property("-") {
+    forAll(getTable(CompiledMathHelper.subtract)) {
+      case (null, _, Right( result )) => result should equal( null )
+      case (_, null, Right( result )) => result should equal( null )
+
+      case (l: java.lang.Double,  r: Number,            Right(result)) => result should equal(l - r.doubleValue())
+      case (l: Number,            r: java.lang.Double,  Right(result)) => result should equal(l.doubleValue() - r)
+      case (l: java.lang.Float,   r: Number,            Right(result)) => result should equal(l - r.doubleValue())
+      case (l: Number,            r: java.lang.Float,   Right(result)) => result should equal(l.doubleValue() - r)
+      case (l: Number,            r: Number,            Right(result)) => result should equal(l.longValue() - r.longValue())
+
+      case (l: Number,            r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (l: String,            r: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (l: String,            r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (l: String,            r: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (l: java.lang.Boolean, r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+
+      case (_: Number,            _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: java.lang.Boolean, _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: java.lang.Boolean, _: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
+
+      case (v1, v2, v3) => fail(s"Unspecified behaviour: $v1 + $v2 => $v3")
+    }
+  }
+
+  implicit class I(i: Int) { def ! = i: java.lang.Integer }
+  implicit class D(i: Double) { def ! = i: java.lang.Double }
+  implicit class Z(i: Boolean) { def ! = i: java.lang.Boolean }
 
   private def r(x: Any): AnyRef = x.asInstanceOf[AnyRef]
 
