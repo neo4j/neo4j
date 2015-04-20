@@ -29,8 +29,8 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
-import org.neo4j.cypher.internal.compiler.v2_3.planner.{SemanticTable, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanningTestSupport, SemanticTable}
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.{Direction, GraphDatabaseService, Node}
 import org.neo4j.helpers.Clock
@@ -63,10 +63,10 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("label scan") {// MATCH (a:T1) RETURN a
     //given
-  val plan = ProduceResult(List("a"), List.empty, List.empty, NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved))
+    val plan = ProduceResult(List("a"), List.empty, List.empty, NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved))
 
     //when
-    val compiled = compile( plan)
+    val compiled = compile(plan)
 
     //then
     val result = getNodesFromResult(compiled, "a")

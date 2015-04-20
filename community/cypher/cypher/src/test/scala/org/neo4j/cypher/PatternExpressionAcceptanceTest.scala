@@ -369,7 +369,8 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
       )
     }
 
-    val legacyExpression = result.executionPlanDescription().arguments.collect {case n: LegacyExpression => n}.head
+    val args = result.executionPlanDescription().children.head.arguments
+    val legacyExpression = args.collect {case n: LegacyExpression => n}.head
     val pipe = legacyExpression.value.asInstanceOf[NestedPipeExpression].pipe
 
     pipe should beLike {

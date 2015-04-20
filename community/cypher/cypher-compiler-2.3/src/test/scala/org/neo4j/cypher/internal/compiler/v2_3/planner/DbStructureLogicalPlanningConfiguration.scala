@@ -46,11 +46,12 @@ object DbStructureLogicalPlanningConfiguration {
 
     new RealLogicalPlanningConfiguration {
 
-      override val computeSemanticTable: SemanticTable = new SemanticTable(
-        resolvedLabelIds = resolvedLabels,
-        resolvedPropertyKeyNames = resolvedPropertyKeys,
-        resolvedRelTypeNames = resolvedRelTypeNames
-      )
+      override def updateSemanticTableWithTokens(table: SemanticTable) = {
+        resolvedPropertyKeys.foreach { case (keyName, keyId) => table.resolvedPropertyKeyNames.put(keyName, PropertyKeyId(keyId)) }
+        resolvedLabels.foreach{ case (keyName, keyId) => table.resolvedLabelIds.put(keyName, LabelId(keyId)) }
+        resolvedRelTypeNames.foreach{ case (keyName, keyId) => table.resolvedRelTypeNames.put(keyName, RelTypeId(keyId))}
+        table
+      }
 
       override val graphStatistics: GraphStatistics =
         new StatisticsCompletingGraphStatistics(underlyingStatistics)

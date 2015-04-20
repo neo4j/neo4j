@@ -29,46 +29,51 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
 
   test("MATCH (a:A) RETURN a AS a UNION ALL MATCH (a:B) RETURN a AS a") {
 
-    val setup: UnionPlanningIntegrationTest.this.type#given = new given {
+    val setup = new given {
       knownLabels = Set("A", "B")
     }
     implicit val (logicalPlan, semanticTable) = setup.getLogicalPlanFor("MATCH (a:A) RETURN a AS a UNION ALL MATCH (a:B) RETURN a AS a")
 
     logicalPlan should equal(
-      Union(
-        Projection(
-          NodeByLabelScan("  a@7", LazyLabel(LabelName("A")_), Set.empty)(solved),
-          Map("a" -> Identifier("  a@7")_)
-        )(solved),
-        Projection(
-          NodeByLabelScan("  a@43", LazyLabel(LabelName("B")_), Set.empty)(solved),
-          Map("a" -> Identifier("  a@43")_)
+      ProduceResult(Seq("a"), Seq.empty, Seq.empty,
+        Union(
+          Projection(
+            NodeByLabelScan("  a@7", LazyLabel(LabelName("A") _), Set.empty)(solved),
+            Map("a" -> Identifier("  a@7") _)
+          )(solved),
+          Projection(
+            NodeByLabelScan("  a@43", LazyLabel(LabelName("B") _), Set.empty)(solved),
+            Map("a" -> Identifier("  a@43") _)
+          )(solved)
         )(solved)
-      )(solved)
+      )
     )
   }
+
   test("MATCH (a:A) RETURN a AS a UNION MATCH (a:B) RETURN a AS a") {
 
-    val setup: UnionPlanningIntegrationTest.this.type#given = new given {
+    val setup = new given {
       knownLabels = Set("A", "B")
     }
     implicit val (logicalPlan, semanticTable) = setup.getLogicalPlanFor("MATCH (a:A) RETURN a AS a UNION MATCH (a:B) RETURN a AS a")
 
     logicalPlan should equal(
-      Aggregation(
-        left = Union(
-          Projection(
-            NodeByLabelScan("  a@7", LazyLabel(LabelName("A")_), Set.empty)(solved),
-            Map("a" -> Identifier("  a@7")_)
+      ProduceResult(Seq("a"), Seq.empty, Seq.empty,
+        Aggregation(
+          left = Union(
+            Projection(
+              NodeByLabelScan("  a@7", LazyLabel(LabelName("A") _), Set.empty)(solved),
+              Map("a" -> Identifier("  a@7") _)
+            )(solved),
+            Projection(
+              NodeByLabelScan("  a@39", LazyLabel(LabelName("B") _), Set.empty)(solved),
+              Map("a" -> Identifier("  a@39") _)
+            )(solved)
           )(solved),
-          Projection(
-            NodeByLabelScan("  a@39", LazyLabel(LabelName("B")_), Set.empty)(solved),
-            Map("a" -> Identifier("  a@39")_)
-          )(solved)
-        )(solved),
-        groupingExpressions = Map("a" -> ident("a")),
-        aggregationExpression = Map.empty
-      )(solved)
+          groupingExpressions = Map("a" -> ident("a")),
+          aggregationExpression = Map.empty
+        )(solved)
+      )
     )
   }
 }

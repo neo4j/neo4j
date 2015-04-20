@@ -42,6 +42,7 @@ case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
     horizon.preferredStrictness orElse tail.flatMap(_.preferredStrictness)
 
   def lastQueryGraph: QueryGraph = tail.map(_.lastQueryGraph).getOrElse(graph)
+  def lastQueryHorizon: QueryHorizon = tail.map(_.lastQueryHorizon).getOrElse(horizon)
 
   def withTail(newTail: PlannerQuery): PlannerQuery = tail match {
     case None => copy(tail = Some(newTail))

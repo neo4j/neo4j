@@ -23,18 +23,17 @@ import java.util
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.neo4j.cypher.internal.ExecutionMode
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
-import org.neo4j.cypher.internal.compiler.v2_3.{PropertyKeyId, CostPlannerName}
+import org.neo4j.cypher.internal.compiler.v2_3.CostPlannerName
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaTypes.{INT, LONG, OBJECT, DOUBLE, STRING}
+import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaTypes.{DOUBLE, INT, LONG, OBJECT, STRING}
 import org.neo4j.cypher.internal.compiler.v2_3.birk.il._
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{PlanFingerprint, CompiledPlan}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledPlan, PlanFingerprint}
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v2_3.planner.{SemanticTable, CantCompileQueryException}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LogicalPlanIdentificationBuilder,
-LogicalPlan2PlanDescription}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_3.spi.{PlanContext, InstrumentedGraphStatistics}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LogicalPlan2PlanDescription, LogicalPlanIdentificationBuilder}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantCompileQueryException, SemanticTable}
+import org.neo4j.cypher.internal.compiler.v2_3.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.api.Statement
@@ -103,6 +102,7 @@ case class JavaSymbol(name: String, javaType: String)
 class CodeGenerator {
 
   import CodeGenerator.{n, nextClassName, packageName}
+
   import scala.collection.JavaConverters._
 
   def generate(plan: LogicalPlan, planContext: PlanContext, clock: Clock, semanticTable: SemanticTable) = {

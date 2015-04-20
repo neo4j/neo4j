@@ -46,62 +46,62 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     resultText should equal(
       // oh perty where art thou!?
-      "Projection(Limit(Expand(Apply(Limit(AllNodesScan(IdName(a),Set()),UnsignedDecimalIntegerLiteral(1)),Argument(Set(IdName(a)))),IdName(a),OUTGOING,List(),IdName(b),IdName(r1),ExpandAll),UnsignedDecimalIntegerLiteral(1)),Map(b -> Identifier(b)))")
+      "Limit(Expand(Apply(Limit(AllNodesScan(IdName(a),Set()),UnsignedDecimalIntegerLiteral(1)),Argument(Set(IdName(a)))),IdName(a),OUTGOING,List(),IdName(b),IdName(r1),ExpandAll),UnsignedDecimalIntegerLiteral(1))")
   }
 
   test("should build plans with WITH and selections") {
     val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WHERE r1.prop = 42 RETURN r1").plan
 
     result.toString should equal(
-      "Projection(Selection(Vector(In(Property(Identifier(r1),PropertyKeyName(prop)),Collection(List(SignedDecimalIntegerLiteral(42))))),Apply(Limit(AllNodesScan(IdName(a),Set()),UnsignedDecimalIntegerLiteral(1)),Expand(Argument(Set(IdName(a))),IdName(a),OUTGOING,List(),IdName(b),IdName(r1),ExpandAll))),Map(r1 -> Identifier(r1)))")
+      "Selection(Vector(In(Property(Identifier(r1),PropertyKeyName(prop)),Collection(List(SignedDecimalIntegerLiteral(42))))),Apply(Limit(AllNodesScan(IdName(a),Set()),UnsignedDecimalIntegerLiteral(1)),Expand(Argument(Set(IdName(a))),IdName(a),OUTGOING,List(),IdName(b),IdName(r1),ExpandAll)))")
   }
 
   test("should build plans for two matches separated by WITH") {
     val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r]->(b) RETURN b").plan
 
     result.toString should equal(
-      "Projection(Expand(Apply(Limit(AllNodesScan(IdName(a),Set()),UnsignedDecimalIntegerLiteral(1)),Argument(Set(IdName(a)))),IdName(a),OUTGOING,List(),IdName(b),IdName(r),ExpandAll),Map(b -> Identifier(b)))")
+      "Expand(Apply(Limit(AllNodesScan(IdName(a),Set()),UnsignedDecimalIntegerLiteral(1)),Argument(Set(IdName(a)))),IdName(a),OUTGOING,List(),IdName(b),IdName(r),ExpandAll)")
   }
 
   test("should build plans that project endpoints of re-matched directed relationship arguments") {
     val plan = planFor("MATCH (a)-[r]->(b) WITH r LIMIT 1 MATCH (u)-[r]->(v) RETURN r").plan
 
     plan.toString should equal(
-      "Projection(Apply(Limit(Expand(AllNodesScan(IdName(b),Set()),IdName(b),INCOMING,List(),IdName(a),IdName(r),ExpandAll),UnsignedDecimalIntegerLiteral(1)),ProjectEndpoints(Argument(Set(IdName(r))),IdName(r),IdName(u),false,IdName(v),false,None,true,SimplePatternLength)),Map(r -> Identifier(r)))")
+      "Apply(Limit(Expand(AllNodesScan(IdName(b),Set()),IdName(b),INCOMING,List(),IdName(a),IdName(r),ExpandAll),UnsignedDecimalIntegerLiteral(1)),ProjectEndpoints(Argument(Set(IdName(r))),IdName(r),IdName(u),false,IdName(v),false,None,true,SimplePatternLength))")
   }
 
   test("should build plans that project endpoints of re-matched reversed directed relationship arguments") {
     val plan = planFor("MATCH (a)-[r]->(b) WITH r AS r, a AS a LIMIT 1 MATCH (b2)<-[r]-(a) RETURN r").plan
 
     plan.toString should equal(
-      "Projection(Apply(Limit(Expand(AllNodesScan(IdName(b),Set()),IdName(b),INCOMING,List(),IdName(a),IdName(r),ExpandAll),UnsignedDecimalIntegerLiteral(1)),ProjectEndpoints(Argument(Set(IdName(a), IdName(r))),IdName(r),IdName(a),true,IdName(b2),false,None,true,SimplePatternLength)),Map(r -> Identifier(r)))")
+      "Apply(Limit(Expand(AllNodesScan(IdName(b),Set()),IdName(b),INCOMING,List(),IdName(a),IdName(r),ExpandAll),UnsignedDecimalIntegerLiteral(1)),ProjectEndpoints(Argument(Set(IdName(a), IdName(r))),IdName(r),IdName(a),true,IdName(b2),false,None,true,SimplePatternLength))")
   }
 
   test("should build plans that verify endpoints of re-matched directed relationship arguments") {
     val plan = planFor("MATCH (a)-[r]->(b) WITH * LIMIT 1 MATCH (a)-[r]->(b) RETURN r").plan
 
     plan.toString should equal(
-      "Projection(Apply(Limit(Expand(AllNodesScan(IdName(b),Set()),IdName(b),INCOMING,List(),IdName(a),IdName(r),ExpandAll),UnsignedDecimalIntegerLiteral(1)),ProjectEndpoints(Argument(Set(IdName(a), IdName(b), IdName(r))),IdName(r),IdName(a),true,IdName(b),true,None,true,SimplePatternLength)),Map(r -> Identifier(r)))")
+      "Apply(Limit(Expand(AllNodesScan(IdName(b),Set()),IdName(b),INCOMING,List(),IdName(a),IdName(r),ExpandAll),UnsignedDecimalIntegerLiteral(1)),ProjectEndpoints(Argument(Set(IdName(a), IdName(b), IdName(r))),IdName(r),IdName(a),true,IdName(b),true,None,true,SimplePatternLength))")
   }
 
   test("should build plans that project and verify endpoints of re-matched directed relationship arguments") {
     val plan = planFor("MATCH (a)-[r]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r]->(b2) RETURN r").plan
 
     plan.toString should equal(
-      "Projection(Apply(Limit(Expand(AllNodesScan(IdName(b),Set()),IdName(b),INCOMING,List(),IdName(a),IdName(r),ExpandAll),UnsignedDecimalIntegerLiteral(1)),ProjectEndpoints(Argument(Set(IdName(a), IdName(r))),IdName(r),IdName(a),true,IdName(b2),false,None,true,SimplePatternLength)),Map(r -> Identifier(r)))")
+      "Apply(Limit(Expand(AllNodesScan(IdName(b),Set()),IdName(b),INCOMING,List(),IdName(a),IdName(r),ExpandAll),UnsignedDecimalIntegerLiteral(1)),ProjectEndpoints(Argument(Set(IdName(a), IdName(r))),IdName(r),IdName(a),true,IdName(b2),false,None,true,SimplePatternLength))")
   }
 
   test("should build plans that project and verify endpoints of re-matched undirected relationship arguments") {
     val plan = planFor("MATCH (a)-[r]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r]-(b2) RETURN r").plan
 
     plan.toString should equal(
-      "Projection(Apply(Limit(Expand(AllNodesScan(IdName(b),Set()),IdName(b),INCOMING,List(),IdName(a),IdName(r),ExpandAll),UnsignedDecimalIntegerLiteral(1)),ProjectEndpoints(Argument(Set(IdName(a), IdName(r))),IdName(r),IdName(a),true,IdName(b2),false,None,false,SimplePatternLength)),Map(r -> Identifier(r)))")
+      "Apply(Limit(Expand(AllNodesScan(IdName(b),Set()),IdName(b),INCOMING,List(),IdName(a),IdName(r),ExpandAll),UnsignedDecimalIntegerLiteral(1)),ProjectEndpoints(Argument(Set(IdName(a), IdName(r))),IdName(r),IdName(a),true,IdName(b2),false,None,false,SimplePatternLength))")
   }
 
   test("should build plans that project and verify endpoints of re-matched directed var length relationship arguments") {
     val plan = planFor("MATCH (a)-[r*]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r*]->(b2) RETURN r").plan
 
     plan.toString should equal(
-      "Projection(Apply(Limit(VarExpand(AllNodesScan(IdName(b),Set()),IdName(b),INCOMING,OUTGOING,List(),IdName(a),IdName(r),VarPatternLength(1,None),ExpandAll,Vector()),UnsignedDecimalIntegerLiteral(1)),ProjectEndpoints(Argument(Set(IdName(a), IdName(r))),IdName(r),IdName(a),true,IdName(b2),false,None,true,VarPatternLength(1,None))),Map(r -> Identifier(r)))")
+      "Apply(Limit(VarExpand(AllNodesScan(IdName(b),Set()),IdName(b),INCOMING,OUTGOING,List(),IdName(a),IdName(r),VarPatternLength(1,None),ExpandAll,Vector()),UnsignedDecimalIntegerLiteral(1)),ProjectEndpoints(Argument(Set(IdName(a), IdName(r))),IdName(r),IdName(a),true,IdName(b2),false,None,true,VarPatternLength(1,None)))")
   }
 }

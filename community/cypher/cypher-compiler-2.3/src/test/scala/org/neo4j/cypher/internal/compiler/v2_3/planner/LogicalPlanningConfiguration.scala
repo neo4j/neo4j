@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cost, _}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.GraphStatistics
 
 trait LogicalPlanningConfiguration {
-  def computeSemanticTable: SemanticTable
+  def updateSemanticTableWithTokens(in: SemanticTable): SemanticTable
   def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel): CardinalityModel
   def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput), Cost]
   def graphStatistics: GraphStatistics
@@ -40,7 +40,7 @@ trait LogicalPlanningConfiguration {
 }
 
 class DelegatingLogicalPlanningConfiguration(val parent: LogicalPlanningConfiguration) extends LogicalPlanningConfiguration {
-  override def computeSemanticTable = parent.computeSemanticTable
+  override def updateSemanticTableWithTokens(in: SemanticTable): SemanticTable = parent.updateSemanticTableWithTokens(in)
   override def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel): CardinalityModel =
     parent.cardinalityModel(queryGraphCardinalityModel)
   override def costModel() = parent.costModel()
@@ -55,8 +55,7 @@ class DelegatingLogicalPlanningConfiguration(val parent: LogicalPlanningConfigur
 trait LogicalPlanningConfigurationAdHocSemanticTable {
   self: LogicalPlanningConfiguration =>
 
-  override def computeSemanticTable: SemanticTable = {
-    val table = SemanticTable()
+  override def updateSemanticTableWithTokens(table: SemanticTable): SemanticTable = {
     def addLabelIfUnknown(labelName: String) =
       if (!table.resolvedLabelIds.contains(labelName))
         table.resolvedLabelIds.put(labelName, LabelId(table.resolvedLabelIds.size))

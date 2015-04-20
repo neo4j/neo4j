@@ -49,7 +49,7 @@ object GreedyPlanTable {
              !(newSolved.graph.covers(solved.graph) &&
                solved.isCoveredByHints(newSolved))
          }
-         DefaultGreedyPlanTable(oldPlansNotCoveredByNewPlan + (newPlan.solved.lastQueryGraph -> newPlan))
+         DefaultGreedyPlanTable(oldPlansNotCoveredByNewPlan + (newSolved.lastQueryGraph -> newPlan))
        }
      }
 

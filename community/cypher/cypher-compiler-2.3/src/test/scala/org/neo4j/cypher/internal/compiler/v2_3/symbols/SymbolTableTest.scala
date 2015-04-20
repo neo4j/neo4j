@@ -28,7 +28,7 @@ class SymbolTableTest extends CypherFunSuite {
 
   test("anytype_is_ok") {
     //given
-    val s = createSymbols("p" -> CTPath)
+    val s = symbols("p" -> CTPath)
 
     //then
     s.evaluateType("p", CTAny) should equal(CTPath)
@@ -36,7 +36,7 @@ class SymbolTableTest extends CypherFunSuite {
 
   test("missing_identifier") {
     //given
-    val s = createSymbols()
+    val s = symbols()
 
     //then
     intercept[SyntaxException](s.evaluateType("p", CTAny))
@@ -44,7 +44,7 @@ class SymbolTableTest extends CypherFunSuite {
 
   test("identifier_with_wrong_type") {
     //given
-    val symbolTable = createSymbols("x" -> CTString)
+    val symbolTable = symbols("x" -> CTString)
 
     //then
     intercept[CypherTypeException](symbolTable.evaluateType("x", CTNumber))
@@ -52,7 +52,7 @@ class SymbolTableTest extends CypherFunSuite {
 
   test("identifier_with_type_not_specific_enough") {
     //given
-    val symbolTable = createSymbols("x" -> CTMap)
+    val symbolTable = symbols("x" -> CTMap)
 
     //then
     symbolTable.evaluateType("x", CTRelationship)
@@ -60,7 +60,7 @@ class SymbolTableTest extends CypherFunSuite {
 
   test("adding_string_with_string_gives_string_type") {
     //given
-    val symbolTable = createSymbols()
+    val symbolTable = symbols()
     val exp = new Add(new FakeExpression(CTString), new FakeExpression(CTString))
 
     //when
@@ -72,7 +72,7 @@ class SymbolTableTest extends CypherFunSuite {
 
   test("adding_number_with_number_gives_number_type") {
     //given
-    val symbolTable = createSymbols()
+    val symbolTable = symbols()
     val exp = new Add(new FakeExpression(CTNumber), new FakeExpression(CTNumber))
 
     //when
@@ -84,7 +84,7 @@ class SymbolTableTest extends CypherFunSuite {
 
   test("adding_to_string_collection") {
     //given
-    val symbolTable = createSymbols()
+    val symbolTable = symbols()
     val exp = new Add(new FakeExpression(CTCollection(CTString)), new FakeExpression(CTString))
 
     //when
@@ -103,8 +103,35 @@ class SymbolTableTest extends CypherFunSuite {
     expected.isAssignableFrom(actual) should equal(true)
   }
 
+  test("intersection of two symbol tables") {
+    SymbolTable() intersect SymbolTable() should equal(SymbolTable())
 
-  def createSymbols(elems: (String, CypherType)*): SymbolTable = {
+    symbols("a" -> CTString).intersect(
+    symbols("a" -> CTString)) should equal(
+    symbols("a" -> CTString))
+
+    symbols("a" -> CTString).intersect(
+    symbols("a" -> CTAny)) should equal(
+    symbols("a" -> CTAny))
+
+    symbols("a" -> CTString).intersect(
+    symbols("a" -> CTNumber)) should equal(
+    symbols("a" -> CTString.leastUpperBound(CTNumber)))
+
+    symbols("a" -> CTString, "b" -> CTString).intersect(
+    symbols("a" -> CTString, "c" -> CTString)) should equal(
+    symbols("a" -> CTString))
+
+    symbols("a" -> CTString, "b" -> CTString).intersect(
+    symbols()) should equal(
+    symbols())
+
+    symbols("a" -> CTString).
+      intersect(symbols("a" -> CTString)) should equal(symbols("a" -> CTString))
+  }
+
+
+  def symbols(elems: (String, CypherType)*): SymbolTable = {
     SymbolTable(elems.toMap)
   }
 }
