@@ -21,10 +21,14 @@ package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -34,18 +38,16 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.progress.ProgressListener;
+import org.neo4j.test.RandomRule;
 import org.neo4j.test.RepeatRule;
-import org.neo4j.test.RepeatRule.Repeat;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.GatheringMemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper.Monitor;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
@@ -65,21 +67,41 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.helpers.progress.ProgressListener.NONE;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper.NO_MONITOR;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.badCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.Group.GLOBAL;
 import static org.neo4j.unsafe.impl.batchimport.input.SimpleInputIteratorWrapper.wrap;
 
+@RunWith( Parameterized.class )
 public class EncodingIdMapperTest
 {
+    @Parameters( name = "processors:{0}" )
+    public static Collection<Object[]> data()
+    {
+        Collection<Object[]> data = new ArrayList<>();
+        data.add( new Object[] {1} );
+        data.add( new Object[] {2} );
+        int bySystem = Runtime.getRuntime().availableProcessors()-1;
+        if ( bySystem > 2 )
+        {
+            data.add( new Object[] {bySystem} );
+        }
+        return data;
+    }
+
+    private final int processors;
+
+    public EncodingIdMapperTest( int processors )
+    {
+        this.processors = processors;
+    }
+
     @Test
     public void shouldHandleGreatAmountsOfStuff() throws Exception
     {
         // GIVEN
-        IdMapper idMapper = IdMappers.strings( NumberArrayFactory.AUTO );
+        IdMapper idMapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
         InputIterable<Object> ids = new InputIterable<Object>()
         {
             @Override
@@ -178,19 +200,16 @@ public class EncodingIdMapperTest
         assertEquals( 0L, mapper.get( "123", GLOBAL ) );
     }
 
-    @Repeat( times = 10 )
     @Test
     public void shouldEncodeSmallSetOfRandomData() throws Throwable
     {
         // GIVEN
-        int processorsForSorting = random.nextInt( 7 ) + 1;
         int size = random.nextInt( 10_000 ) + 2;
         ValueType type = ValueType.values()[random.nextInt( ValueType.values().length )];
-        IdMapper mapper = new EncodingIdMapper( NumberArrayFactory.HEAP, type.encoder(), type.radix(),
-                NO_MONITOR, size*2, processorsForSorting /*1-7*/ );
+        IdMapper mapper = mapper( type.encoder(), type.radix(), NO_MONITOR );
 
         // WHEN
-        InputIterable<Object> values = new ValueGenerator( size, type.data( random ) );
+        InputIterable<Object> values = new ValueGenerator( size, type.data( random.random() ) );
         {
             int id = 0;
             for ( Object value : values )
@@ -199,21 +218,13 @@ public class EncodingIdMapperTest
             }
         }
 
-        try
-        {
-            mapper.prepare( values, mock( Collector.class ), NONE );
+        mapper.prepare( values, mock( Collector.class ), NONE );
 
-            // THEN
-            int id = 0;
-            for ( Object value : values )
-            {
-                assertEquals( "Expected " + value + " to map to " + id + ", seed:" + seed, id++,
-                        mapper.get( value, GLOBAL ) );
-            }
-        }
-        catch ( Throwable e )
+        // THEN
+        int id = 0;
+        for ( Object value : values )
         {
-            throw Exceptions.withMessage( e, e.getMessage() + ", seed:" + seed );
+            assertEquals( "Expected " + value + " to map to " + id, id++, mapper.get( value, GLOBAL ) );
         }
     }
 
@@ -296,7 +307,7 @@ public class EncodingIdMapperTest
 
         // THEN
         verifyNoMoreInteractions( collector );
-        verify( monitor ).numberOfCollisions( 1 );
+        verify( monitor ).numberOfCollisions( 2 );
         assertEquals( 0L, mapper.get( "10", GLOBAL ) );
         assertEquals( 1L, mapper.get( "9", GLOBAL ) );
         // 3 times since SORT+DETECT+RESOLVE
@@ -348,7 +359,7 @@ public class EncodingIdMapperTest
         mapper.prepare( ids, collector, mock( ProgressListener.class ) );
 
         // THEN
-        verify( monitor ).numberOfCollisions( 2 );
+        verify( monitor ).numberOfCollisions( 4 );
         assertEquals( 0L, mapper.get( a, groupA ) );
         assertEquals( 1L, mapper.get( b, groupA ) );
         assertEquals( 2L, mapper.get( c, groupA ) );
@@ -511,10 +522,39 @@ public class EncodingIdMapperTest
         }
     }
 
+    @Test
+    public void shouldHandleHolesInIdSequence() throws Exception
+    {
+        // GIVEN
+        IdMapper mapper = mapper( new LongEncoder(), Radix.LONG, NO_MONITOR );
+        List<Object> ids = new ArrayList<>();
+        for ( int i = 0; i < 100; i++ )
+        {
+            if ( random.nextBoolean() )
+            {
+                // Skip this one
+            }
+            else
+            {
+                Long id = (long) i;
+                ids.add( id );
+                mapper.put( id, i, GLOBAL );
+            }
+        }
+
+        // WHEN
+        mapper.prepare( SimpleInputIteratorWrapper.wrap( "source", ids ), mock( Collector.class ), NONE );
+
+        // THEN
+        for ( Object id : ids )
+        {
+            assertEquals( ((Long)id).longValue(), mapper.get( id, GLOBAL ) );
+        }
+    }
+
     private IdMapper mapper( Encoder encoder, Factory<Radix> radix, Monitor monitor )
     {
-        return new EncodingIdMapper( NumberArrayFactory.HEAP, encoder, radix, monitor, 1_000,
-                Runtime.getRuntime().availableProcessors()-1 );
+        return new EncodingIdMapper( NumberArrayFactory.HEAP, encoder, radix, monitor, 1_000, processors );
     }
 
     private class ValueGenerator implements InputIterable<Object>
@@ -697,7 +737,6 @@ public class EncodingIdMapperTest
         abstract Factory<Object> data( Random random );
     }
 
-    private final long seed = currentTimeMillis();
-    private final Random random = new Random( seed );
+    public final @Rule RandomRule random = new RandomRule();
     public final @Rule RepeatRule repeater = new RepeatRule();
 }

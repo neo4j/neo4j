@@ -30,8 +30,6 @@ import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
 import org.neo4j.unsafe.impl.batchimport.cache.IntArray;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
 
-import static java.lang.Math.max;
-
 import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToInt;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper.clearCollision;
 
@@ -44,26 +42,23 @@ public class ParallelSort
     private final int[] radixIndexCount;
     private final RadixCalculator radixCalculator;
     private final LongArray dataCache;
-    private final NumberArrayStats dataStats;
+    private final long highestSetIndex;
     private final IntArray tracker;
-    private final NumberArrayStats trackerStats;
     private final int threads;
     private long[][] sortBuckets;
     private final ProgressListener progress;
     private final Comparator comparator;
 
-    public ParallelSort( Radix radix, LongArray dataCache, NumberArrayStats dataStats,
-            IntArray tracker, NumberArrayStats trackerStats, int threads, ProgressListener progress,
-            Comparator comparator )
+    public ParallelSort( Radix radix, LongArray dataCache, long highestSetIndex,
+            IntArray tracker, int threads, ProgressListener progress, Comparator comparator )
     {
         this.progress = progress;
         this.comparator = comparator;
         this.radixIndexCount = radix.getRadixIndexCounts();
         this.radixCalculator = radix.calculator();
         this.dataCache = dataCache;
-        this.dataStats = dataStats;
+        this.highestSetIndex = highestSetIndex;
         this.tracker = tracker;
-        this.trackerStats = trackerStats;
         this.threads = threads;
     }
 
@@ -108,10 +103,9 @@ public class ParallelSort
         int[] bucketRange = new int[threads];
         Workers<TrackerInitializer> initializers = new Workers<>( "TrackerInitializer" );
         sortBuckets = new long[threads][2];
-        int bucketSize = safeCastLongToInt( dataStats.size() / threads );
-        int count = 0, fullCount = 0 + 0;
-        rangeParams[0][0] = 0;
-        bucketRange[0] = 0;
+        long dataSize = highestSetIndex+1;
+        int bucketSize = safeCastLongToInt( dataSize / threads );
+        int count = 0, fullCount = 0;
         progress.started( "SPLIT" );
         for ( int i = 0, threadIndex = 0; i < radixIndexCount.length && threadIndex < threads; i++ )
         {
@@ -145,7 +139,7 @@ public class ParallelSort
             {
                 bucketRange[threadIndex] = radixIndexCount.length;
                 rangeParams[threadIndex][0] = fullCount;
-                rangeParams[threadIndex][1] = safeCastLongToInt( dataStats.size() - fullCount );
+                rangeParams[threadIndex][1] = safeCastLongToInt( dataSize - fullCount );
                 initializers.start( new TrackerInitializer( threadIndex, rangeParams[threadIndex],
                         threadIndex > 0 ? bucketRange[threadIndex-1] : -1, bucketRange[threadIndex],
                         sortBuckets[threadIndex] ) );
@@ -159,18 +153,15 @@ public class ParallelSort
         // data indexes as any other thread. Here we wait for them all to finish.
         Throwable error = initializers.await();
         int[] bucketIndex = new int[threads];
-        long highestIndex = -1, size = 0;
         int i = 0;
         for ( TrackerInitializer initializer : initializers )
         {
             bucketIndex[i++] = initializer.bucketIndex;
-            highestIndex = max( highestIndex, initializer.highestIndex );
-            size += initializer.size;
         }
-        trackerStats.set( size, highestIndex );
         if ( error != null )
         {
-            throw new AssertionError( error.getMessage() + "\n" + dumpBuckets( rangeParams, bucketRange, bucketIndex ) );
+            throw new AssertionError( error.getMessage() + "\n" + dumpBuckets( rangeParams, bucketRange, bucketIndex ),
+                    error );
         }
         return rangeParams;
     }
@@ -343,47 +334,40 @@ public class ParallelSort
     private class TrackerInitializer implements Runnable
     {
         private final int[] rangeParams;
-        private final int lowBucketRange;
-        private final int highBucketRange;
+        private final int lowRadixRange;
+        private final int highRadixRange;
         private final int threadIndex;
         private int bucketIndex;
         private final long[] result;
-        private long highestIndex = -1;
-        private long size;
 
-        TrackerInitializer( int threadIndex, int[] rangeParams, int lowBucketRange, int highBucketRange, long[] result )
+        TrackerInitializer( int threadIndex, int[] rangeParams, int lowRadixRange, int highRadixRange, long[] result )
         {
             this.threadIndex = threadIndex;
             this.rangeParams = rangeParams;
-            this.lowBucketRange = lowBucketRange;
-            this.highBucketRange = highBucketRange;
+            this.lowRadixRange = lowRadixRange;
+            this.highRadixRange = highRadixRange;
             this.result = result;
         }
 
         @Override
         public void run()
         {
-            long max = dataStats.highestIndex();
-            for ( long i = 0; i <= max; i++ )
+            for ( long i = 0; i <= highestSetIndex; i++ )
             {
                 int rIndex = radixCalculator.radixOf( dataCache.get( i ) );
-                if ( rIndex > lowBucketRange && rIndex <= highBucketRange )
+                if ( rIndex > lowRadixRange && rIndex <= highRadixRange )
                 {
-                    long temp = (rangeParams[0] + bucketIndex++);
-                    assert tracker.get( temp ) == -1 : "Overlapping buckets i:" + i + ", k:" + threadIndex;
-                    tracker.set( temp, (int) i );
+                    long trackerIndex = (rangeParams[0] + bucketIndex++);
+                    assert tracker.get( trackerIndex ) == -1 :
+                            "Overlapping buckets i:" + i + ", k:" + threadIndex + ", index:" + trackerIndex;
+                    tracker.set( trackerIndex, (int) i );
                     if ( bucketIndex == rangeParams[1] )
                     {
-                        result[0] = highBucketRange;
+                        result[0] = highRadixRange;
                         result[1] = rangeParams[0];
                     }
                 }
             }
-            if ( bucketIndex > 0 )
-            {
-                highestIndex = rangeParams[0] + bucketIndex - 1;
-            }
-            size = bucketIndex;
         }
     }
 }
