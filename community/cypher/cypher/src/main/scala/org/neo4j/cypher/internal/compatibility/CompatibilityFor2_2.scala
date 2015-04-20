@@ -339,12 +339,22 @@ case class CompatibilityFor2_2Cost(graph: GraphDatabaseService,
                                    kernelMonitors: KernelMonitors,
                                    kernelAPI: KernelAPI,
                                    log: Log,
-                                   plannerName: CostBasedPlannerName) extends CompatibilityFor2_2 {
+                                   planner: CypherPlanner) extends CompatibilityFor2_2 {
 
-  protected val compiler = CypherCompilerFactory.costBasedCompiler(
-    graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, WrappedMonitors2_2(kernelMonitors),
-    StringInfoLogger2_2(log), plannerName, rewriterSequencer
-  )
+  protected val compiler = {
+    val plannerName = planner match {
+      case CypherPlanner.default => ConservativePlannerName
+      case CypherPlanner.cost => CostPlannerName
+      case CypherPlanner.idp => IDPPlannerName
+      case CypherPlanner.dp => DPPlannerName
+      case _ => throw new IllegalArgumentException(s"unknown cost based planner: ${planner.name}")
+    }
+
+    CypherCompilerFactory.costBasedCompiler(
+      graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, WrappedMonitors2_2(kernelMonitors),
+      StringInfoLogger2_2(log), plannerName, rewriterSequencer
+    )
+  }
 }
 
 case class CompatibilityFor2_2Rule(graph: GraphDatabaseService,
