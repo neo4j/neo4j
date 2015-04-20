@@ -67,7 +67,7 @@ public class ParallelSort
         this.threads = threads;
     }
 
-    public long[][] run() throws InterruptedException
+    public synchronized long[][] run() throws InterruptedException
     {
         int[][] sortParams = sortRadix();
         int threadsNeeded = 0;
@@ -80,8 +80,7 @@ public class ParallelSort
             threadsNeeded++;
         }
         CountDownLatch waitSignal = new CountDownLatch( 1 );
-        CountDownLatch doneSignal = new CountDownLatch( threadsNeeded );
-        SortWorker[] sortWorker = new SortWorker[threadsNeeded];
+        Workers<SortWorker> sortWorkers = new Workers<>( "SortWorker" );
         progress.started( "SORT" );
         for ( int i = 0; i < threadsNeeded; i++ )
         {
@@ -89,13 +88,12 @@ public class ParallelSort
             {
                 break;
             }
-            sortWorker[i] = new SortWorker( i, sortParams[i][0], sortParams[i][1], waitSignal, doneSignal );
-            sortWorker[i].start();
+            sortWorkers.start( new SortWorker( sortParams[i][0], sortParams[i][1], waitSignal ) );
         }
         waitSignal.countDown();
         try
         {
-            doneSignal.await();
+            sortWorkers.awaitAndThrowOnError();
         }
         finally
         {
@@ -108,7 +106,7 @@ public class ParallelSort
     {
         int[][] rangeParams = new int[threads][2];
         int[] bucketRange = new int[threads];
-        TrackerInitializer[] initializers = new TrackerInitializer[threads];
+        Workers<TrackerInitializer> initializers = new Workers<>( "TrackerInitializer" );
         sortBuckets = new long[threads][2];
         int bucketSize = safeCastLongToInt( dataStats.size() / threads );
         int count = 0, fullCount = 0 + 0;
@@ -134,9 +132,9 @@ public class ParallelSort
                     fullCount += radixIndexCount[i];
                     progress.add( radixIndexCount[i] );
                 }
-                initializers[threadIndex] = new TrackerInitializer( threadIndex, rangeParams[threadIndex],
+                initializers.start( new TrackerInitializer( threadIndex, rangeParams[threadIndex],
                         threadIndex > 0 ? bucketRange[threadIndex-1] : -1, bucketRange[threadIndex],
-                        sortBuckets[threadIndex] );
+                        sortBuckets[threadIndex] ) );
                 threadIndex++;
             }
             else
@@ -148,9 +146,9 @@ public class ParallelSort
                 bucketRange[threadIndex] = radixIndexCount.length;
                 rangeParams[threadIndex][0] = fullCount;
                 rangeParams[threadIndex][1] = safeCastLongToInt( dataStats.size() - fullCount );
-                initializers[threadIndex] = new TrackerInitializer( threadIndex, rangeParams[threadIndex],
+                initializers.start( new TrackerInitializer( threadIndex, rangeParams[threadIndex],
                         threadIndex > 0 ? bucketRange[threadIndex-1] : -1, bucketRange[threadIndex],
-                        sortBuckets[threadIndex] );
+                        sortBuckets[threadIndex] ) );
                 break;
             }
         }
@@ -159,23 +157,15 @@ public class ParallelSort
         // In the loop above where we split up radixes into buckets, we start one thread per bucket whose
         // job is to populate trackerCache and sortBuckets where each thread will not touch the same
         // data indexes as any other thread. Here we wait for them all to finish.
+        Throwable error = initializers.await();
         int[] bucketIndex = new int[threads];
-        Throwable error = null;
         long highestIndex = -1, size = 0;
-        for ( int i = 0; i < initializers.length; i++ )
+        int i = 0;
+        for ( TrackerInitializer initializer : initializers )
         {
-            TrackerInitializer initializer = initializers[i];
-            if ( initializer != null )
-            {
-                Throwable initializerError = initializer.await();
-                if ( initializerError != null )
-                {
-                    error = initializerError;
-                }
-                bucketIndex[i] = initializer.bucketIndex;
-                highestIndex = max( highestIndex, initializer.highestIndex );
-                size += initializer.size;
-            }
+            bucketIndex[i++] = initializer.bucketIndex;
+            highestIndex = max( highestIndex, initializer.highestIndex );
+            size += initializer.size;
         }
         trackerStats.set( size, highestIndex );
         if ( error != null )
@@ -301,20 +291,17 @@ public class ParallelSort
      * instead trackerCache is updated to point to the right indexes. Only touches a designated part of trackerCache
      * so that many can run in parallel on their own part without synchronization.
      */
-    private class SortWorker extends Thread
+    private class SortWorker implements Runnable
     {
         private final int start, size;
-        private final CountDownLatch doneSignal, waitSignal;
-        private int workerId = -1;
+        private final CountDownLatch waitSignal;
         private int threadLocalProgress;
 
-        SortWorker( int workerId, int startRange, int size, CountDownLatch wait, CountDownLatch done )
+        SortWorker( int startRange, int size, CountDownLatch wait )
         {
             this.start = startRange;
             this.size = size;
-            this.doneSignal = done;
             this.waitSignal = wait;
-            this.workerId = workerId;
         }
 
         void incrementProgress( int diff )
@@ -336,7 +323,6 @@ public class ParallelSort
         public void run()
         {
             Random random = ThreadLocalRandom.current();
-            this.setName( "SortWorker-" + workerId );
             try
             {
                 waitSignal.await();
@@ -347,7 +333,6 @@ public class ParallelSort
             }
             recursiveQsort( start, start + size, random, this );
             reportProgress();
-            doneSignal.countDown();
         }
     }
 
@@ -355,7 +340,7 @@ public class ParallelSort
      * Sets the initial tracker indexes pointing to data indexes. Only touches a designated part of trackerCache
      * so that many can run in parallel on their own part without synchronization.
      */
-    private class TrackerInitializer extends Thread
+    private class TrackerInitializer implements Runnable
     {
         private final int[] rangeParams;
         private final int lowBucketRange;
@@ -363,7 +348,6 @@ public class ParallelSort
         private final int threadIndex;
         private int bucketIndex;
         private final long[] result;
-        private volatile Throwable error;
         private long highestIndex = -1;
         private long size;
 
@@ -374,46 +358,32 @@ public class ParallelSort
             this.lowBucketRange = lowBucketRange;
             this.highBucketRange = highBucketRange;
             this.result = result;
-            start();
         }
 
         @Override
         public void run()
         {
-            try
+            long max = dataStats.highestIndex();
+            for ( long i = 0; i <= max; i++ )
             {
-                long dataSize = dataStats.size();
-                for ( long i = 0; i < dataSize; i++ )
+                int rIndex = radixCalculator.radixOf( dataCache.get( i ) );
+                if ( rIndex > lowBucketRange && rIndex <= highBucketRange )
                 {
-                    int rIndex = radixCalculator.radixOf( dataCache.get( i ) );
-                    if ( rIndex > lowBucketRange && rIndex <= highBucketRange )
+                    long temp = (rangeParams[0] + bucketIndex++);
+                    assert tracker.get( temp ) == -1 : "Overlapping buckets i:" + i + ", k:" + threadIndex;
+                    tracker.set( temp, (int) i );
+                    if ( bucketIndex == rangeParams[1] )
                     {
-                        long temp = (rangeParams[0] + bucketIndex++);
-                        assert tracker.get( temp ) == -1 : "Overlapping buckets i:" + i + ", k:" + threadIndex;
-                        tracker.set( temp, (int) i );
-                        if ( bucketIndex == rangeParams[1] )
-                        {
-                            result[0] = highBucketRange;
-                            result[1] = rangeParams[0];
-                        }
+                        result[0] = highBucketRange;
+                        result[1] = rangeParams[0];
                     }
                 }
-                if ( bucketIndex > 0 )
-                {
-                    highestIndex = rangeParams[0] + bucketIndex - 1;
-                }
-                size = bucketIndex;
             }
-            catch ( Throwable t )
+            if ( bucketIndex > 0 )
             {
-                error = t;
+                highestIndex = rangeParams[0] + bucketIndex - 1;
             }
-        }
-
-        private synchronized Throwable await() throws InterruptedException
-        {
-            join();
-            return error;
+            size = bucketIndex;
         }
     }
 }

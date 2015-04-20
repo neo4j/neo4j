@@ -241,33 +241,28 @@ public class EncodingIdMapper implements IdMapper
     public void prepare( InputIterable<Object> ids, Collector collector, ProgressListener progress )
     {
         endPreviousGroup();
-        synchronized ( this )
+        dataCache = dataCache.fixate();
+        trackerCache = cacheFactory.newIntArray( dataCacheStats.highestIndex()+1, -1 );
+
+        try
         {
-            dataCache = dataCache.fixate();
-            trackerCache = cacheFactory.newIntArray( dataCacheStats.highestIndex()+1, -1 );
+            sortBuckets = new ParallelSort( radix, dataCache, dataCacheStats, trackerCache, trackerStats,
+                    processorsForSorting, progress, DEFAULT ).run();
 
-            // Synchronized since there's this concern that a couple of other threads are changing trackerCache
-            // and it's nice to go through a memory barrier afterwards to ensure this CPU see correct data.
-            try
+            if ( detectAndMarkCollisions( progress ) > 0 )
             {
-                sortBuckets = new ParallelSort( radix, dataCache, dataCacheStats, trackerCache, trackerStats,
-                        processorsForSorting, progress, DEFAULT ).run();
-
-                if ( detectAndMarkCollisions( progress ) > 0 )
+                try ( InputIterator<Object> idIterator = ids.iterator() )
                 {
-                    try ( InputIterator<Object> idIterator = ids.iterator() )
-                    {
-                        buildCollisionInfo( idIterator, collector, progress );
-                    }
+                    buildCollisionInfo( idIterator, collector, progress );
                 }
             }
-            catch ( InterruptedException e )
-            {
-                Thread.interrupted();
-                throw new RuntimeException( "Got interrupted while preparing the index. Throwing this exception "
-                        + "onwards will cause a chain reaction which will cause a panic in the whole import, "
-                        + "so mission accomplished" );
-            }
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.interrupted();
+            throw new RuntimeException( "Got interrupted while preparing the index. Throwing this exception "
+                    + "onwards will cause a chain reaction which will cause a panic in the whole import, "
+                    + "so mission accomplished" );
         }
         readyForUse = true;
     }
