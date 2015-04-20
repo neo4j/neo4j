@@ -47,12 +47,13 @@ angular.module('neo4jApp.directives')
             for unbind in unbinds
               unbind()
             unbinds = []
-            while elm[0].firstChild
-              elm[0].removeChild elm[0].firstChild
+            $(elm[0]).empty()
+            dir.link(scope, elm, attr, ngCtrl)
           )
           unbinds.push listenerExportSVG
           unbinds.push listenerExportPNG
           unbinds.push listenerResetFrame
+          watchGraphData()
 
       dir.getDimensions = (view) ->
         boundingBox = view.boundingBox()
