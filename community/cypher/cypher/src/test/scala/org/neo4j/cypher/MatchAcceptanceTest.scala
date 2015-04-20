@@ -2125,6 +2125,21 @@ return b
     result should equal(List(Map("l" -> null), Map("l" -> null), Map("l" -> r), Map("l" -> null), Map("l" -> r)))
   }
 
+  test("should correctly handle nulls in var length expand") {
+    val node = createLabeledNode("A")
+    createLabeledNode("B")
+
+    val query =
+      """match (a:A)
+        |optional match (a)-[r1:FOO]->(b:B)
+        |optional match (b)<-[r2:BAR*]-(c:B)
+        |return a, b, c""".stripMargin
+
+    val result = executeWithAllPlanners(query).toList
+
+    result should equal(List(Map("a" -> node, "b" -> null, "c" -> null)))
+  }
+
   /**
    * Append identifier to keys and transform value arrays to lists
    */

@@ -85,6 +85,8 @@ case class VarLengthExpandPipe(source: Pipe,
                 row.newWith2(relName, rels, toName, node)
             }
 
+          case null => Iterator(row.newWith2(relName, null, toName, null))
+
           case value => throw new InternalException(s"Expected to find a node at $fromName but found $value instead")
         }
       }

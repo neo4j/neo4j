@@ -960,6 +960,24 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     single("b") should equal(endNode)
   }
 
+  test("should correctly handle nulls from source pipe") {
+    // given
+    val query = mock[QueryContext]
+    val queryState = QueryStateHelper.emptyWith(query = query)
+
+    val source = newMockedPipe(SymbolTable(Map("a" -> CTNode)))
+    when(source.createResults(queryState)).thenReturn(Iterator(row("a" -> null)))
+
+    // when
+    val result = VarLengthExpandPipe(source, "a", "r", "b", Direction.BOTH, Direction.INCOMING, LazyTypes.empty, 1, None, nodeInScope = false)().createResults(queryState).toList
+
+    // then
+    val (single :: Nil) = result
+    single("a").asInstanceOf[AnyRef] should be(null)
+    single("r").asInstanceOf[AnyRef] should be(null)
+    single("b").asInstanceOf[AnyRef] should be(null)
+  }
+
   private def row(values: (String, Any)*) = ExecutionContext.from(values: _*)
 
   private def newMockedNode(id: Int) = {
