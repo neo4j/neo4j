@@ -326,10 +326,7 @@ final class MuninnPage extends StampedLock implements Page
             while ( read != -1 && (readTotal += read) < length );
 
             // Zero-fill the rest.
-            while ( bufferProxy.position() < bufferProxy.limit() )
-            {
-                bufferProxy.put( (byte) 0 );
-            }
+            UnsafeUtil.setMemory( pointer + readTotal, getCachePageSize() - readTotal, (byte) 0 );
             return readTotal;
         }
         catch ( ClosedChannelException e )
@@ -368,6 +365,12 @@ final class MuninnPage extends StampedLock implements Page
         {
             throw new IOException( e );
         }
+    }
+
+    @Override
+    public void clear()
+    {
+        UnsafeUtil.setMemory( pointer, getCachePageSize(), (byte) 0 );
     }
 
     /**
@@ -463,7 +466,6 @@ final class MuninnPage extends StampedLock implements Page
         evictionEvent.setSwapper( swapper );
 
         flush( evictionEvent.flushEventOpportunity() );
-        UnsafeUtil.setMemory( pointer, getCachePageSize(), (byte) 0 );
         this.filePageId = PageCursor.UNBOUND_PAGE_ID;
 
         this.swapper = null;

@@ -122,4 +122,16 @@ public class ByteBufferPage implements Page
         duplicate.limit( length );
         channel.writeAll( duplicate, offset );
     }
+
+    @Override
+    public void clear()
+    {
+        ByteBuffer duplicate = buffer.duplicate();
+        duplicate.clear();
+        int length = duplicate.capacity();
+        for ( int i = 0; i < length; i++ )
+        {
+            duplicate.put( (byte) 0 );
+        }
+    }
 }

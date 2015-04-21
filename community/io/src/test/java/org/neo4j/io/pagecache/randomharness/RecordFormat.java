@@ -21,8 +21,11 @@ package org.neo4j.io.pagecache.randomharness;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.StubPageCursor;
 
 import static org.hamcrest.Matchers.isOneOf;
 import static org.junit.Assert.assertThat;
@@ -43,6 +46,14 @@ public abstract class RecordFormat
     {
         int recordsPerPage = cursor.getCurrentPageSize() / getRecordSize();
         writeRecordToPage( cursor, cursor.getCurrentPageId(), recordsPerPage );
+    }
+
+    public final void writeRecord( Record record, StoreChannel channel ) throws IOException
+    {
+        ByteBuffer buffer = ByteBuffer.allocate( getRecordSize() );
+        StubPageCursor cursor = new StubPageCursor( 0, buffer );
+        write( record, cursor );
+        channel.writeAll( buffer );
     }
 
     public final void fillWithRecords( PageCursor cursor )
