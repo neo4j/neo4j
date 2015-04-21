@@ -101,6 +101,9 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
     private void updateIndexes() throws IOException, IndexCapacityExceededException, IndexEntryConflictException
     {
         // We only allow a single writer at the time to update the schema index stores
+        // TODO we should probably do two things here:
+        //   - make the synchronized block more granular, over each index or something
+        //   - not even on each index, but make the decision up to the index implementation instead
         synchronized ( indexingService )
         {
             indexUpdates.flush();

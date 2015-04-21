@@ -22,8 +22,6 @@ package org.neo4j.kernel.api.impl.index;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ReferenceManager;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 
 import java.io.Closeable;
@@ -124,6 +122,7 @@ abstract class LuceneIndexAccessor implements IndexAccessor
     public void force() throws IOException
     {
         writerStatus.commitAsOnline( writer );
+        searcherManager.maybeRefresh();
     }
 
     @Override
@@ -175,25 +174,9 @@ abstract class LuceneIndexAccessor implements IndexAccessor
 
     private void addRecovered( long nodeId, Object value ) throws IOException, IndexCapacityExceededException
     {
-        IndexSearcher searcher = searcherManager.acquire();
-        try
-        {
-            TopDocs hits = searcher.search( new TermQuery( documentStructure.newQueryForChangeOrRemove( nodeId ) ), 1 );
-            if ( hits.totalHits > 0 )
-            {
-                Fieldable encodedValue = documentStructure.encodeAsFieldable( value );
-                writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
-                        documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
-            }
-            else
-            {
-                add( nodeId, value );
-            }
-        }
-        finally
-        {
-            searcherManager.release( searcher );
-        }
+        Fieldable encodedValue = documentStructure.encodeAsFieldable( value );
+        writer.updateDocument( documentStructure.newQueryForChangeOrRemove( nodeId ),
+                documentStructure.newDocumentRepresentingProperty( nodeId, encodedValue ) );
     }
 
     protected void add( long nodeId, Object value ) throws IOException, IndexCapacityExceededException
@@ -295,7 +278,10 @@ abstract class LuceneIndexAccessor implements IndexAccessor
         @Override
         public void close() throws IOException, IndexEntryConflictException
         {
-            refreshSearcherManager();
+            if ( !inRecovery )
+            {
+                refreshSearcherManager();
+            }
         }
 
         @Override
