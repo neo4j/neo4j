@@ -43,4 +43,8 @@ class LikePatternParserTest extends CypherFunSuite {
   test("combining wildcard and escaped percent") {
     LikePatternParser("""%\%_%""").ops should equal(List(MatchMany, MatchText("%"), MatchSingle, MatchMany))
   }
+
+  test("combining wildcard and escaped underscore") {
+    LikePatternParser("""%\_%""").ops should equal(List(MatchMany, MatchText("_"), MatchMany))
+  }
 }

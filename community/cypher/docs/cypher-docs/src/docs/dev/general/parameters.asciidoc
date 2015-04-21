@@ -29,6 +29,12 @@ include::includes/exampleWithShortSyntaxStringLiteralAsParameter.asciidoc[]
 
 include::includes/exampleWithParameterRegularExpression.asciidoc[]
 
+
+== Case-(in)sensitive string pattern matching  ==
+
+include::includes/exampleWithParameterCSCIStringPatternMatching.asciidoc[]
+
+
 == Create node with properties ==
 
 include::includes/create_node_from_map.asciidoc[]

@@ -136,5 +136,18 @@ class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with
 
   }
 
+
+  test("escaping_wildcard_characters") {
+    parsing(
+      """'\_'""") shouldGive
+      legacy.Literal("_")
+
+    parsing(
+      """'\%'""") shouldGive
+      legacy.Literal("%")
+
+  }
+
+
   def convert(astNode: ast.Expression): legacy.Expression = astNode.asCommandExpression
 }

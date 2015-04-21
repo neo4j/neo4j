@@ -2,6 +2,8 @@
 -------
 
 Cypher:
+o Cypher now supports two new operators for string pattern matching: LIKE and ILIKE
+o It is now possible to escape '_' and '%' in string literals using backslash (for use with LIKE)
 o Specifying a default Cypher planner in the settings now only applies to the default language version / parser
 
 2.3-M01
