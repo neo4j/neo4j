@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.InputPosition
 import org.neo4j.cypher.internal.compiler.v2_3.parser.ParserMonitor
 import org.scalatest.prop.TableDrivenPropertyChecks
 
-class CypherOptionParserTest extends CypherFunSuite with TableDrivenPropertyChecks {
+class PreParserOptionParserTest extends CypherFunSuite with TableDrivenPropertyChecks {
 
   val queries = Table(
     ("query", "expected"),
@@ -78,7 +78,7 @@ class CypherOptionParserTest extends CypherFunSuite with TableDrivenPropertyChec
   }
 
   private def parse(arg:String): CypherQueryWithOptions = {
-    CypherOptionParser(mock[ParserMonitor[CypherQueryWithOptions]]).apply(arg)
+    CypherPreParser(mock[ParserMonitor[CypherQueryWithOptions]]).apply(arg)
   }
 
   private implicit def lift(pos: (Int, Int, Int)): InputPosition = InputPosition(pos._3, pos._1, pos._2)

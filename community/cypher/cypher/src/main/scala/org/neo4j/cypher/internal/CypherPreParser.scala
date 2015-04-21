@@ -23,18 +23,18 @@ import org.neo4j.cypher.internal.compiler.v2_3.InputPosition
 import org.neo4j.cypher.internal.compiler.v2_3.parser._
 import org.parboiled.scala._
 
-final case class CypherQueryWithOptions(statement: String, options: Seq[CypherOption], offset: InputPosition)
+final case class CypherQueryWithOptions(statement: String, options: Seq[PreParserOption], offset: InputPosition)
 
-case class CypherOptionParser(monitor: ParserMonitor[CypherQueryWithOptions]) extends Parser with Base {
+case class CypherPreParser(monitor: ParserMonitor[CypherQueryWithOptions]) extends Parser with Base {
   def apply(input: String): CypherQueryWithOptions = parseOrThrow(input, None, QueryWithOptions, Some(monitor))
 
   def QueryWithOptions: Rule1[Seq[CypherQueryWithOptions]] =
     WS ~ AllOptions ~ WS ~ AnySomething ~~>>
-      ( (options: Seq[CypherOption], text: String) => pos => Seq(CypherQueryWithOptions(text, options, pos)))
+      ( (options: Seq[PreParserOption], text: String) => pos => Seq(CypherQueryWithOptions(text, options, pos)))
 
-  def AllOptions: Rule1[Seq[CypherOption]] = zeroOrMore(AnyCypherOption, WS)
+  def AllOptions: Rule1[Seq[PreParserOption]] = zeroOrMore(AnyCypherOption, WS)
 
-  def AnyCypherOption: Rule1[CypherOption] = Cypher | Explain | Profile | PlannerDeprecated
+  def AnyCypherOption: Rule1[PreParserOption] = Cypher | Explain | Profile | PlannerDeprecated
 
   def AnySomething: Rule1[String] = rule("Query") { oneOrMore(org.parboiled.scala.ANY) ~> identity }
 
@@ -44,7 +44,7 @@ case class CypherOptionParser(monitor: ParserMonitor[CypherQueryWithOptions]) ex
       zeroOrMore(PlannerOption | RuntimeOption, WS) ~~> ConfigurationOptions
   }
 
-  def PlannerOption: Rule1[CypherOption] = rule("planner option") (
+  def PlannerOption: Rule1[PreParserOption] = rule("planner option") (
     option("planner", "cost") ~ push(CostPlannerOption)
   | option("planner", "rule") ~ push(RulePlannerOption)
   | option("planner", "idp") ~ push(IDPPlannerOption)

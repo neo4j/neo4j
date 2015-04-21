@@ -70,7 +70,9 @@ public final class Settings
 
     public static final String TRUE = "true";
     public static final String FALSE = "false";
-    
+
+    public static final String DEFAULT = "default";
+
     public static final String SEPARATOR = ",";
 
     public static final String DURATION_FORMAT = "\\d+(ms|s|m)";
@@ -310,7 +312,7 @@ public final class Settings
             return "a string";
         }
     };
-    
+
     public static final Function<String, List<String>> STRING_LIST = new Function<String, List<String>>()
     {
         @Override
@@ -318,7 +320,7 @@ public final class Settings
         {
             String[] list = value.split( SEPARATOR );
             List<String> result = new ArrayList();
-            for( String item : list) 
+            for( String item : list)
             {
                 item = item.trim();
                 if( !item.equals( "" ) )
@@ -433,7 +435,7 @@ public final class Settings
                     return "a URI";
                 }
             };
-            
+
     public static final Function<String, URI> NORMALIZED_RELATIVE_URI = new Function<String, URI>()
     {
         @Override

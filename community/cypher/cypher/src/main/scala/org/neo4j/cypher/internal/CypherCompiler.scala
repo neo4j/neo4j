@@ -57,7 +57,7 @@ class CypherCompiler(graph: GraphDatabaseService,
                      defaultVersion: CypherVersion,
                      defaultPlanner: CypherPlanner,
                      defaultRuntime: CypherRuntime,
-                     optionParser: CypherOptionParser,
+                     optionParser: CypherPreParser,
                      logProvider: LogProvider) {
   import org.neo4j.cypher.internal.CypherCompiler._
 
@@ -122,7 +122,7 @@ class CypherCompiler(graph: GraphDatabaseService,
     PreParsedQuery(queryWithOption.statement, cypherVersion, executionMode, planner, runtime, logger)(queryWithOption.offset)
   }
 
-  private def calculateExecutionMode(options: Seq[CypherOption]) = {
+  private def calculateExecutionMode(options: Seq[PreParserOption]) = {
     val executionModes: Seq[ExecutionMode] = options.collect {
       case ExplainOption => ExplainMode
       case ProfileOption => ProfileMode
@@ -131,7 +131,7 @@ class CypherCompiler(graph: GraphDatabaseService,
     executionModes.reduceOption(_ combineWith _).getOrElse(NormalMode)
   }
 
-  private def calculatePlanner(options: Option[ConfigurationOptions], other: Seq[CypherOption],
+  private def calculatePlanner(options: Option[ConfigurationOptions], other: Seq[PreParserOption],
                                version: CypherVersion, logger: InternalNotificationLogger) = {
     val planner = options.map(_.options.collect {
           case CostPlannerOption => CypherPlanner.cost
@@ -153,7 +153,7 @@ class CypherCompiler(graph: GraphDatabaseService,
   }
 
   @deprecated
-  private def calculatePlannerDeprecated( options: Seq[CypherOption], version: CypherVersion, logger: InternalNotificationLogger) = {
+  private def calculatePlannerDeprecated( options: Seq[PreParserOption], version: CypherVersion, logger: InternalNotificationLogger) = {
     val planner = options.collect {
       case CostPlannerOption => CypherPlanner.cost
       case RulePlannerOption => CypherPlanner.rule

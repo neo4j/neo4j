@@ -19,21 +19,13 @@
  */
 package org.neo4j.cypher
 
-sealed abstract class CypherRuntime(runtimeName: String) {
-  val name = CypherOptionName.asCanonicalName(runtimeName)
-}
+sealed abstract class CypherRuntime(runtimeName: String) extends CypherOption(runtimeName)
 
-object CypherRuntime {
+case object CypherRuntime extends CypherOptionCompanion[CypherRuntime] {
 
   case object default extends CypherRuntime("default")
   case object interpreted extends CypherRuntime("interpreted")
   case object compiled extends CypherRuntime("compiled")
 
-  def apply(name: String) = findRuntimeByExactName(CypherOptionName.asCanonicalName(name)).getOrElse {
-    throw new SyntaxException(s"Supported runtimes are: ${allRuntimes.map(_.name).mkString(", ")}")
-  }
-
-  def findRuntimeByExactName(name: String) = allRuntimes.find( _.name == name )
-
-  val allRuntimes = Seq(default, interpreted, compiled)
+  val all: Set[CypherRuntime] = Set(interpreted, compiled)
 }

@@ -19,16 +19,15 @@
  */
 package org.neo4j.cypher.internal
 
-sealed trait CypherOption
+sealed trait PreParserOption
 
-final case class VersionOption(version: String) extends CypherOption
-case object ProfileOption extends CypherOption
-case object ExplainOption extends CypherOption
-case object CostPlannerOption extends CypherOption
-case object RulePlannerOption extends CypherOption
-case object IDPPlannerOption extends CypherOption
-case object DPPlannerOption extends CypherOption
-case object InterpretedRuntimeOption extends CypherOption
-case object CompiledRuntimeOption extends CypherOption
-case class ConfigurationOptions(version: Option[VersionOption],
-                            options: Seq[CypherOption]) extends CypherOption
+case class VersionOption(version: String) extends PreParserOption
+case object ProfileOption extends PreParserOption
+case object ExplainOption extends PreParserOption
+case object CostPlannerOption extends PreParserOption
+case object RulePlannerOption extends PreParserOption
+case object IDPPlannerOption extends PreParserOption
+case object DPPlannerOption extends PreParserOption
+case object InterpretedRuntimeOption extends PreParserOption
+case object CompiledRuntimeOption extends PreParserOption
+case class ConfigurationOptions(version: Option[VersionOption], options: Seq[PreParserOption]) extends PreParserOption

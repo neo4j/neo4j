@@ -19,6 +19,28 @@
  */
 package org.neo4j.cypher
 
-object CypherOptionName {
+object CypherOption {
+  val DEFAULT: String = "default"
+
   def asCanonicalName(name: String) = name.toLowerCase
+}
+
+abstract class CypherOption(inputName: String) {
+  val name = CypherOption.asCanonicalName(inputName)
+}
+
+trait CypherOptionCompanion[O <: CypherOption] {
+  self: Product =>
+
+  def default: O
+  def all: Set[O]
+
+  def apply(name: String) = findByExactName(CypherOption.asCanonicalName(name)).getOrElse {
+    throw new SyntaxException(s"Supported ${self.productPrefix} values are: ${all.map(_.name).mkString(", ")}")
+  }
+
+  private def findByExactName(name: String) = if (CypherOption.DEFAULT == name)
+    Some(default)
+  else
+    all.find( _.name == name )
 }

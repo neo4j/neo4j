@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.cache.MonitorGc;
 import static org.neo4j.helpers.Settings.ANY;
 import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.BYTES;
+import static org.neo4j.helpers.Settings.DEFAULT;
 import static org.neo4j.helpers.Settings.DURATION;
 import static org.neo4j.helpers.Settings.FALSE;
 import static org.neo4j.helpers.Settings.INTEGER;
@@ -86,17 +87,17 @@ public abstract class GraphDatabaseSettings
     @Description( "Set this to specify the default parser." )
     public static final Setting<String> cypher_parser_version = setting(
             "cypher_parser_version",
-            options( "1.9", "2.2", "2.3"), NO_DEFAULT );
+            options( "1.9", "2.2", "2.3", DEFAULT ), DEFAULT );
 
     @Description( "Set this to specify the default planner." )
     public static final Setting<String> cypher_planner = setting(
             "dbms.cypher.planner",
-            options( "COST", "RULE"), NO_DEFAULT );
+            options( "COST", "RULE", DEFAULT ), DEFAULT );
 
     @Internal
     public static final Setting<String> cypher_runtime = setting(
             "dbms.cypher.runtime",
-            options( "INTERPRETED", "COMPILED" ), NO_DEFAULT );
+            options( "INTERPRETED", "COMPILED", DEFAULT ), DEFAULT );
 
     @Description( "The number of Cypher query execution plans that are cached." )
     public static Setting<Integer> query_cache_size = setting( "query_cache_size", INTEGER, "1000", min( 0 ) );

@@ -201,7 +201,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
 
   private def createCompiler: CypherCompiler = {
     val version = CypherVersion(optGraphSetting[String](
-      graph, GraphDatabaseSettings.cypher_parser_version, CypherVersion.vDefault.name))
+      graph, GraphDatabaseSettings.cypher_parser_version, CypherVersion.default.name))
     val planner = CypherPlanner(optGraphSetting[String](
       graph, GraphDatabaseSettings.cypher_planner, CypherPlanner.default.name))
     val runtime = CypherRuntime(optGraphSetting[String](
@@ -212,7 +212,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
       log.error(message)
       throw new IllegalStateException(message)
     }
-    val optionParser = CypherOptionParser(kernelMonitors.newMonitor(classOf[ParserMonitor[CypherQueryWithOptions]]))
+    val optionParser = CypherPreParser(kernelMonitors.newMonitor(classOf[ParserMonitor[CypherQueryWithOptions]]))
     new CypherCompiler(graph, kernel, kernelMonitors, version, planner, runtime, optionParser, logProvider)
   }
 
