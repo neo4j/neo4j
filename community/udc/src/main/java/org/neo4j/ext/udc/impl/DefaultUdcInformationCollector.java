@@ -328,7 +328,26 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
 
     private long determineTotalMemory()
     {
-        return ((OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean()).getTotalPhysicalMemorySize();
+        java.lang.management.OperatingSystemMXBean operatingSystemMXBean = ManagementFactory.getOperatingSystemMXBean();
+        try
+        {
+            return ((OperatingSystemMXBean) operatingSystemMXBean).getTotalPhysicalMemorySize();
+        }
+        catch ( NoClassDefFoundError e )
+        {
+            // If not running on Oracle JDK
+
+            // Try IBM JDK method
+            try
+            {
+                return (Long)operatingSystemMXBean.getClass().getMethod( "getTotalPhysicalMemory" ).invoke( operatingSystemMXBean );
+            }
+            catch ( Throwable e1 )
+            {
+                // Give up
+                return -1;
+            }
+        }
     }
 
     private long determineHeapSize()
