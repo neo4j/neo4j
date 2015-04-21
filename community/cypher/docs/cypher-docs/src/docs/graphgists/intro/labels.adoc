@@ -3,13 +3,13 @@
 Labels are a convenient way to group nodes together.
 They are used to restrict queries, define constraints and create indexes.
 
-== Using Contraints
+== Using Constraints
 
 You can also specify unique constraints that guarantee uniqueness of a certain property on nodes with a specific label.
 
 These constraints are also used by the +MERGE+ clause to make certain that a node only exists once.
 
-The following will give an example of how to use labels and add contraints and indexes to them.
+The following will give an example of how to use labels and add constraints and indexes to them.
 Let's start out adding a constraint -- in this case we decided that all +Movie+ node ++title++s should be unique.
 
 [source,cypher]
