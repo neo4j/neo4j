@@ -58,15 +58,6 @@ public class ConsistencyReportLogger extends AbstractPrintWriterLogger
     }
 
     @Override
-    protected void writeLog( PrintWriter out, String format, Object[] arguments )
-    {
-        out.write( prefix );
-        out.write( ": " );
-        out.format( format, arguments );
-        out.println();
-    }
-
-    @Override
     protected Logger getBulkLogger( PrintWriter out, Object lock )
     {
         return new ConsistencyReportLogger( Suppliers.singleton( out ), lock, prefix, false );
