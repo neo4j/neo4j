@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.docgen.cookbook
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 import org.neo4j.cypher.docgen.DocumentingTestBase
 
 //modeled after a mailing list suggestion in
@@ -63,7 +63,7 @@ class MealTestIgnored extends DocumentingTestBase {
         "WHERE me.name='Peter' and not (ingredient) --> ()" +
         "RETURN ingredient.name ",
       optionalResultExplanation = "",
-      (p) => {
+      assertions = (p) => {
         val result = p.toList
         assertEquals(Set(Map("ingredient.name" -> "Potatoes"),
           Map("ingredient.name" -> "Meat"),

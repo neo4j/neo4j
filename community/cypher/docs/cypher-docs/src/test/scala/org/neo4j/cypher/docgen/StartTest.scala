@@ -19,13 +19,9 @@
  */
 package org.neo4j.cypher.docgen
 
-import scala.collection.JavaConverters._
-import org.junit.Assert.assertThat
 import org.junit.Assert.assertEquals
-import org.junit.matchers.JUnitMatchers.hasItem
 import org.junit.Test
-import org.neo4j.graphdb.{ Relationship, Node }
-import org.neo4j.graphdb.index.Index
+import org.neo4j.kernel.GraphDatabaseAPI
 
 class StartTest extends DocumentingTestBase {
   override def graphDescription = List("A KNOWS B", "A KNOWS C")
@@ -40,27 +36,27 @@ class StartTest extends DocumentingTestBase {
       text = "When the starting point can be found by using index lookups, it can be done like this: `node:index-name(key = \"value\")`. In this example, there exists a node index named `nodes`.",
       queryText = """start n=node:nodes(name = "A") return n""",
       optionalResultExplanation = """The query returns the node indexed with the name "+A+".""",
-      (p) => assertEquals(List(Map("n" -> node("A"))), p.toList))
+      assertions = (p) => assertEquals(List(Map("n" -> node("A"))), p.toList))
   }
 
   @Test def relationships_by_index() {
     generateConsole = false
-    db.inTx {
+    val setPropertyAndUpdateLegacyIndex = (db: GraphDatabaseAPI) => db.inTx {
       val r = db.getRelationshipById(0)
       val property = "name"
       val value = "Andrés"
       r.setProperty(property, value)
-      val relIndex: Index[Relationship] = db.index().forRelationships("rels")
-      relIndex.add(r, property, value)
+      db.index().forRelationships("rels").add(r, property, value)
     }
 
     // TODO this should be changed to use the standard graph for this section somehow.
-    testQuery(
+    prepareAndTestQuery(
       title = "Relationship by index lookup",
       text = "When the starting point can be found by using index lookups, it can be done like this: `relationship:index-name(key = \"value\")`.",
       queryText = """start r=relationship:rels(name = "Andrés") return r""",
       optionalResultExplanation = """The relationship indexed with the +name+ property set to "+Andrés+" is returned by the query.""",
-      (p) => assertEquals(List(Map("r" -> rel(0))), p.toList))
+      assertions = (p) => assertEquals(List(Map("r" -> rel(0))), p.toList),
+      dbPrepare = setPropertyAndUpdateLegacyIndex)
   }
 
   @Test def nodes_by_index_query() {
@@ -71,7 +67,7 @@ class StartTest extends DocumentingTestBase {
         "This allows you to write more advanced index queries.",
       queryText = """start n=node:nodes("name:A") return n""",
       optionalResultExplanation = """The node indexed with name "A" is returned by the query.""",
-      (p) => assertEquals(List(Map("n" -> node("A"))), p.toList))
+      assertions = (p) => assertEquals(List(Map("n" -> node("A"))), p.toList))
   }
 
 }

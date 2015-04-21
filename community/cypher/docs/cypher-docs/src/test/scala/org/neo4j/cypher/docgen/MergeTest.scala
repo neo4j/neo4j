@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.neo4j.cypher.{MergeConstraintConflictException, QueryStatisticsTestSupport}
 import org.junit.Test
-import org.neo4j.visualization.graphviz.GraphStyle
-import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
+import org.neo4j.cypher.{MergeConstraintConflictException, QueryStatisticsTestSupport}
+import org.neo4j.visualization.graphviz.{AsciiDocSimpleStyle, GraphStyle}
 
 class MergeTest extends DocumentingTestBase with QueryStatisticsTestSupport {
 
@@ -187,7 +186,7 @@ For more information on parameters, see <<cypher-parameters>>.""",
       prepare = setParameters(Map("param" -> Map("name" -> "Keanu Reeves", "role" -> "Neo"))),
       queryText = "merge (oliver:Person {name:{param}.name, role:{param}.role}) return oliver",
       optionalResultExplanation = "",
-      assertion = p => assertStats(p, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1)
+      assertions = p => assertStats(p, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1)
     )
   }
 

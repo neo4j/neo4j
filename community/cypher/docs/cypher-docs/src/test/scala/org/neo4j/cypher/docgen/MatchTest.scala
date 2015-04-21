@@ -20,13 +20,13 @@
 package org.neo4j.cypher.docgen
 
 import org.junit.Assert._
-import org.junit.matchers.JUnitMatchers._
-import org.neo4j.graphdb._
 import org.junit.Test
+import org.hamcrest.CoreMatchers._
+import org.neo4j.graphdb._
 import org.neo4j.tooling.GlobalGraphOperations
-import collection.JavaConverters._
-import org.neo4j.visualization.graphviz.GraphStyle
-import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
+import org.neo4j.visualization.graphviz.{AsciiDocSimpleStyle, GraphStyle}
+
+import scala.collection.JavaConverters._
 
 class MatchTest extends DocumentingTestBase {
 
@@ -68,7 +68,7 @@ Rather use application generated ids.
              """,
       queryText = "match n where id(n) = %Charlie% return n",
       optionalResultExplanation = "The corresponding node is returned.",
-      (p) => assertThat(p.columnAs[Node]("n").toList.asJava, hasItem(node("Charlie"))))
+      assertions = (p) => assertThat(p.columnAs[Node]("n").toList.asJava, hasItem(node("Charlie"))))
   }
 
   @Test def relationships_by_id() {
@@ -81,7 +81,7 @@ This is not recommended practice. See <<match-node-by-id>> for more information 
              """,
       queryText = "match ()-[r]->() where id(r) = 0 return r",
       optionalResultExplanation = "The relationship with id +0+ is returned.",
-      (p) => assertThat(p.columnAs[Relationship]("r").toList.asJava, hasItem(rel(0))))
+      assertions = (p) => assertThat(p.columnAs[Relationship]("r").toList.asJava, hasItem(rel(0))))
   }
 
   @Test def multiple_nodes_by_id() {
@@ -90,7 +90,7 @@ This is not recommended practice. See <<match-node-by-id>> for more information 
       text = "Multiple nodes are selected by specifying them in an IN clause.",
       queryText = "match n where id(n) in [%Charlie%, %Martin%, %Oliver%] return n",
       optionalResultExplanation = "This returns the nodes listed in the `IN` expression.",
-      (p) => assertEquals(Set(node("Charlie"), node("Martin"), node("Oliver")), p.columnAs[Node]("n").toSet))
+      assertions = (p) => assertEquals(Set(node("Charlie"), node("Martin"), node("Oliver")), p.columnAs[Node]("n").toSet))
   }
 
   @Test def start_with_multiple_nodes() {
@@ -99,7 +99,7 @@ This is not recommended practice. See <<match-node-by-id>> for more information 
       text = "Sometimes you want to return multiple nodes by id and separate identifiers. Just list them separated by commas.",
       queryText = "match a, b where id(a) = %Charlie% and id(b) = %Martin% return a, b",
       optionalResultExplanation = """Both the nodes +Charlie+ and the +Martin+  are returned.""",
-      p => assertEquals(List(Map("a" -> node("Charlie"), "b" -> node("Martin"))), p.toList))
+      assertions = p => assertEquals(List(Map("a" -> node("Charlie"), "b" -> node("Martin"))), p.toList))
   }
 
   @Test def get_all_nodes() {
@@ -203,16 +203,12 @@ This is not recommended practice. See <<match-node-by-id>> for more information 
   }
 
   @Test def relationshipsByTypeWithSpace() {
-    db.inTx {
-      val a = node("Rob")
-      val b = node("Charlie")
-      a.createRelationshipTo(b, DynamicRelationshipType.withName("TYPE THAT HAS SPACE IN IT"))
-    }
-    testQuery(
+    prepareAndTestQuery(
       title = "Relationship types with uncommon characters",
       text = "Sometime your database will have types with non-letter characters, or with spaces in them. Use +`+ (backtick) to quote these.",
       queryText = """match (n {name:'Rob Reiner'})-[r:`TYPE THAT HAS SPACE IN IT`]->() return r""",
       optionalResultExplanation = """Returns a relationship of a type with spaces in it.""",
+      prepare = executePreparationQueries(List("CREATE (r {name : 'Rob Reiner'})-[:`TYPE THAT HAS SPACE IN IT`]->(c {name : 'Charlie Sheen'})")),
       assertions = (p) => assertEquals(1, p.size)
     )
   }
@@ -356,7 +352,7 @@ include::includes/match-match-with-properties-on-a-variable-length-path.preparat
         "WHERE charlie.name = 'Charlie Sheen' AND martin.name = 'Martin Sheen' " +
         "RETURN p",
       optionalResultExplanation = "Returns the paths between Charlie and Martin Sheen where all relationships have the +blocked+ property set to +FALSE+.",
-      assertion = p => {
+      assertions = p => {
         val path = p.next()("p").asInstanceOf[Path].asScala
 
         assert(!path.exists {

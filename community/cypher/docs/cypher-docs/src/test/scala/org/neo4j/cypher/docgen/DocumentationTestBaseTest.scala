@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.junit.Test
-import org.neo4j.graphdb.Node
 import org.junit.Assert._
-import org.neo4j.visualization.graphviz.GraphStyle
-import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
+import org.junit.Test
 import org.neo4j.cypher.QueryStatisticsTestSupport
+import org.neo4j.graphdb.Node
+import org.neo4j.visualization.graphviz.{AsciiDocSimpleStyle, GraphStyle}
 
 class DocumentationTestBaseTest extends DocumentingTestBase with QueryStatisticsTestSupport {
   override def graphDescription = List("A KNOWS B", "A BLOCKS C", "D KNOWS A", "B KNOWS E", "C KNOWS E", "B BLOCKS D")
@@ -83,7 +82,7 @@ _When you do this, you can't create anything else in the same +CREATE+ statement
       ,
       queryText = "create ({props})",
       optionalResultExplanation = "",
-      assertion = (p) => assertStats(p, nodesCreated = 2, propertiesSet = 4))
+      assertions = (p) => assertStats(p, nodesCreated = 2, propertiesSet = 4))
 
     // ensure that the parameters are printed
     val resultSource = io.Source.fromFile("target/docs/dev/ql/internaltesting/create-multiple-nodes-with-parameters-for-properties.asciidoc", "utf-8")
