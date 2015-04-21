@@ -17,10 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal
-
-import org.neo4j.cypher.internal.ExecutionMode.cantMixProfileAndExplain
-import org.neo4j.cypher.internal.compiler.v2_3.InvalidSemanticsException
+package org.neo4j.cypher.internal.compiler.v2_3
 
 object ExecutionMode {
   def cantMixProfileAndExplain: Nothing =
@@ -37,15 +34,14 @@ case object NormalMode extends ExecutionMode {
 
 case object ExplainMode extends ExecutionMode {
   def combineWith(other: ExecutionMode) = other match {
-    case ProfileMode => cantMixProfileAndExplain
-    case _        => this
+    case ProfileMode => ExecutionMode.cantMixProfileAndExplain
+    case _ => this
   }
 }
 
 case object ProfileMode extends ExecutionMode {
   def combineWith(other: ExecutionMode) = other match {
-    case ExplainMode => cantMixProfileAndExplain
-    case _         => this
+    case ExplainMode => ExecutionMode.cantMixProfileAndExplain
+    case _ => this
   }
 }
-

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan
 
-import org.neo4j.cypher.internal.ExecutionMode
+import org.neo4j.cypher.internal.compiler.v2_3.ExecutionMode
 import org.neo4j.cypher.internal.compiler.v2_3.{RuntimeName, PlannerName}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{GraphStatistics, QueryContext}
 import org.neo4j.kernel.api.Statement

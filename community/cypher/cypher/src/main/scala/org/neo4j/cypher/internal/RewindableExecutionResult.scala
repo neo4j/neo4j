@@ -23,6 +23,7 @@ import java.util
 
 import org.neo4j.cypher.internal.compatibility.{ExecutionResultWrapperFor2_3, exceptionHandlerFor2_3}
 import org.neo4j.cypher.internal.compiler.v2_3.PipeExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode => ExecutionModev2_3}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledExecutionResult, InternalExecutionResult}
 import org.neo4j.cypher.{ExecutionResult, InternalException}
 import org.neo4j.graphdb.QueryExecutionType.QueryType
@@ -42,7 +43,7 @@ object RewindableExecutionResult {
           override val toList = other.toList
           override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = other.accept(visitor)
           override def executionPlanDescription() = other.executionPlanDescription()
-          override def executionMode: ExecutionMode = other.executionMode
+          override def executionMode: ExecutionModev2_3 = other.executionMode
         }
       }
     case _ =>

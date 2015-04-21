@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.idp
 
 import org.mockito.Mockito.{times, verify, verifyNoMoreInteractions}
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Cardinality
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanningTestSupport2, QueryGraph, Selections}
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Direction
 
 import scala.collection.immutable

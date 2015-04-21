@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.PathImpl
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CustomMatchers
 import org.neo4j.graphdb._
-import org.neo4j.cypher.internal.PathImpl
 import scala.util.Random
-import org.neo4j.cypher.internal.commons.CustomMatchers
 
 class ReturnAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers with NewPlannerTestSupport {
   test("should support multiple divisions in aggregate function") {

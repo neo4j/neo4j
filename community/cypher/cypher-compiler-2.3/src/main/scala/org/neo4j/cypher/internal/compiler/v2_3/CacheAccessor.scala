@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
-import org.neo4j.cypher.internal.LRUCache
-
 trait CacheAccessor[K, T] {
   def getOrElseUpdate(cache: LRUCache[K, T])(key: K, f: => T): T
   def remove(cache: LRUCache[K, T])(key: K)

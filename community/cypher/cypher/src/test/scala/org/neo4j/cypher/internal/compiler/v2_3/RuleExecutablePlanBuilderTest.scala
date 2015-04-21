@@ -24,7 +24,6 @@ import java.util.concurrent._
 import org.junit.Assert._
 import org.mockito.Mockito._
 import org.neo4j.cypher.GraphDatabaseTestSupport
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compatibility.WrappedMonitors2_3
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Identifier, Literal}
@@ -41,6 +40,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.spi.v2_3.TransactionBoundQueryContext
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.DynamicLabel
 import org.neo4j.helpers.Clock
 import org.scalatest.mock.MockitoSugar

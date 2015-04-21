@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes.aggregation
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
 class AvgFunctionTest extends CypherFunSuite with AggregateTest {
   def createAggregator(inner: Expression) = new AvgFunction(inner)

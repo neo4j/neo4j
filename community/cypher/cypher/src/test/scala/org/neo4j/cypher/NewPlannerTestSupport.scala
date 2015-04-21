@@ -22,12 +22,12 @@ package org.neo4j.cypher
 import org.neo4j.cypher.NewPlannerMonitor.{NewPlannerMonitorCall, NewQuerySeen, UnableToHandleQuery}
 import org.neo4j.cypher.NewRuntimeMonitor.{NewPlanSeen, NewRuntimeMonitorCall, UnableToCompileQuery}
 import org.neo4j.cypher.internal.RewindableExecutionResult
-import org.neo4j.cypher.internal.commons.CypherTestSupport
 import org.neo4j.cypher.internal.compatibility.ExecutionResultWrapperFor2_3
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{InternalExecutionResult, NewLogicalPlanSuccessRateMonitor, NewRuntimeSuccessRateMonitor}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantCompileQueryException, CantHandleQueryException}
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherTestSupport
 import org.neo4j.helpers.Exceptions
 
 import scala.util.Try

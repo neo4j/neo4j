@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, PatternRelationship, SimplePatternLength}
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Direction
 
 class QueryGraphTest extends CypherFunSuite {

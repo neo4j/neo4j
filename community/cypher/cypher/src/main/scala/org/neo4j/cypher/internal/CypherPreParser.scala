@@ -23,14 +23,14 @@ import org.neo4j.cypher.internal.compiler.v2_3.InputPosition
 import org.neo4j.cypher.internal.compiler.v2_3.parser._
 import org.parboiled.scala._
 
-final case class CypherQueryWithOptions(statement: String, options: Seq[PreParserOption], offset: InputPosition)
+final case class PreParsedStatement(statement: String, options: Seq[PreParserOption], offset: InputPosition)
 
-case class CypherPreParser(monitor: ParserMonitor[CypherQueryWithOptions]) extends Parser with Base {
-  def apply(input: String): CypherQueryWithOptions = parseOrThrow(input, None, QueryWithOptions, Some(monitor))
+case class CypherPreParser(monitor: ParserMonitor[PreParsedStatement]) extends Parser with Base {
+  def apply(input: String): PreParsedStatement = parseOrThrow(input, None, QueryWithOptions, Some(monitor))
 
-  def QueryWithOptions: Rule1[Seq[CypherQueryWithOptions]] =
+  def QueryWithOptions: Rule1[Seq[PreParsedStatement]] =
     WS ~ AllOptions ~ WS ~ AnySomething ~~>>
-      ( (options: Seq[PreParserOption], text: String) => pos => Seq(CypherQueryWithOptions(text, options, pos)))
+      ( (options: Seq[PreParserOption], text: String) => pos => Seq(PreParsedStatement(text, options, pos)))
 
   def AllOptions: Rule1[Seq[PreParserOption]] = zeroOrMore(AnyCypherOption, WS)
 

@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{Expression, Identifier, PatternExpression, SignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, LogicalPlan, Selection}
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
 class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
   private implicit val planContext = newMockedPlanContext

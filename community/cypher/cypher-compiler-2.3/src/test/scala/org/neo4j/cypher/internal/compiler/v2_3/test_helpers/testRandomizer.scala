@@ -17,8 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal
+package org.neo4j.cypher.internal.compiler.v2_3.test_helpers
 
-trait CypherArray {
-   def length(): Int
+import scala.util.Random
+
+case object testRandomizer extends Random {
+  // By randomizing, we will test more variants of the data. The formulas expressed should still give correct results
+  // We print the seed used for the Random object so that test failures can easily be reproduced when encountered
+  val seed = System.currentTimeMillis()
+  setSeed(seed)
+  println("seed: " + seed)
 }

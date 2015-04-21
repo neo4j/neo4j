@@ -20,8 +20,7 @@
 package org.neo4j.cypher
 
 import java.util
-
-import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.test.ImpermanentGraphDatabase
 
 import scala.collection.JavaConverters._

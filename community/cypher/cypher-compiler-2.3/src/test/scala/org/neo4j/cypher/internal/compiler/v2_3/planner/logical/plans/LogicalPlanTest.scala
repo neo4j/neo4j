@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, LogicalPlanningTestSupport, PlannerQuery}
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
 class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
   case class TestPlan()(val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LogicalPlanWithoutExpressions {

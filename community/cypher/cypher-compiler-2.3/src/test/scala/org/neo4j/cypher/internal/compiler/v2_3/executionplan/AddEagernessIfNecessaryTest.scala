@@ -23,11 +23,11 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
 class AddEagernessIfNecessaryTest extends CypherFunSuite {
   implicit val monitor = mock[PipeMonitor]

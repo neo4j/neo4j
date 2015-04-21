@@ -38,25 +38,24 @@ object CypherCompiler {
   val CLOCK = Clock.SYSTEM_CLOCK
   val STATISTICS_DIVERGENCE_THRESHOLD = 0.5
 
-  def notificationLoggerBuilder(executionMode: ExecutionMode): InternalNotificationLogger = executionMode  match {
-      case ExplainMode => new RecordingNotificationLogger()
+  def notificationLoggerBuilder(executionMode: CypherExecutionMode): InternalNotificationLogger = executionMode  match {
+      case CypherExecutionMode.explain => new RecordingNotificationLogger()
       case _ => devNullLogger
     }
 }
 
-case class PreParsedQuery(statement: String, version: CypherVersion, executionMode: ExecutionMode, planner: CypherPlanner,
-                          runtime: CypherRuntime, notificationLogger: InternalNotificationLogger)
+case class PreParsedQuery(statement: String, version: CypherVersion, executionMode: CypherExecutionMode,
+                          planner: CypherPlanner, runtime: CypherRuntime, notificationLogger: InternalNotificationLogger)
                          (val offset: InputPosition) {
   val statementWithVersionAndPlanner = s"CYPHER ${version.name} planner=${planner.name} runtime=${runtime.name} $statement"
 }
 
-
 class CypherCompiler(graph: GraphDatabaseService,
                      kernelAPI: KernelAPI,
                      kernelMonitors: KernelMonitors,
-                     defaultVersion: CypherVersion,
-                     defaultPlanner: CypherPlanner,
-                     defaultRuntime: CypherRuntime,
+                     configuredVersion: CypherVersion,
+                     configuredPlanner: CypherPlanner,
+                     configuredRuntime: CypherRuntime,
                      optionParser: CypherPreParser,
                      logProvider: LogProvider) {
   import org.neo4j.cypher.internal.CypherCompiler._
@@ -88,9 +87,38 @@ class CypherCompiler(graph: GraphDatabaseService,
 
   @throws(classOf[SyntaxException])
   def preParseQuery(queryText: String): PreParsedQuery = {
-    val queryWithOptions = optionParser(queryText)
-    val preParsedQuery = preParse(queryWithOptions)
-    preParsedQuery
+    val preParsedStatement = optionParser(queryText)
+    val statementWithOption = CypherStatementWithOptions(preParsedStatement)
+
+    val cypherVersion = statementWithOption.version.getOrElse(configuredVersion)
+    val executionMode = statementWithOption.executionMode.getOrElse(CypherExecutionMode.default)
+    val planner = statementWithOption.planner.getOrElse(configuredPlanner)
+    val runtime = statementWithOption.runtime.getOrElse(configuredRuntime)
+
+    assertValidOptions(statementWithOption, cypherVersion, executionMode, planner, runtime)
+
+    val logger = notificationLoggerBuilder(executionMode)
+    statementWithOption.notifications.foreach( logger += _ )
+
+    PreParsedQuery(statementWithOption.statement, cypherVersion, executionMode, planner, runtime, logger)(statementWithOption.offset)
+  }
+
+  private def assertValidOptions(statementWithOption: CypherStatementWithOptions,
+                                 cypherVersion: CypherVersion, executionMode: CypherExecutionMode,
+                                 planner: CypherPlanner, runtime: CypherRuntime) {
+    if (VERSIONS_WITH_FIXED_PLANNER(cypherVersion)) {
+      if (statementWithOption.planner.nonEmpty)
+        throw new InvalidArgumentException("PLANNER not supported in versions older than Neo4j v2.2")
+
+      if (executionMode == CypherExecutionMode.explain)
+        throw new InvalidArgumentException("EXPLAIN not supported in versions older than Neo4j v2.2")
+    }
+
+    if (VERSIONS_WITH_FIXED_RUNTIME(cypherVersion) && statementWithOption.runtime.nonEmpty)
+      throw new InvalidArgumentException("RUNTIME not supported in versions older than Neo4j v2.3")
+
+    if (ILLEGAL_PLANNER_RUNTIME_COMBINATIONS((planner, runtime)))
+      throw new InvalidArgumentException(s"Unsupported PLANNER - RUNTIME combination: ${planner.name} - ${runtime.name}")
   }
 
   @throws(classOf[SyntaxException])
@@ -103,102 +131,6 @@ class CypherCompiler(graph: GraphDatabaseService,
       case CypherVersion.v2_2 => planners(PlannerSpec_v2_2(planner)).produceParsedQuery(preParsedQuery.statement)
       case CypherVersion.v1_9 => planners(PlannerSpec_v1_9).parseQuery(preParsedQuery.statement)
     }
-  }
-
-  private def preParse(queryWithOption: CypherQueryWithOptions): PreParsedQuery = {
-    val cypherOptions = queryWithOption.options.collectFirst {
-      case opt: ConfigurationOptions => opt
-    }
-    val cypherVersion = cypherOptions.flatMap(_.version)
-      .map(v => CypherVersion(v.version))
-      .getOrElse(defaultVersion)
-    val executionMode: ExecutionMode = calculateExecutionMode(queryWithOption.options)
-    val logger = notificationLoggerBuilder(executionMode)
-    if (executionMode == ExplainMode && VERSIONS_WITH_FIXED_PLANNER(cypherVersion)) {
-      throw new InvalidArgumentException("EXPLAIN not supported in versions older than Neo4j v2.2")
-    }
-    val planner = calculatePlanner(cypherOptions, queryWithOption.options, cypherVersion, logger)
-    val runtime = calculateRuntime(cypherOptions, planner, cypherVersion)
-    PreParsedQuery(queryWithOption.statement, cypherVersion, executionMode, planner, runtime, logger)(queryWithOption.offset)
-  }
-
-  private def calculateExecutionMode(options: Seq[PreParserOption]) = {
-    val executionModes: Seq[ExecutionMode] = options.collect {
-      case ExplainOption => ExplainMode
-      case ProfileOption => ProfileMode
-    }
-
-    executionModes.reduceOption(_ combineWith _).getOrElse(NormalMode)
-  }
-
-  private def calculatePlanner(options: Option[ConfigurationOptions], other: Seq[PreParserOption],
-                               version: CypherVersion, logger: InternalNotificationLogger) = {
-    val planner = options.map(_.options.collect {
-          case CostPlannerOption => CypherPlanner.cost
-          case RulePlannerOption => CypherPlanner.rule
-          case IDPPlannerOption => CypherPlanner.idp
-          case DPPlannerOption => CypherPlanner.dp
-        }.distinct).getOrElse(Seq.empty)
-
-    if (VERSIONS_WITH_FIXED_PLANNER(version) && planner.nonEmpty) {
-      throw new InvalidArgumentException("PLANNER not supported in versions older than Neo4j v2.2")
-    }
-
-    if (planner.size > 1) {
-      throw new InvalidSemanticsException("Can't use multiple planners")
-    }
-
-    //TODO once the we have removed PLANNER X syntax, change to defaultPlanner here
-    if (planner.isEmpty) calculatePlannerDeprecated(other, version, logger) else planner.head
-  }
-
-  @deprecated
-  private def calculatePlannerDeprecated( options: Seq[PreParserOption], version: CypherVersion, logger: InternalNotificationLogger) = {
-    val planner = options.collect {
-      case CostPlannerOption => CypherPlanner.cost
-      case RulePlannerOption => CypherPlanner.rule
-      case IDPPlannerOption => CypherPlanner.idp
-      case DPPlannerOption => CypherPlanner.dp
-    }.distinct
-
-
-    if (VERSIONS_WITH_FIXED_PLANNER(version) && planner.nonEmpty) {
-      throw new InvalidArgumentException("PLANNER not supported in versions older than Neo4j v2.2")
-    }
-
-    if (planner.size > 1) {
-      throw new InvalidSemanticsException("Can't use multiple planners")
-    }
-
-    if (planner.isEmpty)
-      defaultPlanner
-    else {
-      logger += LegacyPlannerNotification
-      planner.head
-    }
-  }
-
-  private def calculateRuntime(options: Option[ConfigurationOptions], planner: CypherPlanner, version: CypherVersion) = {
-    val runtimes = options.map(_.options.collect {
-      case InterpretedRuntimeOption => CypherRuntime.interpreted
-      case CompiledRuntimeOption => CypherRuntime.compiled
-    }.distinct).getOrElse(Seq.empty)
-
-    if (VERSIONS_WITH_FIXED_RUNTIME(version) && runtimes.nonEmpty) {
-      throw new InvalidArgumentException("RUNTIME not supported in versions older than Neo4j v2.3")
-    }
-
-    if (runtimes.size > 1) {
-      throw new InvalidSemanticsException("Can't use multiple runtimes")
-    }
-
-    val runtime = if (runtimes.isEmpty) defaultRuntime else runtimes.head
-
-    if (ILLEGAL_PLANNER_RUNTIME_COMBINATIONS((planner, runtime))) {
-      throw new InvalidArgumentException(s"Unsupported PLANNER - RUNTIME combination: ${planner.name} - ${runtime.name}")
-    }
-
-    runtime
   }
 
   private def getQueryCacheSize : Int =

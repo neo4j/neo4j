@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.commons.CustomMatchers
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CustomMatchers
 
 class OrderByAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers with NewPlannerTestSupport {
   test("should support ORDER BY") {

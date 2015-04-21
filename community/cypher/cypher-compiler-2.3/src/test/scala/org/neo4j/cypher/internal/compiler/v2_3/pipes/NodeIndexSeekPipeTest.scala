@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionContext, CypherTypeException, LabelId, PropertyKeyId}
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{LabelToken, PropertyKeyToken, _}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{ManyQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Collection, Literal, Identifier}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.index.IndexDescriptor
 

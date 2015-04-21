@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.commands
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryStateHelper
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
 class PropertyValueTest extends CypherFunSuite {
 

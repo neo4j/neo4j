@@ -19,25 +19,16 @@
  */
 package org.neo4j.cypher.internal
 
-object CollectionFrosting {
+import org.neo4j.cypher.{CypherOptionCompanion, CypherOption}
 
-  implicit class RichTraversable[T](inner: Traversable[T]) {
-    /**
-     * If a single element matching the description is found, a Right(Some(x)) is returned, with x being the element.
-     *
-     * If no elements matching are found, a Right(None) is returned. If multiple matching elements are found,
-     * a Left(Seq(...)) with all the matching elements is returned
-     * @param pf the partial function to use to match and transform elements
-     * @tparam B the type of the produced projections
-     */
-    def collectSingle[B](pf: PartialFunction[T, B]): Either[Seq[B], Option[B]] = {
-      val collect = inner.collect(pf)
-      collect.toList match {
-        case Nil      => Right(None)
-        case x :: Nil => Right(Some(x))
-        case matches  => Left(matches)
-      }
-    }
-  }
+sealed abstract class CypherExecutionMode(modeName: String) extends CypherOption(modeName)
 
+case object CypherExecutionMode extends CypherOptionCompanion[CypherExecutionMode] {
+
+  case object normal extends CypherExecutionMode("normal")
+  case object profile extends CypherExecutionMode("profile")
+  case object explain extends CypherExecutionMode("explain")
+
+  val default = normal
+  val all: Set[CypherExecutionMode] = Set(profile, explain, normal)
 }

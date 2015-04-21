@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3
 
 import org.mockito.Mockito
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.QueryExecutionType.QueryType
 
 class ExplainExecutionResultTest extends CypherFunSuite {

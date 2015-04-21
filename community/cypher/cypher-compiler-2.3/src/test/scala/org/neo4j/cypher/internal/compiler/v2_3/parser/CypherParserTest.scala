@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_3.parser
 
 import org.hamcrest.CoreMatchers.equalTo
 import org.junit.Assert._
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
@@ -30,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType.Propert
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.{KeyToken, TokenType, UnresolvedLabel}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.LabelSupport
 import org.neo4j.cypher.internal.compiler.v2_3.mutation._
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Direction
 
 class CypherParserTest extends CypherFunSuite {

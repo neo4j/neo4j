@@ -23,9 +23,9 @@ import java.net.URL
 
 import org.mockito.Matchers
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.ExternalResource
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
 class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 

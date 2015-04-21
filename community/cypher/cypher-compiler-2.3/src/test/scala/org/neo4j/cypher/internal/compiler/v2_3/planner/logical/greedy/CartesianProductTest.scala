@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.greedy
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.HardcodedGraphStatistics
 import org.neo4j.cypher.internal.compiler.v2_3.ast.PatternExpression
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Cost
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{CartesianProduct, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanningTestSupport, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
 class CartesianProductTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

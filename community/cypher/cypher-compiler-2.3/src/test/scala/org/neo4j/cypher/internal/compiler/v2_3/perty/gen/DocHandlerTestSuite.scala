@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.perty.gen
 
-import scala.reflect.runtime.universe._
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
+import scala.reflect.runtime.universe._
 import org.neo4j.cypher.internal.compiler.v2_3.perty._
 import org.neo4j.cypher.internal.compiler.v2_3.perty.print.{pprintToDoc, PrintCommand}
 

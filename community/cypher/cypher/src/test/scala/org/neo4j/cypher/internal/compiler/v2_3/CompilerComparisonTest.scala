@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.rewriter.Lo
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{GraphStatistics, PlanContext, QueriedGraphStatistics}
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundPlanContext, TransactionBoundQueryContext}
-import org.neo4j.cypher.internal.{LRUCache, ProfileMode}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseFactory

@@ -21,11 +21,10 @@ package org.neo4j.cypher.internal.compiler.v2_3.executionplan
 
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.Pipe
 import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.{ExplainMode, NormalMode}
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.GraphDatabaseService
 
 class ExecutionWorkflowBuilderTest extends CypherFunSuite {

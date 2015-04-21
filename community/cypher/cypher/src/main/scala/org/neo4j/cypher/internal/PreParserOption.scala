@@ -20,14 +20,17 @@
 package org.neo4j.cypher.internal
 
 sealed trait PreParserOption
+sealed abstract class ExecutionModePreParserOption(val name: String) extends PreParserOption
+sealed abstract class PlannerPreParserOption(val name: String) extends PreParserOption
+sealed abstract class RuntimePreParserOption(val name: String) extends PreParserOption
 
 case class VersionOption(version: String) extends PreParserOption
-case object ProfileOption extends PreParserOption
-case object ExplainOption extends PreParserOption
-case object CostPlannerOption extends PreParserOption
-case object RulePlannerOption extends PreParserOption
-case object IDPPlannerOption extends PreParserOption
-case object DPPlannerOption extends PreParserOption
-case object InterpretedRuntimeOption extends PreParserOption
-case object CompiledRuntimeOption extends PreParserOption
+case object ProfileOption extends ExecutionModePreParserOption("profile")
+case object ExplainOption extends ExecutionModePreParserOption("explain")
+case object CostPlannerOption extends PlannerPreParserOption("cost")
+case object RulePlannerOption extends PlannerPreParserOption("rule")
+case object IDPPlannerOption extends PlannerPreParserOption("idp")
+case object DPPlannerOption extends PlannerPreParserOption("dp")
+case object InterpretedRuntimeOption extends RuntimePreParserOption("interpreted")
+case object CompiledRuntimeOption extends RuntimePreParserOption("compiled")
 case class ConfigurationOptions(version: Option[VersionOption], options: Seq[PreParserOption]) extends PreParserOption

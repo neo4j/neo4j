@@ -23,7 +23,7 @@ import java.util.{Map => JavaMap}
 
 import org.neo4j.cypher.internal.compiler.v2_3.parser.ParserMonitor
 import org.neo4j.cypher.internal.compiler.v2_3.prettifier.Prettifier
-import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.cypher.internal.compiler.v2_3.{LRUCache => LRUCachev2_3, _}
 import org.neo4j.cypher.internal.{CypherCompiler, _}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.config.Setting
@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.query.{QueryEngineProvider, QueryExecutionMonitor, QuerySession}
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase, api, monitoring}
-import org.neo4j.logging.{NullLogProvider, LogProvider}
+import org.neo4j.logging.{LogProvider, NullLogProvider}
 
 import scala.collection.JavaConverters._
 
@@ -63,8 +63,8 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
 
   private val cacheAccessor = new MonitoringCacheAccessor[String, (ExecutionPlan, Map[String, Any])](cacheMonitor)
 
-  private val preParsedQueries = new LRUCache[String, PreParsedQuery](getPlanCacheSize)
-  private val parsedQueries = new LRUCache[String, ParsedQuery](getPlanCacheSize)
+  private val preParsedQueries = new LRUCachev2_3[String, PreParsedQuery](getPlanCacheSize)
+  private val parsedQueries = new LRUCachev2_3[String, ParsedQuery](getPlanCacheSize)
 
   @throws(classOf[SyntaxException])
   def profile(query: String): ExtendedExecutionResult = profile(query, Map[String, Any](), QueryEngineProvider.embeddedSession)
@@ -138,9 +138,9 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
 
       val (plan: ExecutionPlan, extractedParameters) = try {
         // fetch plan cache
-        val cache: LRUCache[String, (ExecutionPlan, Map[String, Any])] = getOrCreateFromSchemaState(kernelStatement, {
+        val cache: LRUCachev2_3[String, (ExecutionPlan, Map[String, Any])] = getOrCreateFromSchemaState(kernelStatement, {
           cacheMonitor.cacheFlushDetected(kernelStatement)
-          new LRUCache[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
+          new LRUCachev2_3[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
         })
 
         Iterator.continually {
@@ -212,7 +212,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
       log.error(message)
       throw new IllegalStateException(message)
     }
-    val optionParser = CypherPreParser(kernelMonitors.newMonitor(classOf[ParserMonitor[CypherQueryWithOptions]]))
+    val optionParser = CypherPreParser(kernelMonitors.newMonitor(classOf[ParserMonitor[PreParsedStatement]]))
     new CypherCompiler(graph, kernel, kernelMonitors, version, planner, runtime, optionParser, logProvider)
   }
 

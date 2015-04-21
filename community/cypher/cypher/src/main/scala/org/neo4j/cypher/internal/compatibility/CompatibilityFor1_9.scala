@@ -23,6 +23,7 @@ import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v1_9.executionplan.{ExecutionPlan => ExecutionPlan_v1_9}
 import org.neo4j.cypher.internal.compiler.v1_9.{CypherCompiler => CypherCompiler1_9}
+import org.neo4j.cypher.internal.compiler.v2_3
 import org.neo4j.cypher.internal.spi.v1_9.{GDSBackedQueryContext => QueryContext_v1_9}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.GraphDatabaseAPI
@@ -31,7 +32,7 @@ import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
 import org.neo4j.kernel.monitoring.Monitors
 
 case class CompatibilityFor1_9(graph: GraphDatabaseService, queryCacheSize: Int,  kernelMonitors: Monitors) {
-  private val queryCache1_9 = new LRUCache[String, Object](queryCacheSize)
+  private val queryCache1_9 = new v2_3.LRUCache[String, Object](queryCacheSize)
   private val compiler1_9   = new CypherCompiler1_9(graph, (q, f) => queryCache1_9.getOrElseUpdate(q, f))
   implicit val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
@@ -49,10 +50,10 @@ case class CompatibilityFor1_9(graph: GraphDatabaseService, queryCacheSize: Int,
     private def queryContext(graph: GraphDatabaseAPI) =
       new QueryContext_v1_9(graph)
 
-    def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, exeuctionMode: ExecutionMode, params: Map[String, Any], session: QuerySession) = exeuctionMode match {
-      case NormalMode   => execute(graph, txInfo, params, session)
-      case ProfileMode  => profile(graph, txInfo, params, session)
-      case _            => throw new UnsupportedOperationException(s"${CypherVersion.v1_9.name}: $exeuctionMode is unsupported")
+    def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, executionMode: CypherExecutionMode, params: Map[String, Any], session: QuerySession) = executionMode match {
+      case CypherExecutionMode.normal   => execute(graph, txInfo, params, session)
+      case CypherExecutionMode.profile  => profile(graph, txInfo, params, session)
+      case _  => throw new UnsupportedOperationException(s"${CypherVersion.v1_9.name}: $executionMode is unsupported")
     }
 
     private def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any], session: QuerySession) = {

@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_3
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
-import org.neo4j.cypher.internal.PathImpl
 import org.neo4j.cypher.internal.compiler.v2_3.commands.True
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.PathImpl
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.{EndPoint, SingleStepTrail, VariableLengthStepTrail}
 import org.neo4j.graphdb.Direction
 

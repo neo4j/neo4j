@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 import org.mockito.Mockito.{verify, verifyNoMoreInteractions, when}
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{AllNodesScan, IdName, LogicalPlan, Selection}
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Direction
 
 class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSupport {

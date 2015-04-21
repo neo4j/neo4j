@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.compiler.v2_3.{ConservativePlannerName, CostPlannerName, CypherCompilerFactory, CypherException => CypherException_v2_3, DPPlannerName, IDPPlannerName, InfoLogger, InputPosition => CompilerInputPosition, Monitors, PlannerName, _}
+import org.neo4j.cypher.internal.compiler.v2_3.{ConservativePlannerName, CostPlannerName, CypherCompilerFactory, CypherException => CypherException_v2_3, DPPlannerName, ExplainMode => ExplainModev2_3, IDPPlannerName, InfoLogger, Monitors, NormalMode => NormalModev2_3, PlannerName, ProfileMode => ProfileModev2_3, _}
 import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
 import org.neo4j.cypher.{ArithmeticException, CypherTypeException, EntityNotFoundException, FailedIndexException, IncomparableValuesException, IndexHintException, InternalException, InvalidArgumentException, InvalidSemanticsException, LabelScanHintException, LoadCsvStatusWrapCypherException, LoadExternalResourceException, MergeConstraintConflictException, NodeStillHasRelationshipsException, ParameterNotFoundException, ParameterWrongTypeException, PatternException, PeriodicCommitInOpenTransactionException, ProfilerStatisticsNotReadyException, SyntaxException, UniquePathNotUniqueException, UnknownLabelException, _}
@@ -170,10 +170,15 @@ trait CompatibilityFor2_3 {
       new ExceptionTranslatingQueryContextFor2_3(ctx)
     }
 
-    def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, executionMode: ExecutionMode, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
+    def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, executionMode: CypherExecutionMode, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
       implicit val s = session
+      val innerExecutionMode = executionMode match {
+        case CypherExecutionMode.explain => ExplainModev2_3
+        case CypherExecutionMode.profile => ProfileModev2_3
+        case CypherExecutionMode.normal => NormalModev2_3
+      }
       exceptionHandlerFor2_3.runSafely {
-        ExecutionResultWrapperFor2_3(inner.run(queryContext(graph, txInfo), txInfo.statement, executionMode, params), inner.plannerUsed, inner.runtimeUsed)
+        ExecutionResultWrapperFor2_3(inner.run(queryContext(graph, txInfo), txInfo.statement, innerExecutionMode, params), inner.plannerUsed, inner.runtimeUsed)
       }
     }
 

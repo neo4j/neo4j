@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner
 
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.commons.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.parser.{CypherParser, ParserMonitor}
@@ -34,6 +33,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.rewriter.Lo
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.{CypherTestSupport, CypherFunSuite}
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.Clock
 

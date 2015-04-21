@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.functions
 import org.neo4j.cypher.internal.compiler.v2_3.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.indexScanLeafPlanner
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
 class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

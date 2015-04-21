@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.execution
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{Collection, Expression, SignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Literal
@@ -28,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.Clock
 

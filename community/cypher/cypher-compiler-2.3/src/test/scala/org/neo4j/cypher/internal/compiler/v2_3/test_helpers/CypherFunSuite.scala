@@ -17,19 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.commons
+package org.neo4j.cypher.internal.compiler.v2_3.test_helpers
 
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.junit.runner.RunWith
+import org.scalatest._
+import org.scalatest.junit.JUnitRunner
+import org.scalatest.mock.MockitoSugar
 
-trait CustomMatchers {
-  class IsTypeOf(clazz: Class[_]) extends Matcher[Any] {
+@RunWith(classOf[JUnitRunner])
+abstract class CypherFunSuite
+  extends Suite
+  with Assertions
+  with CypherTestSupport
+  with MockitoSugar
+  with FunSuiteLike
+  with Matchers
+  with BeforeAndAfterEach {
 
-    def apply(left: Any) = MatchResult(
-      clazz.isAssignableFrom(left.getClass),
-      s"expected $left to have type $clazz but it was ${left.getClass}",
-      s"$left has type $clazz")
+  override protected def beforeEach() {
+    initTest()
   }
 
-  def haveType[T](implicit manifest: Manifest[T]) = new IsTypeOf(manifest.runtimeClass)
-
+  override protected def afterEach() {
+    stopTest()
+  }
 }

@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.CTNumber
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
 class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 

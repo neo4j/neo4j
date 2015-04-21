@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
-import org.neo4j.cypher.internal.LRUCache
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters.{normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan._

@@ -17,11 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.commons
+package org.neo4j.cypher.internal.compiler.v2_3.test_helpers
 
-// Inherited by test mixin classes that need to manage resources
-trait CypherTestSupport  {
-  protected def initTest() {}
-  protected def stopTest() {}
+trait RandomizedTestSupport {
+  val N: Double  = testRandomizer.nextDouble() * 1E6
+  println("N: " + N)
 }
-

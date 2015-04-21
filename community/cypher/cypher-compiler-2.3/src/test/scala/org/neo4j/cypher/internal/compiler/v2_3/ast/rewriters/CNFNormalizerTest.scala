@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters
 
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.{AstRewritingMonitor, Rewriter}
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+
 class CNFNormalizerTest extends CypherFunSuite with PredicateTestSupport {
   def rewriter: Rewriter = CNFNormalizer()(mock[AstRewritingMonitor])
 

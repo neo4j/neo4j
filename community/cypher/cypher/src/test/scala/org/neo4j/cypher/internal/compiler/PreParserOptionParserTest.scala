@@ -20,55 +20,55 @@
 package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.cypher.internal._
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.InputPosition
 import org.neo4j.cypher.internal.compiler.v2_3.parser.ParserMonitor
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 class PreParserOptionParserTest extends CypherFunSuite with TableDrivenPropertyChecks {
 
   val queries = Table(
     ("query", "expected"),
-    ("CYPHER 1.9 MATCH", CypherQueryWithOptions("MATCH", Seq(ConfigurationOptions(Some(VersionOption("1.9")), Seq.empty)), (1, 12, 11))),
-    ("CYPHER 2.0 THAT", CypherQueryWithOptions("THAT", Seq(ConfigurationOptions(Some(VersionOption("2.0")), Seq.empty)), (1, 12, 11))),
-    ("CYPHER 2.1 YO", CypherQueryWithOptions("YO", Seq(ConfigurationOptions(Some(VersionOption("2.1")), Seq.empty)), (1, 12, 11))),
-    ("CYPHER 2.2 HO", CypherQueryWithOptions("HO", Seq(ConfigurationOptions(Some(VersionOption("2.2")), Seq.empty)), (1, 12, 11))),
-    ("PROFILE THINGS", CypherQueryWithOptions("THINGS", Seq(ProfileOption), (1, 9, 8))),
-    ("EXPLAIN THIS", CypherQueryWithOptions("THIS", Seq(ExplainOption), (1, 9, 8))),
-    ("CYPHER 2.2 PLANNER COST PROFILE PATTERN", CypherQueryWithOptions("PATTERN", Seq(ConfigurationOptions(Some(VersionOption("2.2")), Seq.empty), CostPlannerOption, ProfileOption), (1, 33, 32))),
-    ("EXPLAIN CYPHER 2.1 YALL", CypherQueryWithOptions("YALL", Seq(ExplainOption, ConfigurationOptions(Some(VersionOption("2.1")), Seq.empty)), (1, 20, 19))),
-    ("CYPHER 2.2 PLANNER COST RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(Some(VersionOption("2.2")), Seq.empty), CostPlannerOption), (1, 25, 24))),
-    ("PLANNER COST RETURN", CypherQueryWithOptions("RETURN", Seq(CostPlannerOption), (1, 14, 13))),
-    ("CYPHER 2.2 PLANNER RULE RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(Some(VersionOption("2.2")), Seq.empty), RulePlannerOption), (1, 25, 24))),
-    ("PLANNER RULE RETURN", CypherQueryWithOptions("RETURN", Seq(RulePlannerOption), (1, 14, 13))),
-    ("CYPHER 2.2 PLANNER IDP RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(Some(VersionOption("2.2")), Seq.empty), IDPPlannerOption), (1, 24, 23))),
-    ("CYPHER 2.2 PLANNER DP RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(Some(VersionOption("2.2")), Seq.empty), DPPlannerOption), (1, 23, 22))),
-    ("PLANNER IDP RETURN", CypherQueryWithOptions("RETURN", Seq(IDPPlannerOption), (1, 13, 12))),
-    ("PLANNER DP RETURN", CypherQueryWithOptions("RETURN", Seq(DPPlannerOption), (1, 12, 11))),
-    ("CYPHER planner=cost RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(None, Seq(CostPlannerOption))), (1, 21, 20))),
-    ("CYPHER 2.2 planner=cost RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(Some(VersionOption("2.2")), Seq(CostPlannerOption))), (1, 25, 24))),
-    ("CYPHER 2.2 planner = idp RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(Some(VersionOption("2.2")), Seq(IDPPlannerOption))), (1, 26, 25))),
-    ("CYPHER planner =dp RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(None, Seq(
+    ("CYPHER 1.9 MATCH", PreParsedStatement("MATCH", Seq(ConfigurationOptions(Some(VersionOption("1.9")), Seq.empty)), (1, 12, 11))),
+    ("CYPHER 2.0 THAT", PreParsedStatement("THAT", Seq(ConfigurationOptions(Some(VersionOption("2.0")), Seq.empty)), (1, 12, 11))),
+    ("CYPHER 2.1 YO", PreParsedStatement("YO", Seq(ConfigurationOptions(Some(VersionOption("2.1")), Seq.empty)), (1, 12, 11))),
+    ("CYPHER 2.2 HO", PreParsedStatement("HO", Seq(ConfigurationOptions(Some(VersionOption("2.2")), Seq.empty)), (1, 12, 11))),
+    ("PROFILE THINGS", PreParsedStatement("THINGS", Seq(ProfileOption), (1, 9, 8))),
+    ("EXPLAIN THIS", PreParsedStatement("THIS", Seq(ExplainOption), (1, 9, 8))),
+    ("CYPHER 2.2 PLANNER COST PROFILE PATTERN", PreParsedStatement("PATTERN", Seq(ConfigurationOptions(Some(VersionOption("2.2")), Seq.empty), CostPlannerOption, ProfileOption), (1, 33, 32))),
+    ("EXPLAIN CYPHER 2.1 YALL", PreParsedStatement("YALL", Seq(ExplainOption, ConfigurationOptions(Some(VersionOption("2.1")), Seq.empty)), (1, 20, 19))),
+    ("CYPHER 2.2 PLANNER COST RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(Some(VersionOption("2.2")), Seq.empty), CostPlannerOption), (1, 25, 24))),
+    ("PLANNER COST RETURN", PreParsedStatement("RETURN", Seq(CostPlannerOption), (1, 14, 13))),
+    ("CYPHER 2.2 PLANNER RULE RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(Some(VersionOption("2.2")), Seq.empty), RulePlannerOption), (1, 25, 24))),
+    ("PLANNER RULE RETURN", PreParsedStatement("RETURN", Seq(RulePlannerOption), (1, 14, 13))),
+    ("CYPHER 2.2 PLANNER IDP RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(Some(VersionOption("2.2")), Seq.empty), IDPPlannerOption), (1, 24, 23))),
+    ("CYPHER 2.2 PLANNER DP RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(Some(VersionOption("2.2")), Seq.empty), DPPlannerOption), (1, 23, 22))),
+    ("PLANNER IDP RETURN", PreParsedStatement("RETURN", Seq(IDPPlannerOption), (1, 13, 12))),
+    ("PLANNER DP RETURN", PreParsedStatement("RETURN", Seq(DPPlannerOption), (1, 12, 11))),
+    ("CYPHER planner=cost RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(None, Seq(CostPlannerOption))), (1, 21, 20))),
+    ("CYPHER 2.2 planner=cost RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(Some(VersionOption("2.2")), Seq(CostPlannerOption))), (1, 25, 24))),
+    ("CYPHER 2.2 planner = idp RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(Some(VersionOption("2.2")), Seq(IDPPlannerOption))), (1, 26, 25))),
+    ("CYPHER planner =dp RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(None, Seq(
       DPPlannerOption))), (1, 20, 19))),
 
-    ("CYPHER runtime=interpreted RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(None, Seq(InterpretedRuntimeOption))), (1, 28, 27))),
-    ("CYPHER runtime=compiled RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(None, Seq(CompiledRuntimeOption))), (1, 25, 24))),
+    ("CYPHER runtime=interpreted RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(None, Seq(InterpretedRuntimeOption))), (1, 28, 27))),
+    ("CYPHER runtime=compiled RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(None, Seq(CompiledRuntimeOption))), (1, 25, 24))),
 
-    ("CYPHER 2.3 planner=cost runtime=interpreted RETURN", CypherQueryWithOptions("RETURN", Seq(
+    ("CYPHER 2.3 planner=cost runtime=interpreted RETURN", PreParsedStatement("RETURN", Seq(
       ConfigurationOptions(Some(VersionOption("2.3")), Seq(CostPlannerOption, InterpretedRuntimeOption))), (1, 45, 44))),
-    ("CYPHER 2.3 planner=cost runtime=compiled RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(
+    ("CYPHER 2.3 planner=cost runtime=compiled RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(
       Some(VersionOption("2.3")), Seq(CostPlannerOption, CompiledRuntimeOption))), (1, 42, 41))),
-    ("CYPHER 2.3 planner=dp runtime=interpreted RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(
+    ("CYPHER 2.3 planner=dp runtime=interpreted RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(
       Some(VersionOption("2.3")), Seq(DPPlannerOption, InterpretedRuntimeOption))), (1, 43, 42))),
-    ("CYPHER 2.3 planner=dp runtime=compiled RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(
+    ("CYPHER 2.3 planner=dp runtime=compiled RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(
       Some(VersionOption("2.3")), Seq(DPPlannerOption, CompiledRuntimeOption))), (1, 40, 39))),
-    ("CYPHER 2.3 planner=idp runtime=interpreted RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions
+    ("CYPHER 2.3 planner=idp runtime=interpreted RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions
       (Some(VersionOption("2.3")), Seq(IDPPlannerOption, InterpretedRuntimeOption))), (1, 44, 43))),
-    ("CYPHER 2.3 planner=idp runtime=compiled RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(
+    ("CYPHER 2.3 planner=idp runtime=compiled RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(
       Some(VersionOption("2.3")), Seq(IDPPlannerOption, CompiledRuntimeOption))), (1, 41, 40))),
-    ("CYPHER 2.3  runtime=compiled  planner=idp   RETURN", CypherQueryWithOptions("RETURN", Seq(ConfigurationOptions(
+    ("CYPHER 2.3  runtime=compiled  planner=idp   RETURN", PreParsedStatement("RETURN", Seq(ConfigurationOptions(
       Some(VersionOption("2.3")), Seq(CompiledRuntimeOption,IDPPlannerOption))), (1, 45, 44))),
-    ("explainmatch", CypherQueryWithOptions("explainmatch", Seq.empty, (1, 1, 0)))
+    ("explainmatch", PreParsedStatement("explainmatch", Seq.empty, (1, 1, 0)))
     )
 
   test("run the tests") {
@@ -77,8 +77,8 @@ class PreParserOptionParserTest extends CypherFunSuite with TableDrivenPropertyC
     }
   }
 
-  private def parse(arg:String): CypherQueryWithOptions = {
-    CypherPreParser(mock[ParserMonitor[CypherQueryWithOptions]]).apply(arg)
+  private def parse(arg:String): PreParsedStatement = {
+    CypherPreParser(mock[ParserMonitor[PreParsedStatement]]).apply(arg)
   }
 
   private implicit def lift(pos: (Int, Int, Int)): InputPosition = InputPosition(pos._3, pos._1, pos._2)

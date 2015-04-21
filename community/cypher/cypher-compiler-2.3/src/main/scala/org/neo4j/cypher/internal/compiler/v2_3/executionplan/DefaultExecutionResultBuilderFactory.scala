@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{CSVResources, QueryContext}
-import org.neo4j.cypher.internal.{ExplainMode, ExecutionMode}
+import org.neo4j.cypher.internal.compiler.v2_3.{ExplainMode, ExecutionMode}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.QueryExecutionType.QueryType
 

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal
+package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
 import java.lang.{Iterable => JavaIterable}
 import java.util.{Iterator => JavaIterator}
@@ -30,8 +30,7 @@ import scala.collection.mutable
 
 case class PathImpl(pathEntities: PropertyContainer*)
   extends org.neo4j.graphdb.Path
-  with Traversable[PropertyContainer]
-  with CypherArray {
+  with Traversable[PropertyContainer] {
 
   val sz = pathEntities.size
 

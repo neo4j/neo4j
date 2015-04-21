@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.pipes.matching
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.commands.True
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Direction
 
 class StepSizeTest extends CypherFunSuite {

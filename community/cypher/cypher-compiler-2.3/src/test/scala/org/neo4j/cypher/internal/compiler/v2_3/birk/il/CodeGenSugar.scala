@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.birk.il
 
-import org.neo4j.cypher.internal.ExecutionMode
+import org.neo4j.cypher.internal.compiler.v2_3.ExecutionMode
 import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
