@@ -51,7 +51,7 @@ public class RelationshipStage extends Stage
         add( new PropertyEncoderStep<>( control(), config, neoStore.getPropertyKeyRepository(), propertyStore ) );
         add( new ParallelizeByNodeIdStep( control(), config ) );
         add( new RelationshipEncoderStep( control(), config,
-                neoStore.getRelationshipTypeRepository(), relationshipStore, cache, specificIds ) );
+                neoStore.getRelationshipTypeRepository(), cache, specificIds ) );
         add( new EntityStoreUpdaterStep<>( control(), config,
                 relationshipStore, propertyStore, writeMonitor, writerFactory ) );
     }

@@ -130,8 +130,8 @@ public class CsvDataGeneratorInput extends CsvDataGenerator<InputNode,InputRelat
     }
 
     @Override
-    public Collector<InputRelationship> badRelationshipsCollector( OutputStream out )
+    public Collector badCollector( OutputStream out )
     {
-        return Collectors.badRelationshipsCollector( out, 0 );
+        return Collectors.badCollector( out, 0 );
     }
 }

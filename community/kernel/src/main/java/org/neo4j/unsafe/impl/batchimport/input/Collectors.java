@@ -28,20 +28,36 @@ import org.neo4j.function.Function;
  */
 public class Collectors
 {
-    public static Collector<InputRelationship> badRelationshipsCollector( OutputStream out, int tolerance )
+    public static Collector badCollector( OutputStream out, int tolerance )
     {
-        return new BadRelationshipsCollector( out, tolerance );
+        return badCollector( out, tolerance, BadCollector.COLLECT_ALL );
     }
 
-    public static Function<OutputStream,Collector<InputRelationship>> badRelationships( final int tolerance )
+    public static Collector badCollector( OutputStream out, int tolerance, int collect )
     {
-        return new Function<OutputStream,Collector<InputRelationship>>()
+        return new BadCollector( out, tolerance, collect );
+    }
+
+    public static Function<OutputStream,Collector> badCollector( final int tolerance )
+    {
+        return badCollector( tolerance, BadCollector.COLLECT_ALL );
+    }
+
+    public static Function<OutputStream,Collector> badCollector( final int tolerance, final int collect )
+    {
+        return new Function<OutputStream,Collector>()
         {
             @Override
-            public Collector<InputRelationship> apply( OutputStream out ) throws RuntimeException
+            public Collector apply( OutputStream out ) throws RuntimeException
             {
-                return badRelationshipsCollector( out, tolerance );
+                return badCollector( out, tolerance, collect );
             }
         };
+    }
+
+    public static int collect( boolean skipBadRelationships, boolean skipDuplicateNodes )
+    {
+        return (skipBadRelationships ? BadCollector.BAD_RELATIONSHIPS : 0 ) |
+               (skipDuplicateNodes ? BadCollector.DUPLICATE_NODES : 0 );
     }
 }

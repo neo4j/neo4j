@@ -43,13 +43,12 @@ public class CalculateDenseNodePrepareStep extends ProcessorStep<Batch<InputRela
     private final int batchSize;
     private final long[][] inProgressBatches;
     private final int[] cursors;
-    private final Collector<InputRelationship> badRelationships;
+    private final Collector badCollector;
 
-    public CalculateDenseNodePrepareStep( StageControl control, Configuration config,
-            Collector<InputRelationship> badRelationships )
+    public CalculateDenseNodePrepareStep( StageControl control, Configuration config, Collector badCollector )
     {
         super( control, "DIVIDE", config, 1 );
-        this.badRelationships = badRelationships;
+        this.badCollector = badCollector;
         this.batchSize = config.batchSize() * 2; // x2 since we receive (and send) 2 ids per relationship
         this.inProgressBatches = new long[RADIXES][batchSize];
         this.cursors = new int[inProgressBatches.length];
@@ -92,7 +91,7 @@ public class CalculateDenseNodePrepareStep extends ProcessorStep<Batch<InputRela
         }
         else
         {
-            badRelationships.collect( relationship, inputId );
+            badCollector.collectBadRelationship( relationship, inputId );
         }
     }
 
