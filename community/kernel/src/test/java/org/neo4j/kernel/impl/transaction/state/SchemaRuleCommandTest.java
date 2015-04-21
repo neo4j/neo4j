@@ -24,7 +24,7 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.transaction.command.NeoStoreTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV2;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
+import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -50,6 +51,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.store.UniquenessConstraintRule.uniquenessConstraintRule;
@@ -204,7 +206,8 @@ public class SchemaRuleCommandTest
     private final NeoStore neoStore = mock( NeoStore.class );
     private final SchemaStore store = mock( SchemaStore.class );
     private final IndexingService indexes = mock( IndexingService.class );
-    private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
+    @SuppressWarnings( "unchecked" )
+    private final Provider<LabelScanWriter> labelScanStore = mock( Provider.class );
     private final NeoStoreTransactionApplier storeApplier = new NeoStoreTransactionApplier( neoStore,
             mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE, new LockGroup(), txId );
     private final IndexTransactionApplier indexApplier = new IndexTransactionApplier( indexes,

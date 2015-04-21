@@ -21,16 +21,14 @@ package org.neo4j.kernel.impl.transaction.command;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
+import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
@@ -51,28 +49,19 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
  */
 public class IndexTransactionApplier extends NeoCommandHandler.Adapter
 {
-    private static final Comparator<NodeLabelUpdate> nodeLabelUpdateComparator = new Comparator<NodeLabelUpdate>()
-    {
-        @Override
-        public int compare( NodeLabelUpdate o1, NodeLabelUpdate o2 )
-        {
-            return Long.compare( o1.getNodeId(), o2.getNodeId() );
-        }
-    };
-
     private final ValidatedIndexUpdates indexUpdates;
     private List<NodeLabelUpdate> labelUpdates;
 
     private final IndexingService indexingService;
-    private final LabelScanStore labelScanStore;
+    private final Provider<LabelScanWriter> labelScanWriters;
     private final CacheAccessBackDoor cacheAccess;
 
     public IndexTransactionApplier( IndexingService indexingService, ValidatedIndexUpdates indexUpdates,
-            LabelScanStore labelScanStore, CacheAccessBackDoor cacheAccess )
+            Provider<LabelScanWriter> labelScanWriters, CacheAccessBackDoor cacheAccess )
     {
         this.indexingService = indexingService;
         this.indexUpdates = indexUpdates;
-        this.labelScanStore = labelScanStore;
+        this.labelScanWriters = labelScanWriters;
         this.cacheAccess = cacheAccess;
     }
 
@@ -112,17 +101,13 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
 
     private void updateLabelScanStore() throws IOException, IndexCapacityExceededException
     {
-        Collections.sort( labelUpdates, nodeLabelUpdateComparator );
-
-        // We only allow a single writer at the time to update the label scan store
-        synchronized ( labelScanStore )
+        // Updates are sorted according to node id here, an artifact of node commands being sorted
+        // by node id when extracting from TransactionRecordState.
+        try ( LabelScanWriter writer = labelScanWriters.instance() )
         {
-            try ( LabelScanWriter writer = labelScanStore.newWriter() )
+            for ( NodeLabelUpdate update : labelUpdates )
             {
-                for ( NodeLabelUpdate update : labelUpdates )
-                {
-                    writer.write( update );
-                }
+                writer.write( update );
             }
         }
     }
