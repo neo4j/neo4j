@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.CypherVersion._
+import org.neo4j.cypher.internal.CypherStatementWithOptions
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compiler.v2_3.notification.LegacyPlannerNotification
 import org.neo4j.cypher.internal.compiler.v2_3.{InputPosition, InternalNotificationLogger, PlannerName, RecordingNotificationLogger, devNullLogger, _}
@@ -88,19 +89,26 @@ class CypherCompiler(graph: GraphDatabaseService,
   @throws(classOf[SyntaxException])
   def preParseQuery(queryText: String): PreParsedQuery = {
     val preParsedStatement = optionParser(queryText)
-    val statementWithOption = CypherStatementWithOptions(preParsedStatement)
+    val statementWithOptions = CypherStatementWithOptions(preParsedStatement)
+    val CypherStatementWithOptions(statement, offset, version, planner, runtime, mode, notifications) = statementWithOptions
 
-    val cypherVersion = statementWithOption.version.getOrElse(configuredVersion)
-    val executionMode = statementWithOption.executionMode.getOrElse(CypherExecutionMode.default)
-    val planner = statementWithOption.planner.getOrElse(configuredPlanner)
-    val runtime = statementWithOption.runtime.getOrElse(configuredRuntime)
+    val cypherVersion = version.getOrElse(configuredVersion)
+    val pickedExecutionMode = mode.getOrElse(CypherExecutionMode.default)
 
-    assertValidOptions(statementWithOption, cypherVersion, executionMode, planner, runtime)
+    val pickedPlanner = pick(planner, CypherPlanner, if (cypherVersion == configuredVersion) Some(configuredPlanner) else None)
+    val pickedRuntime = pick(runtime, CypherRuntime, if (cypherVersion == configuredVersion) Some(configuredRuntime) else None)
 
-    val logger = notificationLoggerBuilder(executionMode)
-    statementWithOption.notifications.foreach( logger += _ )
+    assertValidOptions(statementWithOptions, cypherVersion, pickedExecutionMode, pickedPlanner, pickedRuntime)
 
-    PreParsedQuery(statementWithOption.statement, cypherVersion, executionMode, planner, runtime, logger)(statementWithOption.offset)
+    val logger = notificationLoggerBuilder(pickedExecutionMode)
+    notifications.foreach( logger += _ )
+
+    PreParsedQuery(statement, cypherVersion, pickedExecutionMode, pickedPlanner, pickedRuntime, logger)(offset)
+  }
+
+  private def pick[O <: CypherOption](candidate: Option[O], companion: CypherOptionCompanion[O], configured: Option[O]): O = {
+    val specified = candidate.getOrElse(companion.default)
+    if (specified == companion.default) configured.getOrElse(specified) else specified
   }
 
   private def assertValidOptions(statementWithOption: CypherStatementWithOptions,

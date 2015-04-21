@@ -84,16 +84,17 @@ public abstract class GraphDatabaseSettings
 
     // Cypher settings
     // TODO: These should live with cypher
-    @Description( "Set this to specify the default parser." )
+    @Description( "Set this to specify the default parser (language version)." )
     public static final Setting<String> cypher_parser_version = setting(
             "cypher_parser_version",
             options( "1.9", "2.2", "2.3", DEFAULT ), DEFAULT );
 
-    @Description( "Set this to specify the default planner." )
+    @Description( "Set this to specify the default planner for the default language version." )
     public static final Setting<String> cypher_planner = setting(
             "dbms.cypher.planner",
             options( "COST", "RULE", DEFAULT ), DEFAULT );
 
+    @Description( "Set this to specify the default runtime for the default language version." )
     @Internal
     public static final Setting<String> cypher_runtime = setting(
             "dbms.cypher.runtime",

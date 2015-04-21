@@ -1,3 +1,9 @@
+2.3-M02
+-------
+
+Cypher:
+o Specifying a default Cypher planner in the settings now only applies to the default language version / parser
+
 2.3-M01
 -------
 
