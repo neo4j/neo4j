@@ -17,10 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v2_1
+package org.neo4j.cypher
 
+sealed abstract class CypherRuntime(runtimeName: String) {
+  val name = CypherOptionName.asCanonicalName(runtimeName)
+}
 
-//This class should live here, but until we have to touch
-//disk, let's have it in the compiler. Convenient.
-case object HardcodedGraphStatistics
-  extends org.neo4j.cypher.internal.compiler.v2_1.HardcodedGraphStatisticsValues
+object CypherRuntime {
+
+  case object default extends CypherRuntime("default")
+  case object interpreted extends CypherRuntime("interpreted")
+  case object compiled extends CypherRuntime("compiled")
+
+  def apply(name: String) = findRuntimeByExactName(CypherOptionName.asCanonicalName(name)).getOrElse {
+    throw new SyntaxException(s"Supported runtimes are: ${allRuntimes.map(_.name).mkString(", ")}")
+  }
+
+  def findRuntimeByExactName(name: String) = allRuntimes.find( _.name == name )
+
+  val allRuntimes = Seq(default, interpreted, compiled)
+}

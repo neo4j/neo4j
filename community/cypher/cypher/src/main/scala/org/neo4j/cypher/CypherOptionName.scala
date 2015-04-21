@@ -19,22 +19,6 @@
  */
 package org.neo4j.cypher
 
-sealed abstract class CypherVersion(versionName: String) {
-  val name = CypherOptionName.asCanonicalName(versionName)
-}
-
-object CypherVersion {
-
-  case object v1_9 extends CypherVersion("1.9")
-  case object v2_2 extends CypherVersion("2.2")
-  case object v2_3 extends CypherVersion("2.3")
-
-  def apply(versionName: String) = findVersionByExactName(CypherOptionName.asCanonicalName(versionName)).getOrElse {
-    throw new SyntaxException(s"Supported versions are: ${allVersions.map(_.name).mkString(", ")}")
-  }
-
-  def findVersionByExactName(versionName: String) = allVersions.find( _.name == versionName )
-
-  val vDefault = v2_3
-  val allVersions = Seq(v1_9, v2_2, v2_3)
+object CypherOptionName {
+  def asCanonicalName(name: String) = name.toLowerCase
 }

@@ -18,12 +18,12 @@
  */
 package org.neo4j.examples;
 
-import java.util.Map;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
+
+import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -66,7 +66,7 @@ public abstract class AbstractJavaDocTestBase implements GraphHolder
 
     protected String createCypherSnippet( String cypherQuery )
     {
-        String snippet = org.neo4j.cypher.internal.compiler.v2_0.prettifier.Prettifier$.MODULE$.apply( cypherQuery );
+        String snippet = org.neo4j.cypher.internal.compiler.v2_3.prettifier.Prettifier$.MODULE$.apply( cypherQuery );
         return AsciidocHelper.createAsciiDocSnippet( "cypher", snippet );
     }
 

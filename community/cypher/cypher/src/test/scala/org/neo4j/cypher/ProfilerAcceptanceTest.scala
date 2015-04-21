@@ -47,11 +47,11 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertDbHits(2)(result)("Expand")
   }
 
-  test("PROFILE for Cypher 2.0") {
-    val result = eengine.profile("cypher 2.0 match n where n-[:FOO]->() return *")
+  test("PROFILE for Cypher 2.2") {
+    val result = eengine.profile("cypher 2.2 match n where n-[:FOO]->() return *")
 
     assert(result.planDescriptionRequested, "result not marked with planDescriptionRequested")
-    result.executionPlanDescription().toString should include("_db_hits")
+    result.executionPlanDescription().toString should include("DbHits")
   }
 
   test("EXPLAIN for Cypher 2.3") {
