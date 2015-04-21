@@ -19,6 +19,15 @@
  */
 package org.neo4j.tooling;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.lang.Thread.UncaughtExceptionHandler;
+import java.nio.charset.Charset;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Map.Entry;
+
 import org.neo4j.function.Function;
 import org.neo4j.function.Function2;
 import org.neo4j.helpers.Args;
@@ -33,7 +42,11 @@ import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.storemigration.FileOperation;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
-import org.neo4j.kernel.impl.util.*;
+import org.neo4j.kernel.impl.util.Converters;
+import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.impl.util.Validator;
+import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
@@ -48,24 +61,20 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactory;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.lang.Thread.UncaughtExceptionHandler;
-import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Map.Entry;
-
 import static java.nio.charset.Charset.defaultCharset;
+
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.badCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.collect;
-import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.*;
+import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_NODE_DECORATOR;
+import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.additiveLabels;
+import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.defaultRelationshipType;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.*;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.data;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
 
 /**
  * User-facing command line tool around a {@link BatchImporter}.
@@ -314,11 +323,11 @@ public class ImportTool
         }
         finally
         {
-            File badRelationships = new File( storeDir, BAD_FILE_NAME );
-            if ( badRelationships.exists() )
+            File badFile = new File( storeDir, BAD_FILE_NAME );
+            if ( badFile.exists() )
             {
                 System.out.println( "There were bad entries which were skipped and logged into " +
-                        badRelationships.getAbsolutePath() );
+                        badFile.getAbsolutePath() );
             }
 
             life.shutdown();

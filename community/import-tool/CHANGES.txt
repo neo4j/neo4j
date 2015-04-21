@@ -5,6 +5,13 @@ o Added ability to skip duplicate nodes, i.e. multiple nodes with the same ID in
   using --bad-tolerance=<max bad entries>. Skipping of bad relationships/nodes can be enabled/disabled
   individually with --skip-duplicate-nodes and --skip-bad-relationships.
 
+2.2.2
+-----
+o Added ability to skip duplicate nodes, i.e. multiple nodes with the same ID in the same id space.
+  Maximum total number of bad entries (nodes and relationships) during an import is still controlled
+  using --bad-tolerance=<max bad entries>. Skipping of bad relationships/nodes can be enabled/disabled
+  individually with --skip-duplicate-nodes and --skip-bad-relationships.
+
 2.2.1
 -----
 o Ability to specify input encoding (using --input-encoding)

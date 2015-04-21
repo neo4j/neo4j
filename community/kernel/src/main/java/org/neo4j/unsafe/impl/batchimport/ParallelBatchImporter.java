@@ -126,7 +126,7 @@ public class ParallelBatchImporter implements BatchImporter
         boolean hasBadEntries = false;
         File badFile = new File( storeDir, Configuration.BAD_FILE_NAME );
         try ( BatchingNeoStore neoStore = new BatchingNeoStore( fileSystem, storeDir, config,
-                    writeMonitor, logProvider, monitors, writerFactory, additionalInitialIds );
+              writeMonitor, logProvider, monitors, writerFactory, additionalInitialIds );
               OutputStream badOutput = new BufferedOutputStream( fileSystem.openAsOutputStream( badFile, false ) );
               Collector badCollector = input.badCollector( badOutput );
               CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset(
