@@ -28,6 +28,7 @@ import java.util.IllegalFormatException;
 
 import org.neo4j.function.Suppliers;
 
+import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -46,7 +47,7 @@ public class FormattedLogTest
         log.info( "Terminator 2" );
 
         // Then
-        assertEquals( "1984-10-26 04:23:24.343 INFO  [test] Terminator 2\n", writer.toString() );
+        assertEquals( format( "1984-10-26 04:23:24.343 INFO  [test] Terminator 2%n" ), writer.toString() );
     }
 
     @Test
@@ -80,7 +81,7 @@ public class FormattedLogTest
 
         // Then
         assertEquals(
-                "1984-10-26 04:23:24.343 INFO  [test] Hasta la vista, baby <message>\n<stacktrace>",
+                format( "1984-10-26 04:23:24.343 INFO  [test] Hasta la vista, baby <message>%n<stacktrace>" ),
                 writer.toString() );
     }
 
@@ -114,7 +115,7 @@ public class FormattedLogTest
         log.info( "I'll take care of the police", (Throwable) null );
 
         // Then
-        assertEquals( "1984-10-26 04:23:24.343 INFO  [test] I'll take care of the police\n", writer.toString() );
+        assertEquals( format( "1984-10-26 04:23:24.343 INFO  [test] I'll take care of the police%n" ), writer.toString() );
     }
 
     @Test
@@ -128,7 +129,7 @@ public class FormattedLogTest
         log.info( "Hasta la vista, baby", newThrowable( null, "<stacktrace>" ) );
 
         // Then
-        assertEquals( "1984-10-26 04:23:24.343 INFO  [test] Hasta la vista, baby\n<stacktrace>", writer.toString() );
+        assertEquals( format( "1984-10-26 04:23:24.343 INFO  [test] Hasta la vista, baby%n<stacktrace>" ), writer.toString() );
     }
 
     @Test
@@ -143,7 +144,7 @@ public class FormattedLogTest
 
         // Then
         assertEquals(
-                "1984-10-26 04:23:24.343 INFO  [test] I need your clothes, your boots and your motorcycle\n",
+                format( "1984-10-26 04:23:24.343 INFO  [test] I need your clothes, your boots and your motorcycle%n" ),
                 writer.toString() );
     }
 
@@ -177,7 +178,7 @@ public class FormattedLogTest
         log.info( "Come with me if you %s to live!", new Object[]{} );
 
         // Then
-        assertEquals( "1984-10-26 04:23:24.343 INFO  [test] Come with me if you %s to live!\n", writer.toString() );
+        assertEquals( format( "1984-10-26 04:23:24.343 INFO  [test] Come with me if you %%s to live!%n" ), writer.toString() );
     }
 
     @Test
@@ -191,7 +192,7 @@ public class FormattedLogTest
         log.info( "Come with me if you %s to live!", (Object[]) null );
 
         // Then
-        assertEquals( "1984-10-26 04:23:24.343 INFO  [test] Come with me if you %s to live!\n", writer.toString() );
+        assertEquals( format( "1984-10-26 04:23:24.343 INFO  [test] Come with me if you %%s to live!%n" ), writer.toString() );
     }
 
     @Test
