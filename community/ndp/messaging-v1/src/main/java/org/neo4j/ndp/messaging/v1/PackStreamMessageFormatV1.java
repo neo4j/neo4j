@@ -60,6 +60,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
     public static final char NODE = 'N';
     public static final char RELATIONSHIP = 'R';
     public static final char PATH = 'P';
+    public static final char IDENTITY = 'I';
 
     @Override
     public MessageFormat.Writer newWriter()
@@ -349,7 +350,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             {
                 Node node = (Node) obj;
                 packer.packStructHeader( 3, NODE );
-                packer.pack( "node/" + node.getId() );
+                packNodeIdentity( node.getId() );
 
                 Collection<Label> labels = Iterables.toList( node.getLabels() );
                 packer.packListHeader( labels.size() );
@@ -370,9 +371,10 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             {
                 Relationship rel = (Relationship) obj;
                 packer.packStructHeader( 5, RELATIONSHIP );
-                packer.pack( "rel/" + rel.getId() );
-                packer.pack( "node/" + rel.getStartNode().getId() );
-                packer.pack( "node/" + rel.getEndNode().getId() );
+
+                packRelIdentity( rel.getId() );
+                packNodeIdentity( rel.getStartNode().getId() );
+                packNodeIdentity( rel.getEndNode().getId() );
 
                 packer.pack( rel.getType().name() );
 
@@ -399,6 +401,18 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 throw new RuntimeException( "Unpackable value " + obj.toString() + " of type " + obj.getClass()
                         .getName() );
             }
+        }
+
+        private void packRelIdentity( long relId ) throws IOException
+        {
+            packer.packStructHeader( 1, IDENTITY );
+            packer.pack( "rel/" + relId );
+        }
+
+        private void packNodeIdentity( long nodeId ) throws IOException
+        {
+            packer.packStructHeader( 1, IDENTITY );
+            packer.pack( "node/" + nodeId );
         }
     }
 
@@ -606,7 +620,7 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 {
                 case NODE:
                 {
-                    String urn = unpacker.unpackString();
+                    String urn = unpackIdentity();
 
                     int numLabels = (int) unpacker.unpackListHeader();
                     List<Label> labels;
@@ -629,9 +643,9 @@ public class PackStreamMessageFormatV1 implements MessageFormat
                 }
                 case RELATIONSHIP:
                 {
-                    String urn = unpacker.unpackString();
-                    String startUrn = unpacker.unpackString();
-                    String endUrn = unpacker.unpackString();
+                    String urn = unpackIdentity();
+                    String startUrn = unpackIdentity();
+                    String endUrn = unpackIdentity();
                     String relType = unpacker.unpackString();
 
                     Map<String,Object> props = unpackProperties();
@@ -660,6 +674,17 @@ public class PackStreamMessageFormatV1 implements MessageFormat
             default:
                 throw new IOException( "Unknown value type: " + valType );
             }
+        }
+
+        private String unpackIdentity() throws IOException
+        {
+            unpacker.unpackStructHeader();
+            char sig = unpacker.unpackStructSignature();
+            if(sig != IDENTITY)
+            {
+                throw new IOException( "Expected identity, found: " + sig );
+            }
+            return unpacker.unpackString();
         }
 
         private Map<String,Object> unpackProperties() throws IOException
