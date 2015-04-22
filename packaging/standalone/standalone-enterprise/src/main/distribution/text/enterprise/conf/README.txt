@@ -3,8 +3,6 @@ ${product.fullname} Configuration
 
 ${product.fullname} configuration files.
 
-* custom-logback.xml                 -- logging system configuration for the database
-                                        process using standard logback options
 * neo4j-http-logging.xml             -- logging system configuration for the HTTP REST server
                                         using standard logback options
 * arbiter-wrapper.conf               -- environment and launch settings for the arbiter instance
