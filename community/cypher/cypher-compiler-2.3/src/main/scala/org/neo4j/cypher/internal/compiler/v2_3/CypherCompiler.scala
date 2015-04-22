@@ -78,11 +78,11 @@ object CypherCompilerFactory {
     val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
     val queryPlanner = new DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
 
-    val pickedPlannerName = plannerName.getOrElse(ConservativePlannerName)
+    val pickedPlannerName = plannerName.getOrElse(FallbackPlannerName)
     val planner = CostBasedPipeBuilderFactory(monitors, metricsFactory, planningMonitor, clock, queryPlanner = queryPlanner, rewriterSequencer = rewriterSequencer, plannerName = pickedPlannerName, runtimeName = runtimeName)
     // falling back to legacy planner is allowed only when no cost-based planner is picked explicitly (e.g., COST, IDP)
     val pipeBuilder = pickedPlannerName match {
-      case ConservativePlannerName =>
+      case FallbackPlannerName =>
         new LegacyVsNewExecutablePlanBuilder(new LegacyExecutablePlanBuilder(monitors, rewriterSequencer), planner, planBuilderMonitor)
       case _ =>
         new ErrorReportingExecutablePlanBuilder(planner)

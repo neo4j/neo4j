@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3
 
 sealed abstract class RuntimeName {
   def name: String
+  def toTextOutput: String = name
 }
 
 case object InterpretedRuntimeName extends RuntimeName {

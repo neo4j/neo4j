@@ -27,7 +27,7 @@ sealed abstract class RuntimePreParserOption(val name: String) extends PreParser
 case class VersionOption(version: String) extends PreParserOption
 case object ProfileOption extends ExecutionModePreParserOption("profile")
 case object ExplainOption extends ExecutionModePreParserOption("explain")
-case object CostPlannerOption extends PlannerPreParserOption("cost")
+case object GreedyPlannerOption extends PlannerPreParserOption("greedy")
 case object RulePlannerOption extends PlannerPreParserOption("rule")
 case object IDPPlannerOption extends PlannerPreParserOption("idp")
 case object DPPlannerOption extends PlannerPreParserOption("dp")

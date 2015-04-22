@@ -45,10 +45,11 @@ case class CypherPreParser(monitor: ParserMonitor[PreParsedStatement]) extends P
   }
 
   def PlannerOption: Rule1[PreParserOption] = rule("planner option") (
-    option("planner", "cost") ~ push(CostPlannerOption)
-  | option("planner", "rule") ~ push(RulePlannerOption)
-  | option("planner", "idp") ~ push(IDPPlannerOption)
-  | option("planner", "dp") ~ push(DPPlannerOption)
+      option("planner", "cost") ~ push(GreedyPlannerOption)
+    | option("planner", "greedy") ~ push(GreedyPlannerOption)
+    | option("planner", "rule") ~ push(RulePlannerOption)
+    | option("planner", "idp") ~ push(IDPPlannerOption)
+    | option("planner", "dp") ~ push(DPPlannerOption)
   )
 
   def RuntimeOption = rule("runtime option")(
@@ -58,10 +59,11 @@ case class CypherPreParser(monitor: ParserMonitor[PreParsedStatement]) extends P
 
   @deprecated
   def PlannerDeprecated = rule("PLANNER") (
-    keyword("PLANNER COST") ~ push(CostPlannerOption)
-      | keyword("PLANNER IDP") ~ push(IDPPlannerOption)
-      | keyword("PLANNER DP") ~ push(DPPlannerOption)
-      | keyword("PLANNER RULE") ~ push(RulePlannerOption)
+      keyword("PLANNER COST") ~ push(GreedyPlannerOption)
+    | keyword("PLANNER GREEDY") ~ push(GreedyPlannerOption)
+    | keyword("PLANNER IDP") ~ push(IDPPlannerOption)
+    | keyword("PLANNER DP") ~ push(DPPlannerOption)
+    | keyword("PLANNER RULE") ~ push(RulePlannerOption)
   )
 
   def VersionNumber = rule("Version") {

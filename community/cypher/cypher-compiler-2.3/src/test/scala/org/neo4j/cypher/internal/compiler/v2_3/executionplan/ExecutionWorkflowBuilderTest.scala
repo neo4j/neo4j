@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.GraphDatabaseService
 
 class ExecutionWorkflowBuilderTest extends CypherFunSuite {
-  val PlannerName = CostPlannerName
+  val PlannerName = GreedyPlannerName
 
   test("produces eager results for updating queries") {
     // GIVEN

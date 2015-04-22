@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.compiler.v2_3.{ConservativePlannerName, CostPlannerName, CypherCompilerFactory, CypherException => CypherException_v2_3, DPPlannerName, ExplainMode => ExplainModev2_3, IDPPlannerName, InfoLogger, Monitors, NormalMode => NormalModev2_3, PlannerName, ProfileMode => ProfileModev2_3, _}
+import org.neo4j.cypher.internal.compiler.v2_3.{CypherCompilerFactory, CypherException => CypherException_v2_3, DPPlannerName, ExplainMode => ExplainModev2_3, GreedyPlannerName, IDPPlannerName, InfoLogger, Monitors, NormalMode => NormalModev2_3, PlannerName, ProfileMode => ProfileModev2_3, _}
 import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
 import org.neo4j.cypher.{ArithmeticException, CypherTypeException, EntityNotFoundException, FailedIndexException, IncomparableValuesException, IndexHintException, InternalException, InvalidArgumentException, InvalidSemanticsException, LabelScanHintException, LoadCsvStatusWrapCypherException, LoadExternalResourceException, MergeConstraintConflictException, NodeStillHasRelationshipsException, ParameterNotFoundException, ParameterWrongTypeException, PatternException, PeriodicCommitInOpenTransactionException, ProfilerStatisticsNotReadyException, SyntaxException, UniquePathNotUniqueException, UnknownLabelException, _}
@@ -254,8 +254,10 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
       convert(
         inner.executionPlanDescription().
           addArgument(Version("CYPHER 2.3")).
-          addArgument(Planner(planner.name)).
-          addArgument(Runtime(runtime.name))
+          addArgument(Planner(planner.toTextOutput)).
+          addArgument(PlannerImpl(planner.name)).
+          addArgument(Runtime(runtime.toTextOutput)).
+          addArgument(RuntimeImpl(runtime.name))
     )
   }
 
@@ -307,7 +309,9 @@ case class CompatibilityPlanDescriptionFor2_3(inner: InternalPlanDescription, ve
 
   override def toString: String = {
     val NL = System.lineSeparator()
-    exceptionHandlerFor2_3.runSafely { s"Compiler CYPHER ${version.name}$NL${NL}Planner ${planner.name.toUpperCase}$NL${NL}Runtime ${runtime.name.toUpperCase}$NL$NL$inner" }
+    exceptionHandlerFor2_3.runSafely {
+      s"Compiler CYPHER ${version.name}$NL${NL}Planner ${planner.toTextOutput.toUpperCase}$NL${NL}Runtime ${runtime.toTextOutput.toUpperCase}$NL$NL$inner"
+    }
   }
 
   def asJava(in: ExtendedPlanDescription): javacompat.PlanDescription = new javacompat.PlanDescription {
@@ -352,7 +356,8 @@ case class CompatibilityFor2_3Cost(graph: GraphDatabaseService,
   protected val compiler = {
     val plannerName = planner match {
       case CypherPlanner.default => None
-      case CypherPlanner.cost => Some(CostPlannerName)
+      case CypherPlanner.cost => Some(GreedyPlannerName)
+      case CypherPlanner.greedy => Some(GreedyPlannerName)
       case CypherPlanner.idp => Some(IDPPlannerName)
       case CypherPlanner.dp => Some(DPPlannerName)
       case _ => throw new IllegalArgumentException(s"unknown cost based planner: ${planner.name}")
