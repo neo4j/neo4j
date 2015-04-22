@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.neo4j.concurrent.WorkSync;
 import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -100,6 +101,8 @@ public class NeoTransactionStoreApplierTest
     private final DynamicRecord one = DynamicRecord.dynamicRecord( 1, true );
     private final DynamicRecord two = DynamicRecord.dynamicRecord( 2, true );
     private final DynamicRecord three = DynamicRecord.dynamicRecord( 3, true );
+    private WorkSync<Provider<LabelScanWriter>,IndexTransactionApplier.LabelUpdateWork>
+            labelScanStoreSynchronizer = new WorkSync<>( labelScanStore );
 
     @Before
     public void setup()
@@ -574,7 +577,7 @@ public class NeoTransactionStoreApplierTest
         // given
         final NeoCommandHandler applier = newApplier( false );
         final NeoCommandHandler indexApplier = new IndexTransactionApplier( indexingService,
-                ValidatedIndexUpdates.NONE, labelScanStore, cacheAccess );
+                ValidatedIndexUpdates.NONE, labelScanStoreSynchronizer, cacheAccess );
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         record.setCreated();
         final Collection<DynamicRecord> recordsAfter = Arrays.asList( record );
@@ -761,7 +764,8 @@ public class NeoTransactionStoreApplierTest
 
     private NeoCommandHandler newIndexApplier( TransactionApplicationMode mode )
     {
-        return new IndexTransactionApplier( indexingService, ValidatedIndexUpdates.NONE, labelScanStore, cacheAccess );
+        return new IndexTransactionApplier(
+                indexingService, ValidatedIndexUpdates.NONE, labelScanStoreSynchronizer, cacheAccess );
     }
 
     @Test

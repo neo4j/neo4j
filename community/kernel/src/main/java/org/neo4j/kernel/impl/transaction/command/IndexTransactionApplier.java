@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.neo4j.concurrent.Work;
+import org.neo4j.concurrent.WorkSync;
 import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
@@ -55,15 +57,16 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
     private List<NodeLabelUpdate> labelUpdates;
 
     private final IndexingService indexingService;
-    private final Provider<LabelScanWriter> labelScanWriters;
     private final CacheAccessBackDoor cacheAccess;
+    private final WorkSync<Provider<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync;
 
     public IndexTransactionApplier( IndexingService indexingService, ValidatedIndexUpdates indexUpdates,
-            Provider<LabelScanWriter> labelScanWriters, CacheAccessBackDoor cacheAccess )
+                                    WorkSync<Provider<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync,
+                                    CacheAccessBackDoor cacheAccess )
     {
         this.indexingService = indexingService;
         this.indexUpdates = indexUpdates;
-        this.labelScanWriters = labelScanWriters;
+        this.labelScanStoreSync = labelScanStoreSync;
         this.cacheAccess = cacheAccess;
     }
 
@@ -101,17 +104,44 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
         }
     }
 
-    private void updateLabelScanStore() throws IOException, IndexCapacityExceededException
+    private void updateLabelScanStore()
     {
-        // Even if the node commands are sorted by node id, they are not totally ordered by node id,
-        // since created records comes before updated records, which comes before deleted records.
-        Collections.sort( labelUpdates, SORT_BY_NODE_ID );
+        // Updates are sorted according to node id here, an artifact of node commands being sorted
+        // by node id when extracting from TransactionRecordState.
+        labelScanStoreSync.apply(
+                new LabelUpdateWork( labelUpdates ) );
+    }
 
-        try ( LabelScanWriter writer = labelScanWriters.instance() )
+    public static class LabelUpdateWork implements Work<Provider<LabelScanWriter>,LabelUpdateWork>
+    {
+        private final List<NodeLabelUpdate> labelUpdates;
+
+        public LabelUpdateWork( List<NodeLabelUpdate> labelUpdates )
         {
-            for ( NodeLabelUpdate update : labelUpdates )
+            this.labelUpdates = labelUpdates;
+        }
+
+        @Override
+        public LabelUpdateWork combine( LabelUpdateWork work )
+        {
+            labelUpdates.addAll( work.labelUpdates );
+            return this;
+        }
+
+        @Override
+        public void apply( Provider<LabelScanWriter> labelScanStore )
+        {
+            Collections.sort( labelUpdates, SORT_BY_NODE_ID );
+            try ( LabelScanWriter writer = labelScanStore.instance() )
             {
-                writer.write( update );
+                for ( NodeLabelUpdate update : labelUpdates )
+                {
+                    writer.write( update );
+                }
+            }
+            catch ( Exception e )
+            {
+                throw new UnderlyingStorageException( e );
             }
         }
     }

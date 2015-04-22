@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.transaction.command.IndexTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.NeoStoreTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogNeoCommandReaderV2;
+import org.neo4j.concurrent.WorkSync;
 import org.neo4j.kernel.impl.transaction.log.CommandWriter;
 import org.neo4j.kernel.impl.transaction.log.InMemoryLogChannel;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
@@ -51,7 +52,6 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.store.UniquenessConstraintRule.uniquenessConstraintRule;
@@ -210,8 +210,10 @@ public class SchemaRuleCommandTest
     private final Provider<LabelScanWriter> labelScanStore = mock( Provider.class );
     private final NeoStoreTransactionApplier storeApplier = new NeoStoreTransactionApplier( neoStore,
             mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE, new LockGroup(), txId );
+    private WorkSync<Provider<LabelScanWriter>,IndexTransactionApplier.LabelUpdateWork> labelScanStoreSynchronizer =
+            new WorkSync<>( labelScanStore );
     private final IndexTransactionApplier indexApplier = new IndexTransactionApplier( indexes,
-            ValidatedIndexUpdates.NONE, labelScanStore, mock( CacheAccessBackDoor.class ) );
+            ValidatedIndexUpdates.NONE, labelScanStoreSynchronizer, mock( CacheAccessBackDoor.class ) );
     private final PhysicalLogNeoCommandReaderV2 reader = new PhysicalLogNeoCommandReaderV2();
     private final IndexRule rule = IndexRule.indexRule( id, labelId, propertyKey, PROVIDER_DESCRIPTOR );
 
@@ -235,7 +237,7 @@ public class SchemaRuleCommandTest
     private void assertSchemaRule( SchemaRuleCommand readSchemaCommand )
     {
         assertEquals( id, readSchemaCommand.getKey() );
-        assertEquals( labelId, ((IndexRule)readSchemaCommand.getSchemaRule()).getLabel() );
+        assertEquals( labelId, readSchemaCommand.getSchemaRule().getLabel() );
         assertEquals( propertyKey, ((IndexRule)readSchemaCommand.getSchemaRule()).getPropertyKey() );
     }
 

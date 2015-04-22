@@ -23,6 +23,8 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import org.neo4j.concurrent.WorkSync;
+import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -34,7 +36,6 @@ import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates.NONE;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
@@ -48,8 +49,10 @@ public class IndexTransactionApplierTest
         // GIVEN
         IndexingService indexing = mock( IndexingService.class );
         LabelScanWriter writer = new OrderVerifyingLabelScanWriter( 10, 15, 20 );
+        WorkSync<Provider<LabelScanWriter>,IndexTransactionApplier.LabelUpdateWork> labelScanSync =
+                new WorkSync<>( singletonProvider( writer ) );
         try ( IndexTransactionApplier applier = new IndexTransactionApplier( indexing, NONE,
-                singletonProvider( writer ), mock( CacheAccessBackDoor.class ) ) )
+                labelScanSync, mock( CacheAccessBackDoor.class ) ) )
         {
             // WHEN
             applier.visitNodeCommand( node( 15 ) );
