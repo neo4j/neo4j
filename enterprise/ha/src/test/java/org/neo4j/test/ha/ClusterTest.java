@@ -52,56 +52,6 @@ public class ClusterTest
     @Rule
     public LoggerRule logging = new LoggerRule( Level.OFF );
 
-    @Test
-    public void testCluster2() throws Throwable
-    {
-        Clusters.Cluster cluster = new Clusters.Cluster( "neo4j.ha" );
-        for ( int i = 0; i < 3; i++ )
-        {
-            cluster.getMembers().add( new Clusters.Member( "172.16.123.1:"+(5001 + i), true ) );
-        }
-        final Clusters clusters = new Clusters();
-        clusters.getClusters().add( cluster );
-
-        ClusterManager clusterManager = new ClusterManager( ClusterManager.provided( clusters ),
-                TargetDirectory.forTest( getClass() ).cleanDirectory( "testCluster" ),
-                MapUtil.stringMap( ClusterSettings.cluster_server.name(), "172.16.123.1:5001-5099",
-                        HaSettings.ha_server.name(), "172.16.123.1:6001-6005",
-                        HaSettings.tx_push_factor.name(), "2" ));
-        try
-        {
-            clusterManager.start();
-
-            clusterManager.getDefaultCluster().await( allSeesAllAsAvailable() );
-
-            GraphDatabaseAPI master = clusterManager.getDefaultCluster().getMaster();
-            Transaction tx = master.beginTx();
-            Node node = master.createNode();
-            long nodeId = node.getId();
-            node.setProperty( "foo", "bar" );
-            tx.success();
-            tx.finish();
-
-
-            HighlyAvailableGraphDatabase slave = clusterManager.getDefaultCluster().getAnySlave();
-            Transaction transaction = slave.beginTx();
-            try
-            {
-                node = slave.getNodeById( nodeId );
-                assertThat( node.getProperty( "foo" ).toString(), CoreMatchers.equalTo( "bar" ) );
-            }
-            finally
-            {
-                transaction.finish();
-            }
-
-            Thread.sleep(500*1000);
-        }
-        finally
-        {
-            clusterManager.stop();
-        }
-    }
 
     @Test
     public void testCluster() throws Throwable
