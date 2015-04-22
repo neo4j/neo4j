@@ -25,6 +25,8 @@ import java.util.Map;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.factory.DataSourceModule;
@@ -37,7 +39,9 @@ import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
@@ -101,22 +105,34 @@ public class GraphDatabaseFacadeFactoryTest
             protected PlatformModule createPlatform( Map<String, String> params, Dependencies dependencies,
                                                      GraphDatabaseFacade graphDatabaseFacade )
             {
-                PlatformModule module = new PlatformModule( mock( Map.class ), mock( Dependencies.class, RETURNS_MOCKS ),
+                final LifeSupport lifeMock = mock( LifeSupport.class );
+                doThrow( startupError ).when( lifeMock ).start();
+                doAnswer( new Answer()
+                {
+                    @Override
+                    public Object answer( InvocationOnMock invocationOnMock ) throws Throwable
+                    {
+                        return invocationOnMock.getArguments()[0];
+                    }
+                } ).when(lifeMock).add( any() );
+
+
+                PlatformModule module = new PlatformModule( mock( Map.class ),
+                        mock( Dependencies.class, RETURNS_MOCKS ),
                         mock( GraphDatabaseFacade.class ) )
                 {
                     @Override
                     public LifeSupport createLife()
                     {
-                        return mock( LifeSupport.class );
+                        return lifeMock;
                     }
 
                     @Override
                     public File getStoreDir()
                     {
-                        return mock( File.class );
+                        return dir.graphDbDir();
                     }
                 };
-                doThrow( startupError ).when( module.life ).start();
                 return module;
             }
 

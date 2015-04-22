@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -124,7 +125,7 @@ public abstract class GraphDatabaseFacadeFactory
         // Start it
         graphDatabaseFacade.init( platform, edition, dataSource );
 
-        boolean failed = false;
+        Throwable error = null;
         try
         {
             enableAvailabilityLogging( platform.availabilityGuard, platform.logging.getInternalLog( getClass() )
@@ -135,13 +136,12 @@ public abstract class GraphDatabaseFacadeFactory
         }
         catch ( final Throwable throwable )
         {
-            failed = true;
-            throw new RuntimeException( "Error starting " + getClass().getName() + ", "  + platform.storeDir.getAbsolutePath(),
-                    throwable );
+            error = new RuntimeException( "Error starting " + getClass().getName() + ", " +
+                    platform.storeDir.getAbsolutePath(), throwable );
         }
         finally
         {
-            if ( failed )
+            if ( error != null )
             {
                 try
                 {
@@ -149,9 +149,14 @@ public abstract class GraphDatabaseFacadeFactory
                 }
                 catch ( Throwable shutdownError )
                 {
-                    // Ignore
+                    error = Exceptions.withSuppressed( shutdownError, error );
                 }
             }
+        }
+
+        if ( error != null )
+        {
+            throw Exceptions.launderedException( error );
         }
 
         return graphDatabaseFacade;
