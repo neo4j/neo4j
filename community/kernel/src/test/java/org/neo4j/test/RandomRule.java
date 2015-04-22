@@ -25,6 +25,8 @@ import org.junit.runners.model.Statement;
 
 import java.util.Random;
 
+import org.neo4j.test.Randoms.Configuration;
+
 import static java.lang.System.currentTimeMillis;
 
 import static org.neo4j.helpers.Exceptions.withMessage;
@@ -32,12 +34,15 @@ import static org.neo4j.helpers.Exceptions.withMessage;
 /**
  * Like a {@link Random} but guarantees to include the seed with the test failure, which helps
  * greatly in debugging.
+ *
+ * Available methods directly on this class include those found in {@link Randoms} and the basic ones in {@link Random}.
  */
 public class RandomRule implements TestRule
 {
     private Long specificSeed;
     private long seed;
     private Random random;
+    private Randoms randoms;
 
     public RandomRule withSeed( long seed )
     {
@@ -67,10 +72,9 @@ public class RandomRule implements TestRule
         };
     }
 
-    public void reset()
-    {
-        random = new Random( seed );
-    }
+    // ============================
+    // Methods from Random
+    // ============================
 
     public void nextBytes( byte[] bytes )
     {
@@ -102,16 +106,6 @@ public class RandomRule implements TestRule
         return random.nextInt( n );
     }
 
-    /**
-     * For example nextIntBetween( 2, 8 ) can give values between 2-8, all included.
-     */
-    public int nextIntBetween( int lowIncluded, int highIncluded )
-    {
-        int diff = highIncluded-lowIncluded;
-        assert diff > 0;
-        return lowIncluded + random.nextInt( diff+1 );
-    }
-
     public double nextGaussian()
     {
         return random.nextGaussian();
@@ -122,6 +116,66 @@ public class RandomRule implements TestRule
         return random.nextLong();
     }
 
+    // ============================
+    // Methods from Randoms
+    // ============================
+
+    public int intBetween( int min, int max )
+    {
+        return randoms.intBetween( min, max );
+    }
+
+    public String string()
+    {
+        return randoms.string();
+    }
+
+    public String string( int minLength, int maxLength, int characterSets )
+    {
+        return randoms.string( minLength, maxLength, characterSets );
+    }
+
+    @Override
+    public boolean equals( Object obj )
+    {
+        return randoms.equals( obj );
+    }
+
+    public char character( int characterSets )
+    {
+        return randoms.character( characterSets );
+    }
+
+    public <T> T[] selection( T[] among, int min, int max, boolean allowDuplicates )
+    {
+        return randoms.selection( among, min, max, allowDuplicates );
+    }
+
+    public <T> T among( T[] among )
+    {
+        return randoms.among( among );
+    }
+
+    public Object propertyValue()
+    {
+        return randoms.propertyValue();
+    }
+
+    // ============================
+    // Other utility methods
+    // ============================
+
+    public void reset()
+    {
+        random = new Random( seed );
+        randoms = new Randoms( random, Randoms.DEFAULT );
+    }
+
+    public Randoms fork( Configuration configuration )
+    {
+        return randoms.fork( configuration );
+    }
+
     public long seed()
     {
         return seed;
@@ -130,5 +184,10 @@ public class RandomRule implements TestRule
     public Random random()
     {
         return random;
+    }
+
+    public Randoms randoms()
+    {
+        return randoms;
     }
 }
