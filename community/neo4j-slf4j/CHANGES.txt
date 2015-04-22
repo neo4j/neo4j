@@ -1,0 +1,3 @@
+2.3
+---
+o Initial creation of component
