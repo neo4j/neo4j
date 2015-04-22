@@ -19,9 +19,6 @@
  */
 package org.neo4j.cluster.com;
 
-import static org.neo4j.cluster.com.NetworkReceiver.CLUSTER_SCHEME;
-import static org.neo4j.helpers.NamedThreadFactory.daemon;
-
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -50,12 +47,14 @@ import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
+import org.jboss.netty.channel.WriteCompletionEvent;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
 import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
+
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageSender;
 import org.neo4j.cluster.com.message.MessageType;
@@ -65,6 +64,9 @@ import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+
+import static org.neo4j.cluster.com.NetworkReceiver.CLUSTER_SCHEME;
+import static org.neo4j.helpers.NamedThreadFactory.daemon;
 
 /**
  * TCP version of sending messages. This handles sending messages from state machines to other instances
@@ -424,6 +426,8 @@ public class NetworkSender
     private class NetworkMessageSender
             extends SimpleChannelHandler
     {
+        private Throwable lastException;
+
         @Override
         public void channelConnected( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
         {
@@ -445,8 +449,24 @@ public class NetworkSender
             Throwable cause = e.getCause();
             if ( !(cause instanceof ConnectException || cause instanceof RejectedExecutionException) )
             {
-                msgLog.error( "Receive exception:", cause );
+                // If we keep getting the same exception, only output the first one
+                if (lastException != null && !lastException.getClass().equals( cause.getClass() ))
+                {
+                    msgLog.error( "Receive exception:", cause );
+                    lastException = cause;
+                }
             }
+        }
+
+        @Override
+        public void writeComplete( ChannelHandlerContext ctx, WriteCompletionEvent e ) throws Exception
+        {
+            if (lastException != null)
+            {
+                msgLog.error( "Recovered from:", lastException);
+                lastException = null;
+            }
+            super.writeComplete( ctx, e );
         }
     }
 }
