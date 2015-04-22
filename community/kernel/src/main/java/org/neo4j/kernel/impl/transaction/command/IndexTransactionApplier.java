@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.command;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.helpers.Provider;
@@ -40,6 +41,7 @@ import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
+import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.SORT_BY_NODE_ID;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
 /**
@@ -97,8 +99,10 @@ public class IndexTransactionApplier extends NeoCommandHandler.Adapter
 
     private void updateLabelScanStore() throws IOException, IndexCapacityExceededException
     {
-        // Updates are sorted according to node id here, an artifact of node commands being sorted
-        // by node id when extracting from TransactionRecordState.
+        // Even if the node commands are sorted by node id, they are not totally ordered by node id,
+        // since created records comes before updated records, which comes before deleted records.
+        Collections.sort( labelUpdates, SORT_BY_NODE_ID );
+
         try ( LabelScanWriter writer = labelScanWriters.instance() )
         {
             for ( NodeLabelUpdate update : labelUpdates )
