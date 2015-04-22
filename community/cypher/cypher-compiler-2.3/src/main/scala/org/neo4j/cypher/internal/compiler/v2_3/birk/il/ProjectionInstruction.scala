@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.birk.il
 
-import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaTypes.{DOUBLE, LONG, OBJECT, OBJECTARRAY, STRING, NUMBER}
-import org.neo4j.cypher.internal.compiler.v2_3.birk.{CodeGenerator, JavaSymbol, Namer}
+import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaTypes.{DOUBLE, LONG, NUMBER, OBJECT, OBJECTARRAY, STRING}
+import org.neo4j.cypher.internal.compiler.v2_3.birk.codegen.Namer
+import org.neo4j.cypher.internal.compiler.v2_3.birk.{CodeGenerator, JavaSymbol}
 
 sealed trait ProjectionInstruction extends Instruction {
   def projectedVariable: JavaSymbol
@@ -39,7 +40,7 @@ object ProjectionInstruction {
 }
 
 case class ProjectNodeProperty(token: Option[Int], propName: String, nodeIdVar: String, namer: Namer) extends ProjectionInstruction {
-  private val propKeyVar = token.map(_.toString).getOrElse(namer.next())
+  private val propKeyVar = token.map(_.toString).getOrElse(namer.newVarName())
 
   def generateInit() = if (token.isEmpty)
       s"""if ( $propKeyVar == -1 )
@@ -58,7 +59,7 @@ case class ProjectNodeProperty(token: Option[Int], propName: String, nodeIdVar: 
 }
 
 case class ProjectRelProperty(token: Option[Int], propName: String, relIdVar: String, namer: Namer) extends ProjectionInstruction {
-  private val propKeyVar = token.map(_.toString).getOrElse(namer.next())
+  private val propKeyVar = token.map(_.toString).getOrElse(namer.newVarName())
 
   def generateInit() =
     if (token.isEmpty)

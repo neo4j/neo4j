@@ -22,10 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_3.birk
 import java.util
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.neo4j.cypher.internal.compiler.v2_3.ExecutionMode
-import org.neo4j.cypher.internal.compiler.v2_3.CostPlannerName
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaTypes.{DOUBLE, INT, LONG, OBJECT, STRING}
+import org.neo4j.cypher.internal.compiler.v2_3.{CostPlannerName, ExecutionMode}
+import org.neo4j.cypher.internal.compiler.v2_3.birk.codegen.{CodeGenContext, Namer}
 import org.neo4j.cypher.internal.compiler.v2_3.birk.il._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledPlan, PlanFingerprint}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
@@ -39,11 +37,10 @@ import org.neo4j.helpers.Clock
 import org.neo4j.kernel.api.Statement
 
 import scala.collection.Map
-import scala.collection.immutable.Stack
 
 object CodeGenerator {
   def generateClass( instructions: Seq[Instruction] ) = {
-    val className = nextClassName()
+    val className = Namer.newClassName()
     val source = generateCodeFromInstructions(className, instructions)
 //    print(indentNicely(source))
     Javac.compile(s"$packageName.$className",source )
@@ -61,11 +58,6 @@ object CodeGenerator {
 
   private val packageName = "org.neo4j.cypher.internal.compiler.v2_3.birk.generated"
   private val nameCounter = new AtomicInteger(0)
-
-  private def nextClassName(): String = {
-    val x = nameCounter.getAndIncrement
-    s"GeneratedExecutionPlan$x"
-  }
 
   def indentNicely(in: String): String = {
 
@@ -177,159 +169,19 @@ object CodeGenerator {
   }
 
   private def createInstructions(plan: LogicalPlan, semanticTable: SemanticTable): Seq[Instruction] = {
-    var variables: Map[String, JavaSymbol] = Map.empty
-    var probeTables: Map[NodeHashJoin, CodeThunk] = Map.empty
-    val variableName = new Namer("v")
-    val methodName = new Namer("m")
+    import org.neo4j.cypher.internal.compiler.v2_3.birk.codegen.LogicalPlanConverter._
 
-    def produce(plan: LogicalPlan, stack: Stack[LogicalPlan]): (Option[JavaSymbol], Seq[Instruction]) = {
-      plan match {
-        case AllNodesScan(IdName(name), arguments) =>
-          val variable = variableName.nextWithType(LONG)
-          variables += (name -> variable)
-          val (methodHandle, actions) = consume(stack.top, plan, stack.pop)
-          (methodHandle, Seq(WhileLoop(variable, ScanAllNodes(), actions)))
-
-        case NodeByLabelScan(IdName(name), label, _) =>
-          val nodeVariable = variableName.nextWithType(LONG)
-          val labelToken = variableName.nextWithType(INT)
-          variables += (name -> nodeVariable)
-          val (methodHandle, actions) = consume(stack.top, plan, stack.pop)
-          (methodHandle, Seq(WhileLoop(nodeVariable, ScanForLabel(label.name, labelToken), actions)))
-
-        case NodeHashJoin(_, lhs, rhs) =>
-          val (Some(symbol), lAst) = produce(lhs, stack.push(plan))
-          val lhsMethod = MethodInvocation(symbol.name, symbol.javaType, methodName.next(), lAst)
-          val (x, r) = produce(rhs, stack.push(plan))
-          (x, lhsMethod +: r)
-
-        case e: SingleRow =>
-          val (methodHandle, actions) = consume(stack.top, plan, stack.pop)
-          (methodHandle, Seq(actions))
-
-        case _: ProduceResult | _: Expand | _: Projection =>
-          produce(plan.lhs.get, stack.push(plan))
-
-        case _ => throw new CantCompileQueryException(s"$plan is not yet supported")
-      }
-    }
-
-    def consume(plan: LogicalPlan, from: LogicalPlan, stack: Stack[LogicalPlan]): (Option[JavaSymbol], Instruction) = {
-      plan match {
-        case ProduceResult(nodes, rels, other, _) =>
-          (None, ProduceResults(nodes.map(c => c -> variables(c).name).toMap,
-            rels.map(c => c -> variables(c).name).toMap,
-            other.map(c => c -> variables(c).name).toMap))
-
-        case join@NodeHashJoin(nodes, lhs, rhs) if from eq lhs =>
-          val nodeId = variables(nodes.head.name)
-          val probeTableName = variableName.next()
-          val symbols = (lhs.availableSymbols.map(_.name) intersect variables.keySet diff nodes.map(_.name)).map(s => s -> variables(s)).toMap
-
-          val probeTable = BuildProbeTable(probeTableName, nodeId.name, symbols, variableName)
-          val probeTableSymbol = JavaSymbol(probeTableName, probeTable.producedType)
-
-          probeTables += (join -> probeTable.generateFetchCode)
-
-          (Some(probeTableSymbol), probeTable)
-
-        case join@NodeHashJoin(nodes, lhs, rhs) if from eq rhs =>
-          val nodeId = variables(nodes.head.name)
-          val thunk = probeTables(join)
-          thunk.vars foreach(variables += _)
-          val (x, action) = consume(stack.top, plan, stack.pop)
-
-          (x, GetMatchesFromProbeTable(nodeId.name, thunk, action))
-
-        case Expand(_, IdName(fromNode), dir, relTypes, IdName(to), IdName(rel), ExpandAll) =>
-          val relVar = variableName.nextWithType(LONG)
-          val nodeVar = variableName.nextWithType(LONG)
-          variables  += rel -> relVar
-          variables  += to -> nodeVar
-
-          val (x, action) = consume(stack.top, plan, stack.pop)
-          (x, WhileLoop(relVar, ExpandC(variables(fromNode).name, relVar.name, dir, relTypes.map(t => variableName.next -> t.name).toMap,nodeVar.name, action), Instruction.empty))
-
-        case Projection(_, expressions)  =>
-          def findProjectionInstruction(expression: Expression): ProjectionInstruction = expression match {
-                case nodeOrRel@Identifier(name) if semanticTable.isNode(nodeOrRel) || semanticTable.isRelationship(nodeOrRel) =>
-                  ProjectNodeOrRelationship(variables(name))
-
-                case Property(node@Identifier(name), propKey) if semanticTable.isNode(node) =>
-                  val token = propKey.id(semanticTable).map(_.id)
-                  ProjectNodeProperty(token, propKey.name, variables(name).name, variableName)
-
-                case Property(rel@Identifier(name), propKey) if semanticTable.isRelationship(rel) =>
-                  val token = propKey.id(semanticTable).map(_.id)
-                  ProjectRelProperty(token, propKey.name, variables(name).name, variableName)
-
-                case Parameter(name) => ProjectParameter(name)
-
-                case lit: IntegerLiteral =>
-                  ProjectLiteral(JavaSymbol(s"${lit.value.toString}L", LONG))
-
-                case lit: DoubleLiteral =>
-                  ProjectLiteral(JavaSymbol(lit.value.toString, DOUBLE))
-
-                case lit: StringLiteral =>
-                  ProjectLiteral(JavaSymbol(s""""${lit.value}"""", STRING))
-
-                case lit: Literal =>
-                  ProjectLiteral(JavaSymbol(lit.value.toString, OBJECT))
-
-                case Collection(exprs) =>
-                  ProjectCollection(exprs.map(findProjectionInstruction))
-
-                case Add(lhs, rhs) =>
-                  val leftOp = findProjectionInstruction(lhs)
-                  val rightOp = findProjectionInstruction(rhs)
-                  ProjectAddition(leftOp, rightOp)
-
-                case Subtract(lhs, rhs) =>
-                  val leftOp = findProjectionInstruction(lhs)
-                  val rightOp = findProjectionInstruction(rhs)
-                  ProjectSubtraction(leftOp, rightOp)
-
-                case other => throw new CantCompileQueryException(s"Projections of $other not yet supported")
-              }
-
-          val projectionInstructions = expressions.map {
-              case (identifier, expression) =>
-                val instruction = findProjectionInstruction(expression)
-                variables += identifier -> instruction.projectedVariable
-                instruction
-            }.toSeq
-
-          val (x, action) = consume(stack.top, plan, stack.pop)
-
-          (x, ProjectProperties(projectionInstructions, action))
-
-        case _ => throw new CantCompileQueryException(s"$plan is not yet supported")
-      }
-    }
-
-    val (_, result) = produce(plan, Stack.empty)
-
+    val (_, result) = plan.asCodeGenPlan.produce(CodeGenContext(semanticTable))
     result
   }
-}
-
-class Namer(prefix: String) {
-  var varCounter = 0
-
-  def next(): String = {
-    varCounter += 1
-    prefix + varCounter
-  }
-
-  def nextWithType(typ: String): JavaSymbol = JavaSymbol(next(), typ)
 }
 
 case class JavaSymbol(name: String, javaType: String)
 
 class CodeGenerator {
 
-  import CodeGenerator.{generateClass, createInstructions}
+  import CodeGenerator.{createInstructions, generateClass}
+
   import scala.collection.JavaConverters._
 
   def generate(plan: LogicalPlan, planContext: PlanContext, clock: Clock, semanticTable: SemanticTable) = {
@@ -368,6 +220,5 @@ class CodeGenerator {
     case iter: Map[_, _] => Eagerly.immutableMapValues( iter, javaValue ).asJava
     case x: Any => x.asInstanceOf[AnyRef]
   }
-
 
 }
