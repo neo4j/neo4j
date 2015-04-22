@@ -116,7 +116,7 @@ class ExecutionEngineIT extends CypherFunSuite {
 
     //then
     plan.getArguments.get("planner") should equal("COST")
-    plan.getArguments.get("planner-impl") should equal("GREEDY")
+    plan.getArguments.get("planner-impl") should equal("IDP")
   }
 
   test("should throw error if using COST for older versions") {

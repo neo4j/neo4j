@@ -356,7 +356,7 @@ case class CompatibilityFor2_3Cost(graph: GraphDatabaseService,
   protected val compiler = {
     val plannerName = planner match {
       case CypherPlanner.default => None
-      case CypherPlanner.cost => Some(GreedyPlannerName)
+      case CypherPlanner.cost => Some(IDPPlannerName)
       case CypherPlanner.greedy => Some(GreedyPlannerName)
       case CypherPlanner.idp => Some(IDPPlannerName)
       case CypherPlanner.dp => Some(DPPlannerName)
