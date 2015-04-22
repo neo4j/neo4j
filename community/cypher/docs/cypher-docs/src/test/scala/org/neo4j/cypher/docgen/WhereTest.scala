@@ -82,7 +82,7 @@ class WhereTest extends DocumentingTestBase {
     testQuery(
       title = "Escaping in regular expressions",
       text = "If you need a forward slash inside of your regular expression, escape it. Remember that back slash needs " +
-             "to be escaped in string literals",
+             "to be escaped in string literals.",
       queryText = """match (n) where n.name =~ 'Some\\/thing' return n""",
       optionalResultExplanation = """No nodes match this regular expression.""",
       assertions = (p) => assertEquals(List(), p.toList))
@@ -95,6 +95,43 @@ class WhereTest extends DocumentingTestBase {
       queryText = """match (n) where n.name =~ '(?i)ANDR.*' return n""",
       optionalResultExplanation = """The node with name "+Andres+" is returned.""",
       assertions = (p) => assertEquals(List(Map("n" -> node("Andres"))), p.toList))
+  }
+
+  @Test def string_pattern_matching_case_sensitive() {
+    testQuery(
+      title = "Case-sensitive pattern matching",
+      text = "Use the `LIKE` keyword and the `%` wildcard character to do case-sensitive matching on a string suffixed by 0 or more characters:",
+      queryText = """match (n) where n.name LIKE 'Pet%' return n""",
+      optionalResultExplanation = """The "+Peter+" node will be returned.""",
+      assertions = (p) => assertEquals(List(node("Peter")), p.columnAs[Node]("n").toList))
+  }
+
+  @Test def string_pattern_matching_case_insensitive() {
+    testQuery(
+      title = "Case-insensitive pattern matching",
+      text = "Use the `ILIKE` keyword and the `_` wildcard character to do case-insensitive matching on a string suffixed by a single character:",
+      queryText = """match (n) where n.name ILIKE 'ANDRE_' return n""",
+      optionalResultExplanation = """The "+Andres+" node will be returned.""",
+      assertions = (p) => assertEquals(List(node("Andres")), p.columnAs[Node]("n").toList))
+  }
+
+  @Test def string_pattern_matching_negation() {
+    testQuery(
+      title = "Pattern matching negation",
+      text = "Use the `NOT` keyword to exclude all matches on given string from your result:",
+      queryText = """match (n) where n.name NOT LIKE '%s' return n""",
+      optionalResultExplanation = """The "+Peter+" node will be returned.""",
+      assertions = (p) => assertEquals(List(node("Peter")), p.columnAs[Node]("n").toList))
+  }
+
+  @Test def string_pattern_matching_escaped() {
+    testQuery(
+      title = "Escaping in pattern matching",
+      text = "If one of the wildcard characters (`%` or `_`) is needed inside your string, escape it. Remember that back slash needs " +
+        "to be escaped in string literals.",
+      queryText = """match (n) where n.email LIKE '%\_%' return n""",
+      optionalResultExplanation = """No nodes match this expression.""",
+      assertions = (p) => assertEquals(List(), p.toList))
   }
 
   @Test def has_property() {

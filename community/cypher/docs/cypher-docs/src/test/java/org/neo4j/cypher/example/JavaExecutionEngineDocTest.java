@@ -341,6 +341,26 @@ public class JavaExecutionEngineDocTest
         assertEquals( "Johan", n_column.next() );
     }
 
+    
+
+    @Test
+    public void exampleWithParameterCSCIStringPatternMatching() throws Exception
+    {
+        // START SNIPPET: exampleWithParameterCSCIStringPatternMatching
+        Map<String, Object> params = new HashMap<String, Object>();
+        params.put( "name", "Michael%" );
+        String query = "MATCH (n) WHERE n.name LIKE {name} RETURN n.name";
+        Result result = db.execute( query, params );
+        // END SNIPPET: exampleWithParameterCSCIStringPatternMatching
+        dumpToFile( "exampleWithParameterCSCIStringPatternMatching", query, params );
+
+        assertThat( result.columns(), hasItem( "n.name" ) );
+        Iterator<Object> n_column = result.columnAs( "n.name" );
+        assertEquals( "Michaela", n_column.next() );
+    }
+    
+    
+    
     @Test
     public void create_node_from_map() throws Exception
     {
