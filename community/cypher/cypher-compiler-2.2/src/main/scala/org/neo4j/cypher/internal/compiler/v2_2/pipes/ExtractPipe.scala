@@ -64,7 +64,7 @@ case class ExtractPipe(source: Pipe, expressions: Map[String, Expression], hack_
   /*
   Most of the time, we can execute expressions and put the results straight back into the original execution context.
   Some times, an expression we want to run can overwrite an identifier that already exists in the context. In these
-  cases, we need to run the expressions on the original execution context. Here we decide wich one it is we're dealing
+  cases, we need to run the expressions on the original execution context. Here we decide which one it is we're dealing
   with and hard code the version to use
    */
   val applyExpressions: (ExecutionContext, QueryState) => ExecutionContext = {

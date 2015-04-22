@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands
 
-import ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_2._
-import commands.{expressions => commandexpressions, values => commandvalues}
-import commands.expressions.{Expression => CommandExpression}
+import org.neo4j.cypher.internal.compiler.v2_2.ast.convert.commands.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_2.commands.expressions.{Expression => CommandExpression}
+import org.neo4j.cypher.internal.compiler.v2_2.commands.{expressions => commandexpressions, values => commandvalues}
 import org.neo4j.cypher.internal.compiler.v2_2.helpers.UnNamedNameGenerator
-import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.graphdb.Direction
+import org.neo4j.helpers.ThisShouldNotHappenError
 
 object PatternConverters {
 
@@ -37,7 +37,7 @@ object PatternConverters {
   }
 
   implicit class RelationshipsPatternConverter(val pattern: ast.RelationshipsPattern) extends AnyVal {
-    def asLegacyPatterns = pattern.element.asLegacyPatterns(makeOutgoing = true)
+    def asLegacyPatterns = pattern.element.asLegacyPatterns
     def asLegacyNamedPath = None
     def asLegacyCreates = pattern.element.asLegacyCreates
     def asAbstractPatterns = pattern.element.asAbstractPatterns
@@ -100,7 +100,7 @@ object PatternConverters {
 
   implicit class EveryPathConverter(val part: ast.EveryPath) extends AnyVal {
     def asLegacyPatterns(maybePathName: Option[String]): Seq[commands.Pattern] =
-      part.element.asLegacyPatterns(maybePathName.isEmpty)
+      part.element.asLegacyPatterns
 
     def asLegacyNamedPath(pathName: String) =
       Some(commands.NamedPath(pathName, part.element.asAbstractPatterns:_*))
@@ -136,9 +136,9 @@ object PatternConverters {
   }
 
   implicit class PatternElementConverter(val element: ast.PatternElement) extends AnyVal {
-    def asLegacyPatterns(makeOutgoing: Boolean): Seq[commands.Pattern] = element match {
+    def asLegacyPatterns: Seq[commands.Pattern] = element match {
       case element: ast.RelationshipChain =>
-        RelationshipChainConverter(element).asLegacyPatterns(makeOutgoing)
+        RelationshipChainConverter(element).asLegacyPatterns
       case element: ast.NodePattern =>
         NodePatternConverter(element).asLegacyPatterns
     }
@@ -159,15 +159,15 @@ object PatternConverters {
   }
 
   implicit class RelationshipChainConverter(val chain: ast.RelationshipChain) extends AnyVal {
-    def asLegacyPatterns(makeOutgoing: Boolean): Seq[commands.Pattern] = {
+    def asLegacyPatterns: Seq[commands.Pattern] = {
       val (patterns, leftNode) = chain.element match {
         case node: ast.NodePattern            =>
           (Vector(), node)
         case leftChain: ast.RelationshipChain =>
-          (leftChain.asLegacyPatterns(makeOutgoing), leftChain.rightNode)
+          (leftChain.asLegacyPatterns, leftChain.rightNode)
       }
 
-      patterns :+ chain.relationship.asLegacyPattern(leftNode, chain.rightNode, makeOutgoing)
+      patterns :+ chain.relationship.asLegacyPattern(leftNode, chain.rightNode)
     }
 
     def asLegacyCreates: Seq[mutation.CreateRelationship] = {
@@ -251,15 +251,7 @@ object PatternConverters {
   }
 
   implicit class RelationshipPatternConverter(val relationship: ast.RelationshipPattern) extends AnyVal {
-    def asLegacyPattern(leftNode: ast.NodePattern, rightNode: ast.NodePattern, makeOutgoing: Boolean): commands.Pattern = {
-      val (left, right, dir) = if (!makeOutgoing) (leftNode, rightNode, relationship.direction)
-      else relationship.direction match {
-        case Direction.OUTGOING                                           => (leftNode, rightNode, relationship.direction)
-        case Direction.INCOMING                                           => (rightNode, leftNode, Direction.OUTGOING)
-        case Direction.BOTH if leftNode.legacyName < rightNode.legacyName => (leftNode, rightNode, relationship.direction)
-        case Direction.BOTH                                               => (rightNode, leftNode, relationship.direction)
-      }
-
+    def asLegacyPattern(leftNode: ast.NodePattern, rightNode: ast.NodePattern): commands.Pattern = {
       relationship.length match {
         case Some(maybeRange) =>
           val pathName = UnNamedNameGenerator.name(relationship.position)
@@ -268,11 +260,11 @@ object PatternConverters {
             case None        => (None, None)
           }
           val relIterator = relationship.identifier.map(_.name)
-          commands.VarLengthRelatedTo(pathName, left.asLegacyNode, right.asLegacyNode, min, max,
-            relationship.types.map(_.name).distinct, dir, relIterator, properties = legacyProperties)
+          commands.VarLengthRelatedTo(pathName, leftNode.asLegacyNode, rightNode.asLegacyNode, min, max,
+            relationship.types.map(_.name).distinct, relationship.direction, relIterator, properties = legacyProperties)
         case None             =>
-          commands.RelatedTo(left.asLegacyNode, right.asLegacyNode, relationship.legacyName,
-            relationship.types.map(_.name).distinct, dir, legacyProperties)
+          commands.RelatedTo(leftNode.asLegacyNode, rightNode.asLegacyNode, relationship.legacyName,
+            relationship.types.map(_.name).distinct, relationship.direction, legacyProperties)
       }
     }
 

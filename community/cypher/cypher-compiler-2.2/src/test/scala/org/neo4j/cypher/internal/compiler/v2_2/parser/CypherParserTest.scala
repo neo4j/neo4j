@@ -448,7 +448,7 @@ class CypherParserTest extends CypherFunSuite {
       "start a = NODE(1) match a <-[:KNOWS]- (b) return a, b",
       Query.
         start(NodeById("a", 1)).
-        matches(RelatedTo("b", "a", "  UNNAMED26", Seq("KNOWS"), Direction.OUTGOING)).
+        matches(RelatedTo("a", "b", "  UNNAMED26", Seq("KNOWS"), Direction.INCOMING)).
         returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b"))
     )
   }
@@ -460,15 +460,15 @@ class CypherParserTest extends CypherFunSuite {
       start(NodeById("a", 1), NodeById("b", 2)).
       matches(
         RelatedTo(SingleNode("a"), SingleNode("X"), "r1", Seq(), Direction.OUTGOING, Map.empty),
-        RelatedTo(SingleNode("b"), SingleNode("X"), "r2", Seq(), Direction.OUTGOING, Map.empty),
-        RelatedTo(SingleNode("Z"), SingleNode("a"), "r3", Seq(), Direction.OUTGOING, Map.empty),
+        RelatedTo(SingleNode("X"), SingleNode("b"), "r2", Seq(), Direction.INCOMING, Map.empty),
+        RelatedTo(SingleNode("a"), SingleNode("Z"), "r3", Seq(), Direction.INCOMING, Map.empty),
         RelatedTo(SingleNode("Z"), SingleNode("b"), "r4", Seq(), Direction.OUTGOING, Map.empty)
       ).makeOptional().
       orderBy(
-        SortItem(IdFunction(Identifier("r1")), true),
-        SortItem(IdFunction(Identifier("r2")), true),
-        SortItem(IdFunction(Identifier("r3")), true),
-        SortItem(IdFunction(Identifier("r4")), true)
+        SortItem(IdFunction(Identifier("r1")), ascending = true),
+        SortItem(IdFunction(Identifier("r2")), ascending = true),
+        SortItem(IdFunction(Identifier("r3")), ascending = true),
+        SortItem(IdFunction(Identifier("r4")), ascending = true)
       ).returns(
         ReturnItem(Identifier("r1"), "r1"),
         ReturnItem(Identifier("r2"), "r2"),
@@ -650,8 +650,8 @@ class CypherParserTest extends CypherFunSuite {
       "start n = node(0) match (n)-[r:KNOWS]-(c) return n, count(c) as cnt order by cnt",
       Query.
         start(NodeById("n", 0)).
-        matches(RelatedTo("c", "n", "r", Seq("KNOWS"), Direction.BOTH)).
-        orderBy(SortItem(Identifier("cnt"), true)).
+        matches(RelatedTo("n", "c", "r", Seq("KNOWS"), Direction.BOTH)).
+        orderBy(SortItem(Identifier("cnt"), ascending = true)).
         aggregation(Count(Identifier("c"))).
         returns(ReturnItem(Identifier("n"), "n"), ReturnItem(Count(Identifier("c")), "cnt")))
   }
@@ -824,15 +824,6 @@ class CypherParserTest extends CypherFunSuite {
         matches(RelatedTo("n", "x", "r", Seq(), Direction.OUTGOING)).
         namedPaths(NamedPath("p", ParsedRelation("r", "n", "x", Seq.empty, Direction.OUTGOING))).
         returns(ReturnItem(RelationshipFunction(Identifier("p")), "RELATIONSHIPS(p)")))
-  }
-
-  test("makeDirectionOutgoing") {
-    expectQuery(
-      "START a=node(1) match b<-[r]-a return b",
-      Query.
-        start(NodeById("a", 1)).
-        matches(RelatedTo("a", "b", "r", Seq(), Direction.OUTGOING)).
-        returns(ReturnItem(Identifier("b"), "b")))
   }
 
   test("keepDirectionForNamedPaths") {
@@ -2958,8 +2949,8 @@ class CypherParserTest extends CypherFunSuite {
     expectQuery("match (a)<-[r1:REL1]-(b)<-[r2:REL2]-(c) return a, b, c",
       Query.
         matches(
-        RelatedTo("b", "a", "r1", Seq("REL1"), Direction.OUTGOING),
-        RelatedTo("c", "b", "r2", Seq("REL2"), Direction.OUTGOING)).
+        RelatedTo("a", "b", "r1", Seq("REL1"), Direction.INCOMING),
+        RelatedTo("b", "c", "r2", Seq("REL2"), Direction.INCOMING)).
         returns(ReturnItem(Identifier("a"), "a"), ReturnItem(Identifier("b"), "b"), ReturnItem(Identifier("c"), "c"))
     )
   }
@@ -3035,7 +3026,7 @@ class CypherParserTest extends CypherFunSuite {
   }
 
   test("should handle optional match following optional match") {
-    val last = Query.matches(RelatedTo("c", "n", "r2", Seq.empty, Direction.OUTGOING)).makeOptional().returns(AllIdentifiers())
+    val last = Query.matches(RelatedTo("n", "c", "r2", Seq.empty, Direction.INCOMING)).makeOptional().returns(AllIdentifiers())
     val second = Query.matches(RelatedTo("n", "b", "r1", Seq.empty, Direction.OUTGOING)).makeOptional().tail(last).returns(AllIdentifiers())
     val first = Query.matches(SingleNode("n")).tail(second).returns(AllIdentifiers())
 

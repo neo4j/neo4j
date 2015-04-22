@@ -26,6 +26,17 @@ import scala.collection.JavaConverters._
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
+  test("path query should return results in written order") {
+    val a = createLabeledNode("label1")
+    val b = createLabeledNode("label2")
+    val r = relate(b, a)
+
+    val query = "MATCH (a:label1) RETURN (a)<--(:label2) AS p"
+
+    val result = executeWithAllPlanners(query)
+    result.toList should equal(Seq(Map("p" -> List(PathImpl(a, r, b)))))
+  }
+
   test("Get node degree via length of pattern expression") {
     val node = createLabeledNode("X")
     relate(node, createNode())
