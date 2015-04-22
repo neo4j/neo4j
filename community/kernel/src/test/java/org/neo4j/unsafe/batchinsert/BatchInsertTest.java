@@ -55,6 +55,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -89,11 +90,11 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreProvider;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static java.lang.Integer.parseInt;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -107,9 +108,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
-import static java.lang.Integer.parseInt;
-
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
@@ -182,9 +180,12 @@ public class BatchInsertTest
         properties.put( "key18", new char[] {1,2,3,4,5,6,7,8,9} );
     }
 
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    private FileSystemAbstraction fs = new org.neo4j.io.fs.DefaultFileSystemAbstraction();
 
-    @Rule public final PageCacheRule pageCacheRule = new PageCacheRule();
+    @Rule
+    public TargetDirectory.TestDirectory storeDir = TargetDirectory.testDirForTest( getClass() );
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
 
     private Map<String, String> configuration()
     {
@@ -193,21 +194,21 @@ public class BatchInsertTest
 
     private BatchInserter newBatchInserter()
     {
-        return BatchInserters.inserter( new File("neo-batch-db").getAbsolutePath(), fs.get(), configuration() );
+        return BatchInserters.inserter( storeDir.absolutePath(), fs, configuration() );
     }
 
     private BatchInserter newBatchInserterWithSchemaIndexProvider( KernelExtensionFactory<?> provider )
     {
         List<KernelExtensionFactory<?>> extensions = Arrays.asList(
                 provider, new InMemoryLabelScanStoreExtension() );
-        return BatchInserters.inserter( "neo-batch-db", fs.get(), configuration(), extensions );
+        return BatchInserters.inserter( storeDir.absolutePath(), fs, configuration(), extensions );
     }
 
     private BatchInserter newBatchInserterWithLabelScanStore( KernelExtensionFactory<?> provider )
     {
         List<KernelExtensionFactory<?>> extensions = Arrays.asList(
                 new InMemoryIndexProviderFactory(), provider );
-        return BatchInserters.inserter( "neo-batch-db", fs.get(), configuration(), extensions );
+        return BatchInserters.inserter( storeDir.absolutePath(), fs, configuration(), extensions );
     }
 
     @Test
@@ -288,7 +289,7 @@ public class BatchInsertTest
     {
         inserter.shutdown();
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-        factory.setFileSystem( fs.get() );
+        factory.setFileSystem( fs );
         return factory.newImpermanentDatabaseBuilder( inserter.getStoreDir() )
                 // Shouldn't be necessary to set dense node threshold since it's a stick config
                 .setConfig( configuration() )
@@ -299,8 +300,8 @@ public class BatchInsertTest
     {
         inserter.shutdown();
         File dir = new File( inserter.getStoreDir() );
-        PageCache pageCache = pageCacheRule.getPageCache( fs.get() );
-        StoreFactory storeFactory = new StoreFactory( fs.get(), dir, pageCache, StringLogger.DEV_NULL, new Monitors() );
+        PageCache pageCache = pageCacheRule.getPageCache( fs );
+        StoreFactory storeFactory = new StoreFactory( fs, dir, pageCache, StringLogger.DEV_NULL, new Monitors() );
         return storeFactory.newNeoStore( false );
     }
 
