@@ -297,11 +297,6 @@ public class StoreCopyClient
                 .newGraphDatabase();
     }
 
-    String logConfigFileName()
-    {
-        return "neo4j-backup-logback.xml";
-    }
-
     private StoreWriter decorateWithProgressIndicator( final StoreWriter actual )
     {
         return new StoreWriter()

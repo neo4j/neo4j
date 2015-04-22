@@ -13,6 +13,9 @@ o Object cache (i.e. node/relationship/property data cached as java objects in h
 o When setting properties on node/relationship existing property record chain is scanned for room
   to fit the new property before creating a new property record. This will have writes pay
   a small cost, but benefit readers as the property store will be more dense.
+o Replaced use of logback for internal logging with neo4j-logging API
+o Allow GraphDatabaseFactory to accept a LogProvider for user logging, allowing
+  programatic customization of user log output.
 
 2.2.1
 -----
