@@ -39,7 +39,7 @@ case class CompiledPlan(updating: Boolean,
                         periodicCommit: Option[PeriodicCommitInfo] = None,
                         fingerprint: Option[PlanFingerprint] = None,
                         plannerUsed: PlannerName,
-                        executionResultBuilder: (KernelStatement, GraphDatabaseService, ExecutionMode, Map[String, Any]) => InternalExecutionResult)
+                        executionResultBuilder: (KernelStatement, GraphDatabaseService, ExecutionMode, Map[String, Any], CompletionListener) => InternalExecutionResult)
 
 case class PipeInfo(pipe: Pipe,
                     updating: Boolean,
@@ -83,7 +83,9 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
 
       def run(queryContext: QueryContext, kernelStatement: KernelStatement,
                        planType: ExecutionMode, params: Map[String, Any]): InternalExecutionResult =
-        compiledPlan.executionResultBuilder(kernelStatement, graph, planType, params)
+        compiledPlan.executionResultBuilder(kernelStatement, graph, planType, params, new CompletionListener {
+          override def complete(success: Boolean) = queryContext.close(success)
+        })
 
       def plannerUsed: PlannerName = CostPlannerName
 
