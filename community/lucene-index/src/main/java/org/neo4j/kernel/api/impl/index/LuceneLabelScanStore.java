@@ -31,6 +31,8 @@ import org.apache.lucene.store.LockObtainFailedException;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.ResourceIterator;
@@ -61,6 +63,7 @@ public class LuceneLabelScanStore
     private boolean needsRebuild;
     private final File directoryLocation;
     private final FileSystemAbstraction fs;
+    private final Lock lock = new ReentrantLock( true );
 
     public interface Monitor
     {
@@ -169,14 +172,6 @@ public class LuceneLabelScanStore
     public AllEntriesLabelScanReader newAllEntriesReader()
     {
         return strategy.newNodeLabelReader( searcherManager );
-    }
-
-    @Override
-    public void recover( Iterator<NodeLabelUpdate> updates ) throws IOException, IndexCapacityExceededException
-    {
-        // The way we update and commit fits for recovery as well since we use writer.updateDocument(...)
-        // which deletes any existing documents and just adds the new and up-to-date version.
-        write( updates );
     }
 
     @Override
@@ -314,7 +309,10 @@ public class LuceneLabelScanStore
     @Override
     public LabelScanWriter newWriter()
     {
-        return strategy.acquireWriter( this );
+        // Only a single writer is allowed at any point in time. For that this lock is used and passed
+        // onto the writer to release in its close()
+        lock.lock();
+        return strategy.acquireWriter( this, lock );
     }
 
     private boolean indexExists()

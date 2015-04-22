@@ -38,6 +38,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -93,6 +94,7 @@ import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
@@ -141,11 +143,12 @@ import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
-import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.kernel.monitoring.tracing.Tracers;
+import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.neo4j.helpers.collection.Iterables.toList;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
@@ -719,7 +722,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         IdOrderingQueue legacyIndexTransactionOrdering = new SynchronizedArrayIdOrderingQueue( 20 );
         final TransactionRepresentationStoreApplier storeApplier = dependencies.satisfyDependency(
                 new TransactionRepresentationStoreApplier(
-                        indexingService, labelScanStore, neoStore,
+                        indexingService, alwaysCreateNewWriter( labelScanStore ), neoStore,
                         cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore,
                         legacyIndexTransactionOrdering ) );
 
@@ -817,15 +820,29 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         };
     }
 
+    private Provider<LabelScanWriter> alwaysCreateNewWriter( final LabelScanStore labelScanStore )
+    {
+        return new Provider<LabelScanWriter>()
+        {
+            @Override
+            public LabelScanWriter instance()
+            {
+                return labelScanStore.newWriter();
+            }
+        };
+    }
+
     private void buildRecovery( final FileSystemAbstraction fileSystemAbstraction, CacheAccessBackDoor cacheAccess,
             IndexingService indexingService, IndexUpdatesValidator indexUpdatesValidator, LabelScanStore labelScanStore,
             final NeoStore neoStore, RecoveryVisitor.Monitor recoveryVisitorMonitor, Recovery.Monitor recoveryMonitor,
             final PhysicalLogFiles logFiles, final LogRotationControl logRotationControl,
             final StartupStatisticsProvider startupStatistics )
     {
+        final RecoveryLabelScanWriterProvider labelScanWriters =
+                new RecoveryLabelScanWriterProvider( labelScanStore, 1000 );
         final TransactionRepresentationStoreApplier storeRecoverer =
                 new TransactionRepresentationStoreApplier(
-                        indexingService, labelScanStore, neoStore, cacheAccess, lockService,
+                        indexingService, labelScanWriters, neoStore, cacheAccess, lockService,
                         legacyIndexProviderLookup, indexConfigStore, IdOrderingQueue.BYPASS );
 
         RecoveryVisitor recoveryVisitor = new RecoveryVisitor( neoStore, storeRecoverer, indexUpdatesValidator,
@@ -840,6 +857,14 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
             @Override
             public void forceEverything()
             {
+                try
+                {
+                    labelScanWriters.close();
+                }
+                catch ( IOException e )
+                {
+                    throw new UnderlyingStorageException( e );
+                }
                 logRotationControl.forceEverything();
             }
 

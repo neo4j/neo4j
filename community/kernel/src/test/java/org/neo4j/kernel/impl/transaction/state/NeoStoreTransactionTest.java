@@ -45,6 +45,7 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -107,7 +108,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
-import static java.lang.Integer.parseInt;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -126,6 +126,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
+import static java.lang.Integer.parseInt;
+
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -1467,8 +1470,9 @@ public class NeoStoreTransactionTest
                 any( LogAppendEvent.class ) ) ).thenReturn( nextTxId++ );
         LogicalTransactionStore txStoreMock = mock( LogicalTransactionStore.class );
         when( txStoreMock.getAppender() ).thenReturn( appenderMock );
-        LabelScanStore labelScanStore = mock( LabelScanStore.class );
-        when( labelScanStore.newWriter() ).thenReturn( mock( LabelScanWriter.class ) );
+        @SuppressWarnings( "unchecked" )
+        Provider<LabelScanWriter> labelScanStore = mock( Provider.class );
+        when( labelScanStore.instance() ).thenReturn( mock( LabelScanWriter.class ) );
         TransactionRepresentationStoreApplier applier = new TransactionRepresentationStoreApplier(
                 indexing, labelScanStore, neoStore, cacheAccessBackDoor, locks, null, null, null );
 

@@ -26,8 +26,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
@@ -53,7 +53,8 @@ public class NeoTransactionIndexApplierTest
     private final static Descriptor INDEX_DESCRIPTOR = new Descriptor( "in-memory", "1.0" );
 
     private final IndexingService indexingService = mock( IndexingService.class );
-    private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
+    @SuppressWarnings( "unchecked" )
+    private final Provider<LabelScanWriter> labelScanStore = mock( Provider.class );
     private final CacheAccessBackDoor cacheAccess = mock( CacheAccessBackDoor.class );
 
     private final Collection<DynamicRecord> emptyDynamicRecords = Collections.emptySet();
@@ -73,7 +74,7 @@ public class NeoTransactionIndexApplierTest
         after.setLabelField( 18, emptyDynamicRecords );
         final Command.NodeCommand command = new Command.NodeCommand().init( before, after );
 
-        when( labelScanStore.newWriter() ).thenReturn( mock( LabelScanWriter.class ) );
+        when( labelScanStore.instance() ).thenReturn( mock( LabelScanWriter.class ) );
 
         // when
         final boolean result = applier.visitNodeCommand( command );

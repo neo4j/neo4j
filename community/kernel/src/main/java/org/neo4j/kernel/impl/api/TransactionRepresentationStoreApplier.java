@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.impl.api.LegacyIndexApplier.ProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.command.NeoStoreTransactionApplier;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.function.Optional;
+import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 /**
  * Holistic application of {@link TransactionRepresentation transactions} onto the store. Includes application
@@ -50,18 +51,18 @@ public class TransactionRepresentationStoreApplier
     private final IndexingService indexingService;
     private final CacheAccessBackDoor cacheAccess;
     private final LockService lockService;
-    private final LabelScanStore labelScanStore;
+    private final Provider<LabelScanWriter> labelScanWriters;
     private final IndexConfigStore indexConfigStore;
     private final ProviderLookup legacyIndexProviderLookup;
     private final IdOrderingQueue legacyIndexTransactionOrdering;
 
     public TransactionRepresentationStoreApplier(
-            IndexingService indexingService, LabelScanStore labelScanStore, NeoStore neoStore,
+            IndexingService indexingService, Provider<LabelScanWriter> labelScanWriters, NeoStore neoStore,
             CacheAccessBackDoor cacheAccess, LockService lockService, ProviderLookup legacyIndexProviderLookup,
             IndexConfigStore indexConfigStore, IdOrderingQueue legacyIndexTransactionOrdering )
     {
         this.indexingService = indexingService;
-        this.labelScanStore = labelScanStore;
+        this.labelScanWriters = labelScanWriters;
         this.neoStore = neoStore;
         this.cacheAccess = cacheAccess;
         this.lockService = lockService;
@@ -88,7 +89,7 @@ public class TransactionRepresentationStoreApplier
 
         // Schema index application
         IndexTransactionApplier indexApplier = new IndexTransactionApplier( indexingService, indexUpdates,
-                labelScanStore );
+                labelScanWriters );
 
         // Legacy index application
         LegacyIndexApplier legacyIndexApplier = new LegacyIndexApplier( indexConfigStore,
@@ -119,7 +120,7 @@ public class TransactionRepresentationStoreApplier
     public TransactionRepresentationStoreApplier withLegacyIndexTransactionOrdering(
             IdOrderingQueue legacyIndexTransactionOrdering )
     {
-        return new TransactionRepresentationStoreApplier( indexingService, labelScanStore, neoStore, cacheAccess,
+        return new TransactionRepresentationStoreApplier( indexingService, labelScanWriters, neoStore, cacheAccess,
                                                           lockService, legacyIndexProviderLookup, indexConfigStore,
                                                           legacyIndexTransactionOrdering );
     }
