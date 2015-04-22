@@ -23,6 +23,10 @@ import org.neo4j.cypher.internal.compiler.v2_3.Rewriter
 import org.neo4j.cypher.internal.compiler.v2_3.planner.PlannerQuery
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 
+/*
+This class ties together disparate query graphs through their event horizons. It does so by using Apply,
+which in most cases is then rewritten away by LogicalPlan rewriting
+ */
 case class PlanWithTail(expressionRewriterFactory: (LogicalPlanningContext => Rewriter) = ExpressionRewriterFactory,
                         planEventHorizon: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = PlanEventHorizon())
   extends LogicalPlanningFunction2[LogicalPlan, Option[PlannerQuery], LogicalPlan] {

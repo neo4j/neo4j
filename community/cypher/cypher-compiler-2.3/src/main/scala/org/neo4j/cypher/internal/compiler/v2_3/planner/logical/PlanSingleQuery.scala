@@ -24,6 +24,10 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.PlannerQuery
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.verifyBestPlan
 
+/*
+This coordinates PlannerQuery planning and delegates work to the classes that do the actual planning of
+QueryGraphs and EventHorizons
+ */
 case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext, Option[LogicalPlan]) => LogicalPlan = planPart,
                            planEventHorizon: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = PlanEventHorizon(),
                            expressionRewriterFactory: (LogicalPlanningContext => Rewriter) = ExpressionRewriterFactory,

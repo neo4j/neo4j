@@ -21,11 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, LogicalPlan, ProduceResult}
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.{aggregation, projection, sortSkipAndLimit, verifyBestPlan}
-import org.neo4j.cypher.internal.compiler.v2_3.symbols._
-
-import scala.collection.mutable
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{LogicalPlan, ProduceResult}
 
 trait QueryPlanner {
   def plan(plannerQuery: UnionQuery)(implicit context: LogicalPlanningContext): LogicalPlan
@@ -48,24 +44,15 @@ case class DefaultQueryPlanner(planRewriter: Rewriter,
 
   private def createProduceResultOperator(in: LogicalPlan, unionQuery: UnionQuery)
                                          (implicit context: LogicalPlanningContext): LogicalPlan = {
-    val nodes = mutable.ListBuffer[String]()
-    val rels = mutable.ListBuffer[String]()
-    val others = mutable.ListBuffer[String]()
-
     val lastQuery = unionQuery.queries.last
     val columns = lastQuery.lastQueryHorizon.exposedSymbols(lastQuery.lastQueryGraph)
 
-    columns.foreach {
-      case IdName(name) =>
-        if (context.semanticTable.getTypeFor(name) == CTNode.invariant)
-          nodes += name
-        else if (context.semanticTable.getTypeFor(name) == CTRelationship.invariant)
-          rels += name
-        else
-          others += name
-    }
+    val stringColumns = columns.map(_.name)
+    val rels = stringColumns.filter(context.semanticTable.isRelationship)
+    val nodes = stringColumns.filter(context.semanticTable.isNode)
+    val others = stringColumns -- rels -- nodes
 
-    ProduceResult(nodes, rels, others, in)
+    ProduceResult(nodes.toSeq, rels.toSeq, others.toSeq, in)
   }
 
   private def planQueries(queries: Seq[PlannerQuery], distinct: Boolean)(implicit context: LogicalPlanningContext) = {
