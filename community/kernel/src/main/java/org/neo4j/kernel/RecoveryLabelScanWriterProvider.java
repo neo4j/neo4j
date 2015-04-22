@@ -23,7 +23,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 import org.neo4j.helpers.Provider;
@@ -31,6 +30,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexCapacityExceededException;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
+
+import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.SORT_BY_NODE_ID;
 
 /**
  * Provides {@link LabelScanWriter} that takes advantage of the single-threaded context of recovery
@@ -95,7 +96,7 @@ class RecoveryLabelScanWriterProvider implements Provider<LabelScanWriter>, Clos
         {
             if ( !updates.isEmpty() )
             {
-                Collections.sort( updates, UPDATES_SORTER );
+                Collections.sort( updates, SORT_BY_NODE_ID );
                 try ( LabelScanWriter writer = labelScanStore.newWriter() )
                 {
                     for ( NodeLabelUpdate update : updates )
@@ -111,13 +112,4 @@ class RecoveryLabelScanWriterProvider implements Provider<LabelScanWriter>, Clos
             }
         }
     }
-
-    private static final Comparator<? super NodeLabelUpdate> UPDATES_SORTER = new Comparator<NodeLabelUpdate>()
-    {
-        @Override
-        public int compare( NodeLabelUpdate o1, NodeLabelUpdate o2 )
-        {
-            return Long.compare( o1.getNodeId(), o2.getNodeId() );
-        }
-    };
 }
