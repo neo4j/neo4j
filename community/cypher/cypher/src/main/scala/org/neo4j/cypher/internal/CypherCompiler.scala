@@ -40,7 +40,13 @@ object CypherCompiler {
 
 case class PreParsedQuery(statement: String, version: CypherVersion, executionMode: ExecutionMode, planner: PlannerName)
                          (val offset: InputPosition) {
-  val statementWithVersionAndPlanner = s"CYPHER ${version.name} PLANNER ${planner.name} $statement"
+  val statementWithVersionAndPlanner = {
+    val plannerInfo = planner match {
+      case ConservativePlannerName => ""
+      case _ => s" PLANNER ${planner.name}"
+    }
+    s"CYPHER ${version.name}$plannerInfo $statement"
+  }
 }
 
 class CypherCompiler(graph: GraphDatabaseService,
