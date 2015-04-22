@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantCompileQueryExceptio
 import org.neo4j.cypher.internal.compiler.v2_3.profiler.Profiler
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
-import org.neo4j.cypher.internal.{ExecutionMode, ProfileMode}
+import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, ProfileMode}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.api.{Statement => KernelStatement}

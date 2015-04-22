@@ -17,10 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.helpers
+package org.neo4j.cypher.internal.compiler.v2_3.helpers
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
+
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
 import scala.collection.{immutable, mutable}
 

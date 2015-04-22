@@ -17,11 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal
+package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
 import java.lang.Iterable
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Traverser.Order
 import org.neo4j.graphdb._
 
@@ -47,7 +48,7 @@ class PathImplTest extends CypherFunSuite {
     val nodA = new FakeNode
     val nodB = new FakeNode
     val rel = new FakeRel(nodA, nodB, typ)
-    val path = new PathImpl(nodA, rel, nodB)
+    val path = new expressions.PathImpl(nodA, rel, nodB)
 
     path.length() should equal(1)
     path.startNode() should equal(nodA)
@@ -69,7 +70,7 @@ class PathImplTest extends CypherFunSuite {
       Seq(rel1)
     )
 
-    badPaths.foreach(p => intercept[IllegalArgumentException](new PathImpl(p:_*)))
+    badPaths.foreach(p => intercept[IllegalArgumentException](new expressions.PathImpl(p:_*)))
   }
 
   class FakeRel(start: Node, end: Node, typ: RelationshipType) extends Relationship {

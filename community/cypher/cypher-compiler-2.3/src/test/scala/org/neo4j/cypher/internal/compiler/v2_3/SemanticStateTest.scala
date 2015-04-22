@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3
 
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import symbols._
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 
 class SemanticStateTest extends CypherFunSuite {
 

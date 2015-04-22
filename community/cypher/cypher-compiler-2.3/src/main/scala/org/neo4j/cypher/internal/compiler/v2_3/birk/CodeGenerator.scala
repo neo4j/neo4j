@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.birk
 import java.util
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.neo4j.cypher.internal.ExecutionMode
+import org.neo4j.cypher.internal.compiler.v2_3.ExecutionMode
 import org.neo4j.cypher.internal.compiler.v2_3.CostPlannerName
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaTypes.{INT, LONG, OBJECT, DOUBLE, STRING}
@@ -123,7 +123,7 @@ object CodeGenerator {
        |import org.neo4j.graphdb.Result.ResultVisitor;
        |import org.neo4j.graphdb.Result;
        |import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription;
-       |import org.neo4j.cypher.internal.ExecutionMode;
+       |import org.neo4j.cypher.internal.compiler.v2_3.ExecutionMode;
        |import java.util.Map;
        |
        |$imports

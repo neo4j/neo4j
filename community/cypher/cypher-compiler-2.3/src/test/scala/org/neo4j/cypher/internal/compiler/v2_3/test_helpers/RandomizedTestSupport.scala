@@ -17,18 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal
+package org.neo4j.cypher.internal.compiler.v2_3.test_helpers
 
-sealed trait CypherOption
-
-final case class VersionOption(version: String) extends CypherOption
-case object ProfileOption extends CypherOption
-case object ExplainOption extends CypherOption
-case object CostPlannerOption extends CypherOption
-case object RulePlannerOption extends CypherOption
-case object IDPPlannerOption extends CypherOption
-case object DPPlannerOption extends CypherOption
-case object InterpretedRuntimeOption extends CypherOption
-case object CompiledRuntimeOption extends CypherOption
-case class ConfigurationOptions(version: Option[VersionOption],
-                            options: Seq[CypherOption]) extends CypherOption
+trait RandomizedTestSupport {
+  val N: Double  = testRandomizer.nextDouble() * 1E6
+  println("N: " + N)
+}

@@ -20,8 +20,7 @@
 package org.neo4j.cypher
 
 import java.util
-
-import org.neo4j.cypher.internal.PathImpl
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.PathImpl
 import org.neo4j.graphdb._
 
 import scala.collection.JavaConverters._
@@ -1978,7 +1977,7 @@ return b
     val node2 = createNode()
     val r = relate(node1, node2)
 
-    val query = """CYPHER planner=cost WITH [{0}, {1}] AS x, count(*) as y
+    val query = """WITH [{0}, {1}] AS x, count(*) as y
                   |MATCH (n) WHERE ID(n) IN x
                   |MATCH (m) WHERE ID(m) IN x
                   |MATCH paths = allShortestPaths((n)-[*..1]-(m))
@@ -2003,7 +2002,7 @@ return b
     relate(mid, other, "CONNECTED_TO")
 
     // when
-    val query = "PLANNER COST MATCH topRoute = (db1:Start)<-[:CONNECTED_TO]-()-[:CONNECTED_TO*3..3]-(db2:End) RETURN topRoute"
+    val query = "MATCH topRoute = (db1:Start)<-[:CONNECTED_TO]-()-[:CONNECTED_TO*3..3]-(db2:End) RETURN topRoute"
 
     executeWithAllPlanners(query).toList should have size 4
   }

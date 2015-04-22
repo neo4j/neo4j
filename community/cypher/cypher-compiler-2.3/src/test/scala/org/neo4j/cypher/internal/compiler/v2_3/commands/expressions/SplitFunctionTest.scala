@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.scalatest.FunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryStateHelper
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 
 class SplitFunctionTest extends CypherFunSuite {
 

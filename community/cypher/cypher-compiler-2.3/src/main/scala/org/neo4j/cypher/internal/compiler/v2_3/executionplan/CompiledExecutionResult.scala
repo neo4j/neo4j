@@ -23,11 +23,10 @@ import java.io.{PrintWriter, StringWriter}
 import java.util
 import java.util.Collections
 
-import org.neo4j.cypher.internal.{ExecutionMode, ProfileMode, ExplainMode}
+import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, ProfileMode, ExplainMode}
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
 import org.neo4j.cypher.internal.compiler.v2_3.notification.InternalNotification
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.graphdb.QueryExecutionType._
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.{QueryExecutionType, ResourceIterator}

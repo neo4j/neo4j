@@ -17,15 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.commons
+package org.neo4j.cypher.internal.compiler.v2_3.test_helpers
 
-class TestableIterator[A](inner: Iterator[A]) extends Iterator[A] {
-  var fetched = 0
+import org.scalatest.matchers.{MatchResult, Matcher}
 
-  def hasNext: Boolean = inner.hasNext
+trait CustomMatchers {
+  class IsTypeOf(clazz: Class[_]) extends Matcher[Any] {
 
-  def next(): A = {
-    fetched += 1
-    inner.next()
+    def apply(left: Any) = MatchResult(
+      clazz.isAssignableFrom(left.getClass),
+      s"expected $left to have type $clazz but it was ${left.getClass}",
+      s"$left has type $clazz")
   }
+
+  def haveType[T](implicit manifest: Manifest[T]) = new IsTypeOf(manifest.runtimeClass)
+
 }

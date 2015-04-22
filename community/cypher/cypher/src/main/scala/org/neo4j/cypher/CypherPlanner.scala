@@ -19,11 +19,9 @@
  */
 package org.neo4j.cypher
 
-sealed abstract class CypherPlanner(plannerName: String) {
-  val name = CypherOptionName.asCanonicalName(plannerName)
-}
+sealed abstract class CypherPlanner(plannerName: String) extends CypherOption(plannerName)
 
-object CypherPlanner {
+case object CypherPlanner extends CypherOptionCompanion[CypherPlanner] {
 
   case object default extends CypherPlanner("default")
   case object cost extends CypherPlanner("cost")
@@ -31,11 +29,5 @@ object CypherPlanner {
   case object dp extends CypherPlanner("dp")
   case object rule extends CypherPlanner("rule")
 
-  def apply(name: String) = findPlannerByExactName(CypherOptionName.asCanonicalName(name)).getOrElse {
-    throw new SyntaxException(s"Supported planners are: ${allPlanners.map(_.name).mkString(", ")}")
-  }
-
-  def findPlannerByExactName(name: String) = allPlanners.find( _.name == name )
-
-  val allPlanners = Seq(default, cost, idp, dp, rule)
+  val all: Set[CypherPlanner] = Set(cost, idp, dp, rule)
 }

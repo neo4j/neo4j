@@ -17,8 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.internal.compiler.v2_3.test_helpers
 
-object CypherOptionName {
-  def asCanonicalName(name: String) = name.toLowerCase
+import org.junit.runner.RunWith
+import org.scalatest._
+import org.scalatest.junit.JUnitRunner
+import org.scalatest.mock.MockitoSugar
+
+@RunWith(classOf[JUnitRunner])
+abstract class CypherFunSuite
+  extends Suite
+  with Assertions
+  with CypherTestSupport
+  with MockitoSugar
+  with FunSuiteLike
+  with Matchers
+  with BeforeAndAfterEach {
+
+  override protected def beforeEach() {
+    initTest()
+  }
+
+  override protected def afterEach() {
+    stopTest()
+  }
 }

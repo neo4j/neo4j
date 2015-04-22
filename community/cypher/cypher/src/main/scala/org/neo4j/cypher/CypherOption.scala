@@ -17,14 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.helpers
+package org.neo4j.cypher
 
-import scala.util.Random
+object CypherOption {
+  val DEFAULT: String = "default"
 
-case object testRandomizer extends Random {
-  // By randomizing, we will test more variants of the data. The formulas expressed should still give correct results
-  // We print the seed used for the Random object so that test failures can easily be reproduced when encountered
-  val seed = System.currentTimeMillis()
-  setSeed(seed)
-  println("seed: " + seed)
+  def asCanonicalName(name: String) = name.toLowerCase
+}
+
+abstract class CypherOption(inputName: String) {
+  val name = CypherOption.asCanonicalName(inputName)
+}
+
+trait CypherOptionCompanion[O <: CypherOption] {
+  self: Product =>
+
+  def default: O
+  def all: Set[O]
+
+  def apply(name: String) = findByExactName(CypherOption.asCanonicalName(name)).getOrElse {
+    throw new SyntaxException(s"Supported ${self.productPrefix} values are: ${all.map(_.name).mkString(", ")}")
+  }
+
+  private def findByExactName(name: String) = if (CypherOption.DEFAULT == name)
+    Some(default)
+  else
+    all.find( _.name == name )
 }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.birk;
 
+import sun.tools.java.CompilerError;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -41,9 +43,7 @@ import javax.tools.SimpleJavaFileObject;
 import javax.tools.StandardLocation;
 import javax.tools.ToolProvider;
 
-import sun.tools.java.CompilerError;
-
-import org.neo4j.cypher.internal.ExecutionMode;
+import org.neo4j.cypher.internal.compiler.v2_3.ExecutionMode;
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult;
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription;
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException;

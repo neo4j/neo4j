@@ -17,8 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal
+package org.neo4j.cypher.internal.compiler.v2_3.test_helpers
 
-trait CypherArray {
-   def length(): Int
+class TestableIterator[A](inner: Iterator[A]) extends Iterator[A] {
+  var fetched = 0
+
+  def hasNext: Boolean = inner.hasNext
+
+  def next(): A = {
+    fetched += 1
+    inner.next()
+  }
 }

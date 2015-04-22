@@ -17,21 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal
+package org.neo4j.cypher.internal.compiler.v2_3
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_3
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
 class LRUCacheTest extends CypherFunSuite {
 
   test("shouldStoreSingleValue") {
-    val cache = new LRUCache[String, String](5)
+    val cache = new v2_3.LRUCache[String, String](5)
     cache.getOrElseUpdate("hello", "world")
 
     cache.get("hello") should equal(Some("world"))
   }
 
   test("shouldLooseTheFirstOne") {
-    val cache = new LRUCache[String, String](5)
+    val cache = new v2_3.LRUCache[String, String](5)
     fillWithOneToFive(cache)
 
     cache.getOrElseUpdate("6", "6")
@@ -40,7 +41,7 @@ class LRUCacheTest extends CypherFunSuite {
   }
 
   test("shouldLooseTheLeastUsedItem") {
-    val cache = new LRUCache[String, String](5)
+    val cache = new v2_3.LRUCache[String, String](5)
     fillWithOneToFive(cache)
 
     cache.get("1")
@@ -53,7 +54,7 @@ class LRUCacheTest extends CypherFunSuite {
     cache.containsKey("2") should equal(false);
   }
 
-  def fillWithOneToFive(cache: LRUCache[String, String]) {
+  def fillWithOneToFive(cache: v2_3.LRUCache[String, String]) {
     cache.put("1", "1")
     cache.put("2", "2")
     cache.put("3", "3")

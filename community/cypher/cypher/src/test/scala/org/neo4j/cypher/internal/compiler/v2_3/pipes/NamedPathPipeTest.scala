@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v2_3._
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 import org.neo4j.graphdb._
 
 class NamedPathPipeTest extends GraphDatabaseFunSuite {
@@ -55,7 +56,7 @@ class NamedPathPipeTest extends GraphDatabaseFunSuite {
     cNode = createNode("c")
     r1 = relate(aNode, bNode, "R")
     r2 = relate(bNode, cNode, "R")
-    p = PathImpl(Seq(aNode, r1, bNode, r2, cNode): _*)
+    p = expressions.PathImpl(Seq(aNode, r1, bNode, r2, cNode): _*)
   }
 
   test("single node path") {
@@ -84,7 +85,7 @@ class NamedPathPipeTest extends GraphDatabaseFunSuite {
 
   test("paths are turned right side around") {
     // MATCH p = a-[*]->c
-    val p = PathImpl(cNode, r2, bNode, r1, aNode)
+    val p = expressions.PathImpl(cNode, r2, bNode, r1, aNode)
     val inputPipe = new FakePipe(Seq(Map("a" -> aNode, "c" -> cNode, "x" -> p)))
 
     createNamedPath(inputPipe, varLengthPath) should equal(Seq(aNode, r1, bNode, r2, cNode))
@@ -92,7 +93,7 @@ class NamedPathPipeTest extends GraphDatabaseFunSuite {
 
   test("paths are turned right side around 2") {
     // MATCH p = a-[r1]->b-[*]->c
-    val p = PathImpl(cNode, r2, bNode)
+    val p = expressions.PathImpl(cNode, r2, bNode)
     val inputPipe = new FakePipe(Seq(Map("a" -> aNode, "r1" -> r1, "b" -> bNode, "c" -> cNode, "x" -> p)))
 
     createNamedPath(inputPipe, singleRelationship, varLengthPath.copy(start = ParsedEntity("b"))) should equal(Seq(aNode, r1, bNode, r2, cNode))
@@ -102,6 +103,6 @@ class NamedPathPipeTest extends GraphDatabaseFunSuite {
     val pipe = new NamedPathPipe(inputPipe, "p", patterns)
     val results = pipe.createResults(QueryStateHelper.empty).toList
 
-    Option(results.head("p")).map(_.asInstanceOf[PathImpl].pathEntities).orNull
+    Option(results.head("p")).map(_.asInstanceOf[expressions.PathImpl].pathEntities).orNull
   }
 }

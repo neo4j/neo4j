@@ -169,10 +169,15 @@ trait CompatibilityFor2_2 {
       new ExceptionTranslatingQueryContextFor2_2(ctx)
     }
 
-    def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, executionMode: ExecutionMode, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
+    def run(graph: GraphDatabaseAPI, txInfo: TransactionInfo, executionMode: CypherExecutionMode, params: Map[String, Any], session: QuerySession): ExtendedExecutionResult = {
       implicit val s = session
+      val internalMode = executionMode match {
+        case CypherExecutionMode.normal  => NormalMode
+        case CypherExecutionMode.profile => ProfileMode
+        case CypherExecutionMode.explain => ExplainMode
+      }
       exceptionHandlerFor2_2.runSafely {
-        ExecutionResultWrapperFor2_2(inner.run(queryContext(graph, txInfo), executionMode, params), inner.plannerUsed)
+        ExecutionResultWrapperFor2_2(inner.run(queryContext(graph, txInfo), internalMode, params), inner.plannerUsed)
       }
     }
 

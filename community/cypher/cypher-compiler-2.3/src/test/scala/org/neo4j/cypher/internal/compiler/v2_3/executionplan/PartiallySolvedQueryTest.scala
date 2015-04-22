@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Identifier
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{AllIdentifiers, CreateNodeStartItem, Query, SingleNode}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.Unsolved
 import org.neo4j.cypher.internal.compiler.v2_3.mutation.{CreateNode, DeleteEntityAction}
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
 class PartiallySolvedQueryTest extends CypherFunSuite {
 

@@ -17,11 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.commons
+package org.neo4j.cypher.internal.compiler.v2_3.test_helpers
 
-// Inherited by test mixin classes that need to manage resources
-trait CypherTestSupport  {
-  protected def initTest() {}
-  protected def stopTest() {}
+import scala.util.Random
+
+case object testRandomizer extends Random {
+  // By randomizing, we will test more variants of the data. The formulas expressed should still give correct results
+  // We print the seed used for the Random object so that test failures can easily be reproduced when encountered
+  val seed = System.currentTimeMillis()
+  setSeed(seed)
+  println("seed: " + seed)
 }
-

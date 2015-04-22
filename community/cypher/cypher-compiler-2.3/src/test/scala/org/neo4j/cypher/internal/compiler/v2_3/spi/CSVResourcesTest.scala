@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_3.spi
 
 import java.net.URL
-import org.mockito.Mockito._
+
 import org.mockito.Matchers._
-import org.neo4j.cypher.internal.commons.{CreateTempFileTestSupport, CypherFunSuite}
+import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_3.TaskCloser
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.{CreateTempFileTestSupport, CypherFunSuite}
 
 
 class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {

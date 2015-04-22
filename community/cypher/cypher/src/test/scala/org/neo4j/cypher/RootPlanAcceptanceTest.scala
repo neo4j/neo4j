@@ -26,7 +26,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
   test("should include version information in root plan description for queries of each legacy version") {
 
     //v2.2 and v2.3 must be handled separately since the resulting compiler is dependent on query
-    val versions = CypherVersion.allVersions.filter(v => !v.name.startsWith(CypherVersion.v2_3.name) && !v.name.startsWith(CypherVersion.v2_2.name))
+    val versions = CypherVersion.all.filter(v => !v.name.startsWith(CypherVersion.v2_3.name) && !v.name.startsWith(CypherVersion.v2_2.name))
     versions.foreach { v =>
       given("create() return 1")
         .withCypherVersion(v)

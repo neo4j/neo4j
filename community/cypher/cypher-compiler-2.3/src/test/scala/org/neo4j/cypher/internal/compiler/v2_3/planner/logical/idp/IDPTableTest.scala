@@ -38,8 +38,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical.idp
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
 import scala.collection.immutable.BitSet
 

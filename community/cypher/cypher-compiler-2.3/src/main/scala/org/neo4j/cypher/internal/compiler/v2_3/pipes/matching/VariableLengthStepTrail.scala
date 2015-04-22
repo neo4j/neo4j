@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_3.pipes.matching
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import commands.{True, Pattern}
-import pipes.MutableMaps
-import symbols._
-import org.neo4j.cypher.internal.PathImpl
-import org.neo4j.graphdb.{Relationship, Node, PropertyContainer, Direction}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.PathImpl
+import org.neo4j.cypher.internal.compiler.v2_3.commands.{Pattern, True}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.MutableMaps
+import org.neo4j.cypher.internal.compiler.v2_3.symbols._
+import org.neo4j.graphdb.{Direction, Node, PropertyContainer, Relationship}
 
 final case class VariableLengthStepTrail(next: Trail,
                                          dir: Direction,

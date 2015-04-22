@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.mutation
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.StatementConverters._
 import org.neo4j.cypher.internal.compiler.v2_3.commands.Query
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Identifier, Literal, Property}
@@ -27,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.values.TokenType.Propert
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{Effects, _}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
 class UpdateActionEffectfulTest extends CypherFunSuite {
 

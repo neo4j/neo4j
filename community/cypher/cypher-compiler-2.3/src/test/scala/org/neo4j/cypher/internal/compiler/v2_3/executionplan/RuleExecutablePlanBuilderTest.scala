@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_3.parser.{CypherParser, ParserMonitor}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
@@ -28,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.SemanticTable
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v2_3.{Monitors, PreparedQuery, Scope, devNullLogger}
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 class RuleExecutablePlanBuilderTest extends CypherFunSuite {

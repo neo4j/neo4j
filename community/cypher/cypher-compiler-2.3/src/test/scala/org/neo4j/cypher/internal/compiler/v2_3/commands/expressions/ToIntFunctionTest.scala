@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.compiler.v2_3.{CypherTypeException, ExecutionContext}
+import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
 class ToIntFunctionTest extends CypherFunSuite {
 
