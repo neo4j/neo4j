@@ -134,6 +134,7 @@ import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.Boolean.parseBoolean;
+
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -255,10 +256,7 @@ public class BatchInserterImpl implements BatchInserter
         msgLog.logMessage( Thread.currentThread() + " Starting BatchInserter(" + this + ")" );
         life.start();
         neoStore = sf.newNeoStore( true );
-        if ( !neoStore.isStoreOk() )
-        {
-            throw new IllegalStateException( storeDir + " store is not cleanly shutdown." );
-        }
+        neoStore.verifyStoreOk();
         neoStore.makeStoreOk();
         Token[] indexes = getPropertyKeyTokenStore().getTokens( 10000 );
         propertyKeyTokens = new BatchTokenHolder( indexes );

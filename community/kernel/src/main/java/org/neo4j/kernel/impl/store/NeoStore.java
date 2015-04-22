@@ -765,11 +765,20 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         return relGrabSize;
     }
 
-    public boolean isStoreOk()
+    /**
+     * Throws cause of store not being OK.
+     */
+    public void verifyStoreOk()
     {
-        return getStoreOk() && relTypeStore.getStoreOk() && labelTokenStore.getStoreOk() && propStore.getStoreOk()
-                && relStore.getStoreOk() && nodeStore.getStoreOk() && schemaStore.getStoreOk()
-                && relGroupStore.getStoreOk();
+        visitStore( new Visitor<CommonAbstractStore,RuntimeException>()
+        {
+            @Override
+            public boolean visit( CommonAbstractStore element )
+            {
+                element.checkStoreOk();
+                return false;
+            }
+        } );
     }
 
     @Override
@@ -964,7 +973,6 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
      * {@link #closeStorage()} (where that method could be deleted all together and do a visit in {@link #close()}),
      * {@link #logIdUsage(org.neo4j.kernel.impl.util.StringLogger.LineLogger)},
      * {@link #logVersions(org.neo4j.kernel.impl.util.StringLogger.LineLogger)},
-     * {@link #isStoreOk()},
      * For a good samaritan to pick up later.
      */
     @Override
