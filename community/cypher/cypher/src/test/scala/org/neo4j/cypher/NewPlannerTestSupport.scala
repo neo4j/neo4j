@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantCompileQueryExceptio
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherTestSupport
 import org.neo4j.helpers.Exceptions
 
-import scala.util.Try
+import scala.util.{Success, Failure, Try}
 
 object NewPlannerMonitor {
 
@@ -200,19 +200,29 @@ trait NewPlannerTestSupport extends CypherTestSupport {
   override def execute(queryText: String, params: (String, Any)*) =
     fail("Don't use execute together with NewPlannerTestSupport")
 
-  def executeWithRulePlanner(queryText: String, params: (String, Any)*) =
-    monitoringNewPlanner(innerExecute(queryText, params: _*))(unexpectedlyUsedNewPlanner(queryText))(unexpectedlyUsedNewRuntime(queryText))
+  def executeWithRulePlanner(queryText: String, params: (String, Any)*) = {
+    val plannerWatcher: (List[NewPlannerMonitorCall]) => Unit = unexpectedlyUsedNewPlanner(queryText)
+    val runtimeWatcher: (List[NewRuntimeMonitorCall]) => Unit = unexpectedlyUsedNewRuntime(queryText)
+    monitoringNewPlanner(innerExecute(queryText, params: _*))(plannerWatcher)(runtimeWatcher)
+  }
 
   def monitoringNewPlanner[T](action: => T)(testPlanner: List[NewPlannerMonitorCall] => Unit)(testRuntime: List[NewRuntimeMonitorCall] => Unit): T = {
     newPlannerMonitor.clear()
     newRuntimeMonitor.clear()
     //if action fails we must wait to throw until after test has run
-    val result = Try(action)
-    testPlanner(newPlannerMonitor.trace)
-    testRuntime(newRuntimeMonitor.trace)
+    val result = Try(action) match {
+      case f@Failure(ex: CantHandleQueryException) =>
+        testPlanner(newPlannerMonitor.trace)
+        testRuntime(newRuntimeMonitor.trace)
+        // this should never happen, but make the thing to compile:
+        throw ex
+
+      case Failure(ex) => throw ex
+      case Success(r) => r
+    }
 
     //now it is safe to throw
-    result.get
+    result
   }
 
   /**
