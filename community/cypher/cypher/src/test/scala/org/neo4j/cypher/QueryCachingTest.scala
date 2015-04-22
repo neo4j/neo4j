@@ -66,9 +66,9 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
         val actual = cacheListener.trace
         val expected = List(
           s"cacheFlushDetected",
-          s"cacheMiss: CYPHER 2.3 planner=default runtime=default $query",
-          s"cacheHit: CYPHER 2.3 planner=default runtime=default $query",
-          s"cacheHit: CYPHER 2.3 planner=default runtime=default $query")
+          s"cacheMiss: CYPHER 2.3 $query",
+          s"cacheHit: CYPHER 2.3 $query",
+          s"cacheHit: CYPHER 2.3 $query")
 
         actual should equal(expected)
     }

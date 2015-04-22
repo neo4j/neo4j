@@ -126,7 +126,7 @@ class CypherCompilerStringCacheMonitoringAcceptanceTest extends ExecutionEngineF
 
     // then
     logProvider.assertAtLeastOnce(
-      AssertableLogProvider.inLog( classOf[ExecutionEngine] ).info( s"Discarded stale query from the query cache: CYPHER 2.3 planner=default runtime=default $query" )
+      AssertableLogProvider.inLog( classOf[ExecutionEngine] ).info( s"Discarded stale query from the query cache: CYPHER 2.3 $query" )
     )
   }
 }

@@ -20,11 +20,9 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.CypherVersion._
-import org.neo4j.cypher.internal.CypherStatementWithOptions
 import org.neo4j.cypher.internal.compatibility._
-import org.neo4j.cypher.internal.compiler.v2_3.notification.LegacyPlannerNotification
-import org.neo4j.cypher.internal.compiler.v2_3.{InputPosition, InternalNotificationLogger, PlannerName, RecordingNotificationLogger, devNullLogger, _}
-import org.neo4j.cypher.{InvalidArgumentException, InvalidSemanticsException, SyntaxException, _}
+import org.neo4j.cypher.internal.compiler.v2_3.{InputPosition, InternalNotificationLogger, RecordingNotificationLogger, devNullLogger}
+import org.neo4j.cypher.{InvalidArgumentException, SyntaxException, _}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.Clock
@@ -48,7 +46,17 @@ object CypherCompiler {
 case class PreParsedQuery(statement: String, version: CypherVersion, executionMode: CypherExecutionMode,
                           planner: CypherPlanner, runtime: CypherRuntime, notificationLogger: InternalNotificationLogger)
                          (val offset: InputPosition) {
-  val statementWithVersionAndPlanner = s"CYPHER ${version.name} planner=${planner.name} runtime=${runtime.name} $statement"
+  val statementWithVersionAndPlanner = {
+    val plannerInfo = planner match {
+      case CypherPlanner.default => ""
+      case _ => s" planner=${planner.name}"
+    }
+    val runtimeInfo = runtime match {
+      case CypherRuntime.default => ""
+      case _ => s" runtime=${runtime.name}"
+    }
+    s"CYPHER ${version.name}$plannerInfo$runtimeInfo $statement"
+  }
 }
 
 class CypherCompiler(graph: GraphDatabaseService,
