@@ -76,7 +76,6 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     private IdGenerator idGenerator;
     private StoreChannel fileChannel;
     private boolean storeOk = true;
-    @SuppressWarnings( "unused" /* We keep this for debugging purpose */)
     private Throwable causeOfStoreNotOk;
     private FileLock fileLock;
     private String readTypeDescriptorAndVersion;
@@ -484,6 +483,17 @@ public abstract class CommonAbstractStore implements IdSequence, AutoCloseable
     protected boolean getStoreOk()
     {
         return storeOk;
+    }
+
+    /**
+     * Throws cause of not being OK if {@link #getStoreOk()} returns {@code false}.
+     */
+    protected void checkStoreOk()
+    {
+        if ( !storeOk )
+        {
+            throw launderedException( causeOfStoreNotOk );
+        }
     }
 
     /**
