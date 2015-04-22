@@ -26,9 +26,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
+import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
@@ -46,18 +46,21 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
+import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.kernel.impl.util.function.Optionals.some;
 
 public class TransactionRepresentationStoreApplierTest
 {
     private final IndexingService indexService = mock( IndexingService.class );
-    private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
+    @SuppressWarnings( "unchecked" )
+    private final Provider<LabelScanWriter> labelScanStore = mock( Provider.class );
     private final NeoStore neoStore = mock( NeoStore.class );
     private final CacheAccessBackDoor cacheAccess = mock( CacheAccessBackDoor.class );
     private final LockService lockService = new ReentrantLockService();

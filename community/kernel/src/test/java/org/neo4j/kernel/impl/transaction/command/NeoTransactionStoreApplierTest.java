@@ -28,11 +28,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.TransactionApplicationMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.ValidatedIndexUpdates;
@@ -64,6 +64,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyKeyTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
+import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -80,7 +81,8 @@ public class NeoTransactionStoreApplierTest
 {
     private final NeoStore neoStore = mock( NeoStore.class );
     private final IndexingService indexingService = mock( IndexingService.class );
-    private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
+    @SuppressWarnings( "unchecked" )
+    private final Provider<LabelScanWriter> labelScanStore = mock( Provider.class );
     private final CacheAccessBackDoor cacheAccess = mock( CacheAccessBackDoor.class );
     private final LockService lockService = mock( LockService.class );
 

@@ -19,6 +19,11 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,15 +32,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
@@ -95,8 +94,6 @@ import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static java.lang.Integer.parseInt;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -110,6 +107,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
+import static java.lang.Integer.parseInt;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
@@ -1387,11 +1386,6 @@ public class BatchInsertTest
 
             fail( "No update matching [nodeId:" + node + ", labels:" + Arrays.toString( labels ) + " found among: " +
                     allUpdates );
-        }
-
-        @Override
-        public void recover( Iterator<NodeLabelUpdate> updates ) throws IOException
-        {
         }
 
         @Override
