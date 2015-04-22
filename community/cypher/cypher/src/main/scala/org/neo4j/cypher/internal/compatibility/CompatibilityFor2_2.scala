@@ -331,7 +331,7 @@ case class CompatibilityFor2_2Cost(graph: GraphDatabaseService,
                                    kernelMonitors: KernelMonitors,
                                    kernelAPI: KernelAPI,
                                    logger: StringLogger,
-                                   plannerName: CostBasedPlannerName) extends CompatibilityFor2_2 {
+                                   plannerName: Option[CostBasedPlannerName] = None) extends CompatibilityFor2_2 {
   protected val compiler = CypherCompilerFactory.costBasedCompiler(
     graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock, new WrappedMonitors(kernelMonitors),
     new StringInfoLogger(logger), plannerName, createRewriterSequence

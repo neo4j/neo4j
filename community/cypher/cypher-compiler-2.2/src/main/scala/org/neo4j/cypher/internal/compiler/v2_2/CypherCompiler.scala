@@ -67,7 +67,7 @@ object CypherCompilerFactory {
 
   def costBasedCompiler(graph: GraphDatabaseService, queryCacheSize: Int, statsDivergenceThreshold: Double,
                         queryPlanTTL: Long, clock: Clock, monitors: Monitors,
-                        logger: InfoLogger, plannerName: CostBasedPlannerName,
+                        logger: InfoLogger, plannerName: Option[CostBasedPlannerName],
                         rewriterSequencer: (String) => RewriterStepSequencer): CypherCompiler = {
     val parser = new CypherParser(monitors.newMonitor[ParserMonitor[Statement]](monitorTag))
     val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
@@ -76,10 +76,11 @@ object CypherCompilerFactory {
     val planningMonitor = monitors.newMonitor[PlanningMonitor](monitorTag)
     val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
     val queryPlanner = new DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
-    val planner = CostBasedPipeBuilderFactory(monitors, metricsFactory, planningMonitor, clock, queryPlanner = queryPlanner, rewriterSequencer = rewriterSequencer, plannerName = plannerName)
 
+    val pickedPlannerName = plannerName.getOrElse(ConservativePlannerName)
+    val planner = CostBasedPipeBuilderFactory(monitors, metricsFactory, planningMonitor, clock, queryPlanner = queryPlanner, rewriterSequencer = rewriterSequencer, plannerName = pickedPlannerName)
     // falling back to legacy planner is allowed only when no cost-based planner is picked explicitly (e.g., COST, IDP)
-    val pipeBuilder = plannerName match {
+    val pipeBuilder = pickedPlannerName match {
       case ConservativePlannerName =>
         new LegacyVsNewPipeBuilder(new LegacyPipeBuilder(monitors, rewriterSequencer), planner, planBuilderMonitor)
       case _ =>
