@@ -74,20 +74,20 @@ class CypherCompiler(graph: GraphDatabaseService,
     private val queryCacheSize: Int = getQueryCacheSize
     private val queryPlanTTL: Long = getMinimumTimeBeforeReplanning
 
-    override def create[T](spec: PlannerSpec[T]): T = spec match {
-      case PlannerSpec_v1_9 => CompatibilityFor1_9(graph, queryCacheSize, kernelMonitors).asInstanceOf[T]
+    override def create[S](spec: PlannerSpec { type SPI = S }): S = spec match {
+      case PlannerSpec_v1_9 => CompatibilityFor1_9(graph, queryCacheSize, kernelMonitors)
       case PlannerSpec_v2_2(planner) => planner match {
-        case CypherPlanner.rule => CompatibilityFor2_2Rule(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI).asInstanceOf[T]
-        case _ => CompatibilityFor2_2Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, log, planner).asInstanceOf[T]
-      }
+          case CypherPlanner.rule => CompatibilityFor2_2Rule(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI)
+          case _ => CompatibilityFor2_2Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, log, planner)
+        }
       case PlannerSpec_v2_3(planner, runtime) => planner match {
-        case CypherPlanner.rule => CompatibilityFor2_3Rule(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI).asInstanceOf[T]
-        case _ => CompatibilityFor2_3Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, log, planner, runtime).asInstanceOf[T]
+        case CypherPlanner.rule => CompatibilityFor2_3Rule(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI)
+        case _ => CompatibilityFor2_3Cost(graph, queryCacheSize, STATISTICS_DIVERGENCE_THRESHOLD, queryPlanTTL, CLOCK, kernelMonitors, kernelAPI, log, planner, runtime)
       }
     }
   }
 
-  private val planners = new PlannerCache(factory)
+  private val planners: PlannerCache[PlannerSpec] = new VersionBasedPlannerCache(factory)
 
   private final val VERSIONS_WITH_FIXED_PLANNER: Set[CypherVersion] = Set(v1_9)
   private final val VERSIONS_WITH_FIXED_RUNTIME: Set[CypherVersion] = Set(v1_9, v2_2)

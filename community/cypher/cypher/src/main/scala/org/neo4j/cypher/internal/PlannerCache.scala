@@ -19,38 +19,75 @@
  */
 package org.neo4j.cypher.internal
 
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicReference
 
 import org.neo4j.cypher.internal.compatibility.{CompatibilityFor1_9, CompatibilityFor2_2, CompatibilityFor2_3}
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime}
 
-import scala.collection.JavaConverters._
-import scala.collection.concurrent.Map
+import scala.annotation.tailrec
+import scala.ref.WeakReference
 
-class PlannerCache(factory: PlannerFactory) {
-  private val map: Map[Any, Any] = new ConcurrentHashMap[Any, Any]().asScala
+sealed trait PlannerSpec {
+  type SPI
+}
 
-  def apply[T](spec: PlannerSpec[T]): T = {
-    map.get(spec) match {
-      case Some(cachedInstance) => cachedInstance.asInstanceOf[T]
-      case None =>
-        val newInstance = factory.create(spec)
-        map.putIfAbsent(spec, newInstance) match {
-          case Some(cachedInstance) => cachedInstance.asInstanceOf[T]
-          case None => newInstance
-        }
+case object PlannerSpec_v1_9 extends PlannerSpec {
+  type SPI = CompatibilityFor1_9
+}
+
+final case class PlannerSpec_v2_2(planner: CypherPlanner) extends PlannerSpec {
+  type SPI = CompatibilityFor2_2
+}
+
+final case class PlannerSpec_v2_3(planner: CypherPlanner, runtime: CypherRuntime) extends PlannerSpec {
+  type SPI = CompatibilityFor2_3
+}
+
+trait PlannerFactory {
+  def create[S](spec: PlannerSpec { type SPI = S }): S
+}
+
+trait PlannerCache[K <: PlannerSpec]  {
+  def apply[S](spec: K { type SPI = S }): S
+}
+
+object VersionBasedPlannerCache {
+
+  class PlannerMap[K <: PlannerSpec { type SPI = S }, S](factory: PlannerFactory) {
+    private val cell = newCell(newRef(Map.empty[K, S]))
+
+    def apply(spec: K): S = recurse(spec, None)
+
+    @tailrec
+    private final def recurse(spec: K, candidate: Option[S]): S = {
+      val ref = cell.get()
+      val map = ref.get.getOrElse(Map.empty)
+      map.get(spec) match {
+        case Some(result) => result
+        case None =>
+          val nextCandidate = candidate.getOrElse(factory.create(spec))
+          val nextRef = newRef(map.updated(spec, nextCandidate))
+          if (cell.compareAndSet(ref, nextRef)) nextCandidate else recurse(spec, candidate orElse Some(nextCandidate))
+      }
     }
   }
 
+  private def newCell[T <: AnyRef](v: T) = new AtomicReference(v)
+  private def newRef[T <: AnyRef](v: T) = new WeakReference[T](v)
 }
 
-sealed trait PlannerSpec[T]
+class VersionBasedPlannerCache(factory: PlannerFactory) extends PlannerCache[PlannerSpec] {
 
-case object PlannerSpec_v1_9 extends PlannerSpec[CompatibilityFor1_9]
-case class PlannerSpec_v2_2(planner: CypherPlanner) extends PlannerSpec[CompatibilityFor2_2]
-case class PlannerSpec_v2_3(planner: CypherPlanner, runtime: CypherRuntime) extends PlannerSpec[CompatibilityFor2_3]
+  import VersionBasedPlannerCache.PlannerMap
 
-trait PlannerFactory {
+  private val cache_v1_9 = new PlannerMap[PlannerSpec_v1_9.type, CompatibilityFor1_9](factory)
+  private val cache_v2_2 = new PlannerMap[PlannerSpec_v2_2, CompatibilityFor2_2](factory)
+  private val cache_v2_3 = new PlannerMap[PlannerSpec_v2_3, CompatibilityFor2_3](factory)
 
-  def create[T](spec: PlannerSpec[T]): T
+  def apply[S](spec: PlannerSpec { type SPI = S }): S = spec match {
+    case s@PlannerSpec_v1_9 => cache_v1_9(s)
+    case s: PlannerSpec_v2_2 => cache_v2_2(s)
+    case s: PlannerSpec_v2_3 => cache_v2_3(s)
+  }
 }
+
