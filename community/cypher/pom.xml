@@ -19,8 +19,6 @@
 
   <properties>
     <bundle.namespace>org.neo4j.cypher</bundle.namespace>
-    <scala.version>2.10.5</scala.version>
-    <scala.binary.version>2.10</scala.binary.version>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/cypher-query-lang.html</docs.url>
     <short-name>community-cypher-build</short-name>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
@@ -77,8 +75,6 @@
           </execution>
         </executions>
         <configuration>
-          <scalaVersion>${scala.version}</scalaVersion>
-          <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
           <jvmArgs>
             <jvmArg>-Xms64m</jvmArg>
             <jvmArg>-Xmx1024m</jvmArg>
@@ -185,42 +181,8 @@
 
   <dependencies>
 
-    <!-- scala -->
+    <!-- shared java test dependencies -->
 
-    <dependency>
-      <groupId>org.scala-lang</groupId>
-      <artifactId>scala-library</artifactId>
-    </dependency>
-
-    <!-- testing -->
-
-    <dependency>
-      <groupId>org.scalatest</groupId>
-      <artifactId>scalatest_2.10</artifactId>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <artifactId>scala-library</artifactId>
-          <groupId>org.scala-lang</groupId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.scalautils</groupId>
-      <artifactId>scalautils_2.10</artifactId>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <artifactId>scala-library</artifactId>
-          <groupId>org.scala-lang</groupId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.scalacheck</groupId>
-      <artifactId>scalacheck_2.10</artifactId>
-      <scope>test</scope>
-    </dependency>
    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -251,17 +213,10 @@
   <!-- Required versions for each dependency, inherited dependencies are set in dependencies -->
 
   <dependencyManagement>
+
     <dependencies>
 
-      <!-- scala -->
-
-      <dependency>
-        <groupId>org.scala-lang</groupId>
-        <artifactId>scala-library</artifactId>
-        <version>${scala.version}</version>
-      </dependency>
-
-      <!-- testing -->
+      <!-- scala test dependencies -->
 
       <dependency>
         <groupId>org.scalatest</groupId>
@@ -333,26 +288,21 @@
       <!-- other -->
 
       <dependency>
-        <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
-        <artifactId>concurrentlinkedhashmap-lru</artifactId>
-        <version>1.4</version>
-      </dependency>
-      <dependency>
-        <groupId>org.codehaus.jackson</groupId>
-        <artifactId>jackson-mapper-asl</artifactId>
-        <version>1.9.7</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
         <groupId>org.parboiled</groupId>
         <artifactId>parboiled-scala_2.10</artifactId>
-        <version>1.1.6</version>
+        <version>1.1.7</version>
         <exclusions>
           <exclusion>
             <artifactId>scala-library</artifactId>
             <groupId>org.scala-lang</groupId>
           </exclusion>
         </exclusions>
+      </dependency>
+
+      <dependency>
+        <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
+        <artifactId>concurrentlinkedhashmap-lru</artifactId>
+        <version>1.4</version>
       </dependency>
 
     </dependencies>
