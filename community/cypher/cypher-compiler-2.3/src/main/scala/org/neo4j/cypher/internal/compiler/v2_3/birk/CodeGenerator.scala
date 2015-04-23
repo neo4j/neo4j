@@ -127,28 +127,14 @@ object CodeGenerator {
        |{
        |private final ReadOperations ro;
        |private final GraphDatabaseService db;
-       |private final InternalPlanDescription description;
-       |private final ExecutionMode executionMode;
        |private final Map<String, Object> params;
        |
        |public $className( CompletionListener completion, Statement statement, GraphDatabaseService db, ExecutionMode executionMode, InternalPlanDescription description, Map<String, Object> params )
        |{
-       |  super( completion, statement );
+       |  super( completion, statement, executionMode, description );
        |  this.ro = statement.readOperations();
        |  this.db = db;
-       |  this.executionMode = executionMode;
-       |  this.description = description;
        |  this.params = params;
-       |}
-       |
-       |public ExecutionMode executionMode()
-       |{
-       |  return this.executionMode;
-       |}
-       |
-       |public InternalPlanDescription executionPlanDescription()
-       |{
-       |  return this.description;
        |}
        |
        |$fields
