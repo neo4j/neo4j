@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.{Eagerly, IsCollection}
 import org.neo4j.cypher.internal.compiler.v2_3.notification.InternalNotification
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{Runtime, Planner}
 import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, ExplainMode, ProfileMode, _}
 import org.neo4j.graphdb.QueryExecutionType._
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
@@ -39,7 +40,7 @@ import scala.collection.{Map, mutable}
  * Base class for compiled execution results, implements everything in InternalExecutionResult
  * except `javaColumns` and `accept` which should be implemented by the generated classes.
  */
-abstract class CompiledExecutionResult(taskCloser: TaskCloser, statement:Statement) extends InternalExecutionResult {
+abstract class CompiledExecutionResult(taskCloser: TaskCloser, statement:Statement, executionMode:ExecutionMode, description:InternalPlanDescription) extends InternalExecutionResult {
   self =>
 
   import scala.collection.JavaConverters._
@@ -78,7 +79,7 @@ abstract class CompiledExecutionResult(taskCloser: TaskCloser, statement:Stateme
    * NOTE: This should ony be used for testing, it creates an InternalExecutionResult
    * where you can call both toList and dumpToString
    */
-  def toEagerIterableResult: InternalExecutionResult = {
+  def toEagerIterableResult(planner: PlannerName, runtime: RuntimeName): InternalExecutionResult = {
     val dumpToStringBuilder = Seq.newBuilder[Map[String, String]]
     val resultBuilder = Seq.newBuilder[Map[String, Any]]
     doInAccept{ (row) =>
@@ -87,14 +88,13 @@ abstract class CompiledExecutionResult(taskCloser: TaskCloser, statement:Stateme
     }
     val result = resultBuilder.result()
     val iterator = result.toIterator
-    new CompiledExecutionResult(taskCloser, statement) {
-      override def executionMode: ExecutionMode = self.executionMode
+    new CompiledExecutionResult(taskCloser, statement, executionMode, description) {
 
       override def javaColumns: util.List[String] = self.javaColumns
 
       override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = throw new UnsupportedOperationException
 
-      override def executionPlanDescription(): InternalPlanDescription = self.executionPlanDescription()
+      override def executionPlanDescription(): InternalPlanDescription = self.executionPlanDescription().addArgument(Planner(planner.name)).addArgument(Runtime(runtime.name))
 
       override def toList = result.map(Eagerly.immutableMapValues(_, materialize)).toList
 
@@ -118,6 +118,10 @@ abstract class CompiledExecutionResult(taskCloser: TaskCloser, statement:Stateme
     taskCloser.close(success = successful)
   }
 
+  override def executionPlanDescription() = description
+
+  def mode = executionMode
+
   override def planDescriptionRequested: Boolean =  executionMode == ExplainMode || executionMode == ProfileMode
 
   override def executionType = if (executionMode == ProfileMode) {
@@ -137,9 +141,6 @@ abstract class CompiledExecutionResult(taskCloser: TaskCloser, statement:Stateme
     ensureIterator()
     Eagerly.immutableMapValues(innerIterator.next(), materialize)
   }
-
-
-  def executionMode: ExecutionMode
 
   //TODO when allowing writes this should be moved to the generated class
   protected def queryType: QueryType = QueryType.READ_ONLY

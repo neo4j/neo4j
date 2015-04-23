@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.birk.il
 
-import org.neo4j.cypher.internal.compiler.v2_3.ExecutionMode
+import org.neo4j.cypher.internal.compiler.v2_3.{TaskCloser, ExecutionMode}
 import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
@@ -51,16 +51,18 @@ trait CodeGenSugar extends MockitoSugar {
     CodeGenerator.generateClass(instructions.toSeq)
 
   def newInstance(clazz: Class[InternalExecutionResult],
+                  taskCloser: TaskCloser = new TaskCloser,
                   statement: Statement = mock[Statement],
                   graphdb: GraphDatabaseService = null,
                   executionMode: ExecutionMode = null,
                   description: InternalPlanDescription = null,
                   params: Map[String, Any] = Map.empty): InternalExecutionResult =
     clazz.getConstructor(
+      classOf[TaskCloser],
       classOf[Statement],
       classOf[GraphDatabaseService],
       classOf[ExecutionMode],
       classOf[InternalPlanDescription],
       classOf[java.util.Map[String, Object]]
-    ).newInstance(statement, graphdb, executionMode, description, JavaConversions.mapAsJavaMap(params))
+    ).newInstance(taskCloser, statement, graphdb, executionMode, description, JavaConversions.mapAsJavaMap(params))
 }

@@ -44,8 +44,7 @@ object RewindableExecutionResult {
         }
       }
     case other: CompiledExecutionResult  =>
-      exceptionHandlerFor2_3.runSafely {other.toEagerIterableResult}
-
+      exceptionHandlerFor2_3.runSafely {other.toEagerIterableResult(planner, runtime)}
     case _ =>
       inner
   }
