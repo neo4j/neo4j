@@ -19,13 +19,13 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
-import org.neo4j.logging.LogProvider;
+import org.neo4j.kernel.impl.logging.LogService;
 
 /**
  * Context used by AcceptorState
  */
 public interface AcceptorContext
-    extends LogProvider
+    extends LogService
 {
     AcceptorInstance getAcceptorInstance( InstanceId instanceId );
 

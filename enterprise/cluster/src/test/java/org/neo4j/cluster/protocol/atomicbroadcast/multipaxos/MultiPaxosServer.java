@@ -27,8 +27,7 @@ import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.Collection;
 
-import org.neo4j.logging.FormattedLogProvider;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.kernel.impl.logging.NullLogService;
 
 import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.ClusterSettings;
@@ -61,6 +60,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 
 /**
  * Multi Paxos test server
@@ -89,13 +89,11 @@ public class MultiPaxosServer
             MessageTimeoutStrategy timeoutStrategy = new MessageTimeoutStrategy( new FixedTimeoutStrategy( 5000 ) )
                     .timeout( HeartbeatMessage.sendHeartbeat, 200 );
 
-            LogProvider logProvider = FormattedLogProvider.toOutputStream( System.out );
-
             Monitors monitors = new Monitors();
             NetworkedServerFactory serverFactory = new NetworkedServerFactory( life,
-                    new MultiPaxosServerFactory( new ClusterConfiguration( "default", logProvider ),
-                            logProvider, monitors.newMonitor( StateMachines.Monitor.class ) ),
-                    timeoutStrategy, logProvider, new ObjectStreamFactory(), new ObjectStreamFactory(),
+                    new MultiPaxosServerFactory( new ClusterConfiguration( "default", NullLogProvider.getInstance() ),
+                            NullLogService.getInstance(), monitors.newMonitor( StateMachines.Monitor.class ) ),
+                    timeoutStrategy, NullLogProvider.getInstance(), new ObjectStreamFactory(), new ObjectStreamFactory(),
                     monitors.newMonitor( NetworkReceiver.Monitor.class ),
                     monitors.newMonitor( NetworkSender.Monitor.class ),
                     monitors.newMonitor( NamedThreadFactory.Monitor.class )

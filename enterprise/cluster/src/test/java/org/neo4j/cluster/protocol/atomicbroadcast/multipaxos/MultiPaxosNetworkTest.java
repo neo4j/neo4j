@@ -55,6 +55,7 @@ import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -84,7 +85,7 @@ public class MultiPaxosNetworkTest
                                 "cluster://localhost:5001",
                                 "cluster://localhost:5002",
                                 "cluster://localhost:5003" ),
-                        NullLogProvider.getInstance(),
+                        NullLogService.getInstance(),
                         monitors.newMonitor( StateMachines.Monitor.class )
                 ),
                 timeoutStrategy, NullLogProvider.getInstance(), new ObjectStreamFactory(), new ObjectStreamFactory(),

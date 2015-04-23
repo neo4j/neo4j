@@ -34,7 +34,7 @@ import org.neo4j.cluster.protocol.election.ElectionRole;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogService;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -60,7 +60,7 @@ public class ClusterContextTest
                     {
                         command.run();
                     }
-                }, NullLogProvider.getInstance(),
+                }, NullLogService.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class )
@@ -107,7 +107,7 @@ public class ClusterContextTest
                     {
                         command.run();
                     }
-                }, NullLogProvider.getInstance(),
+                }, NullLogService.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class )
@@ -147,7 +147,7 @@ public class ClusterContextTest
                     {
                         command.run();
                     }
-                }, NullLogProvider.getInstance(),
+                }, NullLogService.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class )
@@ -194,7 +194,7 @@ public class ClusterContextTest
                     {
                         command.run();
                     }
-                }, NullLogProvider.getInstance(),
+                }, NullLogService.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class )

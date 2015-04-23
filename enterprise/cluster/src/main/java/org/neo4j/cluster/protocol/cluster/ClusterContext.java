@@ -29,6 +29,7 @@ import org.neo4j.cluster.protocol.TimeoutsContext;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage.ConfigurationResponseState;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.LogProvider;
 
 /**
@@ -39,7 +40,7 @@ import org.neo4j.logging.LogProvider;
  * @see ClusterState
  */
 public interface ClusterContext
-    extends LogProvider, TimeoutsContext, ConfigurationContext
+    extends LogService, TimeoutsContext, ConfigurationContext
 {
     public static final int NO_ELECTOR_VERSION = -1;
 

@@ -30,8 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageType;
@@ -58,20 +58,20 @@ public class NetworkMock
     private long tickDuration;
     private final MultipleFailureLatencyStrategy strategy;
     private MessageTimeoutStrategy timeoutStrategy;
-    private LogProvider logProvider;
+    private LogService logService;
     protected final Log log;
     private final List<Pair<Future<?>, Runnable>> futureWaiter;
 
 
-    public NetworkMock( LogProvider logProvider, Monitors monitors, long tickDuration, MultipleFailureLatencyStrategy strategy,
+    public NetworkMock( LogService logService, Monitors monitors, long tickDuration, MultipleFailureLatencyStrategy strategy,
                         MessageTimeoutStrategy timeoutStrategy )
     {
         this.monitors = monitors;
         this.tickDuration = tickDuration;
         this.strategy = strategy;
         this.timeoutStrategy = timeoutStrategy;
-        this.logProvider = logProvider;
-        this.log = logProvider.getLog( NetworkMock.class );
+        this.logService = logService;
+        this.log = logService.getInternalLog( NetworkMock.class );
         futureWaiter = new LinkedList<Pair<Future<?>, Runnable>>();
     }
 
@@ -88,13 +88,13 @@ public class NetworkMock
 
     protected TestProtocolServer newTestProtocolServer( int serverId, URI serverUri )
     {
-        ProtocolServerFactory protocolServerFactory = new MultiPaxosServerFactory( new ClusterConfiguration( "default", logProvider ), logProvider, monitors.newMonitor( StateMachines.Monitor.class ) );
+        ProtocolServerFactory protocolServerFactory = new MultiPaxosServerFactory( new ClusterConfiguration( "default", logService.getInternalLogProvider() ), logService, monitors.newMonitor( StateMachines.Monitor.class ) );
 
         ServerIdElectionCredentialsProvider electionCredentialsProvider = new ServerIdElectionCredentialsProvider();
         electionCredentialsProvider.listeningAt( serverUri );
-        TestProtocolServer protocolServer = new TestProtocolServer( logProvider, timeoutStrategy, protocolServerFactory, serverUri,
+        TestProtocolServer protocolServer = new TestProtocolServer( logService.getInternalLogProvider(), timeoutStrategy, protocolServerFactory, serverUri,
                 new InstanceId( serverId ), new InMemoryAcceptorInstanceStore(), electionCredentialsProvider );
-        protocolServer.addStateTransitionListener( new StateTransitionLogger( logProvider ) );
+        protocolServer.addStateTransitionListener( new StateTransitionLogger( logService.getInternalLogProvider() ) );
         return protocolServer;
     }
 

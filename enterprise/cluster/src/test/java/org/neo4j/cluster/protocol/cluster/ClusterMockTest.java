@@ -60,7 +60,7 @@ import org.neo4j.cluster.statemachine.State;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.LoggerRule;
 
@@ -76,7 +76,7 @@ public class ClusterMockTest
 
     public static NetworkMock DEFAULT_NETWORK()
     {
-        return new NetworkMock( NullLogProvider.getInstance(), new Monitors(), 10,
+        return new NetworkMock( NullLogService.getInstance(), new Monitors(), 10,
                 new MultipleFailureLatencyStrategy( new FixedNetworkLatencyStrategy( 10 ),
                         new ScriptableNetworkFailureLatencyStrategy() ),
                 new MessageTimeoutStrategy( new FixedTimeoutStrategy( 500 ) )

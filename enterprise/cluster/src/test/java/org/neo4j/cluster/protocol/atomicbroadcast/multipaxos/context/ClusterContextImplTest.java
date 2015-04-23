@@ -39,7 +39,7 @@ import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogService;
 
 public class ClusterContextImplTest
 {
@@ -60,7 +60,7 @@ public class ClusterContextImplTest
         CommonContextState commonContextState = mock( CommonContextState.class );
         when( commonContextState.configuration() ).thenReturn( clusterConfiguration );
 
-        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
+        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogService.getInstance(),
                 mock( Timeouts.class ), mock ( Executor.class ), mock( ObjectOutputStreamFactory.class ), mock(
                 ObjectInputStreamFactory.class ), mock( LearnerContext.class ), mock( HeartbeatContext.class ) );
 
@@ -94,7 +94,7 @@ public class ClusterContextImplTest
         CommonContextState commonContextState = mock( CommonContextState.class );
         when( commonContextState.configuration() ).thenReturn( clusterConfiguration );
 
-        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
+        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogService.getInstance(),
                 mock( Timeouts.class ), mock ( Executor.class ), mock( ObjectOutputStreamFactory.class ), mock(
                 ObjectInputStreamFactory.class ), mock( LearnerContext.class ), mock( HeartbeatContext.class ) );
 
@@ -124,7 +124,7 @@ public class ClusterContextImplTest
 
         CommonContextState commonContextState = mock( CommonContextState.class, RETURNS_MOCKS );
 
-        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
+        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogService.getInstance(),
                 mock( Timeouts.class ), mock ( Executor.class ), mock( ObjectOutputStreamFactory.class ), mock(
                 ObjectInputStreamFactory.class ), mock( LearnerContext.class ), mock( HeartbeatContext.class ) );
 
@@ -154,7 +154,7 @@ public class ClusterContextImplTest
 
         CommonContextState commonContextState = mock( CommonContextState.class, RETURNS_MOCKS );
 
-        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
+        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogService.getInstance(),
                 mock( Timeouts.class ), mock ( Executor.class ), mock( ObjectOutputStreamFactory.class ), mock(
                 ObjectInputStreamFactory.class ), mock( LearnerContext.class ), mock( HeartbeatContext.class ) );
 
@@ -189,7 +189,7 @@ public class ClusterContextImplTest
 
         ArgumentCaptor<HeartbeatListener> listenerCaptor = ArgumentCaptor.forClass( HeartbeatListener.class );
 
-        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
+        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogService.getInstance(),
                 timeouts, executor, mock( ObjectOutputStreamFactory.class ), mock(
                 ObjectInputStreamFactory.class ), mock( LearnerContext.class ), heartbeatContext );
 
@@ -228,7 +228,7 @@ public class ClusterContextImplTest
 
         ArgumentCaptor<HeartbeatListener> listenerCaptor = ArgumentCaptor.forClass( HeartbeatListener.class );
 
-        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogProvider.getInstance(),
+        ClusterContext context = new ClusterContextImpl(me, commonContextState, NullLogService.getInstance(),
                 timeouts, executor, mock( ObjectOutputStreamFactory.class ), mock(
                 ObjectInputStreamFactory.class ), mock( LearnerContext.class ), heartbeatContext );
 
