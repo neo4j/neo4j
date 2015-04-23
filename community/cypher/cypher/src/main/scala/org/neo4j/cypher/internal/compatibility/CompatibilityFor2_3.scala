@@ -351,10 +351,10 @@ case class CompatibilityFor2_3Cost(graph: GraphDatabaseService,
                                            runtime: CypherRuntime) extends CompatibilityFor2_3 {
   protected val compiler = {
     val plannerName = planner match {
-      case CypherPlanner.default => ConservativePlannerName
-      case CypherPlanner.cost => CostPlannerName
-      case CypherPlanner.idp => IDPPlannerName
-      case CypherPlanner.dp => DPPlannerName
+      case CypherPlanner.default => None
+      case CypherPlanner.cost => Some(CostPlannerName)
+      case CypherPlanner.idp => Some(IDPPlannerName)
+      case CypherPlanner.dp => Some(DPPlannerName)
       case _ => throw new IllegalArgumentException(s"unknown cost based planner: ${planner.name}")
     }
 

@@ -176,7 +176,7 @@ class CypherCompilerPerformanceTest extends GraphDatabaseFunSuite {
       monitors = new WrappedMonitors2_3(kernelMonitors),
       logger = DEV_NULL,
       rewriterSequencer = RewriterStepSequencer.newPlain,
-      plannerName = CostPlannerName,
+      plannerName = Some(CostPlannerName),
       runtimeName = InterpretedRuntimeName
     )
   }
