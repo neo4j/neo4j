@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast
 import org.neo4j.cypher.internal.compiler.v2_3.ast.AscSortItem
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{Ascending, SortDescription}
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, LogicalPlanningContext}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, LogicalPlan, Projection}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, LogicalPlanningContext}
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
 class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -41,7 +41,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     implicit val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
-    val result = projection(startPlan, projections, intermediate = true)
+    val result = projection(startPlan, projections)
 
     // then
     result should equal(Projection(startPlan, projections)(solved))
@@ -54,36 +54,23 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     implicit val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
-    val result = projection(startPlan, projections, intermediate = true)
+    val result = projection(startPlan, projections)
 
     // then
     result should equal(startPlan)
     result.solved.horizon should equal(RegularQueryProjection(projections))
   }
 
-  test("does add the final projection when needed") {
+  test("does projection when renaming columns") {
     // given
-    val projections: Map[String, ast.Expression] = Map("n" -> ast.Identifier("n") _)
+    val projections: Map[String, ast.Expression] = Map("  n@34" -> ast.Identifier("n") _)
     implicit val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
-    val result = projection(startPlan, projections, intermediate = false)
+    val result = projection(startPlan, projections)
 
     // then
     result should equal(Projection(startPlan, projections)(solved))
-    result.solved.horizon should equal(RegularQueryProjection(projections))
-  }
-
-  test("does not add the final projection when not needed") {
-    // given
-    val projections: Map[String, ast.Expression] = Map("n" -> ast.Identifier("n") _, "m" -> ast.Identifier("m") _)
-    implicit val (context, startPlan) = queryGraphWith(projectionsMap = projections)
-
-    // when
-    val result = projection(startPlan, projections, intermediate = false)
-
-    // then
-    result should equal(startPlan)
     result.solved.horizon should equal(RegularQueryProjection(projections))
   }
 
@@ -95,10 +82,10 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
       planContext = newMockedPlanContext
     )
 
-    val ids = Set(IdName("n"), IdName("m"))
+    val ids = projectionsMap.keys.map(IdName(_)).toSet
 
     val plan =
-      newMockedLogicalPlanWithSolved(ids, CardinalityEstimation.lift(PlannerQuery(QueryGraph.empty.addPatternNodes(IdName("n"), IdName("m"))), Cardinality(0)))
+      newMockedLogicalPlanWithSolved(ids, CardinalityEstimation.lift(PlannerQuery(QueryGraph.empty.addPatternNodes(ids.toList: _*)), Cardinality(0)))
 
     (context, plan)
   }

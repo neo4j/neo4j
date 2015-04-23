@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionMode
 import org.neo4j.cypher.internal.compiler.v2_3.CostPlannerName
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaTypes.{INT, LONG, OBJECT, DOUBLE, STRING}
+import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaTypes.{DOUBLE, INT, LONG, OBJECT, STRING}
 import org.neo4j.cypher.internal.compiler.v2_3.birk.il._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledPlan, PlanFingerprint}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly

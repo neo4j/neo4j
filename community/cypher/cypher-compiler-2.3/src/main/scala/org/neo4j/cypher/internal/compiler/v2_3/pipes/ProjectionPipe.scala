@@ -23,11 +23,14 @@ import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.Effects._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.LegacyExpression
-import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
 
-case class ProjectionNewPipe(source: Pipe, expressions: Map[String, Expression])(val estimatedCardinality: Option[Double] = None)
-                            (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
-  val symbols: SymbolTable = {
+/*
+Projection evaluates expressions and stores their values into new slots in the execution context.
+It's an additive operation - nothing is lost in the execution context, the pipe simply adds new key-value pairs.
+ */
+case class ProjectionPipe(source: Pipe, expressions: Map[String, Expression])(val estimatedCardinality: Option[Double] = None)
+                         (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with RonjaPipe {
+  val symbols = {
     val newIdentifiers = expressions.map {
       case (name, expression) => name -> expression.getType(source.symbols)
     }
@@ -39,14 +42,14 @@ case class ProjectionNewPipe(source: Pipe, expressions: Map[String, Expression])
     //register as parent so that stats are associated with this pipe
     state.decorator.registerParentPipe(this)
     input.map {
-      original =>
-        val m = MutableMaps.create(expressions.size)
+      ctx =>
         expressions.foreach {
           case (name, expression) =>
-            m.put(name, expression(original)(state))
+            val result = expression(ctx)(state)
+            ctx.put(name, result)
         }
 
-        ExecutionContext(m)
+        ctx
     }
   }
 

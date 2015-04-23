@@ -193,7 +193,7 @@ class QueryPlanTest extends DocumentingTestBase {
         """For each row from its input, projection executes a set of expressions and produces a row with the results of the expressions.
           |The following query will produce one row with the value "hello".""".stripMargin,
       queryText = """RETURN "hello" AS greeting""",
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, startsWith("Projection"))
+      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("Projection"))
     )
   }
 
@@ -522,7 +522,7 @@ class QueryPlanTest extends DocumentingTestBase {
         """Takes a collection of values and returns one row per item in the collection.
           |The following query will return one row for each of the numbers 1 to 5.""".stripMargin,
       queryText = """UNWIND range(1,5) as value return value;""",
-      assertion = (p) => assertThat(p.executionPlanDescription().toString, startsWith("UNWIND"))
+      assertion = (p) => assertThat(p.executionPlanDescription().toString, containsString("UNWIND"))
     )
   }
 

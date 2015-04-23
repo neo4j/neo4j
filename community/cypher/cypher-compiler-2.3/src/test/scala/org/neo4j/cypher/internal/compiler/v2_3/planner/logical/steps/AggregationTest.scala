@@ -66,7 +66,7 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     aggregation(startPlan, projectionPlan)(context) should equal(
       Aggregation(
-        projection(startPlan, groupingMap + ("n" -> ident("n")), true),
+        projection(startPlan, groupingMap + ("n" -> ident("n"))),
         groupingMap, aggregatingMap2)(solved)
     )
   }

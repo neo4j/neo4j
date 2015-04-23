@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.PatternConve
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.StatementConverters
 import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.compiler.v2_3.ast.{Expression, Identifier, NodeStartItem, RelTypeName}
+import org.neo4j.cypher.internal.compiler.v2_3.birk.il.ProduceResults
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{AggregationExpression, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.{EntityProducerFactory, Predicate => CommandPredicate, True}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.prepare.KeyTokenResolver
@@ -51,12 +52,12 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
     implicit val table: SemanticTable = context.semanticTable
     val updating = false
 
-    def buildPipe(plan: LogicalPlan): Pipe = {
+    def buildPipe(plan: LogicalPlan): Pipe with RonjaPipe = {
       implicit val monitor = monitors.newMonitor[PipeMonitor]()
 
-      val result: Pipe with RonjaPipe = plan match {
+      val result = plan match {
         case Projection(left, expressions) =>
-          ProjectionNewPipe(buildPipe(left), Eagerly.immutableMapValues(expressions, buildExpression))()
+          ProjectionPipe(buildPipe(left), Eagerly.immutableMapValues(expressions, buildExpression))()
 
         case ProjectEndpoints(left, rel, start, startInScope, end, endInScope, types, directed, length) =>
           ProjectEndpointsPipe(buildPipe(left), rel.name,
@@ -211,6 +212,11 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
           val source = new SingleRowPipe()
           val ep = entityProducerFactory.nodeStartItems((planContext, StatementConverters.StartItemConverter(hint).asCommandStartItem))
           NodeStartPipe(source, id.name, ep)()
+
+        case ProduceResult(nodes, rels, others, lhs) =>
+          val source = buildPipe(lhs)
+          val columns = nodes ++ rels ++ others
+          ProduceResultsPipe(source, columns)()
 
         case x =>
           throw new CantHandleQueryException(x.toString)

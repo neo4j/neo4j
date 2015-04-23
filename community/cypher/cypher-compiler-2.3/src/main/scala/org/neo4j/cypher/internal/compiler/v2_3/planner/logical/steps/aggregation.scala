@@ -35,8 +35,9 @@ object aggregation {
       case id => id.name -> id
     }.toMap
 
-    //  TODO: we need to project here since the pipe does not do that, when moving to the new runtime the aggregation pipe MUST do the projection itself
-    val projectedPlan = projection(plan, groupingExpressions ++ identifiersToKeep, intermediate = true)
+    //  TODO: we need to project here since the pipe does not do that,
+    //  when moving to the new runtime the aggregation pipe MUST do the projection itself
+    val projectedPlan = projection(plan, groupingExpressions ++ identifiersToKeep)
     context.logicalPlanProducer.planAggregation(projectedPlan, groupingExpressions, aggregation.aggregationExpressions)
   }
 }

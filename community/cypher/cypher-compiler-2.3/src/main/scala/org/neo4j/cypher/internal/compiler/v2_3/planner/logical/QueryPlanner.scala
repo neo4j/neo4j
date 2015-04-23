@@ -21,10 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.planner._
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.{aggregation, projection, sortSkipAndLimit, verifyBestPlan}
-
-import scala.annotation.tailrec
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{LogicalPlan, ProduceResult}
 
 trait QueryPlanner {
   def plan(plannerQuery: UnionQuery)(implicit context: LogicalPlanningContext): LogicalPlan
@@ -32,19 +29,33 @@ trait QueryPlanner {
 
 case class DefaultQueryPlanner(planRewriter: Rewriter,
                                config: QueryPlannerConfiguration = QueryPlannerConfiguration.default,
-                               planSingleQuery: LogicalPlanningFunction1[PlannerQuery, LogicalPlan] = planSingleQueryX())
+                               planSingleQuery: LogicalPlanningFunction1[PlannerQuery, LogicalPlan] = PlanSingleQuery())
   extends QueryPlanner {
 
   def plan(unionQuery: UnionQuery)(implicit context: LogicalPlanningContext): LogicalPlan = unionQuery match {
     case UnionQuery(queries, distinct) =>
-      val plan = planQuery(queries, distinct)
-      plan.endoRewrite(planRewriter)
+      val plan = planQueries(queries, distinct)
+      val rewrittenPlan = plan.endoRewrite(planRewriter)
+      createProduceResultOperator(rewrittenPlan, unionQuery)
 
     case _ =>
       throw new CantHandleQueryException
   }
 
-  private def planQuery(queries: Seq[PlannerQuery], distinct: Boolean)(implicit context: LogicalPlanningContext) = {
+  private def createProduceResultOperator(in: LogicalPlan, unionQuery: UnionQuery)
+                                         (implicit context: LogicalPlanningContext): LogicalPlan = {
+    val lastQuery = unionQuery.queries.last
+    val columns = lastQuery.lastQueryHorizon.exposedSymbols(lastQuery.lastQueryGraph)
+
+    val stringColumns = columns.map(_.name)
+    val rels = stringColumns.filter(context.semanticTable.isRelationship)
+    val nodes = stringColumns.filter(context.semanticTable.isNode)
+    val others = stringColumns -- rels -- nodes
+
+    ProduceResult(nodes.toSeq, rels.toSeq, others.toSeq, in)
+  }
+
+  private def planQueries(queries: Seq[PlannerQuery], distinct: Boolean)(implicit context: LogicalPlanningContext) = {
     val logicalPlans: Seq[LogicalPlan] = queries.map(p => planSingleQuery(p))
     val unionPlan = logicalPlans.reduce[LogicalPlan] {
       case (p1, p2) => context.logicalPlanProducer.planUnion(p1, p2)
@@ -57,60 +68,6 @@ case class DefaultQueryPlanner(planRewriter: Rewriter,
   }
 }
 
-case class planEventHorizonX(config: QueryPlannerConfiguration = QueryPlannerConfiguration.default)
-  extends LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] {
-
-  override def apply(query: PlannerQuery, plan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan = {
-    val selectedPlan = config.applySelections(plan, query.graph)
-    val projectedPlan = query.horizon match {
-      case aggregatingProjection: AggregatingQueryProjection =>
-        val aggregationPlan = aggregation(selectedPlan, aggregatingProjection)
-        sortSkipAndLimit(aggregationPlan, query)
-
-      case queryProjection: RegularQueryProjection =>
-        val sortedAndLimited = sortSkipAndLimit(selectedPlan, query)
-        projection(sortedAndLimited, queryProjection.projections, intermediate = query.tail.isDefined)
-
-      case UnwindProjection(identifier, expression) =>
-        context.logicalPlanProducer.planUnwind(plan, identifier, expression)
-
-      case _ =>
-        throw new CantHandleQueryException
-    }
-
-    projectedPlan
-  }
-}
-
-case class planWithTailX(expressionRewriterFactory: (LogicalPlanningContext => Rewriter) = ExpressionRewriterFactory,
-                        planEventHorizon: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = planEventHorizonX())
-  extends LogicalPlanningFunction2[LogicalPlan, Option[PlannerQuery], LogicalPlan] {
-
-//  @tailrec
-  override def apply(pred: LogicalPlan, remaining: Option[PlannerQuery])(implicit context: LogicalPlanningContext): LogicalPlan = {
-    remaining match {
-      case Some(query) =>
-        val lhs = pred
-        val lhsContext = context.recurse(lhs)
-        val rhs = planPart(query, lhsContext, Some(context.logicalPlanProducer.planQueryArgumentRow(query.graph)))
-        val applyPlan = context.logicalPlanProducer.planTailApply(lhs, rhs)
-
-        val applyContext = lhsContext.recurse(applyPlan)
-        val projectedPlan = planEventHorizon(query, applyPlan)(applyContext)
-
-        val projectedContext = applyContext.recurse(projectedPlan)
-        val expressionRewriter = expressionRewriterFactory(projectedContext)
-        val completePlan = projectedPlan.endoRewrite(expressionRewriter)
-
-        // planning nested expressions doesn't change outer cardinality
-        apply(completePlan, query.tail)(projectedContext)
-
-      case None =>
-        pred
-    }
-  }
-}
-
 case object planPart extends ((PlannerQuery, LogicalPlanningContext, Option[LogicalPlan]) => LogicalPlan) {
 
   def apply(query: PlannerQuery, context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = {
@@ -119,23 +76,5 @@ case object planPart extends ((PlannerQuery, LogicalPlanningContext, Option[Logi
       case _ => context
     }
     ctx.strategy.plan(query.graph)(ctx, leafPlan)
-  }
-}
-
-case class planSingleQueryX(planPart: (PlannerQuery, LogicalPlanningContext, Option[LogicalPlan]) => LogicalPlan = planPart,
-                           planEventHorizon: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = planEventHorizonX(),
-                           expressionRewriterFactory: (LogicalPlanningContext => Rewriter) = ExpressionRewriterFactory,
-                           planWithTail: LogicalPlanningFunction2[LogicalPlan, Option[PlannerQuery], LogicalPlan] = planWithTailX()) extends LogicalPlanningFunction1[PlannerQuery, LogicalPlan] {
-
-  override def apply(in: PlannerQuery)(implicit context: LogicalPlanningContext): LogicalPlan = {
-    val partPlan = planPart(in, context, None)
-
-    val projectedPlan = planEventHorizon(in, partPlan)
-    val projectedContext = context.recurse(projectedPlan)
-    val expressionRewriter = expressionRewriterFactory(projectedContext)
-    val completePlan = projectedPlan.endoRewrite(expressionRewriter)
-
-    val finalPlan = planWithTail(completePlan, in.tail)(projectedContext)
-    verifyBestPlan(finalPlan, in)
   }
 }

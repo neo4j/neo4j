@@ -105,7 +105,7 @@ class ProfilerTest extends CypherFunSuite {
     val projectedPath = mock[ProjectedPath]
     val DB_HITS = 100
     val innerPipe = NestedPipeExpression(new ProfilerTestPipe(SingleRowPipe(), "nested pipe", rows = 10, dbAccess = DB_HITS), projectedPath)
-    val pipeUnderInspection = ProjectionNewPipe(SingleRowPipe(), Map("x" -> innerPipe))()
+    val pipeUnderInspection = ProjectionPipe(SingleRowPipe(), Map("x" -> innerPipe))()
 
     val queryContext = mock[QueryContext]
     val profiler = new Profiler
@@ -125,9 +125,9 @@ class ProfilerTest extends CypherFunSuite {
     val projectedPath = mock[ProjectedPath]
     val DB_HITS = 100
     val nestedExpression = NestedPipeExpression(new ProfilerTestPipe(SingleRowPipe(), "nested pipe1", rows = 10, dbAccess = DB_HITS), projectedPath)
-    val innerInnerPipe = ProjectionNewPipe(SingleRowPipe(), Map("y"->nestedExpression))()
+    val innerInnerPipe = ProjectionPipe(SingleRowPipe(), Map("y"->nestedExpression))()
     val innerPipe = NestedPipeExpression(new ProfilerTestPipe(innerInnerPipe, "nested pipe2", rows = 10, dbAccess = DB_HITS), projectedPath)
-    val pipeUnderInspection = ProjectionNewPipe(SingleRowPipe(), Map("x" -> innerPipe))()
+    val pipeUnderInspection = ProjectionPipe(SingleRowPipe(), Map("x" -> innerPipe))()
 
     val queryContext = mock[QueryContext]
     val profiler = new Profiler

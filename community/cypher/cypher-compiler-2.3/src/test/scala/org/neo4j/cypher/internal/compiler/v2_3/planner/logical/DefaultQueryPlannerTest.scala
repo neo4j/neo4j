@@ -21,60 +21,62 @@ package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
 import org.mockito.Matchers.any
 import org.mockito.Mockito.{times, verify, when}
-import org.neo4j.cypher.internal.compiler.v2_3.ast._
+import org.neo4j.cypher.internal.compiler.v2_3.ast.{ASTAnnotationMap, Expression}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, LazyMode, LogicalPlan, Projection}
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, LazyMode, LogicalPlan, ProduceResult, Projection}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, LogicalPlanningTestSupport2, PlannerQuery, QueryGraph, RegularQueryProjection, SemanticTable, UnionQuery}
-import org.neo4j.cypher.internal.compiler.v2_3.{InputPosition, Rewriter}
+import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_3.symbols._
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_3.{ExpressionTypeInfo, Rewriter}
 
 class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  test("names unnamed patterns when planning pattern expressions") {
+  test("adds ProduceResult with a single node") {
+    val result = createProduceResultOperator(Set("a"), SemanticTable().addNode(ident("a")))
 
-    // given
-    val expectedPlan = mock[LogicalPlan]
-    val solver = new TentativeQueryGraphSolver {
-      override def config = ???
-      override def tryPlan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): Option[LogicalPlan] = ???
-      override def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = expectedPlan
-    }
-
-    implicit val context = LogicalPlanningContext(null, LogicalPlanProducer(mock[Metrics.CardinalityModel]), null, SemanticTable(), solver)
-    val patExpr = parsePatternExpression("WITH {a} AS a, {r} AS r, {b} AS b LIMIT 1 RETURN ()-[]->(b)")
-
-    // when
-    val (producedPlan, namedExpr) = solver.planPatternExpression(Set.empty, patExpr)
-
-    // then
-    val expectedExpr = parsePatternExpression("WITH {a} AS a, {r} AS r, {b} AS b LIMIT 1 RETURN (`  UNNAMED50`)-[`  UNNAMED52`]->(b)")
-
-    expectedExpr should equal(namedExpr)
-    expectedPlan should equal(producedPlan)
+    result.nodes should equal(Seq("a"))
+    result.relationships shouldBe empty
+    result.other shouldBe empty
   }
 
-  test("build correct semantic table when planning pattern expressions") {
+  test("adds ProduceResult with a single relationship") {
+    val result = createProduceResultOperator(Set("r"), SemanticTable().addRelationship(ident("r")))
 
-    // given
-    val expectedPlan = mock[LogicalPlan]
-    val solver = new QueryGraphSolver with PatternExpressionSolving {
-      override def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan]): LogicalPlan = {
-        val table = context.semanticTable
-        table.isNode(Identifier("  UNNAMED50")(InputPosition(49, 1, 50))) should be(true)
-        table.isRelationship(Identifier("  UNNAMED52")(InputPosition(51, 1, 52))) should be(true)
-        expectedPlan
-      }
-    }
+    result.relationships should equal(Seq("r"))
+    result.nodes shouldBe empty
+    result.other shouldBe empty
+  }
 
-    implicit val context = LogicalPlanningContext(null, LogicalPlanProducer(mock[Metrics.CardinalityModel]), null, SemanticTable(), solver)
-    val patExpr = parsePatternExpression("WITH {a} AS a, {r} AS r, {b} AS b LIMIT 1 RETURN ()-[]->(b)")
+  test("adds ProduceResult with a single value") {
+    val expr = ident("x")
+    val types = ASTAnnotationMap.empty[Expression, ExpressionTypeInfo].updated(expr, ExpressionTypeInfo(CTFloat, None))
 
-    // when
-    val (producedPlan, _) = solver.planPatternExpression(Set.empty, patExpr)
+    val result = createProduceResultOperator(Set("x"), semanticTable = SemanticTable(types = types))
 
-    // then
-    expectedPlan should equal(producedPlan)
+    result.other should equal(Seq("x"))
+    result.nodes shouldBe empty
+    result.relationships shouldBe empty
+  }
+
+  private def createProduceResultOperator(columns: Set[String], semanticTable: SemanticTable): ProduceResult = {
+    implicit val planningContext = mockLogicalPlanningContext(semanticTable)
+
+    val inputPlan = mock[LogicalPlan]
+    when(inputPlan.availableSymbols).thenReturn(columns.map(IdName.apply))
+
+    val queryPlanner = DefaultQueryPlanner(identity, planSingleQuery = new FakePlanner(inputPlan))
+
+    val pq = PlannerQuery(horizon = RegularQueryProjection(columns.map(c => c -> ident(c)).toMap))
+
+    val union = UnionQuery(Seq(pq), distinct = false)
+
+    val result = queryPlanner.plan(union)
+
+    result shouldBe a [ProduceResult]
+
+    result.asInstanceOf[ProduceResult]
   }
 
   test("should set strictness when needed") {
@@ -83,6 +85,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     when(plannerQuery.preferredStrictness).thenReturn(Some(LazyMode))
     when(plannerQuery.graph).thenReturn(QueryGraph.empty)
     when(plannerQuery.horizon).thenReturn(RegularQueryProjection())
+    when(plannerQuery.lastQueryHorizon).thenReturn(RegularQueryProjection())
     when(plannerQuery.tail).thenReturn(None)
 
     val lp = {
@@ -102,7 +105,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     when(producer.planStarProjection(any(), any())(any())).thenReturn(lp)
     when(context.logicalPlanProducer).thenReturn(producer)
     val queryPlanner = new DefaultQueryPlanner(planRewriter = Rewriter.noop,
-      planSingleQuery = planSingleQueryX(expressionRewriterFactory = (lpc) => Rewriter.noop ))
+      planSingleQuery = PlanSingleQuery(expressionRewriterFactory = (lpc) => Rewriter.noop ))
 
     // when
     val query = UnionQuery(Seq(plannerQuery), distinct = false)
@@ -112,12 +115,14 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     verify(context, times(1)).withStrictness(LazyMode)
   }
 
-  private def parsePatternExpression(query: String): PatternExpression = {
-    parser.parse(query) match {
-      case Query(_, SingleQuery(clauses)) =>
-        val ret = clauses.last.asInstanceOf[Return]
-        val patExpr = ret.returnItems.items.head.expression.asInstanceOf[PatternExpression]
-        patExpr
-    }
+  class FakePlanner(result: LogicalPlan) extends LogicalPlanningFunction1[PlannerQuery, LogicalPlan] {
+    def apply(input: PlannerQuery)(implicit context: LogicalPlanningContext): LogicalPlan = result
   }
+
+  private def mockLogicalPlanningContext(semanticTable: SemanticTable) = LogicalPlanningContext(
+    planContext = mock[PlanContext],
+    logicalPlanProducer = LogicalPlanProducer(mock[Metrics.CardinalityModel]),
+    metrics = mock[Metrics],
+    semanticTable = semanticTable,
+    strategy = mock[QueryGraphSolver])
 }
