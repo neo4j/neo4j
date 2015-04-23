@@ -152,6 +152,16 @@ RETURN n###
 
 Regular expression.
 
+###assertion=returns-one
+MATCH n
+WHERE HAS(n.property) AND
+
+n.property LIKE "Tob%"
+
+RETURN n###
+
+String pattern matching.
+
 ###assertion=returns-four
 MATCH n, m
 WHERE
