@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import org.neo4j.cypher.internal.compiler.v2_3.{CostPlannerName, ExecutionMode}
 import org.neo4j.cypher.internal.compiler.v2_3.birk.codegen.{CodeGenContext, Namer}
 import org.neo4j.cypher.internal.compiler.v2_3.birk.il._
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledPlan, PlanFingerprint}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompletionListener, CompiledPlan, PlanFingerprint}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
@@ -114,8 +114,10 @@ object CodeGenerator {
        |import org.neo4j.graphdb.Result.ResultRow;
        |import org.neo4j.graphdb.Result.ResultVisitor;
        |import org.neo4j.graphdb.Result;
+       |import org.neo4j.graphdb.Transaction;
        |import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription;
        |import org.neo4j.cypher.internal.compiler.v2_3.ExecutionMode;
+       |import org.neo4j.cypher.internal.compiler.v2_3.executionplan.CompletionListener;
        |import java.util.Map;
        |
        |$imports
@@ -128,9 +130,10 @@ object CodeGenerator {
        |private final ExecutionMode executionMode;
        |private final Map<String, Object> params;
        |
-       |public $className( Statement statement, GraphDatabaseService db, ExecutionMode executionMode, InternalPlanDescription description, Map<String, Object> params )
+       |public $className( CompletionListener completion, Statement statement, GraphDatabaseService db, ExecutionMode executionMode, InternalPlanDescription description, Map<String, Object> params )
        |{
-       |  this.ro = statement.readOperations( );
+       |  super( completion, statement );
+       |  this.ro = statement.readOperations();
        |  this.db = db;
        |  this.executionMode = executionMode;
        |  this.description = description;
@@ -157,11 +160,16 @@ object CodeGenerator {
        |try
        |{
        |$methodBody
+       |success();
        |}
        |catch (Exception e)
        |{
        |//TODO proper error handling
        |throw new RuntimeException( e );
+       |}
+       |finally
+       |{
+       |close();
        |}
        |}
        |$privateMethodText
@@ -199,7 +207,7 @@ class CodeGenerator {
         val idMap = LogicalPlanIdentificationBuilder(plan)
         val description: InternalPlanDescription = LogicalPlan2PlanDescription(plan, idMap)
 
-        val builder = (st: Statement, db: GraphDatabaseService, mode: ExecutionMode, params: Map[String, Any]) => Javac.newInstance(clazz, st, db,  mode, description, asJavaHashMap(params))
+        val builder = (st: Statement, db: GraphDatabaseService, mode: ExecutionMode, params: Map[String, Any], completion:CompletionListener) => Javac.newInstance(clazz, completion, st, db,  mode, description, asJavaHashMap(params))
 
         CompiledPlan(updating = false, None, fp, CostPlannerName, builder)
 

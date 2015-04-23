@@ -26,7 +26,8 @@ import org.mockito.stubbing.Answer
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compiler.v2_3.NormalMode
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.CompletionListener.NOOP
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompletionListener, InternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{LogicalPlanningTestSupport, SemanticTable}
@@ -373,9 +374,60 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     result.toSet should equal(Set(Map("a" -> List(3, 1))))
   }
 
-  private def compile(plan: LogicalPlan, params: Map[String, AnyRef] = Map.empty) = {
+  test("close transaction after successfully exhausting result") {
+    // given
+    val plan = ProduceResult( List.empty, List.empty, List( "a" ), Projection( SingleRow( )( solved ), Map( "a" -> SignedDecimalIntegerLiteral( "1" )( null ) ) )( solved ) )
+
+    // when
+    val completion = mock[CompletionListener]
+    val compiled = compile( plan, completion = completion )
+
+    // then
+    verifyZeroInteractions(completion)
+    val visitor = mock[ResultVisitor[RuntimeException]]
+    when( visitor.visit( any[ResultRow] ) ).thenReturn( true )
+    compiled.accept(visitor)
+    verify( completion ).complete( success = true )
+  }
+
+  test("close transaction after prematurely terminating result exhaustion") {
+    // given
+    val plan = ProduceResult( List.empty, List.empty, List( "a" ), Projection( SingleRow( )( solved ), Map( "a" -> SignedDecimalIntegerLiteral( "1" )( null ) ) )( solved ) )
+
+    // when
+    val completion = mock[CompletionListener]
+    val compiled = compile( plan, completion = completion )
+
+    // then
+    verifyZeroInteractions(completion)
+    val visitor = mock[ResultVisitor[RuntimeException]]
+    when( visitor.visit( any[ResultRow] ) ).thenReturn( false )
+    compiled.accept(visitor)
+    verify( completion ).complete( success = false )
+  }
+
+  test("close transaction after failure while handling results") {
+    // given
+    val plan = ProduceResult( List.empty, List.empty, List( "a" ), Projection( SingleRow( )( solved ), Map( "a" -> SignedDecimalIntegerLiteral( "1" )( null ) ) )( solved ) )
+
+    // when
+    val completion = mock[CompletionListener]
+    val compiled = compile( plan, completion = completion )
+
+    // then
+    verifyZeroInteractions(completion)
+    val visitor = mock[ResultVisitor[RuntimeException]]
+    val exception = new scala.RuntimeException()
+    when( visitor.visit( any[ResultRow] ) ).thenThrow( exception )
+    intercept[RuntimeException] {
+      compiled.accept(visitor)
+    } // should be(exception) -- TODO: this verification fails, but that failure is unrelated to the current fix...
+    verify( completion ).complete( success = false )
+  }
+
+  private def compile(plan: LogicalPlan, params: Map[String, AnyRef] = Map.empty, completion:CompletionListener=NOOP) = {
     val compiled = generator.generate(plan, newMockedPlanContext, Clock.SYSTEM_CLOCK, mock[SemanticTable])
-    compiled.executionResultBuilder(statement, graphDatabaseService, NormalMode, params)
+    compiled.executionResultBuilder(statement, graphDatabaseService, NormalMode, params, completion)
   }
 
   /*

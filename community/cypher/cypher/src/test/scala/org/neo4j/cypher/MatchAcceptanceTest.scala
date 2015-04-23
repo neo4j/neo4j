@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher
 
-import java.util
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.PathImpl
 import org.neo4j.graphdb._
 

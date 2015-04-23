@@ -21,13 +21,15 @@ package org.neo4j.cypher.internal
 
 import java.util
 
+import org.mockito.Mockito.mock
 import org.neo4j.cypher.internal.compatibility.{ExecutionResultWrapperFor2_3, exceptionHandlerFor2_3}
-import org.neo4j.cypher.internal.compiler.v2_3.PipeExecutionResult
-import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode => ExecutionModev2_3}
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledExecutionResult, InternalExecutionResult}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledExecutionResult, CompletionListener, InternalExecutionResult}
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.iteratorToVisitable
+import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode => ExecutionModev2_3, PipeExecutionResult}
 import org.neo4j.cypher.{ExecutionResult, InternalException}
 import org.neo4j.graphdb.QueryExecutionType.QueryType
 import org.neo4j.graphdb.Result.ResultVisitor
+import org.neo4j.kernel.api.Statement
 
 object RewindableExecutionResult {
   self =>
@@ -38,10 +40,13 @@ object RewindableExecutionResult {
       }
     case other: CompiledExecutionResult  =>
       exceptionHandlerFor2_3.runSafely {
-        new CompiledExecutionResult {
+        val data = other.toList
+        new CompiledExecutionResult(CompletionListener.NOOP, mock(classOf[Statement])) {
           override def javaColumns: util.List[String] = other.javaColumns
-          override val toList = other.toList
-          override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = other.accept(visitor)
+          override val toList = data
+          override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = {
+            iteratorToVisitable.accept(data.iterator, visitor)
+          }
           override def executionPlanDescription() = other.executionPlanDescription()
           override def executionMode: ExecutionModev2_3 = other.executionMode
         }

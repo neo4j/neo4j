@@ -23,13 +23,13 @@ import java.io.{PrintWriter, StringWriter}
 import java.util
 import java.util.Collections
 
-import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, ProfileMode, ExplainMode}
-import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
 import org.neo4j.cypher.internal.compiler.v2_3.notification.InternalNotification
+import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, ExplainMode, ProfileMode, _}
 import org.neo4j.graphdb.QueryExecutionType._
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.{QueryExecutionType, ResourceIterator}
+import org.neo4j.kernel.api.Statement
 
 import scala.collection.{Map, mutable}
 
@@ -37,7 +37,7 @@ import scala.collection.{Map, mutable}
  * Base class for compiled execution results, implements everything in InternalExecutionResult
  * except `javaColumns` and `accept` which should be implemented by the generated classes.
  */
-abstract class CompiledExecutionResult extends InternalExecutionResult {
+abstract class CompiledExecutionResult(completion: CompletionListener, statement:Statement) extends InternalExecutionResult {
   self =>
 
   import scala.collection.JavaConverters._
@@ -74,9 +74,17 @@ abstract class CompiledExecutionResult extends InternalExecutionResult {
 
   override def queryStatistics(): InternalQueryStatistics = InternalQueryStatistics()
 
+  private var successful = false
+  protected def success(): Unit = {
+    successful = true
+  }
+
   override def close(): Unit = {
-    ensureIterator()
-    innerIterator.close()
+    if (innerIterator != null) {
+      innerIterator.close( )
+    }
+    statement.close()
+    completion.complete(success=successful)
   }
 
   override def planDescriptionRequested: Boolean =  executionMode == ExplainMode || executionMode == ProfileMode
