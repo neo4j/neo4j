@@ -37,6 +37,7 @@
     <module>csv</module>
     <module>logging</module>
     <module>kernel</module>
+    <module>security</module>
     <module>jmx</module>
     <module>udc</module>
     <module>monitor-logging</module>

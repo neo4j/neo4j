@@ -49,8 +49,6 @@
     <git.directory>${project.basedir}/../../.git</git.directory>
   </properties>
 
-  <packaging>jar</packaging>
-
   <scm>
 	  <url>https://github.com/neo4j/neo4j/tree/master/community/kernel</url>
   </scm>
