@@ -269,6 +269,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     val keySet = nodeMap.keySet
     val writer: PrintWriter = createWriter(title, dir)
     prepareForTest(title, prepare, dbPrepare)
+    db.inTx { db.schema().awaitIndexesOnline(10, TimeUnit.SECONDS) }
 
     val query = db.inTx {
       keySet.foldLeft(queryText)((acc, key) => acc.replace("%" + key + "%", node(key).getId.toString))
