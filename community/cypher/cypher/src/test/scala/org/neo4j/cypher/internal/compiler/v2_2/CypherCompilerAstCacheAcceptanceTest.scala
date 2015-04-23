@@ -38,7 +38,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
                      clock: Clock = Clock.SYSTEM_CLOCK, logger: StringLogger = DEV_NULL) =
     CypherCompilerFactory.costBasedCompiler(
       graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock,
-      new WrappedMonitors(kernelMonitors), new StringInfoLogger(logger), plannerName = CostPlannerName, rewriterSequencer = RewriterStepSequencer.newPlain _)
+      new WrappedMonitors(kernelMonitors), new StringInfoLogger(logger), plannerName = Some(CostPlannerName), rewriterSequencer = RewriterStepSequencer.newPlain _)
 
   case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0, evicted: Int = 0) {
     override def toString = s"hits = $hits, misses = $misses, flushes = $flushes, evicted = $evicted"
