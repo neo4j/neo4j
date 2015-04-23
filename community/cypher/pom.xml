@@ -135,6 +135,20 @@
   </build>
 
   <profiles>
+
+    <profile>
+      <id>scala_2_11</id>
+      <activation>
+        <property>
+          <name>!skipScala211</name>
+        </property>
+      </activation>
+      <modules>
+        <module>cypher-commons_2.11</module>
+        <module>cypher-compiler-1.9_2.11</module>
+      </modules>
+    </profile>
+
     <profile>
       <id>neo-scala-style</id>
 
@@ -216,7 +230,7 @@
 
     <dependencies>
 
-      <!-- scala test dependencies -->
+      <!-- scala test dependencies for 2.10 -->
 
       <dependency>
         <groupId>org.scalatest</groupId>
@@ -246,6 +260,47 @@
         <groupId>org.scalacheck</groupId>
         <artifactId>scalacheck_2.10</artifactId>
         <version>1.11.0</version>
+        <scope>test</scope>
+      </dependency>
+
+      <!-- scala test dependencies for 2.11 -->
+
+      <dependency>
+        <groupId>org.scalatest</groupId>
+        <artifactId>scalatest_2.11</artifactId>
+        <version>2.2.4</version>
+        <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <artifactId>scala-library</artifactId>
+            <groupId>org.scala-lang</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>scala-reflect</artifactId>
+            <groupId>org.scala-lang</groupId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.scalautils</groupId>
+        <artifactId>scalautils_2.11</artifactId>
+        <version>2.1.7</version>
+        <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <artifactId>scala-library</artifactId>
+            <groupId>org.scala-lang</groupId>
+          </exclusion>
+          <exclusion>
+            <artifactId>scala-reflect</artifactId>
+            <groupId>org.scala-lang</groupId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.scalacheck</groupId>
+        <artifactId>scalacheck_2.11</artifactId>
+        <version>1.12.2</version>
         <scope>test</scope>
       </dependency>
 

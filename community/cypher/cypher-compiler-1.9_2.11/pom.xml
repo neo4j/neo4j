@@ -1,0 +1,171 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.neo4j</groupId>
+    <artifactId>cypher-parent</artifactId>
+    <version>2.0.5-SNAPSHOT</version>
+    <relativePath>../</relativePath>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>neo4j-cypher-compiler-1.9_2.11</artifactId>
+  <packaging>jar</packaging>
+  <version>2.0.5-SNAPSHOT</version>
+  <name>Neo4j - Cypher Compiler 1.9 for scala 2.11</name>
+  <description>Compiler for Cypher 1.9 compiled for scala 2.11</description>
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+
+  <properties>
+    <version-package>cypher.internal.compiler.v1_9</version-package>
+    <scala.version>2.11.6</scala.version>
+    <scala.binary.version>2.11</scala.binary.version>
+  </properties>
+
+  <scm>
+	  <url>https://github.com/neo4j/neo4j/tree/master/community/cypher/cypher-compiler-1.9</url>
+  </scm>
+
+  <licenses>
+    <license>
+      <name>GNU General Public License, Version 3</name>
+      <url>http://www.gnu.org/licenses/gpl-3.0-standalone.html</url>
+      <comments>The software ("Software") developed and owned by Network Engine for
+        Objects in Lund AB (referred to in this notice as "Neo Technology") is
+        licensed under the GNU GENERAL PUBLIC LICENSE Version 3 to all third
+        parties and that license is included below.
+
+        However, if you have executed an End User Software License and Services
+        Agreement or an OEM Software License and Support Services Agreement, or
+        another commercial license agreement with Neo Technology or one of its
+        affiliates (each, a "Commercial Agreement"), the terms of the license in
+        such Commercial Agreement will supersede the GNU GENERAL PUBLIC LICENSE
+        Version 3 and you may use the Software solely pursuant to the terms of
+        the relevant Commercial Agreement.
+      </comments>
+    </license>
+  </licenses>
+
+  <build>
+
+    <sourceDirectory>../cypher-compiler-1.9/src/main</sourceDirectory>
+    <testSourceDirectory>../cypher-compiler-1.9/src/test</testSourceDirectory>
+
+    <plugins>
+
+      <plugin>
+        <groupId>net.alchim31.maven</groupId>
+        <artifactId>scala-maven-plugin</artifactId>
+        <configuration>
+          <scalaVersion>${scala.version}</scalaVersion>
+          <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
+          <args>
+            <arg>-Xmax-classfile-name</arg>
+            <arg>100</arg>
+            <arg>-Xlint</arg>
+            <arg>-language:implicitConversions</arg>
+            <arg>-language:existentials</arg>
+            <arg>-language:higherKinds</arg>
+            <arg>-language:postfixOps</arg>
+            <arg>-feature</arg>
+
+            <!-- we want to enable this long-term -->
+            <!-- arg>-Xfatal-warnings</arg -->
+
+            <!-- we might want to try those one fine day for performance
+                 (but watch out for binary compatability with scala 2.12)
+
+              <arg>-Yopt:l:project</arg>
+              <arg>-Ybackend:GenBCode</arg>
+              <arg>-Ydelambdafy:method</arg>
+              <arg>-Yinline</arg>
+            -->
+          </args>
+        </configuration>
+      </plugin>
+
+    </plugins>
+  </build>
+
+  <dependencies>
+
+    <!-- shared versions are defined in the parent pom -->
+
+    <!-- scala -->
+
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+      <version>${scala.version}</version>
+    </dependency>
+
+    <!-- scala test dependencies -->
+
+    <dependency>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest_2.11</artifactId>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>scala-library</artifactId>
+          <groupId>org.scala-lang</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.scalautils</groupId>
+      <artifactId>scalautils_2.11</artifactId>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>scala-library</artifactId>
+          <groupId>org.scala-lang</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.scalacheck</groupId>
+      <artifactId>scalacheck_2.11</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- neo4j -->
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-graphviz</artifactId>
+        <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-lucene-index</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-graph-matching</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-graph-algo</artifactId>
+    </dependency>
+
+    <!-- neo4j-cypher -->
+
+    <dependency>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-cypher-commons</artifactId>
+        <scope>provided</scope>
+        <version>${project.version}</version>
+    </dependency>
+
+  </dependencies>
+</project>
