@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LogicalPlan2Plan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantCompileQueryException, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, GreedyPlannerName}
+import org.neo4j.function.Supplier
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.api.Statement
@@ -114,6 +115,7 @@ object CodeGenerator {
     s"""package $packageName;
        |
        |import org.neo4j.helpers.collection.Visitor;
+       |import org.neo4j.function.Supplier;
        |import org.neo4j.graphdb.GraphDatabaseService;
        |import org.neo4j.kernel.api.Statement;
        |import org.neo4j.kernel.api.exceptions.KernelException;
@@ -128,6 +130,8 @@ object CodeGenerator {
        |import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription;
        |import org.neo4j.cypher.internal.compiler.v2_3.ExecutionMode;
        |import org.neo4j.cypher.internal.compiler.v2_3.TaskCloser;
+       |import org.neo4j.cypher.internal.compiler.v2_3.birk.QueryExecutionTracer;
+       |import org.neo4j.cypher.internal.compiler.v2_3.birk.QueryExecutionEvent;
        |import java.util.Map;
        |
        |$imports
@@ -137,12 +141,14 @@ object CodeGenerator {
        |private final ReadOperations ro;
        |private final GraphDatabaseService db;
        |private final Map<String, Object> params;
+       |private final QueryExecutionTracer tracer;
        |
-       |public $className( TaskCloser closer, Statement statement, GraphDatabaseService db, ExecutionMode executionMode, InternalPlanDescription description, Map<String, Object> params )
+       |public $className( TaskCloser closer, Statement statement, GraphDatabaseService db, ExecutionMode executionMode, Supplier<InternalPlanDescription> description, QueryExecutionTracer tracer, Map<String, Object> params )
        |{
        |  super( closer, statement, executionMode, description );
        |  this.ro = statement.readOperations();
        |  this.db = db;
+       |  this.tracer = tracer;
        |  this.params = params;
        |}
        |
@@ -199,8 +205,10 @@ class CodeGenerator {
         val idMap = LogicalPlanIdentificationBuilder(plan)
         val description: InternalPlanDescription = LogicalPlan2PlanDescription(plan, idMap)
 
-        val builder = (st: Statement, db: GraphDatabaseService, mode: ExecutionMode, params: Map[String, Any], closer: TaskCloser) =>
-          Javac.newInstance(clazz, closer, st, db,  mode, description, asJavaHashMap(params))
+        val builder = (st: Statement, db: GraphDatabaseService, mode: ExecutionMode, tracing:(InternalPlanDescription=>(Supplier[InternalPlanDescription],Option[QueryExecutionTracer])), params: Map[String, Any], closer: TaskCloser) => {
+          val (supplier, tracer) = tracing(description)
+          Javac.newInstance(clazz, closer, st, db,  mode, supplier, tracer.getOrElse(QueryExecutionTracer.NONE), asJavaHashMap(params))
+        }
 
         val columns = res.nodes ++ res.relationships ++ res.other
         CompiledPlan(updating = false, None, fp, GreedyPlannerName, description, columns, builder)

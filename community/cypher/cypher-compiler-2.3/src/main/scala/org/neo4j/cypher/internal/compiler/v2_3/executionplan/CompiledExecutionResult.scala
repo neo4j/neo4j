@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.notification.InternalNotification
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{Runtime, Planner}
 import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, ExplainMode, ProfileMode, _}
+import org.neo4j.function.Supplier
 import org.neo4j.graphdb.QueryExecutionType._
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb._
@@ -40,7 +41,7 @@ import scala.collection.{Map, mutable}
  * Base class for compiled execution results, implements everything in InternalExecutionResult
  * except `javaColumns` and `accept` which should be implemented by the generated classes.
  */
-abstract class CompiledExecutionResult(taskCloser: TaskCloser, statement:Statement, executionMode:ExecutionMode, description:InternalPlanDescription) extends InternalExecutionResult {
+abstract class CompiledExecutionResult(taskCloser: TaskCloser, statement:Statement, executionMode:ExecutionMode, description:Supplier[InternalPlanDescription]) extends InternalExecutionResult {
   self =>
 
   import scala.collection.JavaConverters._
@@ -118,7 +119,7 @@ abstract class CompiledExecutionResult(taskCloser: TaskCloser, statement:Stateme
     taskCloser.close(success = successful)
   }
 
-  override def executionPlanDescription() = description
+  override def executionPlanDescription() = description.get()
 
   def mode = executionMode
 

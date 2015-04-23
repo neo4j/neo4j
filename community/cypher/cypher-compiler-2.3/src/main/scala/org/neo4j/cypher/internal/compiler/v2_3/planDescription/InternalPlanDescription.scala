@@ -74,6 +74,7 @@ sealed abstract class Argument extends Product {
 
 object InternalPlanDescription {
   object Arguments {
+    case class Time(value: Long) extends Argument
     case class Rows(value: Long) extends Argument
     case class DbHits(value: Long) extends Argument
     case class ColumnsLeft(value: Seq[String]) extends Argument

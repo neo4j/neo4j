@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{Planner, Runtime}
 import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode => ExecutionModev2_3, PipeExecutionResult, PlannerName, RuntimeName, TaskCloser}
 import org.neo4j.cypher.{ExecutionResult, InternalException}
+import org.neo4j.function.Suppliers.singleton
 import org.neo4j.graphdb.QueryExecutionType.QueryType
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.kernel.api.Statement

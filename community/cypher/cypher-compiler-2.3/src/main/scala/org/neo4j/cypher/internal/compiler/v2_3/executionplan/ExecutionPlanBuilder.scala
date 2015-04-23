@@ -19,19 +19,24 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.executionplan
 
-import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
+import org.neo4j.cypher.internal.compiler.v2_3.birk.QueryExecutionTracer
+import org.neo4j.cypher.internal.compiler.v2_3.birk.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.compiler.v2_3.commands._
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.ExecutionPlanBuilder.tracer
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders._
 import org.neo4j.cypher.internal.compiler.v2_3.notification.InternalNotification
 import org.neo4j.cypher.internal.compiler.v2_3.pipes._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantCompileQueryException, CantHandleQueryException}
 import org.neo4j.cypher.internal.compiler.v2_3.profiler.Profiler
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, ProfileMode}
+import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, ProfileMode, _}
+import org.neo4j.function.Supplier
+import org.neo4j.function.Suppliers.singleton
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.QueryExecutionType.QueryType
 import org.neo4j.helpers.Clock
@@ -44,7 +49,12 @@ case class CompiledPlan(updating: Boolean,
                         plannerUsed: PlannerName,
                         planDescription: InternalPlanDescription,
                         columns: Seq[String],
-                        executionResultBuilder: (KernelStatement, GraphDatabaseService, ExecutionMode, Map[String, Any], TaskCloser) => InternalExecutionResult)
+                        executionResultBuilder: (KernelStatement,
+                          GraphDatabaseService,
+                          ExecutionMode,
+                          (InternalPlanDescription => (Supplier[InternalPlanDescription], Option[QueryExecutionTracer])),
+                          Map[String, Any],
+                          TaskCloser) => InternalExecutionResult )
 
 case class PipeInfo(pipe: Pipe,
                     updating: Boolean,
@@ -95,7 +105,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
             new ExplainExecutionResult(taskCloser, compiledPlan.columns.toList,
               compiledPlan.planDescription, QueryType.READ_ONLY, inputQuery.notificationLogger.notifications)
           } else
-            compiledPlan.executionResultBuilder(kernelStatement, graph, executionMode, params, taskCloser)
+            compiledPlan.executionResultBuilder(kernelStatement, graph, executionMode, tracer(executionMode), params, taskCloser)
         } catch {
           case (t: Throwable) =>
             taskCloser.close(success = false)
@@ -194,4 +204,22 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
 
       builder.build(graph, queryId, planType, params, notificationLogger)
     }
+}
+
+object ExecutionPlanBuilder {
+  def tracer( mode: ExecutionMode ) = mode match {
+    case ProfileMode =>
+      val tracer = new ProfilingTracer()
+      ( description: InternalPlanDescription ) => (new Supplier[InternalPlanDescription] {
+        override def get() = description map {
+          plan: InternalPlanDescription =>
+            val data = tracer.get(plan.id)
+            plan.
+              addArgument( Arguments.DbHits( data.dbHits() ) ).
+              addArgument( Arguments.Rows( data.rows() ) ).
+              addArgument( Arguments.Time( data.time() ) )
+        }
+      }, Some(tracer))
+    case _ => (description: InternalPlanDescription) => (singleton(description), None)
+  }
 }
