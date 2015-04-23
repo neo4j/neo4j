@@ -44,7 +44,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.logging.NullLogProvider;
 
 import org.neo4j.cluster.ClusterSettings;
@@ -169,14 +169,12 @@ public class ClusterNetworkTest
         {
             final URI uri = new URI( "neo4j://localhost:800" + (i + 1) );
 
-            LogProvider logProvider = NullLogProvider.getInstance();
-
             Monitors monitors = new Monitors();
             NetworkedServerFactory factory = new NetworkedServerFactory( life,
-                    new MultiPaxosServerFactory( new ClusterConfiguration( "default", logProvider ),
-                            logProvider, monitors.newMonitor( StateMachines.Monitor.class )
+                    new MultiPaxosServerFactory( new ClusterConfiguration( "default", NullLogProvider.getInstance() ),
+                            NullLogService.getInstance(), monitors.newMonitor( StateMachines.Monitor.class )
                     ),
-                    new FixedTimeoutStrategy( 1000 ), logProvider, new ObjectStreamFactory(), new ObjectStreamFactory(),
+                    new FixedTimeoutStrategy( 1000 ), NullLogProvider.getInstance(), new ObjectStreamFactory(), new ObjectStreamFactory(),
                     monitors.newMonitor( NetworkReceiver.Monitor.class ), monitors.newMonitor( NetworkSender.Monitor.class ), monitors.newMonitor( NamedThreadFactory.Monitor.class )
             );
 

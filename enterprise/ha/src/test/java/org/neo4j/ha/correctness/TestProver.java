@@ -27,6 +27,7 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -53,11 +54,11 @@ public class TestProver
         ClusterState state = new ClusterState(
                 asList(
                         newClusterInstance( new InstanceId( 1 ), new URI( "cluster://localhost:5001" ),
-                                new Monitors(), config, NullLogProvider.getInstance() ),
+                                new Monitors(), config, NullLogService.getInstance() ),
                         newClusterInstance( new InstanceId( 2 ), new URI( "cluster://localhost:5002" ),
-                                new Monitors(), config, NullLogProvider.getInstance() ),
+                                new Monitors(), config, NullLogService.getInstance() ),
                         newClusterInstance( new InstanceId( 3 ), new URI( "cluster://localhost:5003" ),
-                                new Monitors(), config, NullLogProvider.getInstance() ) ),
+                                new Monitors(), config, NullLogService.getInstance() ) ),
                 emptySetOf( ClusterAction.class )
         );
 
@@ -82,11 +83,11 @@ public class TestProver
         ClusterState state = new ClusterState(
                 asList(
                         newClusterInstance( new InstanceId( 1 ), new URI( "cluster://localhost:5001" ),
-                                new Monitors(), config, NullLogProvider.getInstance() ),
+                                new Monitors(), config, NullLogService.getInstance() ),
                         newClusterInstance( new InstanceId( 2 ), new URI( "cluster://localhost:5002" ),
-                                new Monitors(), config, NullLogProvider.getInstance() ),
+                                new Monitors(), config, NullLogService.getInstance() ),
                         newClusterInstance( new InstanceId( 3 ), new URI( "cluster://localhost:5003" ),
-                                new Monitors(), config, NullLogProvider.getInstance() ) ),
+                                new Monitors(), config, NullLogService.getInstance() ) ),
                 emptySetOf( ClusterAction.class )
         );
 

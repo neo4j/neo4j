@@ -32,6 +32,7 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.cluster.timeout.Timeouts;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
@@ -60,7 +61,7 @@ public class HeartbeatContextImplTest
         when( configuration.getMemberIds() ).thenReturn( ids( 3 ) );
 
         final List<Runnable> runnables = new ArrayList<Runnable>();
-        HeartbeatContext context = new HeartbeatContextImpl( me, commonState, NullLogProvider.getInstance(), timeouts, new DelayedDirectExecutor(
+        HeartbeatContext context = new HeartbeatContextImpl( me, commonState, NullLogService.getInstance(), timeouts, new DelayedDirectExecutor(
                 NullLogProvider.getInstance() )
         {
             @Override

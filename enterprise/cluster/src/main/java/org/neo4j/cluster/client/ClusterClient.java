@@ -285,7 +285,7 @@ public class ClusterClient extends LifecycleAdapter
         final LogProvider internalLogProvider = logService.getInternalLogProvider();
 
         MultiPaxosServerFactory protocolServerFactory = new MultiPaxosServerFactory( new ClusterConfiguration( config
-                        .getClusterName(), internalLogProvider ), internalLogProvider, monitors.newMonitor( StateMachines.Monitor.class )
+                        .getClusterName(), internalLogProvider ), logService, monitors.newMonitor( StateMachines.Monitor.class )
         );
 
         InMemoryAcceptorInstanceStore acceptorInstanceStore = new InMemoryAcceptorInstanceStore();

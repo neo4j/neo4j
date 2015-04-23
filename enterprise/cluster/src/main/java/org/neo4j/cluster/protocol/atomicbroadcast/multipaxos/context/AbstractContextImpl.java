@@ -30,6 +30,7 @@ import org.neo4j.cluster.protocol.ConfigurationContext;
 import org.neo4j.cluster.protocol.TimeoutsContext;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.timeout.Timeouts;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -37,33 +38,45 @@ import static org.neo4j.helpers.collection.Iterables.limit;
 import static org.neo4j.helpers.collection.Iterables.toList;
 
 class AbstractContextImpl
-        implements TimeoutsContext, LogProvider, ConfigurationContext
+        implements TimeoutsContext, LogService, ConfigurationContext
 {
     protected final org.neo4j.cluster.InstanceId me;
     protected final CommonContextState commonState;
-    protected final LogProvider logProvider;
+    protected final LogService logService;
     protected final Timeouts timeouts;
 
     AbstractContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState,
-                         LogProvider logProvider,
+                         LogService logService,
                          Timeouts timeouts )
     {
         this.me = me;
         this.commonState = commonState;
-        this.logProvider = logProvider;
+        this.logService = logService;
         this.timeouts = timeouts;
     }
 
     @Override
-    public Log getLog( Class loggingClass )
+    public LogProvider getUserLogProvider()
     {
-        return logProvider.getLog( loggingClass );
+        return logService.getUserLogProvider();
     }
 
     @Override
-    public Log getLog( String context )
+    public Log getUserLog( Class loggingClass )
     {
-        return logProvider.getLog( context );
+        return logService.getUserLog( loggingClass );
+    }
+
+    @Override
+    public LogProvider getInternalLogProvider()
+    {
+        return logService.getInternalLogProvider();
+    }
+
+    @Override
+    public Log getInternalLog( Class loggingClass )
+    {
+        return logService.getInternalLog( loggingClass );
     }
 
     // TimeoutsContext

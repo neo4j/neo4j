@@ -61,6 +61,7 @@ import org.neo4j.cluster.statemachine.StateMachineRules;
 import org.neo4j.cluster.timeout.TimeoutStrategy;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.cluster.com.message.Message.internal;
@@ -72,13 +73,13 @@ public class MultiPaxosServerFactory
         implements ProtocolServerFactory
 {
     private final ClusterConfiguration initialConfig;
-    private final LogProvider logProvider;
+    private final LogService logService;
     private StateMachines.Monitor stateMachinesMonitor;
 
-    public MultiPaxosServerFactory( ClusterConfiguration initialConfig, LogProvider logProvider, StateMachines.Monitor stateMachinesMonitor )
+    public MultiPaxosServerFactory( ClusterConfiguration initialConfig, LogService logService, StateMachines.Monitor stateMachinesMonitor )
     {
         this.initialConfig = initialConfig;
-        this.logProvider = logProvider;
+        this.logService = logService;
         this.stateMachinesMonitor = stateMachinesMonitor;
     }
 
@@ -90,16 +91,16 @@ public class MultiPaxosServerFactory
                                              ObjectInputStreamFactory objectInputStreamFactory,
                                              ObjectOutputStreamFactory objectOutputStreamFactory )
     {
-        DelayedDirectExecutor executor = new DelayedDirectExecutor( logProvider );
+        DelayedDirectExecutor executor = new DelayedDirectExecutor( logService.getInternalLogProvider() );
 
         // Create state machines
         Timeouts timeouts = new Timeouts( timeoutStrategy );
 
         final MultiPaxosContext context = new MultiPaxosContext( me,
                 Iterables.<ElectionRole, ElectionRole>iterable( new ElectionRole( ClusterConfiguration.COORDINATOR ) ),
-                new ClusterConfiguration( initialConfig.getName(), logProvider,
+                new ClusterConfiguration( initialConfig.getName(), logService.getInternalLogProvider(),
                         initialConfig.getMemberURIs() ),
-                executor, logProvider, objectInputStreamFactory, objectOutputStreamFactory, acceptorInstanceStore, timeouts,
+                executor, logService, objectInputStreamFactory, objectOutputStreamFactory, acceptorInstanceStore, timeouts,
                 electionCredentialsProvider
         );
 
@@ -115,6 +116,8 @@ public class MultiPaxosServerFactory
                                              Timeouts timeouts,
                                              MultiPaxosContext context, SnapshotContext snapshotContext )
     {
+        LogProvider logProvider = logService.getInternalLogProvider();
+
         return constructSupportingInfrastructureFor( me, input, output, executor, timeouts, stateMachineExecutor,
                 context, new StateMachine[]
                 {
@@ -148,6 +151,8 @@ public class MultiPaxosServerFactory
                                                                 final MultiPaxosContext context,
                                                                 StateMachine[] machines )
     {
+        LogProvider logProvider = logService.getInternalLogProvider();
+
         StateMachines stateMachines = new StateMachines( logProvider, stateMachinesMonitor, input,
                 output, timeouts, executor, stateMachineExecutor, me );
 

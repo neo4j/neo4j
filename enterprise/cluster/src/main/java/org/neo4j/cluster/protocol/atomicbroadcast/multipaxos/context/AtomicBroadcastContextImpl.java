@@ -29,7 +29,7 @@ import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.cluster.util.Quorums;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.kernel.impl.logging.LogService;
 
 class AtomicBroadcastContextImpl
     extends AbstractContextImpl
@@ -40,10 +40,10 @@ class AtomicBroadcastContextImpl
     private final HeartbeatContext heartbeatContext;
 
     AtomicBroadcastContextImpl( org.neo4j.cluster.InstanceId me, CommonContextState commonState,
-                                LogProvider logProvider,
+                                LogService logService,
                                 Timeouts timeouts, Executor executor, HeartbeatContext heartbeatContext  )
     {
-        super( me, commonState, logProvider, timeouts );
+        super( me, commonState, logService, timeouts );
         this.executor = executor;
         this.heartbeatContext = heartbeatContext;
     }
@@ -73,10 +73,10 @@ class AtomicBroadcastContextImpl
         } );
     }
 
-    public AtomicBroadcastContextImpl snapshot( CommonContextState commonStateSnapshot, LogProvider logProvider,
+    public AtomicBroadcastContextImpl snapshot( CommonContextState commonStateSnapshot, LogService logService,
                                                 Timeouts timeouts, Executor executor, HeartbeatContext heartbeatContext )
     {
-        return new AtomicBroadcastContextImpl( me, commonStateSnapshot, logProvider, timeouts, executor, heartbeatContext );
+        return new AtomicBroadcastContextImpl( me, commonStateSnapshot, logService, timeouts, executor, heartbeatContext );
     }
 
     @Override

@@ -25,13 +25,13 @@ import java.util.Set;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.ConfigurationContext;
 import org.neo4j.cluster.protocol.TimeoutsContext;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.kernel.impl.logging.LogService;
 
 /**
  * Context used by the {@link HeartbeatState} state machine.
  */
 public interface HeartbeatContext
-    extends TimeoutsContext, ConfigurationContext, LogProvider
+    extends TimeoutsContext, ConfigurationContext, LogService
 {
     void started();
 

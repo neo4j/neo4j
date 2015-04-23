@@ -82,7 +82,7 @@ public class BiasedWinnerStrategy implements WinnerStrategy
         String electionOutcome =
                 String.format( "Election: received votes %s, eligible votes %s (Instance #%s has been %s)",
                         votes, eligibleVotes, biasedNode, nodePromoted ? "promoted" : "demoted" );
-        electionContext.getLog( getClass() ).debug( electionOutcome );
+        electionContext.getInternalLog( getClass() ).debug( electionOutcome );
     }
 
     private boolean winnerIsBiasedInstance( Vote vote )

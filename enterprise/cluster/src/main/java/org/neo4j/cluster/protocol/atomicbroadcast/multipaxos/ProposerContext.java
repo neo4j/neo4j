@@ -26,13 +26,13 @@ import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.protocol.ConfigurationContext;
 import org.neo4j.cluster.protocol.TimeoutsContext;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.kernel.impl.logging.LogService;
 
 /**
  * Context used by {@link ProposerState} state machine.
  */
 public interface ProposerContext
-    extends TimeoutsContext, LogProvider, ConfigurationContext
+    extends TimeoutsContext, LogService, ConfigurationContext
 {
     InstanceId newInstanceId( );
 

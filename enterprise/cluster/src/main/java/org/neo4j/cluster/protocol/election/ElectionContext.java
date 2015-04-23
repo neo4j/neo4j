@@ -27,13 +27,13 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.ConfigurationContext;
 import org.neo4j.cluster.protocol.TimeoutsContext;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.kernel.impl.logging.LogService;
 
 /**
  * Context used by {@link ElectionState}.
  */
 public interface ElectionContext
-    extends TimeoutsContext, LogProvider, ConfigurationContext
+    extends TimeoutsContext, LogService, ConfigurationContext
 {
 
     void created();

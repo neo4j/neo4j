@@ -23,13 +23,13 @@ import org.neo4j.cluster.protocol.ConfigurationContext;
 import org.neo4j.cluster.protocol.TimeoutsContext;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.kernel.impl.logging.LogService;
 
 /**
  * Context for AtomicBroadcast statemachine.
  */
 public interface AtomicBroadcastContext
-    extends TimeoutsContext, ConfigurationContext, LogProvider
+    extends TimeoutsContext, ConfigurationContext, LogService
 {
     void addAtomicBroadcastListener( AtomicBroadcastListener listener );
     void removeAtomicBroadcastListener( AtomicBroadcastListener listener );
