@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.birk.il
 
-import org.neo4j.cypher.internal.compiler.v2_3.birk.{Namer, CodeGenerator, JavaSymbol}
-import CodeGenerator.n
+import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.n
+import org.neo4j.cypher.internal.compiler.v2_3.birk.codegen.Namer
+import org.neo4j.cypher.internal.compiler.v2_3.birk.{CodeGenerator, JavaSymbol}
 
 sealed trait BuildProbeTable extends Instruction {
   def producedType: String
@@ -49,8 +50,8 @@ case class BuildRecordingProbeTable(name: String, node: String, valueSymbols: Ma
   def generateInit() = s"final $producedType $name = Primitive.longObjectMap( );"
 
   def generateCode() = {
-    val listName = namer.next()
-    val elemName = namer.next()
+    val listName = namer.newVarName()
+    val elemName = namer.newVarName()
     s"""ArrayList<$valueType> $listName = $name.get( $node );
        |if ( null == $listName )
        |{
@@ -63,11 +64,11 @@ case class BuildRecordingProbeTable(name: String, node: String, valueSymbols: Ma
 
   val generateFetchCode: CodeThunk = {
     val symbols = valueSymbols.map {
-      case (id, symbol) => id -> namer.nextWithType(symbol.javaType)
+      case (id, symbol) => id -> namer.newVarName(symbol.javaType)
     }
 
-    val listName = namer.next()
-    val elemName = namer.next()
+    val listName = namer.newVarName()
+    val elemName = namer.newVarName()
     val code = (key: String, action: Instruction) => {
       s"""ArrayList<$valueType> $listName = $name.get( $key);
           |if ( $listName!= null )
@@ -116,7 +117,7 @@ case class BuildCountingProbeTable(name: String, node: String, namer: Namer) ext
   def valueType = "int"
 
   override def generateFetchCode = {
-    val timesSeen = namer.next()
+    val timesSeen = namer.newVarName()
     val code  = (key: String, action: Instruction) => {
       s"""
          |int $timesSeen = $name.get( $key);
