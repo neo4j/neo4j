@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.compatibility.ExecutionResultWrapperFor2_3
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{InternalExecutionResult, NewLogicalPlanSuccessRateMonitor, NewRuntimeSuccessRateMonitor}
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantCompileQueryException, CantHandleQueryException}
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherTestSupport
@@ -174,9 +175,9 @@ trait NewPlannerTestSupport extends CypherTestSupport {
   private def assertResultsAreSame(ruleResult: InternalExecutionResult, costResult: InternalExecutionResult, queryText: String, errorMsg: String) {
     withClue(errorMsg) {
       if (queryText.toLowerCase contains "order by") {
-        ruleResult.toComparableList should contain theSameElementsInOrderAs costResult.toComparableList
+        ruleResult.toComparableResult should contain theSameElementsInOrderAs costResult.toComparableResult
       } else {
-        ruleResult.toComparableList should contain theSameElementsAs costResult.toComparableList
+        ruleResult.toComparableResult should contain theSameElementsAs costResult.toComparableResult
       }
     }
   }
@@ -226,16 +227,20 @@ trait NewPlannerTestSupport extends CypherTestSupport {
   }
 
   /**
-   * Get rid of Arrays to make it easier to compare results by equality.
+   * Get rid of Arrays and java.util.Map to make it easier to compare results by equality.
    */
   implicit class RichInternalExecutionResults(res: InternalExecutionResult) {
-    def toComparableList: Seq[Map[String, Any]] = res.toList.withArraysAsLists
+    def toComparableResult: Seq[Map[String, Any]] = res.toList.toCompararableSeq
   }
 
   implicit class RichMapSeq(res: Seq[Map[String, Any]]) {
-    def withArraysAsLists: Seq[Map[String, Any]] = res.map((map: Map[String, Any]) =>
+
+    import scala.collection.JavaConverters._
+
+    def toCompararableSeq: Seq[Map[String, Any]] = res.map((map: Map[String, Any]) =>
       map.map {
         case (k, a: Array[_]) => k -> a.toList
+        case (k, m: java.util.Map[_,_]) => k -> m.asScala
         case m => m
       }
     )

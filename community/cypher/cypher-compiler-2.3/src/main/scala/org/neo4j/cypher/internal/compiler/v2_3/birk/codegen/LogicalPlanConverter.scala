@@ -223,6 +223,12 @@ object LogicalPlanConverter {
           val rightOp = createProjectionInstruction(rhs, context)
           ProjectSubtraction(leftOp, rightOp)
 
+        case MapExpression(items: Seq[(PropertyKeyName, Expression)]) =>
+          val map = items.map {
+            case (key, expr) => (key.name, createProjectionInstruction(expr, context))
+          }.toMap
+          ProjectMap(map)
+
         case other => throw new CantCompileQueryException(s"Projection of $other not yet supported")
       }
   }

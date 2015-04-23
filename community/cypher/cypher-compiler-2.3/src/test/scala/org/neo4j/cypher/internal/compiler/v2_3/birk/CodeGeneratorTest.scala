@@ -24,7 +24,7 @@ import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.collection.primitive.PrimitiveLongIterator
-import org.neo4j.cypher.internal.compiler.v2_3.NormalMode
+import org.neo4j.cypher.internal.compiler.v2_3.{DummyPosition, NormalMode}
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.CompletionListener.NOOP
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompletionListener, InternalExecutionResult}
@@ -38,6 +38,8 @@ import org.neo4j.helpers.Clock
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
+
+import scala.collection.JavaConverters
 
 class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -164,7 +166,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   val plan = ProduceResult(List("a", "b"), List.empty, List.empty,
       Expand(
         AllNodesScan(IdName("a"), Set.empty)(solved), IdName("a"), Direction.OUTGOING,
-        Seq(RelTypeName("R1")(null), RelTypeName("R2")(null)), IdName("b"), IdName("r"), ExpandAll)(solved))
+        Seq(RelTypeName("R1")(pos), RelTypeName("R2")(pos)), IdName("b"), IdName("r"), ExpandAll)(solved))
 
     //when
     val compiled = compile( plan)
@@ -270,7 +272,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("project literal") {
-    val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> SignedDecimalIntegerLiteral("1")(null)))(solved))
+    val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> SignedDecimalIntegerLiteral("1")(pos)))(solved))
     val compiled = compile(plan)
 
     //then
@@ -280,7 +282,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("project parameter") {
 
-    val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> Parameter("FOO")(null)))(solved))
+    val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> Parameter("FOO")(pos)))(solved))
     val compiled = compile(plan, Map("FOO" -> "BAR"))
 
     //then
@@ -289,9 +291,9 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("project addition of two ints") {
-    val lhs = SignedDecimalIntegerLiteral("1")(null)
-    val rhs = SignedDecimalIntegerLiteral("3")(null)
-    val add = Add(lhs, rhs)(null)
+    val lhs = SignedDecimalIntegerLiteral("1")(pos)
+    val rhs = SignedDecimalIntegerLiteral("3")(pos)
+    val add = Add(lhs, rhs)(pos)
 
     val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> add))(solved))
     val compiled = compile(plan)
@@ -302,9 +304,9 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("project subtraction of two ints") {
-    val lhs = SignedDecimalIntegerLiteral("7")(null)
-    val rhs = SignedDecimalIntegerLiteral("5")(null)
-    val add = Subtract(lhs, rhs)(null)
+    val lhs = SignedDecimalIntegerLiteral("7")(pos)
+    val rhs = SignedDecimalIntegerLiteral("5")(pos)
+    val add = Subtract(lhs, rhs)(pos)
 
     val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> add))(solved))
     val compiled = compile(plan)
@@ -315,9 +317,9 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("project addition of int and double") {
-    val lhs = SignedDecimalIntegerLiteral("1")(null)
-    val rhs = DecimalDoubleLiteral("3.0")(null)
-    val add = Add(lhs, rhs)(null)
+    val lhs = SignedDecimalIntegerLiteral("1")(pos)
+    val rhs = DecimalDoubleLiteral("3.0")(pos)
+    val add = Add(lhs, rhs)(pos)
 
     val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> add))(solved))
     val compiled = compile(plan)
@@ -328,9 +330,9 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("project addition of int and String") {
-    val lhs = SignedDecimalIntegerLiteral("1")(null)
-    val rhs = StringLiteral("two")(null)
-    val add = Add(lhs, rhs)(null)
+    val lhs = SignedDecimalIntegerLiteral("1")(pos)
+    val rhs = StringLiteral("two")(pos)
+    val add = Add(lhs, rhs)(pos)
 
     val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> add))(solved))
     val compiled = compile(plan)
@@ -341,9 +343,9 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("project addition of int and value from params") {
-    val lhs = SignedDecimalIntegerLiteral("1")(null)
-    val rhs = Parameter("FOO")(null)
-    val add = Add(lhs, rhs)(null)
+    val lhs = SignedDecimalIntegerLiteral("1")(pos)
+    val rhs = Parameter("FOO")(pos)
+    val add = Add(lhs, rhs)(pos)
     val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> add))(solved))
     val compiled = compile(plan, Map("FOO" -> Long.box(3L)))
 
@@ -353,9 +355,9 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("project addition of two values coming from params") {
-    val lhs = Parameter("FOO")(null)
-    val rhs = Parameter("BAR")(null)
-    val add = Add(lhs, rhs)(null)
+    val lhs = Parameter("FOO")(pos)
+    val rhs = Parameter("BAR")(pos)
+    val add = Add(lhs, rhs)(pos)
     val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> add))(solved))
     val compiled = compile(plan, Map("FOO" -> Long.box(3L), "BAR" -> Long.box(1L)))
 
@@ -365,13 +367,23 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("project collection") {
-    val collection = Collection(Seq(Parameter("FOO")(null), Parameter("BAR")(null)))(null)
+    val collection = Collection(Seq(Parameter("FOO")(pos), Parameter("BAR")(pos)))(pos)
     val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> collection))(solved))
     val compiled = compile(plan, Map("FOO" -> Long.box(3L), "BAR" -> Long.box(1L)))
 
     //then
     val result = getResult(compiled, "a")
     result.toSet should equal(Set(Map("a" -> List(3, 1))))
+  }
+
+  test("project map") {
+    val map = MapExpression(Seq((PropertyKeyName("FOO")(pos), Parameter("BAR")(pos))))(pos)
+    val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> map))(solved))
+    val compiled = compile(plan, Map("FOO" -> Long.box(3L), "BAR" -> Long.box(1L)))
+
+    //then
+    val result = getResult(compiled, "a")
+    result.toSet should equal(Set(Map("a" -> Map("FOO" -> 1))))
   }
 
   test("close transaction after successfully exhausting result") {
@@ -584,20 +596,17 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
         true
       }
     })
-    res.result().toSeq.withArraysAsLists
+    res.result().asComparableResult
   }
 
-  /**
-   * Get rid of Arrays to make it easier to compare results by equality.
-   */
-  implicit class RichInternalExecutionResults(res: InternalExecutionResult) {
-    def toComparableList: Seq[Map[String, Any]] = res.toList.withArraysAsLists
-  }
 
   implicit class RichMapSeq(res: Seq[Map[String, Any]]) {
-    def withArraysAsLists: Seq[Map[String, Any]] = res.map((map: Map[String, Any]) =>
+    import JavaConverters._
+
+    def asComparableResult: Seq[Map[String, Any]] = res.map((map: Map[String, Any]) =>
       map.map {
         case (k, a: Array[_]) => k -> a.toList
+        case (k, m: java.util.Map[_,_]) => k -> m.asScala
         case m => m
       }
     )

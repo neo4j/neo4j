@@ -386,9 +386,18 @@ return coalesce(a.title, a.name)""")
 
   test("array prop output") {
     createNode("foo" -> Array(1, 2, 3))
-    val result = executeWithAllPlanners("match n return n").dumpToString()
+
+    //cannot use executeWithAllPlannersAndRuntimes since we use the statement to look up n
+    //and executeWithAllPlannersAndRuntimes uses a mocked statement
+    val result = eengine.execute("match n return n").dumpToString()
 
     result should include ("[1,2,3]")
+  }
+
+  test("map output") {
+    val result = executeWithAllPlannersAndRuntimes("return {a:1, b:'foo'}").dumpToString()
+
+    result should include ("""{b -> "foo", a -> 1}""")
   }
 
   test("should be able to return predicate result") {
@@ -545,12 +554,12 @@ return coalesce(a.title, a.name)""")
   test("compiled runtime should support addition of collections") {
     val result = executeWithAllPlannersAndRuntimes("RETURN [1,2,3] + [4, 5] AS FOO")
 
-    result.toComparableList should equal(List(Map("FOO" -> List(1, 2, 3, 4, 5))))
+    result.toComparableResult should equal(List(Map("FOO" -> List(1, 2, 3, 4, 5))))
   }
 
   test("compiled runtime should support addition of item to collection") {
     val result = executeWithAllPlannersAndRuntimes("""RETURN [1,2,3] + 4 AS FOO""")
 
-    result.toComparableList should equal(List(Map("FOO" -> List(1, 2, 3, 4))))
+    result.toComparableResult should equal(List(Map("FOO" -> List(1, 2, 3, 4))))
   }
 }

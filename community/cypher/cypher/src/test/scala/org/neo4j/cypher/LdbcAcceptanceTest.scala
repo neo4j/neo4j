@@ -32,7 +32,7 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
       ldbcQuery.constraintQueries.foreach(executeWithRulePlanner(_))
 
       //when
-      val result = executeWithAllPlanners(ldbcQuery.query, ldbcQuery.params.toSeq: _*).toComparableList
+      val result = executeWithAllPlanners(ldbcQuery.query, ldbcQuery.params.toSeq: _*).toComparableResult
 
       //then
       result should equal(ldbcQuery.expectedResult)
