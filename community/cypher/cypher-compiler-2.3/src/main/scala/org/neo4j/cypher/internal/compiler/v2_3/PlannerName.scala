@@ -32,7 +32,7 @@ sealed abstract class CostBasedPlannerName extends PlannerName
  * Rule based query planner, default in all versions below 2.2
  */
 case object RulePlannerName extends PlannerName {
-  def name = "RULE"
+  val name = "RULE"
 }
 
 /**
@@ -40,7 +40,7 @@ case object RulePlannerName extends PlannerName {
  * query execution plans using greedy search.
  */
 case object CostPlannerName extends CostBasedPlannerName {
-  def name = "COST"
+  val name = "COST"
 }
 
 /**
@@ -48,7 +48,7 @@ case object CostPlannerName extends CostBasedPlannerName {
  * query execution plans using limited exhaustive search based on the IDP algorithm.
  */
 case object IDPPlannerName extends CostBasedPlannerName {
-  def name = "IDP"
+  val name = "IDP"
 }
 
 /**
@@ -56,7 +56,7 @@ case object IDPPlannerName extends CostBasedPlannerName {
  * query execution plans using exhaustive search based on the DP algorithm.
  */
 case object DPPlannerName extends CostBasedPlannerName {
-  def name = "DP"
+  val name = "DP"
 }
 
 /**
@@ -64,7 +64,7 @@ case object DPPlannerName extends CostBasedPlannerName {
  * Rule based planner for classes of queries where the cost based planner might end up with suboptimal plans.
  */
 case object ConservativePlannerName extends CostBasedPlannerName {
-  def name = "CONSERVATIVE"
+  val name = "CONSERVATIVE"
 }
 
 object PlannerName {

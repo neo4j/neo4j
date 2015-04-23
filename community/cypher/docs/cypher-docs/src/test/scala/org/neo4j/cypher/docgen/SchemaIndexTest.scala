@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.neo4j.cypher.QueryStatisticsTestSupport
+import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.junit.Test
+import org.neo4j.cypher.QueryStatisticsTestSupport
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.Planner
+import org.neo4j.cypher.internal.compiler.v2_3.{CostPlannerName, RulePlannerName}
 import org.neo4j.cypher.internal.helpers.GraphIcing
-import org.hamcrest.CoreMatchers._
-
-import scala.collection.immutable.IndexedSeq
 
 class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSupport with GraphIcing {
 
@@ -66,7 +67,7 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
       prepare = executePreparationQueries(List("create index on :Person(name)")),
       queryText = "drop index on :Person(name)",
       optionalResultExplanation = "",
-      assertion = (p) => assertIndexesOnLabels("Person", List())
+      assertions = (p) => assertIndexesOnLabels("Person", List())
     )
   }
 
@@ -81,10 +82,12 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
       assertions = {
         (p) =>
           assertEquals(1, p.size)
-          assertThat(p.executionPlanDescription().toString, containsString("NodeIndexSeek"))
+
+          checkPlanDescription(p)("SchemaIndex", "NodeIndexSeek")
       }
     )
   }
+
   @Test def use_index_with_where() {
     testQuery(
       title = "Use index with WHERE",
@@ -95,7 +98,8 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
       assertions = {
         (p) =>
           assertEquals(1, p.size)
-          assertThat(p.executionPlanDescription().toString, containsString("NodeIndexSeek"))
+
+          checkPlanDescription(p)("SchemaIndex", "NodeIndexSeek")
       }
     )
   }
@@ -111,7 +115,8 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
       assertions = {
         (p) =>
           assertEquals(2, p.size)
-          assertThat(p.executionPlanDescription().toString, containsString("NodeIndexSeek"))
+
+          checkPlanDescription(p)("SchemaIndex", "NodeIndexSeek")
       }
     )
   }
@@ -120,4 +125,17 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
     assert(expectedIndexes === db.indexPropsForLabel(label))
   }
 
+  private def checkPlanDescription(result: InternalExecutionResult)(ruleString: String, costString: String): Unit = {
+    val planDescription = result.executionPlanDescription()
+    val plannerArgument = planDescription.arguments.find(a => a.name == "planner")
+
+    plannerArgument match {
+      case Some(Planner(RulePlannerName.name)) =>
+        assertThat(planDescription.toString, containsString(ruleString))
+      case Some(Planner(CostPlannerName.name)) =>
+        assertThat(planDescription.toString, containsString(costString))
+      case x =>
+        fail(s"Couldn't determine used planner: $x")
+    }
+  }
 }

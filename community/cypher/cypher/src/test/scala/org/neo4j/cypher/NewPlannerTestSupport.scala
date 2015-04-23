@@ -194,7 +194,7 @@ trait NewPlannerTestSupport extends CypherTestSupport {
 
   protected def innerExecute(queryText: String, params: (String, Any)*): InternalExecutionResult =
     eengine.execute(queryText, params.toMap) match {
-      case ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, _, _) => RewindableExecutionResult(inner)
+      case e:ExecutionResultWrapperFor2_3 => RewindableExecutionResult(e)
     }
 
   override def execute(queryText: String, params: (String, Any)*) =

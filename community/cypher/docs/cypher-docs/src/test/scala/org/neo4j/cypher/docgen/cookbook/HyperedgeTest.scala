@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.docgen.cookbook
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 import org.neo4j.cypher.docgen.DocumentingTestBase
-import org.neo4j.visualization.graphviz.{GraphStyle, AsciiDocSimpleStyle}
+import org.neo4j.visualization.graphviz.{AsciiDocSimpleStyle, GraphStyle}
 
 class HyperedgeTest extends DocumentingTestBase {
   override def graphDescription = List("User1 in Group1", "User1 in Group2",
@@ -50,7 +50,7 @@ class HyperedgeTest extends DocumentingTestBase {
         "(hyperEdge)-[:hasRole]->(role) " +
         "return role.name",
       optionalResultExplanation = "The role of +User1+ is returned:",
-      (p) => assertEquals(Map("role.name" -> "Role1"), p.toList.head))
+      assertions = (p) => assertEquals(Map("role.name" -> "Role1"), p.toList.head))
   }
 
   @Test def findAllGroupsForAUser() {
@@ -63,7 +63,7 @@ class HyperedgeTest extends DocumentingTestBase {
         "return role.name, group.name " +
         "order by role.name asc",
       optionalResultExplanation = "The groups and roles of +User1+ are returned:",
-      (p) => {
+      assertions = (p) => {
         val result = p.toList
         assertEquals(Map("role.name" -> "Role1", "group.name" -> "Group2"), result.head)
         assertEquals(Map("role.name" -> "Role2", "group.name" -> "Group1"), result.tail.head)

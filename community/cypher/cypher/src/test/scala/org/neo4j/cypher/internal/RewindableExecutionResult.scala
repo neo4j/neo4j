@@ -25,7 +25,9 @@ import org.mockito.Mockito.mock
 import org.neo4j.cypher.internal.compatibility.{ExecutionResultWrapperFor2_3, exceptionHandlerFor2_3}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledExecutionResult, CompletionListener, InternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.iteratorToVisitable
-import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode => ExecutionModev2_3, PipeExecutionResult}
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{Planner, Runtime}
+import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode => ExecutionModev2_3, PipeExecutionResult, PlannerName, RuntimeName}
 import org.neo4j.cypher.{ExecutionResult, InternalException}
 import org.neo4j.graphdb.QueryExecutionType.QueryType
 import org.neo4j.graphdb.Result.ResultVisitor
@@ -33,10 +35,13 @@ import org.neo4j.kernel.api.Statement
 
 object RewindableExecutionResult {
   self =>
-  def apply(inner: InternalExecutionResult): InternalExecutionResult = inner match {
+
+  def apply(inner: InternalExecutionResult, planner:PlannerName, runtime:RuntimeName): InternalExecutionResult = inner match {
     case other: PipeExecutionResult  =>
       exceptionHandlerFor2_3.runSafely {
-        new PipeExecutionResult(other.result.toEager, other.columns, other.state, other.executionPlanBuilder, other.executionMode, QueryType.READ_WRITE)
+        new PipeExecutionResult(other.result.toEager, other.columns, other.state, other.executionPlanBuilder, other.executionMode, QueryType.READ_WRITE) {
+          override def executionPlanDescription(): InternalPlanDescription = super.executionPlanDescription().addArgument(Planner(planner.name)).addArgument(Runtime(runtime.name))
+        }
       }
     case other: CompiledExecutionResult  =>
       exceptionHandlerFor2_3.runSafely {
@@ -47,7 +52,8 @@ object RewindableExecutionResult {
           override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = {
             iteratorToVisitable.accept(data.iterator, visitor)
           }
-          override def executionPlanDescription() = other.executionPlanDescription()
+          override def executionPlanDescription() = other.executionPlanDescription().addArgument(Planner(planner.name)).addArgument(Runtime(runtime.name))
+
           override def executionMode: ExecutionModev2_3 = other.executionMode
         }
       }
@@ -56,7 +62,7 @@ object RewindableExecutionResult {
   }
 
   def apply(in: ExecutionResult): InternalExecutionResult = in match {
-    case ExecutionResultWrapperFor2_3(inner, _, _) => exceptionHandlerFor2_3.runSafely(apply(inner))
+    case e@ExecutionResultWrapperFor2_3(inner, _, _) => exceptionHandlerFor2_3.runSafely(apply(inner, e.planner, e.runtime))
 
     case _                                      => throw new InternalException("Can't get the internal execution result of an older compiler")
   }

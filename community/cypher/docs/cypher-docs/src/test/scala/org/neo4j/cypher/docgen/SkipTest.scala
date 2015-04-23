@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.neo4j.graphdb.Node
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import org.neo4j.visualization.graphviz.GraphStyle
-import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
+import org.neo4j.graphdb.Node
+import org.neo4j.visualization.graphviz.{AsciiDocSimpleStyle, GraphStyle}
 
 class SkipTest extends DocumentingTestBase {
   override def graphDescription = List("A KNOWS B", "A KNOWS C", "A KNOWS D", "A KNOWS E")
@@ -39,7 +38,7 @@ class SkipTest extends DocumentingTestBase {
       text = "To return a subset of the result, starting from the fourth result, use the following syntax:",
       queryText = "match (n) return n order by n.name skip 3",
       optionalResultExplanation = "The first three nodes are skipped, and only the last two are returned in the result.",
-      (p) => assertEquals(List(node("D"), node("E")), p.columnAs[Node]("n").toList))
+      assertions = (p) => assertEquals(List(node("D"), node("E")), p.columnAs[Node]("n").toList))
   }
 
   @Test def returnFromOneLimitTwo() {
@@ -48,7 +47,7 @@ class SkipTest extends DocumentingTestBase {
       text = "To return a subset of the result, starting from somewhere in the middle, use this syntax:",
       queryText = "match (n) return n order by n.name skip 1 limit 2",
       optionalResultExplanation = "Two nodes from the middle are returned.",
-      (p) => assertEquals(List(node("B"), node("C")), p.columnAs[Node]("n").toList))
+      assertions = (p) => assertEquals(List(node("B"), node("C")), p.columnAs[Node]("n").toList))
   }
 }
 

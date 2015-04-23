@@ -38,26 +38,25 @@ class UsingTest extends DocumentingTestBase {
   def section = "Using"
 
   @Test def query_using_single_index_hint() {
-    db.createIndex("Swedish", "surname")
 
-    testQuery(
+    prepareAndTestQuery(
       title = "Query using an index hint",
       text = "To query using an index hint, use +USING+ +INDEX+.",
       queryText = "match (n:Swedish) using index n:Swedish(surname) where n.surname = 'Taylor' return n",
       optionalResultExplanation = "The query result is returned as usual.",
+      prepare = executePreparationQueries(List("CREATE INDEX ON :Swedish(surname)")),
       assertions = (p) => assert(p.toList === List(Map("n" -> node("Andres"))))
     )
   }
 
   @Test def query_using_multiple_index_hints() {
-    db.createIndex("Swedish", "surname")
-    db.createIndex("German", "surname")
 
-    testQuery(
+    prepareAndTestQuery(
       title = "Query using multiple index hints",
       text = "To query using multiple index hints, use +USING+ +INDEX+.",
       queryText = "match (m:German)-->(n:Swedish) using index m:German(surname) using index n:Swedish(surname) where m.surname = 'Plantikow' and n.surname = 'Taylor' return m",
       optionalResultExplanation = "The query result is returned as usual.",
+      prepare = executePreparationQueries(List("CREATE INDEX ON :Swedish(surname)", "CREATE INDEX ON :German(surname)")),
       assertions = (p) => assert(p.toList === List(Map("m" -> node("Stefan"))))
     )
   }

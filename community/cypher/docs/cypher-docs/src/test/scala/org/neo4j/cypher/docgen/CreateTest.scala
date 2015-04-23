@@ -20,8 +20,9 @@
 package org.neo4j.cypher.docgen
 
 import org.junit.Test
-import org.neo4j.graphdb.{ DynamicLabel, Node, Relationship }
 import org.neo4j.cypher.QueryStatisticsTestSupport
+import org.neo4j.graphdb.{DynamicLabel, Node, Relationship}
+import org.neo4j.kernel.GraphDatabaseAPI
 
 class CreateTest extends DocumentingTestBase with QueryStatisticsTestSupport {
 
@@ -72,44 +73,38 @@ class CreateTest extends DocumentingTestBase with QueryStatisticsTestSupport {
       assertions = (p) => assert(p.size === 1))
   }
 
-  def createTwoNodes: (Long, Long) = db.inTx {
-    val a = db.createNode(DynamicLabel.label("Person"))
-    val b = db.createNode(DynamicLabel.label("Person"))
-
-    a.setProperty("name", "Node A")
-    b.setProperty("name", "Node B")
-
-    (a.getId, b.getId)
+  def createTwoPersonNodesWithNames(db: GraphDatabaseAPI) = {
+    db.inTx {
+      db.createNode(DynamicLabel.label("Person")).setProperty("name", "Node A")
+      db.createNode(DynamicLabel.label("Person")).setProperty("name", "Node B")
+    }
   }
 
   @Test def connect_two_nodes_with_a_relationship() {
-    createTwoNodes
-
-    testQuery(
+    prepareAndTestQuery(
       title = "Create a relationship between two nodes",
       text = "To create a relationship between two nodes, we first get the two nodes. " +
         "Once the nodes are loaded, we simply create a relationship between them.",
       queryText = "match (a:Person), (b:Person) where a.name = 'Node A' and b.name = 'Node B' create (a)-[r:RELTYPE]->(b) return r",
       optionalResultExplanation = "The created relationship is returned by the query.",
+      dbPrepare = createTwoPersonNodesWithNames,
       assertions = (p) => assert(p.size === 1))
   }
 
   @Test def set_property_to_a_collection() {
-    db.inTx {
-      val a = db.createNode()
-      val b = db.createNode()
-
-      a.setProperty("name", "Andres")
-      b.setProperty("name", "Michael")
+    val createTwoNodesWithProperty = (db: GraphDatabaseAPI) => db.inTx {
+      db.createNode().setProperty("name", "Andres")
+      db.createNode().setProperty("name", "Michael")
     }
 
-    testQuery(
+    prepareAndTestQuery(
       title = "Set a property to an array",
       text = """When you set a property to an expression that returns a collection of values,
 Cypher will turn that into an array. All the elements in the collection must be of the same type
 for this to work.""",
       queryText = "match (n) where has(n.name) with collect(n.name) as names create (new { name : names }) return new",
       optionalResultExplanation = "A node with an array property named name is returned.",
+      dbPrepare = createTwoNodesWithProperty,
       assertions = (p) => {
         val createdNode = p.toList.head("new").asInstanceOf[Node]
         assert(createdNode.getProperty("name") === Array("Andres", "Michael"))
@@ -129,14 +124,13 @@ will be created. """,
   }
 
   @Test def create_relationship_with_properties() {
-    createTwoNodes
-
-    testQuery(
+    prepareAndTestQuery(
       title = "Create a relationship and set properties",
       text = "Setting properties on relationships is done in a similar manner to how it's done when creating nodes. " +
         "Note that the values can be any expression.",
       queryText = "match (a:Person), (b:Person) where a.name = 'Node A' and b.name = 'Node B' create (a)-[r:RELTYPE {name : a.name + '<->' + b.name }]->(b) return r",
       optionalResultExplanation = "The newly created relationship is returned by the example query.",
+      dbPrepare = createTwoPersonNodesWithNames,
       assertions = (p) => {
         val result = p.toList
         assert(result.size === 1)
@@ -156,7 +150,7 @@ In this case we add a +Person+ label to the node as well.
       prepare = setParameters(Map("props" -> Map("name" -> "Andres", "position" -> "Developer"))),
       queryText = "create (n:Person {props}) return n",
       optionalResultExplanation = "",
-      assertion = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1))
+      assertions = (p) => assertStats(p, nodesCreated = 1, propertiesSet = 2, labelsAdded = 1))
   }
 
   @Test def create_multiple_nodes_from_maps() {
@@ -171,6 +165,6 @@ NOTE: When you do this, you can't create anything else in the same +CREATE+ clau
         Map("name" -> "Michael", "position" -> "Developer")))),
       queryText = "create (n {props}) return n",
       optionalResultExplanation = "",
-      assertion = (p) => assertStats(p, nodesCreated = 2, propertiesSet = 4))
+      assertions = (p) => assertStats(p, nodesCreated = 2, propertiesSet = 4))
   }
 }

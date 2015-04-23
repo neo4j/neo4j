@@ -20,10 +20,7 @@
 package org.neo4j.cypher.docgen
 
 import org.junit.Test
-import org.junit.Assert._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
-import org.neo4j.graphdb.Node
-import org.neo4j.cypher.ExecutionResult
 
 class SyntaxTest extends DocumentingTestBase {
   override def graphDescription = List(
@@ -106,7 +103,7 @@ END as result""",
     )
   }
 
-  private def testThis(title: String, syntax: String, arguments: List[(String, String)], text: String, queryText: String, returns: String, assertions: (InternalExecutionResult => Unit)*) {
+  private def testThis(title: String, syntax: String, arguments: List[(String, String)], text: String, queryText: String, returns: String, assertions: InternalExecutionResult => Unit) {
     val argsText = arguments.map(x => "* _" + x._1 + ":_ " + x._2).mkString("\r\n\r\n")
     val fullText = String.format("""%s
 
@@ -119,6 +116,6 @@ END as result""",
 *Arguments:*
 
 %s""", text, syntax, argsText)
-    testQuery(title, fullText, queryText, returns, assertions: _*)
+    testQuery(title, fullText, queryText, returns, assertions)
   }
 }

@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.Test
 
 class UnwindTest extends DocumentingTestBase {
 
@@ -56,7 +56,7 @@ class UnwindTest extends DocumentingTestBase {
            MERGE (y)<-[:IN]-(e:Event {id:event.id})
            RETURN e.id as x order by x""",
       optionalResultExplanation = "Each value of the original collection is unwound and passed through `MERGE` to find or create the nodes and relationships.",
-      assertion = (p) => assertEquals(List(1,2), p.columnAs[Int]("x").toList)
+      assertions = (p) => assertEquals(List(1,2), p.columnAs[Int]("x").toList)
     )
   }
 }

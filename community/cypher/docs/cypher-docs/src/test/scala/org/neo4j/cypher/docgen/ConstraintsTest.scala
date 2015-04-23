@@ -20,9 +20,10 @@
 package org.neo4j.cypher.docgen
 
 import org.junit.Test
-import collection.JavaConverters._
-import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.cypher.CypherExecutionException
+import org.neo4j.kernel.api.constraints.UniquenessConstraint
+
+import scala.collection.JavaConverters._
 
 class ConstraintsTest extends DocumentingTestBase {
 
@@ -41,26 +42,26 @@ class ConstraintsTest extends DocumentingTestBase {
 
   @Test def drop_unique_constraint() {
     generateConsole = false
-    engine.execute("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE")
 
-    testQuery(
+    prepareAndTestQuery(
       title = "Drop uniqueness constraint",
       text = "By using +DROP+ +CONSTRAINT+, you remove a constraint from the database.",
       queryText = "DROP CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE",
       optionalResultExplanation = "",
+      prepare = executePreparationQueries(List("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE")),
       assertions = (p) => assertConstraintDoesNotExist("Book", "isbn")
     )
   }
 
   @Test def play_nice_with_constraint() {
     generateConsole = false
-    engine.execute("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE")
 
-    testQuery(
+    prepareAndTestQuery(
       title = "Create a node that complies with constraints",
       text = "Create a `Book` node with an `isbn` that isn't already in the database.",
       queryText = "CREATE (book:Book {isbn: '1449356265', title: 'Graph Databases'})",
       optionalResultExplanation = "",
+      prepare = executePreparationQueries(List("CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE")),
       assertions = (p) => assertConstraintExist("Book", "isbn")
     )
   }

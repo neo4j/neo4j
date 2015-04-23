@@ -20,10 +20,10 @@
 package org.neo4j.cypher.docgen
 
 import org.junit.Test
-import org.neo4j.visualization.graphviz.GraphStyle
-import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.graphdb.DynamicLabel
+import org.neo4j.kernel.GraphDatabaseAPI
+import org.neo4j.visualization.graphviz.{AsciiDocSimpleStyle, GraphStyle}
 
 class DeleteTest extends DocumentingTestBase with QueryStatisticsTestSupport {
   override def graphDescription = List("Andres KNOWS Tobias", "Andres KNOWS Peter")
@@ -34,20 +34,22 @@ class DeleteTest extends DocumentingTestBase with QueryStatisticsTestSupport {
     "Peter"  -> Map("name"->"Peter",  "age" -> 34l)
   )
 
-  override protected def getGraphvizStyle: GraphStyle = 
+  override protected def getGraphvizStyle: GraphStyle =
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
 
   def section = "Delete"
 
   @Test def delete_single_node() {
+    val createLabeledNode = (db: GraphDatabaseAPI) => db.inTx {
+      db.createNode(DynamicLabel.label("Useless"))
+    } : Unit
 
-    db.inTx(db.createNode(DynamicLabel.label("Useless")))
-
-    testQuery(
+    prepareAndTestQuery(
       title = "Delete single node",
       text = "To delete a node, use the +DELETE+ clause.",
       queryText = "match (n:Useless) delete n",
       optionalResultExplanation = "Nothing is returned from this query, except the count of affected nodes.",
+      dbPrepare = createLabeledNode,
       assertions = (p) => assertStats(p, nodesDeleted = 1))
   }
 
