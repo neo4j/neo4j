@@ -99,6 +99,12 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>websocket-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <!-- Used to validate docs -->
     <dependency>
       <groupId>org.asciidoctor</groupId>
@@ -112,6 +118,7 @@
       <version>1.8.1</version>
       <scope>test</scope>
     </dependency>
+
   </dependencies>
 
   <build>
@@ -152,6 +159,13 @@
         <groupId>org.asciidoctor</groupId>
         <artifactId>asciidoctor-maven-plugin</artifactId>
         <version>1.5.2</version>
+        <dependencies>
+          <dependency>
+            <groupId>org.asciidoctor</groupId>
+            <artifactId>asciidoctorj-pdf</artifactId>
+            <version>1.5.0-alpha.6</version>
+          </dependency>
+        </dependencies>
         <executions>
           <execution>
             <id>generate-compliance-manual</id>
@@ -161,14 +175,14 @@
             </goals>
             <configuration>
               <backend>html</backend>
+              <outputDirectory>${basedir}/target/protocol-manual/pdf</outputDirectory>
             </configuration>
           </execution>
         </executions>
         <configuration>
           <sourceDirectory>${basedir}/src/docs/dev</sourceDirectory>
-          <outputDirectory>${basedir}/target/protocol-manual/html</outputDirectory>
-          <backend>html</backend>
           <attributes>
+            <pagenums/>
             <toc/>
             <source-highlighter>coderay</source-highlighter>
           </attributes>

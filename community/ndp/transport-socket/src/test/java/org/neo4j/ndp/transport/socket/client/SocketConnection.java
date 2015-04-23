@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.ndp.transport.socket.integration;
+package org.neo4j.ndp.transport.socket.client;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,13 +29,14 @@ import java.nio.ByteBuffer;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.impl.util.HexPrinter;
 
-public class NDPConn implements AutoCloseable
+public class SocketConnection implements Connection
 {
     private Socket socket;
     private InputStream in;
     private OutputStream out;
 
-    public NDPConn connect( HostnamePort address ) throws IOException
+    @Override
+    public Connection connect( HostnamePort address ) throws IOException
     {
         socket = new Socket();
         socket.connect( new InetSocketAddress( address.getHost(), address.getPort() ) );
@@ -44,12 +45,14 @@ public class NDPConn implements AutoCloseable
         return this;
     }
 
-    public NDPConn send( byte[] rawBytes ) throws IOException
+    @Override
+    public Connection send( byte[] rawBytes ) throws IOException
     {
         out.write( rawBytes );
         return this;
     }
 
+    @Override
     public byte[] recv( int length ) throws IOException, InterruptedException
     {
         long timeout = System.currentTimeMillis() + 1000 * 30;
@@ -69,6 +72,15 @@ public class NDPConn implements AutoCloseable
         return bytes;
     }
 
+    @Override
+    public void discard( int length ) throws IOException
+    {
+        for ( int i = 0; i < length; i++ )
+        {
+            in.read();
+        }
+    }
+
     private void waitUntilAvailable( byte[] recieved, long timeout, int left ) throws IOException
     {
         while ( in.available() == 0 )
@@ -83,6 +95,7 @@ public class NDPConn implements AutoCloseable
         }
     }
 
+    @Override
     public void disconnect() throws IOException
     {
         if ( socket != null && socket.isConnected() )

@@ -22,6 +22,7 @@ package org.neo4j.ndp.docs.v1;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -44,7 +45,7 @@ public class Chunker
 
         ChannelHandlerContext ch = mock( ChannelHandlerContext.class );
         when( ch.alloc() ).thenReturn( UnpooledByteBufAllocator.DEFAULT );
-        when( ch.writeAndFlush( any() ) ).then( new Answer<Object>()
+        when( ch.writeAndFlush( any(), any( ChannelPromise.class ) ) ).then( new Answer<Object>()
         {
             @Override
             public Object answer( InvocationOnMock inv ) throws Throwable

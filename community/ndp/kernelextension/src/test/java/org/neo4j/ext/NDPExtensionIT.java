@@ -61,7 +61,7 @@ public class NDPExtensionIT
         db = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( tmpDir.getRoot().getAbsolutePath() )
                 .setConfig( NDPKernelExtension.Settings.ndp_enabled, "true" )
-                .setConfig( NDPKernelExtension.Settings.ndp_address, "localhost:8776" )
+                .setConfig( NDPKernelExtension.Settings.ndp_socket_address, "localhost:8776" )
                 .newGraphDatabase();
 
         // Then

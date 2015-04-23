@@ -23,6 +23,8 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.neo4j.function.Factory;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -30,18 +32,27 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
 import org.neo4j.ndp.runtime.Session;
+import org.neo4j.ndp.runtime.Sessions;
 import org.neo4j.ndp.runtime.internal.StandardSessions;
+import org.neo4j.ndp.transport.socket.NettyServer;
+import org.neo4j.ndp.transport.socket.SocketProtocol;
+import org.neo4j.ndp.transport.socket.SocketProtocolV1;
 import org.neo4j.ndp.transport.socket.SocketTransport;
+import org.neo4j.ndp.transport.socket.WebSocketTransport;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static java.util.Arrays.asList;
+import static org.neo4j.collection.primitive.Primitive.longObjectMap;
 
 public class Neo4jWithSocket implements TestRule
 {
     private final LifeSupport life = new LifeSupport();
-    private SocketTransport transport;
+    private SocketTransport socketTransport;
+    private WebSocketTransport wsTransport;
 
     public HostnamePort address()
     {
-        return transport.address();
+        return socketTransport.address();
     }
 
     @Override
@@ -54,12 +65,28 @@ public class Neo4jWithSocket implements TestRule
             {
                 final GraphDatabaseService gdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
                 final GraphDatabaseAPI api = ((GraphDatabaseAPI) gdb);
-                Log log = api.getDependencyResolver().resolveDependency( LogService.class )
+                final Log log = api.getDependencyResolver().resolveDependency( LogService.class )
                         .getInternalLog( Session.class );
 
-                transport = life.add( new SocketTransport(
-                        new HostnamePort( "localhost:7687" ), log, life.add( new StandardSessions( api, log ) )
-                ) );
+                final Sessions sessions = life.add( new StandardSessions( api, log ) );
+
+                PrimitiveLongObjectMap<Factory<SocketProtocol>> availableVersions = longObjectMap();
+                availableVersions.put( SocketProtocolV1.VERSION, new Factory<SocketProtocol>()
+                {
+                    @Override
+                    public SocketProtocol newInstance()
+                    {
+                        return new SocketProtocolV1( log, sessions.newSession() );
+                    }
+                } );
+
+                // Start services
+                socketTransport = new SocketTransport( new HostnamePort( "localhost:7687" ), availableVersions );
+                wsTransport = new WebSocketTransport( new HostnamePort( "localhost:7688" ), availableVersions );
+                life.add( new NettyServer( asList(
+                        socketTransport,
+                        wsTransport )) );
+
                 life.start();
                 try
                 {

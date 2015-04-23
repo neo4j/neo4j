@@ -522,6 +522,11 @@ public class SessionStateMachine implements Session, SessionState
     /** Forward an error to the currently attached callback */
     private void error( Neo4jError err )
     {
+        if( err.status().code().classification() == Status.Classification.DatabaseError )
+        {
+            log.error( "A database error occurred while servicing a user request: " + err );
+        }
+
         if ( currentCallback != null )
         {
             currentCallback.failure( err, currentAttachment );

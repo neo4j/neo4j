@@ -22,8 +22,6 @@ package org.neo4j.ndp.transport.socket.integration;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
-import org.junit.Rule;
-import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -32,31 +30,22 @@ import java.nio.ByteOrder;
 import java.util.Arrays;
 
 import org.neo4j.ndp.messaging.v1.message.Message;
+import org.neo4j.ndp.transport.socket.client.Connection;
 
 import static java.nio.ByteOrder.BIG_ENDIAN;
-import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.ndp.messaging.v1.message.Messages.pullAll;
-import static org.neo4j.ndp.messaging.v1.message.Messages.run;
 import static org.neo4j.ndp.messaging.v1.util.MessageMatchers.message;
-import static org.neo4j.ndp.messaging.v1.util.MessageMatchers.msgRecord;
-import static org.neo4j.ndp.messaging.v1.util.MessageMatchers.msgSuccess;
 import static org.neo4j.ndp.messaging.v1.util.MessageMatchers.serialize;
-import static org.neo4j.runtime.internal.runner.StreamMatchers.eqRecord;
 
-public class SocketSessionIT
+public class TransportTestUtil
 {
-    @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket();
 
-    private static byte[] chunk( Message... messages ) throws IOException
+    public static byte[] chunk( Message... messages ) throws IOException
     {
         return chunk( 32, messages );
     }
 
-    private static byte[] chunk( int chunkSize, Message... messages ) throws IOException
+    public static byte[] chunk( int chunkSize, Message... messages ) throws IOException
     {
         ByteBuffer output = ByteBuffer.allocate( 1024 ).order( ByteOrder.BIG_ENDIAN );
 
@@ -84,58 +73,7 @@ public class SocketSessionIT
         return arrayOutput;
     }
 
-    @Test
-    public void shouldNegotiateProtocolVersion() throws Throwable
-    {
-        // Given
-        NDPConn client = new NDPConn();
-
-        // When
-        client.connect( server.address() )
-                .send( acceptedVersions( 1, 0, 0, 0 ) );
-
-        // Then
-        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-    }
-
-    @Test
-    public void shouldReturnNilOnNoApplicableVersion() throws Throwable
-    {
-        // Given
-        NDPConn client = new NDPConn();
-
-        // When
-        client.connect( server.address() )
-                .send( acceptedVersions( 1337, 0, 0, 0 ) );
-
-        // Then
-        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 0} ) );
-    }
-
-    @Test
-    public void shouldRunSimpleStatement() throws Throwable
-    {
-        // Given
-        NDPConn client = new NDPConn();
-
-        // When
-        client.connect( server.address() )
-                .send( acceptedVersions( 1, 0, 0, 0 ) )
-                .send( chunk(
-                        run( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ),
-                        pullAll() ) );
-
-        // Then
-        assertThat( client, eventuallyRecieves( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyRecieves(
-                msgSuccess( map( "fields", asList( "a", "a_squared" ) ) ),
-                msgRecord( eqRecord( equalTo( 1l ), equalTo( 1l ) ) ),
-                msgRecord( eqRecord( equalTo( 2l ), equalTo( 4l ) ) ),
-                msgRecord( eqRecord( equalTo( 3l ), equalTo( 9l ) ) ),
-                msgSuccess() ) );
-    }
-
-    private byte[] acceptedVersions( long option1, long option2, long option3, long option4 )
+    public static byte[] acceptedVersions( long option1, long option2, long option3, long option4 )
     {
         ByteBuffer bb = ByteBuffer.allocate( 4 * 4 ).order( BIG_ENDIAN );
         bb.putInt( (int) option1 );
@@ -145,12 +83,12 @@ public class SocketSessionIT
         return bb.array();
     }
 
-    private Matcher<NDPConn> eventuallyRecieves( final Matcher<Message>... messages )
+    public static Matcher<Connection> eventuallyRecieves( final Matcher<Message>... messages )
     {
-        return new TypeSafeMatcher<NDPConn>()
+        return new TypeSafeMatcher<Connection>()
         {
             @Override
-            protected boolean matchesSafely( NDPConn conn )
+            protected boolean matchesSafely( Connection conn )
             {
                 try
                 {
@@ -166,7 +104,8 @@ public class SocketSessionIT
                         }
                         else
                         {
-                            assertThat( message( baos.toByteArray() ), messages[messageNo] );
+                            Message message = message( baos.toByteArray() );
+                            assertThat( message, messages[messageNo] );
                             baos = new ByteArrayOutputStream();
                             messageNo++;
                         }
@@ -188,18 +127,18 @@ public class SocketSessionIT
         };
     }
 
-    private int recvChunkHeader( NDPConn conn ) throws IOException, InterruptedException
+    public static int recvChunkHeader( Connection conn ) throws Exception
     {
         byte[] raw = conn.recv( 2 );
         return (raw[0] << 8 | raw[1]) & 0xffff;
     }
 
-    private Matcher<NDPConn> eventuallyRecieves( final byte[] expected )
+    public static Matcher<Connection> eventuallyRecieves( final byte[] expected )
     {
-        return new TypeSafeMatcher<NDPConn>()
+        return new TypeSafeMatcher<Connection>()
         {
             @Override
-            protected boolean matchesSafely( NDPConn item )
+            protected boolean matchesSafely( Connection item )
             {
                 try
                 {

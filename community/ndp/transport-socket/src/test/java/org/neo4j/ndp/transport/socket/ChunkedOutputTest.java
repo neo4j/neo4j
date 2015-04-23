@@ -22,6 +22,7 @@ package org.neo4j.ndp.transport.socket;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -78,7 +79,7 @@ public class ChunkedOutputTest
     {
         ChannelHandlerContext ch = mock( ChannelHandlerContext.class );
         when( ch.alloc() ).thenReturn( UnpooledByteBufAllocator.DEFAULT );
-        when( ch.writeAndFlush( any() ) ).thenAnswer( new Answer<Object>()
+        when( ch.writeAndFlush( any(), any(ChannelPromise.class) ) ).thenAnswer( new Answer<Object>()
         {
             @Override
             public Object answer( InvocationOnMock invocation ) throws Throwable
