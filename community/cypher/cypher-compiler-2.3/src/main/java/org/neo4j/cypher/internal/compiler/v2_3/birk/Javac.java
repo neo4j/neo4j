@@ -41,13 +41,12 @@ import javax.tools.SimpleJavaFileObject;
 import javax.tools.StandardLocation;
 import javax.tools.ToolProvider;
 
-import sun.tools.java.CompilerError;
-
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionMode;
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.CompletionListener;
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult;
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription;
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantCompileQueryException;
+import org.neo4j.function.Supplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.api.Statement;
 
@@ -100,12 +99,12 @@ public class Javac
     }
 
     public static InternalExecutionResult newInstance( Class<InternalExecutionResult> clazz, CompletionListener completion, Statement statement,
-                                                       GraphDatabaseService db, ExecutionMode executionMode, InternalPlanDescription description, Map<String, Object> params)
+                                                       GraphDatabaseService db, ExecutionMode executionMode, Supplier<InternalPlanDescription> description, QueryExecutionTracer tracer, Map<String, Object> params)
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException
     {
         Constructor<InternalExecutionResult> constructor =
-                clazz.getDeclaredConstructor( CompletionListener.class, Statement.class, GraphDatabaseService.class, ExecutionMode.class, InternalPlanDescription.class , Map.class);
-        return constructor.newInstance( completion, statement, db, executionMode, description, params );
+                clazz.getDeclaredConstructor( CompletionListener.class, Statement.class, GraphDatabaseService.class, ExecutionMode.class, Supplier.class, QueryExecutionTracer.class, Map.class);
+        return constructor.newInstance( completion, statement, db, executionMode, description, tracer, params );
     }
 
     private static class InMemSource extends SimpleJavaFileObject

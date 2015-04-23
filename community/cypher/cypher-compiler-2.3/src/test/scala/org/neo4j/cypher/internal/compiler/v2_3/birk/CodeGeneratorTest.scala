@@ -27,6 +27,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compiler.v2_3.{DummyPosition, NormalMode}
 import org.neo4j.cypher.internal.compiler.v2_3.ast._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.CompletionListener.NOOP
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.ExecutionPlanBuilder.tracer
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompletionListener, InternalExecutionResult}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.LazyLabel
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
@@ -438,7 +439,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   private def compile(plan: LogicalPlan, params: Map[String, AnyRef] = Map.empty, completion: CompletionListener = NOOP) = {
     val compiled = generator.generate(plan, newMockedPlanContext, Clock.SYSTEM_CLOCK, mock[SemanticTable])
-    compiled.executionResultBuilder(statement, graphDatabaseService, NormalMode, params, completion)
+    compiled.executionResultBuilder(statement, graphDatabaseService, NormalMode, tracer(NormalMode), params, completion)
   }
 
   /*
