@@ -179,22 +179,32 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("AllNodesScan should be the only child of the plan") {
     val description = given("match n return n").planDescription
-    val children = description.getChildren
+    var children = description.getChildren
     children should have size 1
+    while (children.get(0).getChildren.size() > 0) {
+      children = children.get(0).getChildren
+      children should have size 1
+    }
+
     children.get(0).getName should be("AllNodesScan")
   }
 
+  //TODO remove InterpretedRuntimeName when PROFILE is supported
   test("DbHits should should contain proper values") {
-    val description = given("match n return n").planDescription
-    println(description)
+    val description = given("match n return n")
+      .withRuntime(InterpretedRuntimeName)
+      .planDescription
     val children = description.getChildren
     children should have size 1
     description.getArguments.get("DbHits") should equal(0) // ProduceResults has no hits
     children.get(0).getArguments.get("DbHits") should equal(1) // AllNodesScan has 1 hit
   }
 
+  //TODO remove InterpretedRuntimeName when PROFILE is supported
   test("Rows should be properly formatted") {
-    given("match n return n").planDescription.getArguments.get("Rows") should equal(0)
+    given("match n return n")
+      .withRuntime(InterpretedRuntimeName)
+      .planDescription.getArguments.get("Rows") should equal(0)
   }
 
   test("EstimatedRows should be properly formatted") {

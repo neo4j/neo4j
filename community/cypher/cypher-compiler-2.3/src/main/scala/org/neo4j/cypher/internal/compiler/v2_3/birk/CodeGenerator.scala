@@ -22,9 +22,12 @@ package org.neo4j.cypher.internal.compiler.v2_3.birk
 import java.util
 import java.util.concurrent.atomic.AtomicInteger
 
+
+import org.apache.commons.lang3.StringEscapeUtils
+import org.neo4j.cypher.internal.compiler.v2_3.TaskCloser
 import org.neo4j.cypher.internal.compiler.v2_3.birk.codegen.{CodeGenContext, Namer}
 import org.neo4j.cypher.internal.compiler.v2_3.birk.il._
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledPlan, CompletionListener, PlanFingerprint}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledPlan, PlanFingerprint}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
@@ -42,15 +45,19 @@ object CodeGenerator {
   def generateClass(instructions: Seq[Instruction]) = {
     val className = Namer.newClassName()
     val source = generateCodeFromInstructions(className, instructions)
-    //    print(indentNicely(source))
-    Javac.compile(s"$packageName.$className", source)
+
+    Javac.compile(s"$packageName.$className",source )
+  }
+
+  implicit class JavaString(name: String) {
+    def toJava = s"""${StringEscapeUtils.escapeJava(name)}"""
   }
 
   object JavaTypes {
     val LONG = "long"
     val INT = "int"
     val OBJECT = "Object"
-    val OBJECT_ARRAY = "Object[]"
+    val LIST = "java.util.List"
     val MAP = "java.util.Map"
     val DOUBLE = "double"
     val STRING = "String"
@@ -111,6 +118,7 @@ object CodeGenerator {
        |import org.neo4j.kernel.api.exceptions.KernelException;
        |import org.neo4j.kernel.api.ReadOperations;
        |import org.neo4j.cypher.internal.compiler.v2_3.birk.ResultRowImpl;
+       |import org.neo4j.cypher.internal.compiler.v2_3.CypherException;
        |import org.neo4j.cypher.internal.compiler.v2_3.executionplan.CompiledExecutionResult;
        |import org.neo4j.graphdb.Result.ResultRow;
        |import org.neo4j.graphdb.Result.ResultVisitor;
@@ -118,7 +126,7 @@ object CodeGenerator {
        |import org.neo4j.graphdb.Transaction;
        |import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription;
        |import org.neo4j.cypher.internal.compiler.v2_3.ExecutionMode;
-       |import org.neo4j.cypher.internal.compiler.v2_3.executionplan.CompletionListener;
+       |import org.neo4j.cypher.internal.compiler.v2_3.TaskCloser;
        |import java.util.Map;
        |
        |$imports
@@ -131,9 +139,9 @@ object CodeGenerator {
        |private final ExecutionMode executionMode;
        |private final Map<String, Object> params;
        |
-       |public $className( CompletionListener completion, Statement statement, GraphDatabaseService db, ExecutionMode executionMode, InternalPlanDescription description, Map<String, Object> params )
+       |public $className( TaskCloser closer, Statement statement, GraphDatabaseService db, ExecutionMode executionMode, InternalPlanDescription description, Map<String, Object> params )
        |{
-       |  super( completion, statement );
+       |  super( closer, statement );
        |  this.ro = statement.readOperations();
        |  this.db = db;
        |  this.executionMode = executionMode;
@@ -157,15 +165,20 @@ object CodeGenerator {
        |public <E extends Exception> void accept(final ResultVisitor<E> visitor)
        |{
        |final ResultRowImpl row = new ResultRowImpl(db);
-       |$init
        |try
        |{
+       |$init
        |$methodBody
        |success();
+       |}
+       |catch (CypherException e)
+       |{
+       |throw e;
        |}
        |catch (Exception e)
        |{
        |//TODO proper error handling
+       |//we want to handle KernelExceptions and E coming from visitor
        |throw new RuntimeException( e );
        |}
        |finally
@@ -195,7 +208,7 @@ class CodeGenerator {
 
   def generate(plan: LogicalPlan, planContext: PlanContext, clock: Clock, semanticTable: SemanticTable) = {
     plan match {
-      case _: ProduceResult =>
+      case res: ProduceResult =>
         val clazz = generateClass(createInstructions(plan, semanticTable))
 
         val fp = planContext.statistics match {
@@ -208,10 +221,11 @@ class CodeGenerator {
         val idMap = LogicalPlanIdentificationBuilder(plan)
         val description: InternalPlanDescription = LogicalPlan2PlanDescription(plan, idMap)
 
-        val builder = (st: Statement, db: GraphDatabaseService, mode: ExecutionMode, params: Map[String, Any], completion: CompletionListener) =>
-          Javac.newInstance(clazz, completion, st, db, mode, description, asJavaHashMap(params))
+        val builder = (st: Statement, db: GraphDatabaseService, mode: ExecutionMode, params: Map[String, Any], closer: TaskCloser) =>
+          Javac.newInstance(clazz, closer, st, db,  mode, description, asJavaHashMap(params))
 
-        CompiledPlan(updating = false, None, fp, GreedyPlannerName, builder)
+        val columns = res.nodes ++ res.relationships ++ res.other
+        CompiledPlan(updating = false, None, fp, GreedyPlannerName, description, columns, builder)
 
       case _ => throw new CantCompileQueryException("Can only compile plans with ProduceResult on top")
     }

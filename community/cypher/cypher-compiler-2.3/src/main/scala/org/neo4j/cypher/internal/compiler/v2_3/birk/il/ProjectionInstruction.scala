@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.birk.il
 
-import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaTypes.{DOUBLE, LONG, NUMBER, OBJECT, OBJECT_ARRAY, STRING, MAP}
+import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaTypes.{DOUBLE, LONG, NUMBER, OBJECT, LIST, STRING, MAP}
 import org.neo4j.cypher.internal.compiler.v2_3.birk.codegen.Namer
 import org.neo4j.cypher.internal.compiler.v2_3.birk.{CodeGenerator, JavaSymbol}
+import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaString
 
 sealed trait ProjectionInstruction extends Instruction {
   def projectedVariable: JavaSymbol
@@ -79,12 +80,18 @@ case class ProjectRelProperty(token: Option[Int], propName: String, relIdVar: St
 
 case class ProjectParameter(key: String) extends ProjectionInstruction {
 
-  def generateInit() = ""
+  def generateInit() =
+    s"""if( !params.containsKey( "${key.toJava}" ) )
+      |{
+      |throw new ParameterNotFoundException( "Expected a parameter named ${key.toJava}" );
+      |}
+    """.stripMargin
 
 
-  def projectedVariable = JavaSymbol(s"""params.get( "$key" )""", OBJECT)
+  def projectedVariable = JavaSymbol(s"""params.get( "${key.toJava}" )""", OBJECT)
 
   def fields() = ""
+  override def _importedClasses(): Set[String] = Set("org.neo4j.cypher.internal.compiler.v2_3.ParameterNotFoundException")
 }
 
 case class ProjectLiteral(projectedVariable: JavaSymbol) extends ProjectionInstruction {
@@ -159,9 +166,11 @@ case class ProjectCollection(instructions: Seq[ProjectionInstruction]) extends P
 
   def generateInit() = ""
 
-  def projectedVariable = JavaSymbol(instructions.map(_.projectedVariable.name).mkString("new Object[]{", ",", "}"), OBJECT_ARRAY)
+  def projectedVariable = JavaSymbol(instructions.map(_.projectedVariable.name).mkString("Arrays.asList(", ",", ")"), LIST)
 
   def fields() = ""
+
+  override def _importedClasses() = Set( "java.util.Arrays")
 }
 
 case class ProjectMap(instructions: Map[String, ProjectionInstruction]) extends ProjectionInstruction {

@@ -148,10 +148,19 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     costResult
   }
 
-
   def executeWithAllPlanners(queryText: String, params: (String, Any)*): InternalExecutionResult = {
     val ruleResult = innerExecute(s"CYPHER planner=rule $queryText", params: _*)
     val costResult = executeWithCostPlannerOnly(queryText, params: _*)
+
+    assertResultsAreSame(ruleResult, costResult, queryText, "Diverging results between rule and cost planners")
+
+    costResult
+  }
+
+  //TODO remove as soon compiled plans support dumpToString and PROFILE
+  def executeWithAllPlannersOnInterpretedRuntime(queryText: String, params: (String, Any)*): InternalExecutionResult = {
+    val ruleResult = innerExecute(s"CYPHER planner=rule $queryText", params: _*)
+    val costResult = innerExecute(s"CYPHER planner=cost runtime=interpreted $queryText", params: _*)
 
     assertResultsAreSame(ruleResult, costResult, queryText, "Diverging results between rule and cost planners")
 
@@ -242,6 +251,7 @@ trait NewPlannerTestSupport extends CypherTestSupport {
       map.map {
         case (k, a: Array[_]) => k -> a.toList
         case (k, m: java.util.Map[_,_]) => k -> m.asScala
+        case (k, m: java.util.List[_]) => k -> m.asScala
         case m => m
       }
     )

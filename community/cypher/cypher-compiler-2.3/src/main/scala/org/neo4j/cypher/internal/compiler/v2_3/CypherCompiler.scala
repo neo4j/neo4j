@@ -69,7 +69,7 @@ object CypherCompilerFactory {
                         logger: InfoLogger,
                         rewriterSequencer: (String) => RewriterStepSequencer,
                         plannerName: Option[CostBasedPlannerName],
-                        runtimeName: RuntimeName): CypherCompiler = {
+                        runtimeName: Option[RuntimeName]): CypherCompiler = {
     val parser = new CypherParser(monitors.newMonitor[ParserMonitor[Statement]](monitorTag))
     val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
     val rewriter = new ASTRewriter(rewriterSequencer, monitors.newMonitor[AstRewritingMonitor](monitorTag))
@@ -79,7 +79,9 @@ object CypherCompilerFactory {
     val queryPlanner = new DefaultQueryPlanner(LogicalPlanRewriter(rewriterSequencer))
 
     val pickedPlannerName = plannerName.getOrElse(FallbackPlannerName)
-    val planner = CostBasedPipeBuilderFactory(monitors, metricsFactory, planningMonitor, clock, queryPlanner = queryPlanner, rewriterSequencer = rewriterSequencer, plannerName = pickedPlannerName, runtimeName = runtimeName)
+    val pickedRuntimeName = runtimeName.getOrElse(CompiledRuntimeName)
+    val planner = CostBasedPipeBuilderFactory(monitors, metricsFactory, planningMonitor, clock, queryPlanner = queryPlanner,
+      rewriterSequencer = rewriterSequencer, plannerName = pickedPlannerName, runtimeName = pickedRuntimeName)
     // falling back to legacy planner is allowed only when no cost-based planner is picked explicitly (e.g., COST, IDP)
     val pipeBuilder = pickedPlannerName match {
       case FallbackPlannerName =>

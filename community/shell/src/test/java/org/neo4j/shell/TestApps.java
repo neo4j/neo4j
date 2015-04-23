@@ -1145,10 +1145,11 @@ public class TestApps extends AbstractShellTest
         executeCommand( "EXPLAIN OPTIONAL MATCH (n) RETURN n;", "No data returned" );
     }
 
+    //TODO remove interpreted when PROFILE is supported in compiled plans
     @Test
     public void shouldAllowProfileAsStartForACypherQuery() throws Exception
     {
-        executeCommand( "PROFILE MATCH (n) RETURN n;", "DbHits" );
+        executeCommand( "CYPHER runtime=interpreted PROFILE MATCH (n) RETURN n;", "DbHits" );
     }
 
     @Test

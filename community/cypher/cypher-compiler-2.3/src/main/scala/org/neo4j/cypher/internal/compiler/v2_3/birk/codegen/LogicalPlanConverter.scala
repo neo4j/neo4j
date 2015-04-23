@@ -182,7 +182,9 @@ object LogicalPlanConverter {
       (methodHandle, ProjectProperties(projectionInstructions, action))
     }
 
-    private def createProjectionInstruction(expression: Expression, context: CodeGenContext): ProjectionInstruction =
+    private def createProjectionInstruction(expression: Expression, context: CodeGenContext): ProjectionInstruction = {
+      def safeToString(a: Any) = if (a != null) a.toString else "null"
+
       expression match {
         case nodeOrRel@Identifier(name)
           if context.semanticTable.isNode(nodeOrRel) || context.semanticTable.isRelationship(nodeOrRel) =>
@@ -199,16 +201,17 @@ object LogicalPlanConverter {
         case Parameter(name) => ProjectParameter(name)
 
         case lit: IntegerLiteral =>
-          ProjectLiteral(JavaSymbol(s"${lit.value.toString}L", LONG))
+          val value = if (lit.value != null) s"${lit.value.toString}L" else "null"
+          ProjectLiteral(JavaSymbol(value, LONG))
 
         case lit: DoubleLiteral =>
-          ProjectLiteral(JavaSymbol(lit.value.toString, DOUBLE))
+          ProjectLiteral(JavaSymbol(safeToString(lit.value), DOUBLE))
 
         case lit: StringLiteral =>
-          ProjectLiteral(JavaSymbol( s""""${lit.value}"""", STRING))
+          ProjectLiteral(JavaSymbol( s""""${safeToString(lit.value)}"""", STRING))
 
         case lit: Literal =>
-          ProjectLiteral(JavaSymbol(lit.value.toString, OBJECT))
+          ProjectLiteral(JavaSymbol(safeToString(lit.value), OBJECT))
 
         case Collection(exprs) =>
           ProjectCollection(exprs.map(e => createProjectionInstruction(e, context)))
@@ -231,6 +234,6 @@ object LogicalPlanConverter {
 
         case other => throw new CantCompileQueryException(s"Projection of $other not yet supported")
       }
+    }
   }
-
 }

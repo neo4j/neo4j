@@ -30,6 +30,7 @@ import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.QueryExecutionType;
+import org.neo4j.graphdb.QueryExecutionType.QueryType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
@@ -54,7 +55,7 @@ import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Result
 {
     private final org.neo4j.cypher.ExtendedExecutionResult inner;
-    private final ResourceIterator<Map<String, Object>> iter;
+    private ResourceIterator<Map<String, Object>> iter = null;
 
     /**
      * Constructor used by the Cypher framework. End-users should not
@@ -64,7 +65,11 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     public ExecutionResult( org.neo4j.cypher.ExtendedExecutionResult projection)
     {
         inner = projection;
-        iter = inner.javaIterator();
+        //if updating query we must fetch the iterator right away in order to eagerly perform updates
+        if ( projection.executionType().queryType() == QueryType.WRITE )
+        {
+            ensureIterator();
+        }
     }
 
     /**
@@ -193,12 +198,14 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     @Override
     public ResourceIterator<Map<String, Object>> iterator()
     {
+        ensureIterator();
         return iter; // legacy method - don't convert exceptions...
     }
 
     @Override
     public boolean hasNext()
     {
+        ensureIterator();
         try
         {
             return iter.hasNext();
@@ -212,6 +219,7 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     @Override
     public Map<String, Object> next()
     {
+        ensureIterator();
         try
         {
             return iter.next();
@@ -225,6 +233,7 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     @Override
     public void close()
     {
+        ensureIterator();
         try
         {
             iter.close();
@@ -232,6 +241,14 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
         catch ( CypherException e )
         {
             throw converted( e );
+        }
+    }
+
+    private void ensureIterator()
+    {
+        if (iter == null)
+        {
+            iter = inner.javaIterator();
         }
     }
 

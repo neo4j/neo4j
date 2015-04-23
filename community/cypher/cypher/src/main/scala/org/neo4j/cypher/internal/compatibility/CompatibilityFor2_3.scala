@@ -282,7 +282,10 @@ case class ExecutionResultWrapperFor2_3(inner: InternalExecutionResult, planner:
       NotificationCode.LEGACY_PLANNER.notification(InputPosition.empty)
   }
 
-  override def accept[EX <: Exception](visitor: ResultVisitor[EX]) = exceptionHandlerFor2_3.runSafely {inner.accept(visitor)}
+  override def accept[EX <: Exception](visitor: ResultVisitor[EX]) = exceptionHandlerFor2_3.runSafely {
+    inner.accept(visitor)
+    endQueryExecution()
+  }
 }
 
 case class CompatibilityPlanDescriptionFor2_3(inner: InternalPlanDescription, version: CypherVersion, planner: PlannerName, runtime: RuntimeName)
@@ -364,9 +367,9 @@ case class CompatibilityFor2_3Cost(graph: GraphDatabaseService,
     }
 
     val runtimeName = runtime match {
-      case CypherRuntime.default => InterpretedRuntimeName
-      case CypherRuntime.interpreted => InterpretedRuntimeName
-      case CypherRuntime.compiled => CompiledRuntimeName
+      case CypherRuntime.default => None
+      case CypherRuntime.interpreted => Some(InterpretedRuntimeName)
+      case CypherRuntime.compiled => Some(CompiledRuntimeName)
     }
 
     CypherCompilerFactory.costBasedCompiler(

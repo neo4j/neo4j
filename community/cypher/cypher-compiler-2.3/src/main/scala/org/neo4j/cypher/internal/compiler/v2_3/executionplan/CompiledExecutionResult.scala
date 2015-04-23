@@ -31,18 +31,19 @@ import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.{QueryExecutionType, ResourceIterator}
 import org.neo4j.kernel.api.Statement
 
-import scala.collection.{Map, mutable}
+import scala.Predef
+import scala.collection.{Map, mutable, immutable}
 
 /**
  * Base class for compiled execution results, implements everything in InternalExecutionResult
  * except `javaColumns` and `accept` which should be implemented by the generated classes.
  */
-abstract class CompiledExecutionResult(completion: CompletionListener, statement:Statement) extends InternalExecutionResult {
+abstract class CompiledExecutionResult(taskCloser: TaskCloser, statement:Statement) extends InternalExecutionResult {
   self =>
 
   import scala.collection.JavaConverters._
 
-  protected var innerIterator: ResultIterator = null
+  protected var innerIterator: Iterator[Map[String, Any]] = null
 
   override def columns: List[String] = javaColumns.asScala.toList
 
@@ -68,24 +69,24 @@ abstract class CompiledExecutionResult(completion: CompletionListener, statement
 
   override def dumpToString(writer: PrintWriter) = formatOutput(statement.readOperations, writer, columns, toList, queryStatistics())
 
-  override def queryStatistics(): InternalQueryStatistics = InternalQueryStatistics()
+  override def queryStatistics() = InternalQueryStatistics()
 
   private var successful = false
-  protected def success(): Unit = {
+  protected def success() = {
     successful = true
   }
 
   override def close(): Unit = {
-    if (innerIterator != null) {
-      innerIterator.close( )
-    }
-    statement.close()
-    completion.complete(success=successful)
+    taskCloser.close(success = successful)
   }
 
   override def planDescriptionRequested: Boolean =  executionMode == ExplainMode || executionMode == ProfileMode
 
-  override def executionType: QueryExecutionType =  if (executionMode == ProfileMode) profiled(queryType) else query(queryType)
+  override def executionType = if ( executionMode == ProfileMode ) {
+    profiled( queryType )
+  } else {
+    query( queryType )
+  }
 
   override def notifications = Iterable.empty[InternalNotification]
 
@@ -96,8 +97,9 @@ abstract class CompiledExecutionResult(completion: CompletionListener, statement
 
   override def next() = {
     ensureIterator()
-    innerIterator.next()
+    Eagerly.immutableMapValues(innerIterator.next(), materialize)
   }
+
 
   def executionMode: ExecutionMode
 
@@ -116,8 +118,15 @@ abstract class CompiledExecutionResult(completion: CompletionListener, statement
           true
         }
       })
-      innerIterator = new ClosingIterator(res.result().toIterator, new TaskCloser, identity)
+      innerIterator = res.result().toIterator
     }
+  }
+
+  private def materialize(v: Any): Any = v match {
+    case (x: Stream[_])   => x.map(materialize).toList
+    case (x: Map[_, _])   => Eagerly.immutableMapValues(x, materialize)
+    case (x: Iterable[_]) => x.map(materialize)
+    case x => x
   }
 
   private def makeValueJavaCompatible(value: Any): Any = value match {
