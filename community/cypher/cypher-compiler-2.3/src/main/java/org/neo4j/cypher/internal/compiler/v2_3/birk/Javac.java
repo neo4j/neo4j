@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.birk;
 
-import sun.tools.java.CompilerError;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -56,6 +54,13 @@ import static javax.tools.JavaCompiler.CompilationTask;
 //TODO this should be replaced, here for testing stuff out
 public class Javac
 {
+    public static class CompilationError extends Error
+    {
+        public CompilationError( String message )
+        {
+            super( message );
+        }
+    }
 
     public static Class<InternalExecutionResult> compile( String className, String classBody ) throws
             ClassNotFoundException
@@ -84,7 +89,7 @@ public class Javac
                 sb.append( format( " Line number : %d%s", diagnostic.getLineNumber(), System.lineSeparator() ) );
                 number++;
             }
-            throw new CompilerError( sb.toString() );
+            throw new CompilationError( sb.toString() );
         }
 
         Class<InternalExecutionResult> clazz = (Class<InternalExecutionResult>) manager.getClassLoader( null ).loadClass( className );
