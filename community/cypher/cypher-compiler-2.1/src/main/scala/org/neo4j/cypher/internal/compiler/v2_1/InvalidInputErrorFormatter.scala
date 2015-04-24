@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
+import org.parboiled.common.StringUtils
 import org.parboiled.errors.{DefaultInvalidInputErrorFormatter, InvalidInputError}
 import org.parboiled.matchers.{Matcher, TestNotMatcher}
-import org.parboiled.support.MatcherPath
+import org.parboiled.support.{Chars, MatcherPath}
+
 import scala.collection.JavaConversions._
-import org.parboiled.common.StringUtils
-import org.parboiled.support.Chars
 
 class InvalidInputErrorFormatter extends DefaultInvalidInputErrorFormatter {
 
@@ -73,13 +73,13 @@ class InvalidInputErrorFormatter extends DefaultInvalidInputErrorFormatter {
   }
 
   private def findProperLabelMatcher(path: MatcherPath, errorIndex: Int) : Matcher = {
-    val elements = unfoldRight(path) { p => if (p == null) None else Some(p.element, p.parent) }.reverse
+    val elements = unfoldRight(path) { p => if (p == null) None else Some(p.element -> p.parent) }.reverse
 
     val matcher = for (element <- elements.takeWhile(!_.matcher.isInstanceOf[TestNotMatcher]).find(e => {
       e.startIndex == errorIndex && e.matcher.hasCustomLabel
     })) yield element.matcher
 
-    matcher.getOrElse(null)
+    matcher.orNull
   }
 
   private def unfoldRight[A, B](seed: B)(f: B => Option[(A, B)]): List[A] = f(seed) match {
