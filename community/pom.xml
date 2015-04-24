@@ -38,6 +38,7 @@
     <module>logging</module>
     <module>neo4j-slf4j</module>
     <module>kernel</module>
+    <module>security</module>
     <module>jmx</module>
     <module>udc</module>
     <module>monitor-logging</module>

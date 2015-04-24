@@ -135,30 +135,6 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-logging</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-io</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.neo4j</groupId>
       <artifactId>server-api</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -172,6 +148,18 @@
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-browser</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-security</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-shell</artifactId>
       <version>${project.version}</version>
     </dependency>
 
@@ -243,11 +231,6 @@
       <artifactId>rhino</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>bouncycastle</groupId>
-      <artifactId>bcprov-jdk16</artifactId>
-    </dependency>
-
     <!-- File uploads -->
     <dependency>
       <groupId>com.sun.jersey.contribs</groupId>
@@ -313,9 +296,28 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-shell</artifactId>
+      <artifactId>neo4j-kernel</artifactId>
       <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-logging</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-io</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -348,12 +350,6 @@
     <dependency>
       <groupId>org.powermock</groupId>
       <artifactId>powermock-api-mockito</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.google.jimfs</groupId>
-      <artifactId>jimfs</artifactId>
-      <version>1.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

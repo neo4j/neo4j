@@ -80,11 +80,11 @@ import org.neo4j.server.rest.transactional.TransitionalPeriodTransactionMessCont
 import org.neo4j.server.rest.web.DatabaseActions;
 import org.neo4j.server.rrd.RrdDbProvider;
 import org.neo4j.server.rrd.RrdFactory;
-import org.neo4j.server.security.auth.AuthManager;
-import org.neo4j.server.security.auth.FileUserRepository;
-import org.neo4j.server.security.ssl.KeyStoreFactory;
-import org.neo4j.server.security.ssl.KeyStoreInformation;
-import org.neo4j.server.security.ssl.SslCertificateFactory;
+import org.neo4j.security.auth.AuthManager;
+import org.neo4j.security.auth.FileUserRepository;
+import org.neo4j.security.tls.KeyStoreFactory;
+import org.neo4j.security.tls.KeyStoreInformation;
+import org.neo4j.security.tls.SslCertificateFactory;
 import org.neo4j.server.web.ServerInternalSettings;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;

@@ -19,6 +19,24 @@
  */
 package org.neo4j.server.web;
 
+import ch.qos.logback.access.jetty.RequestLogImpl;
+import ch.qos.logback.access.servlet.TeeFilter;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.SessionManager;
+import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.server.handler.MovedContextHandler;
+import org.eclipse.jetty.server.handler.RequestLogHandler;
+import org.eclipse.jetty.server.session.HashSessionManager;
+import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.webapp.WebAppContext;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -41,32 +59,12 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import ch.qos.logback.access.jetty.RequestLogImpl;
-import ch.qos.logback.access.servlet.TeeFilter;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.SessionManager;
-import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.HandlerList;
-import org.eclipse.jetty.server.handler.MovedContextHandler;
-import org.eclipse.jetty.server.handler.RequestLogHandler;
-import org.eclipse.jetty.server.session.HashSessionManager;
-import org.eclipse.jetty.server.session.SessionHandler;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.webapp.WebAppContext;
-
 import org.neo4j.kernel.configuration.Config;
-
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.security.tls.KeyStoreInformation;
 import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.plugins.Injectable;
-import org.neo4j.server.security.ssl.KeyStoreInformation;
-import org.neo4j.server.security.ssl.SslSocketConnectorFactory;
 
 import static java.lang.String.format;
 
