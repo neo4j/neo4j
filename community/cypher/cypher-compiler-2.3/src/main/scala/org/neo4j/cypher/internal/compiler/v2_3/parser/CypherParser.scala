@@ -45,3 +45,11 @@ trait ParserMonitor[T] {
   def finishParsingSuccess(query: String, result: T)
   def finishParsingError(query:String, errors: Seq[ParseError])
 }
+
+object ParserMonitor {
+  def empty[T] = new ParserMonitor[T] {
+    override def startParsing(query: String): Unit = ()
+    override def finishParsingSuccess(query: String, result: T): Unit = ()
+    override def finishParsingError(query: String, errors: Seq[ParseError]): Unit = ()
+  }
+}
