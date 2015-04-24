@@ -35,7 +35,7 @@ class InvalidInputErrorFormatter extends DefaultInvalidInputErrorFormatter {
       val len = error.getEndIndex - error.getStartIndex
       val sb = new StringBuilder()
       if (len > 0) {
-        val char = error.getInputBuffer().charAt(error.getStartIndex())
+        val char = error.getInputBuffer.charAt(error.getStartIndex)
         if (char == Chars.EOI) {
           sb.append("Unexpected end of input")
         } else {
@@ -48,9 +48,9 @@ class InvalidInputErrorFormatter extends DefaultInvalidInputErrorFormatter {
       }
       val expectedString = getExpectedString(error)
       if (StringUtils.isNotEmpty(expectedString)) {
-        sb.append(": expected ").append(expectedString);
+        sb.append(": expected ").append(expectedString)
       }
-      sb.toString
+      sb.toString()
     }
   }
 
@@ -74,7 +74,7 @@ class InvalidInputErrorFormatter extends DefaultInvalidInputErrorFormatter {
   }
 
   private def findProperLabelMatcher(path: MatcherPath, errorIndex: Int) : Matcher = {
-    val elements = unfoldRight(path) { p => if (p == null) None else Some((p.element, p.parent)) }.reverse
+    val elements = unfoldRight(path) { p => if (p == null) None else Some(p.element -> p.parent) }.reverse
 
     val matcher = for (element <- elements.takeWhile(!_.matcher.isInstanceOf[TestNotMatcher]).find(e => {
       e.startIndex == errorIndex && e.matcher.hasCustomLabel
