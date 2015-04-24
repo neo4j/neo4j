@@ -21,25 +21,13 @@ package org.neo4j.cypher.internal.compiler.v2_3.ast
 
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 
-class QueryTaggerTest extends CypherFunSuite {
+class QueryCoderTest extends CypherFunSuite {
 
-  test("Tags match clauses with :match") {
-    QueryTagger("MATCH n RETURN n") should contain(MatchTag)
-  }
+  val tagger = QueryTagger.default
 
-  test("Tags optional clauses with :opt") {
-    QueryTagger("OPTIONAL MATCH n RETURN 1") should contain(OptionalMatchTag)
-  }
-
-  test("Tags used expressions with :expr") {
-    QueryTagger("RETURN n + 1") should contain(ComplexExpressionTag)
-  }
-
-  test("Tags filtering expressions with :filtering-expr") {
-    QueryTagger("RETURN any(n in [1,2] where n > 0)") should contain(FilteringExpressionTag)
-  }
-
-  test("Supports combining tags") {
-    QueryTagger("MATCH n RETURN n") should be(Set(MatchTag, RegularMatchTag, IdentifierExpressionTag))
+  test("Computes query codes") {
+    QueryCoder(tagger("MATCH n RETURN n")) should equal("Mri")
+    QueryCoder(tagger("MATCH n RETURN n+1")) should equal("MrXli")
+    QueryCoder(tagger("OPTIONAL MATCH n RETURN n")) should equal("Moi")
   }
 }
