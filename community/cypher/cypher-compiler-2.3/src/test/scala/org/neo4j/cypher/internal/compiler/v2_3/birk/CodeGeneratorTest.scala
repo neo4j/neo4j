@@ -48,7 +48,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val plan = ProduceResult(List("a"), List.empty, List.empty, AllNodesScan(IdName("a"), Set.empty)(solved))
 
     //when
-    val compiled = compile( plan)
+    val compiled = compile(plan)
 
     //then
     val result = getNodesFromResult(compiled, "a")
@@ -87,7 +87,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val plan = ProduceResult(List("a"), List.empty, List.empty, join)
 
     //when
-    val compiled = compile( plan)
+    val compiled = compile(plan)
 
     //then
     val result = getNodesFromResult(compiled, "a")
@@ -108,7 +108,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
         AllNodesScan(IdName("a"), Set.empty)(solved), IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved))
 
     //when
-    val compiled = compile( plan)
+    val compiled = compile(plan)
 
     //then
     val result = getNodesFromResult(compiled, "a", "b")
@@ -117,7 +117,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
       Map("a" -> aNode, "b" -> dNode),
       Map("a" -> bNode, "b" -> dNode),
       Map("a" -> cNode, "b" -> eNode),
-      Map("a" -> fNode, "b" -> dNode ),
+      Map("a" -> fNode, "b" -> dNode),
       Map("a" -> gNode, "b" -> eNode)))
   }
 
@@ -128,7 +128,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
         NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved), IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved))
 
     //when
-    val compiled = compile( plan)
+    val compiled = compile(plan)
 
     //then
     val result = getNodesFromResult(compiled, "a", "b")
@@ -137,7 +137,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
       Map("a" -> aNode, "b" -> dNode),
       Map("a" -> bNode, "b" -> dNode),
       Map("a" -> cNode, "b" -> eNode)
-      ))
+    ))
   }
 
   test("all node scan+ expand outgoing with one type") { // MATCH (a)-[r:R1]->(b) RETURN a, b
@@ -147,7 +147,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
         AllNodesScan(IdName("a"), Set.empty)(solved), IdName("a"), Direction.OUTGOING, Seq(RelTypeName("R1")(null)), IdName("b"), IdName("r"), ExpandAll)(solved))
 
     //when
-    val compiled = compile( plan)
+    val compiled = compile(plan)
 
     //then
     val result = getNodesFromResult(compiled, "a", "b")
@@ -167,7 +167,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
         Seq(RelTypeName("R1")(null), RelTypeName("R2")(null)), IdName("b"), IdName("r"), ExpandAll)(solved))
 
     //when
-    val compiled = compile( plan)
+    val compiled = compile(plan)
 
     //then
     val result = getNodesFromResult(compiled, "a", "b")
@@ -176,19 +176,18 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
       Map("a" -> aNode, "b" -> dNode),
       Map("a" -> bNode, "b" -> dNode),
       Map("a" -> cNode, "b" -> eNode),
-      Map("a" -> fNode, "b" -> dNode ),
+      Map("a" -> fNode, "b" -> dNode),
       Map("a" -> gNode, "b" -> eNode)))
   }
 
   test("label scan + expand incoming") { // // MATCH (a:T1)<-[r]-(b) RETURN a, b
-  //given
   //given
   val plan = ProduceResult(List("a", "b"), List.empty, List.empty,
       Expand(
         NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved), IdName("a"), Direction.INCOMING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved))
 
     //when
-    val compiled = compile( plan)
+    val compiled = compile(plan)
 
     //then
     val result = getNodesFromResult(compiled, "a", "b")
@@ -203,7 +202,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
         NodeByLabelScan(IdName("a"), LazyLabel("T1"), Set.empty)(solved), IdName("a"), Direction.BOTH, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved))
 
     //when
-    val compiled = compile( plan)
+    val compiled = compile(plan)
 
     //then
     val result = getNodesFromResult(compiled, "a", "b")
@@ -224,25 +223,25 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val join = NodeHashJoin(Set(IdName("b")), lhs, rhs)(solved)
     val plan = ProduceResult(List("a", "b", "c"), List.empty, List.empty, join)
 
-    val compiled = compile( plan)
+    val compiled = compile(plan)
 
     //then
     val result = getNodesFromResult(compiled, "a", "b", "c")
 
     result.toSet should equal(Set(
-      Map("a" -> aNode, "b" -> dNode, "c" -> fNode ),
-      Map("a" -> aNode, "b" -> dNode, "c" -> bNode ),
-      Map("a" -> aNode, "b" -> dNode, "c" -> aNode ),
-      Map("a" -> bNode, "b" -> dNode, "c" -> aNode ),
-      Map("a" -> bNode, "b" -> dNode, "c" -> bNode ),
-      Map("a" -> bNode, "b" -> dNode, "c" -> fNode ),
-      Map("a" -> fNode, "b" -> dNode, "c" -> aNode ),
-      Map("a" -> fNode, "b" -> dNode, "c" -> bNode ),
-      Map("a" -> fNode, "b" -> dNode, "c" -> fNode ),
-      Map("a" -> cNode, "b" -> eNode, "c" -> cNode ),
-      Map("a" -> cNode, "b" -> eNode, "c" -> gNode ),
-      Map("a" -> gNode, "b" -> eNode, "c" -> cNode ),
-      Map("a" -> gNode, "b" -> eNode, "c" -> gNode )
+      Map("a" -> aNode, "b" -> dNode, "c" -> fNode),
+      Map("a" -> aNode, "b" -> dNode, "c" -> bNode),
+      Map("a" -> aNode, "b" -> dNode, "c" -> aNode),
+      Map("a" -> bNode, "b" -> dNode, "c" -> aNode),
+      Map("a" -> bNode, "b" -> dNode, "c" -> bNode),
+      Map("a" -> bNode, "b" -> dNode, "c" -> fNode),
+      Map("a" -> fNode, "b" -> dNode, "c" -> aNode),
+      Map("a" -> fNode, "b" -> dNode, "c" -> bNode),
+      Map("a" -> fNode, "b" -> dNode, "c" -> fNode),
+      Map("a" -> cNode, "b" -> eNode, "c" -> cNode),
+      Map("a" -> cNode, "b" -> eNode, "c" -> gNode),
+      Map("a" -> gNode, "b" -> eNode, "c" -> cNode),
+      Map("a" -> gNode, "b" -> eNode, "c" -> gNode)
     ))
   }
 
@@ -257,15 +256,15 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val join = NodeHashJoin(Set(IdName("b")), lhs, rhs)(solved)
     val plan = ProduceResult(List("a", "b", "c"), List.empty, List.empty, join)
 
-    val compiled = compile( plan)
+    val compiled = compile(plan)
 
     //then
     val result = getNodesFromResult(compiled, "a", "b", "c")
 
     result.toSet should equal(Set(
-      Map("a" -> aNode, "b" -> dNode, "c" -> fNode ),
-      Map("a" -> bNode, "b" -> dNode, "c" -> fNode ),
-      Map("a" -> cNode, "b" -> eNode, "c" -> gNode )
+      Map("a" -> aNode, "b" -> dNode, "c" -> fNode),
+      Map("a" -> bNode, "b" -> dNode, "c" -> fNode),
+      Map("a" -> cNode, "b" -> eNode, "c" -> gNode)
     ))
   }
 
@@ -376,56 +375,56 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("close transaction after successfully exhausting result") {
     // given
-    val plan = ProduceResult( List.empty, List.empty, List( "a" ), Projection( SingleRow( )( solved ), Map( "a" -> SignedDecimalIntegerLiteral( "1" )( null ) ) )( solved ) )
+    val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> SignedDecimalIntegerLiteral("1")(null)))(solved))
 
     // when
     val completion = mock[CompletionListener]
-    val compiled = compile( plan, completion = completion )
+    val compiled = compile(plan, completion = completion)
 
     // then
     verifyZeroInteractions(completion)
     val visitor = mock[ResultVisitor[RuntimeException]]
-    when( visitor.visit( any[ResultRow] ) ).thenReturn( true )
+    when(visitor.visit(any[ResultRow])).thenReturn(true)
     compiled.accept(visitor)
-    verify( completion ).complete( success = true )
+    verify(completion).complete(success = true)
   }
 
   test("close transaction after prematurely terminating result exhaustion") {
     // given
-    val plan = ProduceResult( List.empty, List.empty, List( "a" ), Projection( SingleRow( )( solved ), Map( "a" -> SignedDecimalIntegerLiteral( "1" )( null ) ) )( solved ) )
+    val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> SignedDecimalIntegerLiteral("1")(null)))(solved))
 
     // when
     val completion = mock[CompletionListener]
-    val compiled = compile( plan, completion = completion )
+    val compiled = compile(plan, completion = completion)
 
     // then
     verifyZeroInteractions(completion)
     val visitor = mock[ResultVisitor[RuntimeException]]
-    when( visitor.visit( any[ResultRow] ) ).thenReturn( false )
+    when(visitor.visit(any[ResultRow])).thenReturn(false)
     compiled.accept(visitor)
-    verify( completion ).complete( success = false )
+    verify(completion).complete(success = false)
   }
 
   test("close transaction after failure while handling results") {
     // given
-    val plan = ProduceResult( List.empty, List.empty, List( "a" ), Projection( SingleRow( )( solved ), Map( "a" -> SignedDecimalIntegerLiteral( "1" )( null ) ) )( solved ) )
+    val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> SignedDecimalIntegerLiteral("1")(null)))(solved))
 
     // when
     val completion = mock[CompletionListener]
-    val compiled = compile( plan, completion = completion )
+    val compiled = compile(plan, completion = completion)
 
     // then
     verifyZeroInteractions(completion)
     val visitor = mock[ResultVisitor[RuntimeException]]
     val exception = new scala.RuntimeException()
-    when( visitor.visit( any[ResultRow] ) ).thenThrow( exception )
+    when(visitor.visit(any[ResultRow])).thenThrow(exception)
     intercept[RuntimeException] {
       compiled.accept(visitor)
     } // should be(exception) -- TODO: this verification fails, but that failure is unrelated to the current fix...
-    verify( completion ).complete( success = false )
+    verify(completion).complete(success = false)
   }
 
-  private def compile(plan: LogicalPlan, params: Map[String, AnyRef] = Map.empty, completion:CompletionListener=NOOP) = {
+  private def compile(plan: LogicalPlan, params: Map[String, AnyRef] = Map.empty, completion: CompletionListener = NOOP) = {
     val compiled = generator.generate(plan, newMockedPlanContext, Clock.SYSTEM_CLOCK, mock[SemanticTable])
     compiled.executionResultBuilder(statement, graphDatabaseService, NormalMode, params, completion)
   }
@@ -501,7 +500,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
       val arguments = invocationOnMock.getArguments
       val node = arguments(0).asInstanceOf[Long].toInt
       val dir = arguments(1).asInstanceOf[Direction]
-      val types = (2 until arguments.length).map( arguments(_).asInstanceOf[Int]).toSet
+      val types = (2 until arguments.length).map(arguments(_).asInstanceOf[Int]).toSet
       getRelsForNode(allNodes(node), dir, types)
     }
   })
@@ -514,7 +513,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     }
   })
   val graphDatabaseService = mock[GraphDatabaseService]
-  when(graphDatabaseService.getNodeById(anyLong())).thenAnswer(new Answer[Node](){
+  when(graphDatabaseService.getNodeById(anyLong())).thenAnswer(new Answer[Node]() {
     override def answer(invocationOnMock: InvocationOnMock): Node = {
       val id = invocationOnMock.getArguments.apply(0).asInstanceOf[Long].toInt
       allNodes(id)
@@ -527,6 +526,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     when(node.toString).thenReturn(name)
     node
   }
+
   private def getRelsForNode(node: Node, dir: Direction, types: Set[Int]) = {
     def hasType(relationship: Relationship) = types.isEmpty || types(relationship.relType)
     if (dir == Direction.OUTGOING) {
@@ -536,7 +536,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
       val relIds = relMap.values.filter(n => n.to == node && hasType(n)).map(_.id).toSeq
       relationshipIterator(relIds)
     } else {
-      val relIds = relMap.values.filter(n => (n.from == node || n.to == node) && hasType(n) ).map(_.id).toSeq
+      val relIds = relMap.values.filter(n => (n.from == node || n.to == node) && hasType(n)).map(_.id).toSeq
       relationshipIterator(relIds)
     }
   }
@@ -564,11 +564,11 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   private def getNodesFromResult(plan: InternalExecutionResult, columns: String*) = {
-    val res= Seq.newBuilder[Map[String, Node]]
+    val res = Seq.newBuilder[Map[String, Node]]
 
     plan.accept(new ResultVisitor[RuntimeException]() {
       override def visit(element: ResultRow): Boolean = {
-        res += columns.map(col =>  col -> element.getNode(col)).toMap
+        res += columns.map(col => col -> element.getNode(col)).toMap
         true
       }
     })
@@ -576,11 +576,11 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   private def getResult(plan: InternalExecutionResult, columns: String*) = {
-    val res= Seq.newBuilder[Map[String, Any]]
+    val res = Seq.newBuilder[Map[String, Any]]
 
     plan.accept(new ResultVisitor[RuntimeException]() {
       override def visit(element: ResultRow): Boolean = {
-        res += columns.map(col =>  col -> element.get(col)).toMap
+        res += columns.map(col => col -> element.get(col)).toMap
         true
       }
     })
@@ -602,4 +602,5 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
       }
     )
   }
+
 }

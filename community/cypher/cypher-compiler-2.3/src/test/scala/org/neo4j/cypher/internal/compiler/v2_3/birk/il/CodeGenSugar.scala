@@ -27,39 +27,40 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.kernel.api.Statement
 import org.scalatest.mock.MockitoSugar
-import collection.JavaConversions
+
+import scala.collection.JavaConversions
 
 trait CodeGenSugar extends MockitoSugar {
-  def evaluate( instructions: Instruction* ): List[Map[String, Object]] = {
-    evaluate( newInstance( compile( instructions: _* ) ) )
+  def evaluate(instructions: Instruction*): List[Map[String, Object]] = {
+    evaluate(newInstance(compile(instructions: _*)))
   }
 
-  def evaluate( result: InternalExecutionResult ): List[Map[String, Object]] = {
+  def evaluate(result: InternalExecutionResult): List[Map[String, Object]] = {
     var rows = List.empty[Map[String, Object]]
     val columns: List[String] = result.columns
-    result.accept( new ResultVisitor[RuntimeException] {
-      override def visit( row: ResultRow ): Boolean = {
-        rows = rows :+ columns.map( key => (key, row.get( key )) ).toMap
+    result.accept(new ResultVisitor[RuntimeException] {
+      override def visit(row: ResultRow): Boolean = {
+        rows = rows :+ columns.map(key => (key, row.get(key))).toMap
         true
       }
-    } )
+    })
     rows
   }
 
-  def compile( instructions: Instruction* ): Class[InternalExecutionResult] =
-    CodeGenerator.generateClass( instructions.toSeq )
+  def compile(instructions: Instruction*): Class[InternalExecutionResult] =
+    CodeGenerator.generateClass(instructions.toSeq)
 
-  def newInstance( clazz: Class[InternalExecutionResult],
-                   statement:Statement = mock[Statement],
-                   graphdb:GraphDatabaseService = null,
-                   executionMode:ExecutionMode = null,
-                   description:InternalPlanDescription = null,
-                   params:Map[String, Any] = Map.empty ): InternalExecutionResult =
+  def newInstance(clazz: Class[InternalExecutionResult],
+                  statement: Statement = mock[Statement],
+                  graphdb: GraphDatabaseService = null,
+                  executionMode: ExecutionMode = null,
+                  description: InternalPlanDescription = null,
+                  params: Map[String, Any] = Map.empty): InternalExecutionResult =
     clazz.getConstructor(
       classOf[Statement],
       classOf[GraphDatabaseService],
       classOf[ExecutionMode],
       classOf[InternalPlanDescription],
       classOf[java.util.Map[String, Object]]
-    ).newInstance( statement, graphdb, executionMode, description, JavaConversions.mapAsJavaMap(params) )
+    ).newInstance(statement, graphdb, executionMode, description, JavaConversions.mapAsJavaMap(params))
 }

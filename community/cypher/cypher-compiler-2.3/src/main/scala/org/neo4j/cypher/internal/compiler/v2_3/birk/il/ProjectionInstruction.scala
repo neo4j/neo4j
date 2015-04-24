@@ -29,14 +29,14 @@ sealed trait ProjectionInstruction extends Instruction {
 }
 
 object ProjectionInstruction {
-  def literal( value:Long ):ProjectionInstruction = ProjectLiteral( JavaSymbol( value.toString + "L", LONG ) )
-  def literal( value:Double ):ProjectionInstruction = ProjectLiteral( JavaSymbol( value.toString, DOUBLE ) )
-  def literal( value:String ):ProjectionInstruction = ProjectLiteral( JavaSymbol( s""""$value"""", STRING ) )
-  def literal( value:Boolean ):ProjectionInstruction = ???
-  def parameter( key:String ):ProjectionInstruction = ProjectParameter( key )
+  def literal(value: Long): ProjectionInstruction = ProjectLiteral(JavaSymbol(value.toString + "L", LONG))
+  def literal(value: Double): ProjectionInstruction = ProjectLiteral(JavaSymbol(value.toString, DOUBLE))
+  def literal(value: String): ProjectionInstruction = ProjectLiteral(JavaSymbol( s""""$value"""", STRING))
+  def literal(value: Boolean): ProjectionInstruction = ???
+  def parameter(key: String): ProjectionInstruction = ProjectParameter(key)
 
-  def add( lhs:ProjectionInstruction, rhs:ProjectionInstruction ):ProjectionInstruction = ProjectAddition( lhs, rhs )
-  def sub( lhs:ProjectionInstruction, rhs:ProjectionInstruction ):ProjectionInstruction = ProjectSubtraction( lhs, rhs )
+  def add(lhs: ProjectionInstruction, rhs: ProjectionInstruction): ProjectionInstruction = ProjectAddition(lhs, rhs)
+  def sub(lhs: ProjectionInstruction, rhs: ProjectionInstruction): ProjectionInstruction = ProjectSubtraction(lhs, rhs)
 }
 
 case class ProjectNodeProperty(token: Option[Int], propName: String, nodeIdVar: String, namer: Namer) extends ProjectionInstruction {

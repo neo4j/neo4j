@@ -22,16 +22,16 @@ package org.neo4j.cypher.internal.compiler.v2_3.birk
 import java.util
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.neo4j.cypher.internal.compiler.v2_3.{CostPlannerName, ExecutionMode}
 import org.neo4j.cypher.internal.compiler.v2_3.birk.codegen.{CodeGenContext, Namer}
 import org.neo4j.cypher.internal.compiler.v2_3.birk.il._
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompletionListener, CompiledPlan, PlanFingerprint}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{CompiledPlan, CompletionListener, PlanFingerprint}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LogicalPlan2PlanDescription, LogicalPlanIdentificationBuilder}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantCompileQueryException, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{InstrumentedGraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.compiler.v2_3.{CostPlannerName, ExecutionMode}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.api.Statement
@@ -39,11 +39,11 @@ import org.neo4j.kernel.api.Statement
 import scala.collection.Map
 
 object CodeGenerator {
-  def generateClass( instructions: Seq[Instruction] ) = {
+  def generateClass(instructions: Seq[Instruction]) = {
     val className = Namer.newClassName()
     val source = generateCodeFromInstructions(className, instructions)
-//    print(indentNicely(source))
-    Javac.compile(s"$packageName.$className",source )
+    //    print(indentNicely(source))
+    Javac.compile(s"$packageName.$className", source)
   }
 
   object JavaTypes {
@@ -91,8 +91,8 @@ object CodeGenerator {
         reduceOption(_ ++ _).
         getOrElse(Set.empty)
 
-    val imports = if ( importLines.nonEmpty )
-      importLines.toSeq.sorted.mkString( "import ", s";${n}import ", ";" )
+    val imports = if (importLines.nonEmpty)
+      importLines.toSeq.sorted.mkString("import ", s";${n}import ", ";")
     else
       ""
     val fields = instructions.map(_.fields().trim).reduce(_ + n + _)
@@ -195,7 +195,7 @@ class CodeGenerator {
   def generate(plan: LogicalPlan, planContext: PlanContext, clock: Clock, semanticTable: SemanticTable) = {
     plan match {
       case _: ProduceResult =>
-        val clazz = generateClass( createInstructions( plan, semanticTable ) )
+        val clazz = generateClass(createInstructions(plan, semanticTable))
 
         val fp = planContext.statistics match {
           case igs: InstrumentedGraphStatistics =>
@@ -207,7 +207,8 @@ class CodeGenerator {
         val idMap = LogicalPlanIdentificationBuilder(plan)
         val description: InternalPlanDescription = LogicalPlan2PlanDescription(plan, idMap)
 
-        val builder = (st: Statement, db: GraphDatabaseService, mode: ExecutionMode, params: Map[String, Any], completion:CompletionListener) => Javac.newInstance(clazz, completion, st, db,  mode, description, asJavaHashMap(params))
+        val builder = (st: Statement, db: GraphDatabaseService, mode: ExecutionMode, params: Map[String, Any], completion: CompletionListener) =>
+          Javac.newInstance(clazz, completion, st, db, mode, description, asJavaHashMap(params))
 
         CompiledPlan(updating = false, None, fp, CostPlannerName, builder)
 
@@ -223,9 +224,9 @@ class CodeGenerator {
     jMap
   }
 
-  private def javaValue( value: Any ): Object = value match {
-    case iter: Seq[_] => iter.map( javaValue ).asJava
-    case iter: Map[_, _] => Eagerly.immutableMapValues( iter, javaValue ).asJava
+  private def javaValue(value: Any): Object = value match {
+    case iter: Seq[_] => iter.map(javaValue).asJava
+    case iter: Map[_, _] => Eagerly.immutableMapValues(iter, javaValue).asJava
     case x: Any => x.asInstanceOf[AnyRef]
   }
 

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.birk.il
 
 case class GetMatchesFromProbeTable(key: String, code: CodeThunk, action: Instruction) extends Instruction {
   def generateCode() = code(key, action)
+
   def generateInit() = action.generateInit()
 
   def fields() = action.fields()

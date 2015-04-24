@@ -93,8 +93,6 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
   implicit class D(i: Double) { def ! = i: java.lang.Double }
   implicit class Z(i: Boolean) { def ! = i: java.lang.Boolean }
 
-  private def r(x: Any): AnyRef = x.asInstanceOf[AnyRef]
-
   private def getTable(f: (AnyRef, AnyRef) => AnyRef) = {
 
     val cartesianProduct = (for (x <- values; y <- values) yield {

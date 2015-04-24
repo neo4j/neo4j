@@ -51,7 +51,7 @@ case class ProduceResults(nodes: Map[String, String],
        |return $columnsList;
        |}""".
       stripMargin
-    }
+  }
 
 
   override def _importedClasses() = Set(
