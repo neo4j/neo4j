@@ -23,6 +23,7 @@ import org.neo4j.graphalgo.impl.path.AStar;
 import org.neo4j.graphalgo.impl.path.AllPaths;
 import org.neo4j.graphalgo.impl.path.AllSimplePaths;
 import org.neo4j.graphalgo.impl.path.Dijkstra;
+import org.neo4j.graphalgo.impl.path.ExactDepthPathFinder;
 import org.neo4j.graphalgo.impl.path.ShortestPath;
 import org.neo4j.graphalgo.impl.util.DoubleEvaluator;
 import org.neo4j.graphdb.Node;
@@ -37,7 +38,7 @@ import org.neo4j.graphdb.traversal.InitialStateFactory;
  * Static factory methods for the recommended implementations of common
  * graph algorithms for Neo4j. The algorithms exposed here are implementations
  * which are tested extensively and also scale on bigger graphs.
- * 
+ *
  * @author Mattias Persson
  */
 public abstract class GraphAlgoFactory
@@ -73,7 +74,7 @@ public abstract class GraphAlgoFactory
     {
         return new AllPaths( maxDepth, expander );
     }
-    
+
     /**
      * Returns an algorithm which can find all simple paths between two
      * nodes. These returned paths cannot contain loops (i.e. a node cannot
@@ -107,7 +108,7 @@ public abstract class GraphAlgoFactory
     {
         return new AllSimplePaths( maxDepth, expander );
     }
-    
+
     /**
      * Returns an algorithm which can find all shortest paths (that is paths
      * with as short {@link Path#length()} as possible) between two nodes. These
@@ -130,7 +131,7 @@ public abstract class GraphAlgoFactory
      * with as short {@link Path#length()} as possible) between two nodes. These
      * returned paths cannot contain loops (i.e. a node cannot occur more than
      * once in any returned path).
-     * 
+     *
      * @param expander the {@link PathExpander} to use for expanding
      *            {@link Relationship}s for each {@link Path}.
      * @param maxDepth the max {@link Path#length()} returned paths are allowed
@@ -141,13 +142,13 @@ public abstract class GraphAlgoFactory
     {
         return new ShortestPath( maxDepth, expander );
     }
-    
+
     /**
      * Returns an algorithm which can find all shortest paths (that is paths
      * with as short {@link Path#length()} as possible) between two nodes. These
      * returned paths cannot contain loops (i.e. a node cannot occur more than
      * once in any returned path).
-     * 
+     *
      * @param expander the {@link RelationshipExpander} to use for expanding
      *            {@link Relationship}s for each {@link Node}.
      * @param maxDepth the max {@link Path#length()} returned paths are allowed
@@ -160,13 +161,13 @@ public abstract class GraphAlgoFactory
     {
         return new ShortestPath( maxDepth, expander, maxHitCount );
     }
-    
+
     /**
      * Returns an algorithm which can find all shortest paths (that is paths
      * with as short {@link Path#length()} as possible) between two nodes. These
      * returned paths cannot contain loops (i.e. a node cannot occur more than
      * once in any returned path).
-     * 
+     *
      * @param expander the {@link PathExpander} to use for expanding
      *            {@link Relationship}s for each {@link Path}.
      * @param maxDepth the max {@link Path#length()} returned paths are allowed
@@ -179,12 +180,12 @@ public abstract class GraphAlgoFactory
     {
         return new ShortestPath( maxDepth, expander, maxHitCount );
     }
-    
+
     /**
      * Returns an algorithm which can find simple all paths of a certain length
      * between two nodes. These returned paths cannot contain loops (i.e. a node
      * could not occur more than once in any returned path).
-     * 
+     *
      * @param expander the {@link RelationshipExpander} to use for expanding
      * {@link Relationship}s for each {@link Node}.
      * @param length the {@link Path#length()} returned paths will have, if any
@@ -193,14 +194,14 @@ public abstract class GraphAlgoFactory
      */
     public static PathFinder<Path> pathsWithLength( RelationshipExpander expander, int length )
     {
-        return new ShortestPath( length, expander, Integer.MAX_VALUE, true );
+        return new ExactDepthPathFinder( expander, length, Integer.MAX_VALUE, false );
     }
-    
+
     /**
      * Returns an algorithm which can find simple all paths of a certain length
      * between two nodes. These returned paths cannot contain loops (i.e. a node
      * could not occur more than once in any returned path).
-     * 
+     *
      * @param expander the {@link PathExpander} to use for expanding
      * {@link Relationship}s for each {@link Node}.
      * @param length the {@link Path#length()} returned paths will have, if any
@@ -209,9 +210,9 @@ public abstract class GraphAlgoFactory
      */
     public static PathFinder<Path> pathsWithLength( PathExpander expander, int length )
     {
-        return new ShortestPath( length, expander, Integer.MAX_VALUE, true );
+        return new ExactDepthPathFinder( expander, length, Integer.MAX_VALUE, false );
     }
-    
+
     /**
      * Returns a {@link PathFinder} which uses the A* algorithm to find the
      * cheapest path between two nodes. The definition of "cheap" is the lowest
@@ -219,10 +220,10 @@ public abstract class GraphAlgoFactory
      * is returned from {@code lengthEvaluator} and {@code estimateEvaluator}.
      * These returned paths cannot contain loops (i.e. a node cannot occur more
      * than once in any returned path).
-     * 
+     *
      * See http://en.wikipedia.org/wiki/A*_search_algorithm for more
      * information.
-     * 
+     *
      * @param expander the {@link RelationshipExpander} to use for expanding
      * {@link Relationship}s for each {@link Node}.
      * @param lengthEvaluator evaluator that can return the cost represented
@@ -246,10 +247,10 @@ public abstract class GraphAlgoFactory
      * is returned from {@code lengthEvaluator} and {@code estimateEvaluator}.
      * These returned paths cannot contain loops (i.e. a node cannot occur more
      * than once in any returned path).
-     * 
+     *
      * See http://en.wikipedia.org/wiki/A*_search_algorithm for more
      * information.
-     * 
+     *
      * @param expander the {@link PathExpander} to use for expanding
      * {@link Relationship}s for each {@link Path}.
      * @param lengthEvaluator evaluator that can return the cost represented
@@ -265,7 +266,7 @@ public abstract class GraphAlgoFactory
     {
         return new AStar( expander, lengthEvaluator, estimateEvaluator );
     }
-    
+
     /**
      * Returns a {@link PathFinder} which uses the Dijkstra algorithm to find
      * the cheapest path between two nodes. The definition of "cheap" is the
@@ -273,10 +274,10 @@ public abstract class GraphAlgoFactory
      * the cost is returned from {@code costEvaluator}. These returned paths
      * cannot contain loops (i.e. a node cannot occur more than once in any
      * returned path).
-     * 
+     *
      * See http://en.wikipedia.org/wiki/Dijkstra%27s_algorithm for more
      * information.
-     * 
+     *
      * @param expander the {@link RelationshipExpander} to use for expanding
      * {@link Relationship}s for each {@link Node}.
      * @param costEvaluator evaluator that can return the cost represented
@@ -289,7 +290,7 @@ public abstract class GraphAlgoFactory
     {
         return new Dijkstra( expander, costEvaluator );
     }
-    
+
     /**
      * Returns a {@link PathFinder} which uses the Dijkstra algorithm to find
      * the cheapest path between two nodes. The definition of "cheap" is the
@@ -297,10 +298,10 @@ public abstract class GraphAlgoFactory
      * the cost is returned from {@code costEvaluator}. These returned paths
      * cannot contain loops (i.e. a node cannot occur more than once in any
      * returned path).
-     * 
+     *
      * See http://en.wikipedia.org/wiki/Dijkstra%27s_algorithm for more
      * information.
-     * 
+     *
      * @param expander the {@link PathExpander} to use for expanding
      * {@link Relationship}s for each {@link Path}.
      * @param costEvaluator evaluator that can return the cost represented
@@ -313,13 +314,13 @@ public abstract class GraphAlgoFactory
     {
         return new Dijkstra( expander, costEvaluator );
     }
-    
+
     /**
      * See {@link #dijkstra(RelationshipExpander, CostEvaluator)}.
-     * 
+     *
      * Uses a cost evaluator which uses the supplied property key to
-     * represent the cost (values of type <bold>double</bold>). 
-     * 
+     * represent the cost (values of type <bold>double</bold>).
+     *
      * @param expander the {@link RelationshipExpander} to use for expanding
      * {@link Relationship}s for each {@link Node}.
      * @param relationshipPropertyRepresentingCost the property to represent cost
@@ -332,13 +333,13 @@ public abstract class GraphAlgoFactory
     {
         return dijkstra( expander, new DoubleEvaluator( relationshipPropertyRepresentingCost ) );
     }
-    
+
     /**
      * See {@link #dijkstra(RelationshipExpander, CostEvaluator)}.
-     * 
+     *
      * Uses a cost evaluator which uses the supplied property key to
-     * represent the cost (values of type <bold>double</bold>). 
-     * 
+     * represent the cost (values of type <bold>double</bold>).
+     *
      * @param expander the {@link PathExpander} to use for expanding
      * {@link Relationship}s for each {@link Path}.
      * @param relationshipPropertyRepresentingCost the property to represent cost
@@ -351,13 +352,13 @@ public abstract class GraphAlgoFactory
     {
         return dijkstra( expander, new DoubleEvaluator( relationshipPropertyRepresentingCost ) );
     }
-    
+
     /**
      * See {@link #dijkstra(RelationshipExpander, CostEvaluator)}.
-     * 
+     *
      * Uses a cost evaluator which uses the supplied property key to
-     * represent the cost (values of type <bold>double</bold>). 
-     * 
+     * represent the cost (values of type <bold>double</bold>).
+     *
      * @param expander the {@link PathExpander} to use for expanding
      * {@link Relationship}s for each {@link Path}.
      * @param stateFactory initial state for the traversal branches.
@@ -373,10 +374,10 @@ public abstract class GraphAlgoFactory
 
     /**
      * See {@link #dijkstra(RelationshipExpander, CostEvaluator)}.
-     * 
+     *
      * Uses a cost evaluator which uses the supplied property key to
-     * represent the cost (values of type <bold>double</bold>). 
-     * 
+     * represent the cost (values of type <bold>double</bold>).
+     *
      * @param expander the {@link PathExpander} to use for expanding
      * {@link Relationship}s for each {@link Path}.
      * @param stateFactory initial state for the traversal branches.
@@ -389,13 +390,13 @@ public abstract class GraphAlgoFactory
     {
         return new Dijkstra( expander, stateFactory, costEvaluator );
     }
-    
+
     /**
      * See {@link #dijkstra(RelationshipExpander, CostEvaluator)}.
-     * 
+     *
      * Uses a cost evaluator which uses the supplied property key to
-     * represent the cost (values of type <bold>double</bold>). 
-     * 
+     * represent the cost (values of type <bold>double</bold>).
+     *
      * @param expander the {@link PathExpander} to use for expanding
      * {@link Relationship}s for each {@link Path}.
      * @param stateFactory initial state for the traversal branches.
@@ -412,10 +413,10 @@ public abstract class GraphAlgoFactory
 
     /**
      * See {@link #dijkstra(RelationshipExpander, CostEvaluator)}.
-     * 
+     *
      * Uses a cost evaluator which uses the supplied property key to
-     * represent the cost (values of type <bold>double</bold>). 
-     * 
+     * represent the cost (values of type <bold>double</bold>).
+     *
      * @param expander the {@link PathExpander} to use for expanding
      * {@link Relationship}s for each {@link Path}.
      * @param stateFactory initial state for the traversal branches.
