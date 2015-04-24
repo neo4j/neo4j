@@ -68,6 +68,8 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
         }
     }
 
+    // TODO: Handle channelInactive (eg. close our session if we've opened one)
+
     private void chooseProtocolVersion( ChannelHandlerContext ctx, ByteBuf buffer ) throws Exception
     {
         switch ( protocolChooser.handleVersionHandshakeChunk( buffer ) )

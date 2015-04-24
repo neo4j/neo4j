@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.neo4j</groupId>
+    <artifactId>parent</artifactId>
+    <version>2.3-SNAPSHOT</version>
+    <relativePath>../../..</relativePath>
+  </parent>
+
+  <properties>
+    <license-text.header>GPL-3-header.txt</license-text.header>
+    <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
+  </properties>
+
+  <groupId>org.neo4j.ndp</groupId>
+  <artifactId>neo4j-ndp-v1-docs</artifactId>
+
+  <packaging>jar</packaging>
+  <name>Neo4j - Data Protocol Documentation V1</name>
+  <description>Documentation for the Data Protocol, Version 1</description>
+
+  <dependencies>
+
+    <dependency>
+      <groupId>org.neo4j.ndp</groupId>
+      <artifactId>neo4j-ndp-transport-socket</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j.ndp</groupId>
+      <artifactId>neo4j-ndp-transport-socket</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j.ndp</groupId>
+      <artifactId>neo4j-ndp-messaging-v1</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-io</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j.ndp</groupId>
+      <artifactId>neo4j-ndp-runtime</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Test dependencies -->
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-all</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-all</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Used to validate docs -->
+    <dependency>
+      <groupId>org.asciidoctor</groupId>
+      <artifactId>asciidoctorj</artifactId>
+      <version>1.5.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jsoup</groupId>
+      <artifactId>jsoup</artifactId>
+      <version>1.8.1</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>2.3.2</version>
+        <configuration>
+          <source>1.7</source>
+          <target>1.7</target>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>2.2</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- Disable the ComponentVersion generation -->
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>generate-version</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Temporary asciidoc generation, pending plugging into manual. -->
+      <plugin>
+        <groupId>org.asciidoctor</groupId>
+        <artifactId>asciidoctor-maven-plugin</artifactId>
+        <version>1.5.2</version>
+        <executions>
+          <execution>
+            <id>generate-compliance-manual</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>process-asciidoc</goal>
+            </goals>
+            <configuration>
+              <backend>html</backend>
+            </configuration>
+          </execution>
+        </executions>
+        <configuration>
+          <sourceDirectory>${basedir}/src/docs/dev</sourceDirectory>
+          <outputDirectory>${basedir}/target/protocol-manual/html</outputDirectory>
+          <backend>html</backend>
+          <attributes>
+            <toc/>
+            <source-highlighter>coderay</source-highlighter>
+          </attributes>
+        </configuration>
+      </plugin>
+
+    </plugins>
+  </build>
+</project>

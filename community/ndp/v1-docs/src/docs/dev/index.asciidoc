@@ -1,0 +1,27 @@
+[[ndp]]
+Neo4j Data Protocol, Version 1
+==============================
+
+WARNING: This component is in active development and *will* change.
+
+== Overview
+
+This section describes the Neo4j Data Protocol, version 1.
+It is written primarily for those implementing client drivers as well as those who want to understand the low-level communication details of such interactions.
+
+Neo4j supports a client-server protocol where messages are exchanged between a client who drives an interaction and a server which processes and responds to client requests.
+Every exchange of messages is initiated by the client with one or more request messages; in turn these requests are consumed by the server and corresponding response messages are returned.
+
+The diagram below illustrates a typical interaction including the order of messages sent and the life spans of the session and job (which are described in more detail in other chapters).
+
+image:typical-interaction.png[]
+
+The protocol is divided into two layers - <<ndp-transport,transport>> and <<ndp-messaging,messaging>>.
+
+include::transport.asciidoc[]
+
+include::messaging.asciidoc[]
+
+include::serialization.asciidoc[]
+
+include::examples.asciidoc[]

@@ -30,7 +30,7 @@ public class Neo4jError
     private final Status status;
     private final String message;
 
-    public Neo4jError(Status status, String message)
+    public Neo4jError( Status status, String message )
     {
         this.status = status;
         this.message = message;
@@ -84,7 +84,7 @@ public class Neo4jError
     public static Status codeFromString( String codeStr )
     {
         String[] parts = codeStr.split( "\\." );
-        if(parts.length != 4)
+        if ( parts.length != 4 )
         {
             return Status.General.UnknownFailure;
         }
@@ -93,22 +93,22 @@ public class Neo4jError
         String error = parts[3];
 
         // Note: the input string may contain arbitrary input data, using reflection would open network attack vector
-        switch(category)
+        switch ( category )
         {
         case "Schema":
-            return Status.Schema.valueOf(error);
+            return Status.Schema.valueOf( error );
         case "LegacyIndex":
-            return Status.LegacyIndex.valueOf(error);
+            return Status.LegacyIndex.valueOf( error );
         case "General":
-            return Status.General.valueOf(error);
+            return Status.General.valueOf( error );
         case "Statement":
-            return Status.Statement.valueOf(error);
+            return Status.Statement.valueOf( error );
         case "Transaction":
-            return Status.Transaction.valueOf(error);
+            return Status.Transaction.valueOf( error );
         case "Request":
-            return Status.Request.valueOf(error);
+            return Status.Request.valueOf( error );
         case "Network":
-            return Status.Network.valueOf(error);
+            return Status.Network.valueOf( error );
         default:
             return Status.General.UnknownFailure;
         }

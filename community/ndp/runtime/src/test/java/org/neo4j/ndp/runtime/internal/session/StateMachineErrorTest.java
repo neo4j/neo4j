@@ -59,7 +59,7 @@ public class StateMachineErrorTest
     @Before
     public void setup()
     {
-        when(db.beginTx()).thenReturn( tx );
+        when( db.beginTx() ).thenReturn( tx );
     }
 
     @Test
@@ -68,8 +68,8 @@ public class StateMachineErrorTest
         // Given
         RecordingCallback responses = new RecordingCallback();
 
-        doThrow( new SyntaxException( "src/test" ) ).when( runner ).run( any(SessionState.class),
-                any(String.class), any(Map.class) );
+        doThrow( new SyntaxException( "src/test" ) ).when( runner ).run( any( SessionState.class ),
+                any( String.class ), any( Map.class ) );
 
         SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLog.getInstance() );
 
@@ -77,8 +77,8 @@ public class StateMachineErrorTest
         machine.run( "this is nonsense", EMPTY_MAP, null, responses );
 
         // Then
-        assertThat(responses.next(), failedWith( Status.Statement.InvalidSyntax ) );
-        assertThat(machine.state(), equalTo( ERROR ));
+        assertThat( responses.next(), failedWith( Status.Statement.InvalidSyntax ) );
+        assertThat( machine.state(), equalTo( ERROR ) );
     }
 
     @Test
@@ -93,7 +93,7 @@ public class StateMachineErrorTest
                 throw new RuntimeException( "Well, that didn't work out very well." );
             }
         };
-        when(runner.run( any(SessionState.class), any(String.class), any(Map.class) ))
+        when( runner.run( any( SessionState.class ), any( String.class ), any( Map.class ) ) )
                 .thenReturn( mock( RecordStream.class ) );
 
         SessionStateMachine machine = new SessionStateMachine( db, txBridge, runner, NullLog.getInstance() );
@@ -105,8 +105,8 @@ public class StateMachineErrorTest
         machine.pullAll( null, failingCallback );
 
         // Then
-        assertThat(failingCallback.next(), failedWith( Status.General.UnknownFailure ));
-        assertThat(machine.state(), equalTo( ERROR ));
+        assertThat( failingCallback.next(), failedWith( Status.General.UnknownFailure ) );
+        assertThat( machine.state(), equalTo( ERROR ) );
     }
 
     @Test
@@ -119,13 +119,13 @@ public class StateMachineErrorTest
         machine.beginTransaction();
 
         // And given that transaction will fail to roll back
-        doThrow(new TransactionFailureException( "This just isn't going well for us." )).when( tx ).close();
+        doThrow( new TransactionFailureException( "This just isn't going well for us." ) ).when( tx ).close();
 
         // When
         machine.rollbackTransaction();
 
         // Then
-        assertThat(machine.state(), equalTo( ERROR ));
+        assertThat( machine.state(), equalTo( ERROR ) );
     }
 
     @Test
@@ -139,28 +139,28 @@ public class StateMachineErrorTest
         machine.commitTransaction(); // No tx to be committed!
 
         // Then it should be in an error state
-        assertThat(machine.state(), equalTo(ERROR));
+        assertThat( machine.state(), equalTo( ERROR ) );
 
         // and no action other than acknowledging the error should be possible
         machine.beginTransaction();
-        assertThat(machine.state(), equalTo(ERROR));
+        assertThat( machine.state(), equalTo( ERROR ) );
 
         machine.beginImplicitTransaction();
-        assertThat(machine.state(), equalTo(ERROR));
+        assertThat( machine.state(), equalTo( ERROR ) );
 
         machine.commitTransaction();
-        assertThat(machine.state(), equalTo(ERROR));
+        assertThat( machine.state(), equalTo( ERROR ) );
 
         machine.rollbackTransaction();
-        assertThat(machine.state(), equalTo(ERROR));
+        assertThat( machine.state(), equalTo( ERROR ) );
 
         // this includes externally triggered actions
         machine.run( "src/test", EMPTY_MAP, null, messages );
-        assertThat(machine.state(), equalTo(ERROR));
+        assertThat( machine.state(), equalTo( ERROR ) );
         assertThat( messages.next(), ignored() );
 
         machine.pullAll( null, messages );
-        assertThat(machine.state(), equalTo(ERROR));
+        assertThat( machine.state(), equalTo( ERROR ) );
         assertThat( messages.next(), ignored() );
 
         // And nothing at all should have been done

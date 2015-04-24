@@ -81,4 +81,22 @@ public class ChunkedInputTest
         // Then
         assertThat( bytes, equalTo( new byte[]{7, 0, 0} ) );
     }
+
+    @Test
+    public void shouldReadPartialChunk() throws Throwable
+    {
+        // Given
+        ChunkedInput ch = new ChunkedInput();
+
+        ch.addChunk( wrappedBuffer( new byte[]{1, 2} ) );
+        ch.addChunk( wrappedBuffer( new byte[]{3} ) );
+        ch.addChunk( wrappedBuffer( new byte[]{4, 5} ) );
+
+        // When
+        byte[] bytes = new byte[5];
+        ch.get( bytes, 0, 5 );
+
+        // Then
+        assertThat( bytes, equalTo( new byte[]{1, 2, 3, 4, 5} ) );
+    }
 }

@@ -25,6 +25,7 @@ public interface PackInput
 {
     /**
      * Ensure the specified number of bytes are available for reading
+     *
      * @throws org.neo4j.packstream.PackStream.EndOfStream if there are not enough bytes available
      */
     PackInput ensure( int numBytes ) throws IOException;

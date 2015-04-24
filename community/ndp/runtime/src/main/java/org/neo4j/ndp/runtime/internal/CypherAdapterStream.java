@@ -35,7 +35,7 @@ public class CypherAdapterStream implements RecordStream
     {
         this.delegate = delegate;
         this.fieldNames = delegate.columns().toArray( new String[delegate.columns().size()] );
-        this.currentRecord = new CypherAdapterRecord(fieldNames);
+        this.currentRecord = new CypherAdapterRecord( fieldNames );
     }
 
     @Override
@@ -53,7 +53,7 @@ public class CypherAdapterStream implements RecordStream
     @Override
     public void visitAll( Visitor visitor ) throws Exception
     {
-        while(delegate.hasNext())
+        while ( delegate.hasNext() )
         {
             visitor.visit( currentRecord.reset( delegate.next() ) );
         }
@@ -96,7 +96,7 @@ public class CypherAdapterStream implements RecordStream
             };
         }
 
-        public CypherAdapterRecord reset( Map<String, Object> cypherRecord )
+        public CypherAdapterRecord reset( Map<String,Object> cypherRecord )
         {
             for ( int i = 0; i < fields.length; i++ )
             {

@@ -41,7 +41,7 @@ public class BufferedChannelOutput implements PackOutput
 
     public BufferedChannelOutput( WritableByteChannel channel, int bufferSize )
     {
-        this(bufferSize);
+        this( bufferSize );
         reset( channel );
     }
 
@@ -64,7 +64,7 @@ public class BufferedChannelOutput implements PackOutput
     public BufferedChannelOutput flush() throws IOException
     {
         buffer.flip();
-        do { channel.write( buffer ); } while( buffer.remaining() > 0 );
+        do { channel.write( buffer ); } while ( buffer.remaining() > 0 );
         buffer.clear();
         return this;
     }
@@ -80,14 +80,14 @@ public class BufferedChannelOutput implements PackOutput
     public PackOutput put( byte[] data, int offset, int length ) throws IOException
     {
         int index = 0;
-        while(index < length)
+        while ( index < length )
         {
             int amountToWrite = Math.min( buffer.remaining(), length - index );
 
-            buffer.put( data, offset, amountToWrite );
+            buffer.put( data, offset + index, amountToWrite );
             index += amountToWrite;
 
-            if( buffer.remaining() == 0)
+            if ( buffer.remaining() == 0 )
             {
                 flush();
             }

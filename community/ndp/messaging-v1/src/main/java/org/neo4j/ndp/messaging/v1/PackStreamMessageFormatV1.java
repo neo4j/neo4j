@@ -36,6 +36,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueNode;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValuePath;
 import org.neo4j.ndp.messaging.v1.infrastructure.ValueRelationship;
@@ -114,8 +115,13 @@ public class PackStreamMessageFormatV1 implements MessageFormat
          */
         public Writer( PackOutput output, Runnable onMessageComplete )
         {
+            this( new PackStream.Packer( output ), onMessageComplete );
+        }
+
+        public Writer( PackStream.Packer packer, Runnable onMessageComplete )
+        {
+            this.packer = packer;
             this.onMessageComplete = onMessageComplete;
-            packer = new PackStream.Packer( output );
         }
 
         @Override
@@ -480,8 +486,13 @@ public class PackStreamMessageFormatV1 implements MessageFormat
         {
             Map<String,Object> map = unpackRawMap();
 
-            String codeStr = (String) map.get( "code" );
-            String msg = (String) map.get( "message" );
+            String codeStr = map.containsKey( "code" ) ?
+                             (String) map.get( "code" ) :
+                             Status.General.UnknownFailure.name();
+
+            String msg = map.containsKey( "message" ) ?
+                         (String) map.get( "message" ) :
+                         "<No message supplied>";
 
             output.handleFailureMessage( new Neo4jError( codeFromString( codeStr ), msg ) );
         }

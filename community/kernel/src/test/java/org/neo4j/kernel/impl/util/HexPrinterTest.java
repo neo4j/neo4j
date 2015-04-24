@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import org.junit.Test;
+
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 
-import org.junit.Test;
-
 import static java.lang.String.format;
-
 import static org.junit.Assert.assertEquals;
 
 public class HexPrinterTest
@@ -165,12 +164,18 @@ public class HexPrinterTest
     @Test
     public void shouldOnlyPrintBytesWrittenToBuffer() throws Exception
     {
+        // Given
         ByteBuffer bytes = ByteBuffer.allocate( 1024 );
         for ( byte value = 0; value < 10; value++ )
         {
             bytes.put( value );
         }
+        bytes.flip();
+
+        // When
         String hexString = HexPrinter.hex( bytes );
+
+        // Then
         assertEquals( format( "00 01 02 03 04 05 06 07    08 09" ), hexString );
     }
 }

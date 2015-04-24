@@ -40,7 +40,7 @@ public class RecordingCallback implements Session.Callback
     public Call next() throws InterruptedException
     {
         Call msg = calls.poll( 10, TimeUnit.SECONDS );
-        if(msg == null)
+        if ( msg == null )
         {
             throw new RuntimeException( "Waited 10 seconds for message, but no message arrived." );
         }
@@ -66,7 +66,7 @@ public class RecordingCallback implements Session.Callback
                 throw new RuntimeException( e );
             }
         }
-        else if(result instanceof StatementMetadata)
+        else if ( result instanceof StatementMetadata )
         {
             results.add( new StatementSuccess( (StatementMetadata) result ) );
         }
@@ -87,9 +87,9 @@ public class RecordingCallback implements Session.Callback
     {
         try
         {
-            if(ignored)
+            if ( ignored )
             {
-                calls.add(new Ignored());
+                calls.add( new Ignored() );
             }
             else if ( errors.size() > 0 )
             {
@@ -107,7 +107,8 @@ public class RecordingCallback implements Session.Callback
             {
                 calls.add( new Success() );
             }
-        } finally
+        }
+        finally
         {
             results.clear();
             errors.clear();
@@ -176,7 +177,7 @@ public class RecordingCallback implements Session.Callback
     {
         private final StatementMetadata meta;
 
-        public StatementSuccess(StatementMetadata meta)
+        public StatementSuccess( StatementMetadata meta )
         {
             this.meta = meta;
         }

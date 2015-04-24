@@ -21,5 +21,13 @@ package org.neo4j.packstream;
 
 public enum PackType
 {
-    NULL, BOOLEAN, INTEGER, FLOAT, BYTES, TEXT, LIST, MAP, STRUCT
+    NULL,
+    BOOLEAN,
+    INTEGER,
+    FLOAT,
+    BYTES,
+    TEXT,
+    LIST,
+    MAP,
+    STRUCT
 }
