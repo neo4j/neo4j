@@ -142,7 +142,7 @@ trait DocumentationHelper extends GraphIcing {
 
 }
 
-abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper with GraphIcing {
+abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper with GraphIcing with ResetStrategy {
 
   def testQuery(title: String, text: String, queryText: String, optionalResultExplanation: String, assertions: InternalExecutionResult => Unit) {
     internalTestQuery(title, text, queryText, optionalResultExplanation, None, None, assertions)
@@ -154,7 +154,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
   }
 
   def prepareAndTestQuery(title: String, text: String, queryText: String, optionalResultExplanation: String,
-                          prepare: => Unit = executePreparationQueries(List.empty), assertions: InternalExecutionResult => Unit, dbPrepare: GraphDatabaseAPI => Unit = _ => ()) {
+                          prepare: => Unit = executePreparationQueries(List.empty), assertions: InternalExecutionResult => Unit, dbPrepare: GraphDatabaseAPI => Any = _ => ()) {
     internalTestQuery(title, text, queryText, optionalResultExplanation, None, Some(() => prepare), assertions, dbPrepare)
   }
 
@@ -242,7 +242,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
 
   private def internalTestQuery(title: String, text: String, queryText: String, optionalResultExplanation: String,
                                 expectedException: Option[ClassTag[_ <: CypherException]], prepare: Option[() => Any],
-                                assertions: InternalExecutionResult => Unit, dbPrepare: GraphDatabaseAPI => Unit = _ => Unit) {
+                                assertions: InternalExecutionResult => Unit, dbPrepare: GraphDatabaseAPI => Any = _ => Unit) {
     parameters = null
     preparationQueries = List()
     //dumpGraphViz(dir, graphvizOptions.trim)
@@ -269,7 +269,6 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     val keySet = nodeMap.keySet
     val writer: PrintWriter = createWriter(title, dir)
     prepareForTest(title, prepare, dbPrepare)
-    db.inTx { db.schema().awaitIndexesOnline(10, TimeUnit.SECONDS) }
 
     val query = db.inTx {
       keySet.foldLeft(queryText)((acc, key) => acc.replace("%" + key + "%", node(key).getId.toString))
@@ -292,7 +291,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
     }
   }
 
-  def prepareForTest(title: String, prepare: Option[() => Any], dbPrepare: GraphDatabaseAPI => Unit): Unit = {
+  def prepareForTest(title: String, prepare: Option[() => Any], dbPrepare: GraphDatabaseAPI => Any): Unit = {
     prepare.foreach {
       (prepareStep: () => Any) => prepareStep()
     }
@@ -301,6 +300,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
       dumpPreparationGraphviz(dir, title, graphvizOptions)
     }
     dbPrepare(db)
+    db.inTx { db.schema().awaitIndexesOnline(2, TimeUnit.SECONDS) }
   }
 
   private def executeWithAllPlannersAndAssert(query: String, assertions: InternalExecutionResult => Unit,
@@ -317,7 +317,7 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
         val rewindable = RewindableExecutionResult(engine.execute(s"$s $query", params))
         db.inTx(assertions(rewindable))
         val dump = rewindable.dumpToString()
-        init()
+        reset
         prepareFunction
         Some(dump)
 
@@ -432,6 +432,10 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
 
   @Before
   def init() {
+    hardReset
+  }
+
+  override def hardReset = {
     teardown()
     db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().
       setConfig(GraphDatabaseSettings.node_keys_indexable, "name").
@@ -439,7 +443,11 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
       newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
     engine = new ServerExecutionEngine(db)
 
-    cleanDatabaseContent( db )
+    softReset
+  }
+
+  override def softReset = {
+    cleanDatabaseContent(db)
 
     setupConstraintQueries.foreach(engine.execute)
 
@@ -514,4 +522,18 @@ abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper w
       writer.println(AsciiDocGenerator.dumpToSeparateFile(dir, testId + ".console", output.toString()))
     }
   }
+}
+
+trait ResetStrategy {
+  def reset = ()
+  def hardReset = ()
+  def softReset = ()
+}
+
+trait HardReset extends ResetStrategy {
+  override def reset = hardReset
+}
+
+trait SoftReset extends ResetStrategy {
+  override def reset = softReset
 }

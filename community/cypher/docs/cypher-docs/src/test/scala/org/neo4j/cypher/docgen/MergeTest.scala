@@ -23,7 +23,7 @@ import org.junit.Test
 import org.neo4j.cypher.{MergeConstraintConflictException, QueryStatisticsTestSupport}
 import org.neo4j.visualization.graphviz.{AsciiDocSimpleStyle, GraphStyle}
 
-class MergeTest extends DocumentingTestBase with QueryStatisticsTestSupport {
+class MergeTest extends DocumentingTestBase with QueryStatisticsTestSupport with SoftReset {
 
   override protected def getGraphvizStyle: GraphStyle =
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()

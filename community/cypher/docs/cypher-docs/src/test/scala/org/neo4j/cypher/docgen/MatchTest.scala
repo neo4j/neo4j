@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.docgen
 
+import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.junit.Test
-import org.hamcrest.CoreMatchers._
 import org.neo4j.graphdb._
+import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.tooling.GlobalGraphOperations
 import org.neo4j.visualization.graphviz.{AsciiDocSimpleStyle, GraphStyle}
 
@@ -49,6 +50,8 @@ class MatchTest extends DocumentingTestBase {
     "WallStreet" -> Map("title" -> "Wall Street"),
     "TheAmericanPresident" -> Map("title" -> "The American President")
   )
+
+  override val setupQueries = List("CREATE (r {name : 'Rob Reiner'})-[:`TYPE THAT HAS SPACE IN IT`]->(c {name : 'Charlie Sheen'})")
 
   override protected def getGraphvizStyle: GraphStyle =
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
@@ -203,12 +206,11 @@ This is not recommended practice. See <<match-node-by-id>> for more information 
   }
 
   @Test def relationshipsByTypeWithSpace() {
-    prepareAndTestQuery(
+    testQuery(
       title = "Relationship types with uncommon characters",
       text = "Sometime your database will have types with non-letter characters, or with spaces in them. Use +`+ (backtick) to quote these.",
       queryText = """match (n {name:'Rob Reiner'})-[r:`TYPE THAT HAS SPACE IN IT`]->() return r""",
       optionalResultExplanation = """Returns a relationship of a type with spaces in it.""",
-      prepare = executePreparationQueries(List("CREATE (r {name : 'Rob Reiner'})-[:`TYPE THAT HAS SPACE IN IT`]->(c {name : 'Charlie Sheen'})")),
       assertions = (p) => assertEquals(1, p.size)
     )
   }
