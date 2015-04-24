@@ -57,7 +57,6 @@ public class ShortestPath implements PathFinder<Path>
     private final int maxDepth;
     private final int maxResultCount;
     private final PathExpander expander;
-    private final HitDecider hitDecider;
     private Metadata lastMetadata;
 
     /**
@@ -69,27 +68,14 @@ public class ShortestPath implements PathFinder<Path>
      */
     public ShortestPath( int maxDepth, PathExpander expander )
     {
-        this( maxDepth, expander, Integer.MAX_VALUE, false );
+        this( maxDepth, expander, Integer.MAX_VALUE );
     }
     
     public ShortestPath( int maxDepth, RelationshipExpander expander )
     {
-        this( maxDepth, toPathExpander( expander ), Integer.MAX_VALUE, false );
+        this( maxDepth, toPathExpander( expander ), Integer.MAX_VALUE );
     }
-    
-    /**
-     * Constructs a new shortest path algorithm.
-     * @param maxDepth the maximum depth for the traversal. Returned paths
-     * will never have a greater {@link Path#length()} than {@code maxDepth}.
-     * @param expander the {@link RelationshipExpander} to use for deciding
-     * which relationships to expand for each {@link Node}.
-     * @param maxResultCount the maximum number of hits to return. If this number
-     * of hits are encountered the traversal will stop.
-     */
-    public ShortestPath( int maxDepth, PathExpander expander, int maxResultCount )
-    {
-        this( maxDepth, expander, maxResultCount, false );
-    }
+
     
     public ShortestPath( int maxDepth, RelationshipExpander expander, int maxResultCount )
     {
@@ -104,22 +90,12 @@ public class ShortestPath implements PathFinder<Path>
      * which relationships to expand for each {@link Node}.
      * @param maxResultCount the maximum number of hits to return. If this number
      * of hits are encountered the traversal will stop.
-     * @param findPathsOnMaxDepthOnly if {@code true} then it will only try to
-     * find paths on that particular depth ({@code maxDepth}).
      */
-    public ShortestPath( int maxDepth, PathExpander expander, int maxResultCount,
-            boolean findPathsOnMaxDepthOnly )
+    public ShortestPath( int maxDepth, PathExpander expander, int maxResultCount )
     {
         this.maxDepth = maxDepth;
         this.expander = expander;
         this.maxResultCount = maxResultCount;
-        this.hitDecider = findPathsOnMaxDepthOnly ? new DepthHitDecider( maxDepth ) : YES_HIT_DECIDER;
-    }
-    
-    public ShortestPath( int maxDepth, RelationshipExpander relExpander, int maxResultCount,
-            boolean findPathsOnMaxDepthOnly )
-    {
-        this( maxDepth, toPathExpander( relExpander ), maxResultCount, findPathsOnMaxDepthOnly );
     }
     
     public Iterable<Path> findAllPaths( Node start, Node end )
@@ -211,10 +187,6 @@ public class ShortestPath implements PathFinder<Path>
         {
             // This is a hit
             int depth = directionData.currentDepth + otherSideHit.depth;
-            if ( !hitDecider.isHit( depth ) )
-            {
-                return;
-            }
             
             if ( directionData.sharedFrozenDepth.value == MutableInteger.NULL )
             {
@@ -328,10 +300,10 @@ public class ShortestPath implements PathFinder<Path>
                     return null;
                 }
                 lastMetadata.rels++;
-                if ( !hitDecider.canVisitRelationship( sharedVisitedRels, nextRel ) )
-                {
-                    continue;
-                }
+//                if ( !hitDecider.canVisitRelationship( sharedVisitedRels, nextRel ) )
+//                {
+//                    continue;
+//                }
                 
                 Node result = nextRel.getOtherNode( this.lastPath.endNode() );
                 LevelData levelData = this.visitedNodes.get( result );

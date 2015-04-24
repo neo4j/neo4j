@@ -19,11 +19,7 @@
  */
 package org.neo4j.graphalgo;
 
-import org.neo4j.graphalgo.impl.path.AStar;
-import org.neo4j.graphalgo.impl.path.AllPaths;
-import org.neo4j.graphalgo.impl.path.AllSimplePaths;
-import org.neo4j.graphalgo.impl.path.Dijkstra;
-import org.neo4j.graphalgo.impl.path.ShortestPath;
+import org.neo4j.graphalgo.impl.path.*;
 import org.neo4j.graphalgo.impl.util.DoubleEvaluator;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -179,7 +175,7 @@ public abstract class GraphAlgoFactory
     {
         return new ShortestPath( maxDepth, expander, maxHitCount );
     }
-    
+
     /**
      * Returns an algorithm which can find simple all paths of a certain length
      * between two nodes. These returned paths cannot contain loops (i.e. a node
@@ -193,14 +189,14 @@ public abstract class GraphAlgoFactory
      */
     public static PathFinder<Path> pathsWithLength( RelationshipExpander expander, int length )
     {
-        return new ShortestPath( length, expander, Integer.MAX_VALUE, true );
+        return new ExactDepthPathFinder( expander, length, Integer.MAX_VALUE );
     }
-    
+
     /**
      * Returns an algorithm which can find simple all paths of a certain length
      * between two nodes. These returned paths cannot contain loops (i.e. a node
      * could not occur more than once in any returned path).
-     * 
+     *
      * @param expander the {@link PathExpander} to use for expanding
      * {@link Relationship}s for each {@link Node}.
      * @param length the {@link Path#length()} returned paths will have, if any
@@ -209,7 +205,7 @@ public abstract class GraphAlgoFactory
      */
     public static PathFinder<Path> pathsWithLength( PathExpander expander, int length )
     {
-        return new ShortestPath( length, expander, Integer.MAX_VALUE, true );
+        return new ExactDepthPathFinder( expander, length, Integer.MAX_VALUE );
     }
     
     /**

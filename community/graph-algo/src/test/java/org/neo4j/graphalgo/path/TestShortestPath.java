@@ -503,7 +503,6 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         }, PathExpanders.forTypeAndDirection( R1, INCOMING ), 2 );
     }
 
-    @Ignore("Exposes a problem where the expected path isn't returned")
     @Test
     public void pathsWithLengthProblem() throws Exception
     {
@@ -524,7 +523,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         Node a = graph.getNode( "a" );
         Node c = graph.getNode( "c" );
 
-        assertPaths( new ShortestPath( 3, PathExpanders.forType( R1 ), 10, true ).findAllPaths( a, c ), "a,d,b,c" );
+        assertPaths( new ShortestPath( 3, PathExpanders.forType( R1 ), 10 ).findAllPaths( a, c ), "a,d,c" );
     }
 
     @Test
