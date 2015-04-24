@@ -523,7 +523,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         Node a = graph.getNode( "a" );
         Node c = graph.getNode( "c" );
 
-        assertPaths( new ShortestPath( 3, PathExpanders.forType( R1 ), 10 ).findAllPaths( a, c ), "a,d,c" );
+        assertPaths( new ShortestPath( 3, PathExpanders.forType( R1 ), 10 ).findAllPaths( a, c ), "a,b,c" );
     }
 
     @Test

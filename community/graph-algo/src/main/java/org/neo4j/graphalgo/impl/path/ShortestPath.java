@@ -300,10 +300,6 @@ public class ShortestPath implements PathFinder<Path>
                     return null;
                 }
                 lastMetadata.rels++;
-//                if ( !hitDecider.canVisitRelationship( sharedVisitedRels, nextRel ) )
-//                {
-//                    continue;
-//                }
                 
                 Node result = nextRel.getOtherNode( this.lastPath.endNode() );
                 LevelData levelData = this.visitedNodes.get( result );
@@ -627,46 +623,6 @@ public class ShortestPath implements PathFinder<Path>
             builder = builder.push( rel );
         }
         return builder;
-    }
-    
-    private static interface HitDecider
-    {
-        boolean isHit( int depth );
-        
-        boolean canVisitRelationship( Collection<Long> rels, Relationship rel );
-    }
-    
-    private static final HitDecider YES_HIT_DECIDER = new HitDecider()
-    {
-        public boolean isHit( int depth )
-        {
-            return true;
-        }
-        
-        public boolean canVisitRelationship( Collection<Long> rels, Relationship rel )
-        {
-            return true;
-        }
-    };
-    
-    private static class DepthHitDecider implements HitDecider
-    {
-        private final int depth;
-
-        DepthHitDecider( int depth )
-        {
-            this.depth = depth;
-        }
-        
-        public boolean isHit( int depth )
-        {
-            return this.depth == depth;
-        }
-        
-        public boolean canVisitRelationship( Collection<Long> rels, Relationship rel )
-        {
-            return rels.add( rel.getId() );
-        }
     }
     
     private static class Metadata implements TraversalMetadata
