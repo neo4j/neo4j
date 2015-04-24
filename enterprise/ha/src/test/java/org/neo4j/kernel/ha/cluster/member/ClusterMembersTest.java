@@ -37,7 +37,7 @@ import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.heartbeat.Heartbeat;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.kernel.impl.logging.FormattedLogProvider;
 import org.neo4j.kernel.impl.store.StoreId;
 
 import static java.net.URI.create;

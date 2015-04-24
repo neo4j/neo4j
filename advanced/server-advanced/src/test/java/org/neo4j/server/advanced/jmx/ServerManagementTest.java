@@ -26,8 +26,8 @@ import java.util.Map;
 
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.NullLog;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLog;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.advanced.AdvancedNeoServer;
 import org.neo4j.server.advanced.helpers.AdvancedServerBuilder;

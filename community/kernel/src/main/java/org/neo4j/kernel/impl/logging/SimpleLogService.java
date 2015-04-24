@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.logging;
 
-import org.neo4j.logging.DuplicatingLogProvider;
 import org.neo4j.logging.LogProvider;
 
 public class SimpleLogService extends AbstractLogService

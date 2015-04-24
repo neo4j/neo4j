@@ -32,7 +32,7 @@ import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.kernel.impl.logging.FormattedLogProvider;
 import org.neo4j.kernel.impl.recovery.StoreRecoverer;
 import org.neo4j.logging.LogProvider;
 

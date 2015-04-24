@@ -31,7 +31,7 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 
 import static org.jboss.netty.buffer.ChannelBuffers.EMPTY_BUFFER;
 import static org.junit.Assert.assertEquals;

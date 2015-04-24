@@ -49,7 +49,7 @@ import org.neo4j.logging.AssertableLogProvider.LogMatcher;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
-import org.neo4j.logging.NullLog;
+import org.neo4j.kernel.impl.logging.NullLog;
 import org.neo4j.test.CleanupRule;
 
 import static org.hamcrest.Matchers.any;

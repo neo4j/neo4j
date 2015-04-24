@@ -21,7 +21,6 @@ package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
 import org.junit.Test;
 
-import org.mockito.Matchers;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
@@ -33,7 +32,7 @@ import org.neo4j.kernel.impl.logging.AbstractLogService;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 
 import static org.hamcrest.core.StringContains.containsString;
 import static org.mockito.Mockito.mock;

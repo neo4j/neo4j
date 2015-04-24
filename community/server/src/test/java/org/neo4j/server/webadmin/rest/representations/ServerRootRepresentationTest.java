@@ -25,7 +25,7 @@ import java.util.Map;
 
 import org.junit.Test;
 
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.rest.management.console.ConsoleService;

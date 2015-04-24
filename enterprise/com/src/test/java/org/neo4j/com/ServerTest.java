@@ -30,7 +30,7 @@ import org.junit.Test;
 
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.TickingClock;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 import static junit.framework.TestCase.fail;

@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreTransactionContextSupplie
 import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
-import org.neo4j.logging.NullLog;
+import org.neo4j.kernel.impl.logging.NullLog;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 

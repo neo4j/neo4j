@@ -43,7 +43,7 @@ import org.neo4j.kernel.impl.query.QuerySession;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.web.QuerySessionProvider;
 import org.neo4j.server.rest.web.TransactionUriScheme;

@@ -32,7 +32,7 @@ import java.util.Collections;
 import org.junit.Test;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 
 public class ClusterConfigurationTest
 {

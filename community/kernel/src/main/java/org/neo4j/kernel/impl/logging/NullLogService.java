@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.logging;
 
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLog;
-import org.neo4j.logging.NullLogProvider;
 
 public class NullLogService implements LogService
 {

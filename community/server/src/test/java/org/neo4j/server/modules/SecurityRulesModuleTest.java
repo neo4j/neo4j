@@ -21,7 +21,7 @@ package org.neo4j.server.modules;
 
 import org.junit.Test;
 
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 
 public class SecurityRulesModuleTest
 {

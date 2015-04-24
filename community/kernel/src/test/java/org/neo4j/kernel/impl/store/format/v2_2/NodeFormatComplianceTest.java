@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.store.format.v2_2.NodeStoreFormat_v2_2.NodeRecordCu
 import org.neo4j.kernel.impl.store.impl.TestStoreIdGenerator;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.standard.StandardStore;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;

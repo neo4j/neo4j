@@ -26,7 +26,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLog;
+import org.neo4j.kernel.impl.logging.NullLog;
 
 public class EmbeddedNeo4jWithCustomLogging
 {

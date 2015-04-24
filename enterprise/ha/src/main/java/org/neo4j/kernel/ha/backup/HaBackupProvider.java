@@ -45,7 +45,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.HANewSnapshotFunction;
-import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.kernel.impl.logging.FormattedLogProvider;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.lifecycle.LifeSupport;

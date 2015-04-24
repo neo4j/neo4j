@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.store.format.TestHeaderlessStoreFormat;
 import org.neo4j.kernel.impl.store.format.TestRecord;
 import org.neo4j.kernel.impl.store.standard.StandardStore;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 

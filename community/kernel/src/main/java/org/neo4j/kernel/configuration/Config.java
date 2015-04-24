@@ -35,7 +35,7 @@ import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
-import org.neo4j.logging.BufferingLog;
+import org.neo4j.kernel.impl.logging.BufferingLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 

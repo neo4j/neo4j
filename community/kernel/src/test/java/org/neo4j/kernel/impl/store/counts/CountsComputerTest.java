@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 import org.neo4j.test.EphemeralFileSystemRule;

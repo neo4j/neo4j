@@ -32,7 +32,7 @@ import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.ElectionRole;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertFalse;

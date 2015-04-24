@@ -165,7 +165,7 @@ import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.tooling.GlobalGraphOperations;

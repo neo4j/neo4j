@@ -40,7 +40,7 @@ import org.junit.Test;
 
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.RrdDbWrapper;
 import org.neo4j.server.database.WrappedDatabase;

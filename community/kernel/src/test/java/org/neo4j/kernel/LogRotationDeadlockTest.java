@@ -50,7 +50,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.OtherThreadRule;

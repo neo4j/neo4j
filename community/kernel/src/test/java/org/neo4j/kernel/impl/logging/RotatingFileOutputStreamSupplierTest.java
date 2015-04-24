@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.logging;
+package org.neo4j.kernel.impl.logging;
 
 import org.junit.Test;
 import org.neo4j.adversaries.Adversary;
@@ -29,7 +29,7 @@ import org.neo4j.function.Suppliers;
 import org.neo4j.function.primitive.LongSupplier;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.logging.RotatingFileOutputStreamSupplier.RotationListener;
+import org.neo4j.kernel.impl.logging.RotatingFileOutputStreamSupplier.RotationListener;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -37,7 +37,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.nio.channels.ClosedChannelException;
-import java.nio.charset.Charset;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -52,11 +51,10 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.logging.FormattedLog.OUTPUT_STREAM_CONVERTER;
+import static org.neo4j.kernel.impl.logging.FormattedLog.OUTPUT_STREAM_CONVERTER;
 
 public class RotatingFileOutputStreamSupplierTest
 {
-    private static final Charset UTF_8 = Charset.forName( "UTF-8" );
     private static final java.util.concurrent.Executor DIRECT_EXECUTOR = new Executor()
     {
         @Override

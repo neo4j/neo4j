@@ -39,7 +39,7 @@ import org.neo4j.graphdb.mockfs.DelegatingFileSystem;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemProvider;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.kernel.impl.util.Charsets;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 
 import static org.hamcrest.CoreMatchers.equalTo;

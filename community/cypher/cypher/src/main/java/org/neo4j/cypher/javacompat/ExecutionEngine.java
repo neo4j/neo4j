@@ -25,7 +25,7 @@ import org.neo4j.cypher.CypherException;
 import org.neo4j.graphdb.GraphDatabaseService;
 
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 
 /**
  * To run a Cypher query, use this class.
