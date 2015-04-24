@@ -45,8 +45,10 @@ class AmendedRootPlanDescription(inner: ExtendedPlanDescription, version: Cypher
       val newArgs = new util.HashMap[String, AnyRef]()
       newArgs.putAll(args)
       newArgs.put("version", s"CYPHER ${version.name}")
-      newArgs.put("planner", s"Planner ${planner.name}")
-      newArgs.put("runtime", s"Runtime ${runtime.name}")
+      newArgs.put("planner", s"Planner ${planner.toTextOutput}")
+      newArgs.put("planner-impl", s"Planner ${planner.name}")
+      newArgs.put("runtime", s"Runtime ${runtime.toTextOutput}")
+      newArgs.put("runtime-impl", s"Runtime ${runtime.name}")
       java.util.Collections.unmodifiableMap[String, AnyRef](newArgs)
     }
 

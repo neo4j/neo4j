@@ -350,6 +350,7 @@ case class CompatibilityFor2_2Cost(graph: GraphDatabaseService,
     val plannerName = planner match {
       case CypherPlanner.default => ConservativePlannerName
       case CypherPlanner.cost => CostPlannerName
+      case CypherPlanner.greedy => CostPlannerName
       case CypherPlanner.idp => IDPPlannerName
       case CypherPlanner.dp => DPPlannerName
       case _ => throw new IllegalArgumentException(s"unknown cost based planner: ${planner.name}")

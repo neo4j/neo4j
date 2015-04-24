@@ -87,7 +87,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
           override def complete(success: Boolean) = queryContext.close(success)
         })
 
-      def plannerUsed: PlannerName = CostPlannerName
+      def plannerUsed: PlannerName = GreedyPlannerName
 
       def isPeriodicCommit: Boolean = compiledPlan.periodicCommit.isDefined
 

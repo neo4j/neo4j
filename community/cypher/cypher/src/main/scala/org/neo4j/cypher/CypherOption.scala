@@ -27,6 +27,8 @@ object CypherOption {
 
 abstract class CypherOption(inputName: String) {
   val name = CypherOption.asCanonicalName(inputName)
+
+  def toTextOutput = name
 }
 
 trait CypherOptionCompanion[O <: CypherOption] {

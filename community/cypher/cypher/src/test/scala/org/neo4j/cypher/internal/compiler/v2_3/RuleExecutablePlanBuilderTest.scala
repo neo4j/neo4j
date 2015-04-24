@@ -214,8 +214,8 @@ class RuleExecutablePlanBuilderTest
   }
 }
 
-class LegacyExecutablePlanBuilderWithCustomPlanBuilders(builders: Seq[PlanBuilder], monitors:Monitors) extends LegacyExecutablePlanBuilder(monitors, RewriterStepSequencer.newValidating) {
-  override val phases = new Phase { def myBuilders: Seq[PlanBuilder] = builders }
+class LegacyExecutablePlanBuilderWithCustomPlanBuilders(innerBuilders: Seq[PlanBuilder], monitors:Monitors) extends LegacyExecutablePlanBuilder(monitors, RewriterStepSequencer.newValidating) {
+  override val phases = new Phase { def myBuilders: Seq[PlanBuilder] = innerBuilders }
 }
 
 // This is a builder that accepts everything, but changes nothing

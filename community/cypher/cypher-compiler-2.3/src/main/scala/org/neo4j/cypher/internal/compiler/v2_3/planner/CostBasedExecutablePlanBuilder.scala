@@ -120,7 +120,7 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
     val plan = queryPlanner.plan(unionQuery)(context)
 
     val costPlannerName = plannerName match {
-      case ConservativePlannerName => CostPlannerName
+      case FallbackPlannerName => GreedyPlannerName
       case _                   => plannerName
     }
 

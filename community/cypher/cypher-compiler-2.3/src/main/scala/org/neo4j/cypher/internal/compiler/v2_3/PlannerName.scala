@@ -24,23 +24,27 @@ package org.neo4j.cypher.internal.compiler.v2_3
  **/
 sealed abstract class PlannerName {
   def name: String
+  def toTextOutput: String
 }
 
-sealed abstract class CostBasedPlannerName extends PlannerName
+sealed abstract class CostBasedPlannerName extends PlannerName {
+  val toTextOutput = "COST"
+}
 
 /**
  * Rule based query planner, default in all versions below 2.2
  */
 case object RulePlannerName extends PlannerName {
   val name = "RULE"
+  override def toTextOutput = name
 }
 
 /**
  * Cost based query planner uses statistics from the running database to find good
  * query execution plans using greedy search.
  */
-case object CostPlannerName extends CostBasedPlannerName {
-  val name = "COST"
+case object GreedyPlannerName extends CostBasedPlannerName {
+  val name = "GREEDY"
 }
 
 /**
@@ -63,22 +67,22 @@ case object DPPlannerName extends CostBasedPlannerName {
  * Hybrid planner that uses the Cost based planner for most of its operations but falls back to
  * Rule based planner for classes of queries where the cost based planner might end up with suboptimal plans.
  */
-case object ConservativePlannerName extends CostBasedPlannerName {
-  val name = "CONSERVATIVE"
+case object FallbackPlannerName extends CostBasedPlannerName {
+  val name = "FALLBACK"
 }
 
 object PlannerName {
 
-  val default = ConservativePlannerName
+  val default = FallbackPlannerName
 
   def apply(name: String): PlannerName = name.toUpperCase match {
     case "RULE" => RulePlannerName
-    case "COST" => CostPlannerName
+    case "GREEDY" => GreedyPlannerName
     case "IDP" => IDPPlannerName
     case "DP" => DPPlannerName
-    case "CONSERVATIVE" => ConservativePlannerName
+    case "FALLBACK" => FallbackPlannerName
 
     // Note that conservative planner is not exposed to end users.
-    case n => throw new IllegalArgumentException(s"$n is not a a valid planner, valid options are COST, IDP and RULE")
+    case n => throw new IllegalArgumentException(s"$n is not a a valid planner, valid options are GREEDY, IDP and RULE")
   }
 }

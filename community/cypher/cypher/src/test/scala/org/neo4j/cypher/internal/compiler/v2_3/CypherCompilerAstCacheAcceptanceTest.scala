@@ -39,7 +39,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       graph, queryCacheSize, statsDivergenceThreshold, queryPlanTTL, clock,
       new WrappedMonitors2_3(kernelMonitors),
       new StringInfoLogger2_3(log),
-      plannerName = Some(CostPlannerName),
+      plannerName = Some(GreedyPlannerName),
       runtimeName = InterpretedRuntimeName,
       rewriterSequencer = RewriterStepSequencer.newValidating)
 

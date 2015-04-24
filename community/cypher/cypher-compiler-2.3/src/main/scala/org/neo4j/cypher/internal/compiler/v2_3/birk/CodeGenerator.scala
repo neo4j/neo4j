@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LogicalPlan2PlanDescription, LogicalPlanIdentificationBuilder}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantCompileQueryException, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{InstrumentedGraphStatistics, PlanContext}
-import org.neo4j.cypher.internal.compiler.v2_3.{CostPlannerName, ExecutionMode}
+import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, GreedyPlannerName}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.api.Statement
@@ -210,7 +210,7 @@ class CodeGenerator {
         val builder = (st: Statement, db: GraphDatabaseService, mode: ExecutionMode, params: Map[String, Any], completion: CompletionListener) =>
           Javac.newInstance(clazz, completion, st, db, mode, description, asJavaHashMap(params))
 
-        CompiledPlan(updating = false, None, fp, CostPlannerName, builder)
+        CompiledPlan(updating = false, None, fp, GreedyPlannerName, builder)
 
       case _ => throw new CantCompileQueryException("Can only compile plans with ProduceResult on top")
     }

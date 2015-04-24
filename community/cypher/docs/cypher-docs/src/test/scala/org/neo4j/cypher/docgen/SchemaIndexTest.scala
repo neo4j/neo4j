@@ -25,7 +25,7 @@ import org.junit.Test
 import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.Planner
-import org.neo4j.cypher.internal.compiler.v2_3.{CostPlannerName, RulePlannerName}
+import org.neo4j.cypher.internal.compiler.v2_3.{GreedyPlannerName, RulePlannerName}
 import org.neo4j.cypher.internal.helpers.GraphIcing
 
 class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSupport with GraphIcing {
@@ -132,7 +132,7 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
     plannerArgument match {
       case Some(Planner(RulePlannerName.name)) =>
         assertThat(planDescription.toString, containsString(ruleString))
-      case Some(Planner(CostPlannerName.name)) =>
+      case Some(Planner(GreedyPlannerName.name)) =>
         assertThat(planDescription.toString, containsString(costString))
       case x =>
         fail(s"Couldn't determine used planner: $x")
