@@ -20,7 +20,7 @@
 package org.neo4j.logging;
 
 /**
- * Logging provider this is used to obtain a {@link Log} with a given {@link Class} as context
+ * Used to obtain a {@link Log} for a specified context
  */
 public interface LogProvider
 {
@@ -32,7 +32,7 @@ public interface LogProvider
 
     /**
      * @param context the named context for the returned {@link Log}
-     * @return a {@link Log} that logs messages with the given {@code context}
+     * @return a {@link Log} that logs messages with the given context
      */
     Log getLog( String context );
 }

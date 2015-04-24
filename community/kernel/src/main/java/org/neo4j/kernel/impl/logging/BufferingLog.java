@@ -392,6 +392,8 @@ public class BufferingLog extends AbstractLog
 
     /**
      * Replays buffered messages and clears the buffer.
+     *
+     * @param other the log to reply into
      */
     public void replayInto( Log other )
     {
