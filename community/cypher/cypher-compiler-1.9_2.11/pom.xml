@@ -8,17 +8,17 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>neo4j-cypher-compiler-1.9</artifactId>
+  <artifactId>neo4j-cypher-compiler-1.9_2.11</artifactId>
   <packaging>jar</packaging>
   <version>2.0.5-SNAPSHOT</version>
-  <name>Neo4j - Cypher Compiler 1.9</name>
-  <description>Compiler for Cypher 1.9</description>
+  <name>Neo4j - Cypher Compiler 1.9 for scala 2.11</name>
+  <description>Compiler for Cypher 1.9 compiled for scala 2.11</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
     <version-package>cypher.internal.compiler.v1_9</version-package>
-    <scala.version>2.10.5</scala.version>
-    <scala.binary.version>2.10</scala.binary.version>
+    <scala.version>2.11.6</scala.version>
+    <scala.binary.version>2.11</scala.binary.version>
   </properties>
 
   <scm>
@@ -46,6 +46,10 @@
   </licenses>
 
   <build>
+
+    <sourceDirectory>../cypher-compiler-1.9/src/main</sourceDirectory>
+    <testSourceDirectory>../cypher-compiler-1.9/src/test</testSourceDirectory>
+
     <plugins>
 
       <plugin>
@@ -58,6 +62,23 @@
             <arg>-Xmax-classfile-name</arg>
             <arg>100</arg>
             <arg>-Xlint</arg>
+            <arg>-language:implicitConversions</arg>
+            <arg>-language:existentials</arg>
+            <arg>-language:higherKinds</arg>
+            <arg>-language:postfixOps</arg>
+            <arg>-feature</arg>
+
+            <!-- we want to enable this long-term -->
+            <!-- arg>-Xfatal-warnings</arg -->
+
+            <!-- we might want to try those one fine day for performance
+                 (but watch out for binary compatability with scala 2.12)
+
+              <arg>-Yopt:l:project</arg>
+              <arg>-Ybackend:GenBCode</arg>
+              <arg>-Ydelambdafy:method</arg>
+              <arg>-Yinline</arg>
+            -->
           </args>
         </configuration>
       </plugin>
@@ -81,7 +102,7 @@
 
     <dependency>
       <groupId>org.scalatest</groupId>
-      <artifactId>scalatest_2.10</artifactId>
+      <artifactId>scalatest_2.11</artifactId>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -92,7 +113,7 @@
     </dependency>
     <dependency>
       <groupId>org.scalautils</groupId>
-      <artifactId>scalautils_2.10</artifactId>
+      <artifactId>scalautils_2.11</artifactId>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -103,7 +124,7 @@
     </dependency>
     <dependency>
       <groupId>org.scalacheck</groupId>
-      <artifactId>scalacheck_2.10</artifactId>
+      <artifactId>scalacheck_2.11</artifactId>
       <scope>test</scope>
     </dependency>
 

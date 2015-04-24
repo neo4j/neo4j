@@ -53,10 +53,10 @@ class InvalidInputErrorFormatter extends DefaultInvalidInputErrorFormatter {
       sb.toString
     }
   }
-  
+
   override def getExpectedString(error: InvalidInputError) : String = {
     val pathStartIndex = error.getStartIndex - error.getIndexDelta
-    
+
     val labels = error.getFailedMatchers.toList.flatMap(path => {
       val labelMatcher = findProperLabelMatcher(path, pathStartIndex)
       if (labelMatcher == null) {
@@ -71,17 +71,17 @@ class InvalidInputErrorFormatter extends DefaultInvalidInputErrorFormatter {
 
     join(labels)
   }
-  
+
   private def findProperLabelMatcher(path: MatcherPath, errorIndex: Int) : Matcher = {
-    val elements = unfoldRight(path) { p => if (p == null) None else Some(p.element, p.parent) }.reverse
-    
+    val elements = unfoldRight(path) { p => if (p == null) None else Some(p.element -> p.parent) }.reverse
+
     val matcher = for (element <- elements.takeWhile(!_.matcher.isInstanceOf[TestNotMatcher]).find(e => {
       e.startIndex == errorIndex && e.matcher.hasCustomLabel
     })) yield element.matcher
-    
+
     matcher.getOrElse(null)
   }
-    
+
   private def unfoldRight[A, B](seed: B)(f: B => Option[(A, B)]): List[A] = f(seed) match {
     case Some((a, b)) => a :: unfoldRight(b)(f)
     case None => Nil

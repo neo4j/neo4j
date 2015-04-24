@@ -49,7 +49,7 @@ class StepSizeTest extends Assertions {
   }
 
   @Test def limited_varlength_plus_unlimited_is_none() {
-    val second = VarLengthStep(01, Seq(), Direction.OUTGOING, 0, None, None, True(), True())
+    val second = VarLengthStep(1, Seq(), Direction.OUTGOING, 0, None, None, True(), True())
     val step = VarLengthStep(0, Seq(), Direction.OUTGOING, 0, Some(42), Some(second), True(), True())
     assert(step.size === None)
   }
