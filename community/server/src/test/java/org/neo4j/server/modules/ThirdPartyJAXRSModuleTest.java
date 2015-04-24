@@ -26,7 +26,7 @@ import java.util.List;
 import org.junit.Test;
 
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.ConfigurationBuilder;
 import org.neo4j.server.configuration.ServerSettings;

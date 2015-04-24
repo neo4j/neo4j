@@ -24,8 +24,9 @@ import java.util.{Map => JavaMap}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 import org.neo4j.cypher.{ExecutionEngine, SyntaxException}
 import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.kernel.impl.logging.NullLogProvider
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySession}
-import org.neo4j.logging.{NullLogProvider, LogProvider}
+import org.neo4j.logging.LogProvider
 
 import scala.collection.JavaConverters._
 

@@ -24,7 +24,7 @@ import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.NullLog;
+import org.neo4j.kernel.impl.logging.NullLog;
 
 enum CheckerVersion
 {

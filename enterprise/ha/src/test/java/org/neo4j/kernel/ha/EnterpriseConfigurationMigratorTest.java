@@ -27,7 +27,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.logging.NullLog;
+import org.neo4j.kernel.impl.logging.NullLog;
 
 /**
  * EnterpriseConfigurationMigrator tests

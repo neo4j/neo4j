@@ -17,17 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.logging;
+package org.neo4j.kernel.impl.logging;
 
 import org.neo4j.function.Supplier;
 import org.neo4j.function.Suppliers;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
-import static org.neo4j.logging.FormattedLog.OUTPUT_STREAM_CONVERTER;
+import static org.neo4j.kernel.impl.logging.FormattedLog.OUTPUT_STREAM_CONVERTER;
 
 /**
  * A {@link LogProvider} implementation that applies a simple formatting to each log message.

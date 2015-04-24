@@ -9,7 +9,7 @@
 
   <properties>
     <short-name>neo4j-slf4j</short-name>
-    <bundle.namespace>org.neo4j.logging</bundle.namespace>
+    <bundle.namespace>org.neo4j.logging.slf4j</bundle.namespace>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
@@ -50,13 +50,15 @@ the relevant Commercial Agreement.
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-logging</artifactId>
+      <artifactId>neo4j-kernel</artifactId>
       <version>${project.version}</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
       <version>1.7.7</version>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
@@ -80,11 +82,6 @@ the relevant Commercial Agreement.
         <groupId>org.hamcrest</groupId>
         <artifactId>hamcrest-library</artifactId>
         <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>

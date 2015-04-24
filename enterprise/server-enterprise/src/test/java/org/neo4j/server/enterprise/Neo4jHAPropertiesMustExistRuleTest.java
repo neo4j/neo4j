@@ -29,7 +29,7 @@ import org.junit.rules.TemporaryFolder;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.NullLog;
+import org.neo4j.kernel.impl.logging.NullLog;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 

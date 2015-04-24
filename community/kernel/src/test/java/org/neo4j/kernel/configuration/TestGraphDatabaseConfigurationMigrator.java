@@ -24,7 +24,7 @@ import org.junit.Test;
 import java.util.Map;
 
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.NullLog;
+import org.neo4j.kernel.impl.logging.NullLog;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;

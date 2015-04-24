@@ -26,7 +26,7 @@ import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.locking.DumpLocksVisitor;
 import org.neo4j.kernel.impl.locking.LockType;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.logging.FormattedLog;
+import org.neo4j.kernel.impl.logging.FormattedLog;
 
 import static java.lang.String.format;
 

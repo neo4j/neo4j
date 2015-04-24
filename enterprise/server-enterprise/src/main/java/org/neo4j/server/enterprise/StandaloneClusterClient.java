@@ -36,6 +36,7 @@ import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.logging.FormattedLogProvider;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -43,7 +44,6 @@ import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.logging.FormattedLogProvider;
 
 import static org.neo4j.cluster.client.ClusterClient.adapt;
 import static org.neo4j.helpers.Exceptions.peel;

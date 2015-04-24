@@ -28,7 +28,7 @@ import javax.ws.rs.core.UriInfo;
 import org.junit.Test;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.ConfigurationBuilder;

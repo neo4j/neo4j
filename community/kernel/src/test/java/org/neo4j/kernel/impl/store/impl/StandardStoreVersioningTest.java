@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.store.format.Store;
 import org.neo4j.kernel.impl.store.standard.StandardStore;
 import org.neo4j.kernel.impl.store.standard.StoreFormat;
 import org.neo4j.kernel.impl.store.standard.StoreToolkit;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;
 

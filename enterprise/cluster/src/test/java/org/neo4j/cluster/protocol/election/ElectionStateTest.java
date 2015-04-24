@@ -38,7 +38,7 @@ import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AtomicBroadcastMess
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.protocol.omega.MessageArgumentMatcher;
-import org.neo4j.logging.NullLog;
+import org.neo4j.kernel.impl.logging.NullLog;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;

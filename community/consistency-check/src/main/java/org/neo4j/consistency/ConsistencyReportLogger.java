@@ -21,7 +21,7 @@ package org.neo4j.consistency;
 
 import org.neo4j.function.Supplier;
 import org.neo4j.function.Suppliers;
-import org.neo4j.logging.AbstractPrintWriterLogger;
+import org.neo4j.kernel.impl.logging.AbstractPrintWriterLogger;
 import org.neo4j.logging.Logger;
 
 import java.io.PrintWriter;

@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 import org.hamcrest.Matcher;
 import org.junit.rules.ExternalResource;
 
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 
 public class DumpProcessInformationRule extends ExternalResource
 {
