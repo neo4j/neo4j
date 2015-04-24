@@ -29,19 +29,32 @@ sealed class QueryTag(aName: String) {
 }
 
 case object MatchTag extends QueryTag("match")
-case object OptionalTag extends QueryTag("opt")
-case object ExpressionTag extends QueryTag("expr")
+case object OptionalMatchTag extends QueryTag("opt-match")
+case object RegularMatchTag extends QueryTag("reg-match")
+case object ComplexExpressionTag extends QueryTag("complex-expr")
 case object FilteringExpressionTag extends QueryTag("filtering-expr")
+case object LiteralExpressionTag extends QueryTag("literal-expr")
+case object ParameterExpressionTag extends QueryTag("parameter-expr")
+case object IdentifierExpressionTag extends QueryTag("identifier-expr")
 
 object QueryTagger extends QueryTagger[String] {
 
   def apply(input: String) = default(input)
 
   val default: QueryTagger[String] = fromString(forEachChild(
-    lift[ASTNode] { case x: Match => Set(MatchTag) } ++
-    lift[ASTNode] { case x: Match if x.optional => Set(OptionalTag) } ++
-    lift[ASTNode] { case x: Expression => Set(ExpressionTag) } ++
-    lift[ASTNode] { case x: FilteringExpression => Set(FilteringExpressionTag) }
+    lift[ASTNode] { case x: Match if !x.optional => Set(MatchTag, RegularMatchTag) } ++
+    lift[ASTNode] { case x: Match if x.optional => Set(MatchTag, OptionalMatchTag) } ++
+    lift[ASTNode] {
+      case x: Identifier => Set.empty
+      case x: Literal => Set.empty
+      case x: Expression => Set(ComplexExpressionTag)
+    } ++
+    lift[ASTNode] {
+      case x: Identifier => Set(IdentifierExpressionTag)
+      case x: Literal => Set(LiteralExpressionTag)
+      case x: Parameter => Set(ParameterExpressionTag)
+      case x: FilteringExpression => Set(FilteringExpressionTag)
+    }
   ))
 
   case class fromString(next: QueryTagger[Statement], monitor: ParserMonitor[Statement] = ParserMonitor.empty[Statement])
