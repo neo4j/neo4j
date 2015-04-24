@@ -40,7 +40,7 @@ public abstract class AbstractPrintWriterLogger implements Logger
      * @param lock           An object that will be used to synchronize all writes on
      * @param autoFlush      Whether to flush the writer after each log message is written
      */
-    protected AbstractPrintWriterLogger( Supplier<PrintWriter> writerSupplier, Object lock, boolean autoFlush )
+    public AbstractPrintWriterLogger( Supplier<PrintWriter> writerSupplier, Object lock, boolean autoFlush )
     {
         this.writerSupplier = writerSupplier;
         this.lock = lock;
