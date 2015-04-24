@@ -879,24 +879,9 @@ public class MuninnPageCache implements PageCache
         Object freelistHead = getFreelistHead();
         if ( freelistHead instanceof FreePageWaiter )
         {
-            FreePageWaiter waiters =
-                    (FreePageWaiter) getAndSetFreelistHead( null );
-            return reverse( waiters );
+            return (FreePageWaiter) getAndSetFreelistHead( null );
         }
         return null;
-    }
-
-    private FreePageWaiter reverse( FreePageWaiter waiters )
-    {
-        FreePageWaiter result = null;
-        while ( waiters != null )
-        {
-            FreePageWaiter tail = waiters.next;
-            waiters.next = result;
-            result = waiters;
-            waiters = tail;
-        }
-        return result;
     }
 
     private void clearEvictorException()
