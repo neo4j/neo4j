@@ -24,7 +24,7 @@ import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.graphdb.{DynamicLabel, Node, Relationship}
 import org.neo4j.kernel.GraphDatabaseAPI
 
-class CreateTest extends DocumentingTestBase with QueryStatisticsTestSupport {
+class CreateTest extends DocumentingTestBase with QueryStatisticsTestSupport with SoftReset {
 
   def section = "Create"
 

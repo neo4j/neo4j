@@ -20,6 +20,7 @@
 package org.neo4j.cypher.docgen
 
 import org.junit.Test
+import org.neo4j.kernel.GraphDatabaseAPI
 
 class UsingTest extends DocumentingTestBase {
 
@@ -28,6 +29,8 @@ class UsingTest extends DocumentingTestBase {
     "Stefan:German KNOWS Andres",
     "Emil KNOWS Peter"
   )
+
+  override val setupConstraintQueries: List[String] = List("CREATE INDEX ON :Swedish(surname)", "CREATE INDEX ON :German(surname)")
 
   override val properties = Map(
     "Andres" -> Map("age" -> 36l, "awesome" -> true, "surname" -> "Taylor"),
@@ -38,25 +41,21 @@ class UsingTest extends DocumentingTestBase {
   def section = "Using"
 
   @Test def query_using_single_index_hint() {
-
     prepareAndTestQuery(
       title = "Query using an index hint",
       text = "To query using an index hint, use +USING+ +INDEX+.",
       queryText = "match (n:Swedish) using index n:Swedish(surname) where n.surname = 'Taylor' return n",
       optionalResultExplanation = "The query result is returned as usual.",
-      prepare = executePreparationQueries(List("CREATE INDEX ON :Swedish(surname)")),
       assertions = (p) => assert(p.toList === List(Map("n" -> node("Andres"))))
     )
   }
 
   @Test def query_using_multiple_index_hints() {
-
     prepareAndTestQuery(
       title = "Query using multiple index hints",
       text = "To query using multiple index hints, use +USING+ +INDEX+.",
       queryText = "match (m:German)-->(n:Swedish) using index m:German(surname) using index n:Swedish(surname) where m.surname = 'Plantikow' and n.surname = 'Taylor' return m",
       optionalResultExplanation = "The query result is returned as usual.",
-      prepare = executePreparationQueries(List("CREATE INDEX ON :Swedish(surname)", "CREATE INDEX ON :German(surname)")),
       assertions = (p) => assert(p.toList === List(Map("m" -> node("Stefan"))))
     )
   }

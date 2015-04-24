@@ -25,7 +25,7 @@ import org.neo4j.graphdb.DynamicLabel
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.visualization.graphviz.{AsciiDocSimpleStyle, GraphStyle}
 
-class DeleteTest extends DocumentingTestBase with QueryStatisticsTestSupport {
+class DeleteTest extends DocumentingTestBase with QueryStatisticsTestSupport with SoftReset {
   override def graphDescription = List("Andres KNOWS Tobias", "Andres KNOWS Peter")
 
   override val properties = Map(
@@ -42,7 +42,7 @@ class DeleteTest extends DocumentingTestBase with QueryStatisticsTestSupport {
   @Test def delete_single_node() {
     val createLabeledNode = (db: GraphDatabaseAPI) => db.inTx {
       db.createNode(DynamicLabel.label("Useless"))
-    } : Unit
+    }
 
     prepareAndTestQuery(
       title = "Delete single node",

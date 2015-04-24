@@ -23,7 +23,7 @@ import org.junit.Assert._
 import org.junit.Test
 import org.neo4j.visualization.graphviz.{AsciiDocSimpleStyle, GraphStyle}
 
-class AggregationTest extends DocumentingTestBase {
+class AggregationTest extends DocumentingTestBase with SoftReset {
   override def graphDescription = List("A:Person KNOWS B:Person", "A KNOWS C:Person", "A KNOWS D:Person")
 
   override val properties: Map[String, Map[String, Any]] = Map(

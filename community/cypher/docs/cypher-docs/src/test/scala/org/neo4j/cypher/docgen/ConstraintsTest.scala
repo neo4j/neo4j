@@ -25,7 +25,7 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint
 
 import scala.collection.JavaConverters._
 
-class ConstraintsTest extends DocumentingTestBase {
+class ConstraintsTest extends DocumentingTestBase with SoftReset {
 
   def section: String = "Constraints"
 

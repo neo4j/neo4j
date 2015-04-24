@@ -24,7 +24,7 @@ import org.junit.Test
 import org.neo4j.visualization.graphviz.GraphStyle
 import org.neo4j.visualization.graphviz.AsciiDocSimpleStyle
 
-class CreateUniqueTest extends DocumentingTestBase with QueryStatisticsTestSupport {
+class CreateUniqueTest extends DocumentingTestBase with QueryStatisticsTestSupport with SoftReset {
 
   override protected def getGraphvizStyle: GraphStyle = 
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
