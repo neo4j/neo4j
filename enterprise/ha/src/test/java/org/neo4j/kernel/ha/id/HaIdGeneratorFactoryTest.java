@@ -33,7 +33,7 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;

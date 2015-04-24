@@ -42,7 +42,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyString;

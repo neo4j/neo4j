@@ -31,7 +31,7 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;

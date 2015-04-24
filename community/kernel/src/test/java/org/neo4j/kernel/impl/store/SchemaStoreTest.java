@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.RecordSerializer;
 import org.neo4j.kernel.impl.store.record.SchemaRule;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.PageCacheRule;

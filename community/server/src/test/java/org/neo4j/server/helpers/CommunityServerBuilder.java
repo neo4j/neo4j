@@ -38,7 +38,7 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.ServerTestUtils;

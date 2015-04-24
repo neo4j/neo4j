@@ -53,7 +53,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriterv1;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.Math.max;

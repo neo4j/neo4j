@@ -31,7 +31,7 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.logging.NullLogService;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.util.Arrays.asList;

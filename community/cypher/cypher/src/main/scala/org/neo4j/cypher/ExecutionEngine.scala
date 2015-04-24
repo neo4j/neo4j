@@ -29,10 +29,11 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.impl.logging.NullLogProvider
 import org.neo4j.kernel.impl.query.{QueryEngineProvider, QueryExecutionMonitor, QuerySession}
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase, api, monitoring}
-import org.neo4j.logging.{LogProvider, NullLogProvider}
+import org.neo4j.logging.LogProvider
 
 import scala.collection.JavaConverters._
 

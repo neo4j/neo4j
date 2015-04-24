@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.notification.CartesianProductNoti
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.helpers.Clock
-import org.neo4j.logging.NullLog
+import org.neo4j.kernel.impl.logging.NullLog
 
 class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
 

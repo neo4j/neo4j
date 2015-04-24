@@ -23,7 +23,7 @@ import org.eclipse.jetty.util.log.AbstractLogger;
 import org.eclipse.jetty.util.log.Logger;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;

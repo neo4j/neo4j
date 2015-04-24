@@ -26,7 +26,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 

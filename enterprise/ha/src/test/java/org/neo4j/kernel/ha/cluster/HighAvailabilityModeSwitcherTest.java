@@ -46,7 +46,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 import org.neo4j.kernel.impl.logging.NullLogService;
 
 import static org.mockito.Matchers.any;

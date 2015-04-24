@@ -26,7 +26,7 @@ import static org.mockito.Mockito.mock;
 import org.junit.Test;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;

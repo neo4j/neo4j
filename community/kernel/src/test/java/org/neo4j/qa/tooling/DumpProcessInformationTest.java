@@ -29,7 +29,7 @@ import java.util.Set;
 import org.junit.Test;
 
 import org.neo4j.helpers.Pair;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 import org.neo4j.test.TargetDirectory;
 
 import static java.lang.Runtime.getRuntime;

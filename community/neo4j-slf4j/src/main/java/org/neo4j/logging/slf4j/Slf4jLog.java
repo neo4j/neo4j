@@ -24,6 +24,9 @@ import org.neo4j.logging.AbstractLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 
+/**
+ * An adapter from a {@link org.slf4j.Logger} to a {@link Log} interface
+ */
 public class Slf4jLog extends AbstractLog
 {
     private final Object lock;
@@ -33,6 +36,9 @@ public class Slf4jLog extends AbstractLog
     private final Logger warnLogger;
     private final Logger errorLogger;
 
+    /**
+     * @param slf4jLogger the SLF4J logger to output to
+     */
     public Slf4jLog( final org.slf4j.Logger slf4jLogger )
     {
         this.lock = this;

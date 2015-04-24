@@ -119,6 +119,14 @@ the relevant Commercial Agreement.
                   <directory>${project.build.directory}/../../../community/server-api/src/main/java/</directory>
                   <filtering>false</filtering>
                 </resource>
+                <resource>
+                  <directory>${project.build.directory}/../../../community/logging/src/main/java/</directory>
+                  <filtering>false</filtering>
+                </resource>
+                <resource>
+                  <directory>${project.build.directory}/../../../community/neo4j-slf4j/src/main/java/</directory>
+                  <filtering>false</filtering>
+                </resource>
               </resources>
             </configuration>
           </execution>
@@ -143,7 +151,7 @@ the relevant Commercial Agreement.
               <windowtitle>Neo4j ${project.version} API</windowtitle>
               <show>public</show>
               <excludePackageNames>
-                *.impl.*:*.internal.*:org.neo4j.ext.udc:org.neo4j.kernel:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*:org.neo4j.com:org.neo4j.com.*:org.apache.lucene.index:org.neo4j.cluster.*:org.neo4j.helpers.progress:org.neo4j.kernel.configuration:org.neo4j.kernel.guard:org.neo4j.kernel.info:org.neo4j.kernel.logging:org.neo4j.backup.log:org.neo4j.helpers.logging
+                *.impl.*:*.internal.*:org.neo4j.ext.udc:org.neo4j.kernel:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*:org.neo4j.com:org.neo4j.com.*:org.apache.lucene.index:org.neo4j.cluster.*:org.neo4j.helpers.progress:org.neo4j.kernel.configuration:org.neo4j.kernel.guard:org.neo4j.kernel.info
               </excludePackageNames>
               <groups>
                 <group>

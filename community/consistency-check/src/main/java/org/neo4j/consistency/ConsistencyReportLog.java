@@ -25,7 +25,7 @@ import org.neo4j.function.Suppliers;
 import org.neo4j.logging.AbstractLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
-import org.neo4j.logging.NullLogger;
+import org.neo4j.kernel.impl.logging.NullLogger;
 
 import java.io.PrintWriter;
 

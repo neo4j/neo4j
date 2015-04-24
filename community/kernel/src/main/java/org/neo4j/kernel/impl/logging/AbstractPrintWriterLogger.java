@@ -17,10 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.logging;
+package org.neo4j.kernel.impl.logging;
 
 import org.neo4j.function.Consumer;
 import org.neo4j.function.Supplier;
+import org.neo4j.logging.Logger;
 
 import java.io.PrintWriter;
 
@@ -40,7 +41,7 @@ public abstract class AbstractPrintWriterLogger implements Logger
      * @param lock           An object that will be used to synchronize all writes on
      * @param autoFlush      Whether to flush the writer after each log message is written
      */
-    protected AbstractPrintWriterLogger( Supplier<PrintWriter> writerSupplier, Object lock, boolean autoFlush )
+    public AbstractPrintWriterLogger( Supplier<PrintWriter> writerSupplier, Object lock, boolean autoFlush )
     {
         this.writerSupplier = writerSupplier;
         this.lock = lock;

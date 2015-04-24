@@ -65,7 +65,7 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 import org.neo4j.register.Register.DoubleLong;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;

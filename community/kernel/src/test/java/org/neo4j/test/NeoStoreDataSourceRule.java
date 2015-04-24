@@ -56,8 +56,8 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
-import org.neo4j.logging.NullLog;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLog;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 
 public class NeoStoreDataSourceRule extends ExternalResource
 {

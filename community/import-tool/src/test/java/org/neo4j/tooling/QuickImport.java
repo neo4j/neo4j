@@ -27,7 +27,7 @@ import org.neo4j.csv.reader.CharSeekers;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.Readables;
 import org.neo4j.helpers.Args;
-import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.kernel.impl.logging.FormattedLogProvider;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;

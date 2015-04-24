@@ -36,9 +36,9 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.util.HexPrinter;
-import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.kernel.impl.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 
 import static org.neo4j.kernel.impl.pagecache.StandalonePageCacheFactory.createPageCache;
 

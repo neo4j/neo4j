@@ -54,7 +54,7 @@ import org.neo4j.graphdb.impl.notification.NotificationCode;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.test.mocking.GraphMock;

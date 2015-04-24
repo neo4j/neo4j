@@ -52,7 +52,7 @@ import org.neo4j.kernel.impl.transaction.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.transaction.state.RecordChanges.RecordChange;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.kernel.impl.logging.NullLogProvider;
 
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;

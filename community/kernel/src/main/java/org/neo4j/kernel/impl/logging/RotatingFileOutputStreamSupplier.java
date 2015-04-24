@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.logging;
+package org.neo4j.kernel.impl.logging;
 
 import org.neo4j.function.Supplier;
 import org.neo4j.function.primitive.LongSupplier;
@@ -107,7 +107,7 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
      * @param rotationDelaySeconds The minimum time (in seconds) after last rotation before the file may be rotated again
      * @param maxArchives The maximum number of archived output files to keep
      * @param rotationExecutor An {@link Executor} for performing the rotation
-     * @param rotationListener A {@link org.neo4j.logging.RotatingFileOutputStreamSupplier.RotationListener} that can observe the rotation process and be notified of errors
+     * @param rotationListener A {@link RotatingFileOutputStreamSupplier.RotationListener} that can observe the rotation process and be notified of errors
      * @throws IOException If the output file cannot be created
      */
     public RotatingFileOutputStreamSupplier( FileSystemAbstraction fileSystem, File outputFile, long rotationThresholdBytes, int rotationDelaySeconds, int maxArchives, Executor rotationExecutor, RotationListener rotationListener ) throws IOException
