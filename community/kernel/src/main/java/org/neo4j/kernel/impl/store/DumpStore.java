@@ -245,7 +245,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
         {
             long high = store.getHighestPossibleIdInUse();
 
-            for ( long id = 1; id <= high; id++ )
+            for ( long id = 0; id <= high; id++ )
             {
                 boolean inUse = dumpRecord( store, size, fileChannel, buffer, id );
 
@@ -266,14 +266,11 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends CommonAb
 
         if ( ids == null )
         {
-            out.printf( "used = %s / highId = %s (%.2f%%)%n", used, store.getHighId(), used * 100.0 / store.getHighId
-                    () );
-
+            out.printf( "used = %s / highId = %s (%.2f%%)%n", used, store.getHighId(), used * 100.0 / store.getHighId() );
         }
     }
 
-    private boolean dumpRecord( STORE store, int size, StoreChannel fileChannel, ByteBuffer buffer, long id ) throws
-            Exception
+    private boolean dumpRecord( STORE store, int size, StoreChannel fileChannel, ByteBuffer buffer, long id ) throws Exception
     {
         RECORD record = store.forceGetRecord( id );
 
