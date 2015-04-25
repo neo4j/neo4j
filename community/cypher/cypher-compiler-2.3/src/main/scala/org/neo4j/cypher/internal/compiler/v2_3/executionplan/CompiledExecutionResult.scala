@@ -58,12 +58,6 @@ abstract class CompiledExecutionResult(completion: CompletionListener, statement
     def next() = Eagerly.immutableMapValues(self.next(), makeValueJavaCompatible).asJava
   }
 
-  override def dumpToString(writer: PrintWriter) = {
-    ensureIterator()
-    //todo make pretty
-    writer.println(innerIterator.toList)
-  }
-
   override def dumpToString(): String = {
     val stringWriter = new StringWriter()
     val writer = new PrintWriter(stringWriter)
@@ -71,6 +65,8 @@ abstract class CompiledExecutionResult(completion: CompletionListener, statement
     writer.close()
     stringWriter.getBuffer.toString
   }
+
+  override def dumpToString(writer: PrintWriter) = formatOutput(statement.readOperations, writer, columns, toList, queryStatistics())
 
   override def queryStatistics(): InternalQueryStatistics = InternalQueryStatistics()
 
@@ -141,3 +137,4 @@ abstract class CompiledExecutionResult(completion: CompletionListener, statement
     def close() { self.close() }
   }
 }
+

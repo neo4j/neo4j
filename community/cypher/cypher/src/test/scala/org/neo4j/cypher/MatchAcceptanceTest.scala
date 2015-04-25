@@ -2053,7 +2053,7 @@ return b
 
     val query = "MATCH a RETURN a.prop"
 
-    val result = executeWithAllPlannersAndRuntimes(query).toComparableList
+    val result = executeWithAllPlannersAndRuntimes(query).toComparableResult
     result should equal(List(asResult(props, "a")))
   }
 
@@ -2062,7 +2062,7 @@ return b
 
     val query = "MATCH a-[r]->b RETURN r.prop"
 
-    val result = executeWithAllPlannersAndRuntimes(query).toComparableList
+    val result = executeWithAllPlannersAndRuntimes(query).toComparableResult
     result should equal(List(asResult(Map("prop" -> 1), "r")))
   }
 
@@ -2072,7 +2072,7 @@ return b
 
     val query = "MATCH a-[r]->b RETURN a.nodeProp, r.relProp"
 
-    val result = executeWithAllPlannersAndRuntimes(query).toComparableList
+    val result = executeWithAllPlannersAndRuntimes(query).toComparableResult
     result should equal(List(asResult(Map("nodeProp" -> 1), "a") ++ asResult(Map("relProp" -> 2), "r")))
   }
 
@@ -2082,7 +2082,7 @@ return b
 
     val query = "MATCH a-[r]->b RETURN a AS FOO, r AS BAR"
 
-    val result = executeWithAllPlannersAndRuntimes(query).toComparableList
+    val result = executeWithAllPlannersAndRuntimes(query).toComparableResult
     result should equal(List(Map("FOO" -> a, "BAR" -> r)))
   }
 
@@ -2091,7 +2091,7 @@ return b
 
     val query = "MATCH a-[r]->b RETURN r.foo"
 
-    val result = executeWithAllPlannersAndRuntimes(query).toComparableList
+    val result = executeWithAllPlannersAndRuntimes(query).toComparableResult
     result should equal(List(Map("r.foo" -> null)))
   }
 
@@ -2105,14 +2105,14 @@ return b
 
     val query = "MATCH a RETURN a.name, a.age, a.seasons"
 
-    val result = executeWithAllPlannersAndRuntimes(query).toComparableList
+    val result = executeWithAllPlannersAndRuntimes(query).toComparableResult
     result should equal(List(asResult(props, "a")))
   }
 
   test("adding a property and a literal is supported in new runtime") {
     val props = Map("prop" -> 1)
     createNode(props)
-    val result = executeWithAllPlannersAndRuntimes("MATCH a RETURN a.prop + 1 AS FOO").toComparableList
+    val result = executeWithAllPlannersAndRuntimes("MATCH a RETURN a.prop + 1 AS FOO").toComparableResult
 
     result should equal(List(Map("FOO" -> 2)))
   }
@@ -2120,7 +2120,7 @@ return b
   test("adding arrays is supported in new runtime") {
     val props = Map("prop1" -> Array(1,2,3), "prop2" -> Array(4, 5))
     createNode(props)
-    val result = executeWithAllPlannersAndRuntimes("MATCH a RETURN a.prop1 + a.prop2 AS FOO").toComparableList
+    val result = executeWithAllPlannersAndRuntimes("MATCH a RETURN a.prop1 + a.prop2 AS FOO").toComparableResult
 
     result should equal(List(Map("FOO" -> List(1, 2, 3, 4, 5))))
   }

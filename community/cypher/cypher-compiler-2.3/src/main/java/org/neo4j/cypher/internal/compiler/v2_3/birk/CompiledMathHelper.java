@@ -51,17 +51,17 @@ public final class CompiledMathHelper
         }
 
         // array addition
-        Class<?> op1Class = lhs.getClass();
-        Class<?> op2Class = rhs.getClass();
-        if ( op1Class.isArray() && op2Class.isArray())
+        Class<?> lhsClass = lhs.getClass();
+        Class<?> rhsClass = rhs.getClass();
+        if ( lhsClass.isArray() && rhsClass.isArray())
         {
-            return addArrays( lhs, rhs );
+            return addArrays(lhs, rhs);
         }
-        else if ( op1Class.isArray() )
+        else if ( lhsClass.isArray() )
         {
             return addArrayWithObject( lhs, rhs );
         }
-        else if ( op2Class.isArray() )
+        else if ( rhsClass.isArray() )
         {
             return addObjectWithArray( lhs, rhs );
         }

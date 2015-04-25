@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.birk.il
 
-import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaTypes.{DOUBLE, LONG, NUMBER, OBJECT, OBJECTARRAY, STRING}
+import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.JavaTypes.{DOUBLE, LONG, NUMBER, OBJECT, OBJECT_ARRAY, STRING, MAP}
 import org.neo4j.cypher.internal.compiler.v2_3.birk.codegen.Namer
 import org.neo4j.cypher.internal.compiler.v2_3.birk.{CodeGenerator, JavaSymbol}
 
@@ -159,7 +159,22 @@ case class ProjectCollection(instructions: Seq[ProjectionInstruction]) extends P
 
   def generateInit() = ""
 
-  def projectedVariable = JavaSymbol(instructions.map(_.projectedVariable.name).mkString("new Object[]{", ",", "}"), OBJECTARRAY)
+  def projectedVariable = JavaSymbol(instructions.map(_.projectedVariable.name).mkString("new Object[]{", ",", "}"), OBJECT_ARRAY)
+
+  def fields() = ""
+}
+
+case class ProjectMap(instructions: Map[String, ProjectionInstruction]) extends ProjectionInstruction {
+
+  override def children: Seq[Instruction] = instructions.values.toSeq
+
+  def generateInit() = ""
+
+  def projectedVariable = JavaSymbol(
+    instructions.map {
+      case (key, value) => s""""$key", ${value.projectedVariable.name}"""
+    }
+    .mkString("org.neo4j.helpers.collection.MapUtil.map(", ",", ")"), MAP)
 
   def fields() = ""
 }
