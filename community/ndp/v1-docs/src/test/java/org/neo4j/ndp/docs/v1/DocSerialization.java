@@ -251,7 +251,7 @@ public class DocSerialization
     /** Convert a hex string into a normalized format for string comparison */
     public static String normalizedHex( String dirtyHex )
     {
-        StringBuilder str = new StringBuilder( dirtyHex.replace( "\n", "" ).replace( " ", "" ) );
+        StringBuilder str = new StringBuilder( dirtyHex.replace( "\r", "" ).replace( "\n", "" ).replace( " ", "" ) );
         int idx = str.length() - 2;
 
         while ( idx > 0 )
