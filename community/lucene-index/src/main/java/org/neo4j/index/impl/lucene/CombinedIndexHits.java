@@ -59,7 +59,6 @@ public class CombinedIndexHits extends PrimitiveLongCollections.PrimitiveLongCon
         {
             hits.close();
         }
-        allIndexHits.clear();
     }
 
     @Override
