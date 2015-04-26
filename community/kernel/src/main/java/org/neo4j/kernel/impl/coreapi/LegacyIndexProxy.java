@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -38,9 +37,8 @@ import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelExce
 import org.neo4j.kernel.impl.api.legacyindex.AbstractIndexHits;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
-import static java.lang.Math.max;
 import static java.lang.String.format;
-import static org.neo4j.collection.primitive.Primitive.longSet;
+
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.single;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.LEGACY_INDEX;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.legacyIndexResourceId;
@@ -293,8 +291,6 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
     {
         return new AbstractIndexHits<T>()
         {
-            private final PrimitiveLongSet alreadyReturned = longSet( max( 16, ids.size() ) );
-
             @Override
             public int size()
             {
@@ -314,23 +310,20 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
                 while ( ids.hasNext() )
                 {
                     long id = ids.next();
-                    if ( alreadyReturned.add( id ) )
+                    try
                     {
-                        try
+                        return entityOf( id );
+                    }
+                    catch ( NotFoundException e )
+                    {   // By contract this is OK. So just skip it.
+                        // But first, let's try to repair the index so this doesn't happen again.
+                        try ( Statement statement = statementContextBridge.get() )
                         {
-                            return entityOf( id );
+                            internalRemove( statement, id );
                         }
-                        catch ( NotFoundException e )
-                        {   // By contract this is OK. So just skip it.
-                            // But first, let's try to repair the index so this doesn't happen again.
-                            try ( Statement statement = statementContextBridge.get() )
-                            {
-                                internalRemove( statement, id );
-                            }
-                            catch ( LegacyIndexNotFoundKernelException | InvalidTransactionTypeKernelException ignore )
-                            {
-                                // Ignore these failures because we are going to skip the entity anyway
-                            }
+                        catch ( LegacyIndexNotFoundKernelException | InvalidTransactionTypeKernelException ignore )
+                        {
+                            // Ignore these failures because we are going to skip the entity anyway
                         }
                     }
                 }
