@@ -85,6 +85,7 @@ import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -421,6 +422,8 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
         indexProvider = dependencyResolver.resolveDependency( SchemaIndexProvider.class,
                 SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE );
 
+        dependencies.satisfyDependency( lockService );
+
         // Monitor listeners
         LoggingLogFileMonitor loggingLogMonitor = new LoggingLogFileMonitor( msgLog );
         monitors.addMonitorListener( loggingLogMonitor );
@@ -756,7 +759,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
                 new PhysicalLogFileInformation( logFiles, transactionMetadataCache, neoStore, logInformation );
 
         LogPruneStrategy logPruneStrategy = LogPruneStrategyFactory.fromConfigValue( fs, logFileInformation,
-                logFiles, neoStore, config.get( config.get(InternalAbstractGraphDatabase.Configuration.ephemeral) ? InternalAbstractGraphDatabase.Configuration.ephemeral_keep_logical_logs : GraphDatabaseSettings.keep_logical_logs ) );
+                logFiles, neoStore, config.get( config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral) ? GraphDatabaseFacadeFactory.Configuration.ephemeral_keep_logical_logs : GraphDatabaseSettings.keep_logical_logs ) );
 
         monitors.addMonitorListener( new LogPruning( logPruneStrategy, logProvider ) );
 
@@ -1245,7 +1248,7 @@ public class NeoStoreDataSource implements NeoStoreSupplier, Lifecycle, IndexPro
     {
         public static final Setting<String> keep_logical_logs = GraphDatabaseSettings.keep_logical_logs;
         public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
-        public static final Setting<File> store_dir = InternalAbstractGraphDatabase.Configuration.store_dir;
-        public static final Setting<File> neo_store = InternalAbstractGraphDatabase.Configuration.neo_store;
+        public static final Setting<File> store_dir = GraphDatabaseFacadeFactory.Configuration.store_dir;
+        public static final Setting<File> neo_store = GraphDatabaseFacadeFactory.Configuration.neo_store;
     }
 }

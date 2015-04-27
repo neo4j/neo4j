@@ -135,9 +135,9 @@ public class UpdatePuller implements Runnable, Lifecycle
     private final InvalidEpochExceptionHandler invalidEpochHandler;
     private Thread me;
 
-    UpdatePuller( HighAvailabilityMemberStateMachine memberStateMachine,
-            RequestContextFactory requestContextFactory, Master master, LastUpdateTime lastUpdateTime,
-            LogProvider logProvider, InstanceId instanceId, InvalidEpochExceptionHandler invalidEpochHandler )
+    public UpdatePuller( HighAvailabilityMemberStateMachine memberStateMachine,
+                         RequestContextFactory requestContextFactory, Master master, LastUpdateTime lastUpdateTime,
+                         LogProvider logProvider, InstanceId instanceId, InvalidEpochExceptionHandler invalidEpochHandler )
     {
         this.memberStateMachine = memberStateMachine;
         this.requestContextFactory = requestContextFactory;

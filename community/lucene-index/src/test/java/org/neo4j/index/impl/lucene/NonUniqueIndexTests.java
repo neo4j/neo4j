@@ -19,19 +19,20 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.locks.LockSupport;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.api.impl.index.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -41,14 +42,20 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
 import static java.util.Collections.singletonList;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -85,20 +92,30 @@ public class NonUniqueIndexTests
 
     private GraphDatabaseService newEmbeddedGraphDatabaseWithSlowJobScheduler()
     {
-        return new EmbeddedGraphDatabase( directory.absolutePath(), stringMap(), GraphDatabaseDependencies.newDependencies() )
+        GraphDatabaseFactoryState graphDatabaseFactoryState = new GraphDatabaseFactoryState();
+        graphDatabaseFactoryState.setUserLogProvider( NullLogService.getInstance().getUserLogProvider() );
+        return new CommunityFacadeFactory()
         {
             @Override
-            protected Neo4jJobScheduler createJobScheduler()
+            protected PlatformModule createPlatform( Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
             {
-                return newSlowJobScheduler();
-            }
+                return new PlatformModule( params, dependencies, graphDatabaseFacade )
+                {
+                    @Override
+                    protected Neo4jJobScheduler createJobScheduler()
+                    {
+                        return newSlowJobScheduler();
+                    }
 
-            @Override
-            protected LogService createLogService()
-            {
-                return NullLogService.getInstance();
+                    @Override
+                    protected LogService createLogService( LogProvider userLogProvider )
+                    {
+                        return NullLogService.getInstance();
+                    }
+                };
             }
-        };
+        }.newFacade( stringMap( GraphDatabaseSettings.store_dir.name(), directory.absolutePath() ),
+                graphDatabaseFactoryState.databaseDependencies() );
     }
 
     private static Neo4jJobScheduler newSlowJobScheduler()

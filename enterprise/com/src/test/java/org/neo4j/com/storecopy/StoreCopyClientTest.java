@@ -19,14 +19,14 @@
  */
 package org.neo4j.com.storecopy;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.PageCacheRule;
@@ -247,7 +248,7 @@ public class StoreCopyClientTest
                             logRotationControl, fs, new File(originalDir), new Monitors().newMonitor( StoreCopyServer.Monitor.class ) )
                             .flushStoresAndStreamStoreFiles( writer, false );
 
-                    final StoreId storeId = original.getDependencyResolver().resolveDependency( StoreId.class );
+                    final StoreId storeId = original.getDependencyResolver().resolveDependency( NeoStoreSupplier.class ).get().getStoreId();
 
                     ResponsePacker responsePacker = new ResponsePacker( logicalTransactionStore,
                             transactionIdStore, new Supplier<StoreId>()

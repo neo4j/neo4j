@@ -22,7 +22,6 @@ package org.neo4j.kernel;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.Exceptions.withCause;
 
@@ -37,10 +36,10 @@ public class KernelHealth
     private final Log log;
     private Throwable causeOfPanic;
 
-    public KernelHealth( KernelPanicEventGenerator kpe, LogProvider logProvider )
+    public KernelHealth( KernelPanicEventGenerator kpe, Log log )
     {
         this.kpe = kpe;
-        this.log = logProvider.getLog( getClass() );
+        this.log = log;
     }
 
     /**

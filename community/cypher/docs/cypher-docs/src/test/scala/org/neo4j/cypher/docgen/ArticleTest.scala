@@ -224,7 +224,7 @@ abstract class ArticleTest extends Assertions with DocumentationHelper {
       newImpermanentDatabaseBuilder().
       newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
 
-    cleanDatabaseContent( db.asInstanceOf[ImpermanentGraphDatabase] )
+    cleanDatabaseContent( db.asInstanceOf[GraphDatabaseService] )
 
     db.inTx {
       nodeIndex = db.index().forNodes("nodes")

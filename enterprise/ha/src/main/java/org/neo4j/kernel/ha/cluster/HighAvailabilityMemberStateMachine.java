@@ -120,6 +120,11 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
         return state;
     }
 
+    public boolean isMaster()
+    {
+        return getCurrentState() == HighAvailabilityMemberState.MASTER;
+    }
+
     @Override
     public String description()
     {

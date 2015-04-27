@@ -19,10 +19,6 @@
  */
 package org.neo4j.test;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import java.util.Map;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -30,7 +26,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.KernelHealth;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.TransactionEventHandlers;
@@ -47,6 +42,8 @@ import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
+import org.neo4j.kernel.impl.factory.CommunityEditionModule;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
@@ -58,6 +55,11 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class NeoStoreDataSourceRule extends ExternalResource
 {
@@ -72,8 +74,8 @@ public class NeoStoreDataSourceRule extends ExternalResource
             theDs.shutdown();
         }
         final Config config = new Config( stringMap( additionalConfig,
-                InternalAbstractGraphDatabase.Configuration.store_dir.name(), dir.directory( "dir" ).getPath(),
-                InternalAbstractGraphDatabase.Configuration.neo_store.name(), "neo" ),
+                GraphDatabaseFacadeFactory.Configuration.store_dir.name(), dir.directory( "dir" ).getPath(),
+                GraphDatabaseFacadeFactory.Configuration.neo_store.name(), "neo" ),
                 GraphDatabaseSettings.class );
 
         StoreFactory sf = new StoreFactory( config, new DefaultIdGeneratorFactory(), pageCache, fs,
@@ -90,7 +92,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 fs, mock( StoreUpgrader.class ), mock( TransactionMonitor.class ), kernelHealth,
                 mock( PhysicalLogFile.Monitor.class ), TransactionHeaderInformationFactory.DEFAULT,
                 new StartupStatisticsProvider(), mock( NodeManager.class ), null, null,
-                InternalAbstractGraphDatabase.defaultCommitProcessFactory, mock( PageCache.class ),
+                CommunityEditionModule.createCommitProcessFactory(), mock( PageCache.class ),
                 mock( Monitors.class ), new Tracers( "null", NullLog.getInstance() ) );
 
         return theDs;
@@ -100,7 +102,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                                              PageCache pageCache, Map<String, String> additionalConfig )
     {
         KernelHealth kernelHealth = new KernelHealth( mock( KernelPanicEventGenerator.class ),
-                NullLogProvider.getInstance() );
+                NullLogProvider.getInstance().getLog( KernelHealth.class ) );
         return getDataSource( dir, fs, pageCache, additionalConfig, kernelHealth );
     }
 

@@ -25,20 +25,25 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.Settings.TRUE;
-import static org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration.ephemeral;
+import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
+import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.ephemeral;
 import static org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent;
 
 /**
@@ -75,7 +80,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
      */
     public ImpermanentGraphDatabase( String storeDir )
     {
-        this( storeDir, withForcedInMemoryConfiguration( new HashMap<String, String>() ) );
+        this( storeDir, new HashMap<String, String>() );
     }
 
     /**
@@ -84,7 +89,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     @Deprecated
     public ImpermanentGraphDatabase( Map<String, String> params )
     {
-        this( PATH, withForcedInMemoryConfiguration( params ) );
+        this( PATH, params );
     }
 
     /**
@@ -93,7 +98,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     @Deprecated
     public ImpermanentGraphDatabase( String storeDir, Map<String, String> params )
     {
-        this( storeDir, withForcedInMemoryConfiguration( params ),
+        this( storeDir, params,
                 Iterables.<KernelExtensionFactory<?>, KernelExtensionFactory>cast( Service.load(
                         KernelExtensionFactory.class ) ) );
     }
@@ -115,20 +120,32 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     public ImpermanentGraphDatabase( String storeDir, Map<String, String> params,
                                      Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
-        this( storeDir, withForcedInMemoryConfiguration( params ), getDependencies( kernelExtensions ) );
+        this( storeDir, params, getDependencies( kernelExtensions ) );
     }
 
-    private static Dependencies getDependencies( Iterable<KernelExtensionFactory<?>> kernelExtensions )
+    private static GraphDatabaseFacadeFactory.Dependencies getDependencies( Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
-        GraphDatabaseFactoryState state = new GraphDatabaseFactoryState();
-        state.setKernelExtensions( kernelExtensions );
-        return state.databaseDependencies();
+        return newDependencies().kernelExtensions( kernelExtensions );
     }
 
-    public ImpermanentGraphDatabase( String storeDir, Map<String, String> params, Dependencies dependencies )
+    public ImpermanentGraphDatabase( String storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
-        super( storeDir, withForcedInMemoryConfiguration( params ), dependencies );
+        super( storeDir, params, dependencies );
+
         trackUnclosedUse( storeDir );
+    }
+
+    @Override
+    protected void create( Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
+    {
+        new CommunityFacadeFactory()
+        {
+            @Override
+            protected PlatformModule createPlatform( Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+            {
+                return new ImpermanentPlatformModule( params, dependencies, graphDatabaseFacade );
+            }
+        }.newFacade( params, dependencies, this );
     }
 
     private void trackUnclosedUse( String path )
@@ -155,12 +172,6 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         super.shutdown();
     }
 
-    @Override
-    protected FileSystemAbstraction createFileSystemAbstraction()
-    {
-        return life.add( new EphemeralFileSystemAbstraction() );
-    }
-
     private static Map<String, String> withForcedInMemoryConfiguration( Map<String, String> params )
     {
         Map<String, String> result = new HashMap<>( params );
@@ -173,22 +184,37 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         return result;
     }
 
-    @Override
-    protected LogService createLogService()
-    {
-        StoreLogService logService;
-        try
-        {
-            logService = new StoreLogService( NullLogProvider.getInstance(), fileSystem, storeDir, jobScheduler );
-        } catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-        return life.add( logService );
-    }
-
     public void cleanContent()
     {
         cleanDatabaseContent( this );
+    }
+
+    protected static class ImpermanentPlatformModule extends PlatformModule
+    {
+        public ImpermanentPlatformModule( Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies
+                dependencies, GraphDatabaseFacade graphDatabaseFacade )
+        {
+            super( withForcedInMemoryConfiguration(params), dependencies, graphDatabaseFacade );
+        }
+
+        @Override
+        protected FileSystemAbstraction createFileSystemAbstraction()
+        {
+            return new EphemeralFileSystemAbstraction();
+        }
+
+        @Override
+        protected LogService createLogService(LogProvider userLogProvider)
+        {
+            StoreLogService logService;
+            try
+            {
+                logService = new StoreLogService( NullLogProvider.getInstance(), fileSystem, storeDir, jobScheduler );
+            } catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+            return logService;
+        }
     }
 }

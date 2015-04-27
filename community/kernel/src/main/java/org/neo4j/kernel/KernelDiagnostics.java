@@ -28,11 +28,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Format;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.impl.store.StoreId;
-import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
 import org.neo4j.logging.Logger;
@@ -41,30 +39,23 @@ import org.neo4j.logging.Logger;
  * @deprecated This will be moved to internal packages in the next major release.
  */
 @Deprecated
-abstract class KernelDiagnostics implements DiagnosticsProvider
+public abstract class KernelDiagnostics implements DiagnosticsProvider
 {
-    static void register( DiagnosticsManager manager, InternalAbstractGraphDatabase graphdb, NeoStoreDataSource ds )
+    public static class Versions extends KernelDiagnostics
     {
-        manager.prependProvider( new Versions( graphdb.getClass(), ds ) );
-        ds.registerDiagnosticsWith( manager );
-        manager.appendProvider( new StoreFiles( graphdb.getStoreDir() ) );
-    }
-
-    private static class Versions extends KernelDiagnostics
-    {
-        private final Class<? extends GraphDatabaseService> graphDb;
+        private final String edition;
         private final StoreId storeId;
 
-        public Versions( Class<? extends GraphDatabaseService> graphDb, NeoStoreDataSource ds )
+        public Versions( String edition, StoreId storeId )
         {
-            this.graphDb = graphDb;
-            this.storeId = ds.getStoreId();
+            this.edition = edition;
+            this.storeId = storeId;
         }
 
         @Override
         void dump( Logger logger )
         {
-            logger.log( "Graph Database: " + graphDb.getName() + " " + storeId );
+            logger.log( "Graph Database: " + edition + " " + storeId );
             logger.log( "Kernel version: " + Version.getKernel() );
             logger.log( "Neo4j component versions:" );
             for ( Version componentVersion : Service.load( Version.class ) )
@@ -74,13 +65,13 @@ abstract class KernelDiagnostics implements DiagnosticsProvider
         }
     }
 
-    private static class StoreFiles extends KernelDiagnostics
+    public static class StoreFiles extends KernelDiagnostics
     {
         private final File storeDir;
         private static String FORMAT_DATE_ISO = "yyyy-MM-dd'T'HH:mm:ssZ";
         final private SimpleDateFormat dateFormat;
 
-        private StoreFiles( String storeDir )
+        public StoreFiles( String storeDir )
         {
             this.storeDir = new File( storeDir );
             TimeZone tz = TimeZone.getDefault();

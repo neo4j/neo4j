@@ -26,13 +26,17 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.AbstractLogService;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * Test factory for graph databases
@@ -156,48 +160,57 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
             @SuppressWarnings("deprecation")
             public GraphDatabaseService newDatabase( Map<String, String> config )
             {
-                return new ImpermanentGraphDatabase( storeDir, config, state.databaseDependencies() )
+                config.put(GraphDatabaseSettings.store_dir.name(), storeDir);
+                return new CommunityFacadeFactory()
                 {
                     @Override
-                    protected FileSystemAbstraction createFileSystemAbstraction()
+                    protected PlatformModule createPlatform( Map<String, String> params, Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
                     {
-                        FileSystemAbstraction fs = state.getFileSystem();
-                        if ( fs != null )
-                        {
-                            return fs;
-                        }
-                        else
-                        {
-                            return super.createFileSystemAbstraction();
-                        }
-                    }
-
-                    @Override
-                    protected LogService createLogService()
-                    {
-                        final LogProvider internalLogProvider = state.getInternalLogProvider();
-                        if ( internalLogProvider == null )
-                        {
-                            return super.createLogService();
-                        }
-
-                        final LogProvider userLogProvider = state.databaseDependencies().userLogProvider();
-                        return new AbstractLogService()
+                        return new ImpermanentGraphDatabase.ImpermanentPlatformModule( params, dependencies, graphDatabaseFacade )
                         {
                             @Override
-                            public LogProvider getUserLogProvider()
+                            protected FileSystemAbstraction createFileSystemAbstraction()
                             {
-                                return userLogProvider;
+                                FileSystemAbstraction fs = state.getFileSystem();
+                                if ( fs != null )
+                                {
+                                    return fs;
+                                }
+                                else
+                                {
+                                    return super.createFileSystemAbstraction();
+                                }
                             }
 
                             @Override
-                            public LogProvider getInternalLogProvider()
+                            protected LogService createLogService(LogProvider logProvider)
                             {
-                                return internalLogProvider;
+                                final LogProvider internalLogProvider = state.getInternalLogProvider();
+                                if ( internalLogProvider == null )
+                                {
+                                    return super.createLogService(logProvider);
+                                }
+
+                                final LogProvider userLogProvider = state.databaseDependencies().userLogProvider();
+                                return new AbstractLogService()
+                                {
+                                    @Override
+                                    public LogProvider getUserLogProvider()
+                                    {
+                                        return userLogProvider;
+                                    }
+
+                                    @Override
+                                    public LogProvider getInternalLogProvider()
+                                    {
+                                        return internalLogProvider;
+                                    }
+                                };
                             }
+
                         };
                     }
-                };
+                }.newFacade( config, GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
             }
         };
     }

@@ -13,6 +13,7 @@
   <properties>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
+    <componentversion.skip>true</componentversion.skip>
   </properties>
 
   <groupId>org.neo4j.build</groupId>

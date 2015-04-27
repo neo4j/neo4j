@@ -39,6 +39,7 @@ import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.*;
 import static org.neo4j.server.configuration.Configurator.DEFAULT_WEBSERVER_PORT;
 
@@ -67,7 +68,7 @@ public class EnterpriseServerIT
             server.start();
             server.getDatabase();
 
-            assertThat( server.getDatabase().getGraph(), is( HighlyAvailableGraphDatabase.class ) );
+            assertThat( server.getDatabase().getGraph(), is( instanceOf(HighlyAvailableGraphDatabase.class) ) );
 
             Client client = Client.create();
             ClientResponse r = client.resource( "http://localhost:" + DEFAULT_WEBSERVER_PORT +

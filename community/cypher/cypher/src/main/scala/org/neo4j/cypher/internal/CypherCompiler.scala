@@ -26,8 +26,10 @@ import org.neo4j.cypher.{InvalidArgumentException, SyntaxException, _}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.Clock
-import org.neo4j.kernel.InternalAbstractGraphDatabase
+import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.KernelAPI
+import org.neo4j.kernel.configuration.Config
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.{Log, LogProvider}
 
@@ -150,14 +152,14 @@ class CypherCompiler(graph: GraphDatabaseService,
   }
 
   private def getQueryCacheSize : Int =
-    optGraphAs[InternalAbstractGraphDatabase]
-      .andThen(_.getConfig.get(GraphDatabaseSettings.query_cache_size).intValue())
+    optGraphAs[GraphDatabaseFacade]
+      .andThen(_.platformModule.config.get(GraphDatabaseSettings.query_cache_size).intValue())
       .applyOrElse(graph, (_: GraphDatabaseService) => DEFAULT_QUERY_CACHE_SIZE)
 
 
   private def getMinimumTimeBeforeReplanning: Long = {
-    optGraphAs[InternalAbstractGraphDatabase]
-      .andThen(_.getConfig.get(GraphDatabaseSettings.cypher_min_replan_interval).longValue())
+    optGraphAs[GraphDatabaseFacade]
+      .andThen(_.platformModule.config.get(GraphDatabaseSettings.cypher_min_replan_interval).longValue())
       .applyOrElse(graph, (_: GraphDatabaseService) => DEFAULT_QUERY_PLAN_TTL)
   }
 

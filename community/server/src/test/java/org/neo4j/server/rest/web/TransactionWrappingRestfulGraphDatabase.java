@@ -22,8 +22,8 @@ package org.neo4j.server.rest.web;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.server.rest.domain.TraverserReturnType;
 
 /**
@@ -32,10 +32,10 @@ import org.neo4j.server.rest.domain.TraverserReturnType;
  */
 public class TransactionWrappingRestfulGraphDatabase extends RestfulGraphDatabase
 {
-    private final InternalAbstractGraphDatabase graph;
+    private final GraphDatabaseService graph;
     private final RestfulGraphDatabase restfulGraphDatabase;
 
-    public TransactionWrappingRestfulGraphDatabase( InternalAbstractGraphDatabase graph,
+    public TransactionWrappingRestfulGraphDatabase( GraphDatabaseService graph,
                                                     RestfulGraphDatabase restfulGraphDatabase )
     {
         super( null, null, null, null );

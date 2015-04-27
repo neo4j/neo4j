@@ -22,15 +22,14 @@ package org.neo4j.kernel.ha.management;
 import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
-
 import javax.management.NotCompliantMBeanException;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.store.NeoStore;
 import org.neo4j.kernel.impl.store.NeoStore.Position;
@@ -122,7 +121,7 @@ public final class BranchedStoreBean extends ManagementBeanProvider
         {
             return management.getKernelData().
                     getConfig().
-                    get( InternalAbstractGraphDatabase.Configuration.store_dir );
+                    get( CommunityFacadeFactory.Configuration.store_dir );
         }
     }
 }

@@ -32,7 +32,7 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.protocol.election.Election;
-import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.function.Supplier;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -83,8 +83,9 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private SwitchToMaster switchToMaster;
     private final Election election;
     private final ClusterMemberAvailability clusterMemberAvailability;
+    private ClusterClient clusterClient;
+    private Supplier<StoreId> storeIdSupplier;
     private final InstanceId instanceId;
-    private final DependencyResolver dependencyResolver;
 
     private final Log msgLog;
     private final Log userLog;
@@ -101,18 +102,20 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                                          SwitchToMaster switchToMaster,
                                          Election election,
                                          ClusterMemberAvailability clusterMemberAvailability,
-                                         DependencyResolver dependencyResolver,
+                                         ClusterClient clusterClient,
+                                         Supplier<StoreId> storeIdSupplier,
                                          InstanceId instanceId, LogService logService )
     {
         this.switchToSlave = switchToSlave;
         this.switchToMaster = switchToMaster;
         this.election = election;
         this.clusterMemberAvailability = clusterMemberAvailability;
+        this.clusterClient = clusterClient;
+        this.storeIdSupplier = storeIdSupplier;
         this.instanceId = instanceId;
         this.msgLog = logService.getInternalLog( getClass() );
         this.userLog = logService.getUserLog( getClass() );
         this.haCommunicationLife = new LifeSupport();
-        this.dependencyResolver = dependencyResolver;
     }
 
     @Override
@@ -160,7 +163,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     {
         if ( event.getNewState() == event.getOldState() && event.getOldState() == HighAvailabilityMemberState.MASTER )
         {
-            clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI, resolveStoreId() );
+            clusterMemberAvailability.memberIsAvailable( MASTER, masterHaURI, storeIdSupplier.get() );
         }
         else
         {
@@ -173,7 +176,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     {
         if ( event.getNewState() == event.getOldState() && event.getOldState() == HighAvailabilityMemberState.SLAVE )
         {
-            clusterMemberAvailability.memberIsAvailable( SLAVE, slaveHaURI, resolveStoreId() );
+            clusterMemberAvailability.memberIsAvailable( SLAVE, slaveHaURI, storeIdSupplier.get() );
         }
         else
         {
@@ -346,7 +349,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     msgLog.error( "Unable to start up as slave", e );
 
                     clusterMemberAvailability.memberIsUnavailable( SLAVE );
-                    ClusterClient clusterClient = dependencyResolver.resolveDependency( ClusterClient.class );
+                    ClusterClient clusterClient = HighAvailabilityModeSwitcher.this.clusterClient;
                     try
                     {
                         clusterClient.leave();
@@ -429,11 +432,6 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
         this.cancellationHandle = cancellationHandle;
         modeSwitcherFuture = modeSwitcherExecutor.submit( switcher );
-    }
-
-    private StoreId resolveStoreId()
-    {
-        return dependencyResolver.resolveDependency( StoreId.class );
     }
 
     ScheduledExecutorService createExecutor()

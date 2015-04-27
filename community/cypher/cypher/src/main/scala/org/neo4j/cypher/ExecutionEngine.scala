@@ -21,6 +21,7 @@ package org.neo4j.cypher
 
 import java.util.{Map => JavaMap}
 
+import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.parser.ParserMonitor
 import org.neo4j.cypher.internal.compiler.v2_3.prettifier.Prettifier
 import org.neo4j.cypher.internal.compiler.v2_3.{LRUCache => LRUCachev2_3, _}
@@ -28,10 +29,12 @@ import org.neo4j.cypher.internal.{CypherCompiler, _}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.query.{QueryEngineProvider, QueryExecutionMonitor, QuerySession}
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
-import org.neo4j.kernel.{GraphDatabaseAPI, InternalAbstractGraphDatabase, api, monitoring}
+import org.neo4j.kernel.{GraphDatabaseAPI, api, monitoring}
 import org.neo4j.logging.{LogProvider, NullLogProvider}
 
 import scala.collection.JavaConverters._
@@ -226,8 +229,10 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
     def optGraphAs[T <: GraphDatabaseService : Manifest]: PartialFunction[GraphDatabaseService, T] = {
       case (db: T) => db
     }
-    optGraphAs[InternalAbstractGraphDatabase]
-      .andThen(g => Option(g.getConfig.get(setting)))
+    optGraphAs[GraphDatabaseFacade]
+      .andThen(g => {
+      Option(g.platformModule.config.get(setting))
+    })
       .andThen(_.getOrElse(defaultValue))
       .applyOrElse(graph, (_: GraphDatabaseService) => defaultValue)
   }

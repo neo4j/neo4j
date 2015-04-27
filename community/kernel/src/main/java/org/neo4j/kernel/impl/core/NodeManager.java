@@ -22,9 +22,11 @@ package org.neo4j.kernel.impl.core;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.PropertyTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -42,20 +44,23 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
     private final List<PropertyTracker<Node>> nodePropertyTrackers;
     private final List<PropertyTracker<Relationship>> relationshipPropertyTrackers;
     private long epoch;
+    private GraphDatabaseService graphDatabaseService;
+    private RelationshipTypeTokenHolder relationshipTypeTokenHolder;
 
-    public NodeManager( NodeProxy.NodeActions nodeActions, RelationshipProxy.RelationshipActions relationshipActions,
-                        GraphPropertiesProxy.GraphPropertiesActions graphPropertiesActions,
-                        ThreadToStatementContextBridge threadToTransactionBridge )
+    public NodeManager( GraphDatabaseService graphDatabaseService,
+                        ThreadToStatementContextBridge threadToTransactionBridge, RelationshipTypeTokenHolder
+                        relationshipTypeTokenHolder )
     {
-        this.nodeActions = nodeActions;
-        this.relationshipActions = relationshipActions;
-        this.graphPropertiesActions = graphPropertiesActions;
+        this.graphDatabaseService = graphDatabaseService;
+        this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
+        this.nodeActions = new NodeActionsImpl();
+        this.relationshipActions = new RelationshipActionsImpl();
+        this.graphPropertiesActions = new GraphPropertiesActionsImpl();
         this.threadToTransactionBridge = threadToTransactionBridge;
         // Trackers may be added and removed at runtime, e.g. via the REST interface in server,
         // so we use the thread-safe CopyOnWriteArrayList.
         this.nodePropertyTrackers = new CopyOnWriteArrayList<>();
         this.relationshipPropertyTrackers = new CopyOnWriteArrayList<>();
-
     }
 
     @Override
@@ -138,4 +143,124 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
     {
         relationshipPropertyTrackers.remove( relationshipPropertyTracker );
     }
+
+    private class NodeActionsImpl implements NodeProxy.NodeActions
+    {
+        @Override
+        public Statement statement()
+        {
+            return threadToTransactionBridge.get();
+        }
+
+        @Override
+        public GraphDatabaseService getGraphDatabase()
+        {
+            // TODO This should be wrapped as well
+            return graphDatabaseService;
+        }
+
+        @Override
+        public void assertInUnterminatedTransaction()
+        {
+            threadToTransactionBridge.assertInUnterminatedTransaction();
+        }
+
+        @Override
+        public void failTransaction()
+        {
+            threadToTransactionBridge.getKernelTransactionBoundToThisThread( true ).failure();
+        }
+
+        @Override
+        public Relationship lazyRelationshipProxy( long id )
+        {
+            return NodeManager.this.newRelationshipProxyById( id );
+        }
+
+        @Override
+        public Relationship newRelationshipProxy( long id )
+        {
+            return NodeManager.this.newRelationshipProxy( id );
+        }
+
+        @Override
+        public Relationship newRelationshipProxy( long id, long startNodeId, int typeId, long endNodeId )
+        {
+            return NodeManager.this.newRelationshipProxy( id, startNodeId, typeId, endNodeId );
+        }
+    }
+
+    private class RelationshipActionsImpl implements RelationshipProxy.RelationshipActions
+    {
+        @Override
+        public GraphDatabaseService getGraphDatabaseService()
+        {
+            return graphDatabaseService;
+        }
+
+        @Override
+        public void failTransaction()
+        {
+            threadToTransactionBridge.getKernelTransactionBoundToThisThread( true ).failure();
+        }
+
+        @Override
+        public void assertInUnterminatedTransaction()
+        {
+            threadToTransactionBridge.assertInUnterminatedTransaction();
+        }
+
+        @Override
+        public Statement statement()
+        {
+            return threadToTransactionBridge.get();
+        }
+
+        @Override
+        public Node newNodeProxy( long nodeId )
+        {
+            // only used by relationship already checked as valid in cache
+            return NodeManager.this.newNodeProxyById( nodeId );
+        }
+
+        @Override
+        public RelationshipType getRelationshipTypeById( int type )
+        {
+            try
+            {
+                return relationshipTypeTokenHolder.getTokenById( type );
+            }
+            catch ( TokenNotFoundException e )
+            {
+                throw new NotFoundException( e );
+            }
+        }
+    };
+
+    private class GraphPropertiesActionsImpl implements GraphPropertiesProxy.GraphPropertiesActions
+    {
+        @Override
+        public GraphDatabaseService getGraphDatabaseService()
+        {
+            return graphDatabaseService;
+        }
+
+        @Override
+        public void failTransaction()
+        {
+            threadToTransactionBridge.getKernelTransactionBoundToThisThread( true ).failure();
+        }
+
+        @Override
+        public void assertInUnterminatedTransaction()
+        {
+            threadToTransactionBridge.assertInUnterminatedTransaction();
+        }
+
+        @Override
+        public Statement statement()
+        {
+            return threadToTransactionBridge.get();
+        }
+    };
 }

@@ -22,7 +22,7 @@ package org.neo4j.server.advanced;
 import java.util.Arrays;
 
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.advanced.modules.JMXManagementModule;
@@ -32,21 +32,23 @@ import org.neo4j.server.modules.ServerModule;
 
 public class AdvancedNeoServer extends CommunityNeoServer
 {
-    public AdvancedNeoServer( ConfigurationBuilder configurator, Database.Factory dbFactory, InternalAbstractGraphDatabase.Dependencies dependencies, LogProvider logProvider )
+    public AdvancedNeoServer( ConfigurationBuilder configurator, Database.Factory dbFactory,
+                              CommunityFacadeFactory.Dependencies dependencies, LogProvider logProvider )
     {
         super( configurator, dbFactory, dependencies, logProvider );
     }
 
-    public AdvancedNeoServer( ConfigurationBuilder configurator, InternalAbstractGraphDatabase.Dependencies dependencies, LogProvider logProvider )
+    public AdvancedNeoServer( ConfigurationBuilder configurator, CommunityFacadeFactory.Dependencies dependencies,
+                              LogProvider logProvider )
     {
         super( configurator, dependencies, logProvider );
     }
 
     @Override
-	protected Iterable<ServerModule> createServerModules()
-	{
-        return Iterables.mix(Arrays.asList(
-        		(ServerModule)new JMXManagementModule(this)),
-        		super.createServerModules());
-	}
+    protected Iterable<ServerModule> createServerModules()
+    {
+        return Iterables.mix( Arrays.asList(
+                        (ServerModule) new JMXManagementModule( this ) ),
+                super.createServerModules() );
+    }
 }

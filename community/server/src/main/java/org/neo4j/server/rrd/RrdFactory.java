@@ -33,8 +33,8 @@ import org.rrd4j.core.RrdDef;
 import org.rrd4j.core.RrdToolkit;
 
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreSupplier;
 import org.neo4j.logging.Log;
@@ -154,7 +154,7 @@ public class RrdFactory
         }
         else
         {
-            Boolean ephemeral = config.get( InternalAbstractGraphDatabase.Configuration.ephemeral );
+            Boolean ephemeral = config.get( CommunityFacadeFactory.Configuration.ephemeral );
             return ephemeral != null && ephemeral;
         }
     }

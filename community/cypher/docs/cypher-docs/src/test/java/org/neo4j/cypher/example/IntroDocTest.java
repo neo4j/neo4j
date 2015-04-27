@@ -36,12 +36,12 @@ import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphHolder;
-import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.JavaTestDocsGenerator;
 import org.neo4j.test.TestData;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
+import static org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createCypherSnippet;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
 
@@ -53,7 +53,7 @@ public class IntroDocTest implements GraphHolder
     public @Rule
     TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor(
             this, true ) );
-    private static ImpermanentGraphDatabase graphdb;
+    private static GraphDatabaseService graphdb;
 
     @Test
     @Graph( value = { "John friend Sara", "John friend Joe",
@@ -99,8 +99,8 @@ public class IntroDocTest implements GraphHolder
     @BeforeClass
     public static void setup() throws IOException
     {
-        graphdb = (ImpermanentGraphDatabase)new TestGraphDatabaseFactory().newImpermanentDatabase();
-        graphdb.cleanContent();
+        graphdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        cleanDatabaseContent( graphdb );
     }
     
     @AfterClass

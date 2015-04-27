@@ -29,7 +29,7 @@ import org.neo4j.kernel.lifecycle.LifecycleStatus;
 
 /**
  * Adds change listener features to a {@link NeoStoreDataSource}.
- *
+ * <p/>
  * TODO This being a {@link KernelAPI} {@link Supplier} is a smell, it comes from established bad dependency hierarchy
  * where {@link NeoStoreDataSource} and {@link KernelAPI} are needed before they exist.
  */

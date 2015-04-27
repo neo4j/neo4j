@@ -25,11 +25,13 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.neo4j.function.Predicate;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -40,17 +42,17 @@ import static org.neo4j.helpers.collection.Iterables.map;
 public class KernelExtensions extends DependencyResolver.Adapter implements Lifecycle
 {
     private final List<KernelExtensionFactory<?>> kernelExtensionFactories;
-    private final DependencyResolver dependencyResolver;
+    private final Dependencies dependencies;
     private final LifeSupport life = new LifeSupport();
     private final UnsatisfiedDependencyStrategy unsatisfiedDepencyStrategy;
 
     public KernelExtensions( Iterable<KernelExtensionFactory<?>> kernelExtensionFactories,
-            DependencyResolver dependencyResolver, UnsatisfiedDependencyStrategy unsatisfiedDepencyStrategy )
+                             Dependencies dependencies, UnsatisfiedDependencyStrategy unsatisfiedDepencyStrategy )
     {
         this.unsatisfiedDepencyStrategy = unsatisfiedDepencyStrategy;
         this.kernelExtensionFactories = Iterables.addAll( new ArrayList<KernelExtensionFactory<?>>(),
                 kernelExtensionFactories );
-        this.dependencyResolver = dependencyResolver;
+        this.dependencies = dependencies;
     }
 
     @Override
@@ -63,7 +65,10 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
 
             try
             {
-                life.add( kernelExtensionFactory.newKernelExtension( configuration) );
+                Lifecycle dependency = kernelExtensionFactory.newKernelExtension( configuration );
+                Objects.requireNonNull( dependency, kernelExtensionFactory.toString() + " returned a null " +
+                        "KernelExtension" );
+                life.add( dependencies.satisfyDependency( dependency ) );
             }
             catch ( UnsatisfiedDependencyException e )
             {
@@ -149,7 +154,7 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
         {
             try
             {
-                return dependencyResolver.resolveDependency( method.getReturnType() );
+                return dependencies.resolveDependency( method.getReturnType() );
             }
             catch ( IllegalArgumentException e )
             {

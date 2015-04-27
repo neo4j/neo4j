@@ -47,40 +47,46 @@
 
     <!-- Test dependencies -->
     <dependency>
-      <groupId>org.hamcrest</groupId>
-      <artifactId>hamcrest-all</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
+        <groupId>org.hamcrest</groupId>
+        <artifactId>hamcrest-core</artifactId>
+        <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.hamcrest</groupId>
+        <artifactId>hamcrest-library</artifactId>
+        <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.mockito</groupId>
-      <artifactId>mockito-all</artifactId>
+      <artifactId>mockito-core</artifactId>
       <scope>test</scope>
     </dependency>
-
+    
     <!-- Used to validate docs -->
-    <dependency>
-      <groupId>org.asciidoctor</groupId>
-      <artifactId>asciidoctorj</artifactId>
-      <version>1.5.2</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jsoup</groupId>
-      <artifactId>jsoup</artifactId>
-      <version>1.8.1</version>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+          <groupId>org.asciidoctor</groupId>
+          <artifactId>asciidoctorj</artifactId>
+          <version>1.5.2</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.jsoup</groupId>
+          <artifactId>jsoup</artifactId>
+          <version>1.8.1</version>
+          <scope>test</scope>
+        </dependency>
   </dependencies>
 
   <build>
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
+        <version>2.3.2</version>
         <configuration>
           <source>1.7</source>
           <target>1.7</target>
@@ -89,6 +95,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
+        <version>2.2</version>
         <executions>
           <execution>
             <goals>
@@ -107,35 +114,6 @@
           </execution>
         </executions>
       </plugin>
-
-      <!-- Temporary asciidoc generation, pending plugging into manual. -->
-      <plugin>
-        <groupId>org.asciidoctor</groupId>
-        <artifactId>asciidoctor-maven-plugin</artifactId>
-        <version>1.5.2</version>
-        <executions>
-          <execution>
-            <id>generate-compliance-manual</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>process-asciidoc</goal>
-            </goals>
-            <configuration>
-              <backend>html</backend>
-            </configuration>
-          </execution>
-        </executions>
-        <configuration>
-          <sourceDirectory>../v1-docs/src/docs/dev</sourceDirectory>
-          <outputDirectory>${basedir}/target/messaging-manual/html</outputDirectory>
-          <backend>html</backend>
-          <attributes>
-            <toc/>
-            <source-highlighter>coderay</source-highlighter>
-          </attributes>
-        </configuration>
-      </plugin>
-
     </plugins>
   </build>
 

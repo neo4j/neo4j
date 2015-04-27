@@ -40,7 +40,7 @@ import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.impl.factory.CommunityFacadeFactory;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.configuration.Config;
@@ -519,7 +519,7 @@ public class SwitchToSlave
             resolver.resolveDependency( serviceClass ).stop();
         }
 
-        branchPolicy.handle( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) );
+        branchPolicy.handle( config.get( CommunityFacadeFactory.Configuration.store_dir ) );
     }
 
     private void checkDataConsistencyWithMaster( URI availableMasterId, Master master,

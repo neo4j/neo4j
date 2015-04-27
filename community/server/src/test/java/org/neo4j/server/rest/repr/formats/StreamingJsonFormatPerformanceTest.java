@@ -36,7 +36,7 @@ import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.server.WrappingNeoServer;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -57,7 +57,7 @@ public class StreamingJsonFormatPerformanceTest {
         for ( int i = 0; i < 10; i++ ) {
             createData();
         }
-        server = new WrappingNeoServer( (InternalAbstractGraphDatabase) gdb );
+        server = new WrappingNeoServer( (GraphDatabaseAPI) gdb );
         server.start();
     }
 

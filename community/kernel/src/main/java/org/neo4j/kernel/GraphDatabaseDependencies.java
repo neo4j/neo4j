@@ -24,16 +24,23 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.helpers.collection.Iterables.addAll;
+import static org.neo4j.helpers.collection.Iterables.toList;
 
-public class GraphDatabaseDependencies implements InternalAbstractGraphDatabase.Dependencies
+public class GraphDatabaseDependencies implements GraphDatabaseFacadeFactory.Dependencies
 {
+    public static GraphDatabaseDependencies newDependencies( GraphDatabaseFacadeFactory.Dependencies deps )
+    {
+        return new GraphDatabaseDependencies( deps.monitors(), deps.userLogProvider(),
+                toList( deps.settingsClasses() ), toList( deps.kernelExtensions() ), toList( deps.executionEngines() ) );
+    }
+
     public static GraphDatabaseDependencies newDependencies()
     {
         List<KernelExtensionFactory<?>> kernelExtensions = new ArrayList<>();
@@ -42,7 +49,7 @@ public class GraphDatabaseDependencies implements InternalAbstractGraphDatabase.
             kernelExtensions.add( factory );
         }
         return new GraphDatabaseDependencies( null, null, new ArrayList<Class<?>>(), kernelExtensions,
-                                              Iterables.toList( Service.load( QueryEngineProvider.class ) ) );
+                toList( Service.load( QueryEngineProvider.class ) ) );
     }
 
     private final Monitors monitors;
@@ -69,39 +76,39 @@ public class GraphDatabaseDependencies implements InternalAbstractGraphDatabase.
     public GraphDatabaseDependencies monitors( Monitors monitors )
     {
         return new GraphDatabaseDependencies( monitors, userLogProvider, settingsClasses, kernelExtensions,
-                                              queryEngineProviders );
+                queryEngineProviders );
     }
 
     public GraphDatabaseDependencies userLogProvider( LogProvider userLogProvider )
     {
         return new GraphDatabaseDependencies( monitors, userLogProvider, settingsClasses, kernelExtensions,
-                                              queryEngineProviders );
+                queryEngineProviders );
     }
 
     public GraphDatabaseDependencies settingsClasses( List<Class<?>> settingsClasses )
     {
         return new GraphDatabaseDependencies( monitors, userLogProvider, settingsClasses, kernelExtensions,
-                                              queryEngineProviders );
+                queryEngineProviders );
     }
 
     public GraphDatabaseDependencies settingsClasses( Class<?>... settingsClass )
     {
         settingsClasses.addAll( Arrays.asList( settingsClass ) );
         return new GraphDatabaseDependencies( monitors, userLogProvider, settingsClasses, kernelExtensions,
-                                              queryEngineProviders );
+                queryEngineProviders );
     }
 
     public GraphDatabaseDependencies kernelExtensions( Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
         return new GraphDatabaseDependencies( monitors, userLogProvider, settingsClasses,
-                                              addAll( new ArrayList<KernelExtensionFactory<?>>(), kernelExtensions ),
-                                              queryEngineProviders );
+                addAll( new ArrayList<KernelExtensionFactory<?>>(), kernelExtensions ),
+                queryEngineProviders );
     }
 
     public GraphDatabaseDependencies queryEngineProviders( Iterable<QueryEngineProvider> queryEngineProviders )
     {
         return new GraphDatabaseDependencies( monitors, userLogProvider, settingsClasses, kernelExtensions,
-                                              addAll( this.queryEngineProviders, queryEngineProviders ) );
+                addAll( this.queryEngineProviders, queryEngineProviders ) );
     }
 
     // Dependencies implementation

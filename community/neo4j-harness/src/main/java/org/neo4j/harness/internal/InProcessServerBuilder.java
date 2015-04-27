@@ -33,7 +33,7 @@ import org.neo4j.harness.TestServerBuilder;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseDependencies;
-import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.ServerSettings;
@@ -75,7 +75,7 @@ public class InProcessServerBuilder implements TestServerBuilder
             throw new RuntimeException( "Unable to create log file", e );
         }
         final FormattedLogProvider userLogProvider = FormattedLogProvider.toOutputStream( logOutputStream );
-        Dependencies dependencies = GraphDatabaseDependencies.newDependencies().userLogProvider( userLogProvider );
+        GraphDatabaseFacadeFactory.Dependencies dependencies = GraphDatabaseDependencies.newDependencies().userLogProvider( userLogProvider );
         InProcessServerControls controls = new InProcessServerControls( serverFolder,
                 new CommunityNeoServer( new MapConfigurator( config, extensions.toList() ), dependencies, userLogProvider ), logOutputStream );
         controls.start();
