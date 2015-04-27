@@ -99,10 +99,7 @@ class QueryGraphConnectedComponentsTest
       argumentIds = Set(A, C)
     )
 
-    graph.connectedComponents should equal(Seq(
-      QueryGraph(patternNodes = Set(A, B), patternRelationships = Set(R1), argumentIds = Set(A, C)),
-      QueryGraph(patternNodes = Set(C, X), patternRelationships = Set(R3), argumentIds = Set(A, C))
-    ))
+    graph.connectedComponents should equal(Seq(graph))
   }
 
   test("two nodes connected through an optional QG") {
@@ -204,8 +201,16 @@ class QueryGraphConnectedComponentsTest
 
   test("a pattern node with a hint") {
     val graph = QueryGraph.empty.
-      addPatternNodes("a").
+      addPatternNodes(A).
       addHints(Set(NodeByIdentifiedIndex(ident("a"), ident("index"), ident("key"), mock[Expression])(pos)))
+
+    graph.connectedComponents should equal(Seq(graph))
+  }
+
+  test("nodes solved by argument should be in the same component") {
+    val graph = QueryGraph.empty.
+    addPatternNodes(A, B).
+    addArgumentIds(Seq(A, B))
 
     graph.connectedComponents should equal(Seq(graph))
   }
