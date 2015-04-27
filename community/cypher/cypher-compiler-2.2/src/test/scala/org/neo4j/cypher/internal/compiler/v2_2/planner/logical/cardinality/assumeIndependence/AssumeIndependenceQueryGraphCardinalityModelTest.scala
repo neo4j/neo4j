@@ -112,6 +112,12 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
         A_T1_STAR + STAR_T1_A
       },
 
+      "MATCH (a:A)-[*0..0]-(b:A)"
+        -> N * Asel * Asel // This is a simplification, because *0..0 relationships mean something weird and icky
+                           // It's not really right, but should not be fixed by the cardinality model. It should have
+                           // been rewritten away before this stage
+      ,
+
       "MATCH (a:A:B)-->()"
         -> {
         val maxRelCount = N * N * Asel * Bsel
