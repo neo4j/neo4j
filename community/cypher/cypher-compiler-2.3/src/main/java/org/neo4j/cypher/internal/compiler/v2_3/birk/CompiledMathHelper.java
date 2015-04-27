@@ -51,8 +51,6 @@ public final class CompiledMathHelper
             return String.valueOf( lhs ) + String.valueOf( rhs );
         }
 
-        Collections.addAll(  )
-
         // array addition
         Class<?> lhsClass = lhs.getClass();
         Class<?> rhsClass = rhs.getClass();
