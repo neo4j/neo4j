@@ -386,13 +386,14 @@ return coalesce(a.title, a.name)""")
     result.length() should equal(2)
   }
 
-  //TODO change to executeWithAllPlannersAndRuntime when dumpToString is supported
   test("array prop output") {
     createNode("foo" -> Array(1, 2, 3))
 
-    val result = executeWithAllPlannersOnInterpretedRuntime("match n return n").dumpToString()
+    val resultInterpreted = eengine.execute("CYPHER runtime=interpreted match n return n").dumpToString()
+    val resultCompiled = eengine.execute("CYPHER runtime=compiled match n return n").dumpToString()
 
-    result should include ("[1,2,3]")
+    resultInterpreted should equal(resultCompiled)
+    resultCompiled should include ("[1,2,3]")
   }
 
   test("map output") {

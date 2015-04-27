@@ -28,7 +28,7 @@ import scala.collection.mutable
 
 class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with TableDrivenPropertyChecks {
 
-  ignore("re-uses cached plan across different execution modes") {
+  test("re-uses cached plan across different execution modes") {
     // ensure label exists
     graph.inTx { graph.createNode(DynamicLabel.label("Person")) }
 

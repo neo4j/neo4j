@@ -23,16 +23,17 @@ import java.io.{PrintWriter, StringWriter}
 import java.util
 import java.util.Collections
 
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.Eagerly
+import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.{IsCollection, Eagerly}
 import org.neo4j.cypher.internal.compiler.v2_3.notification.InternalNotification
 import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, ExplainMode, ProfileMode, _}
 import org.neo4j.graphdb.QueryExecutionType._
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
-import org.neo4j.graphdb.{QueryExecutionType, ResourceIterator}
+import org.neo4j.graphdb._
 import org.neo4j.kernel.api.Statement
 
 import scala.Predef
-import scala.collection.{Map, mutable, immutable}
+import scala.collection.{mutable, Map, immutable}
 
 /**
  * Base class for compiled execution results, implements everything in InternalExecutionResult
@@ -67,7 +68,11 @@ abstract class CompiledExecutionResult(taskCloser: TaskCloser, statement:Stateme
     stringWriter.getBuffer.toString
   }
 
-  override def dumpToString(writer: PrintWriter) = formatOutput(statement.readOperations, writer, columns, toList, queryStatistics())
+  override def dumpToString(writer: PrintWriter) = {
+    val builder = Seq.newBuilder[Map[String, String]]
+    doInAccept(populateDumpToStringResults(builder))
+    formatOutput(writer, columns, builder.result(), queryStatistics())
+  }
 
   override def queryStatistics() = InternalQueryStatistics()
 
@@ -109,17 +114,61 @@ abstract class CompiledExecutionResult(taskCloser: TaskCloser, statement:Stateme
   private def ensureIterator() = {
     if (innerIterator == null) {
       val res = Seq.newBuilder[Map[String, Any]]
-      accept(new ResultVisitor[RuntimeException] {
-        private val cols = columns
-        override def visit(row: ResultRow): Boolean = {
-          val map = new mutable.HashMap[String, Any]()
-          cols.foreach(c => map.put(c, row.get(c)))
-          res += map
-          true
-        }
-      })
+      doInAccept(populateResults(res))
       innerIterator = res.result().toIterator
     }
+  }
+
+  private def populateResults(builder: mutable.Builder[Map[String, Any], Seq[Map[String, Any]]])(row: ResultRow) = {
+    val map = new mutable.HashMap[String, Any]()
+    columns.foreach(c => map.put(c, row.get(c)))
+    builder += map
+  }
+
+  private def populateDumpToStringResults(builder: mutable.Builder[Map[String, String], Seq[Map[String, String]]])(row: ResultRow) = {
+    val map = new mutable.HashMap[String, String]()
+    columns.foreach(c => map.put(c, text(row.get(c))))
+
+    builder += map
+  }
+
+  private def props(x: PropertyContainer): String = {
+    val readOperations = statement.readOperations()
+    val (properties, propFcn, id) = x match {
+      case n: Node => (readOperations.nodeGetAllProperties(n.getId).asScala.map(_.propertyKeyId()), readOperations.nodeGetProperty _, n.getId )
+      case r: Relationship => (readOperations.relationshipGetAllProperties(r.getId).asScala.map(_.propertyKeyId()), readOperations.relationshipGetProperty _, r.getId)
+    }
+
+    val keyValStrings = properties.
+      map(pkId => readOperations.propertyKeyGetName(pkId) + ":" + text(propFcn(id, pkId).value(null)))
+
+    keyValStrings.mkString("{", ",", "}")
+  }
+
+  def text(a: Any): String = a match {
+    case x: Node            => x.toString + props(x)
+    case x: Relationship    => ":" + x.getType.name() + "[" + x.getId + "]" + props(x)
+    case x if x.isInstanceOf[Map[_, _]] => makeString(x.asInstanceOf[Map[String, Any]])
+    case x if x.isInstanceOf[java.util.Map[_, _]] => makeString(x.asInstanceOf[java.util.Map[String, Any]].asScala)
+    case IsCollection(coll) => coll.map(elem => text(elem)).mkString("[", ",", "]")
+    case x: String          => "\"" + x + "\""
+    case v: KeyToken        => v.name
+    case Some(x)            => x.toString
+    case null               => "<null>"
+    case x                  => x.toString
+  }
+
+  def makeString(m: Map[String, Any]) = m.map {
+    case (k, v) => k + " -> " + text(v)
+  }.mkString("{", ", ", "}")
+
+  private def doInAccept[T](body: ResultRow => T) = {
+    accept(new ResultVisitor[RuntimeException] {
+      override def visit(row: ResultRow): Boolean = {
+        body(row)
+        true
+      }
+    })
   }
 
   private def materialize(v: Any): Any = v match {
