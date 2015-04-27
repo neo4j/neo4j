@@ -27,7 +27,10 @@ import org.neo4j.cypher.internal.compiler.v2_2.symbols._
 case class UnionPipe(sources: List[Pipe], columns:List[String])(implicit val monitor: PipeMonitor) extends Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = new UnionIterator(sources, state)
 
-  def planDescription: InternalPlanDescription = PlanDescriptionImpl(this, "Union", NoChildren, Seq.empty, identifiers) // TODO: This is wrong. Missing children
+  def planDescription: InternalPlanDescription =
+    sources.map(_.planDescription).reduce[InternalPlanDescription] {
+      case (l, r) => new PlanDescriptionImpl(this, "Union", TwoChildren(l, r), Seq.empty, identifiers)
+    }
 
   def symbols: SymbolTable = new SymbolTable(columns.map(k => k -> CTAny).toMap)
 
