@@ -59,7 +59,9 @@ object LogicalPlanConverter {
       val variable = JavaSymbol(context.namer.newVarName(), LONG)
       context.addVariable(logicalPlan.idName.name, variable)
       val (methodHandle, actions) = context.popParent().consume(context, this)
-      (methodHandle, Seq(WhileLoop(variable, ScanAllNodes(), actions)))
+//      context.namer.newOpName() -> context.idMap(logicalPlan)
+      val opName = context.registerOperator(logicalPlan)
+      (methodHandle, Seq(WhileLoop(variable, ScanAllNodes(opName), actions)))
     }
   }
 
@@ -70,7 +72,8 @@ object LogicalPlanConverter {
       val labelVar = JavaSymbol(context.namer.newVarName(), INT)
       context.addVariable(logicalPlan.idName.name, nodeVar)
       val (methodHandle, actions) = context.popParent().consume(context, this)
-      (methodHandle, Seq(WhileLoop(nodeVar, ScanForLabel(logicalPlan.label.name, labelVar), actions)))
+      val opName = context.registerOperator(logicalPlan)
+      (methodHandle, Seq(WhileLoop(nodeVar, ScanForLabel(logicalPlan.label.name, labelVar, opName), actions)))
     }
   }
 
@@ -133,7 +136,8 @@ object LogicalPlanConverter {
       val nodeVars = logicalPlan.nodes.map(n => n -> context.getVariable(n).name)
       val relVars = logicalPlan.relationships.map(r => r -> context.getVariable(r).name)
       val otherVars = logicalPlan.other.map(o => o -> context.getVariable(o).name)
-      (None, ProduceResults(nodeVars.toMap, relVars.toMap, otherVars.toMap))
+      val opName = context.registerOperator(logicalPlan)
+      (None, AcceptVisitor(opName, nodeVars.toMap, relVars.toMap, otherVars.toMap))
     }
   }
 
@@ -157,7 +161,8 @@ object LogicalPlanConverter {
       val (methodHandle, action) = context.popParent().consume(context, this)
       val fromNodeVar = context.getVariable(logicalPlan.from.name)
       val typeVar2TypeName = logicalPlan.types.map(t => context.namer.newVarName() -> t.name).toMap
-      val expand = ExpandC(fromNodeVar.name, relVar.name, logicalPlan.dir, typeVar2TypeName, toNodeVar.name, action)
+      val opName = context.registerOperator(logicalPlan)
+      val expand = ExpandC(fromNodeVar.name, relVar.name, logicalPlan.dir, typeVar2TypeName, toNodeVar.name, action, opName)
       (methodHandle, WhileLoop(relVar, expand, Instruction.empty))
     }
   }

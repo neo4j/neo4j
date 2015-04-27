@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.birk.il
 
 import org.neo4j.cypher.internal.compiler.v2_3.birk.JavaSymbol
 
-case class ScanForLabel(labelName: String, labelVar: JavaSymbol) extends Instruction with LoopDataGenerator {
+case class ScanForLabel(labelName: String, labelVar: JavaSymbol, id: String) extends Instruction with LoopDataGenerator {
   def generateCode() = s"""ro.nodesGetForLabel( ${labelVar.name} )"""
 
   def generateVariablesAndAssignment() = ""

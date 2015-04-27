@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.birk.il
 
 import org.neo4j.cypher.internal.compiler.v2_3.birk.CodeGenerator.n
 
-case class ProduceResults(nodes: Map[String, String],
+case class AcceptVisitor(id: String, nodes: Map[String, String],
                           relationships: Map[String, String],
                           other: Map[String, String]) extends Instruction {
 

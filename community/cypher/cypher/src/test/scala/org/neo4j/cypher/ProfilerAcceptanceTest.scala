@@ -31,9 +31,16 @@ import org.neo4j.cypher.internal.helpers.TxCounts
 class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFileTestSupport with NewPlannerTestSupport {
 
   test("profile with all runtimes") {
+    createNode()
+    createNode()
+    createNode()
+
     val result = profileWithAllPlannersAndRuntimes("MATCH (n) RETURN n")
+    result.size
     val executionPlanDescription = result.executionPlanDescription()
     println(executionPlanDescription)
+    assertRows(3)(result)("AllNodesScan")
+    assertDbHits(4)(result)("AllNodesScan")
   }
 
   test("match n where n-[:FOO]->() return *") {

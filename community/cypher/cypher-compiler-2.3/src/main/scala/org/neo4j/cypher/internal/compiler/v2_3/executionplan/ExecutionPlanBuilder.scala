@@ -41,16 +41,20 @@ import org.neo4j.helpers.Clock
 import org.neo4j.kernel.api.{Statement => KernelStatement}
 
 
+trait RunnablePlan {
+  def apply(statement: KernelStatement,
+            db: GraphDatabaseService,
+            execMode: ExecutionMode,
+            descriptionProvider: (InternalPlanDescription => (Supplier[InternalPlanDescription], Option[QueryExecutionTracer])),
+            params: Map[String, Any],
+            completionListener: CompletionListener): InternalExecutionResult
+}
+
 case class CompiledPlan(updating: Boolean,
                         periodicCommit: Option[PeriodicCommitInfo] = None,
                         fingerprint: Option[PlanFingerprint] = None,
                         plannerUsed: PlannerName,
-                        executionResultBuilder: (KernelStatement,
-                          GraphDatabaseService,
-                          ExecutionMode,
-                          (InternalPlanDescription => (Supplier[InternalPlanDescription], Option[QueryExecutionTracer])),
-                          Map[String, Any],
-                          CompletionListener) => InternalExecutionResult )
+                        executionResultBuilder: RunnablePlan )
 
 case class PipeInfo(pipe: Pipe,
                     updating: Boolean,
@@ -183,7 +187,7 @@ object ExecutionPlanBuilder {
     case ProfileMode =>
       val tracer = new ProfilingTracer()
       ( description: InternalPlanDescription ) => (new Supplier[InternalPlanDescription] {
-        override def get() = description map {
+        override def get(): InternalPlanDescription = description map {
           plan: InternalPlanDescription =>
             val data = tracer.get(plan.id)
             plan.

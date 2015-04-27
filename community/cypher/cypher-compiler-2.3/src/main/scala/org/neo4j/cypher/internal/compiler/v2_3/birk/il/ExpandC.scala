@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.birk.il
 
 import org.neo4j.graphdb.Direction
 
-case class ExpandC(fromVar: String, relVar: String, dir: Direction, types: Map[String, String], toVar: String, inner: Instruction) extends LoopDataGenerator {
+case class ExpandC(fromVar: String, relVar: String, dir: Direction, types: Map[String, String], toVar: String, inner: Instruction, id: String) extends LoopDataGenerator {
   private val theBody =
     if (dir == Direction.OUTGOING)
       s"""$toVar = rel.endNode();

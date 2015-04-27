@@ -23,7 +23,7 @@ trait Instruction {
   // Actual code produced by element
   def generateCode(): String
 
-  def importedClasses() = allLeafs.flatMap(_._importedClasses()).toSet
+  final def importedClasses() = allLeafs.flatMap(_._importedClasses()).toSet
 
   //generate class level members
   def fields(): String
@@ -35,8 +35,8 @@ trait Instruction {
     (allLeafs :+ this).flatMap(_._method)
   }
 
-  // Generates import list for class
-  protected def _importedClasses(): Set[String] = Set.empty
+  // Generates import list for class - implement this!
+  protected def _importedClasses(): Set[String]
 
   protected def children: Seq[Instruction] = Seq.empty
 
@@ -58,5 +58,8 @@ object Instruction {
     override def fields(): String = ""
 
     override def generateInit(): String = ""
+
+    // Generates import list for class - implement this!
+    override protected def _importedClasses(): Set[String] = Set.empty
   }
 }

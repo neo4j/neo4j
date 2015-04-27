@@ -87,7 +87,7 @@ public class ProfilingTracer implements QueryExecutionTracer
     }
 
     @Override
-    public QueryExecutionEvent executeQuery( Id queryId )
+    public QueryExecutionEvent executeOperator( Id queryId )
     {
         Data data = this.data.get( queryId );
         if ( data == null && queryId != null )

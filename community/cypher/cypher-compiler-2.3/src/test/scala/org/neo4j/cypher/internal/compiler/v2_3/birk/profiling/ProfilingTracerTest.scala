@@ -38,7 +38,7 @@ class ProfilingTracerTest extends CypherFunSuite {
     val clock = new Clock
     val operatorId = new Id
     val tracer = new ProfilingTracer(clock)
-    val event = tracer.executeQuery(operatorId)
+    val event = tracer.executeOperator(operatorId)
 
     // when
     clock.progress(516)
@@ -48,11 +48,30 @@ class ProfilingTracerTest extends CypherFunSuite {
     tracer.timeOf(operatorId) should equal(516)
   }
 
+  test("multiple uses of the same Id should aggregate spent time") {
+    // given
+    val clock = new Clock
+    val operatorId = new Id
+    val tracer = new ProfilingTracer(clock)
+
+    // when
+    val event1 = tracer.executeOperator(operatorId)
+    clock.progress(12)
+    event1.close()
+
+    val event2 = tracer.executeOperator(operatorId)
+    clock.progress(45)
+    event2.close()
+
+    // then
+    tracer.timeOf(operatorId) should equal(12 + 45)
+  }
+
   test("shouldReportDbHitsOfQueryExecution") {
     // given
     val operatorId = new Id
     val tracer = new ProfilingTracer
-    val event = tracer.executeQuery(operatorId)
+    val event = tracer.executeOperator(operatorId)
 
     // when
     (0 until 516).foreach { _ =>
@@ -69,7 +88,7 @@ class ProfilingTracerTest extends CypherFunSuite {
     // given
     val operatorId = new Id
     val tracer = new ProfilingTracer
-    val event = tracer.executeQuery(operatorId)
+    val event = tracer.executeOperator(operatorId)
 
     // when
     (0 until 516).foreach { _ =>

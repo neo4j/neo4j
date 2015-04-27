@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.birk.{CodeGenerator, JavaSymbol}
 sealed trait ProjectionInstruction extends Instruction {
   def projectedVariable: JavaSymbol
   def generateCode() = ""
+  override protected def _importedClasses(): Set[String] = Set.empty
 }
 
 object ProjectionInstruction {
@@ -189,4 +190,6 @@ case class ProjectProperties(projections:Seq[ProjectionInstruction], parent:Inst
   override def generateInit() = generate(_.generateInit())
 
   private def generate(f : Instruction => String) = projections.map(f(_)).mkString("", CodeGenerator.n, CodeGenerator.n) + f(parent)
+
+  override protected def _importedClasses(): Set[String] = Set.empty
 }

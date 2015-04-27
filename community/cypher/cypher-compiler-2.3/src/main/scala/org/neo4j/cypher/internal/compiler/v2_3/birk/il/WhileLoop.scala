@@ -27,11 +27,16 @@ case class WhileLoop(id: JavaSymbol, producer: LoopDataGenerator, action: Instru
     val iterator = s"${id.name}Iter"
 
     s"""${producer.javaType} $iterator = ${producer.generateCode()};
+       |try ( QueryExecutionEvent event_op1 = tracer.executeOperator( ${producer.id} ) )
+       |{
+       |event_op1.dbHit();
        |while ( $iterator.hasNext() )
        |{
+       |event_op1.dbHit();
        |final ${id.javaType} ${id.name} = $iterator.next();
        |${producer.generateVariablesAndAssignment()}
        |${action.generateCode()}
+       |}
        |}
        |""".stripMargin
   }
