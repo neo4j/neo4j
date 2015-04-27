@@ -169,6 +169,8 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   private def connectedComponentFor(startNode: IdName, visited: mutable.Set[IdName]): QueryGraph = {
     val queue = mutable.Queue(startNode)
+    val nodesSolvedByArguments = patternNodes intersect argumentIds
+    queue.enqueue(nodesSolvedByArguments.toSeq:_*)
     var qg = QueryGraph.empty.withArgumentIds(argumentIds)
     while (queue.nonEmpty) {
       val node = queue.dequeue()

@@ -29,11 +29,7 @@ case class UnionPipe(sources: List[Pipe], columns:List[String])(implicit val mon
 
   def planDescription: InternalPlanDescription =
     sources.map(_.planDescription).reduce[InternalPlanDescription] {
-<<<<<<< HEAD:community/cypher/cypher-compiler-2.3/src/main/scala/org/neo4j/cypher/internal/compiler/v2_3/pipes/UnionPipe.scala
       case (l, r) => new PlanDescriptionImpl(this.id, "Union", TwoChildren(l, r), Seq.empty, identifiers)
-=======
-      case (l, r) => new PlanDescriptionImpl(this, "Union", TwoChildren(l, r), Seq.empty, identifiers)
->>>>>>> 2f7be62... Fix execution plan description output for Union used by the rule planner:community/cypher/cypher-compiler-2.2/src/main/scala/org/neo4j/cypher/internal/compiler/v2_2/pipes/UnionPipe.scala
     }
 
   def symbols: SymbolTable = new SymbolTable(columns.map(k => k -> CTAny).toMap)

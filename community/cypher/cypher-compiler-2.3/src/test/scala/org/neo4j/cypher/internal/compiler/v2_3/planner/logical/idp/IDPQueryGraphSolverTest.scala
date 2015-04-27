@@ -45,7 +45,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
       val plan = queryGraphSolver.plan(cfg.qg)
       plan should equal(
-        AllNodesScan("a", Set.empty)(null)
+        AllNodesScan("a", Set.empty)(solved)
       )
 
       verify(monitor).noIDPIterationFor(cfg.qg, 0, plan)
@@ -66,9 +66,9 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     }.withLogicalPlanningContext { (cfg, ctx) =>
       implicit val x = ctx
 
-      val allNodeScanA = AllNodesScan("a", Set.empty)(null)
-      val allNodeScanB = AllNodesScan("b", Set.empty)(null)
-      val allNodeScanC = AllNodesScan("c", Set.empty)(null)
+      val allNodeScanA = AllNodesScan("a", Set.empty)(solved)
+      val allNodeScanB = AllNodesScan("b", Set.empty)(solved)
+      val allNodeScanC = AllNodesScan("c", Set.empty)(solved)
       val plan = queryGraphSolver.plan(cfg.qg)
       plan should equal(
         CartesianProduct(
@@ -76,8 +76,8 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
           CartesianProduct(
             allNodeScanB,
             allNodeScanC
-          )(null)
-        )(null)
+          )(solved)
+        )(solved)
       )
 
       val qgs = cfg.qg.connectedComponents.toArray
@@ -111,7 +111,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
       val plan = queryGraphSolver.plan(cfg.qg)
       plan should equal(
-        Expand(NodeByLabelScan("b", LazyLabel("B"), Set.empty)(null), "b", Direction.INCOMING, Seq.empty, "a", "r")(null)
+        Expand(NodeByLabelScan("b", LazyLabel("B"), Set.empty)(solved), "b", Direction.INCOMING, Seq.empty, "a", "r")(solved)
       )
 
       verify(monitor).initTableFor(cfg.qg, 0)
@@ -149,8 +149,8 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       plan should equal(
         Selection(Seq(labelBPredicate),
           Expand(
-            NodeByLabelScan("a", LazyLabel("A"), Set.empty)(null), "a", Direction.OUTGOING, Seq.empty, "b", "r")(null)
-        )(null))
+            NodeByLabelScan("a", LazyLabel("A"), Set.empty)(solved), "a", Direction.OUTGOING, Seq.empty, "b", "r")(solved)
+        )(solved))
 
       verify(monitor).initTableFor(cfg.qg, 0)
       verify(monitor).startIDPIterationFor(cfg.qg, 0)
@@ -192,10 +192,10 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       plan should equal(
         NodeHashJoin(Set("c"),
           Expand(
-            NodeByLabelScan("a", LazyLabel("A"), Set.empty)(null), "a", Direction.OUTGOING, Seq.empty, "c", "r1")(null),
+            NodeByLabelScan("a", LazyLabel("A"), Set.empty)(solved), "a", Direction.OUTGOING, Seq.empty, "c", "r1")(solved),
           Expand(
-            NodeByLabelScan("b", LazyLabel("B"), Set.empty)(null), "b", Direction.INCOMING, Seq.empty, "c", "r2")(null)
-        )(null))
+            NodeByLabelScan("b", LazyLabel("B"), Set.empty)(solved), "b", Direction.INCOMING, Seq.empty, "c", "r2")(solved)
+        )(solved))
 
       verify(monitor).initTableFor(cfg.qg, 0)
       verify(monitor).startIDPIterationFor(cfg.qg, 0)
@@ -242,11 +242,11 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         Selection(Seq(cfg.predicate),
           NodeHashJoin(Set("c"),
             Expand(
-              NodeByLabelScan("a", LazyLabel("A"), Set.empty)(null), "a", Direction.OUTGOING, Seq.empty, "c", "r1")(null),
+              NodeByLabelScan("a", LazyLabel("A"), Set.empty)(solved), "a", Direction.OUTGOING, Seq.empty, "c", "r1")(solved),
             Expand(
-              NodeByLabelScan("b", LazyLabel("B"), Set.empty)(null), "b", Direction.INCOMING, Seq.empty, "c", "r2")(null)
-          )(null)
-        )(null)
+              NodeByLabelScan("b", LazyLabel("B"), Set.empty)(solved), "b", Direction.INCOMING, Seq.empty, "c", "r2")(solved)
+          )(solved)
+        )(solved)
       )
 
       verify(monitor).initTableFor(cfg.qg, 0)
@@ -277,7 +277,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
       val plan = queryGraphSolver.plan(cfg.qg)
       plan should equal(
-        Expand(AllNodesScan("a", Set.empty)(null), "a", Direction.OUTGOING, Seq.empty, "a", IdName("r"), ExpandInto)(null)
+        Expand(AllNodesScan("a", Set.empty)(solved), "a", Direction.OUTGOING, Seq.empty, "a", IdName("r"), ExpandInto)(solved)
       )
 
       verify(monitor).initTableFor(cfg.qg, 0)
@@ -311,11 +311,11 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       plan should equal(
         Expand(
           Expand(
-            AllNodesScan("b", Set.empty)(null),
+            AllNodesScan("b", Set.empty)(solved),
             "b", Direction.OUTGOING, Seq.empty, "c", IdName("r2"), ExpandAll
-          )(null),
+          )(solved),
           "b", Direction.INCOMING, Seq.empty, "a", IdName("r1"), ExpandAll
-        )(null)
+        )(solved)
       )
 
       verify(monitor).initTableFor(cfg.qg, 0)
@@ -365,7 +365,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
       val plan: LogicalPlan = queryGraphSolver.plan(cfg.qg)
       plan should equal(
-        Argument(Set("a"))(null)()
+        Argument(Set("a"))(solved)()
       )
 
       verify(monitor).emptyComponentPlanned(cfg.qg, plan)
@@ -390,7 +390,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
       val plan: LogicalPlan = queryGraphSolver.plan(cfg.qg)
       plan should equal(
-        ProjectEndpoints(Argument(Set("r"))(null)(), "r", "a", startInScope = false, "b", endInScope = false, None, directed = true, SimplePatternLength)(null)
+        ProjectEndpoints(Argument(Set("r"))(solved)(), "r", "a", startInScope = false, "b", endInScope = false, None, directed = true, SimplePatternLength)(solved)
       )
 
       verify(monitor).initTableFor(cfg.qg, 0)
@@ -422,9 +422,9 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       val plan: LogicalPlan = queryGraphSolver.plan(cfg.qg)
       plan should equal(
         Expand(
-          ProjectEndpoints(Argument(Set("r1"))(null)(), "r1", "a", startInScope = false, "b", endInScope = false, None, directed = true, SimplePatternLength)(null),
+          ProjectEndpoints(Argument(Set("r1"))(solved)(), "r1", "a", startInScope = false, "b", endInScope = false, None, directed = true, SimplePatternLength)(solved),
           "b", Direction.OUTGOING, Seq.empty, "c", "r2", ExpandAll
-        )(null)
+        )(solved)
       )
 
       verify(monitor).initTableFor(cfg.qg, 0)
@@ -455,7 +455,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
       val plan = queryGraphSolver.plan(cfg.qg)
       plan should equal(
-        Expand(Argument(Set("a"))(null)(), "a", Direction.OUTGOING, Seq.empty, "b", "r", ExpandAll)(null)
+        Expand(Argument(Set("a"))(solved)(), "a", Direction.OUTGOING, Seq.empty, "b", "r", ExpandAll)(solved)
       )
 
       verify(monitor).initTableFor(cfg.qg, 0)
@@ -527,7 +527,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
       val plan = queryGraphSolver.plan(cfg.qg)
       plan should equal(
-        Argument(Set("a"))(null)()
+        Argument(Set("a"))(solved)()
       )
 
       verify(monitor).noIDPIterationFor(cfg.qg, 0, plan)
@@ -549,9 +549,9 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     }.withLogicalPlanningContext { (cfg, ctx) =>
       implicit val x = ctx
 
-      val allNodeScanA = AllNodesScan("a", Set.empty)(null)
-      val allNodeScanB = AllNodesScan("b", Set.empty)(null)
-      val allNodeScanC = AllNodesScan("c", Set.empty)(null)
+      val allNodeScanA = AllNodesScan("a", Set.empty)(solved)
+      val allNodeScanB = AllNodesScan("b", Set.empty)(solved)
+      val allNodeScanC = AllNodesScan("c", Set.empty)(solved)
       val plan = queryGraphSolver.plan(cfg.qg)
       plan should equal(
         Selection(cfg.qg.selections.flatPredicates,
@@ -560,9 +560,9 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
             CartesianProduct(
               allNodeScanA,
               allNodeScanC
-            )(null)
-          )(null)
-        )(null)
+            )(solved)
+          )(solved)
+        )(solved)
       )
 
       val qgs = cfg.qg.connectedComponents.toArray
@@ -590,16 +590,16 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     }.withLogicalPlanningContext { (cfg, ctx) =>
       implicit val x = ctx
 
-      val expandBtoA = Expand(AllNodesScan("b", Set.empty)(null), "b", Direction.INCOMING, Seq.empty, "a", "r", ExpandAll)(null)
-      val allNodeScanC = AllNodesScan("c", Set.empty)(null)
+      val expandBtoA = Expand(AllNodesScan("b", Set.empty)(solved), "b", Direction.INCOMING, Seq.empty, "a", "r", ExpandAll)(solved)
+      val allNodeScanC = AllNodesScan("c", Set.empty)(solved)
       val plan = queryGraphSolver.plan(cfg.qg)
       plan should equal(
         Selection(cfg.qg.selections.flatPredicates,
           CartesianProduct(
             allNodeScanC,
             expandBtoA
-          )(null)
-        )(null)
+          )(solved)
+        )(solved)
       )
       val qgs = cfg.qg.connectedComponents.toArray
       val plans = Array(expandBtoA, allNodeScanC)
@@ -705,14 +705,14 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         OuterHashJoin(
           Set("a", "b"),
           CartesianProduct(
-            AllNodesScan(IdName("a"), Set.empty)(null),
-            AllNodesScan(IdName("b"), Set.empty)(null)
-          )(null),
+            AllNodesScan(IdName("a"), Set.empty)(solved),
+            AllNodesScan(IdName("b"), Set.empty)(solved)
+          )(solved),
           Expand(
-            AllNodesScan(IdName("b"), Set.empty)(null),
+            AllNodesScan(IdName("b"), Set.empty)(solved),
             "b", Direction.INCOMING, Seq.empty, "a", "r", ExpandAll
-          )(null)
-        )(null)
+          )(solved)
+        )(solved)
       )
     }
   }
@@ -739,7 +739,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
           SingleRow()(solved),
           Optional(
             Expand(
-              AllNodesScan("b", Set.empty)(null),
+              AllNodesScan("b", Set.empty)(solved),
               "b", Direction.INCOMING, Seq.empty, "a", "r", ExpandAll
             )(solved)
           )(solved)
@@ -763,7 +763,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
       val plan = queryGraphSolver.plan(cfg.qg)
       plan should equal(
-        DirectedRelationshipByIdSeek("r", ManySeekableArgs(Collection(Seq(SignedDecimalIntegerLiteral("42")(pos)))(pos)), "a", "b", Set.empty)(null)
+        DirectedRelationshipByIdSeek("r", ManySeekableArgs(Collection(Seq(SignedDecimalIntegerLiteral("42")(pos)))(pos)), "a", "b", Set.empty)(solved)
       )
 
       verify(monitor).initTableFor(cfg.qg, 0)
@@ -797,9 +797,9 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       queryGraphSolver.plan(cfg.qg) should equal(
         ProjectEndpoints(
           ProjectEndpoints(
-            Argument(Set("r1", "r2"))(null)(),
-            "r2", "b", startInScope = false, "c", endInScope = false, None, directed = true, SimplePatternLength)(null),
-          "r1", "a", startInScope = false, "b", endInScope = true, None, directed = true, SimplePatternLength)(null))
+            Argument(Set("r1", "r2"))(solved)(),
+            "r2", "b", startInScope = false, "c", endInScope = false, None, directed = true, SimplePatternLength)(solved),
+          "r1", "a", startInScope = false, "b", endInScope = true, None, directed = true, SimplePatternLength)(solved))
     }
   }
 
@@ -824,10 +824,28 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         ProjectEndpoints(
           Expand(
             ProjectEndpoints(
-              Argument(Set("a", "b", "c", "d", "r1", "r2"))(null)(),
-              "r2", "c", startInScope = true, "d", endInScope = true, None, directed = true, SimplePatternLength)(null),
-            "a", Direction.OUTGOING, Seq.empty, "d", "r3", ExpandInto)(null),
-          "r1", "a", startInScope = true, "b", endInScope = true, None, directed = true, SimplePatternLength)(null))
+              Argument(Set("a", "b", "c", "d", "r1", "r2"))(solved)(),
+              "r2", "c", startInScope = true, "d", endInScope = true, None, directed = true, SimplePatternLength)(solved),
+            "a", Direction.OUTGOING, Seq.empty, "d", "r3", ExpandInto)(solved),
+          "r1", "a", startInScope = true, "b", endInScope = true, None, directed = true, SimplePatternLength)(solved))
+    }
+  }
+
+  test("should not plan cartesian products by duplicating argument rows") {
+    val monitor = mock[IDPQueryGraphSolverMonitor]
+
+    new given {
+      queryGraphSolver = IDPQueryGraphSolver(monitor = monitor, solvers = Seq(expandSolverStep(_)))
+      qg = QueryGraph(
+        patternNodes = Set("a", "b"),
+        argumentIds = Set("a", "b")
+      )
+    }.withLogicalPlanningContext { (cfg, ctx) =>
+      implicit val x = ctx
+
+      queryGraphSolver.plan(cfg.qg) should equal(
+        Argument(Set("a", "b"))(solved)()
+      )
     }
   }
 }
