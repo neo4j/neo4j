@@ -2149,6 +2149,25 @@ return b
     result should equal(List(Map("a" -> node, "b" -> null, "c" -> null)))
   }
 
+  test("should handle varlength paths of size 0..0") {
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+    relate(b, c)
+
+    val query =
+      """match (a)-[*0..0]->(b)
+        |return a, b""".stripMargin
+
+    val result = executeWithAllPlanners(query).toSet
+
+    result should equal(Set(
+      Map("a" -> a, "b" -> a),
+      Map("a" -> b, "b" -> b),
+      Map("a" -> c, "b" -> c)
+    ))
+  }
+
   /**
    * Append identifier to keys and transform value arrays to lists
    */

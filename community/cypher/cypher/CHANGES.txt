@@ -18,6 +18,7 @@ o Cypher may now use full index scans to solve queries containing has(n.prop) if
 -----
 o Fixes problem when using named paths and aggregation
 o Fixes #4462 - RULE planner inconsistent in order of path elements
+o Fixes problem with COST planner and ()-[*0..0]->() patterns
 
 2.2.1
 -----

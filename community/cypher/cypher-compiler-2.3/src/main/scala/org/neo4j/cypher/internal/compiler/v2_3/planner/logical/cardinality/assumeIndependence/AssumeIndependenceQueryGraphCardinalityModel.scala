@@ -67,8 +67,8 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
 
   private def cardinalityForQueryGraph(qg: QueryGraph, input: QueryGraphSolverInput)
                                       (implicit semanticTable: SemanticTable): Cardinality = {
-    val selectivity = calculateSelectivity(qg, input.labelInfo)
-    val numberOfPatternNodes = calculateNumberOfPatternNodes(qg)
+    val (selectivity, numberOfZeroZeroRels) = calculateSelectivity(qg, input.labelInfo)
+    val numberOfPatternNodes = calculateNumberOfPatternNodes(qg) - numberOfZeroZeroRels
     val numberOfGraphNodes = stats.nodesWithLabelCardinality(None)
 
     val c = if (qg.argumentIds.nonEmpty) {
@@ -88,20 +88,25 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
   }
 
   private def calculateSelectivity(qg: QueryGraph, labels: Map[IdName, Set[LabelName]])
-                                  (implicit semanticTable: SemanticTable) = {
+                                  (implicit semanticTable: SemanticTable): (Selectivity, Int) = {
     implicit val selections = qg.selections
 
     val expressionSelectivities = selections.flatPredicates.map(expressionSelectivityEstimator(_))
-    val patternSelectivities = qg.patternRelationships.toSeq.map(patternSelectivityEstimator(_, labels))
 
-    val selectivity = combiner.andTogetherSelectivities(expressionSelectivities ++ patternSelectivities)
+    val patternSelectivities = qg.patternRelationships.toSeq.map {
+      /* This is here to handle the *0..0 case.
+         Our solution to the problem is to keep count of how many of these we see, and decrease the number of pattern
+         nodes accordingly. The nice solution would have been to rewrite these relationships away at an earlier phase.
+         This workaround should work, but might not give the best numbers.
+       */
+      case r if r.length == VarPatternLength(0, Some(0)) => None
+      case r => Some(patternSelectivityEstimator(r, labels))
+    }
 
-    selectivity.getOrElse(Selectivity(1))
+    val numberOfZeroZeroRels = patternSelectivities.count(_.isEmpty)
+
+    val selectivity = combiner.andTogetherSelectivities(expressionSelectivities ++ patternSelectivities.flatten)
+
+    (selectivity.getOrElse(Selectivity(1)), numberOfZeroZeroRels)
   }
 }
-
-
-
-
-
-
