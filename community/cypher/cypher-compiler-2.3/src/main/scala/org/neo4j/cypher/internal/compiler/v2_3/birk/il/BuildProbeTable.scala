@@ -119,8 +119,7 @@ case class BuildCountingProbeTable(name: String, node: String, namer: Namer) ext
   override def generateFetchCode = {
     val timesSeen = namer.newVarName()
     val code  = (key: String, action: Instruction) => {
-      s"""
-         |int $timesSeen = $name.get( $key);
+      s"""int $timesSeen = $name.get( $key);
          |if ( $timesSeen != LongKeyIntValueTable.NULL )
          |{
          |for ( int i = 0; i < $timesSeen; i++ )

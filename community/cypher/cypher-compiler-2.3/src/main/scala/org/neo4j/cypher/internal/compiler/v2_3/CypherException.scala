@@ -128,6 +128,10 @@ class SyntaxException(message: String, val query: String, val offset: Option[Int
   def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.syntaxException(message, query, offset)
 }
 
+class CypherExecutionException(message: String, cause: Throwable) extends CypherException(message, cause) {
+  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]): T = mapper.cypherExecutionException(message, cause)
+}
+
 object IndexHintException {
   def apply(hint: SchemaIndex, message: String) =
     new IndexHintException(hint.identifier, hint.label, hint.property, message)

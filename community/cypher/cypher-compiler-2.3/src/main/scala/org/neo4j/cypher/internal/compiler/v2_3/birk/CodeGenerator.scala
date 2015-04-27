@@ -103,11 +103,12 @@ object CodeGenerator {
       importLines.toSeq.sorted.mkString("import ", s";${n}import ", ";")
     else
       ""
-    val fields = instructions.map(_.fields().trim).reduce(_ + n + _)
-    val init = instructions.map(_.generateInit().trim).reduce(_ + n + _)
-    val methodBody = instructions.map(_.generateCode().trim).reduce(_ + n + _)
+    val fields = instructions.map(_.fields().trim).reduce(_ + n + _).trim
+    val init = instructions.map(_.generateInit().trim).reduce(_ + n + _).trim
+    val methodBody = instructions.map(_.generateCode().trim).reduce(_ + n + _).trim
     val privateMethods = instructions.flatMap(_.methods).distinct.sortBy(_.name)
-    val privateMethodText = privateMethods.map(_.generateCode.trim).reduceOption(_ + n + _).getOrElse("")
+    val privateMethodText = privateMethods.map(_.generateCode.trim).reduceOption(_ + n + _).getOrElse("").trim
+    val exceptions = instructions.flatMap(_.exceptions).toSet
 
     //TODO move imports to set and merge with the other imports, or use full paths
     s"""package $packageName;
@@ -162,7 +163,7 @@ object CodeGenerator {
        |$fields
        |
        |@Override
-       |public <E extends Exception> void accept(final ResultVisitor<E> visitor)
+       |public <E extends Exception> void accept(final ResultVisitor<E> visitor) throws E
        |{
        |final ResultRowImpl row = new ResultRowImpl(db);
        |try
@@ -171,16 +172,7 @@ object CodeGenerator {
        |$methodBody
        |success();
        |}
-       |catch (CypherException e)
-       |{
-       |throw e;
-       |}
-       |catch (Exception e)
-       |{
-       |//TODO proper error handling
-       |//we want to handle KernelExceptions and E coming from visitor
-       |throw new RuntimeException( e );
-       |}
+       |${exceptions.map(_.catchClause).mkString(n).trim}
        |finally
        |{
        |close();

@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSeq
 import org.neo4j.cypher.internal.compiler.v2_3.{CypherCompilerFactory, CypherException => CypherException_v2_3, DPPlannerName, ExplainMode => ExplainModev2_3, GreedyPlannerName, IDPPlannerName, InfoLogger, Monitors, NormalMode => NormalModev2_3, PlannerName, ProfileMode => ProfileModev2_3, _}
 import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.javacompat.ProfilerStatistics
-import org.neo4j.cypher.{ArithmeticException, CypherTypeException, EntityNotFoundException, FailedIndexException, IncomparableValuesException, IndexHintException, InternalException, InvalidArgumentException, InvalidSemanticsException, LabelScanHintException, LoadCsvStatusWrapCypherException, LoadExternalResourceException, MergeConstraintConflictException, NodeStillHasRelationshipsException, ParameterNotFoundException, ParameterWrongTypeException, PatternException, PeriodicCommitInOpenTransactionException, ProfilerStatisticsNotReadyException, SyntaxException, UniquePathNotUniqueException, UnknownLabelException, _}
+import org.neo4j.cypher.{ArithmeticException, CypherTypeException, EntityNotFoundException, FailedIndexException, IncomparableValuesException, IndexHintException, InternalException, InvalidArgumentException, InvalidSemanticsException, LabelScanHintException, LoadCsvStatusWrapCypherException, LoadExternalResourceException, MergeConstraintConflictException, NodeStillHasRelationshipsException, ParameterNotFoundException, ParameterWrongTypeException, PatternException, PeriodicCommitInOpenTransactionException, ProfilerStatisticsNotReadyException, SyntaxException, UniquePathNotUniqueException, UnknownLabelException, CypherExecutionException, _}
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.impl.notification.NotificationCode
 import org.neo4j.graphdb.{GraphDatabaseService, InputPosition, QueryExecutionType, ResourceIterator}
@@ -90,6 +90,8 @@ object exceptionHandlerFor2_3 extends MapToPublicExceptions[CypherException] {
 
   def cypherTypeException(message: String, cause: Throwable) = throw new CypherTypeException(message, cause)
 
+  def cypherExecutionException(message: String, cause: Throwable) = throw new CypherExecutionException(message, cause)
+
   def labelScanHintException(identifier: String, label: String, message: String) = throw new LabelScanHintException(identifier, label, message)
 
   def invalidSemanticException(message: String) = throw new InvalidSemanticsException(message)
@@ -104,6 +106,8 @@ object exceptionHandlerFor2_3 extends MapToPublicExceptions[CypherException] {
 
   def periodicCommitInOpenTransactionException() = throw new PeriodicCommitInOpenTransactionException
 
+  def failedIndexException(indexName: String): CypherException = throw new FailedIndexException(indexName)
+
   def runSafely[T](body: => T)(implicit f: Throwable => Unit = (_) => ()) = {
     try {
       body
@@ -117,9 +121,8 @@ object exceptionHandlerFor2_3 extends MapToPublicExceptions[CypherException] {
         throw e
     }
   }
-
-  def failedIndexException(indexName: String): CypherException = throw new FailedIndexException(indexName)
 }
+
 
 case class WrappedMonitors2_3(kernelMonitors: KernelMonitors) extends Monitors {
   def addMonitorListener[T](monitor: T, tags: String*) {

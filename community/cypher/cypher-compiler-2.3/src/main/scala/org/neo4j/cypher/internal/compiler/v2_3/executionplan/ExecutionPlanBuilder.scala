@@ -87,15 +87,15 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService, statsDivergenceThreshold
       def isStale(lastTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastTxId, statistics)
 
       def run(queryContext: QueryContext, kernelStatement: KernelStatement,
-              planType: ExecutionMode, params: Map[String, Any]): InternalExecutionResult = {
+              executionMode: ExecutionMode, params: Map[String, Any]): InternalExecutionResult = {
         val taskCloser = new TaskCloser
         taskCloser.addTask(queryContext.close)
         try {
-          if (planType == ExplainMode) {
+          if (executionMode == ExplainMode) {
             new ExplainExecutionResult(taskCloser, compiledPlan.columns.toList,
               compiledPlan.planDescription, QueryType.READ_ONLY, inputQuery.notificationLogger.notifications)
           } else
-            compiledPlan.executionResultBuilder(kernelStatement, graph, planType, params, taskCloser)
+            compiledPlan.executionResultBuilder(kernelStatement, graph, executionMode, params, taskCloser)
         } catch {
           case (t: Throwable) =>
             taskCloser.close(success = false)

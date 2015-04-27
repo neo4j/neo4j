@@ -114,16 +114,16 @@ abstract class CompiledExecutionResult(taskCloser: TaskCloser, statement:Stateme
     successful = true
   }
 
-  override def close(): Unit = {
+  override def close() = {
     taskCloser.close(success = successful)
   }
 
   override def planDescriptionRequested: Boolean =  executionMode == ExplainMode || executionMode == ProfileMode
 
-  override def executionType = if ( executionMode == ProfileMode ) {
-    profiled( queryType )
+  override def executionType = if (executionMode == ProfileMode) {
+    profiled(queryType)
   } else {
-    query( queryType )
+    query(queryType)
   }
 
   override def notifications = Iterable.empty[InternalNotification]

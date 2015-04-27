@@ -79,7 +79,6 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     ))
   }
 
-
   test("hash join of all nodes scans") { // MATCH a RETURN a
     //given
     val lhs = AllNodesScan(IdName("a"), Set.empty)(solved)
@@ -432,18 +431,45 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     intercept[RuntimeException] {
       compiled.accept(visitor)
 
-    } // shou0ld be(exception) -- TODO: this verification fails, but that failure is unrelated to the current fix...
+    }
     verify(closer).close(success = false)
   }
 
+  test("should throw the same error as the user provides") {
+    // given
+    val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> SignedDecimalIntegerLiteral("1")(null)))(solved))
+
+    // when
+    val closer = mock[TaskCloser]
+    val compiled = compile( plan, taskCloser = closer )
+
+    // then
+    val visitor = mock[ResultVisitor[RuntimeException]]
+    val exception = new scala.RuntimeException()
+    when(visitor.visit(any[ResultRow])).thenThrow(exception)
+      try {
+        compiled.accept(visitor)
+        fail("should have thrown error")
+      }
+      catch {
+        case e: Throwable => e should equal(exception)
+      }
+
+  }
+
   test("throw error when parameter is missing") {
+    //given
     val plan = ProduceResult(List.empty, List.empty, List("a"), Projection(SingleRow()(solved), Map("a" -> Parameter("FOO")(pos)))(solved))
+
+    //when
     val compiled = compile(plan)
 
+    //then
     intercept[ParameterNotFoundException](getResult(compiled, "a"))
   }
 
   test("handle line breaks and double quotes in names") {
+    //given
     val name = """{"a":
               |1
               |}
@@ -451,6 +477,7 @@ class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val plan = ProduceResult(List.empty, List.empty, List(name), Projection(SingleRow()(solved),
       Map(name -> SignedDecimalIntegerLiteral("1")(pos)))(solved))
 
+    //when
     val compiled = compile(plan, Map("FOO" -> Long.box(3L), "BAR" -> Long.box(1L)))
 
     //then

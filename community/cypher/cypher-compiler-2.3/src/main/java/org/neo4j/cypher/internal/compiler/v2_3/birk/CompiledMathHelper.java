@@ -53,7 +53,7 @@ public final class CompiledMathHelper
         }
 
         //List addition
-        if (lhs instanceof List<?> && rhs instanceof List<?>)
+        if ( lhs instanceof List<?> && rhs instanceof List<?> )
         {
             List<?> lhsList = (List<?>) lhs;
             List<?> rhsList = (List<?>) rhs;
@@ -62,19 +62,19 @@ public final class CompiledMathHelper
             result.addAll( rhsList );
             return result;
         }
-        else if (lhs instanceof List<?>)
+        else if ( lhs instanceof List<?> )
         {
             List<?> lhsList = (List<?>) lhs;
             List<Object> result = new ArrayList<>( lhsList.size() + 1 );
             result.addAll( lhsList );
-            result.add(rhs);
+            result.add( rhs );
             return result;
         }
-        else if (rhs instanceof List<?>)
+        else if ( rhs instanceof List<?> )
         {
             List<?> rhsList = (List<?>) rhs;
             List<Object> result = new ArrayList<>( rhsList.size() + 1 );
-            result.add(lhs);
+            result.add( lhs );
             result.addAll( rhsList );
             return result;
         }

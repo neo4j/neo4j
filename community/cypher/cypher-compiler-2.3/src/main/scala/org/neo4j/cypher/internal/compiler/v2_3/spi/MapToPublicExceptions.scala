@@ -65,4 +65,6 @@ trait MapToPublicExceptions[T <: Throwable] {
   def entityNotFoundException(message: String, cause: Throwable): T
 
   def cypherTypeException(message: String, cause: Throwable): T
+
+  def cypherExecutionException(message: String, cause: Throwable): T
 }
