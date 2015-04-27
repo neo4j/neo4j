@@ -24,16 +24,16 @@ import java.util
 import java.util.Collections
 
 import org.neo4j.cypher.internal.compiler.v2_3.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.{IsCollection, Eagerly}
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.{Eagerly, IsCollection}
 import org.neo4j.cypher.internal.compiler.v2_3.notification.InternalNotification
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v2_3.{ExecutionMode, ExplainMode, ProfileMode, _}
 import org.neo4j.graphdb.QueryExecutionType._
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb._
 import org.neo4j.kernel.api.Statement
 
-import scala.Predef
-import scala.collection.{mutable, Map, immutable}
+import scala.collection.{Map, mutable}
 
 /**
  * Base class for compiled execution results, implements everything in InternalExecutionResult
@@ -72,6 +72,39 @@ abstract class CompiledExecutionResult(taskCloser: TaskCloser, statement:Stateme
     val builder = Seq.newBuilder[Map[String, String]]
     doInAccept(populateDumpToStringResults(builder))
     formatOutput(writer, columns, builder.result(), queryStatistics())
+  }
+
+  /*
+   * NOTE: This should ony be used for testing, it creates an InternalExecutionResult
+   * where you can call both toList and dumpToString
+   */
+  def toEagerIterableResult: InternalExecutionResult = {
+    val dumpToStringBuilder = Seq.newBuilder[Map[String, String]]
+    val resultBuilder = Seq.newBuilder[Map[String, Any]]
+    doInAccept{ (row) =>
+      populateResults(resultBuilder)(row)
+      populateDumpToStringResults(dumpToStringBuilder)(row)
+    }
+    val result = resultBuilder.result()
+    val iterator = result.toIterator
+    new CompiledExecutionResult(taskCloser, statement) {
+      override def executionMode: ExecutionMode = self.executionMode
+
+      override def javaColumns: util.List[String] = self.javaColumns
+
+      override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = throw new UnsupportedOperationException
+
+      override def executionPlanDescription(): InternalPlanDescription = self.executionPlanDescription()
+
+      override def toList = result.map(Eagerly.immutableMapValues(_, materialize)).toList
+
+      override def dumpToString(writer: PrintWriter) = formatOutput(writer, columns, dumpToStringBuilder.result(), queryStatistics())
+
+      override def next() = Eagerly.immutableMapValues(iterator.next(), materialize)
+
+      override def hasNext = iterator.hasNext
+    }
+
   }
 
   override def queryStatistics() = InternalQueryStatistics()

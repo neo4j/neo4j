@@ -19,47 +19,40 @@
  */
 package org.neo4j.cypher
 
-class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite {
+class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   test("format node") {
     createNode(Map("prop1" -> "A", "prop2" -> 2))
 
-    dumpToString("match n return n") should equal("""+----------------------------+
-                                                    || n                          |
-                                                    |+----------------------------+
-                                                    || Node[0]{prop1:"A",prop2:2} |
-                                                    |+----------------------------+
-                                                    |1 row
-                                                    |""".stripMargin)
+    executeWithAllPlannersAndRuntimes("match n return n").dumpToString() should equal("""+----------------------------+
+                                                                                         || n                          |
+                                                                                         |+----------------------------+
+                                                                                         || Node[0]{prop1:"A",prop2:2} |
+                                                                                         |+----------------------------+
+                                                                                         |1 row
+                                                                                         |""".stripMargin)
   }
 
   test("format relationship") {
     relate(createNode(), createNode(), "T", Map("prop1" -> "A", "prop2" -> 2))
 
-    dumpToString("match ()-[r]->() return r") should equal("""+--------------------------+
-                                                              || r                        |
-                                                              |+--------------------------+
-                                                              || :T[0]{prop1:"A",prop2:2} |
-                                                              |+--------------------------+
-                                                              |1 row
-                                                              |""".stripMargin)
+    executeWithAllPlannersAndRuntimes("match ()-[r]->() return r").dumpToString() should equal("""+--------------------------+
+                                                                                                  || r                        |
+                                                                                                  |+--------------------------+
+                                                                                                  || :T[0]{prop1:"A",prop2:2} |
+                                                                                                  |+--------------------------+
+                                                                                                  |1 row
+                                                                                                  |""".stripMargin)
   }
 
   test("format collection of maps") {
-    dumpToString("""RETURN [{ inner: 'Map1' }, { inner: 'Map2' }]""") should equal("""+----------------------------------------+
-                                                                                     || [{ inner: 'Map1' }, { inner: 'Map2' }] |
-                                                                                     |+----------------------------------------+
-                                                                                     || [{inner -> "Map1"},{inner -> "Map2"}]  |
-                                                                                     |+----------------------------------------+
-                                                                                     |1 row
-                                                                                     |""".stripMargin)
-  }
-
-  def dumpToString(q: String, params: (String, Any)*) = {
-    val interpretedResult = eengine.execute(s"CYPHER runtime=interpreted $q", params.toMap).dumpToString()
-    val compiledResult = eengine.execute(s"CYPHER runtime=compiled $q", params.toMap).dumpToString()
-    interpretedResult should equal(compiledResult)
-
-    compiledResult
-  }
+    executeWithAllPlannersAndRuntimes( """RETURN [{ inner: 'Map1' }, { inner: 'Map2' }]""").dumpToString() should
+      equal( """+----------------------------------------+
+               || [{ inner: 'Map1' }, { inner: 'Map2' }] |
+               |+----------------------------------------+
+               || [{inner -> "Map1"},{inner -> "Map2"}]  |
+               |+----------------------------------------+
+               |1 row
+               |""".stripMargin)
+    }
 }

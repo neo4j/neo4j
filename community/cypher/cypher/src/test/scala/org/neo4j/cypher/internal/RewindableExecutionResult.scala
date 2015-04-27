@@ -44,19 +44,8 @@ object RewindableExecutionResult {
         }
       }
     case other: CompiledExecutionResult  =>
-      exceptionHandlerFor2_3.runSafely {
-        val data = other.toList
-        new CompiledExecutionResult(new TaskCloser, mock(classOf[Statement])) {
-          override def javaColumns: util.List[String] = other.javaColumns
-          override val toList = data
-          override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = {
-            iteratorToVisitable.accept(data.iterator, visitor)
-          }
-          override def executionPlanDescription() = other.executionPlanDescription().addArgument(Planner(planner.name)).addArgument(Runtime(runtime.name))
+      exceptionHandlerFor2_3.runSafely {other.toEagerIterableResult}
 
-          override def executionMode: ExecutionModev2_3 = other.executionMode
-        }
-      }
     case _ =>
       inner
   }

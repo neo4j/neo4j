@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.compatibility.ExecutionResultWrapperFor2_3
 import org.neo4j.cypher.internal.compiler.v2_3.ast.Statement
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{InternalExecutionResult, NewLogicalPlanSuccessRateMonitor, NewRuntimeSuccessRateMonitor}
-import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport
+import org.neo4j.cypher.internal.compiler.v2_3.helpers.{Eagerly, JavaConversionSupport}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CantCompileQueryException, CantHandleQueryException}
 import org.neo4j.cypher.internal.compiler.v2_3.test_helpers.CypherTestSupport
@@ -247,14 +247,23 @@ trait NewPlannerTestSupport extends CypherTestSupport {
 
     import scala.collection.JavaConverters._
 
-    def toCompararableSeq: Seq[Map[String, Any]] = res.map((map: Map[String, Any]) =>
-      map.map {
-        case (k, a: Array[_]) => k -> a.toList
-        case (k, m: java.util.Map[_,_]) => k -> m.asScala
-        case (k, m: java.util.List[_]) => k -> m.asScala
+    def toCompararableSeq: Seq[Map[String, Any]] = {
+      def convert(v: Any): Any = v match {
+        case a: Array[_] => a.toList.map(convert)
+        case m: Map[_,_] =>  {
+          Eagerly.immutableMapValues(m, convert)
+        }
+        case m: java.util.Map[_,_] =>  {
+          Eagerly.immutableMapValues(m.asScala, convert)
+        }
+        case l: java.util.List[_] => l.asScala.map(convert)
         case m => m
       }
-    )
-  }
 
+
+      res.map((map: Map[String, Any]) => map.map {
+        case (k, v) => k -> convert(v)
+      })
+    }
+  }
 }

@@ -389,11 +389,9 @@ return coalesce(a.title, a.name)""")
   test("array prop output") {
     createNode("foo" -> Array(1, 2, 3))
 
-    val resultInterpreted = eengine.execute("CYPHER runtime=interpreted match n return n").dumpToString()
-    val resultCompiled = eengine.execute("CYPHER runtime=compiled match n return n").dumpToString()
+    val result = executeWithAllPlannersAndRuntimes("match n return n").dumpToString()
 
-    resultInterpreted should equal(resultCompiled)
-    resultCompiled should include ("[1,2,3]")
+    result should include ("[1,2,3]")
   }
 
   test("map output") {
