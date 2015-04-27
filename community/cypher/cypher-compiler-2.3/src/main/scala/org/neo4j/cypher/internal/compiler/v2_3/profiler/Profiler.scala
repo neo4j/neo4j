@@ -31,14 +31,14 @@ import scala.collection.mutable
 class Profiler extends PipeDecorator {
   outerProfiler =>
 
-  val dbHitsStats: mutable.Map[Object, ProfilingQueryContext] = mutable.Map.empty
-  val rowStats: mutable.Map[Object, ProfilingIterator] = mutable.Map.empty
+  val dbHitsStats: mutable.Map[Object, ProfilingQueryContext] = IdentityMutableMap.empty
+  val rowStats: mutable.Map[Object, ProfilingIterator] = IdentityMutableMap.empty
   private var parentPipe: Option[Pipe] = None
 
 
   def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = {
-
     val oldCount = rowStats.get(pipe.id).map(_.count).getOrElse(0L)
+
     val resultIter = new ProfilingIterator(iter, oldCount)
 
     rowStats(pipe.id) = resultIter

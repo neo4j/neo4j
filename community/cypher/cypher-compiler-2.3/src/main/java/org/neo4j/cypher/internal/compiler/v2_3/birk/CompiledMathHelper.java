@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.birk;
 
 import java.lang.reflect.Array;
+import java.util.Collections;
 
 import org.neo4j.cypher.internal.compiler.v2_3.CypherTypeException;
 
@@ -49,6 +50,8 @@ public final class CompiledMathHelper
         {
             return String.valueOf( lhs ) + String.valueOf( rhs );
         }
+
+        Collections.addAll(  )
 
         // array addition
         Class<?> lhsClass = lhs.getClass();
