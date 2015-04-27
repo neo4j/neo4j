@@ -19,9 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_2
 
-import scala.collection.immutable.Map
-import scala.collection.JavaConverters._
 import java.util
+
+import scala.collection.JavaConverters._
+import scala.collection.immutable.Map
+import scala.collection.mutable
 
 object IdentityMap {
   def empty[K, V]: IdentityMap[K, V] = IdentityMap()
@@ -36,7 +38,6 @@ object IdentityMap {
 }
 
 case class IdentityMap[K, V] private (idMap: util.IdentityHashMap[K, V] = new util.IdentityHashMap[K, V]()) extends Map[K, V] {
-
   self =>
 
   override def get(key: K): Option[V] =
@@ -65,4 +66,26 @@ case class IdentityMap[K, V] private (idMap: util.IdentityHashMap[K, V] = new ut
     idMap.clone().asInstanceOf[util.IdentityHashMap[K, V]].entrySet().iterator().asScala.map(e => (e.getKey, e.getValue))
 
   override def stringPrefix: String = "IdentityMap"
+}
+
+object IdentityMutableMap {
+  def empty[K, V]: IdentityMutableMap[K, V] = IdentityMutableMap()
+
+  def apply[K, V](elems: (K, V)*): IdentityMutableMap[K, V] = {
+    val idMap = new util.IdentityHashMap[K, V]()
+    elems.foreach {
+      elem => idMap.put(elem._1, elem._2)
+    }
+    IdentityMutableMap(idMap)
+  }
+}
+
+case class IdentityMutableMap[K, V] private (idMap: util.IdentityHashMap[K, V] = new util.IdentityHashMap[K, V]()) extends mutable.Map[K, V] {
+  override def +=(kv: (K, V)): this.type = { idMap.put(kv._1, kv._2) ; this }
+
+  override def -=(key: K): this.type = { idMap.remove(key) ; this }
+
+  override def get(key: K): Option[V] = Option(idMap.get(key))
+
+  override def iterator: Iterator[(K, V)] = idMap.entrySet().asScala.map { e => e.getKey -> e.getValue }.toIterator
 }
