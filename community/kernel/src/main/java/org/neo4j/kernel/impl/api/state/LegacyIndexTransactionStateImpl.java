@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.IndexCommandFactory;
@@ -34,7 +35,6 @@ import org.neo4j.graphdb.index.LegacyIndexProviderTransaction;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
-import org.neo4j.kernel.impl.api.LegacyIndexApplier.ProviderLookup;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
@@ -57,14 +57,15 @@ public class LegacyIndexTransactionStateImpl implements LegacyIndexTransactionSt
 {
     private final Map<String, LegacyIndexProviderTransaction> transactions = new HashMap<>();
     private final IndexConfigStore indexConfigStore;
-    private final ProviderLookup providerLookup;
+    private final Function<String,IndexImplementation> providerLookup;
 
     // Commands
     private IndexDefineCommand defineCommand;
     private final Map<String, List<IndexCommand>> nodeCommands = new HashMap<>();
     private final Map<String, List<IndexCommand>> relationshipCommands = new HashMap<>();
 
-    public LegacyIndexTransactionStateImpl( IndexConfigStore indexConfigStore, ProviderLookup providerLookup )
+    public LegacyIndexTransactionStateImpl( IndexConfigStore indexConfigStore,
+            Function<String,IndexImplementation> providerLookup )
     {
         this.indexConfigStore = indexConfigStore;
         this.providerLookup = providerLookup;
@@ -79,7 +80,7 @@ public class LegacyIndexTransactionStateImpl implements LegacyIndexTransactionSt
             throw new LegacyIndexNotFoundKernelException( "Node index '" + indexName + " not found" );
         }
         String providerName = configuration.get( IndexManager.PROVIDER );
-        IndexImplementation provider = providerLookup.lookup( providerName );
+        IndexImplementation provider = providerLookup.apply( providerName );
         LegacyIndexProviderTransaction transaction = transactions.get( providerName );
         if ( transaction == null )
         {
@@ -97,7 +98,7 @@ public class LegacyIndexTransactionStateImpl implements LegacyIndexTransactionSt
             throw new LegacyIndexNotFoundKernelException( "Relationship index '" + indexName + " not found" );
         }
         String providerName = configuration.get( IndexManager.PROVIDER );
-        IndexImplementation provider = providerLookup.lookup( providerName );
+        IndexImplementation provider = providerLookup.apply( providerName );
         LegacyIndexProviderTransaction transaction = transactions.get( providerName );
         if ( transaction == null )
         {
@@ -227,6 +228,7 @@ public class LegacyIndexTransactionStateImpl implements LegacyIndexTransactionSt
         addCommand( indexName, command, true );
     }
 
+    @Override
     public void createIndex( IndexEntityType entityType, String indexName, Map<String, String> config )
     {
         CreateCommand command = new CreateCommand();
@@ -241,6 +243,7 @@ public class LegacyIndexTransactionStateImpl implements LegacyIndexTransactionSt
     }
 
     /** Set this data structure to it's initial state, allowing it to be re-used as if it had just been new'ed up. */
+    @Override
     public void initialize()
     {
         if ( !transactions.isEmpty() )
